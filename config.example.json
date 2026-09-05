@@ -1,0 +1,18 @@
+{
+  "provider": "demo",
+  "api_keys": {
+    "twelvedata": "",
+    "alpaca_key": "",
+    "alpaca_secret": "",
+    "tiingo": ""
+  },
+  "mapper": {
+    "tickers": ["NVDA"],
+    "interval": "5min",
+    "bar_count": 1000,
+    "structure_history_size": 20,
+    "equal_level_tolerance": 0.0003,
+    "bos_min_retracement_pct": 0.382,
+    "debug": true
+  }
+}
