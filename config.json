@@ -1,0 +1,20 @@
+{
+    "provider": "twelvedata",
+    "api_keys": {
+        "twelvedata": "7a5fb48585eb4655aaec0f258a734e33",
+        "alpaca_key": "",
+        "alpaca_secret": "",
+        "tiingo": ""
+    },
+    "scanner": {
+        "tickers": [
+            "NVDA"
+        ],
+        "interval": "5min",
+        "bar_count": 1000,
+        "structure_history_size": 20,
+        "equal_level_tolerance": 0.0003,
+        "bos_min_retracement_pct": 38.2,
+        "debug": true
+    }
+}
