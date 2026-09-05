@@ -1,5 +1,5 @@
 {
-  "provider": "demo",
+  "provider": "twelvedata",
   "api_keys": {
     "twelvedata": "",
     "alpaca_key": "",
