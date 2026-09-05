@@ -1,6 +1,6 @@
 # SMC_mapper
 
-Clean rebuild of the legacy `true_smc_scanner` implementation using the Antigravity development skill and the canonical True SMC methodology.
+Clean rebuild of the legacy `true_smc_scanner` implementation using the reusable `ai-dev-AG` development plugin and the canonical True SMC methodology.
 
 ## Current status
 
@@ -14,7 +14,7 @@ The implementation is intentionally built incrementally. No SMC engine logic is 
 ai-dev-AG plugin
     = HOW TO DEVELOP
 
-True SMC Skill
+True SMC Skill (`.agents/skills/smc`)
     = WHAT TRUE SMC IS
 
 old true_smc_scanner.py
@@ -32,6 +32,8 @@ SMC_mapper.py
 
 ## Development contract
 
+The generic development workflow is supplied by the reusable `ai-dev-AG` Antigravity plugin. This repository keeps only the project-specific `smc` skill locally.
+
 Every implementation change follows:
 
 ```text
@@ -42,9 +44,19 @@ SMALL CHANGE
 TEST
   ↓
 NEXT SMALL CHANGE
+  ↓
+REVIEW
 ```
 
 The legacy scanner is a behavioral baseline, not the final implementation. Canonical True SMC methodology takes precedence over accidental legacy behavior.
+
+## Skill separation
+
+- `ai-dev-AG` defines **HOW** development work is performed.
+- `.agents/skills/smc/SKILL.md` defines **WHAT** canonical True SMC means.
+- The implementation must reconcile behavior against the SMC skill rather than inventing domain rules.
+
+`true-smc` is reference material only and is not the active development target.
 
 ## Planned build order
 
