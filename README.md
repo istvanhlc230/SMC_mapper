@@ -4,9 +4,9 @@ Clean rebuild of the legacy `true_smc_scanner` implementation using the reusable
 
 ## Current status
 
-Part 2 — project scaffold.
+Part 2 — project scaffold and structural engine foundation.
 
-The implementation is intentionally built incrementally. No SMC engine logic is introduced in this scaffold.
+The repository now contains the clean-rebuild engine, data-provider abstraction, regression suite, and the project-specific True SMC methodology skill. Further work is incremental and methodology-driven.
 
 ## Architecture
 
@@ -57,6 +57,10 @@ The legacy scanner is a behavioral baseline, not the final implementation. Canon
 - The implementation must reconcile behavior against the SMC skill rather than inventing domain rules.
 
 `true-smc` is reference material only and is not the active development target.
+
+## Configuration
+
+`config.json` contains non-secret runtime configuration only. External provider credentials must be supplied through environment variables or a local `.env` file. A safe template is provided as `config.example.json`.
 
 ## Planned build order
 
