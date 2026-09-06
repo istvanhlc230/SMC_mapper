@@ -6,7 +6,7 @@ Clean rebuild of the legacy `true_smc_scanner` implementation using the reusable
 
 Part 2 — project scaffold and structural engine foundation.
 
-The repository now contains the clean-rebuild engine, data-provider abstraction, regression suite, and the project-specific True SMC methodology skill. Further work is incremental and methodology-driven.
+The repository contains the clean-rebuild engine, data-provider abstraction, regression suite, and the project-specific True SMC methodology skill. Further work is incremental and methodology-driven.
 
 ## Architecture
 
@@ -16,6 +16,9 @@ ai-dev-AG plugin
 
 True SMC Skill (`.agents/skills/smc`)
     = WHAT TRUE SMC IS
+
+AGENTS.md
+    = PROJECT-SPECIFIC ANTIGRAVITY CONTRACT
 
 old true_smc_scanner.py
     = IMPLEMENTATION BASELINE
@@ -30,30 +33,64 @@ SMC_mapper.py
     = CLEAN REBUILD
 ```
 
+## Antigravity control-plane model
+
+The repository is designed to be operated by the native Antigravity `ai-dev-AG` plugin. The plugin owns orchestration and runtime agent communication; this repository supplies project-specific methodology, implementation, tests, and evidence.
+
+```text
+Antigravity orchestrator
+        │
+        ├── invoke_subagent
+        ▼
+ai-dev-implementation
+        │
+        ├── inspect
+        ├── smallest implementation change
+        └── run tests
+        │
+        ▼
+IMPLEMENTATION_READY
+        │
+        ▼
+external-validator MCP
+        │
+        ▼
+PASS / CONDITIONAL / FAIL
+        │
+        ├── PASS → ACCEPTED
+        ├── CONDITIONAL → HUMAN REVIEW
+        └── FAIL → CORRECT → TEST → VALIDATE
+```
+
+Runtime communication is intentionally not implemented through GitHub commits, branches, PR comments, repository files, polling, or GitHub Actions. Git/GitHub is source control and delivery infrastructure only. The external validator is an independent validation authority and does not own repository changes.
+
 ## Development contract
 
-The generic development workflow is supplied by the reusable `ai-dev-AG` Antigravity plugin. This repository keeps only the project-specific `smc` skill locally.
+The generic development workflow is supplied by the reusable `ai-dev-AG` Antigravity plugin. The repository keeps project-specific constraints in `AGENTS.md` and the canonical `smc` skill in `.agents/skills/smc/skill.md`.
 
 Every implementation change follows:
 
 ```text
 INSPECT
   ↓
+PLAN
+  ↓
 SMALL CHANGE
   ↓
 TEST
   ↓
-NEXT SMALL CHANGE
+IMPLEMENTATION_READY
   ↓
-REVIEW
+INDEPENDENT VALIDATION
 ```
 
-The legacy scanner is a behavioral baseline, not the final implementation. Canonical True SMC methodology takes precedence over accidental legacy behavior.
+Acceptance requires a fresh external `PASS` whenever the task is subject to the validation gate. An implementation agent's own assessment is never the acceptance authority.
 
 ## Skill separation
 
 - `ai-dev-AG` defines **HOW** development work is performed.
-- `.agents/skills/smc/SKILL.md` defines **WHAT** canonical True SMC means.
+- `AGENTS.md` defines **HOW THIS PROJECT** is operated under Antigravity.
+- `.agents/skills/smc/skill.md` defines **WHAT** canonical True SMC means.
 - The implementation must reconcile behavior against the SMC skill rather than inventing domain rules.
 
 `true-smc` is reference material only and is not the active development target.
