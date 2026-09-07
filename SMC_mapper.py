@@ -1069,6 +1069,8 @@ def _process_outside_bar(state: EngineState, c: dict, i: int, candles: List[dict
         state.candidate_low_index = i
         state.candidate_low_source = "PHYSICAL_CANDLE"
 
+    pb_existed = state.pullback is not None
+
     # Deterministic LOW -> HIGH sequence is structurally useful only when it
     # aligns with an active bullish leg. Mirror for HIGH -> LOW in a bearish leg.
     if active_dir == "BULLISH" and bullish_sequence:
@@ -1085,7 +1087,7 @@ def _process_outside_bar(state: EngineState, c: dict, i: int, candles: List[dict
         if c["high"] > ref_h:
             # LOW happened first, HIGH happened second. The pullback can become
             # structurally valid here, but BOS/CHoCH must wait for a later candle.
-            if state.pullback:
+            if pb_existed and state.pullback:
                 state.pullback.extreme_index = min(state.pullback.extreme_index, i)
                 finish_pullback(state, candles, current_i=i)
             state.reference_index = i
@@ -1107,7 +1109,7 @@ def _process_outside_bar(state: EngineState, c: dict, i: int, candles: List[dict
             update_pullback_depth(state.pullback, state)
 
         if c["low"] < ref_l:
-            if state.pullback:
+            if pb_existed and state.pullback:
                 state.pullback.extreme_index = min(state.pullback.extreme_index, i)
                 finish_pullback(state, candles, current_i=i)
             state.reference_index = i
@@ -1169,7 +1171,17 @@ def run_true_smc(candles: List[dict], init_end_index: Optional[int] = None):
             continue
 
         # Canonical outside-bar processing: one real candle, one state-machine step.
+        is_outside = False
         if bH and bL:
+            if state.pullback and state.pullback.active:
+                if state.pullback.direction == "BULLISH" and c["low"] < state.pullback.extreme:
+                    is_outside = True
+                elif state.pullback.direction == "BEARISH" and c["high"] > state.pullback.extreme:
+                    is_outside = True
+            else:
+                is_outside = True
+
+        if is_outside:
             _process_outside_bar(state, c, i, candles)
             continue
 

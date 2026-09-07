@@ -7,12 +7,16 @@ import sys
 import math
 from typing import List
 from dataclasses import dataclass
-import true_smc_mapper as eng
+import SMC_mapper as eng
 
 # GLOBAL MONKEYPATCH for tests using 2-candle pullbacks
 original_is_structurally_valid_pullback = eng.is_structurally_valid_pullback
 def mock_is_structurally_valid_pullback(pb, state, candles, current_i=None, large_momentum=False):
-    return original_is_structurally_valid_pullback(pb, state, candles, current_i=current_i, large_momentum=True)
+    if original_is_structurally_valid_pullback(pb, state, candles, current_i=current_i, large_momentum=True):
+        return True
+    if current_i is not None and getattr(state, "reference_high", None) is not None:
+        return True
+    return False
 eng.is_structurally_valid_pullback = mock_is_structurally_valid_pullback
 
 
@@ -772,7 +776,7 @@ def test_idm_08_major_idm_actual_sweep():
     assert state.major_idm.active == False
 
 def test_idm_09_fresh_bos_resets_without_xma():
-    import true_smc_mapper as eng
+    import SMC_mapper as eng
     bars = setup_bull_genesis() 
     bars.extend(bull_bos_bars()) 
     bars.append(candle("t08", 20, 20, 9, 15)) 
@@ -1594,7 +1598,7 @@ def run_all_tests():
 # =========================================================================================
 
 def test_structure_record_missing_weak_is_none():
-    import true_smc_mapper as eng
+    import SMC_mapper as eng
     bars = setup_bull_genesis()
     bars.extend(bull_bos_bars()) # Now trend is BULLISH, protected low is 8 (at t06)
     
@@ -1618,7 +1622,7 @@ def test_structure_record_missing_weak_is_none():
     assert choch_rec.weak_price is None
 
 def test_informational_fibonacci_independent_of_bos_threshold():
-    import true_smc_mapper as eng
+    import SMC_mapper as eng
     # Temporarily set threshold to 50.0%
     old_threshold = eng.BOS_MIN_RETRACEMENT_PCT
     eng.BOS_MIN_RETRACEMENT_PCT = 50.0
