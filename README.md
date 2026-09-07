@@ -52,17 +52,20 @@ ai-dev-implementation
 IMPLEMENTATION_READY
         │
         ▼
-external-validator MCP
+ai-dev-validator (native subagent)
         │
         ▼
-PASS / CONDITIONAL / FAIL
+validator_contract.py
+        │
+        ▼
+workflow_guard.py
         │
         ├── PASS → ACCEPTED
-        ├── CONDITIONAL → HUMAN REVIEW
+        ├── CONDITIONAL → HUMAN_REVIEW_REQUIRED
         └── FAIL → CORRECT → TEST → VALIDATE
 ```
 
-Runtime communication is intentionally not implemented through GitHub commits, branches, PR comments, repository files, polling, or GitHub Actions. Git/GitHub is source control and delivery infrastructure only. The external validator is an independent validation authority and does not own repository changes.
+Runtime communication is intentionally not implemented through GitHub commits, branches, PR comments, repository files, polling, or GitHub Actions. Git/GitHub is source control and delivery infrastructure only. The validator (`ai-dev-validator`) is an independent, read-only validation subagent and does not own repository changes.
 
 ## Development contract
 
@@ -93,7 +96,7 @@ Acceptance requires a fresh external `PASS` whenever the task is subject to the 
 - `.agents/skills/smc/skill.md` defines **WHAT** canonical True SMC means.
 - The implementation must reconcile behavior against the SMC skill rather than inventing domain rules.
 
-`true-smc` is reference material only and is not the active development target.
+The legacy `true-smc` repository is obsolete and removed; canonical True SMC methodology is preserved locally in `.agents/skills/smc/skill.md`.
 
 ## Configuration
 

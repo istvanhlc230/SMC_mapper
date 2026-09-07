@@ -15,10 +15,15 @@
 
 This repository is operated under the reusable `ai-dev-AG` Antigravity plugin.
 
-- `ai-dev-orchestrator` owns task lifecycle, delegation, evidence collection, external validation, correction loops, and acceptance.
-- `ai-dev-implementation` owns focused production-code and test changes.
-- The external validator MCP is independent validation authority and is read-only with respect to this repository.
-- Runtime communication between agents uses Antigravity-native agent collaboration mechanisms. Do not use Git commits, branches, PR comments, repository files, polling, or GitHub Actions as an inter-agent message bus.
+- `ai-dev-orchestrator` owns task lifecycle, delegation, evidence collection, validation gatekeeping, correction loops, and acceptance.
+- `ai-dev-implementation` owns focused production-code and test changes via native `invoke_subagent`.
+- `ai-dev-validator` is an independent, read-only validation subagent invoked via native `invoke_subagent` without write or execution tools.
+- Validation results are parsed and enforced by `validator_contract.py` and `workflow_guard.py`.
+- Validation is independent of the implementation agent's self-assessment; implementation claims never constitute acceptance.
+- The validation token is an internal control-plane credential: never passed to the validator prompt, never recorded in validator transcripts, and redacted from reports.
+- Timeout, crash, or malformed validator output is fail-safe and never yields `PASS`.
+- Terminal escalation (`HUMAN_REVIEW_REQUIRED`) halts automated correction loops.
+- Runtime communication between agents uses Antigravity-native agent collaboration mechanisms (`invoke_subagent`, `send_message`). Do not use Git commits, branches, PR comments, repository files, polling, or GitHub Actions as an inter-agent message bus.
 - Git/GitHub is source control and delivery infrastructure only.
 
 ## Required implementation loop
@@ -41,6 +46,12 @@ INDEPENDENT VALIDATION
 ```
 
 A change is not accepted merely because the implementation agent reports success. Acceptance requires a fresh independent external validation result of `PASS` when the workflow requires validation.
+
+Safety limits are strictly enforced:
+- `MAX_CORRECTIONS = 3`
+- `MAX_WORKFLOW_TIME = 900`
+- `MAX_VALIDATOR_TIME = 300`
+- `MAX_IDENTICAL_FAILURES = 2`
 
 ## SMC-specific rules
 
