@@ -65,7 +65,3 @@ A canonical executable setup must satisfy a minimum risk/reward of **1:2** where
 - Risk management must consume structural state rather than redefine it.
 - Configuration switches must not silently redefine canonical semantics.
 - Risk policy is downstream from structural validation.
-
-## Migration status
-
-The scoring and risk rules from the preserved pre-reorganization ruleset are migrated here. The immutable baseline remains `.agents/skills/smc/skill_old.md` until the complete rule-by-rule audit is finished.
