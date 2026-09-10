@@ -1,32 +1,32 @@
 # TRUE SMC — METHODOLOGY CATEGORY MAP
 
-**Status:** Classification layer for the existing True SMC skill
-**Purpose:** Classify the existing rules without deleting, weakening, or silently changing any rule in `skill.md`.
+**Status:** Classification layer for the reorganized True SMC skill
+**Purpose:** Classify the existing rules without deleting, weakening, or silently changing any rule in the preserved baseline `skill_old.md`.
 
-> This file is a taxonomy, not a replacement for `skill.md`. Existing rules remain authoritative until explicitly reclassified or revised in a later approved change.
+> This file is a taxonomy and audit ledger, not a replacement for the category documents. The category documents contain the migrated rule bodies; `skill_old.md` remains the immutable completeness baseline until final audit sign-off.
 
 ---
 
 ## 1. Category model
 
-Every rule in the True SMC skill should ultimately belong to one primary authority category.
+Every rule in the True SMC skill belongs to one primary authority category.
 
 | Category | Meaning | Validation role |
 |---|---|---|
 | `STANDARD_SMC` | Broad SMC/ICT concept that is commonly recognized independently of this repository's implementation | Methodology baseline |
 | `TRUE_SMC_CANONICAL` | Rule explicitly belonging to the project's canonical True SMC methodology | Highest methodology authority |
 | `METHODOLOGY_PARAMETER` | Numeric/threshold/configurable parameter used by the methodology | Must not redefine object semantics |
-| `IMPLEMENTATION` | Scanner/state-machine/data-model behavior required to implement the methodology | Code-contract layer |
+| `IMPLEMENTATION` | Mapper/state-machine/data-model behavior required to implement the methodology | Code-contract layer |
 | `EXECUTION` | Trading/execution interpretation built on top of structural facts | Must not redefine structure |
 | `RISK` | Risk, position sizing, trade-management, or scoring policy | Separate from structural truth |
-| `UNVERIFIED` | Rule currently present but lacking sufficient provenance/verification to call it universal or canonical | Must not be promoted silently |
+| `UNVERIFIED` | Rule or claim lacking sufficient provenance/verification to call it universal or canonical | Must not be promoted silently |
 | `DEPRECATED` | Historical rule retained for traceability but no longer active | Must not drive validation |
 
 ### Authority rule
 
-A rule being present in `skill.md` does **not** automatically make it a universal SMC rule. The category records what kind of authority the rule has.
+A rule being present in a category does **not** automatically make it a universal SMC rule. The category records what kind of authority the rule has.
 
-The classification does not delete or weaken the underlying rule.
+Classification does not delete or weaken the underlying rule.
 
 ---
 
@@ -39,7 +39,7 @@ These concepts form the structural core and should remain independent of executi
 | Raw OHLC | `STANDARD_SMC` | Primitive market data |
 | Candle relationships | `STANDARD_SMC` | Price relationship primitives used to derive higher-level structure |
 | Candle-level Minor Structure | `TRUE_SMC_CANONICAL` | Repository-specific structural precursor layer |
-| Candle-level Valid Pullback | `TRUE_SMC_CANONICAL` | Formal multi-step pullback sequence defined by the skill |
+| Candle-level Valid Pullback | `TRUE_SMC_CANONICAL` | Formal multi-step pullback sequence defined by the canonical rules |
 | Equal High / Equal Low reference handling | `TRUE_SMC_CANONICAL` | Deterministic reference-transfer behavior |
 | Inside-bar handling | `TRUE_SMC_CANONICAL` | Inside bars do not independently create structural objects |
 | Outside-bar directional sequencing | `TRUE_SMC_CANONICAL` | LOW → HIGH bullish and HIGH → LOW bearish sequencing |
@@ -51,7 +51,7 @@ These concepts form the structural core and should remain independent of executi
 | Large/high-momentum condition | `UNVERIFIED` | Qualitative in current skill until an authoritative quantitative definition exists |
 | Structurally Valid Pullback | `TRUE_SMC_CANONICAL` | Structurally qualified pullback capable of becoming IDM source |
 | BSL / SSL liquidity | `STANDARD_SMC` | Directional liquidity taxonomy |
-| Active Pullback Pointer | `IMPLEMENTATION` | Single active reference required by the scanner state model |
+| Active Pullback Pointer | `IMPLEMENTATION` | Single active reference required by the mapper state model |
 | IDM | `TRUE_SMC_CANONICAL` | Liquidity derived from the most recent structurally valid pullback on the active impulsive leg |
 | Minor / Active IDM lifecycle | `TRUE_SMC_CANONICAL` | Newest qualifying pullback replaces the active minor IDM |
 | Major IDM | `TRUE_SMC_CANONICAL` | Separate lifecycle from Minor IDM |
@@ -88,11 +88,11 @@ These are concepts that can be discussed as general SMC/ICT ideas, while the exa
 - protected structural levels
 - inducement as a structural/liquidity concept
 
-The skill must define the project's exact semantics where those semantics differ from generic usage.
+The canonical category must define the project's exact semantics where those semantics differ from generic usage.
 
 ### 3.2 True SMC canonical rules
 
-The following should be treated as project methodology rather than assumed universal SMC facts:
+The following are project methodology rather than assumed universal SMC facts:
 
 - the exact candle-level Valid Pullback sequence
 - Equal High / Equal Low reference transfer
@@ -114,7 +114,7 @@ The following should be treated as project methodology rather than assumed unive
 - the exact CHoCH → new impulsive-leg lifecycle
 - genesis restrictions
 
-These rules remain in the skill. Classification simply prevents them from being mislabeled as generic SMC axioms.
+Classification prevents these rules from being mislabeled as generic SMC axioms.
 
 ---
 
@@ -146,7 +146,7 @@ No new ATR, body-ratio, volatility, or standard-deviation threshold should be pr
 
 ## 5. Implementation category
 
-These rules describe how the scanner must represent or transition canonical objects.
+These rules describe how the mapper must represent or transition canonical objects.
 
 ### Current implementation-facing concepts
 
@@ -215,7 +215,7 @@ Any scoring model must remain downstream of validated methodology.
 
 ## 8. BOS classification boundary
 
-BOS is a special case because the concept is broadly recognized while the exact acceptance semantics in this skill are project-specific.
+BOS is a special case because the concept is broadly recognized while the exact acceptance semantics are project-specific.
 
 ### General concept
 
@@ -227,7 +227,7 @@ A structural break in the direction of the active trend/regime.
 
 `TRUE_SMC_CANONICAL`
 
-The existing skill defines prerequisites including:
+The canonical rules define prerequisites including:
 
 - required structural context
 - IDM liquidity takeout
@@ -236,16 +236,14 @@ The existing skill defines prerequisites including:
 - break acceptance
 - active Major IDM gate
 
-### Important unresolved semantic point
+### Required distinction
 
-The skill currently contains both:
+The canonical model contains both:
 
 - **External Wick BOS** for eligible external structural levels
 - **Full Body-Close BOS** when the close exceeds the reference extreme
 
-This distinction must remain visible in the category model. It should not be silently collapsed into a generic "body close required" rule or silently removed.
-
-A future approved methodology pass should explicitly define the precedence and state semantics of these two BOS forms.
+This distinction must remain visible. It must not be silently collapsed into a generic “body close required” rule or silently removed.
 
 ---
 
@@ -261,7 +259,7 @@ A regime/trend transition against the previously governing structural direction.
 
 `TRUE_SMC_CANONICAL`
 
-The current skill explicitly treats CHoCH as a separate lifecycle:
+The canonical model treats CHoCH as a separate lifecycle:
 
 ```text
 CURRENT RANGE
@@ -281,7 +279,7 @@ This must not be replaced by the BOS lifecycle unless the methodology is explici
 
 ## 10. IDM classification boundary
 
-IDM is the most important project-specific concept and should have the strongest provenance discipline.
+IDM is a key project-specific concept and should have strong provenance discipline.
 
 ### General SMC layer
 
@@ -334,37 +332,23 @@ Genesis is partly methodology and partly implementation.
 
 `TRUE_SMC_CANONICAL`
 
-The scanner must not fabricate historical structure merely because initialization requires an object.
+The mapper must not fabricate historical structure merely because initialization requires an object.
 
 ### Implementation authority
 
 `IMPLEMENTATION`
 
-Initialization must explicitly distinguish:
-
-```text
-NO HISTORICAL STRUCTURE
-        ↓
-INITIAL OBSERVATION
-        ↓
-ELIGIBLE STRUCTURAL EVENT
-        ↓
-FIRST VALIDATED OBJECT
-        ↓
-ACTIVE STRUCTURAL STATE
-```
-
-A future revision should add positive initialization states to complement the existing anti-fabrication constraints.
+Initialization must explicitly distinguish the absence of historical structure from the first validated structural state. Bootstrap state must remain distinguishable from organically confirmed structure.
 
 ---
 
 ## 12. Current unresolved / unverified classifications
 
-These items should remain explicitly marked rather than being silently promoted.
+These items remain explicitly marked rather than silently promoted.
 
 ### `UNVERIFIED`
 
-- quantitative definition of "large/high-momentum" unless an authoritative source is established
+- quantitative definition of “large/high-momentum” unless an authoritative source is established
 - any newly invented volatility/body/ATR threshold
 - claims that the exact 38.2% threshold is a universal SMC axiom
 - claims that the exact >=3 candle rule is universal SMC
@@ -384,13 +368,13 @@ These items should remain explicitly marked rather than being silently promoted.
 - object identity checks
 - configuration plumbing
 - historical-state retention
-- scanner lifecycle mechanics
+- mapper lifecycle mechanics
 
 ---
 
 ## 13. Negative constraints vs positive invariants
 
-The existing skill is strong on anti-patterns. The category model should therefore add a second validation dimension: positive invariants.
+The canonical rules contain strong anti-patterns. Validation must also use positive invariants.
 
 ### Positive structural invariants
 
@@ -409,56 +393,24 @@ These are validation invariants; they do not replace existing rules.
 
 ---
 
-## 14. Recommended future skill organization
-
-No current content is deleted by this recommendation. It is a target architecture for later approved edits.
+## 14. Current skill organization
 
 ```text
-TRUE SMC SKILL
-│
-├── A. AUTHORITY & SCOPE
-│
-├── B. CORE STRUCTURAL ONTOLOGY
-│   ├── Candle Relationships
-│   ├── Minor Structure
-│   ├── Valid Pullback
-│   ├── Structural Qualification
-│   ├── Pullback Extreme
-│   ├── Liquidity
-│   ├── IDM
-│   ├── Swing
-│   ├── BOS
-│   ├── CHoCH
-│   └── Trading Range
-│
-├── C. TRUE SMC LIFECYCLES
-│   ├── Minor IDM
-│   ├── Major IDM
-│   ├── Fallback Major IDM
-│   ├── Swing Lock
-│   ├── BOS Lifecycle
-│   ├── CHoCH Lifecycle
-│   └── Genesis
-│
-├── D. METHODOLOGY PARAMETERS
-│   ├── Retracement Thresholds
-│   └── Momentum Qualification
-│
-├── E. EXECUTION LAYER
-│   ├── POI
-│   ├── Order Flow
-│   ├── Order Block
-│   ├── FVG / Imbalance
-│   └── Entry
-│
-├── F. RISK / SCORING
-│
-├── G. IMPLEMENTATION CONTRACT
-│
-└── H. VALIDATION INVARIANTS / ANTI-PATTERNS
+.agents/skills/smc/
+├── skill.md
+├── skill_old.md
+├── standard_smc.md
+├── true_smc_canonical.md
+├── methodology_parameters.md
+├── implementation.md
+├── execution.md
+├── risk.md
+├── unverified.md
+├── deprecated.md
+└── CATEGORY_MAP.md
 ```
 
-This is an organizational target only. Existing rules remain intact.
+`skill.md` is the master entry point. The category documents contain the migrated rule bodies. `skill_old.md` is the immutable pre-reorganization baseline.
 
 ---
 
@@ -476,3 +428,7 @@ Before changing any existing rule, the change must answer:
 8. **Has the methodology change been explicitly approved before implementation?**
 
 No rule should be deleted merely because its category is unclear. Unclear rules should first be marked `UNVERIFIED` or otherwise classified pending verification.
+
+## Migration audit status
+
+Section-level migration is complete. Final rule-by-rule audit against `skill_old.md` remains the acceptance gate. Every original rule, invariant, test requirement, and anti-pattern must have a category owner and retain equivalent semantics before `skill_old.md` can be treated as archival-only.
