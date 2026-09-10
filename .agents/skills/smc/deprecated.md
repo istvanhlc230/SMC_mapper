@@ -24,7 +24,3 @@ Any historical-close Wick-BOS compatibility option is not part of the canonical 
 ## Deprecated handling rule
 
 Deprecated content is retained for traceability only. It must not be used as an active methodology rule, implementation shortcut, scoring rule, or execution rule.
-
-## Migration status
-
-Section 43 of the preserved pre-reorganization ruleset is migrated here. The immutable baseline remains `.agents/skills/smc/skill_old.md` until the complete rule-by-rule audit is finished.
