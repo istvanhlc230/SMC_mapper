@@ -15,16 +15,16 @@ Every original section must have an explicit destination in the new category mod
 | 1 | `true_smc_canonical.md` | `skill.md` | PASS |
 | 2 | `true_smc_canonical.md` | `skill.md` | PASS |
 | 3 | `true_smc_canonical.md` | `skill.md` | PASS |
-| 4 | `true_smc_canonical.md` | `CATEGORY_MAP.md` | PASS |
-| 5 | `true_smc_canonical.md` | `CATEGORY_MAP.md` | PASS |
-| 6 | `true_smc_canonical.md` | `CATEGORY_MAP.md` | PASS |
-| 7 | `true_smc_canonical.md` | `CATEGORY_MAP.md` | PASS |
-| 8 | `true_smc_canonical.md` | `CATEGORY_MAP.md` | PASS |
+| 4 | `true_smc_canonical.md` | `skill.md` | PASS |
+| 5 | `true_smc_canonical.md` | `skill.md` | PASS |
+| 6 | `true_smc_canonical.md` | `skill.md` | PASS |
+| 7 | `true_smc_canonical.md` | `skill.md` | PASS |
+| 8 | `true_smc_canonical.md` | `skill.md` | PASS |
 | 9 | `true_smc_canonical.md` | `methodology_parameters.md` | PASS |
-| 10 | `true_smc_canonical.md` | `CATEGORY_MAP.md` | PASS |
+| 10 | `true_smc_canonical.md` | `skill.md` | PASS |
 | 11 | `true_smc_canonical.md` | `standard_smc.md` | PASS |
 | 12 | `true_smc_canonical.md` | `implementation.md` | PASS |
-| 13 | `true_smc_canonical.md` | `CATEGORY_MAP.md` | PASS |
+| 13 | `true_smc_canonical.md` | `skill.md` | PASS |
 | 14 | `true_smc_canonical.md` | `implementation.md` | PASS |
 | 15 | `true_smc_canonical.md` | `implementation.md` | PASS |
 | 16 | `true_smc_canonical.md` | `implementation.md` | PASS |
@@ -47,18 +47,18 @@ Every original section must have an explicit destination in the new category mod
 | 33 | `true_smc_canonical.md` | `implementation.md` | PASS |
 | 34 | `true_smc_canonical.md` | `implementation.md` | PASS |
 | 35 | `true_smc_canonical.md` | `implementation.md` | PASS |
-| 36 | `execution.md` | `CATEGORY_MAP.md` | PASS |
-| 37 | `execution.md` | `CATEGORY_MAP.md` | PASS |
+| 36 | `execution.md` | `skill.md` | PASS |
+| 37 | `execution.md` | `skill.md` | PASS |
 | 38 | `execution.md` | `unverified.md` | PASS |
 | 39 | `execution.md` | `standard_smc.md` | PASS |
 | 40 | `execution.md` | `implementation.md` | PASS |
 | 41 | `execution.md` + `risk.md` | `skill.md` | PASS |
 | 42 | `true_smc_canonical.md` | `implementation.md` | PASS |
 | 43 | `deprecated.md` | `methodology_parameters.md` | PASS |
-| 44 | `risk.md` | `CATEGORY_MAP.md` | PASS |
+| 44 | `risk.md` | `skill.md` | PASS |
 | 45 | `implementation.md` | `skill.md` | PASS |
 | 46 | `implementation.md` | `skill.md` | PASS |
-| 47 | `implementation.md` | `CATEGORY_MAP.md` | PASS |
+| 47 | `implementation.md` | `skill.md` | PASS |
 | 48 | `implementation.md` | test contract | PASS |
 | 49 | `true_smc_canonical.md` | `skill.md` | PASS |
 
@@ -89,13 +89,16 @@ The historical rule is represented in `deprecated.md`; parameter-facing handling
 - Unverified claims explicitly isolated: YES
 - Generic SMC terminology prevented from overriding True SMC: YES
 - `mapper` used as the new canonical implementation term: YES in the new master/category architecture
+- Active skill architecture depends on historical category mapping: NO
 
-## Remaining known issue
+## Final architecture
 
-`CATEGORY_MAP.md` is a classification ledger rather than a verbatim copy of every rule. It is therefore not used as the completeness source. `skill_old.md` remains the preservation baseline and the category documents are the authoritative organized views.
+The active agent-facing architecture consists of the master `skill.md` and the authoritative category documents. `CATEGORY_MAP.md` is not required by the final architecture and has been removed.
+
+`skill_old.md` remains only as the immutable historical baseline. `MIGRATION_AUDIT.md` remains as a migration/completeness record and is not a methodology authority.
 
 ## Acceptance decision
 
 **MIGRATION STRUCTURE: ACCEPTED**
 
-The original 49-section ruleset has an explicit destination in the new architecture. The baseline must remain until implementation-level regression validation is also completed against the reorganized skill structure.
+The original 49-section ruleset has an explicit destination in the new architecture. The agent-facing skill no longer depends on a historical category mapping file. The next acceptance gate is implementation-level regression validation of `SMC_Mapper` against the reorganized skill structure.
