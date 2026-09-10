@@ -143,9 +143,29 @@ Do not reduce this to “previous candle high breach”.
 
 ## 5. Equal High / Equal Low reference rules
 
-If two consecutive candles have equal highs, the second candle becomes the active reference. A Valid Pullback requires price to break below the second candle low and later break above the shared high.
+Equal High / Equal Low is a candle-level relationship. It participates in reference transfer only within the applicable directional candle context; it is not a directionless structural or IDM event.
 
-If two consecutive candles have equal lows, the second candle becomes the active reference. A Valid Pullback requires price to break above the second candle high and later break below the shared low.
+### Bullish context
+
+When two consecutive candles have equal highs:
+
+1. The shared high forms the Equal High relationship.
+2. The **second candle becomes the active reference**.
+3. Price must subsequently break below the **second candle low**.
+4. Price must then break above the **shared high**.
+5. This completes the applicable candle-level Valid Pullback sequence.
+
+### Bearish context
+
+When two consecutive candles have equal lows:
+
+1. The shared low forms the Equal Low relationship.
+2. The **second candle becomes the active reference**.
+3. Price must subsequently break above the **second candle high**.
+4. Price must then break below the **shared low**.
+5. This completes the applicable candle-level Valid Pullback sequence.
+
+Reference transfer is directional and belongs to candle-level Valid Pullback construction. It does not by itself create a Structurally Valid Pullback, IDM, confirmed swing, BOS, or CHoCH.
 
 ## 6. Inside bars
 
