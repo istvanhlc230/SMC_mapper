@@ -205,7 +205,3 @@ ACTIVE PULLBACK POINTER
 ```
 
 Configuration may alter parameters but cannot manufacture structural truth. Scoring evaluates validated structural state and cannot create or validate structure.
-
-## Migration status
-
-Sections 45–48 of the preserved pre-reorganization ruleset are migrated into this implementation category. The immutable baseline remains `.agents/skills/smc/skill_old.md` until the complete rule-by-rule audit is finished.
