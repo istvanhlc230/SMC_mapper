@@ -22,4 +22,4 @@ An implementation may contain a configurable threshold, but the threshold must b
 
 ## Source of truth
 
-The complete original rules remain in `skill.md` during the migration phase. This file is the explicit uncertainty register; no rule is deleted or silently weakened by this classification.
+Unverified classification does not replace the canonical rules. Project-specific methodology remains authoritative in `true_smc_canonical.md`, with parameter semantics isolated in `methodology_parameters.md` where applicable.
