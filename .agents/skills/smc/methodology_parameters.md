@@ -54,7 +54,3 @@ Future quantitative thresholds may be configurable, but they must remain explici
 ## 43. Obsolete parameter
 
 The historical sub-38.2% Fibonacci bootstrap variant is obsolete and is governed by `deprecated.md`. It must not be retained as a scoring, compatibility, fixture, logging, state-name, or entry/setup classification.
-
-## Migration status
-
-The numeric/configurable parameter semantics from the preserved pre-reorganization ruleset are isolated here. The immutable baseline remains `.agents/skills/smc/skill_old.md` for final completeness verification.
