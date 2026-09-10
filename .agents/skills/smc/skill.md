@@ -175,10 +175,9 @@ CHoCH is a separate regime transition based on violation of the governing Tradin
 2. Existing semantics must not be weakened merely to simplify file structure.
 3. A rule belongs in one primary category; cross-category references should link to the authoritative category rather than duplicate competing definitions.
 4. `skill_old.md` is the preservation baseline for migration completeness.
-5. `CATEGORY_MAP.md` remains unchanged during migration and may be used as an audit/classification ledger.
-6. `mapper` is the canonical implementation term; do not introduce `scanner` as the implementation name in newly written material.
-7. Generic SMC/ICT terminology must remain subordinate to project-specific True SMC rules.
-8. Configuration, scoring, visualization, or implementation convenience must never redefine structural meaning.
+5. `mapper` is the canonical implementation term; do not introduce `scanner` as the implementation name in newly written material.
+6. Generic SMC/ICT terminology must remain subordinate to project-specific True SMC rules.
+7. Configuration, scoring, visualization, or implementation convenience must never redefine structural meaning.
 
 ## 7. Validation requirements
 
@@ -210,5 +209,7 @@ The organized category documents now contain the migrated rule bodies:
 - Provenance/uncertainty classification → `unverified.md`
 
 `skill_old.md` remains immutable as the preservation baseline. It is not an active competing ruleset; it is retained for traceability and future regression/completeness verification.
+
+The migration classification ledger is no longer part of the active skill architecture. The agent must operate from the master entry point and authoritative category documents, not from historical section-to-category mappings.
 
 **Acceptance condition:** No rule may be deleted or semantically changed merely because the migration is complete. Any future methodology change must be explicit, separately approved, and independently validated.
