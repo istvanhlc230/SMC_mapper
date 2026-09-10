@@ -674,6 +674,57 @@ TRADING RANGE BOUNDARY
 
 Deep historical liquidity interaction does not itself invalidate the range.
 
+## 42. Genesis / bootstrap
+
+Genesis is a special initialization condition. It must not manufacture historical structure.
+
+Genesis must not invent IDM, confirmed swing, BOS, Major IDM, or protected structure.
+
+Bootstrap behavior may exist where explicitly established by the methodology, but must remain distinguishable from organically confirmed structural state.
+
+No bootstrap shortcut may silently bypass the canonical lifecycle after normal structure exists.
+
+## 49. Final validation contract
+
+A compliant True SMC implementation must answer “yes” to all of the following:
+
+- Is every IDM derived from the correct Structurally Valid Pullback?
+- Is only the newest valid pullback active for Minor IDM tracking?
+- Are Minor and Major IDM lifecycles separate?
+- Is fallback Major IDM explicitly distinguished from real Major IDM?
+- Is IDM sweep separate from swing confirmation and BOS?
+- Does BOS require the canonical IDM/swing context and physical structural break?
+- Does external BOS apply canonical break acceptance?
+- Is external Wick BOS accepted when eligible?
+- Is full Body-Close BOS distinguished from external Wick BOS?
+- Does an active Major IDM disable external Wick BOS and require body close beyond the physical active Major IDM level?
+- Is there no fallback-specific BOS qualification rule?
+- Is the BOS body-close requirement kept separate from CHoCH qualification?
+- Is deep retracement prevented from arbitrarily resetting confirmed structure?
+- Is CHoCH based on the governing Trading Range boundary?
+- Does the CHoCH-causing leg become the initial active impulse of the new trend?
+- Does CHoCH avoid fabricating a protected swing?
+- Are Trading Range boundaries separate from active IDM?
+- Are candle-level pullbacks separated from structural pullbacks?
+- Is the 2-candle momentum exception handled without inventing a 1-candle exception?
+- Is the obsolete sub-38.2% Fibonacci variant completely removed?
+- Does scoring consume structural state instead of defining it?
+- Are historical structures prevented from silently becoming current active structure?
+- Is the tradable POI ontology closed to Valid OF and Valid OB?
+- Is Rule of Two enforced for Decisional and Extreme POIs?
+- Is Decisional POI location gated by discount for buys and premium for sells?
+- Is Origin OB handled as a distinct canonical OB case?
+- Does Valid OB require all three validation pillars?
+- Is standalone FVG prohibited as a POI and entry trigger?
+- Is FVG used only as an OB validator/property?
+- Are all four canonical entry modules kept separate from structural validation?
+- Is execution failure prevented from inventing BOS or CHoCH?
+- Is Extreme fallback prevented from bypassing POI validation?
+- Is minimum RR 1:2 enforced at execution qualification without redefining structure?
+- Are IDM, liquidity, POI, FVG, and entry execution kept semantically distinct?
+
+The final methodology must contain one coherent True SMC model. Contradictory legacy definitions must be removed or explicitly marked as non-canonical compatibility behavior.
+
 ## Migration status
 
-Sections 1–35 of the preserved pre-reorganization ruleset are now migrated into this canonical category without semantic simplification. The immutable baseline remains `.agents/skills/smc/skill_old.md` until the remaining sections are migrated and the complete rule-by-rule audit is finished.
+Sections 1–35, 42, and 49 of the preserved pre-reorganization ruleset are now migrated into this canonical category without semantic simplification. The immutable baseline remains `.agents/skills/smc/skill_old.md` until the complete rule-by-rule audit is finished.
