@@ -76,6 +76,19 @@ BOS
 
 Every higher-level event must consume a previously validated lower-level event. No stage may be skipped.
 
+### Candle-level Minor Structure
+
+Minor Structure consists of internal candle-level structural price action that does not define or alter the governing external Trading Range. Within an established Trading Range, minor structure exists inside the governing external boundaries. Minor structural levels may provide liquidity references and may participate in IDM formation only when the independent IDM prerequisites are satisfied.
+
+```text
+Minor Structure
+≠ Major Structure
+≠ Liquidity
+≠ IDM
+≠ BOS
+≠ CHoCH
+```
+
 ## 3. Mandatory non-equivalences
 
 ```text
