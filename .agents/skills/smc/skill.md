@@ -12,7 +12,7 @@ description: Governs and validates the canonical True SMC methodology and SMC_Ma
 
 This skill is the master entry point for True SMC methodology and SMC_Mapper validation.
 
-The detailed rules are organized into dedicated category documents. The original pre-reorganization ruleset is preserved in `skill_old.md` as a historical source for migration and completeness verification.
+The detailed rules are organized into dedicated category documents. The original pre-reorganization ruleset is preserved in `skill_old.md` as an immutable baseline for completeness verification.
 
 **No rule from `skill_old.md` may be deleted during reorganization.** Reorganization is structural only unless a rule is explicitly reviewed and changed in a separate approved methodology change.
 
@@ -53,7 +53,7 @@ See `methodology_parameters.md`.
 
 ### IMPLEMENTATION
 
-Rules governing how SMC_Mapper represents and transitions canonical methodology state.
+Rules governing how SMC_Mapper represents and transitions canonical methodology state, including the structural state machine, implementation anti-patterns, and regression coverage requirements.
 
 The mapper must implement the methodology; it must not redefine it.
 
@@ -107,7 +107,7 @@ EXECUTION / RISK
 
 ## 4. Mandatory structural principles
 
-The following principles remain mandatory during reorganization:
+The following principles remain mandatory across the category documents:
 
 ```text
 CANDLE-LEVEL VALID PULLBACK ≠ STRUCTURALLY VALID PULLBACK
@@ -196,6 +196,17 @@ Passing a regression test does not by itself prove that the underlying methodolo
 
 ## 8. Migration status
 
-The category documents are the new organizational structure. `skill_old.md` is retained as the immutable pre-reorganization baseline until a complete rule-by-rule migration audit confirms that every original rule is represented in the appropriate category document.
+The major rule bodies from the preserved pre-reorganization ruleset are now distributed across the category documents:
 
-Until that audit is complete, do not treat absence of a rule from a category document as permission to remove it from the methodology.
+- Sections 1–35, 42, and 49 → `true_smc_canonical.md`
+- Section 43 → `deprecated.md`
+- Section 44 → `risk.md`
+- Sections 45–48 → `implementation.md`
+- Sections 36–41 → `execution.md` with risk boundaries also represented in `risk.md`
+- Section 9 parameter semantics → `methodology_parameters.md`
+- General terminology boundary → `standard_smc.md`
+- Provenance/uncertainty classification → `unverified.md`
+
+`skill_old.md` remains the immutable source baseline. The migration is structurally complete at the section level, but a final rule-by-rule audit against `skill_old.md` and `CATEGORY_MAP.md` is still required before `skill_old.md` can be considered archival-only rather than the migration control baseline.
+
+**Important:** No absence from a category document is permission to delete a rule. The final audit must confirm every original rule, invariant, test requirement, and anti-pattern has a category owner and remains semantically intact.
