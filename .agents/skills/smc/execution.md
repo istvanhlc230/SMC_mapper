@@ -2,7 +2,7 @@
 
 **Role:** Trading/execution-layer rules built on validated structural facts.
 
-**Authority boundary:** Execution consumes structure; execution must never manufacture structural truth. Structural meaning remains governed by `true_smc_canonical.md`.
+**Boundary:** Execution consumes structure; execution must never manufacture structural truth.
 
 ## 36. POI ontology — canonical tradable POIs
 
@@ -52,6 +52,8 @@ POI              ≠ ENTRY EXECUTION
 A POI is a validated execution-location object. Its existence must never alter structural validation of IDM, swing, BOS, CHoCH, or Trading Range.
 
 ### POI and execution invariants
+
+The following invariants are mandatory:
 
 ```text
 POI ∈ {VALID_OF, VALID_OB}
@@ -219,7 +221,3 @@ Do not fail over from Valid OF to Extreme OB solely because price wicked into or
 ### Risk and RR
 
 A canonical executable setup must satisfy a minimum risk/reward of **1:2**. The primary target is the confirmed external range extreme where the applicable entry module requires it. Risk management must consume structural state; it must not redefine structure.
-
-## Migration status
-
-Sections 36–41 of the preserved pre-reorganization ruleset are migrated into this execution category without semantic simplification. The immutable baseline remains `.agents/skills/smc/skill_old.md` until the complete rule-by-rule audit is finished.
