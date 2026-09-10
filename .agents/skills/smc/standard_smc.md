@@ -1,8 +1,8 @@
 # STANDARD_SMC
 
-**Role:** General SMC/ICT concepts used as the methodology baseline.
+**Role:** General SMC/ICT concepts used as baseline terminology.
 
-**Authority boundary:** This file does not override the canonical True SMC definitions in `skill.md`. Where the project defines stricter semantics, `true_smc_canonical.md` governs.
+**Authority boundary:** This file does not override the canonical True SMC definitions in `true_smc_canonical.md`. Where the project defines stricter semantics, `TRUE_SMC_CANONICAL` governs.
 
 ## Core concepts
 
@@ -31,6 +31,12 @@ In particular:
 - Generic CHoCH terminology does not replace the governing Trading Range boundary rule.
 - FVG, displacement, liquidity, and Order Block concepts do not independently create IDM, BOS, CHoCH, or a tradable POI.
 
-## Source of truth
+## Provenance boundary
 
-The complete existing canonical rules remain in `skill.md` during the migration phase. This file is an organizational category view; no rule is deleted by its existence.
+The presence of a concept in this category means it is recognized as general terminology only. It does not mean the project's exact thresholds, lifecycle, object identity, or qualification rules are universal SMC/ICT facts.
+
+Project-specific semantics are authoritative in `true_smc_canonical.md`, with numeric/configurable parameters separated into `methodology_parameters.md`.
+
+## Migration status
+
+This category is terminology-only. It is not a fallback source of structural rules, and it must never be used to weaken the canonical True SMC rules.
