@@ -12,9 +12,7 @@ description: Governs and validates the canonical True SMC methodology and SMC_Ma
 
 This skill is the master entry point for True SMC methodology and SMC_Mapper validation.
 
-The detailed rules are organized into dedicated category documents. The original pre-reorganization ruleset is preserved in `skill_old.md` as an immutable baseline for completeness verification.
-
-**No rule from `skill_old.md` may be deleted during reorganization.** Reorganization is structural only unless a rule is explicitly reviewed and changed in a separate approved methodology change.
+The detailed rules are organized into dedicated category documents.
 
 ## 2. Category model
 
@@ -169,15 +167,14 @@ NEW TRADING RANGE
 
 CHoCH is a separate regime transition based on violation of the governing Trading Range boundary. The CHoCH-causing leg becomes the initial active impulsive leg of the new trend, but CHoCH does not automatically create a pullback, IDM, or protected swing.
 
-## 6. Reorganization rules
+## 6. Final architecture rules
 
-1. No existing methodology rule may be silently deleted.
+1. No methodology rule may be silently deleted.
 2. Existing semantics must not be weakened merely to simplify file structure.
-3. A rule belongs in one primary category; cross-category references should link to the authoritative category rather than duplicate competing definitions.
-4. `skill_old.md` is the preservation baseline for migration completeness.
-5. `mapper` is the canonical implementation term; do not introduce `scanner` as the implementation name in newly written material.
-6. Generic SMC/ICT terminology must remain subordinate to project-specific True SMC rules.
-7. Configuration, scoring, visualization, or implementation convenience must never redefine structural meaning.
+3. A rule belongs in one primary category; cross-category references must point to the authoritative category rather than create competing definitions.
+4. `mapper` is the canonical implementation term; do not introduce `scanner` as the implementation name in newly written material.
+5. Generic SMC/ICT terminology must remain subordinate to project-specific True SMC rules.
+6. Configuration, scoring, visualization, or implementation convenience must never redefine structural meaning.
 
 ## 7. Validation requirements
 
@@ -193,11 +190,9 @@ Does `SMC_Mapper` implement the accepted rule without skipping prerequisites, ma
 
 Passing a regression test does not by itself prove that the underlying methodology rule is correct.
 
-## 8. Migration status
+## 8. Completeness contract
 
-The rule-level migration audit is complete. `MIGRATION_AUDIT.md` records the destination of all original sections 1–49 and the special cases where a section is split across authority categories.
-
-The organized category documents now contain the migrated rule bodies:
+The final category architecture represents the complete pre-reorganization ruleset as follows:
 
 - Sections 1–35, 42, and 49 → `true_smc_canonical.md`
 - Section 43 → `deprecated.md`
@@ -208,8 +203,6 @@ The organized category documents now contain the migrated rule bodies:
 - General terminology boundary → `standard_smc.md`
 - Provenance/uncertainty classification → `unverified.md`
 
-`skill_old.md` remains immutable as the preservation baseline. It is not an active competing ruleset; it is retained for traceability and future regression/completeness verification.
+These destinations are the final architecture; historical migration ledgers are not required for agent operation.
 
-The migration classification ledger is no longer part of the active skill architecture. The agent must operate from the master entry point and authoritative category documents, not from historical section-to-category mappings.
-
-**Acceptance condition:** No rule may be deleted or semantically changed merely because the migration is complete. Any future methodology change must be explicit, separately approved, and independently validated.
+**Acceptance condition:** No rule may be deleted or semantically changed merely because the architecture is reorganized. Any future methodology change must be explicit, separately approved, and independently validated.
