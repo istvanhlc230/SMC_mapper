@@ -724,7 +724,3 @@ A compliant True SMC implementation must answer “yes” to all of the followin
 - Are IDM, liquidity, POI, FVG, and entry execution kept semantically distinct?
 
 The final methodology must contain one coherent True SMC model. Contradictory legacy definitions must be removed or explicitly marked as non-canonical compatibility behavior.
-
-## Migration status
-
-Sections 1–35, 42, and 49 of the preserved pre-reorganization ruleset are now migrated into this canonical category without semantic simplification. The immutable baseline remains `.agents/skills/smc/skill_old.md` until the complete rule-by-rule audit is finished.
