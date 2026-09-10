@@ -196,17 +196,19 @@ Passing a regression test does not by itself prove that the underlying methodolo
 
 ## 8. Migration status
 
-The major rule bodies from the preserved pre-reorganization ruleset are now distributed across the category documents:
+The rule-level migration audit is complete. `MIGRATION_AUDIT.md` records the destination of all original sections 1–49 and the special cases where a section is split across authority categories.
+
+The organized category documents now contain the migrated rule bodies:
 
 - Sections 1–35, 42, and 49 → `true_smc_canonical.md`
 - Section 43 → `deprecated.md`
 - Section 44 → `risk.md`
 - Sections 45–48 → `implementation.md`
-- Sections 36–41 → `execution.md` with risk boundaries also represented in `risk.md`
+- Sections 36–41 → `execution.md`, with risk boundaries also represented in `risk.md`
 - Section 9 parameter semantics → `methodology_parameters.md`
 - General terminology boundary → `standard_smc.md`
 - Provenance/uncertainty classification → `unverified.md`
 
-`skill_old.md` remains the immutable source baseline. The migration is structurally complete at the section level, but a final rule-by-rule audit against `skill_old.md` and `CATEGORY_MAP.md` is still required before `skill_old.md` can be considered archival-only rather than the migration control baseline.
+`skill_old.md` remains immutable as the preservation baseline. It is not an active competing ruleset; it is retained for traceability and future regression/completeness verification.
 
-**Important:** No absence from a category document is permission to delete a rule. The final audit must confirm every original rule, invariant, test requirement, and anti-pattern has a category owner and remains semantically intact.
+**Acceptance condition:** No rule may be deleted or semantically changed merely because the migration is complete. Any future methodology change must be explicit, separately approved, and independently validated.
