@@ -13,6 +13,8 @@ EXECUTION PRIORITY ≠ STRUCTURAL VALIDATION
 ORDER FLOW FAILED ≠ BOS
 ORDER FLOW FAILED ≠ CHoCH
 POI FAILURE ≠ STRUCTURAL FAILURE
+EXECUTION STOP-OUT ≠ ORDER_FLOW_FAILED
+EXECUTION STOP-OUT ≠ VALID_CHoCH
 ```
 
 A failed execution condition must not be converted into a structural event. Likewise, a structurally valid event does not automatically authorize execution.
@@ -58,26 +60,101 @@ Scoring evaluates canonical structural state. Scoring must never create or valid
 
 A canonical executable setup must satisfy a minimum risk/reward of **1:2** where required by the canonical execution layer. Risk management consumes structural state; it must not redefine structure.
 
-## 5.1 Structural Stop-Loss Placement — SOURCE-PENDING
+## 5.1 Structural Stop-Loss Placement
 
-No authoritative canonical stop-loss geometry has been established in the current methodology sources.
+Risk provides two distinct stop-loss tiers for execution. Neither tier creates, confirms, or invalidates structural objects.
 
-Therefore this layer must **not** invent or import stop-placement rules from generic SMC/ICT practice.
+```text
+TIER 1 — MACRO / ZONE INVALIDATION STOP
+TIER 2 — REFINED PATTERN EXTREME STOP
+```
 
-The following items remain unresolved and require an authoritative source before they can become canonical methodology:
+### Tier 1 — Macro / Zone Invalidation SL
 
-- stop location for Valid Order Flow entries;
-- stop location for Valid Order Block entries;
-- priority between POI boundaries and Protected Structural Extremes;
-- wick/price buffer semantics, if any;
-- bullish/bearish mirrored geometry;
-- exact relationship between POI invalidation, structural invalidation, and risk stop;
-- position-sizing calculation from stop distance;
-- required behavior when canonical stop geometry is unavailable.
+The conservative stop is placed beyond the furthest boundary of the **parent Valid Order Flow / Valid Order Block** that authorizes the execution.
 
-Until these are explicitly sourced and validated, they remain **SOURCE-PENDING** and must not be treated as implementation requirements or structural truth.
+```text
+Tier-1 SL
+    ↓
+beyond parent OF/OB furthest boundary
+```
 
-Critical separation:
+Tier 1 is the canonical conservative zone-invalidation stop. Its execution is a risk/position-management event and must not be reinterpreted as automatic `ORDER_FLOW_FAILED`, BOS, CHoCH, IDM, or structural invalidation.
+
+### Tier 2 — Refined Pattern Extreme SL
+
+Tier 2 is an **optional strategy/risk-management choice** available only when entry was triggered by a confirmed close of one of the canonical candlestick reversal patterns.
+
+It is not available for a direct limit entry without candlestick reversal confirmation.
+
+Entry is the close of the completed reversal-pattern candle/sequence.
+
+For a bullish entry:
+
+```text
+SL = min(Low_pattern_candles) - P
+```
+
+For a bearish entry:
+
+```text
+SL = max(High_pattern_candles) + P
+```
+
+The pattern-extreme stop is intended as an aggressive/refined risk option that may improve R:R by reducing stop distance. It does not replace the parent POI/OF/OB geometry as a structural definition.
+
+### Tier-2 stop-out semantics
+
+A Tier-2 stop-out is an execution/risk event only:
+
+```text
+Price <= Tier-2 bullish SL
+OR
+Price >= Tier-2 bearish SL
+        ↓
+EXECUTION_STOPPED_OUT
+```
+
+`EXECUTION_STOPPED_OUT` is not equivalent to:
+
+```text
+ORDER_FLOW_FAILED
+ORDER_BLOCK_FAILED
+VALID_BOS
+VALID_CHoCH
+STRUCTURAL_INVALIDATION
+```
+
+The position may be stopped while the parent POI and macro structure remain structurally valid, including where price remains within the Tier-1 parent-zone boundary.
+
+### Pattern-scope rule
+
+Tier 2 may be used only when a direct entry was actually triggered by one of the canonical reversal patterns defined in `04_execution.md`:
+
+```text
+Long Wick Rejection
+Multiple Wick Rejection
+Engulfing
+Momentum Candle
+Morning / Evening Star
+```
+
+`Shrinking Candles` is an approach filter and not an entry trigger; it therefore cannot independently authorize Tier 2.
+
+### Spread buffer P
+
+`P` is a **SOURCE-PENDING / DOWNSTREAM CONFIG VARIABLE**.
+
+The True SMC methodology does not define a universal pip/tick value for `P`. The canonical rule is only that the Tier-2 stop is placed beyond the relevant pattern extreme by the configured downstream buffer.
+
+```text
+P ∈ downstream risk/execution configuration
+P ≠ structural methodology constant
+```
+
+No default such as `Spread + Minimum Tick` is canonicalized without authoritative validation.
+
+## Critical separation
 
 ```text
 POI INVALIDATION
@@ -85,7 +162,11 @@ POI INVALIDATION
 STRUCTURAL INVALIDATION
         ≠
 RISK STOP
+        ≠
+EXECUTION_STOPPED_OUT
 ```
+
+A risk stop cannot manufacture or confirm structural events.
 
 ## Risk boundaries
 
@@ -94,3 +175,4 @@ RISK STOP
 - Risk management must consume structural state rather than redefine it.
 - Configuration switches must not silently redefine canonical semantics.
 - Risk policy is downstream from structural validation.
+- The Tier-2 pattern stop is an optional execution/risk optimization, not a structural rule.
