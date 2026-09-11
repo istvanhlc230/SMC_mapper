@@ -19,7 +19,7 @@ The canonical minimum retracement default remains 38.2%, with the separately def
 
 ## Superseded BOS / CHoCH compatibility wording
 
-The following historical formulations are explicitly superseded by the validated lifecycle rules in `true_smc_structural_lifecycle.md`:
+The following historical formulations are explicitly superseded by the validated lifecycle rules in `03_structural_lifecycle.md`:
 
 1. Any rule requiring a later body close to validate an otherwise eligible external Wick-BOS.
 2. Any rule treating an external wick breach of an eligible non-fallback Confirmed Continuation Swing as automatically a liquidity sweep rather than a valid Wick-BOS.
@@ -33,10 +33,10 @@ The following historical formulations are explicitly superseded by the validated
 The authoritative replacement is:
 
 ```text
-true_smc_structural_lifecycle.md
+03_structural_lifecycle.md
   3.3.3
   3.4.1–3.4.5
-  3.5.1
+  3.5
 ```
 
 These deprecated formulations may be retained for historical traceability only. They are not alternative canonical paths.
