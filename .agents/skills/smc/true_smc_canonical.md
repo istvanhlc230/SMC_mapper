@@ -1,16 +1,35 @@
 # TRUE_SMC_CANONICAL
 
-**Role:** Project-specific canonical True SMC methodology.
+**Role:** Project-specific canonical True SMC methodology for the Layer 1 Candle-Level Foundation and Layer 2 Minor Structure.
 
-**Authority:** Authoritative for project-specific True SMC structural semantics. Generic SMC/ICT terminology cannot override this category.
+**Authority:** Authoritative for Layer 1 and Layer 2 semantic definitions. Generic SMC/ICT terminology cannot override these project-specific rules.
 
-## 1. Scope and authority
-
-This category defines the canonical True SMC methodology for market structure, candle relationships, Valid Pullbacks, structural qualification, liquidity, IDM, swing confirmation, BOS, CHoCH, Trading Range, Major/Minor IDM lifecycle, and genesis behavior.
+**Lifecycle authority:** Layer 3 Structural Lifecycle rules are owned by `true_smc_structural_lifecycle.md`. Detailed CHoCH mechanics are provided by `true_smc_choch.md` as the detailed Section 3.5 module. Older Layer 3 wording previously retained in this document is superseded by the validated lifecycle documents and is intentionally not duplicated here.
 
 Configuration, scoring, visualization, and implementation convenience must never redefine structural meaning.
 
-## 2. Canonical hierarchy
+## 1. Methodology architecture
+
+True SMC is organized into three logical layers:
+
+```text
+TRUE SMC METHODOLOGY
+│
+├── 1. Candle-Level Foundation
+│
+├── 2. Minor Structure
+│
+└── 3. Structural Lifecycle
+    ├── 3.1 Major Structure
+    ├── 3.2 Genesis
+    ├── 3.3 Swing / Protected Structural Extreme
+    ├── 3.4 BOS
+    └── 3.5 CHoCH
+```
+
+This document owns Layers 1–2 only.
+
+The dependency boundary is:
 
 ```text
 RAW OHLC
@@ -33,52 +52,45 @@ ACTIVE PULLBACK POINTER
   ↓
 IDM ELIGIBILITY
   ↓
-ACTIVE/MINOR IDM
+ACTIVE / MINOR IDM
   ↓
-IDM LIQUIDITY TAKEOUT
-  ↓
-SWING CONFIRMATION
-  ↓
-CONFIRMED STRUCTURAL SWING
-  ↓
-PHYSICAL STRUCTURAL BREAK
-  ↓
-BREAK ACCEPTANCE
-  ↓
-BOS
-  ↓
-NEW TRADING RANGE
+[Layer 3 lifecycle begins]
 ```
 
-CHoCH is a separate regime transition:
+Every higher-level event must consume previously validated lower-level state. No stage may be skipped or manufactured by configuration, scoring, visualization, or implementation convenience.
+
+## 2. Mandatory semantic non-equivalences
+
+The following distinctions are foundational and apply across the methodology:
 
 ```text
-CURRENT TRADING RANGE
-  ↓
-GOVERNING RANGE BOUNDARY VIOLATION
-  ↓
-CHoCH
-  ↓
-NEW TREND
-  ↓
-CHoCH-CAUSING LEG = INITIAL ACTIVE IMPULSIVE LEG
-  ↓
-NEW STRUCTURALLY VALID PULLBACK
-  ↓
-ACTIVE/MINOR IDM
-  ↓
-IDM SWEEP
-  ↓
-CONFIRMED SWING
-  ↓
-BOS
+CANDLE-LEVEL VALID PULLBACK  ≠ STRUCTURALLY VALID PULLBACK
+CANDLE-LEVEL VALID PULLBACK  ≠ IDM
+STRUCTURALLY VALID PULLBACK  ≠ IDM
+PULLBACK EXTREME             ≠ AUTOMATIC IDM
+MINOR STRUCTURE              ≠ MAJOR STRUCTURE
+MINOR STRUCTURE              ≠ LIQUIDITY
+MINOR STRUCTURE              ≠ IDM
+LOCAL / PIVOT EXTREME        ≠ CONFIRMED SWING
+REFERENCE TRANSFER           ≠ VALID PULLBACK
+INSIDE-BAR BREAK             ≠ VALID PULLBACK
+INSIDE-BAR LIQUIDITY         ≠ IDM
+LIQUIDITY                    ≠ STRUCTURE
+CONFIGURATION OPTION         ≠ CANONICAL METHODOLOGY RULE
+
+IDM SWEEP                    ≠ BOS
+IDM SWEEP                    ≠ CHoCH
+CHoCH                        ≠ BOS
+CHoCH                        ≠ IDM
 ```
 
-Every higher-level event must consume a previously validated lower-level event. No stage may be skipped.
+The final four distinctions are lifecycle boundaries; their detailed rules are authoritative in `true_smc_structural_lifecycle.md` and its detailed CHoCH module rather than being redefined here.
 
-### Candle-level Minor Structure
+## 3. Candle-Level Minor Structure
 
-Minor Structure consists of internal candle-level structural price action that does not define or alter the governing external Trading Range. Within an established Trading Range, minor structure exists inside the governing external boundaries. Minor structural levels may provide liquidity references and may participate in IDM formation only when the independent IDM prerequisites are satisfied.
+Minor Structure consists of internal candle-level structural price action that does not define or alter the governing external Trading Range.
+
+Within an established Trading Range, Minor Structure exists inside the governing external boundaries. Minor structural levels may provide liquidity references and may participate in IDM formation only when the independent IDM prerequisites are satisfied.
 
 ```text
 Minor Structure
@@ -89,180 +101,45 @@ Minor Structure
 ≠ CHoCH
 ```
 
-### Candle-level Valid Pullback — Unit of Origin
+A minor structural level or arbitrary local high/low does not become an IDM merely because price interacts with it.
+
+## 4. Candle-Level Valid Pullback — Unit of Origin
 
 The unit of origin for a candle-level Valid Pullback is a reference-candle relationship. Candle color and body size do not independently determine whether a sequence is valid.
 
 A candle-level Valid Pullback is not created by a single reference-level breach. The complete directional sequence must be satisfied.
 
-For a bullish sequence:
+### 4.1 Bullish sequence
 
 1. A valid reference high exists.
-2. Price breaks the reference high.
-3. Price subsequently breaches the reference low.
-4. Price subsequently breaks the applicable continuation/reference high.
-5. The completed sequence constitutes the candle-level Valid Pullback.
-
-For a bearish sequence, the sequence is mirrored:
-
-1. A valid reference low exists.
-2. Price breaks the reference low.
-3. Price subsequently breaches the reference high.
-4. Price subsequently breaks the applicable continuation/reference low.
-5. The completed sequence constitutes the candle-level Valid Pullback.
-
-Strict inside bars cannot independently establish a candle-level Valid Pullback. Their presence does not create a separate structural state and does not by itself establish a Structurally Valid Pullback, IDM, Swing, BOS, or CHoCH.
-
-### 2.3 — Minor Structure / IDM Sweep Threshold
-
-A minor structural level does not require a candle body close to be breached or taken out. Wick and body interaction are both valid at the minor liquidity level.
-
-For an already-qualified active/minor IDM, the IDM liquidity takeout may occur by wick or body. A candle body close beyond the IDM is not required for the IDM sweep.
-
-A wick or body interaction with an arbitrary minor structural level, liquidity node, or local extreme does not independently create or activate an IDM. IDM identity must first be established through the canonical IDM eligibility rules.
-
-```text
-Minor Level Breach
-≠ IDM Activation
-≠ IDM Sweep
-
-Qualified IDM
-→ Wick or Body Takeout
-→ IDM Sweep
-```
-
-### 2.4 — Candle-level Minor Structure / Structural Outcome
-
-A takeout of an arbitrary minor structural level or local high/low does not confirm a Swing and does not create an IDM.
-
-A qualified active/minor IDM sweep is a liquidity event and may participate in the canonical Swing Confirmation sequence, but an IDM sweep alone does not automatically create a Confirmed Structural Swing. Swing confirmation requires the full canonical confirmation prerequisites.
-
-Minor structure takeouts and IDM sweeps do not independently create BOS or CHoCH. BOS requires the canonical external structural break sequence, while CHoCH requires violation of the governing Trading Range boundary.
-
-```text
-Arbitrary Minor Level Takeout
-→ NOT IDM
-→ NOT Swing Confirmation
-→ NOT BOS
-→ NOT CHoCH
-
-Qualified IDM Sweep
-→ Liquidity Requirement Satisfied
-→ Eligible for Swing Confirmation Gate
-→ Does NOT automatically confirm Swing
-→ Does NOT create BOS / CHoCH
-```
-
-### 2.5 — Minor IDM Classification & Structural Role
-
-A Minor IDM is a qualified inducement/liquidity structure associated with the active impulsive leg within the current structural lifecycle.
-
-A Minor IDM must satisfy all canonical IDM eligibility requirements and must be derived directly from a Structurally Valid Pullback and its verified pullback extreme. The mere existence of a pre-BOS state, post-CHoCH state, or arbitrary internal liquidity does not establish a Minor IDM.
-
-The Minor IDM functions strictly as internal liquidity (inducement pool) within the active structural leg. It is ontologically distinct from the Confirmed Structural Swing and the Protected Structural Extreme.
-
-Cross-lifecycle references are intentionally limited to interface hooks. Major IDM lifecycle, fallback/proxy behavior, post-BOS Major IDM creation, and expiration/deprecation rules are defined in the Major Structure lifecycle and must not be redefined here.
-
-```text
-Active Structural Lifecycle
-           +
-Active Impulsive Leg
-           +
-Structurally Valid Pullback (SVP)
-           +
-Verified Pullback Extreme (Liquidity)
-           +
-Canonical IDM Eligibility
-           ↓
-       MINOR IDM
-
-Minor IDM ≠ Protected Swing
-Minor IDM ≠ Protected Structural Extreme
-Minor IDM ≠ Confirmed Swing
-Minor IDM ≠ BOS
-Minor IDM ≠ CHoCH
-```
-
-Cross-lifecycle interface hooks:
-
-```text
-Minor IDM liquidity takeout
-→ Swing Confirmation Gate prerequisite
-
-Major IDM / Fallback Major IDM lifecycle
-→ delegated to Major Structure lifecycle
-```
-
-## 3. Mandatory non-equivalences
-
-```text
-NEW MINOR HIGH/LOW           ≠ CONFIRMED STRUCTURAL SWING
-CANDLE-LEVEL VALID PULLBACK  ≠ STRUCTURALLY VALID PULLBACK
-CANDLE-LEVEL VALID PULLBACK  ≠ IDM
-STRUCTURALLY VALID PULLBACK  ≠ IDM
-PULLBACK EXTREME             ≠ AUTOMATIC IDM
-LOCAL/PIVOT EXTREME          ≠ CONFIRMED SWING
-3 CANDLES                    ≠ IDM
-38.2%                        ≠ IDM
-REFERENCE TRANSFER           ≠ VALID PULLBACK
-INSIDE-BAR BREAK             ≠ VALID PULLBACK
-INSIDE-BAR LIQUIDITY         ≠ IDM
-IDM SWEEP                    ≠ BOS
-IDM SWEEP                    ≠ CHoCH
-LIQUIDITY TAKEOUT            ≠ STRUCTURAL BREAK
-LIQUIDITY                    ≠ STRUCTURE
-CHoCH                        ≠ BOS
-CHoCH                        ≠ IDM
-CHoCH-CAUSING LEG            ≠ AUTOMATIC PULLBACK
-CHoCH-CAUSING LEG            ≠ AUTOMATIC IDM
-DEEP RETRACEMENT             ≠ AUTOMATIC STRUCTURAL RESET
-PROTECTED SWING              ≠ TRADING RANGE BOUNDARY
-NEW MINOR HIGH/LOW           ≠ NEW TRADING RANGE
-HISTORICAL STRUCTURE         ≠ CURRENT GOVERNING STRUCTURE
-IDM                          ≠ POI
-ORDER FLOW                   ≠ ORDER BLOCK
-DISPLACEMENT                 ≠ BOS
-POI                          ≠ ENTRY EXECUTION
-CONFIGURATION OPTION         ≠ CANONICAL METHODOLOGY RULE
-```
-
-## 4. Candle-level Valid Pullback
-
-Day 1 defines candle-level pullback identification only. It must not be conflated with structural qualification, IDM, BOS, CHoCH, or Trading Range logic.
-
-### Bullish
-
-A bullish candle-level Valid Pullback requires:
-
-1. A reference high exists.
 2. Price breaks the reference high.
 3. Price subsequently breaches the reference low.
 4. The breach may be wick or body.
 5. Candle color is irrelevant.
 6. Price subsequently breaks the relevant continuation/reference high.
-7. The full sequence establishes the candle-level Valid Pullback.
+7. The completed sequence establishes the candle-level Valid Pullback.
 
-Do not reduce this to “previous candle low breach”.
+Do not reduce this to a previous-candle-low breach.
 
-### Bearish
+### 4.2 Bearish sequence
 
-Mirror:
-
-1. A reference low exists.
+1. A valid reference low exists.
 2. Price breaks the reference low.
 3. Price subsequently breaches the reference high.
-4. Wick or body is acceptable.
+4. The breach may be wick or body.
 5. Candle color is irrelevant.
 6. Price subsequently breaks the relevant continuation/reference low.
-7. The full sequence establishes the candle-level Valid Pullback.
+7. The completed sequence establishes the candle-level Valid Pullback.
 
-Do not reduce this to “previous candle high breach”.
+Do not reduce this to a previous-candle-high breach.
 
-## 5. Equal High / Equal Low reference rules
+A candle-level Valid Pullback is only the Layer 1/2 origin object. It is not by itself a Structurally Valid Pullback, IDM, confirmed swing, BOS, CHoCH, or Trading Range transition.
+
+## 5. Equal High / Equal Low Directional Reference Transfer
 
 Equal High / Equal Low is a candle-level relationship. It participates in reference transfer only within the applicable directional candle context; it is not a directionless structural or IDM event.
 
-### Bullish context
+### 5.1 Bullish context
 
 When two consecutive candles have equal highs:
 
@@ -272,7 +149,7 @@ When two consecutive candles have equal highs:
 4. Price must then break above the **shared high**.
 5. This completes the applicable candle-level Valid Pullback sequence.
 
-### Bearish context
+### 5.2 Bearish context
 
 When two consecutive candles have equal lows:
 
@@ -282,9 +159,11 @@ When two consecutive candles have equal lows:
 4. Price must then break below the **shared low**.
 5. This completes the applicable candle-level Valid Pullback sequence.
 
-Reference transfer is directional and belongs to candle-level Valid Pullback construction. It does not by itself create a Structurally Valid Pullback, IDM, confirmed swing, BOS, or CHoCH.
+Reference transfer is directional and belongs to candle-level Valid Pullback construction.
 
-## 6. Inside bars
+Reference transfer does not by itself create a Structurally Valid Pullback, IDM, confirmed swing, BOS, or CHoCH.
+
+## 6. Inside Bars
 
 A strict inside bar is:
 
@@ -294,9 +173,13 @@ AND
 current.low  > mother.low
 ```
 
-A strict inside bar does not independently create a Valid Pullback, structurally valid pullback, IDM, confirmed swing, BOS, or CHoCH. A break of an inside-bar relationship requires independent structural validation.
+Equality does not count as a strict inside bar.
 
-## 7. Outside bars
+A strict inside bar does not independently create a Valid Pullback, Structurally Valid Pullback, IDM, confirmed swing, BOS, or CHoCH.
+
+A break of an inside-bar relationship requires independent structural validation.
+
+## 7. Outside Bars
 
 A single outside bar must not activate both directional branches.
 
@@ -307,9 +190,9 @@ Bullish outside-bar sequence = LOW → HIGH
 Bearish outside-bar sequence = HIGH → LOW
 ```
 
-This rule exists to preserve deterministic and timeframe-invariant interpretation.
+Directional interpretation comes from the applicable context and sequence. The outside-bar relationship itself does not independently create higher-level structure.
 
-## 8. Verified pullback extreme
+## 8. Verified Pullback Extreme
 
 After a candle-level Valid Pullback:
 
@@ -320,7 +203,7 @@ Bearish: verified pullback extreme = Pullback High
 
 This extreme is a candidate liquidity reference, not automatic IDM.
 
-Correct chain:
+The required dependency is:
 
 ```text
 Candle-Level Valid Pullback
@@ -334,11 +217,11 @@ Structurally Valid Pullback
 IDM Eligibility
 ```
 
-## 9. Structural retracement qualification
+## 9. Structural Retracement Qualification
 
-A previous strict rule of “at least 3 opposing candles AND 38.2%” is no longer absolute. There are two qualification paths.
+A previous strict rule of “at least 3 opposing candles AND 38.2%” is no longer absolute. There are two validated qualification paths.
 
-### Standard path
+### 9.1 Standard path
 
 ```text
 >= 3 opposing candles
@@ -346,15 +229,11 @@ AND
 >= configured minimum retracement depth
 ```
 
-The canonical default minimum is 38.2%, exposed as a configurable engine parameter where applicable.
+The canonical default minimum is **38.2%**, exposed as a configurable methodology parameter where applicable.
 
-The implementation may expose `BOS_MIN_RETRACEMENT_PCT` with canonical default 38.2%.
+Changing the configured value changes the threshold; it does not redefine the semantic identity of a Structurally Valid Pullback or IDM.
 
-Changing the configured value changes the threshold, not the semantic definition of Valid Pullback or IDM.
-
-Do not encode the numeric default into semantic state names when the state really means “structurally valid pullback”.
-
-### Momentum / candle-size exception
+### 9.2 Exactly-two-candle momentum exception
 
 Exactly 2 opposing candles may qualify when:
 
@@ -370,13 +249,15 @@ AND
 )
 ```
 
-Important constraints:
+Mandatory constraints:
 
-- The verified exception is for exactly 2 candles.
-- Do not automatically extend it to 1 candle.
+- The verified exception is for **exactly 2 candles**.
+- There is **no automatic 1-candle exception**.
 - “Large/high momentum” remains qualitative unless independently verified source material provides a quantitative threshold.
 - Do not invent ATR, body-ratio, volatility, or standard-deviation thresholds and present them as canonical methodology.
-- Implementation thresholds may be configurable, but must be clearly treated as implementation parameters.
+- Numeric/configurable threshold ownership belongs to `methodology_parameters.md`.
+
+If retracement sufficiency is not satisfied, the higher lifecycle must not manufacture a Structurally Valid Pullback from the insufficient sequence.
 
 ## 10. Structurally Valid Pullback
 
@@ -386,26 +267,38 @@ Only a Structurally Valid Pullback can become the basis for active/minor IDM.
 
 A candle-level pullback must never directly create IDM.
 
-## 11. Liquidity taxonomy
+```text
+CANDLE-LEVEL VALID PULLBACK
+        ↓
+RETRACEMENT QUALIFICATION
+        ↓
+STRUCTURALLY VALID PULLBACK
+```
+
+The semantic identity of the object is independent of any configured numeric threshold name.
+
+## 11. Liquidity Taxonomy
 
 For the active structural leg:
 
 ```text
-Uptrend pullback low   → Sell-Side Liquidity (SSL)
+Uptrend pullback low    → Sell-Side Liquidity (SSL)
 Downtrend pullback high → Buy-Side Liquidity (BSL)
 ```
 
-Every structurally valid pullback extreme may represent liquidity, but not every liquidity node is IDM.
+Every Structurally Valid Pullback extreme may represent liquidity, but not every liquidity node is IDM.
 
-## 12. Single active pullback pointer
+Liquidity is a market-state/reference concept. It is not automatically a structural event.
 
-The engine must track one active pullback pointer for the active expansion/impulsive leg: the most recent Structurally Valid Pullback.
+## 12. Single Active Pullback Pointer
+
+The active structural leg must track one active pullback pointer: the most recent Structurally Valid Pullback.
 
 If a newer Structurally Valid Pullback forms before the previous active target is swept, immediately replace the active pointer with the newer pullback.
 
 Do not keep multiple competing minor IDM targets active simultaneously.
 
-This does not mean deleting historical structure. Maintain these separately:
+This does not mean deleting historical structure. Maintain these identities separately:
 
 ```text
 ACTIVE PULLBACK POINTER
@@ -416,448 +309,173 @@ ACTIVE PULLBACK POINTER
 ≠ HISTORICAL STRUCTURE
 ```
 
-## 13. IDM definition
+Major IDM, Fallback Major IDM, Confirmed Swing, Protected Structural Extreme, Trading Range, BOS, and CHoCH lifecycle ownership begins in Layer 3 and is defined in `true_smc_structural_lifecycle.md`.
+
+## 13. IDM Definition — Layer 2 Eligibility
 
 IDM is liquidity resting beyond the most recent Structurally Valid Pullback on the active impulsive leg.
 
-Therefore IDM must be:
+Therefore an active/minor IDM must be:
 
-1. derived from a Structurally Valid Pullback,
-2. on the active impulsive leg,
-3. the most recent qualifying pullback,
+1. derived from a Structurally Valid Pullback;
+2. associated with the active impulsive leg;
+3. the most recent qualifying pullback;
 4. represented by its relevant liquidity extreme.
 
-Random bars, arbitrary pivots, inside bars, generic local highs/lows, Fibonacci levels, or every liquidity node are not IDM.
+Random bars, arbitrary pivots, inside bars, generic local highs/lows, Fibonacci levels, or every visible liquidity node are not IDM.
 
-## 14. Minor / active IDM lifecycle
+The existence of liquidity is not sufficient to establish IDM identity.
+
+## 14. Minor / Active IDM Lifecycle
 
 The active/minor IDM shifts immediately to the newest Structurally Valid Pullback on the same active impulsive leg.
 
 Historical IDM may remain in history but must not remain an active competing target.
 
-## 15. Major IDM lifecycle
-
-Major IDM is a separate lifecycle and must not be overwritten whenever Minor IDM changes.
-
-Canonical real Major IDM lifecycle:
-
 ```text
-BOS
- ↓
-New Trading Range
- ↓
-First real post-BOS Structurally Valid Pullback
- ↓
-Major IDM
+NEWER VALID STRUCTURALLY VALID PULLBACK
+        ↓
+ACTIVE PULLBACK POINTER TRANSFERS
+        ↓
+ACTIVE / MINOR IDM TARGET TRANSFERS
 ```
 
-This BOS lifecycle rule must not be automatically applied to CHoCH.
+This transfer does not mutate Major IDM state, Confirmed Swing state, Protected Structural Extreme state, Trading Range state, or historical structure.
+
+## 15. Minor IDM — Classification and Structural Role
+
+A Minor IDM is a qualified inducement/liquidity structure associated with the active impulsive leg within the current structural lifecycle.
+
+A Minor IDM must satisfy all canonical IDM eligibility requirements and must be derived directly from a Structurally Valid Pullback and its verified pullback extreme.
+
+The mere existence of a pre-BOS state, post-CHoCH state, or arbitrary internal liquidity does not establish a Minor IDM.
+
+The Minor IDM functions strictly as internal liquidity within the active structural leg. It is ontologically distinct from Confirmed Structural Swing and Protected Structural Extreme.
 
 ```text
-BOS lifecycle ≠ CHoCH lifecycle
+Active Structural Lifecycle
+           +
+Active Impulsive Leg
+           +
+Structurally Valid Pullback
+           +
+Verified Pullback Extreme
+           +
+Canonical IDM Eligibility
+           ↓
+       MINOR IDM
+
+Minor IDM ≠ Confirmed Swing
+Minor IDM ≠ Protected Structural Extreme
+Minor IDM ≠ BOS
+Minor IDM ≠ CHoCH
 ```
 
-## 16. Fallback Major IDM
+## 16. Minor IDM Takeout Threshold
 
-If a BOS establishes a new structural lifecycle but no real post-BOS Valid-Pullback-derived Major IDM exists, the previously established protected major structural level may remain as Fallback Major IDM according to the existing engine lifecycle.
+A qualified active/minor IDM does not require a candle body close to be breached or taken out.
 
-Fallback Major IDM is not equivalent to a real post-BOS Major IDM.
+Wick and body interaction are both valid for the IDM liquidity takeout.
 
 ```text
-Real Major IDM     = post-BOS structurally valid pullback-derived IDM
-Fallback Major IDM = previous protected major structural reference used as fallback inducement
+Qualified IDM
+→ Wick or Body Takeout
+→ IDM Liquidity Sweep
 ```
 
-A fallback level may simultaneously function as protected structural reference, inducement liquidity, and liquidity target. These roles must remain semantically distinct.
+A body close beyond the IDM is not required.
 
-## 17. IDM liquidity sweep
+A wick or body interaction with an arbitrary minor structural level, liquidity node, or local extreme does not independently create or activate an IDM. IDM identity must first be established through the eligibility rules above.
 
-Bullish active IDM is normally SSL / pullback low. Bearish active IDM is normally BSL / pullback high.
+## 17. Layer 2 → Layer 3 Interface
 
-The active IDM may be swept by wick or body.
-
-The sweep is a liquidity event. It is not automatically BOS or CHoCH.
-
-## 18. Swing confirmation and BOS are separate
+Layer 2 produces validated structural inputs consumed by the Structural Lifecycle:
 
 ```text
-ACTIVE IDM LIQUIDITY SWEEP
-  ↓
-SWING LOCK-IN / CONFIRMATION
-  ↓
-CONFIRMED STRUCTURAL SWING
-  ↓
-BODY-CLOSE STRUCTURAL BREAK
-  ↓
-BOS
-```
-
-An IDM sweep must not be implemented as a compound BOS event.
-
-## 19. Swing confirmation
-
-A tentative structural swing may form while price expands. The canonical asymmetric Range-Lock model applies.
-
-Bullish: a candidate high forms, the most recent valid pullback low / active IDM is swept by wick or body, and the prior high becomes the Confirmed Range High. The retracement must satisfy the configured minimum depth (default 38.2%). The retracement low remains floating/provisional; track the minimum Low across the entire retracement. Only a later valid BOS above the Confirmed High locks that absolute lowest retracement point as the Protected/Strong Low.
-
-Bearish: a candidate low forms, the most recent valid pullback high / active IDM is swept by wick or body, and the prior low becomes the Confirmed Range Low. The retracement high remains floating/provisional; track the maximum High across the entire retracement. Only a later valid BOS below the Confirmed Low locks that absolute highest retracement point as the Protected/Strong High.
-
-The IDM sweep confirms the opposite/top-side structural extreme; it does not directly confirm the retracement/protected side.
-
-This confirmation is not BOS.
-
-A local pivot or fractal detector may support candidate identification but cannot independently confirm True SMC structure without the required IDM/liquidity sequence.
-
-## 20. Deep retracement after swing confirmation
-
-After swing confirmation, price may retrace deeply, sweep older second/third pullbacks, or interact with FVGs, Imbalances, Order Blocks, and other POIs.
-
-These events do not automatically invalidate the confirmed swing.
-
-Canonical separation:
-
-```text
-Active IDM → determines swing confirmation
-Trading Range Boundary → determines trend health / regime validity
-```
-
-Deep retracement alone must not reset structure or re-anchor a confirmed swing.
-
-## 21. BOS canonical qualification
-
-Canonical external BOS requires appropriate structural context, the required IDM liquidity takeout, a confirmed structural swing / confirmed range boundary, a physical break of the actual reference High/Low, canonical break acceptance, and compliance with the active-Major-IDM gate.
-
-### Bullish external break
-
-```text
-Physical break: Breaking.High > Ref.High
-Acceptance:     Breaking.Close > max(Ref.Open, Ref.Close)
-```
-
-The breaking candle's color is irrelevant. Do not require `Breaking.Close > Breaking.Open`. If the physical high is breached and acceptance succeeds while the close remains at or below `Ref.High`, this is canonical external Wick BOS. If `Breaking.Close > Ref.High`, this is full Body-Close BOS. If `Breaking.High > Ref.High` but `Breaking.Close <= max(Ref.Open, Ref.Close)`, this is a sweep/rejection, not BOS.
-
-### Bearish external break
-
-```text
-Physical break: Breaking.Low < Ref.Low
-Acceptance:     Breaking.Close < min(Ref.Open, Ref.Close)
-```
-
-The breaking candle's color is irrelevant. If `Breaking.Close < Ref.Low`, this is full Body-Close BOS. If the physical low is breached but acceptance fails, the move is a sweep/rejection, not BOS.
-
-### Active Major IDM gate
-
-If the broken structural level is currently the active Major IDM, external Wick BOS is disabled. A physical wick through the active Major IDM is a liquidity sweep only. Bullish BOS requires `Close > Active_Major_IDM`; bearish BOS requires `Close < Active_Major_IDM`. This is object-identity based, not fallback-specific.
-
-Wick BOS is canonical for eligible external structural levels; it is not a legacy compatibility mode.
-
-```text
-IDM SWEEP
-  ↓
-CONFIRMED SWING / RANGE SIDE
-  ↓
-PHYSICAL STRUCTURAL BREAK
-  ↓
-BREAK ACCEPTANCE
-  ↓
-BOS
-```
-
-## 22. Breaker reference
-
-Maintain the existing canonical body-reference rule:
-
-```text
-Bullish:
-  bullish reference candle → close
-  otherwise → open
-
-Bearish:
-  bearish reference candle → close
-  otherwise → open
-```
-
-This is the `breaker_reference` used for body-close structural qualification.
-
-## 23. Non-canonical legacy compatibility
-
-Any historical-close Wick-BOS compatibility option is not part of the canonical methodology. If retained, it is legacy compatibility only and must never override the canonical external Wick BOS rules in Section 21.
-
-## 24. Bullish BOS sequence
-
-```text
-UPWARD EXPANSION
- ↓
+CANDLE RELATIONSHIPS
+        ↓
+CANDLE-LEVEL VALID PULLBACK
+        ↓
+RETRACEMENT QUALIFICATION
+        ↓
 STRUCTURALLY VALID PULLBACK
- ↓
-PULLBACK LOW = SSL
- ↓
-ACTIVE MINOR IDM
- ↓
-MOST RECENT IDM SWEPT
- ↓
-SWING LOW CONFIRMED
- ↓
-PRICE BREAKS PREVIOUS CONFIRMED SWING HIGH
- ↓
-BODY CLOSE
- ↓
-BULLISH BOS
- ↓
-NEW TRADING RANGE
+        ↓
+VERIFIED PULLBACK EXTREME
+        ↓
+LIQUIDITY
+        ↓
+ACTIVE PULLBACK POINTER
+        ↓
+IDM ELIGIBILITY
+        ↓
+ACTIVE / MINOR IDM
+        ↓
+LAYER 3
 ```
 
-Multiple older pullbacks may be swept, but the most recent active IDM is the governing target.
+Layer 3 owns:
 
-## 25. Bearish BOS sequence
+- Major Structure;
+- Genesis / bootstrap;
+- Confirmed Swing;
+- Protected Structural Extreme;
+- Major IDM and Fallback Major IDM lifecycle;
+- IDM sweep → Swing Confirmation Gate;
+- Physical External Break;
+- BOS;
+- Trading Range rollover;
+- CHoCH and post-CHoCH regime initialization.
+
+See `true_smc_structural_lifecycle.md`.
+
+For detailed CHoCH mechanics, see `true_smc_choch.md`.
+
+## 18. Parameter ownership boundary
+
+Numeric methodology parameters are defined in `methodology_parameters.md`.
+
+This document defines the semantic rule that retracement qualification is required and that the validated exception exists. The parameter document owns the configurable numeric values.
 
 ```text
-DOWNWARD EXPANSION
- ↓
-STRUCTURALLY VALID PULLBACK
- ↓
-PULLBACK HIGH = BSL
- ↓
-ACTIVE MINOR IDM
- ↓
-MOST RECENT IDM SWEPT
- ↓
-SWING HIGH CONFIRMED
- ↓
-PRICE BREAKS PREVIOUS CONFIRMED SWING LOW
- ↓
-BODY CLOSE
- ↓
-BEARISH BOS
- ↓
-NEW TRADING RANGE
+SEMANTIC RULE
+    ≠
+CONFIGURATION VALUE
 ```
 
-## 26. Minor IDM takeout is not BOS
+Configuration may change a threshold only where explicitly permitted. It must never change the identity of Valid Pullback, Structurally Valid Pullback, IDM, Minor IDM, or any Layer 3 structural object.
 
-A Minor IDM takeout is first a liquidity event.
+## 19. Layer 1 / Layer 2 Validation Contract
+
+A compliant implementation must preserve all of the following:
+
+- Candle relationships are observations, not automatically higher-level structure.
+- Strict inside bars require strict containment and equality does not qualify.
+- A single outside bar cannot activate both directional branches.
+- Candle-level Valid Pullback requires the complete directional sequence.
+- EQ High / EQ Low reference transfer is directional and uses the second candle as the active reference.
+- Verified Pullback Extreme follows the candle-level Valid Pullback and is not automatically IDM.
+- Structural retracement qualification has the standard path and the exactly-two-candle exception.
+- There is no automatic one-candle exception.
+- High-momentum remains qualitative unless independently verified quantitatively.
+- Only a Structurally Valid Pullback can become the basis for active/minor IDM.
+- Only the newest Structurally Valid Pullback remains the active Minor IDM target for the active leg.
+- Minor IDM remains distinct from Major IDM, Confirmed Swing, Protected Structural Extreme, BOS, CHoCH, and Trading Range.
+- A qualified IDM can be swept by wick or body without requiring body close.
+- Arbitrary minor-level interaction does not manufacture IDM.
+- Layer 3 lifecycle rules are consumed only after the required Layer 1/2 prerequisites exist.
+
+## 20. Authority boundary and supersession rule
+
+Older Layer 3 material previously contained in this file is not an alternative canonical implementation path.
+
+The repository's validated lifecycle rules supersede conflicting older wording regardless of the historical location of that wording.
 
 ```text
-Minor IDM
- ↓
-Minor IDM liquidity takeout
- ↓
-possibly subsequent Valid Pullback
- ↓
-independent structural evaluation
+NEWER EXPLICITLY VALIDATED RULE
+        >
+OLDER CONFLICTING RULE
 ```
 
-A subsequent Valid Pullback must be independently validated. Minimum retracement qualification may be relevant to subsequent BOS/setup evaluation, but neither event alone creates BOS.
+Superseded rules that remain necessary for historical traceability belong in `deprecated.md` and must not silently re-enter canonical semantics.
 
-## 27. Fallback Major IDM takeout
-
-Fallback Major IDM interaction is a liquidity event unless the complete structural break prerequisites are satisfied.
-
-Therefore:
-
-```text
-Fallback Major IDM sweep ≠ BOS
-Fallback Major IDM sweep ≠ CHoCH
-Wick through fallback level ≠ automatic structural break
-```
-
-The Fallback Major IDM does not create a separate BOS qualification rule. Fallback status neither weakens nor strengthens canonical break acceptance. If the broken level is represented as the active Major IDM object, the active-Major-IDM gate applies regardless of whether that object is real or fallback.
-
-Fallback status does not weaken, replace, or bypass the canonical BOS sequence:
-
-```text
-IDM SWEEP
- ↓
-CONFIRMED SWING
- ↓
-STRUCTURAL BREAK
- ↓
-BODY CLOSE
- ↓
-BOS
-```
-
-This rule is specific to BOS qualification and must not be applied to CHoCH. CHoCH is determined by violation of the governing Trading Range boundary.
-
-## 28. Fallback Major IDM setup condition
-
-The following can form a setup qualification, but not automatically a structural break:
-
-```text
-Minor IDM established
- ↓
-Minor IDM takeout
- ↓
-New Structurally Valid Pullback
- ↓
-Configured minimum retracement reached
- ↓
-Fallback Major IDM reached/interacted with
-```
-
-Keep separate states for Valid Pullback, IDM takeout, minimum retracement, fallback interaction, structural break, and BOS.
-
-## 29. CHoCH definition
-
-CHoCH occurs when price violates the governing opposing Trading Range boundary.
-
-Example:
-
-```text
-BEARISH RANGE
- ↓
-ACTIVE/GOVERNING RANGE HIGH VIOLATED
- ↓
-CHoCH
- ↓
-BULLISH REGIME
-```
-
-Mirror for bullish-to-bearish:
-
-```text
-BULLISH RANGE
- ↓
-ACTIVE/GOVERNING RANGE LOW VIOLATED
- ↓
-CHoCH
- ↓
-BEARISH REGIME
-```
-
-CHoCH is not an IDM sweep, BOS, local pivot break, or generic displacement event.
-
-## 30. CHoCH-causing leg becomes the initial active impulse
-
-When CHoCH occurs, the price leg that caused the CHoCH becomes the initial active impulsive leg of the new trend.
-
-Do not reset the new trend into an empty state waiting for another independent impulse.
-
-The next Structurally Valid Pullback formed on that active leg can become the new active/minor IDM.
-
-However:
-
-```text
-CHoCH-causing leg ≠ automatic pullback
-CHoCH-causing leg ≠ automatic IDM
-CHoCH ≠ BOS
-```
-
-## 31. CHoCH and protected swing state
-
-CHoCH establishes the new trend regime but does not automatically create a new protected swing.
-
-The new trend may therefore have:
-
-```text
-NEW TREND
-+
-INITIAL ACTIVE IMPULSIVE LEG
-+
-NO NEW PROTECTED SWING UNTIL VALID STRUCTURAL CONFIRMATION/BOS
-```
-
-Do not fabricate protected structure merely because CHoCH occurred.
-
-## 32. Asymmetric Range-Lock
-
-Confirmed Range High/Low and Protected High/Low are separate lifecycle states.
-
-Bullish: candidate High → retracement → active IDM/pullback Low sweep → Confirmed Range High → minimum retracement (default 38.2%) → floating retracement Low tracking → valid BOS above Confirmed High → absolute lowest retracement Low becomes Protected/Strong Low.
-
-Bearish: candidate Low → retracement → active IDM/pullback High sweep → Confirmed Range Low → minimum retracement → floating retracement High tracking → valid BOS below Confirmed Low → absolute highest retracement High becomes Protected/Strong High.
-
-Deep retracement does not automatically invalidate the confirmed range-side. The IDM sweep confirms the opposite/top-side extreme; BOS locks the protected retracement extreme.
-
-## 33. Trading Range
-
-Trading Range is a separate structural state from Active/Minor IDM, Major IDM, Fallback Major IDM, confirmed swing, weak swing, local pivot, and POI.
-
-BOS establishes a new Trading Range.
-
-### Bearish BOS
-
-New Range High is the absolute highest apex reached during the relevant retracement.
-
-### Bullish BOS
-
-New Range Low is the absolute lowest trough reached during the relevant retracement.
-
-Internal fluctuations do not continuously shift the primary range boundary.
-
-## 34. Trading Range stability
-
-The primary Trading Range remains static until an official structural transition.
-
-The following do not automatically create a new Trading Range:
-
-- new minor high/low,
-- internal pullback,
-- liquidity sweep,
-- FVG interaction,
-- Order Block interaction,
-- local pivot,
-- displacement.
-
-## 35. Trading Range versus IDM
-
-```text
-ACTIVE IDM
-  → short-term liquidity / swing-confirmation mechanism
-
-TRADING RANGE BOUNDARY
-  → regime / structural-health mechanism
-```
-
-Deep historical liquidity interaction does not itself invalidate the range.
-
-## 42. Genesis / bootstrap
-
-Genesis is a special initialization condition. It must not manufacture historical structure.
-
-Genesis must not invent IDM, confirmed swing, BOS, Major IDM, or protected structure.
-
-Bootstrap behavior may exist where explicitly established by the methodology, but must remain distinguishable from organically confirmed structural state.
-
-No bootstrap shortcut may silently bypass the canonical lifecycle after normal structure exists.
-
-## 49. Final validation contract
-
-A compliant True SMC implementation must answer “yes” to all of the following:
-
-- Is every IDM derived from the correct Structurally Valid Pullback?
-- Is only the newest valid pullback active for Minor IDM tracking?
-- Are Minor and Major IDM lifecycles separate?
-- Is fallback Major IDM explicitly distinguished from real Major IDM?
-- Is IDM sweep separate from swing confirmation and BOS?
-- Does BOS require the canonical IDM/swing context and physical structural break?
-- Does external BOS apply canonical break acceptance?
-- Is external Wick BOS accepted when eligible?
-- Is full Body-Close BOS distinguished from external Wick BOS?
-- Does an active Major IDM disable external Wick BOS and require body close beyond the physical active Major IDM level?
-- Is there no fallback-specific BOS qualification rule?
-- Is the BOS body-close requirement kept separate from CHoCH qualification?
-- Is deep retracement prevented from arbitrarily resetting confirmed structure?
-- Is CHoCH based on the governing Trading Range boundary?
-- Does the CHoCH-causing leg become the initial active impulse of the new trend?
-- Does CHoCH avoid fabricating a protected swing?
-- Are Trading Range boundaries separate from active IDM?
-- Are candle-level pullbacks separated from structural pullbacks?
-- Is the 2-candle momentum exception handled without inventing a 1-candle exception?
-- Is the obsolete sub-38.2% Fibonacci variant completely removed?
-- Does scoring consume structural state instead of defining it?
-- Are historical structures prevented from silently becoming current active structure?
-- Is the tradable POI ontology closed to Valid OF and Valid OB?
-- Is Rule of Two enforced for Decisional and Extreme POIs?
-- Is Decisional POI location gated by discount for buys and premium for sells?
-- Is Origin OB handled as a distinct canonical OB case?
-- Does Valid OB require all three validation pillars?
-- Is standalone FVG prohibited as a POI and entry trigger?
-- Is FVG used only as an OB validator/property?
-- Are all four canonical entry modules kept separate from structural validation?
-- Is execution failure prevented from inventing BOS or CHoCH?
-- Is Extreme fallback prevented from bypassing POI validation?
-- Is minimum RR 1:2 enforced at execution qualification without redefining structure?
-- Are IDM, liquidity, POI, FVG, and entry execution kept semantically distinct?
-
-The final methodology must contain one coherent True SMC model. Contradictory legacy definitions must be removed or explicitly marked as non-canonical compatibility behavior.
+The complete Layer 3 lifecycle is maintained in one logical methodology category: `true_smc_structural_lifecycle.md`, with `true_smc_choch.md` serving as its detailed 3.5 mechanics module.
