@@ -1,10 +1,10 @@
 # TRUE SMC — STRUCTURAL LIFECYCLE
 
-**Role:** Canonical structural-lifecycle extension of `true_smc_canonical.md`.
+**Role:** Canonical structural-lifecycle extension of `true_smc_canonical.md` for Major Structure, Confirmed Swing / Protected Structural Extreme, and BOS lifecycle rules.
 
-**Authority:** This document is part of the canonical True SMC methodology. It contains the explicitly validated lifecycle rules for Major Structure, Confirmed Swing / Protected Structural Extreme, BOS, and the beginning of CHoCH. Where older canonical text conflicts with a rule in this document, the later validated rule in this document is authoritative and the conflicting legacy wording is non-canonical.
+**Authority:** This document owns the validated lifecycle rules for Sections 3.1–3.4. CHoCH lifecycle ownership has been moved to `true_smc_choch.md`, which is authoritative for Sections 3.5.1–3.5.5. Any CHoCH wording retained in this document is traceability/reference material only and must not be treated as a competing canonical definition.
 
-**Validation status:** Sections 3.1–3.5.1 are methodologically validated and closed. Implementation changes are not implied by this document.
+**Validation status:** Sections 3.1–3.4 are methodologically validated and closed. Section 3.5.1 below is retained as a legacy reference and is superseded by `true_smc_choch.md`.
 
 ## Structural lifecycle invariant
 
@@ -549,11 +549,13 @@ Proxy initialization is not Real Major IDM creation.
 
 ---
 
-# 3.5 — Change of Character (CHoCH) Mechanics
+# 3.5 — Change of Character (CHoCH) Mechanics — LEGACY REFERENCE
+
+**Authority note:** The CHoCH rules in this section are retained for traceability only. The authoritative and complete CHoCH lifecycle is `true_smc_choch.md`, Sections 3.5.1–3.5.5. This section must not be used as an alternative canonical definition.
 
 CHoCH is a macro structural regime transition. It is not a candlestick pattern, generic displacement, local pivot break, or IDM sweep.
 
-## 3.5.1 — CHoCH: Definition & Unit of Origin
+## 3.5.1 — CHoCH: Definition & Unit of Origin — LEGACY REFERENCE
 
 CHoCH evaluates the governing trend against its **opposing protected boundary**.
 
@@ -595,9 +597,9 @@ Confirmed Continuation Swing Break
 
 The governing opposing boundary is the only normal CHoCH reference-object type. A violation opens the CHoCH gate; it does not by itself establish `VALID_CHoCH`.
 
-The later CHoCH mechanics must enforce all applicable structural prerequisites, including the Fallback Major IDM / Range-Boundary Proxy exception defined in 3.4.4.
+The authoritative classification, fallback exception, and downstream regime initialization are defined in `true_smc_choch.md`.
 
-**Verdict: PASS / CLOSED.**
+**Legacy reference only — not a separate canonical authority.**
 
 ---
 
@@ -639,7 +641,7 @@ Continuation Swing Break  ──X──► CHoCH
 Boundary Penetration     ──X──► automatically VALID_CHoCH
 ```
 
-The normal CHoCH path requires the governing opposing Protected Structural Extreme / Range Boundary plus all subsequent CHoCH structural prerequisites.
+The normal CHoCH path requires the governing opposing Protected Structural Extreme / Range Boundary plus all subsequent CHoCH structural prerequisites. See `true_smc_choch.md` for the authoritative classification and lifecycle.
 
 ## Lifecycle invariants
 
