@@ -30,7 +30,8 @@ Primary documentation ownership:
 - `01_candle_level_foundation.md` — Layer 1 candle-level foundation;
 - `02_minor_structure.md` — Layer 2 minor structure, pullback qualification, liquidity and IDM foundations;
 - `03_structural_lifecycle.md` — Layer 3 lifecycle authority, Sections 3.1–3.5;
-- `03_structural_lifecycle_choch.md` — detailed Section 3.5 mechanics, subordinate to `03_structural_lifecycle.md`;
+- `03_structural_lifecycle_bos.md` — detailed Section 3.4 BOS mechanics, subordinate to `03_structural_lifecycle.md`;
+- `03_structural_lifecycle_choch.md` — detailed Section 3.5 CHoCH mechanics, subordinate to `03_structural_lifecycle.md`;
 - `methodology_parameters.md` — numeric/configurable parameter definitions;
 - `06_implementation.md` — implementation representation and state-transition requirements;
 - `04_execution.md` — execution-layer semantics;
@@ -48,6 +49,7 @@ STANDARD_SMC
 01_CANDLE_LEVEL_FOUNDATION
 02_MINOR_STRUCTURE
 03_STRUCTURAL_LIFECYCLE
+  ├── detailed 3.4 mechanics → 03_structural_lifecycle_bos.md
   └── detailed 3.5 mechanics → 03_structural_lifecycle_choch.md
 04_EXECUTION
 05_RISK
@@ -245,10 +247,15 @@ The category-based file structure is now the canonical documentation architectur
 01_candle_level_foundation.md
 02_minor_structure.md
 03_structural_lifecycle.md
+03_structural_lifecycle_bos.md
 03_structural_lifecycle_choch.md
 04_execution.md
 05_risk.md
 06_implementation.md
+methodology_parameters.md
+standard_smc.md
+unverified.md
+deprecated.md
 ```
 
-The detailed CHoCH file is subordinate to category 03 and does not create a separate methodology category. Duplicate or superseded wording must never be promoted into competing canonical behavior.
+The detailed BOS and CHoCH files are subordinate to category 03 and do not create separate top-level methodology categories. Duplicate or superseded wording must never be promoted into competing canonical behavior.
