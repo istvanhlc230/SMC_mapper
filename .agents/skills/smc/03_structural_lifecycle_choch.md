@@ -69,17 +69,17 @@ Bullish:
 
 ```text
 Close_t < Protected_Swing_Low
-→ VALID_CHoCH
+→ CHoCH_ELIGIBLE
 ```
 
 Bearish:
 
 ```text
 Close_t > Protected_Swing_High
-→ VALID_CHoCH
+→ CHoCH_ELIGIBLE
 ```
 
-Once an eligible Protected Opposing Boundary has been physically broken and the applicable CHoCH prerequisites are satisfied, a body close beyond that boundary immediately establishes `VALID_CHoCH`. The result does not depend on the presence of an internal Major IDM.
+A body close beyond an eligible Protected Opposing Boundary is a CHoCH-eligible event. It becomes `VALID_CHoCH` only when **all applicable CHoCH prerequisites** pass. A body close alone is never sufficient to manufacture CHoCH, and the result does not depend on an internal Major IDM being present.
 
 #### B. Wick-Break Reversal
 
@@ -99,11 +99,16 @@ AND
 Close_t <= Protected_Swing_High
 ```
 
-A wick break is `VALID_CHoCH` only when the active Dealing Range contains an independently formed **REAL_MAJOR_IDM**.
+A wick break is `CHoCH_ELIGIBLE` only when the active Dealing Range contains an independently formed **REAL_MAJOR_IDM**. It becomes `VALID_CHoCH` only when all applicable CHoCH prerequisites also pass.
 
 ```text
-IF range.has_independent_real_major_idm == TRUE:
-    → VALID_CHoCH
+REAL_MAJOR_IDM
++
+OPPOSING WICK BREAK
++
+ALL CHoCH PREREQUISITES
+        ↓
+VALID_CHoCH
 ```
 
 If the tested boundary is instead the Fallback Major IDM / Range-Boundary Proxy, the event is governed by 3.5.4 and is `MAJOR_IDM_SWEEP`, not CHoCH.
@@ -114,7 +119,7 @@ The wick/body geometry does not determine structural identity by itself. Level p
 
 ### 3.5.4 — Fallback Major IDM / CHoCH Exception
 
-When no independent Real Major IDM exists and the protected boundary simultaneously carries `FALLBACK_MAJOR_IDM` provenance, the proxy wick exception applies.
+When the tested opposing boundary carries `FALLBACK_MAJOR_IDM` provenance and the active lifecycle has not yet produced an independently qualified Real Major IDM, the proxy wick exception applies.
 
 ```text
 FALLBACK_MAJOR_IDM
@@ -135,7 +140,7 @@ NOT PROTECTED_EXTREME_LOCK
 
 The proxy sweep satisfies the liquidity requirement and unlocks the Swing Confirmation Gate, but it does not automatically create a Confirmed Swing; all remaining swing-confirmation prerequisites remain mandatory.
 
-A body close beyond an opposing fallback boundary is geometrically eligible for CHoCH, but `VALID_CHoCH` still requires the applicable structural prerequisites of 3.5.3. A body close is not a license to manufacture CHoCH from an arbitrary level.
+A body close beyond an opposing fallback boundary is geometrically eligible for CHoCH, but `VALID_CHoCH` still requires the complete applicable CHoCH prerequisite gate. A body close is not a license to manufacture CHoCH from an arbitrary level.
 
 Fallback Proxy is never directly converted into Real Major IDM. Its lifecycle is:
 
@@ -183,7 +188,7 @@ CONFIRMATION_LOCKED / WAITING_FOR_SVP
 
 #### Phase 1 — Old regime termination
 
-The previous governing trend terminates immediately. The previous Trading Range is closed and its exclusively range-bound POIs transition through the POI lifecycle to `EXPIRED_HISTORICAL` where applicable. The structural engine must not silently delete POI history.
+The previous governing trend terminates immediately and the previous Trading Range is closed. Any POI expiration is handled through the separate POI lifecycle; the structural engine must not silently delete POI history.
 
 #### Phase 2 — New trend initialization
 
@@ -233,14 +238,15 @@ NORMAL BOS LIFECYCLE
 ## 3.5 Canonical invariants
 
 ```text
-WICK
-≠ AUTOMATIC SWEEP
+PHYSICAL OPPOSING BREAK
 ≠ AUTOMATIC CHoCH
 
-LEVEL IDENTITY
-> CANDLE GEOMETRY
+BODY CLOSE
+→ CHoCH_ELIGIBLE
+→ VALID_CHoCH only if all prerequisites pass
 
 REAL_MAJOR_IDM + OPPOSING WICK BREAK
++ ALL CHoCH PREREQUISITES
 → VALID_CHoCH
 
 FALLBACK_MAJOR_IDM + OPPOSING WICK BREAK
