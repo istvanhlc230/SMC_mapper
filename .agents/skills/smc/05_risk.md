@@ -58,6 +58,35 @@ Scoring evaluates canonical structural state. Scoring must never create or valid
 
 A canonical executable setup must satisfy a minimum risk/reward of **1:2** where required by the canonical execution layer. Risk management consumes structural state; it must not redefine structure.
 
+## 5.1 Structural Stop-Loss Placement — SOURCE-PENDING
+
+No authoritative canonical stop-loss geometry has been established in the current methodology sources.
+
+Therefore this layer must **not** invent or import stop-placement rules from generic SMC/ICT practice.
+
+The following items remain unresolved and require an authoritative source before they can become canonical methodology:
+
+- stop location for Valid Order Flow entries;
+- stop location for Valid Order Block entries;
+- priority between POI boundaries and Protected Structural Extremes;
+- wick/price buffer semantics, if any;
+- bullish/bearish mirrored geometry;
+- exact relationship between POI invalidation, structural invalidation, and risk stop;
+- position-sizing calculation from stop distance;
+- required behavior when canonical stop geometry is unavailable.
+
+Until these are explicitly sourced and validated, they remain **SOURCE-PENDING** and must not be treated as implementation requirements or structural truth.
+
+Critical separation:
+
+```text
+POI INVALIDATION
+        ≠
+STRUCTURAL INVALIDATION
+        ≠
+RISK STOP
+```
+
 ## Risk boundaries
 
 - Scoring evaluates canonical structural state.
