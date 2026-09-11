@@ -2,7 +2,7 @@
 
 **Role:** General SMC/ICT concepts used as baseline terminology.
 
-**Authority boundary:** This file does not override the canonical True SMC definitions in `true_smc_canonical.md`. Where the project defines stricter semantics, `TRUE_SMC_CANONICAL` governs.
+**Authority boundary:** This file does not override the canonical True SMC definitions in the current Layer 1–3 methodology files. Where the project defines stricter semantics, the current True SMC semantic owner governs.
 
 ## Core concepts
 
@@ -35,7 +35,7 @@ In particular:
 
 The presence of a concept in this category means it is recognized as general terminology only. It does not mean the project's exact thresholds, lifecycle, object identity, or qualification rules are universal SMC/ICT facts.
 
-Project-specific semantics are authoritative in `true_smc_canonical.md`, with numeric/configurable parameters separated into `methodology_parameters.md`.
+Project-specific semantics are authoritative in their current semantic-owner documents, with numeric/configurable parameters separated into `methodology_parameters.md`.
 
 ## Migration status
 
