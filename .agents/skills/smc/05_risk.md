@@ -83,9 +83,9 @@ Tier 1 is the canonical conservative zone-invalidation stop. Its execution is a 
 
 ### Tier 2 — Refined Pattern Extreme SL
 
-Tier 2 is an **optional strategy/risk-management choice** available only when entry was triggered by a confirmed close of one of the canonical candlestick reversal patterns.
+Tier 2 is an **optional strategy/risk-management choice** available only when entry was triggered by a confirmed close of a canonical candlestick reversal pattern that has a deterministic execution trigger.
 
-It is not available for a direct limit entry without candlestick reversal confirmation.
+It is not available for a direct limit entry without candlestick reversal confirmation, and it cannot be independently authorized by a qualitative-only filter.
 
 Entry is the close of the completed reversal-pattern candle/sequence.
 
@@ -129,17 +129,16 @@ The position may be stopped while the parent POI and macro structure remain stru
 
 ### Pattern-scope rule
 
-Tier 2 may be used only when a direct entry was actually triggered by one of the canonical reversal patterns defined in `04_execution.md`:
+Tier 2 may be used only when a direct entry was actually triggered by a deterministic canonical reversal pattern defined in `04_execution.md`:
 
 ```text
 Long Wick Rejection
 Multiple Wick Rejection
 Engulfing
-Momentum Candle
 Morning / Evening Star
 ```
 
-`Shrinking Candles` is an approach filter and not an entry trigger; it therefore cannot independently authorize Tier 2.
+`Momentum Candle` remains a Qualitative Filter / SOURCE-PENDING classification and is not an independent binary trigger. `Shrinking Candles` is an approach filter and not an entry trigger. Neither can independently authorize Tier 2.
 
 ### Spread buffer P
 
