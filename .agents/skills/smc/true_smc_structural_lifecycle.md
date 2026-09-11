@@ -523,6 +523,34 @@ Only OF/OB entities belonging exclusively to the closed Trading Range transition
 
 This is an event-driven POI lifecycle transition, not a structural-engine database deletion.
 
+### 3.4.5.4 — Fallback Proxy initialization
+
+A new BOS lifecycle initializes the Fallback Major IDM / Range-Boundary Proxy while no independently qualified Real Major IDM exists.
+
+```text
+VALID_BOS
+    ↓
+NEW STRUCTURAL LIFECYCLE
+    ↓
+FALLBACK MAJOR IDM ACTIVE
+    ↓
+First qualifying post-BOS SVP
+    ↓
+Verified Pullback Extreme
+    ↓
+Major IDM Eligibility
+    ↓
+REAL_MAJOR_IDM
+    ↓
+FALLBACK → SUPERSEDED
+```
+
+Proxy initialization is not Real Major IDM creation.
+
+**Verdict: PASS / CLOSED.**
+
+---
+
 ## 3.5 — Change of Character (CHoCH) Lifecycle
 
 CHoCH is a first-class part of the Structural Lifecycle and represents the governing trend-regime transition.
@@ -600,3 +628,23 @@ true_smc_structural_lifecycle.md
 ```
 
 Newer explicitly validated lifecycle rules supersede older conflicting wording regardless of the historical file in which the older wording was stored. Superseded rules belong in `deprecated.md` for traceability and are not alternative canonical paths.
+
+## Lifecycle invariants
+
+```text
+VALID_BOS
+    ↓
+TRADING_RANGE_ROLLED_OVER
+    ↓
+new structural lifecycle
+```
+
+```text
+VALID_CHoCH
+    ↓
+new trend lifecycle
+    ↓
+CHoCH-causing leg = initial active impulsive leg
+```
+
+Neither transition manufactures an IDM, Confirmed Swing, or Protected Structural Extreme that has not independently satisfied its canonical prerequisites.
