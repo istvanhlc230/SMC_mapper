@@ -280,6 +280,201 @@ Regression tests must cover:
 ### Obsolete concepts
 - no obsolete sub-38.2% Fibonacci state, alias, or setup classification.
 
+## 49. State-Transition Coverage & Determinism — VALIDATED / CLOSED
+
+The structural state machine is formally separated into three deterministic layers. A candle must not directly manufacture a state transition.
+
+### 49.1 Three-layer deterministic pipeline
+
+```text
+┌───────────────────────────────────────────────────────────────┐
+│ 1. EVENT DETECTION                                            │
+│                                                               │
+│ Physical OHLC/level relations select exactly ONE of the       │
+│ seven disjoint event classes.                                 │
+└───────────────────────────────┬───────────────────────────────┘
+                                ↓
+┌───────────────────────────────────────────────────────────────┐
+│ 2. EVENT CLASSIFICATION                                       │
+│                                                               │
+│ Retracement sufficiency, level provenance, liquidity, and    │
+│ structural prerequisite gates determine the structural        │
+│ outcome of the detected event.                                │
+└───────────────────────────────┬───────────────────────────────┘
+                                ↓
+┌───────────────────────────────────────────────────────────────┐
+│ 3. STATE TRANSITION                                           │
+│                                                               │
+│ Current State + Structural Outcome determine exactly ONE     │
+│ next state.                                                   │
+└───────────────────────────────────────────────────────────────┘
+```
+
+`IMPULSE_EXTENSION`, `VALID_BOS`, `VALID_CHoCH`, `MAJOR_IDM_SWEEP`, and `NO_CHoCH_BREAK` are **classification outcomes**, not additional event classes.
+
+### 49.2 Seven disjoint event classes
+
+Exactly one event class is emitted by Event Detection:
+
+```text
+1. NO_EVENT / INTERNAL_PB
+2. MINOR_IDM_EVENT
+3. EXT_CONT_BREAK
+4. EXT_OPP_BREAK
+5. FALLBACK_EVENT
+6. REAL_MAJOR_IDM_EVENT
+7. NEW_SVP_QUALIFIED
+```
+
+Detection precedence is:
+
+```text
+EXT_OPP_BREAK
+>
+EXT_CONT_BREAK
+>
+FALLBACK_EVENT
+>
+REAL_MAJOR_IDM_EVENT
+>
+MINOR_IDM_EVENT
+>
+NEW_SVP_QUALIFIED
+>
+NO_EVENT / INTERNAL_PB
+```
+
+The precedence applies only to **event detection**. It does not directly declare a structural outcome or next state.
+
+Where multiple physical relationships appear possible, the event is resolved using the canonical structural identity and active lifecycle of the referenced level. Geometry alone must not manufacture a competing event class.
+
+### 49.3 Event classification rules
+
+#### `EXT_CONT_BREAK`
+
+```text
+EXT_CONT_BREAK DETECTED
+        ↓
+RETRACEMENT SUFFICIENCY GATE
+        ├─ NOT_SATISFIED
+        │      ↓
+        │  OUTCOME = IMPULSE_EXTENSION
+        │
+        └─ SATISFIED
+               ↓
+        LEVEL PROVENANCE
+          ├─ REAL
+          │   ↓
+          │ OUTCOME = VALID_BOS
+          │
+          └─ FALLBACK
+              ↓
+          OUTCOME = MAJOR_IDM_SWEEP
+```
+
+`IMPULSE_EXTENSION` therefore remains a classification outcome of `EXT_CONT_BREAK`; it is not an eighth event class.
+
+#### `EXT_OPP_BREAK`
+
+```text
+EXT_OPP_BREAK DETECTED
+        ↓
+GEOMETRIC CLASSIFICATION
+        ├─ BODY CLOSE
+        │      ↓
+        │  CHoCH_ELIGIBLE
+        │      ↓
+        │  ALL CHoCH PREREQUISITES
+        │      ├─ PASS → VALID_CHoCH
+        │      └─ FAIL → REJECTION / REMAIN
+        │
+        └─ WICK BREACH
+               ↓
+        LEVEL PROVENANCE
+          ├─ FALLBACK
+          │    ↓
+          │  MAJOR_IDM_SWEEP
+          │
+          └─ REAL
+               ↓
+        REAL_MAJOR_IDM?
+          ├─ NO → NO_CHoCH_BREAK / REMAIN
+          └─ YES
+               ↓
+        CHoCH_ELIGIBLE
+               ↓
+        ALL CHoCH PREREQUISITES
+          ├─ PASS → VALID_CHoCH
+          └─ FAIL → REJECTION / REMAIN
+```
+
+A body close beyond the opposing boundary is never `VALID_CHoCH` by geometry alone. It first creates CHoCH eligibility and must pass the complete canonical prerequisite gate.
+
+### 49.4 State-transition coverage
+
+The five lifecycle states are:
+
+```text
+BOOTSTRAP
+CONFIRMATION_LOCKED
+CONFIRMED_RANGE
+POST_BOS
+POST_CHOCH
+```
+
+The seven detected event classes are:
+
+```text
+NO_EVENT / INTERNAL_PB
+MINOR_IDM_EVENT
+EXT_CONT_BREAK
+EXT_OPP_BREAK
+FALLBACK_EVENT
+REAL_MAJOR_IDM_EVENT
+NEW_SVP_QUALIFIED
+```
+
+The transition matrix is exhaustive and deterministic:
+
+| Current State | NO_EVENT / INTERNAL_PB | MINOR_IDM_EVENT | EXT_CONT_BREAK | EXT_OPP_BREAK | FALLBACK_EVENT | REAL_MAJOR_IDM_EVENT | NEW_SVP_QUALIFIED |
+|---|---|---|---|---|---|---|---|
+| **BOOTSTRAP** | REMAIN; update provisional extremes/internal sequence | REMAIN; no confirmed range | DISQUALIFIED; no confirmed swing, therefore no BOS | DISQUALIFIED; no protected boundary, therefore no CHoCH | NOT_APPLICABLE; no fallback level | NOT_APPLICABLE; no Real Major IDM | SVP → Verified Extreme → IDM → Sweep → Gate → **CONFIRMED_RANGE** |
+| **CONFIRMATION_LOCKED** | REMAIN; track active expansion/retrace state | Gate UNLOCKED; remaining prerequisites required before **CONFIRMED_RANGE** | DISQUALIFIED; BOS prohibited while confirmation is locked | CHoCH pipeline; qualifying break + all prerequisites → **POST_CHOCH**, otherwise REMAIN | REMAIN; fallback wick → `MAJOR_IDM_SWEEP`, Gate UNLOCKED, no automatic swing | NOT_APPLICABLE; no Real Major IDM in this phase | REMAIN; first post-CHoCH SVP establishes the Minor IDM pipeline |
+| **CONFIRMED_RANGE** | REMAIN; dynamic `E_retrace` tracking | REMAIN; Minor IDM sweep unlocks gate, trend/range remain active | `IMPULSE_EXTENSION` → REMAIN; `VALID_BOS` → **POST_BOS**; `MAJOR_IDM_SWEEP` → REMAIN | `VALID_CHoCH` → **POST_CHOCH**; `MAJOR_IDM_SWEEP` → REMAIN; `NO_CHoCH_BREAK` → REMAIN | REMAIN; fallback wick → `MAJOR_IDM_SWEEP`, no CHoCH | REMAIN; Real Major IDM sweep unlocks/updates the applicable gate state | REMAIN; new SVP supersedes the previous active pullback reference where canonical lifecycle rules require it |
+| **POST_BOS** | REMAIN; new expansion tracked, closed-range POIs expire through POI lifecycle | NOT_APPLICABLE until a qualifying post-BOS SVP creates the new Minor IDM lifecycle | DISQUALIFIED; another BOS is not interpreted until the new swing lifecycle is established | CHoCH classification pipeline; qualifying opposing break + all prerequisites → **POST_CHOCH**, otherwise REMAIN | REMAIN; fallback proxy wick → `MAJOR_IDM_SWEEP`, Gate UNLOCKED | NOT_APPLICABLE until the post-BOS SVP → Extreme → Eligibility pipeline exists | REMAIN; SVP → Verified Extreme → Major IDM Eligibility → **REAL_MAJOR_IDM** → fallback superseded → **CONFIRMED_RANGE** |
+| **POST_CHOCH** | → `CONFIRMATION_LOCKED` | → `CONFIRMATION_LOCKED` | → `CONFIRMATION_LOCKED` | → `CONFIRMATION_LOCKED` | → `CONFIRMATION_LOCKED` | → `CONFIRMATION_LOCKED` | → `CONFIRMATION_LOCKED` |
+
+### 49.5 Determinism invariants
+
+The following are mandatory:
+
+```text
+EVENT DETECTION
+→ exactly ONE of 7 event classes
+
+EVENT CLASSIFICATION
+→ exactly ONE structural outcome for the detected event
+
+STATE TRANSITION
+→ exactly ONE next state for Current State + Outcome
+```
+
+Additional invariants:
+
+```text
+NO_REAL_MAJOR_IDM ≠ FALLBACK
+MINOR_IDM_SWEEP ≠ AUTOMATIC CONFIRMED_SWING
+MAJOR_IDM_SWEEP ≠ AUTOMATIC CONFIRMED_SWING
+NEW_SVP ≠ AUTOMATIC REAL_MAJOR_IDM
+EXT_CONT_BREAK ≠ AUTOMATIC VALID_BOS
+EXT_OPP_BREAK ≠ AUTOMATIC VALID_CHoCH
+IMPULSE_EXTENSION ≠ EVENT CLASS
+```
+
+The state machine must preserve provenance, prerequisite gates, and anti-retroactive event classification. A later candle may advance state but may not rewrite a previously classified event.
+
+**Verdict: PASS / CLOSED.**
+
 ## Implementation boundary
 
 The following must remain separate state objects or semantically equivalent state representations:
