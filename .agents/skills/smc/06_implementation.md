@@ -6,7 +6,7 @@
 
 ## Canonical lifecycle source
 
-The validated structural lifecycle rules are defined in `true_smc_structural_lifecycle.md` and are part of the canonical methodology authority.
+The validated structural lifecycle rules are defined in `03_structural_lifecycle.md`, with detailed BOS mechanics in `03_structural_lifecycle_bos.md` and detailed CHoCH mechanics in `03_structural_lifecycle_choch.md`.
 
 The mapper must implement those rules without inventing alternative BOS or CHoCH semantics.
 
