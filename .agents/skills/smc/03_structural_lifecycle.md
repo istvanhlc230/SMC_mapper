@@ -97,7 +97,7 @@ IDM
 
 The unit of origin for Major Structure is not an isolated candlestick, fractal pivot, or raw price extreme. Major Structure originates from the complete **Confirmed Dealing Range Cycle**, anchored by liquidity-validated structural extremes.
 
-A governing Trading Range does not exist merely because an impulse has occurred. It becomes formally established only when the Swing Confirmation Gate is satisfied through the canonical liquidity-confirmation lifecycle.
+A governing Trading Range does not exist merely because an impulse has occurred. It becomes formally established only when a qualified IDM liquidity takeout unlocks the Swing Confirmation Gate **and the subsequent canonical confirmation prerequisites establish a Confirmed Swing**. A liquidity sweep alone never establishes the range.
 
 ### 3.2.1 — Genesis / Bootstrap
 
@@ -230,6 +230,8 @@ A valid BOS closes the previous governing Trading Range and starts a new structu
 VALID_BOS
    ↓
 PREVIOUS RANGE CLOSED
+   ↓
+TRADING_RANGE_ROLLED_OVER
    ↓
 NEW RANGE ACTIVE
 ```
