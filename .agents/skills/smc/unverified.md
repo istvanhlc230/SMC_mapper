@@ -22,4 +22,4 @@ An implementation may contain a configurable threshold, but the threshold must b
 
 ## Source of truth
 
-Unverified classification does not replace the canonical rules. Project-specific methodology remains authoritative in `true_smc_canonical.md`, with parameter semantics isolated in `methodology_parameters.md` where applicable.
+Unverified classification does not replace the canonical rules. Project-specific True SMC methodology remains authoritative in the current semantic-owner documents under `.agents/skills/smc/`, with parameter semantics isolated in `methodology_parameters.md` where applicable.
