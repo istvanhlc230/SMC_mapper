@@ -10,17 +10,13 @@ description: Governs and validates the canonical True SMC methodology and SMC_Ma
 
 ## 1. Scope and authority
 
-This skill is the master entry point for True SMC methodology and SMC_Mapper validation.
-
 The methodology is organized into three logical layers. File ownership is documentation architecture; it must not create competing methodology categories.
 
 ```text
 TRUE SMC METHODOLOGY
 │
 ├── 1. Candle-Level Foundation
-│
 ├── 2. Minor Structure
-│
 └── 3. Structural Lifecycle
     ├── 3.1 Major Structure
     ├── 3.2 Genesis
@@ -29,15 +25,16 @@ TRUE SMC METHODOLOGY
     └── 3.5 CHoCH
 ```
 
-The primary documentation ownership is:
+Primary documentation ownership:
 
-- `true_smc_canonical.md` — Layer 1 and Layer 2 semantic foundations;
-- `true_smc_structural_lifecycle.md` — Layer 3 lifecycle authority, Sections 3.1–3.5;
-- `true_smc_choch.md` — detailed Section 3.5 CHoCH mechanics module; it does not create a separate methodology category or separate lifecycle ownership;
+- `01_candle_level_foundation.md` — Layer 1 candle-level foundation;
+- `02_minor_structure.md` — Layer 2 minor structure, pullback qualification, liquidity and IDM foundations;
+- `03_structural_lifecycle.md` — Layer 3 lifecycle authority, Sections 3.1–3.5;
+- `03_structural_lifecycle_choch.md` — detailed Section 3.5 mechanics, subordinate to `03_structural_lifecycle.md`;
 - `methodology_parameters.md` — numeric/configurable parameter definitions;
-- `implementation.md` — implementation representation and state-transition requirements;
-- `execution.md` — execution-layer semantics;
-- `risk.md` — risk/scoring policy;
+- `06_implementation.md` — implementation representation and state-transition requirements;
+- `04_execution.md` — execution-layer semantics;
+- `05_risk.md` — risk/scoring policy;
 - `standard_smc.md` — generic terminology/reference only;
 - `unverified.md` — uncertainty/provenance classification;
 - `deprecated.md` — superseded/obsolete rules retained for traceability only.
@@ -48,113 +45,23 @@ A rule belongs to one primary semantic owner. Cross-category references must poi
 
 ```text
 STANDARD_SMC
-TRUE_SMC_CANONICAL
-  ├── Layer 1: Candle-Level Foundation
-  └── Layer 2: Minor Structure
-TRUE_SMC_STRUCTURAL_LIFECYCLE
-  └── Layer 3: Structural Lifecycle
-       ├── 3.1 Major Structure
-       ├── 3.2 Genesis
-       ├── 3.3 Swing / Protected Structural Extreme
-       ├── 3.4 BOS
-       └── 3.5 CHoCH
-       
-       detailed 3.5 module → true_smc_choch.md
-METHODOLOGY_PARAMETER
-IMPLEMENTATION
-EXECUTION
-RISK
+01_CANDLE_LEVEL_FOUNDATION
+02_MINOR_STRUCTURE
+03_STRUCTURAL_LIFECYCLE
+  └── detailed 3.5 mechanics → 03_structural_lifecycle_choch.md
+04_EXECUTION
+05_RISK
+06_IMPLEMENTATION
+METHODOLOGY_PARAMETERS
 UNVERIFIED
 DEPRECATED
 ```
 
-### STANDARD_SMC
+Generic SMC/ICT terminology remains subordinate to project-specific True SMC semantics.
 
-General SMC/ICT concepts used as the baseline vocabulary. Generic terminology must not override project-specific True SMC semantics.
-
-See `standard_smc.md`.
-
-### TRUE_SMC_CANONICAL
-
-Project-specific canonical True SMC semantic foundations for Layer 1 and Layer 2, including candle relationships, candle-level Valid Pullback qualification, Minor Structure, structural qualification prerequisites, liquidity/IDM foundations, and structural object separation.
-
-Detailed Layer 3 lifecycle ownership is delegated to `true_smc_structural_lifecycle.md`.
-
-See `true_smc_canonical.md`.
-
-### TRUE_SMC_STRUCTURAL_LIFECYCLE
-
-Canonical validated lifecycle authority for the complete Layer 3 Structural Lifecycle:
-
-- 3.1 Major Structure — Definition & Scope;
-- 3.2 Genesis;
-- 3.3 Confirmed Swing & Protected Structural Extreme Lifecycle;
-- 3.4 BOS Mechanics;
-- 3.5 CHoCH lifecycle.
-
-This document is part of the canonical methodology, not an independent competing methodology category.
-
-Where older canonical wording conflicts with a later explicitly validated lifecycle rule, the later validated rule is authoritative and the conflicting wording is superseded/non-canonical.
-
-See `true_smc_structural_lifecycle.md`.
-
-### TRUE_SMC_CHOCH
-
-Detailed module for Section 3.5 of the Structural Lifecycle.
-
-`true_smc_choch.md` contains the validated 3.5.1–3.5.5 CHoCH mechanics in detail. It does not own a separate top-level lifecycle category. The lifecycle ownership remains with `true_smc_structural_lifecycle.md`.
-
-See `true_smc_choch.md`.
-
-### METHODOLOGY_PARAMETER
-
-Numeric or configurable methodology parameters such as the canonical 38.2% default and momentum/qualification thresholds.
-
-A parameter changes a threshold; it does not redefine the semantic identity of a structural object.
-
-See `methodology_parameters.md`.
-
-### IMPLEMENTATION
-
-Rules governing how SMC_Mapper represents and transitions canonical methodology state, including the structural state machine, implementation anti-patterns, and regression coverage requirements.
-
-The mapper must implement the methodology; it must not redefine it.
-
-See `implementation.md`.
-
-### EXECUTION
-
-Canonical execution-layer concepts including POI, Valid Order Flow, Valid Order Block, FVG validation, and entry modules.
-
-Execution logic must consume structural state and must never manufacture structural events.
-
-See `execution.md`.
-
-### RISK
-
-Risk, scoring, quality tiers, RR requirements, and related execution constraints.
-
-Scoring and risk evaluation consume canonical state; they must never create or validate structure.
-
-See `risk.md`.
-
-### UNVERIFIED
-
-Claims, thresholds, or methodology interpretations that are not sufficiently verified to be treated as canonical.
-
-See `unverified.md`.
-
-### DEPRECATED
-
-Superseded or obsolete rules retained for traceability only. Deprecated rules must not silently re-enter canonical methodology or implementation semantics.
-
-See `deprecated.md`.
-
-## 3. Authority and conflict-resolution hierarchy
+## 3. Authority and conflict resolution
 
 Authority is not determined merely by which file contains a rule.
-
-For any conflict, apply this order:
 
 ```text
 1. Explicitly validated / accepted newer True SMC rule
@@ -166,7 +73,7 @@ For any conflict, apply this order:
 4. DEPRECATED / SUPERSEDED traceability
 ```
 
-The critical invariant is:
+Critical invariant:
 
 ```text
 NEWER VALIDATED RULE
@@ -174,24 +81,9 @@ NEWER VALIDATED RULE
 OLDER CONFLICTING RULE
 ```
 
-A rule does not remain authoritative merely because it was historically stored in `true_smc_canonical.md`.
-
-For lifecycle-specific rules:
-
-```text
-3.1–3.5 → true_smc_structural_lifecycle.md
-3.5.1–3.5.5 detailed mechanics → true_smc_choch.md
-```
-
-`true_smc_choch.md` is the detailed module for 3.5, not a competing authority against the structural lifecycle document.
-
-`STANDARD_SMC` supplies general terminology only. It cannot override project-specific True SMC methodology.
-
-`UNVERIFIED` and `DEPRECATED` are non-authoritative and must never be promoted into canonical behavior without explicit methodology approval.
+`standard_smc.md` supplies terminology only. `unverified.md` and `deprecated.md` are non-authoritative and cannot silently become canonical.
 
 ## 4. Mandatory structural principles
-
-The following principles remain mandatory across the category documents:
 
 ```text
 CANDLE-LEVEL VALID PULLBACK ≠ STRUCTURALLY VALID PULLBACK
@@ -287,74 +179,76 @@ CONFIRMED SWING
 NORMAL BOS LIFECYCLE
 ```
 
-Every higher-level event must consume a previously validated lower-level event. No stage may be skipped.
+Every higher-level event must consume previously validated lower-level state. No stage may be skipped.
 
-## 6. Final architecture rules
+## 6. Retracement qualification invariant
 
-1. No methodology rule may be silently deleted.
-2. Existing semantics must not be weakened merely to simplify file structure.
-3. A rule belongs in one primary semantic category; cross-category references must point to the authoritative owner rather than create competing definitions.
-4. `mapper` is the canonical implementation term; do not introduce `scanner` as the implementation name in newly written material.
-5. Generic SMC/ICT terminology must remain subordinate to project-specific True SMC rules.
-6. Configuration, scoring, visualization, or implementation convenience must never redefine structural meaning.
-7. The structural engine and POI lifecycle engine remain separate subsystems. Structural rollover is communicated by an event; the structural engine does not directly delete or mutate POI registry state.
-8. A later validated rule explicitly supersedes conflicting legacy wording; legacy text must not be treated as an alternative canonical path.
-9. Numeric threshold ownership belongs to `methodology_parameters.md`; lifecycle and semantic documents reference the parameter definition rather than creating competing configurable values.
-10. Newer explicitly validated methodology rules are authoritative over older conflicting rules regardless of the older rule's historical file location.
-11. Documentation reorganization must preserve the validated rule itself; only duplicate ownership or superseded wording may be removed or converted to a reference.
+The canonical default minimum retracement is 38.2% with the validated exactly-two-candle momentum exception:
 
-## 7. Validation requirements
+```text
+>=3 opposing candles AND >= minimum depth
+```
 
-A code-review or validation agent must verify both:
+or:
+
+```text
+EXACTLY 2 OPPOSING CANDLES
+AND LARGE / HIGH-MOMENTUM PRICE ACTION
+AND (>=5 PRIOR CANDLE EXTREMES SWEPT/ENGULFED OR DEPTH >=38.2%)
+```
+
+There is no automatic one-candle exception. High momentum remains qualitative unless independently verified quantitatively. Do not invent ATR/body-ratio/volatility/std-dev thresholds as canonical methodology.
+
+## 7. Lifecycle invariants
+
+- Confirmed Swing ≠ Protected Structural Extreme.
+- Protected Structural Extreme locks only through valid BOS.
+- Wick-BOS is immediate when an eligible non-fallback external continuation level is penetrated and the close is at/inside the level.
+- Fallback Major IDM is a Range-Boundary Proxy, not Real Major IDM.
+- Fallback wick breach is `MAJOR_IDM_SWEEP`, not BOS or CHoCH, and only unlocks the Swing Confirmation Gate.
+- `MAJOR_IDM_SWEEP` does not automatically create Confirmed Swing.
+- First post-break SVP does not automatically equal Real Major IDM; the full eligibility chain is required.
+- Later candles cannot retroactively rewrite earlier classifications.
+- VALID_BOS closes the prior range and starts a new lifecycle.
+- VALID_CHoCH terminates the old trend, starts the new trend, and locks confirmation until the first qualifying post-CHoCH SVP/IDM cycle completes.
+- The CHoCH-causing leg becomes the new initial active impulsive leg.
+
+## 8. Implementation validation
+
+The validator must distinguish:
 
 ### Methodology validation
 
-Is the rule itself canonical, project-specific, parameterized, unverified, or deprecated?
-
-The validator must first resolve chronology and authority before treating conflicting text as a methodology failure.
+Is the rule canonical, project-specific, parameterized, unverified, or deprecated? Resolve chronology and authority before treating conflicting text as a methodology failure.
 
 ### Implementation validation
 
 Does `SMC_Mapper` implement the accepted rule without skipping prerequisites, manufacturing structure, or confusing distinct state objects?
 
-For lifecycle validation, the validator uses the Structural Lifecycle authority for the complete Layer 3 lifecycle:
+`06_implementation.md` defines representation, state-transition, anti-pattern, and regression requirements. Implementation must consume methodology; it must not redefine it.
 
-- sections 3.1–3.4 → `true_smc_structural_lifecycle.md`;
-- section 3.5 → `true_smc_structural_lifecycle.md`, with detailed mechanics in `true_smc_choch.md`.
+## 9. Execution and risk boundaries
 
-Passing a regression test does not by itself prove that the underlying methodology rule is correct.
+`04_execution.md` owns POI and entry/execution semantics. Execution must consume structural state and must never manufacture structural events.
 
-## 8. Migration-state contract
+`05_risk.md` owns scoring and risk policy. Risk and scoring consume canonical state and must never create or validate structure.
 
-The canonical documentation ownership migration for the current True SMC methodology has been completed for the primary methodology files.
+`methodology_parameters.md` owns numeric/configurable parameters. Configuration may change permitted thresholds but never structural identity.
 
-The intended architecture is now:
+The structural engine and POI lifecycle engine remain separate subsystems. Structural rollover is communicated by an event; the structural engine does not directly delete or mutate POI registry state.
 
-```text
-true_smc_canonical.md
-    → Layer 1 + Layer 2 semantic foundations
+## 10. Documentation migration invariant
 
-true_smc_structural_lifecycle.md
-    → Layer 3, Sections 3.1–3.5
-
-true_smc_choch.md
-    → detailed Section 3.5 mechanics
-
-methodology_parameters.md
-    → numeric/configurable parameters
-```
-
-The validator must therefore treat these ownership boundaries as current, not as an in-progress migration state. If older lifecycle wording is encountered elsewhere, it must be classified against the current authoritative owner before use:
+The category-based file structure is now the canonical documentation architecture. Renaming or splitting files must preserve validated rules and must not weaken semantics.
 
 ```text
-CURRENT AUTHORITATIVE
-DUPLICATE OF CURRENT AUTHORITATIVE
-SUPERSEDED / LEGACY
+01_candle_level_foundation.md
+02_minor_structure.md
+03_structural_lifecycle.md
+03_structural_lifecycle_choch.md
+04_execution.md
+05_risk.md
+06_implementation.md
 ```
 
-Duplicate or superseded wording must never be promoted into a competing canonical rule merely because it remains physically present for traceability.
-
-The migration was performed by rule ownership, not blind section deletion. The validated rule itself remains authoritative regardless of which historical file previously contained it.
-
-**Acceptance condition:** No rule may be deleted or semantically changed merely because the architecture is reorganized. Any future methodology change must be explicit, separately approved, and independently validated.
-
+The detailed CHoCH file is subordinate to category 03 and does not create a separate methodology category. Duplicate or superseded wording must never be promoted into competing canonical behavior.
