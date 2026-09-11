@@ -2,7 +2,7 @@
 
 **Role:** Numeric and configurable methodology parameters.
 
-**Authority boundary:** This document owns numeric/configurable values only. It does not redefine the semantic identity or lifecycle of any methodology object. The semantic rules that consume these parameters remain authoritative in `true_smc_canonical.md` and, for Layer 3 objects, `true_smc_structural_lifecycle.md`.
+**Authority boundary:** This document owns numeric/configurable values only. It does not redefine the semantic identity or lifecycle of any methodology object. The semantic rules that consume these parameters remain authoritative in their current semantic-owner documents: `01_candle_level_foundation.md`, `02_minor_structure.md`, `03_structural_lifecycle.md`, and its detailed BOS/CHoCH modules where applicable.
 
 ## 9. Structural retracement parameters
 
@@ -17,7 +17,7 @@ The implementation may expose `BOS_MIN_RETRACEMENT_PCT` with canonical default `
 
 ### 9.2 Exactly-two-candle exception parameters
 
-The semantic qualification rule for the exactly-two-candle exception is defined by the canonical methodology. This section owns only its numeric constraints:
+The semantic qualification rule for the exactly-two-candle exception is defined by `02_minor_structure.md` and consumed by the Layer 3 BOS lifecycle. This section owns only its numeric constraints:
 
 - the exception applies to **exactly 2 opposing candles**;
 - the prior-extreme sweep/engulfment threshold is **5 prior candle extremes**;
