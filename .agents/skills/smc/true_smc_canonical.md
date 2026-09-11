@@ -89,6 +89,30 @@ Minor Structure
 ≠ CHoCH
 ```
 
+### Candle-level Valid Pullback — Unit of Origin
+
+The unit of origin for a candle-level Valid Pullback is a reference-candle relationship. Candle color and body size do not independently determine whether a sequence is valid.
+
+A candle-level Valid Pullback is not created by a single reference-level breach. The complete directional sequence must be satisfied.
+
+For a bullish sequence:
+
+1. A valid reference high exists.
+2. Price breaks the reference high.
+3. Price subsequently breaches the reference low.
+4. Price subsequently breaks the applicable continuation/reference high.
+5. The completed sequence constitutes the candle-level Valid Pullback.
+
+For a bearish sequence, the sequence is mirrored:
+
+1. A valid reference low exists.
+2. Price breaks the reference low.
+3. Price subsequently breaches the reference high.
+4. Price subsequently breaks the applicable continuation/reference low.
+5. The completed sequence constitutes the candle-level Valid Pullback.
+
+Strict inside bars cannot independently establish a candle-level Valid Pullback. Their presence does not create a separate structural state and does not by itself establish a Structurally Valid Pullback, IDM, Swing, BOS, or CHoCH.
+
 ## 3. Mandatory non-equivalences
 
 ```text
