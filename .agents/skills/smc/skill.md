@@ -12,16 +12,23 @@ description: Governs and validates the canonical True SMC methodology and SMC_Ma
 
 This skill is the master entry point for True SMC methodology and SMC_Mapper validation.
 
-The detailed rules are organized into dedicated category documents. The canonical structural lifecycle extension is part of the `TRUE_SMC_CANONICAL` authority and contains the validated Major Structure, Swing/Protected Extreme, BOS, and CHoCH lifecycle rules.
+The detailed rules are organized into dedicated category documents. The canonical structural lifecycle is split by ownership:
+
+- `true_smc_canonical.md` — core semantic definitions and foundational structural rules;
+- `true_smc_structural_lifecycle.md` — validated Major Structure, Swing/Protected Extreme, and BOS lifecycle rules (3.1–3.4);
+- `true_smc_choch.md` — validated CHoCH lifecycle rules (3.5.1–3.5.5).
+
+A rule belongs to one primary category. Cross-category references must point to the authoritative category rather than create competing definitions.
 
 ## 2. Category model
-
-The skill is organized into eight focused documents plus the canonical structural-lifecycle extension:
 
 ```text
 STANDARD_SMC
 TRUE_SMC_CANONICAL
-  └── TRUE_SMC_STRUCTURAL_LIFECYCLE
+  ├── TRUE_SMC_STRUCTURAL_LIFECYCLE
+  │      └── 3.1–3.4
+  └── TRUE_SMC_CHOCH
+         └── 3.5.1–3.5.5
 METHODOLOGY_PARAMETER
 IMPLEMENTATION
 EXECUTION
@@ -38,7 +45,9 @@ See `standard_smc.md`.
 
 ### TRUE_SMC_CANONICAL
 
-Project-specific canonical True SMC structural rules, including candle relationships, Valid Pullback qualification, IDM lifecycle, liquidity, swing confirmation, Trading Range, genesis, and canonical structural separation.
+Project-specific canonical True SMC semantic rules, including candle relationships, Valid Pullback qualification, liquidity, IDM identity, structural object separation, and foundational dependencies.
+
+Detailed structural lifecycle ownership is delegated to the lifecycle extensions below.
 
 See `true_smc_canonical.md`.
 
@@ -49,12 +58,25 @@ Canonical validated lifecycle extension for:
 - 3.1 Major Structure — Definition & Scope;
 - 3.2 Major Structure — Unit of Origin;
 - 3.3 Confirmed Swing & Protected Structural Extreme Lifecycle;
-- 3.4 BOS Mechanics, including 3.4.1–3.4.5;
-- 3.5 CHoCH Mechanics through 3.5.1.
+- 3.4 BOS Mechanics, including 3.4.1–3.4.5.
 
 This document is part of the canonical methodology, not an independent competing category. Where older canonical wording conflicts with an explicitly validated lifecycle rule in this document, the later validated rule is authoritative and the conflicting wording is non-canonical/legacy.
 
 See `true_smc_structural_lifecycle.md`.
+
+### TRUE_SMC_CHOCH
+
+Canonical validated lifecycle extension for CHoCH:
+
+- 3.5.1 CHoCH — Definition & Unit of Origin;
+- 3.5.2 Physical Boundary Break;
+- 3.5.3 Break Classification: Wick vs Body Close;
+- 3.5.4 Fallback Major IDM / CHoCH Exception;
+- 3.5.5 Downstream State Changes & Regime Initialization.
+
+This document owns the validated CHoCH lifecycle. Older CHoCH wording in `true_smc_canonical.md` or `true_smc_structural_lifecycle.md` is retained only for traceability and must not be treated as a competing canonical path.
+
+See `true_smc_choch.md`.
 
 ### METHODOLOGY_PARAMETER
 
@@ -109,6 +131,8 @@ TRUE_SMC_CANONICAL
         ↓
 TRUE_SMC_STRUCTURAL_LIFECYCLE
         ↓
+TRUE_SMC_CHOCH
+        ↓
 METHODOLOGY_PARAMETER
         ↓
 IMPLEMENTATION
@@ -116,9 +140,11 @@ IMPLEMENTATION
 EXECUTION / RISK
 ```
 
-`TRUE_SMC_STRUCTURAL_LIFECYCLE` is an explicit extension of the canonical methodology, not a replacement for the broader canonical document.
+`TRUE_SMC_STRUCTURAL_LIFECYCLE` and `TRUE_SMC_CHOCH` are explicit extensions of the canonical methodology. They do not replace the broader semantic definitions in `TRUE_SMC_CANONICAL`.
 
-`STANDARD_SMC` supplies general terminology only. It cannot override `TRUE_SMC_CANONICAL` or its structural-lifecycle extension.
+For lifecycle-specific conflicts, the explicitly validated lifecycle document that owns the section is authoritative. In particular, `TRUE_SMC_CHOCH` owns 3.5.1–3.5.5; `TRUE_SMC_STRUCTURAL_LIFECYCLE` owns 3.1–3.4.
+
+`STANDARD_SMC` supplies general terminology only. It cannot override `TRUE_SMC_CANONICAL` or its validated lifecycle extensions.
 
 `UNVERIFIED` and `DEPRECATED` are non-authoritative and must never be promoted into canonical behavior without explicit methodology approval.
 
@@ -224,6 +250,7 @@ Every higher-level event must consume a previously validated lower-level event. 
 6. Configuration, scoring, visualization, or implementation convenience must never redefine structural meaning.
 7. The structural engine and POI lifecycle engine remain separate subsystems. Structural rollover is communicated by an event; the structural engine does not directly delete or mutate POI registry state.
 8. A later validated lifecycle rule explicitly supersedes conflicting legacy wording; legacy text must not be treated as an alternative canonical path.
+9. Numeric threshold ownership belongs to `methodology_parameters.md`; lifecycle and semantic documents reference the parameter definition rather than creating competing configurable values.
 
 ## 7. Validation requirements
 
@@ -237,17 +264,12 @@ Is the rule itself canonical, project-specific, parameterized, unverified, or de
 
 Does `SMC_Mapper` implement the accepted rule without skipping prerequisites, manufacturing structure, or confusing distinct state objects?
 
+For lifecycle validation, the validator must use the owning document for the section under review. In particular:
+
+- sections 3.1–3.4 → `true_smc_structural_lifecycle.md`;
+- sections 3.5.1–3.5.5 → `true_smc_choch.md`.
+
 Passing a regression test does not by itself prove that the underlying methodology rule is correct.
-
-For the structural lifecycle, validation must additionally check:
-
-- no internal liquidity path can manufacture BOS or CHoCH;
-- wick-BOS is valid for eligible non-fallback external continuation levels;
-- Fallback Major IDM wick penetration terminates as `MAJOR_IDM_SWEEP`;
-- `MAJOR_IDM_SWEEP` unlocks the Swing Confirmation Gate but does not confirm the swing by itself;
-- body close through a governing opposing boundary is only CHoCH-eligible until all 3.5 prerequisites are satisfied;
-- later candles cannot retroactively rewrite earlier structural events;
-- `VALID_BOS` alone drives range rollover, Protected Extreme locking, POI rollover event emission, and Fallback Proxy initialization.
 
 ## 8. Completeness contract
 
@@ -262,7 +284,12 @@ The final category architecture represents the complete pre-reorganization rules
 - General terminology boundary → `standard_smc.md`
 - Provenance/uncertainty classification → `unverified.md`
 
-The validated structural-lifecycle extension is maintained in `true_smc_structural_lifecycle.md` as part of the canonical methodology authority.
+Validated lifecycle ownership is now:
+
+```text
+true_smc_structural_lifecycle.md → 3.1–3.4
+true_smc_choch.md                → 3.5.1–3.5.5
+```
 
 These destinations are the final architecture; historical migration ledgers are not required for agent operation.
 
