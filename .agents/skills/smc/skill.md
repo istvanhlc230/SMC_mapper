@@ -80,8 +80,6 @@ Project-specific canonical True SMC semantic foundations for Layer 1 and Layer 2
 
 Detailed Layer 3 lifecycle ownership is delegated to `true_smc_structural_lifecycle.md`.
 
-During the current documentation migration, older Layer 3 wording may still physically exist in this file. Such wording must not override the newer validated lifecycle authority.
-
 See `true_smc_canonical.md`.
 
 ### TRUE_SMC_STRUCTURAL_LIFECYCLE
@@ -89,7 +87,7 @@ See `true_smc_canonical.md`.
 Canonical validated lifecycle authority for the complete Layer 3 Structural Lifecycle:
 
 - 3.1 Major Structure — Definition & Scope;
-- 3.2 Major Structure — Unit of Origin / Genesis;
+- 3.2 Genesis;
 - 3.3 Confirmed Swing & Protected Structural Extreme Lifecycle;
 - 3.4 BOS Mechanics;
 - 3.5 CHoCH lifecycle.
@@ -328,9 +326,9 @@ Passing a regression test does not by itself prove that the underlying methodolo
 
 ## 8. Migration-state contract
 
-The repository is in a documentation-ownership migration. Until the duplicate lifecycle wording is cleaned from `true_smc_canonical.md`, the validator must treat that older lifecycle wording as non-authoritative whenever it conflicts with the validated Structural Lifecycle rules.
+The canonical documentation ownership migration for the current True SMC methodology has been completed for the primary methodology files.
 
-The intended final architecture is:
+The intended architecture is now:
 
 ```text
 true_smc_canonical.md
@@ -346,7 +344,7 @@ methodology_parameters.md
     → numeric/configurable parameters
 ```
 
-The migration must be performed by rule ownership, not by blind section deletion. Every affected rule must first be classified as:
+The validator must therefore treat these ownership boundaries as current, not as an in-progress migration state. If older lifecycle wording is encountered elsewhere, it must be classified against the current authoritative owner before use:
 
 ```text
 CURRENT AUTHORITATIVE
@@ -354,6 +352,9 @@ DUPLICATE OF CURRENT AUTHORITATIVE
 SUPERSEDED / LEGACY
 ```
 
-Only after that classification may duplicate text be removed or replaced by a cross-reference.
+Duplicate or superseded wording must never be promoted into a competing canonical rule merely because it remains physically present for traceability.
+
+The migration was performed by rule ownership, not blind section deletion. The validated rule itself remains authoritative regardless of which historical file previously contained it.
 
 **Acceptance condition:** No rule may be deleted or semantically changed merely because the architecture is reorganized. Any future methodology change must be explicit, separately approved, and independently validated.
+
