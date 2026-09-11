@@ -1,8 +1,10 @@
 # TRUE SMC — CHoCH MECHANICS
 
-**Role:** Canonical Change of Character (CHoCH) lifecycle extension of `true_smc_canonical.md` and `true_smc_structural_lifecycle.md`.
+**Role:** Detailed Section 3.5 CHoCH lifecycle module of `true_smc_structural_lifecycle.md`.
 
-**Authority:** This document contains the validated and closed True SMC CHoCH rules in Sections 3.5.1–3.5.5. It is authoritative for CHoCH classification and post-CHoCH regime initialization. Older conflicting wording is non-canonical.
+**Authority:** This document contains the validated and closed True SMC CHoCH mechanics in Sections 3.5.1–3.5.5. It is the detailed mechanics authority for CHoCH classification and post-CHoCH regime initialization within the Structural Lifecycle. It does **not** create a separate top-level methodology category or separate lifecycle ownership.
+
+**Lifecycle ownership:** `true_smc_structural_lifecycle.md` owns Section 3.5 as part of the complete Layer 3 Structural Lifecycle. This document provides the detailed deterministic rules used by that lifecycle.
 
 **Validation status:** Sections 3.5.1–3.5.5 are methodologically validated and closed. No implementation change is implied by this document.
 
@@ -256,3 +258,5 @@ VALID_CHoCH
 → CONFIRMED SWING
 → NORMAL BOS LIFECYCLE
 ```
+
+This file is the detailed Section 3.5 module of the Structural Lifecycle. It must be interpreted together with `true_smc_structural_lifecycle.md`, not as a separate lifecycle authority.
