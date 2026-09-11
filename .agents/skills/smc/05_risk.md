@@ -1,27 +1,228 @@
-# RISK
+# 05 — RISK
 
-**Role:** Risk, scoring, position-sizing, and trade-management policy.
+**Role:** Risk, scoring, position sizing, trade management, and execution-lifecycle policy.
 
-**Authority boundary:** Risk and scoring are downstream policy layers, not structural truth. They consume canonical structural state and cannot create or validate it.
+**Authority boundary:** Risk is downstream from canonical structural validation. It consumes canonical structural/execution state and must never create, validate, reinterpret, or redefine structural truth.
 
-## 41. Execution, structural validation, and risk
+## 5.1 Structural Stop-Loss Placement — PASS / CLOSED
 
-Execution priority and structural validation are separate domains.
+### Tier 1 — Structural / Zone Boundary Stop
+
+Conservative stop placement is beyond the furthest relevant boundary of the parent Valid Order Flow / Valid Order Block according to the applicable execution module.
+
+A stop placement or stop touch does not itself create structural truth:
 
 ```text
-EXECUTION PRIORITY ≠ STRUCTURAL VALIDATION
-ORDER FLOW FAILED ≠ BOS
-ORDER FLOW FAILED ≠ CHoCH
-POI FAILURE ≠ STRUCTURAL FAILURE
-EXECUTION STOP-OUT ≠ ORDER_FLOW_FAILED
-EXECUTION STOP-OUT ≠ VALID_CHoCH
+EXECUTION_STOPPED_OUT ≠ ORDER_FLOW_FAILED
+EXECUTION_STOPPED_OUT ≠ ORDER_BLOCK_FAILED
+EXECUTION_STOPPED_OUT ≠ VALID_BOS
+EXECUTION_STOPPED_OUT ≠ VALID_CHoCH
 ```
 
-A failed execution condition must not be converted into a structural event. Likewise, a structurally valid event does not automatically authorize execution.
+### Tier 2 — Refined Pattern Extreme Stop
 
-## 44. Scoring
+Tier 2 is optional and available only after a deterministic canonical candlestick reversal has actually triggered the entry.
 
-Existing scoring weights:
+Bullish:
+
+```text
+SL = min(Low_pattern_candles) - P
+```
+
+Bearish:
+
+```text
+SL = max(High_pattern_candles) + P
+```
+
+`P` is a downstream/configurable buffer. The methodology does not define a universal pip/tick or Spread + Minimum Tick value.
+
+Tier 2 is not available for a direct limit entry without deterministic candle confirmation, and qualitative-only Momentum/Shrinking filters cannot authorize it.
+
+### Tier-2 stop-out semantics
+
+```text
+Price <= Tier-2 bullish SL
+OR
+Price >= Tier-2 bearish SL
+        ↓
+EXECUTION_STOPPED_OUT
+```
+
+This remains an execution/risk event and is not POI failure, structural invalidation, BOS, CHoCH, or IDM creation.
+
+## 5.2 Target audit — PASS / CLOSED
+
+### Primary pro-trend target
+
+The primary final target is the current Trading Range confirmed external extreme where the applicable execution module requires it:
+
+```text
+bullish → Confirmed_Swing_High
+bearish → Confirmed_Swing_Low
+```
+
+The target is an execution/risk object. It does not validate BOS.
+
+```text
+TARGET_HIT ≠ VALID_BOS
+```
+
+When `VALID_BOS` occurs, the previous external target expires and the new Trading Range external extreme becomes the active structural target.
+
+When `VALID_CHoCH` occurs, targets belonging exclusively to the invalidated structural regime become invalid as an execution/risk lifecycle consequence. This does not manufacture a structural event.
+
+### RR gating
+
+Where required by the canonical execution layer:
+
+```text
+Projected_RR_to_Primary_Target >= 1:2
+```
+
+This is an entry/setup gate, not a target-location rule.
+
+### Counter-trend / pullback execution
+
+Counter-trend execution may use IDM/Engineering Liquidity sweep + valid POI + closed canonical reversal. Its expected structural destination may be an unmitigated parent Decisional/Extreme OF/OB, but no universal hard TP coordinate is canonicalized here.
+
+IRL is not a canonical TP category. Internal liquidity, Engineering Liquidity, internal OF/OB, and Minor IDM remain context/execution objects rather than mandatory TP coordinates.
+
+No fixed partial-TP percentage, break-even trigger, or trailing algorithm is canonicalized here.
+
+## 5.3 Pending-order and open-position lifecycle — PASS / CLOSED
+
+### 5.3.1 Pending Order Invalidation
+
+```text
+ORDER_FLOW_FAILED / ORDER_BLOCK_FAILED
+        ↓
+associated pending order
+        ↓
+PENDING_ORDER_CANCELLED
+```
+
+```text
+VALID_BOS
+        ↓
+previous Trading Range dependent orders
+        ↓
+EXPIRED_CANCELLED
+```
+
+```text
+VALID_CHoCH
+        ↓
+pending orders dependent on invalidated regime
+        ↓
+PENDING_ORDER_CANCELLED
+```
+
+`CHoCH_ELIGIBLE` alone does not automatically cancel pending orders.
+
+A historical Origin OB may remain as a historical object after a parent OF lifecycle transition when its own validity remains canonical.
+
+### 5.3.2 Zone Failure
+
+Bullish zone failure:
+
+```text
+Close < lower_zone_boundary
+```
+
+Bearish zone failure:
+
+```text
+Close > upper_zone_boundary
+```
+
+Wick penetration alone is not zone failure unless a canonical execution rule explicitly says otherwise.
+
+### 5.3.3 Open Position Exit Separation
+
+Broker-side stop and target events remain mechanical execution events:
+
+```text
+OPEN POSITION
+   ├── TARGET_HIT
+   └── STOP_LOSS_TOUCH
+```
+
+Do not synthesize a market close merely because a POI failed, a zone failed, BOS occurred, or CHoCH occurred.
+
+```text
+EXECUTION_STOPPED_OUT
+≠ POI_FAILED
+≠ ORDER_FLOW_FAILED
+≠ ORDER_BLOCK_FAILED
+≠ VALID_BOS
+≠ VALID_CHoCH
+```
+
+### 5.3.4 Emergency Structural Kill-Switch
+
+“Kill-Switch” is project execution-control terminology, not an independent structural entity.
+
+```text
+VALID_CHoCH ↛ mandatory MARKET_CLOSE_ON_CHOCH
+ORDER_FLOW_FAILED ↛ mandatory MARKET_CLOSE
+ORDER_BLOCK_FAILED ↛ mandatory MARKET_CLOSE
+```
+
+No authoritative forced market-close behavior is canonicalized solely from these events.
+
+### 5.3.5 Pending vs Open Position
+
+Pending-order premise invalidation terminates the pending order. An already-open position continues its own execution lifecycle until a mechanical target/stop event or a separately authorized exit occurs.
+
+```text
+PENDING ORDER INVALIDATION → CANCEL
+OPEN POSITION → CONTINUE LIFECYCLE
+```
+
+### 5.3.6 G1 — OHLC vs Intrabar Sequence
+
+Absolute invariant:
+
+```text
+OHLC ≠ INTRABAR_SEQUENCE
+```
+
+Intrabar execution events may include:
+
+```text
+ORDER_TRIGGERED
+STOP_TOUCH
+TARGET_TOUCH
+```
+
+Candle-close structural/execution events include:
+
+```text
+ORDER_FLOW_FAILED
+ORDER_BLOCK_FAILED
+VALID_BOS
+VALID_CHoCH
+```
+
+If STOP_TOUCH and TARGET_TOUCH are both reachable inside one OHLC candle, the methodology cannot deterministically establish which occurred first. That requires lower-timeframe/tick data or broker execution records. Do not invent microsequence from OHLC.
+
+## 5.4 Risk invariants — PASS / CLOSED
+
+```text
+RISK CONSUMES STRUCTURE
+RISK DOES NOT CREATE STRUCTURE
+
+POI INVALIDATION ≠ STRUCTURAL INVALIDATION
+STRUCTURAL INVALIDATION ≠ RISK STOP
+RISK STOP ≠ EXECUTION_STOPPED_OUT
+TARGET_HIT ≠ VALID_BOS
+VALID_CHoCH ↛ mandatory MARKET_CLOSE_ON_CHOCH
+```
+
+## 5.5 Scoring — PASS / CLOSED
+
+Existing scoring weights remain:
 
 ```text
 Structure = 25%
@@ -54,124 +255,14 @@ Retracement > 78.6% → -25
 Retracement > 90.0% → -20
 ```
 
-Scoring evaluates canonical structural state. Scoring must never create or validate structure.
+Scoring is downstream policy only. It cannot create, validate, or reinterpret structure.
 
-## Risk/reward
+## 5.6 Audit closure
 
-A canonical executable setup must satisfy a minimum risk/reward of **1:2** where required by the canonical execution layer. Risk management consumes structural state; it must not redefine structure.
+Risk remains a downstream consumer of structural and execution state. No risk rule may manufacture IDM, Confirmed Swing, Protected Structural Extreme, BOS, CHoCH, Trading Range, or POI ontology.
 
-## 5.1 Structural Stop-Loss Placement
-
-Risk provides two distinct stop-loss tiers for execution. Neither tier creates, confirms, or invalidates structural objects.
+The canonical separation is closed:
 
 ```text
-TIER 1 — MACRO / ZONE INVALIDATION STOP
-TIER 2 — REFINED PATTERN EXTREME STOP
+STRUCTURE → EXECUTION → RISK
 ```
-
-### Tier 1 — Macro / Zone Invalidation SL
-
-The conservative stop is placed beyond the furthest boundary of the **parent Valid Order Flow / Valid Order Block** that authorizes the execution.
-
-```text
-Tier-1 SL
-    ↓
-beyond parent OF/OB furthest boundary
-```
-
-Tier 1 is the canonical conservative zone-invalidation stop. Its execution is a risk/position-management event and must not be reinterpreted as automatic `ORDER_FLOW_FAILED`, BOS, CHoCH, IDM, or structural invalidation.
-
-### Tier 2 — Refined Pattern Extreme SL
-
-Tier 2 is an **optional strategy/risk-management choice** available only when entry was triggered by a confirmed close of a canonical candlestick reversal pattern that has a deterministic execution trigger.
-
-It is not available for a direct limit entry without candlestick reversal confirmation, and it cannot be independently authorized by a qualitative-only filter.
-
-Entry is the close of the completed reversal-pattern candle/sequence.
-
-For a bullish entry:
-
-```text
-SL = min(Low_pattern_candles) - P
-```
-
-For a bearish entry:
-
-```text
-SL = max(High_pattern_candles) + P
-```
-
-The pattern-extreme stop is intended as an aggressive/refined risk option that may improve R:R by reducing stop distance. It does not replace the parent POI/OF/OB geometry as a structural definition.
-
-### Tier-2 stop-out semantics
-
-A Tier-2 stop-out is an execution/risk event only:
-
-```text
-Price <= Tier-2 bullish SL
-OR
-Price >= Tier-2 bearish SL
-        ↓
-EXECUTION_STOPPED_OUT
-```
-
-`EXECUTION_STOPPED_OUT` is not equivalent to:
-
-```text
-ORDER_FLOW_FAILED
-ORDER_BLOCK_FAILED
-VALID_BOS
-VALID_CHoCH
-STRUCTURAL_INVALIDATION
-```
-
-The position may be stopped while the parent POI and macro structure remain structurally valid, including where price remains within the Tier-1 parent-zone boundary.
-
-### Pattern-scope rule
-
-Tier 2 may be used only when a direct entry was actually triggered by a deterministic canonical reversal pattern defined in `04_execution.md`:
-
-```text
-Long Wick Rejection
-Multiple Wick Rejection
-Engulfing
-Morning / Evening Star
-```
-
-`Momentum Candle` remains a Qualitative Filter / SOURCE-PENDING classification and is not an independent binary trigger. `Shrinking Candles` is an approach filter and not an entry trigger. Neither can independently authorize Tier 2.
-
-### Spread buffer P
-
-`P` is a **SOURCE-PENDING / DOWNSTREAM CONFIG VARIABLE**.
-
-The True SMC methodology does not define a universal pip/tick value for `P`. The canonical rule is only that the Tier-2 stop is placed beyond the relevant pattern extreme by the configured downstream buffer.
-
-```text
-P ∈ downstream risk/execution configuration
-P ≠ structural methodology constant
-```
-
-No default such as `Spread + Minimum Tick` is canonicalized without authoritative validation.
-
-## Critical separation
-
-```text
-POI INVALIDATION
-        ≠
-STRUCTURAL INVALIDATION
-        ≠
-RISK STOP
-        ≠
-EXECUTION_STOPPED_OUT
-```
-
-A risk stop cannot manufacture or confirm structural events.
-
-## Risk boundaries
-
-- Scoring evaluates canonical structural state.
-- Position sizing must not validate or invalidate structural objects.
-- Risk management must consume structural state rather than redefine it.
-- Configuration switches must not silently redefine canonical semantics.
-- Risk policy is downstream from structural validation.
-- The Tier-2 pattern stop is an optional execution/risk optimization, not a structural rule.
