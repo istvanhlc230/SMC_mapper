@@ -12,23 +12,54 @@ description: Governs and validates the canonical True SMC methodology and SMC_Ma
 
 This skill is the master entry point for True SMC methodology and SMC_Mapper validation.
 
-The detailed rules are organized into dedicated category documents. The canonical structural lifecycle is split by ownership:
+The methodology is organized into three logical layers. File ownership is documentation architecture; it must not create competing methodology categories.
 
-- `true_smc_canonical.md` — core semantic definitions and foundational structural rules;
-- `true_smc_structural_lifecycle.md` — validated Major Structure, Swing/Protected Extreme, and BOS lifecycle rules (3.1–3.4);
-- `true_smc_choch.md` — validated CHoCH lifecycle rules (3.5.1–3.5.5).
+```text
+TRUE SMC METHODOLOGY
+│
+├── 1. Candle-Level Foundation
+│
+├── 2. Minor Structure
+│
+└── 3. Structural Lifecycle
+    ├── 3.1 Major Structure
+    ├── 3.2 Genesis
+    ├── 3.3 Swing / Protected Structural Extreme
+    ├── 3.4 BOS
+    └── 3.5 CHoCH
+```
 
-A rule belongs to one primary category. Cross-category references must point to the authoritative category rather than create competing definitions.
+The primary documentation ownership is:
+
+- `true_smc_canonical.md` — Layer 1 and Layer 2 semantic foundations;
+- `true_smc_structural_lifecycle.md` — Layer 3 lifecycle authority, Sections 3.1–3.5;
+- `true_smc_choch.md` — detailed Section 3.5 CHoCH mechanics module; it does not create a separate methodology category or separate lifecycle ownership;
+- `methodology_parameters.md` — numeric/configurable parameter definitions;
+- `implementation.md` — implementation representation and state-transition requirements;
+- `execution.md` — execution-layer semantics;
+- `risk.md` — risk/scoring policy;
+- `standard_smc.md` — generic terminology/reference only;
+- `unverified.md` — uncertainty/provenance classification;
+- `deprecated.md` — superseded/obsolete rules retained for traceability only.
+
+A rule belongs to one primary semantic owner. Cross-category references must point to that owner rather than create competing definitions.
 
 ## 2. Category model
 
 ```text
 STANDARD_SMC
 TRUE_SMC_CANONICAL
-  ├── TRUE_SMC_STRUCTURAL_LIFECYCLE
-  │      └── 3.1–3.4
-  └── TRUE_SMC_CHOCH
-         └── 3.5.1–3.5.5
+  ├── Layer 1: Candle-Level Foundation
+  └── Layer 2: Minor Structure
+TRUE_SMC_STRUCTURAL_LIFECYCLE
+  └── Layer 3: Structural Lifecycle
+       ├── 3.1 Major Structure
+       ├── 3.2 Genesis
+       ├── 3.3 Swing / Protected Structural Extreme
+       ├── 3.4 BOS
+       └── 3.5 CHoCH
+       
+       detailed 3.5 module → true_smc_choch.md
 METHODOLOGY_PARAMETER
 IMPLEMENTATION
 EXECUTION
@@ -45,36 +76,35 @@ See `standard_smc.md`.
 
 ### TRUE_SMC_CANONICAL
 
-Project-specific canonical True SMC semantic rules, including candle relationships, Valid Pullback qualification, liquidity, IDM identity, structural object separation, and foundational dependencies.
+Project-specific canonical True SMC semantic foundations for Layer 1 and Layer 2, including candle relationships, candle-level Valid Pullback qualification, Minor Structure, structural qualification prerequisites, liquidity/IDM foundations, and structural object separation.
 
-Detailed structural lifecycle ownership is delegated to the lifecycle extensions below.
+Detailed Layer 3 lifecycle ownership is delegated to `true_smc_structural_lifecycle.md`.
+
+During the current documentation migration, older Layer 3 wording may still physically exist in this file. Such wording must not override the newer validated lifecycle authority.
 
 See `true_smc_canonical.md`.
 
 ### TRUE_SMC_STRUCTURAL_LIFECYCLE
 
-Canonical validated lifecycle extension for:
+Canonical validated lifecycle authority for the complete Layer 3 Structural Lifecycle:
 
 - 3.1 Major Structure — Definition & Scope;
-- 3.2 Major Structure — Unit of Origin;
+- 3.2 Major Structure — Unit of Origin / Genesis;
 - 3.3 Confirmed Swing & Protected Structural Extreme Lifecycle;
-- 3.4 BOS Mechanics, including 3.4.1–3.4.5.
+- 3.4 BOS Mechanics;
+- 3.5 CHoCH lifecycle.
 
-This document is part of the canonical methodology, not an independent competing category. Where older canonical wording conflicts with an explicitly validated lifecycle rule in this document, the later validated rule is authoritative and the conflicting wording is non-canonical/legacy.
+This document is part of the canonical methodology, not an independent competing methodology category.
+
+Where older canonical wording conflicts with a later explicitly validated lifecycle rule, the later validated rule is authoritative and the conflicting wording is superseded/non-canonical.
 
 See `true_smc_structural_lifecycle.md`.
 
 ### TRUE_SMC_CHOCH
 
-Canonical validated lifecycle extension for CHoCH:
+Detailed module for Section 3.5 of the Structural Lifecycle.
 
-- 3.5.1 CHoCH — Definition & Unit of Origin;
-- 3.5.2 Physical Boundary Break;
-- 3.5.3 Break Classification: Wick vs Body Close;
-- 3.5.4 Fallback Major IDM / CHoCH Exception;
-- 3.5.5 Downstream State Changes & Regime Initialization.
-
-This document owns the validated CHoCH lifecycle. Older CHoCH wording in `true_smc_canonical.md` or `true_smc_structural_lifecycle.md` is retained only for traceability and must not be treated as a competing canonical path.
+`true_smc_choch.md` contains the validated 3.5.1–3.5.5 CHoCH mechanics in detail. It does not own a separate top-level lifecycle category. The lifecycle ownership remains with `true_smc_structural_lifecycle.md`.
 
 See `true_smc_choch.md`.
 
@@ -122,29 +152,42 @@ Superseded or obsolete rules retained for traceability only. Deprecated rules mu
 
 See `deprecated.md`.
 
-## 3. Authority hierarchy
+## 3. Authority and conflict-resolution hierarchy
 
-When evaluating an implementation:
+Authority is not determined merely by which file contains a rule.
+
+For any conflict, apply this order:
 
 ```text
-TRUE_SMC_CANONICAL
-        ↓
-TRUE_SMC_STRUCTURAL_LIFECYCLE
-        ↓
-TRUE_SMC_CHOCH
-        ↓
-METHODOLOGY_PARAMETER
-        ↓
-IMPLEMENTATION
-        ↓
-EXECUTION / RISK
+1. Explicitly validated / accepted newer True SMC rule
+                    ↓
+2. Current authoritative semantic owner
+                    ↓
+3. Older conflicting wording
+                    ↓
+4. DEPRECATED / SUPERSEDED traceability
 ```
 
-`TRUE_SMC_STRUCTURAL_LIFECYCLE` and `TRUE_SMC_CHOCH` are explicit extensions of the canonical methodology. They do not replace the broader semantic definitions in `TRUE_SMC_CANONICAL`.
+The critical invariant is:
 
-For lifecycle-specific conflicts, the explicitly validated lifecycle document that owns the section is authoritative. In particular, `TRUE_SMC_CHOCH` owns 3.5.1–3.5.5; `TRUE_SMC_STRUCTURAL_LIFECYCLE` owns 3.1–3.4.
+```text
+NEWER VALIDATED RULE
+        >
+OLDER CONFLICTING RULE
+```
 
-`STANDARD_SMC` supplies general terminology only. It cannot override `TRUE_SMC_CANONICAL` or its validated lifecycle extensions.
+A rule does not remain authoritative merely because it was historically stored in `true_smc_canonical.md`.
+
+For lifecycle-specific rules:
+
+```text
+3.1–3.5 → true_smc_structural_lifecycle.md
+3.5.1–3.5.5 detailed mechanics → true_smc_choch.md
+```
+
+`true_smc_choch.md` is the detailed module for 3.5, not a competing authority against the structural lifecycle document.
+
+`STANDARD_SMC` supplies general terminology only. It cannot override project-specific True SMC methodology.
 
 `UNVERIFIED` and `DEPRECATED` are non-authoritative and must never be promoted into canonical behavior without explicit methodology approval.
 
@@ -236,6 +279,14 @@ VALID_CHoCH
 NEW TREND LIFECYCLE
  ↓
 CHoCH-CAUSING LEG = INITIAL ACTIVE IMPULSIVE LEG
+ ↓
+CONFIRMATION LOCK
+ ↓
+FIRST NEW SVP / IDM CYCLE
+ ↓
+CONFIRMED SWING
+ ↓
+NORMAL BOS LIFECYCLE
 ```
 
 Every higher-level event must consume a previously validated lower-level event. No stage may be skipped.
@@ -244,13 +295,15 @@ Every higher-level event must consume a previously validated lower-level event. 
 
 1. No methodology rule may be silently deleted.
 2. Existing semantics must not be weakened merely to simplify file structure.
-3. A rule belongs in one primary category; cross-category references must point to the authoritative category rather than create competing definitions.
+3. A rule belongs in one primary semantic category; cross-category references must point to the authoritative owner rather than create competing definitions.
 4. `mapper` is the canonical implementation term; do not introduce `scanner` as the implementation name in newly written material.
 5. Generic SMC/ICT terminology must remain subordinate to project-specific True SMC rules.
 6. Configuration, scoring, visualization, or implementation convenience must never redefine structural meaning.
 7. The structural engine and POI lifecycle engine remain separate subsystems. Structural rollover is communicated by an event; the structural engine does not directly delete or mutate POI registry state.
-8. A later validated lifecycle rule explicitly supersedes conflicting legacy wording; legacy text must not be treated as an alternative canonical path.
+8. A later validated rule explicitly supersedes conflicting legacy wording; legacy text must not be treated as an alternative canonical path.
 9. Numeric threshold ownership belongs to `methodology_parameters.md`; lifecycle and semantic documents reference the parameter definition rather than creating competing configurable values.
+10. Newer explicitly validated methodology rules are authoritative over older conflicting rules regardless of the older rule's historical file location.
+11. Documentation reorganization must preserve the validated rule itself; only duplicate ownership or superseded wording may be removed or converted to a reference.
 
 ## 7. Validation requirements
 
@@ -260,37 +313,47 @@ A code-review or validation agent must verify both:
 
 Is the rule itself canonical, project-specific, parameterized, unverified, or deprecated?
 
+The validator must first resolve chronology and authority before treating conflicting text as a methodology failure.
+
 ### Implementation validation
 
 Does `SMC_Mapper` implement the accepted rule without skipping prerequisites, manufacturing structure, or confusing distinct state objects?
 
-For lifecycle validation, the validator must use the owning document for the section under review. In particular:
+For lifecycle validation, the validator uses the Structural Lifecycle authority for the complete Layer 3 lifecycle:
 
 - sections 3.1–3.4 → `true_smc_structural_lifecycle.md`;
-- sections 3.5.1–3.5.5 → `true_smc_choch.md`.
+- section 3.5 → `true_smc_structural_lifecycle.md`, with detailed mechanics in `true_smc_choch.md`.
 
 Passing a regression test does not by itself prove that the underlying methodology rule is correct.
 
-## 8. Completeness contract
+## 8. Migration-state contract
 
-The final category architecture represents the complete pre-reorganization ruleset as follows:
+The repository is in a documentation-ownership migration. Until the duplicate lifecycle wording is cleaned from `true_smc_canonical.md`, the validator must treat that older lifecycle wording as non-authoritative whenever it conflicts with the validated Structural Lifecycle rules.
 
-- Sections 1–35, 42, and 49 → `true_smc_canonical.md`
-- Sections 43 → `deprecated.md`
-- Section 44 → `risk.md`
-- Sections 45–48 → `implementation.md`
-- Sections 36–41 → `execution.md`, with risk boundaries also represented in `risk.md`
-- Section 9 parameter semantics → `methodology_parameters.md`
-- General terminology boundary → `standard_smc.md`
-- Provenance/uncertainty classification → `unverified.md`
-
-Validated lifecycle ownership is now:
+The intended final architecture is:
 
 ```text
-true_smc_structural_lifecycle.md → 3.1–3.4
-true_smc_choch.md                → 3.5.1–3.5.5
+true_smc_canonical.md
+    → Layer 1 + Layer 2 semantic foundations
+
+true_smc_structural_lifecycle.md
+    → Layer 3, Sections 3.1–3.5
+
+true_smc_choch.md
+    → detailed Section 3.5 mechanics
+
+methodology_parameters.md
+    → numeric/configurable parameters
 ```
 
-These destinations are the final architecture; historical migration ledgers are not required for agent operation.
+The migration must be performed by rule ownership, not by blind section deletion. Every affected rule must first be classified as:
+
+```text
+CURRENT AUTHORITATIVE
+DUPLICATE OF CURRENT AUTHORITATIVE
+SUPERSEDED / LEGACY
+```
+
+Only after that classification may duplicate text be removed or replaced by a cross-reference.
 
 **Acceptance condition:** No rule may be deleted or semantically changed merely because the architecture is reorganized. Any future methodology change must be explicit, separately approved, and independently validated.
