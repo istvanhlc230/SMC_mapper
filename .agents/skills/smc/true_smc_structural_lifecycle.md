@@ -1,10 +1,10 @@
 # TRUE SMC — STRUCTURAL LIFECYCLE
 
-**Role:** Canonical structural-lifecycle extension of `true_smc_canonical.md` for Major Structure, Confirmed Swing / Protected Structural Extreme, and BOS lifecycle rules.
+**Role:** Canonical Layer 3 Structural Lifecycle authority for Major Structure, Genesis, Confirmed Swing / Protected Structural Extreme, BOS, and CHoCH.
 
-**Authority:** This document owns the validated lifecycle rules for Sections 3.1–3.4. CHoCH lifecycle ownership has been moved to `true_smc_choch.md`, which is authoritative for Sections 3.5.1–3.5.5. Any CHoCH wording retained in this document is traceability/reference material only and must not be treated as a competing canonical definition.
+**Authority:** This document owns the complete validated Structural Lifecycle, Sections 3.1–3.5. `true_smc_choch.md` is the detailed mechanics module for Section 3.5; it does not create a separate lifecycle category or competing authority.
 
-**Validation status:** Sections 3.1–3.4 are methodologically validated and closed. Section 3.5.1 below is retained as a legacy reference and is superseded by `true_smc_choch.md`.
+**Validation status:** Sections 3.1–3.4 are methodologically validated and closed. Section 3.5 is methodologically validated and closed, with its detailed mechanics maintained in `true_smc_choch.md`.
 
 ## Structural lifecycle invariant
 
@@ -43,6 +43,10 @@ BREAK CLASSIFICATION
   ↓
 BOS / CHoCH
 ```
+
+Layer 1 and Layer 2 semantic foundations are owned by `true_smc_canonical.md`.
+
+The Structural Lifecycle begins once those validated prerequisites are available and owns the external structural state machine from Major Structure through CHoCH and post-CHoCH regime initialization.
 
 ---
 
@@ -519,146 +523,80 @@ Only OF/OB entities belonging exclusively to the closed Trading Range transition
 
 This is an event-driven POI lifecycle transition, not a structural-engine database deletion.
 
-Origin OB treatment remains subject to its own canonical lifecycle/provenance rules; it must not be silently promoted or preserved merely because the underlying price level still exists.
+## 3.5 — Change of Character (CHoCH) Lifecycle
 
-### 3.4.5.4 — Fallback Proxy initialization
+CHoCH is a first-class part of the Structural Lifecycle and represents the governing trend-regime transition.
 
-A new BOS lifecycle initializes the Fallback Major IDM / Range-Boundary Proxy while no independently qualified Real Major IDM exists.
+The lifecycle owner is this document. The detailed deterministic CHoCH mechanics are maintained in `true_smc_choch.md`.
+
+The Section 3.5 lifecycle is:
 
 ```text
-VALID_BOS
-    ↓
-NEW STRUCTURAL LIFECYCLE
-    ↓
-FALLBACK MAJOR IDM ACTIVE
-    ↓
-First qualifying post-BOS SVP
-    ↓
-Verified Pullback Extreme
-    ↓
-Major IDM Eligibility
-    ↓
-REAL_MAJOR_IDM
-    ↓
-FALLBACK → SUPERSEDED
+CURRENT GOVERNING RANGE
+        ↓
+GOVERNING OPPOSING PROTECTED STRUCTURAL EXTREME
+        ↓
+PHYSICAL OPPOSING BOUNDARY BREAK
+        ↓
+CHoCH BREAK CLASSIFICATION
+        ↓
+VALID_CHoCH
+        ↓
+OLD TREND TERMINATED
+        ↓
+NEW TREND
+        ↓
+CHoCH-CAUSING LEG = INITIAL ACTIVE IMPULSIVE LEG
+        ↓
+CONFIRMATION LOCKED
+        ↓
+FIRST QUALIFYING POST-CHoCH SVP
+        ↓
+MINOR IDM
+        ↓
+IDM SWEEP / SWING CONFIRMATION
+        ↓
+CONFIRMED SWING
+        ↓
+NEW TRADING RANGE
+        ↓
+NORMAL BOS LIFECYCLE
 ```
 
-Proxy initialization is not Real Major IDM creation.
+### 3.5.1 — Detailed CHoCH mechanics module
+
+`true_smc_choch.md` is the detailed Section 3.5 module and contains the validated, closed rules for:
+
+- eligible Protected Opposing Structural Extreme / Governing Opposing Range Boundary;
+- physical boundary break;
+- body-close and wick-break CHoCH classification;
+- Real Major IDM requirement for opposing wick CHoCH;
+- Fallback Major IDM / Range-Boundary Proxy exception;
+- `MAJOR_IDM_SWEEP` classification and anti-retroactive invariant;
+- old-regime termination;
+- new-trend initialization;
+- CHoCH-causing leg as `INITIAL_ACTIVE_IMPULSE`;
+- post-CHoCH confirmation lock;
+- first qualifying SVP / Minor IDM / Swing Confirmation cycle.
+
+The detailed module must be read as Section 3.5 of this lifecycle, not as a separate methodology category.
 
 **Verdict: PASS / CLOSED.**
 
----
-
-# 3.5 — Change of Character (CHoCH) Mechanics — LEGACY REFERENCE
-
-**Authority note:** The CHoCH rules in this section are retained for traceability only. The authoritative and complete CHoCH lifecycle is `true_smc_choch.md`, Sections 3.5.1–3.5.5. This section must not be used as an alternative canonical definition.
-
-CHoCH is a macro structural regime transition. It is not a candlestick pattern, generic displacement, local pivot break, or IDM sweep.
-
-## 3.5.1 — CHoCH: Definition & Unit of Origin — LEGACY REFERENCE
-
-CHoCH evaluates the governing trend against its **opposing protected boundary**.
-
-The single legitimate **reference object type** for the normal CHoCH path is the active lifecycle's **Protected Structural Extreme / Governing Opposing Range Boundary**.
-
-Bullish trend:
+## Structural lifecycle authority boundary
 
 ```text
-Protected Swing Low
+Layer 1 + Layer 2 semantic foundations
         ↓
-Governing Opposing Boundary
+true_smc_canonical.md
         ↓
-CHoCH eligibility
-```
-
-Bearish trend:
-
-```text
-Protected Swing High
+Layer 3 Structural Lifecycle
         ↓
-Governing Opposing Boundary
-        ↓
-CHoCH eligibility
+true_smc_structural_lifecycle.md
+        │
+        └── 3.5 detailed mechanics
+              ↓
+          true_smc_choch.md
 ```
 
-### Exclusions
-
-```text
-Minor Structure Takeout
-        ≠ CHoCH
-
-IDM Sweep
-        ≠ CHoCH
-
-Confirmed Continuation Swing Break
-        ≠ CHoCH
-        → BOS path
-```
-
-The governing opposing boundary is the only normal CHoCH reference-object type. A violation opens the CHoCH gate; it does not by itself establish `VALID_CHoCH`.
-
-The authoritative classification, fallback exception, and downstream regime initialization are defined in `true_smc_choch.md`.
-
-**Legacy reference only — not a separate canonical authority.**
-
----
-
-# Cross-section invariants
-
-## BOS invariants
-
-```text
-Minor Structure           ──X──► BOS
-IDM Sweep                 ──X──► BOS
-Provisional Swing         ──X──► BOS
-Insufficient Retracement  ──X──► BOS
-Fallback IDM Wick         ──X──► BOS
-Later Candle              ──X──► retroactive BOS
-```
-
-Valid BOS requires:
-
-```text
-Eligible Confirmed Swing
-+
-Retracement Sufficiency
-+
-Physical External Break
-+
-Non-Fallback Classification
-+
-Body-Close OR Wick-Break Path
-        ↓
-VALID_BOS
-```
-
-## CHoCH invariants
-
-```text
-Minor Level Takeout       ──X──► CHoCH
-IDM Sweep                 ──X──► CHoCH
-Continuation Swing Break  ──X──► CHoCH
-Boundary Penetration     ──X──► automatically VALID_CHoCH
-```
-
-The normal CHoCH path requires the governing opposing Protected Structural Extreme / Range Boundary plus all subsequent CHoCH structural prerequisites. See `true_smc_choch.md` for the authoritative classification and lifecycle.
-
-## Lifecycle invariants
-
-```text
-VALID_BOS
-    ↓
-TRADING_RANGE_ROLLED_OVER
-    ↓
-new structural lifecycle
-```
-
-```text
-VALID_CHoCH
-    ↓
-new trend lifecycle
-    ↓
-CHoCH-causing leg = initial active impulsive leg
-```
-
-Neither transition manufactures an IDM, Confirmed Swing, or Protected Structural Extreme that has not independently satisfied its canonical prerequisites.
+Newer explicitly validated lifecycle rules supersede older conflicting wording regardless of the historical file in which the older wording was stored. Superseded rules belong in `deprecated.md` for traceability and are not alternative canonical paths.
