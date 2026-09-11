@@ -2,38 +2,30 @@
 
 **Role:** Numeric and configurable methodology parameters.
 
-**Authority boundary:** A parameter qualifies a methodology object; it does not redefine the semantic identity of that object. Canonical structural meaning remains in `true_smc_canonical.md`.
+**Authority boundary:** This document owns numeric/configurable values only. It does not redefine the semantic identity or lifecycle of any methodology object. The semantic rules that consume these parameters remain authoritative in `true_smc_canonical.md` and, for Layer 3 objects, `true_smc_structural_lifecycle.md`.
 
 ## 9. Structural retracement parameters
 
-### Standard minimum retracement
+### 9.1 Standard minimum retracement depth
 
 - Canonical default: `38.2%`.
-- The minimum retracement may be exposed as a configurable engine parameter where applicable.
-- Configuration changes the threshold, not the semantic definition of Valid Pullback or IDM.
+- The minimum retracement depth may be exposed as a configurable engine parameter where explicitly permitted.
+- Configuration changes the numeric threshold only; it does not redefine the semantic meaning of Valid Pullback, Structurally Valid Pullback, IDM, or any higher-level structural state.
 - Do not encode the numeric default into semantic state names.
 
-The implementation may expose `BOS_MIN_RETRACEMENT_PCT` with canonical default 38.2%.
+The implementation may expose `BOS_MIN_RETRACEMENT_PCT` with canonical default `38.2%`.
 
-### Two-candle momentum exception
+### 9.2 Exactly-two-candle exception parameters
 
-Exactly two opposing candles may qualify only when the canonical exception conditions are satisfied:
+The semantic qualification rule for the exactly-two-candle exception is defined by the canonical methodology. This section owns only its numeric constraints:
 
-```text
-EXACTLY 2 OPPOSING CANDLES
-AND
-LARGE / HIGH-MOMENTUM PRICE ACTION
-AND
-(
-    >= 5 PRIOR CANDLE EXTREMES SWEPT/ENGULFED
-    OR
-    RETRACEMENT DEPTH >= 38.2%
-)
-```
+- the exception applies to **exactly 2 opposing candles**;
+- the prior-extreme sweep/engulfment threshold is **5 prior candle extremes**;
+- the alternative retracement-depth threshold is **38.2%**.
 
-The verified exception is for exactly 2 candles. Do not automatically extend it to 1 candle.
+The qualitative requirement for `LARGE / HIGH-MOMENTUM PRICE ACTION` has no authoritative quantitative value at present and therefore must not be invented here.
 
-The qualitative `large/high-momentum` condition remains unverified until an authoritative quantitative definition exists.
+There is no numeric parameter that authorizes a one-candle exception.
 
 Do not invent ATR, body-ratio, volatility, or standard-deviation thresholds and present them as canonical methodology.
 
@@ -45,7 +37,7 @@ PARAMETER ≠ STRUCTURAL TRUTH
 CONFIGURATION ≠ METHODOLOGY REDEFINITION
 ```
 
-Changing a threshold must never create an otherwise invalid structural event.
+Changing a threshold must never create an otherwise invalid structural event or bypass a non-numeric prerequisite.
 
 ## Implementation parameters
 
