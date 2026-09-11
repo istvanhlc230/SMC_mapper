@@ -113,6 +113,86 @@ For a bearish sequence, the sequence is mirrored:
 
 Strict inside bars cannot independently establish a candle-level Valid Pullback. Their presence does not create a separate structural state and does not by itself establish a Structurally Valid Pullback, IDM, Swing, BOS, or CHoCH.
 
+### 2.3 — Minor Structure / IDM Sweep Threshold
+
+A minor structural level does not require a candle body close to be breached or taken out. Wick and body interaction are both valid at the minor liquidity level.
+
+For an already-qualified active/minor IDM, the IDM liquidity takeout may occur by wick or body. A candle body close beyond the IDM is not required for the IDM sweep.
+
+A wick or body interaction with an arbitrary minor structural level, liquidity node, or local extreme does not independently create or activate an IDM. IDM identity must first be established through the canonical IDM eligibility rules.
+
+```text
+Minor Level Breach
+≠ IDM Activation
+≠ IDM Sweep
+
+Qualified IDM
+→ Wick or Body Takeout
+→ IDM Sweep
+```
+
+### 2.4 — Candle-level Minor Structure / Structural Outcome
+
+A takeout of an arbitrary minor structural level or local high/low does not confirm a Swing and does not create an IDM.
+
+A qualified active/minor IDM sweep is a liquidity event and may participate in the canonical Swing Confirmation sequence, but an IDM sweep alone does not automatically create a Confirmed Structural Swing. Swing confirmation requires the full canonical confirmation prerequisites.
+
+Minor structure takeouts and IDM sweeps do not independently create BOS or CHoCH. BOS requires the canonical external structural break sequence, while CHoCH requires violation of the governing Trading Range boundary.
+
+```text
+Arbitrary Minor Level Takeout
+→ NOT IDM
+→ NOT Swing Confirmation
+→ NOT BOS
+→ NOT CHoCH
+
+Qualified IDM Sweep
+→ Liquidity Requirement Satisfied
+→ Eligible for Swing Confirmation Gate
+→ Does NOT automatically confirm Swing
+→ Does NOT create BOS / CHoCH
+```
+
+### 2.5 — Minor IDM Classification & Structural Role
+
+A Minor IDM is a qualified inducement/liquidity structure associated with the active impulsive leg within the current structural lifecycle.
+
+A Minor IDM must satisfy all canonical IDM eligibility requirements and must be derived directly from a Structurally Valid Pullback and its verified pullback extreme. The mere existence of a pre-BOS state, post-CHoCH state, or arbitrary internal liquidity does not establish a Minor IDM.
+
+The Minor IDM functions strictly as internal liquidity (inducement pool) within the active structural leg. It is ontologically distinct from the Confirmed Structural Swing and the Protected Structural Extreme.
+
+Cross-lifecycle references are intentionally limited to interface hooks. Major IDM lifecycle, fallback/proxy behavior, post-BOS Major IDM creation, and expiration/deprecation rules are defined in the Major Structure lifecycle and must not be redefined here.
+
+```text
+Active Structural Lifecycle
+           +
+Active Impulsive Leg
+           +
+Structurally Valid Pullback (SVP)
+           +
+Verified Pullback Extreme (Liquidity)
+           +
+Canonical IDM Eligibility
+           ↓
+       MINOR IDM
+
+Minor IDM ≠ Protected Swing
+Minor IDM ≠ Protected Structural Extreme
+Minor IDM ≠ Confirmed Swing
+Minor IDM ≠ BOS
+Minor IDM ≠ CHoCH
+```
+
+Cross-lifecycle interface hooks:
+
+```text
+Minor IDM liquidity takeout
+→ Swing Confirmation Gate prerequisite
+
+Major IDM / Fallback Major IDM lifecycle
+→ delegated to Major Structure lifecycle
+```
+
 ## 3. Mandatory non-equivalences
 
 ```text
