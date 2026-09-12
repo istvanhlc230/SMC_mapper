@@ -5,7 +5,7 @@ description: Governs and validates the canonical True SMC methodology and SMC_Ma
 
 # TRUE SMC — CANONICAL STRUCTURAL RULESET
 
-**Status:** Authoritative entry point
+**Status:** Authoritative entry point  
 **Purpose:** Master validation contract for the True SMC methodology and SMC_Mapper.
 
 ## 1. Scope and authority
@@ -35,8 +35,7 @@ Primary documentation ownership:
 - `methodology_parameters.md` — numeric/configurable parameter definitions;
 - `06_implementation.md` — implementation representation and state-transition requirements;
 - `04_execution.md` — execution-layer semantics;
-- `05_risk.md` — risk/scoring policy;
-- `independent_validator_prompt.md` — explicit validator handoff; it restates canonical rules for independent validation and is not a competing semantic owner.
+- `05_risk.md` — risk/scoring policy.
 
 A rule belongs to one primary semantic owner. Cross-category references must point to that owner rather than create competing definitions.
 
@@ -51,11 +50,13 @@ Use these classifications when provenance is incomplete:
 - **SOURCE-PENDING / UNVERIFIED** — claim that lacks sufficient provenance for presentation as universal SMC knowledge; it must not be silently promoted;
 - **OBSOLETE / SUPERSEDED** — historical wording that must not drive validation or implementation.
 
-Important examples of SOURCE-PENDING claims:
+Important boundaries:
 
-- a quantitative definition of `large/high-momentum`;
-- any invented ATR, body-ratio, volatility, or standard-deviation threshold;
-- treating exact 38.2%, >=3 opposing candles, >=5 prior extremes, the three-pillar OB model, or repository scoring weights as universal SMC axioms.
+- quantitative definitions of `large/high-momentum` remain source-dependent unless independently verified;
+- do not invent ATR, body-ratio, volatility, standard-deviation, pip, tick, or similar thresholds as canonical methodology;
+- 38.2% is a canonical **BOS qualification gate**, not a universal SMC axiom and not a requirement for creating a candle-level Valid Pullback;
+- no candle-count lookback rule is part of the canonical methodology; specifically, there is **no canonical 20-candle lookback and no canonical 25-candle rule**;
+- the old exactly-two-opposing-candle / high-momentum / `>=5 prior extremes` exception is not canonical and must not be used as a BOS or structural-pullback exception.
 
 Project-specific accepted rules remain authoritative even when their numeric parameters are not universal SMC facts.
 
@@ -85,6 +86,10 @@ PHYSICAL EXTERNAL BREAK ≠ VALID_BOS
 WICK BREAK OF FALLBACK PROXY ≠ VALID_BOS
 WICK BREAK OF FALLBACK PROXY ≠ VALID_CHoCH
 MAJOR_IDM_SWEEP ≠ CONFIRMED_SWING_POINT
+TARGET_HIT ≠ PHYSICAL_BREAK
+TARGET_HIT ≠ VALID_BOS
+POI INVALIDATION ≠ STRUCTURAL INVALIDATION
+RISK STOP ≠ STRUCTURAL INVALIDATION
 ```
 
 ## 4. Canonical dependency chain
@@ -98,7 +103,7 @@ CANDLE RELATIONSHIPS
  ↓
 CANDLE-LEVEL VALID PULLBACK
  ↓
-STRUCTURAL QUALIFICATION
+STRUCTURAL RETRACEMENT QUALIFICATION
  ↓
 STRUCTURALLY VALID PULLBACK
  ↓
@@ -110,7 +115,7 @@ ACTIVE PULLBACK POINTER
  ↓
 IDM ELIGIBILITY
  ↓
-ACTIVE/MINOR IDM
+ACTIVE / MINOR IDM
  ↓
 IDM TAKEOUT
  ↓
@@ -118,7 +123,7 @@ SWING CONFIRMATION GATE
  ↓
 CONFIRMED STRUCTURAL SWING
  ↓
-RETRACEMENT SUFFICIENCY
+BOS QUALIFICATION GATE
  ↓
 PHYSICAL EXTERNAL BREAK
  ↓
@@ -157,29 +162,92 @@ NORMAL BOS LIFECYCLE
 
 Every higher-level event must consume previously validated lower-level state. No stage may be skipped.
 
-## 5. Retracement qualification invariant
+## 5. Pullback and BOS qualification
 
-The canonical default minimum retracement is 38.2% with the validated exactly-two-candle momentum exception:
+### 5.1 Candle-level Valid Pullback
+
+Candle-level Valid Pullback is a candle-relationship construct. It does **not** require a 38.2% retracement, a fixed candle count, a three-candle sequence, or a momentum exception.
+
+For a bullish candle-level Valid Pullback, within the relevant candlestick uptrend, price first takes out the low of the previous bullish candle by wick or body, in one or multiple candles, regardless of candle color, then reverses and breaks above the high of that same previous bullish candle. Bearish qualification is mirrored.
+
+This candle-level observation must not be promoted directly into IDM, BOS, CHoCH, or a Trading Range reset.
+
+### 5.2 Structural retracement qualification
+
+Structural retracement qualification is a separate layer. It validates the pullback extreme and its structural role; it does not manufacture a BOS.
+
+The canonical BOS gate is:
 
 ```text
->=3 opposing candles AND >= minimum depth
+VALID_BOS
+⇔
+IDM_TAKEN
+AND RETRACEMENT_DEPTH >= 0.382
+AND STRUCTURAL_SWING_BREAK
 ```
 
-or:
+Therefore:
 
 ```text
-EXACTLY 2 OPPOSING CANDLES
-AND LARGE / HIGH-MOMENTUM PRICE ACTION
-AND (>=5 PRIOR CANDLE EXTREMES SWEPT/ENGULFED OR DEPTH >=38.2%)
+RETRACEMENT_DEPTH < 0.382
+→ INSUFFICIENT_RETRACEMENT
+→ NO_VALID_BOS
+→ IMPULSE_EXTENSION
 ```
 
-There is no automatic one-candle exception. High momentum remains qualitative unless independently verified quantitatively. Do not invent ATR/body-ratio/volatility/std-dev thresholds as canonical methodology.
+and:
 
-## 6. Lifecycle invariants
+```text
+RETRACEMENT_DEPTH >= 0.382
+AND IDM_NOT_TAKEN
+→ NO_VALID_BOS
+→ IMPULSE_EXTENSION
+```
+
+The two failure causes are diagnostically distinct: `INSUFFICIENT_RETRACEMENT` and `IDM_NOT_TAKEN`.
+
+There is no `<38.2%` BOS exception based on a fixed number of opposing candles, high momentum, or prior candle extremes.
+
+## 6. BOS break classification
+
+For an eligible non-fallback governing Confirmed Structural Swing Point:
+
+Bullish:
+
+```text
+PHYSICAL_BREAK: High_t > Confirmed_Swing_High
+```
+
+Bearish:
+
+```text
+PHYSICAL_BREAK: Low_t < Confirmed_Swing_Low
+```
+
+Body-close BOS:
+
+```text
+Bullish: High_t > ref AND Close_t > ref
+Bearish: Low_t < ref AND Close_t < ref
+```
+
+Wick BOS is canonical for an eligible external continuation break:
+
+```text
+Bullish: High_t > ref AND Close_t <= ref
+Bearish: Low_t < ref AND Close_t >= ref
+```
+
+Equality at the reference is therefore a valid wick-path close. A continuation external wick break can be `VALID_BOS` and closes the old Trading Range.
+
+A fallback-proxy wick breach is different: it is `MAJOR_IDM_SWEEP`, not BOS and not CHoCH.
+
+## 7. Lifecycle invariants
 
 - Confirmed Swing ≠ Protected Structural Extreme.
 - Protected Structural Extreme locks only through valid BOS.
-- Wick-BOS is immediate when an eligible non-fallback external continuation level is penetrated and the close is at/inside the level.
+- Valid BOS requires IDM takeout, sufficient structural retracement (>=38.2%), and a structural swing break.
+- Wick-BOS is valid for an eligible non-fallback external continuation level when the level is physically penetrated and the close is at/inside the level.
 - Fallback Major IDM is a Range-Boundary Proxy, not Real Major IDM.
 - Fallback wick breach is `MAJOR_IDM_SWEEP`, not BOS or CHoCH, and only unlocks the Swing Confirmation Gate.
 - `MAJOR_IDM_SWEEP` does not automatically create Confirmed Swing.
@@ -189,7 +257,31 @@ There is no automatic one-candle exception. High momentum remains qualitative un
 - VALID_CHoCH terminates the old trend, starts the new trend, and locks confirmation until the first qualifying post-CHoCH SVP/IDM cycle completes.
 - The CHoCH-causing leg becomes the new initial active impulsive leg.
 
-## 7. Documentation architecture
+## 8. Post-CHoCH dual-liquidity lifecycle
+
+```text
+VALID_CHoCH
+├─ STRUCTURAL REGIME FLIP
+│  ├─ new trend fixed
+│  ├─ INITIAL_ACTIVE_IMPULSE begins
+│  └─ CONFIRMATION_LOCKED=True
+│      ↓
+│  FIRST_POST_CHOCH_SVP
+│      ↓
+│  VERIFIED_PULLBACK_EXTREME
+│      ↓
+│  MINOR_IDM_ELIGIBILITY
+│      ↓
+│  FIRST_POST_CHOCH_MINOR_IDM
+└─ PROXY INITIALIZATION
+   └─ external protected range boundary → FALLBACK_MAJOR_IDM
+```
+
+`FIRST_POST_CHOCH_SVP` is not the same entity as `FIRST_POST_CHOCH_MINOR_IDM`.
+
+The fallback Major IDM is an external range-boundary proxy. It is not internal liquidity and does not become a Real Major IDM merely because it is swept.
+
+## 9. Documentation architecture
 
 ```text
 01_candle_level_foundation.md
@@ -201,12 +293,11 @@ There is no automatic one-candle exception. High momentum remains qualitative un
 05_risk.md
 06_implementation.md
 methodology_parameters.md
-independent_validator_prompt.md
 ```
 
-The BOS and CHoCH files are detailed subordinate modules, not competing top-level authorities. The validator prompt is an explicit handoff artifact, not a methodology source.
+The BOS and CHoCH files are detailed subordinate modules, not competing top-level authorities.
 
-## 8. Generic terminology boundary
+## 10. Generic terminology boundary
 
 General SMC/ICT terms such as liquidity, BSL/SSL, swing, IDM, BOS, CHoCH, displacement, FVG and OB may be used as terminology. Their presence does not establish universal thresholds, lifecycle rules, object identity, or qualification semantics.
 
@@ -217,7 +308,7 @@ In particular:
 - generic CHoCH does not replace the governing Trading Range boundary rule;
 - FVG, displacement, liquidity, and OB do not independently create IDM, BOS, CHoCH, or a tradable POI.
 
-## 9. Implementation validation
+## 11. Implementation validation
 
 The validator must distinguish methodology validation from implementation validation.
 
@@ -225,7 +316,7 @@ Methodology validation asks whether a rule is canonical, parameterized, source-p
 
 `06_implementation.md` defines implementation representation, state-transition, anti-pattern, and regression requirements. Implementation must consume methodology; it must not redefine it.
 
-## 10. Execution and risk boundaries
+## 12. Execution and risk boundaries
 
 `04_execution.md` owns POI and entry/execution semantics. Execution must consume structural state and must never manufacture structural events.
 
@@ -235,7 +326,7 @@ Methodology validation asks whether a rule is canonical, parameterized, source-p
 
 The structural engine and POI lifecycle engine remain separate subsystems. Structural rollover is communicated by an event; the structural engine does not directly delete or mutate POI registry state.
 
-## 11. Authority and conflict resolution
+## 13. Authority and conflict resolution
 
 ```text
 CURRENT VALIDATED TRUE SMC RULE
