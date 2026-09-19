@@ -210,7 +210,7 @@ The detailed semantic owner is `03_structural_lifecycle.md`; `03_structural_life
 
 The BOS gate additionally requires IDM takeout and an eligible structural swing break.
 
-There is no `<38.2%` BOS exception based on a fixed number of opposing candles, high momentum, or prior candle extremes.
+There is no generic `<38.2%` exception. The only canonical sub-38.2% structural qualification path is the exact-two-candle exception, which additionally requires large/high-momentum price action and `>=5` prior candle extremes swept/engulfed.
 
 ## 6. BOS break classification
 
