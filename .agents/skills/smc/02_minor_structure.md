@@ -17,7 +17,7 @@ CANDLE RELATIONSHIPS
   ↓
 CANDLE-LEVEL VALID PULLBACK
   ↓
-STRUCTURAL RETRACEMENT QUALIFICATION
+MAJOR STRUCTURAL RETRACEMENT QUALIFICATION
   ↓
 STRUCTURALLY VALID PULLBACK
   ↓
@@ -78,25 +78,32 @@ Structurally Valid Pullback
 IDM Eligibility
 ```
 
-## 4. Structural Retracement Qualification
+## 4. Structural qualification boundary
 
-A previous strict rule of “at least 3 opposing candles AND 38.2%” is no longer absolute. There are two validated qualification paths.
+Major structural retracement qualification is **not owned by Layer 2 Minor Structure**. It is a Layer 3 Major Structure rule owned by `03_structural_lifecycle.md`.
 
-### 4.1 Standard path
+Layer 2 may produce the candle-level Valid Pullback and verified pullback extreme that become inputs to the Layer 3 structural qualification stage, but Layer 2 must not redefine the major-structure qualification criteria.
 
 ```text
->= 3 opposing candles
-AND
->= configured minimum retracement depth
+CANDLE-LEVEL VALID PULLBACK
+        ↓
+VERIFIED PULLBACK EXTREME
+        ↓
+LAYER 3 — MAJOR MAJOR STRUCTURAL RETRACEMENT QUALIFICATION
+        ↓
+STRUCTURALLY VALID PULLBACK
 ```
 
-The canonical default minimum is **38.2%**, exposed as a configurable methodology parameter where applicable.
+The canonical Layer 3 qualification paths are:
 
-Changing the configured value changes the threshold; it does not redefine the semantic identity of a Structurally Valid Pullback or IDM.
+```text
+STANDARD
+>= 3 OPPOSING CANDLES
+AND
+RETRACEMENT DEPTH >= 38.2%
+```
 
-### 4.2 Exactly-two-candle momentum exception
-
-Exactly 2 opposing candles may qualify when:
+or:
 
 ```text
 EXACTLY 2 OPPOSING CANDLES
@@ -110,15 +117,9 @@ AND
 )
 ```
 
-Mandatory constraints:
+There is no automatic one-candle exception.
 
-- The verified exception is for **exactly 2 candles**.
-- There is **no automatic 1-candle exception**.
-- “Large/high momentum” remains qualitative unless independently verified source material provides a quantitative threshold.
-- Do not invent ATR, body-ratio, volatility, or standard-deviation thresholds and present them as canonical methodology.
-- Numeric/configurable threshold ownership belongs to `methodology_parameters.md`.
-
-If retracement sufficiency is not satisfied, the higher lifecycle must not manufacture a Structurally Valid Pullback from the insufficient sequence.
+This document does not redefine or duplicate those rules. See `03_structural_lifecycle.md` Section 3.3.2 for the canonical semantic definition and `methodology_parameters.md` for numeric/configurable values.
 
 ## 5. Structurally Valid Pullback
 
@@ -313,7 +314,7 @@ A compliant implementation must preserve all of the following:
 - Candle-level Valid Pullback requires the complete directional sequence.
 - EQ High / EQ Low reference transfer is directional and uses the second candle as the active reference.
 - Verified Pullback Extreme follows the candle-level Valid Pullback and is not automatically IDM.
-- Structural retracement qualification has the standard path and the exactly-two-candle exception.
+- Major structural retracement qualification is owned by Layer 3 and has the standard path and exactly-two-candle exception.
 - There is no automatic one-candle exception.
 - High-momentum remains qualitative unless independently verified quantitatively.
 - Only a Structurally Valid Pullback can become the basis for active/minor IDM.
@@ -333,4 +334,4 @@ NEWER EXPLICITLY VALIDATED RULE
 OLDER CONFLICTING RULE
 ```
 
-Superseded rules that remain necessary for historical traceability belong in `deprecated.md` and must not silently re-enter canonical semantics.
+Superseded rules that remain necessary for historical traceability belong in repository history and must not silently re-enter canonical semantics.
