@@ -2,7 +2,7 @@
 
 **Role:** Numeric and configurable methodology parameters.
 
-**Authority boundary:** This document owns numeric/configurable values only. It does not redefine the semantic identity or lifecycle of any methodology object. The semantic rules that consume these parameters remain authoritative in their current semantic-owner documents: `01_candle_level_foundation.md`, `02_minor_structure.md`, `03_structural_lifecycle.md`, and its detailed BOS/CHoCH modules where applicable.
+**Authority boundary:** This document owns numeric/configurable values only. It does not redefine the semantic identity or lifecycle of any methodology object. The semantic rules that consume these parameters remain authoritative in their current semantic-owner documents: `01_candle_level_foundation.md`, `02_minor_structure.md`, and `03_structural_lifecycle.md` with its subordinate BOS/CHoCH modules.
 
 ## 9. Structural retracement parameters
 
@@ -17,7 +17,7 @@ The implementation may expose `BOS_MIN_RETRACEMENT_PCT` with canonical default `
 
 ### 9.2 Exactly-two-candle exception parameters
 
-The semantic qualification rule for the exactly-two-candle exception is defined by `02_minor_structure.md` and consumed by the Layer 3 BOS lifecycle. This section owns only its numeric constraints:
+The semantic qualification rule for the exactly-two-candle major-structure exception is defined by `03_structural_lifecycle.md` Section 3.3.2. This document owns only its numeric constraints. This section owns only its numeric constraints:
 
 - the exception applies to **exactly 2 opposing candles**;
 - the prior-extreme sweep/engulfment threshold is **5 prior candle extremes**;
@@ -45,4 +45,4 @@ Future quantitative thresholds may be configurable, but they must remain explici
 
 ## 43. Obsolete parameter
 
-The historical sub-38.2% Fibonacci bootstrap variant is obsolete and is governed by `deprecated.md`. It must not be retained as a scoring, compatibility, fixture, logging, state-name, or entry/setup classification.
+Any historical sub-38.2% Fibonacci bootstrap wording is obsolete and must not be retained as an active scoring, compatibility, fixture, logging, state-name, or entry/setup classification.
