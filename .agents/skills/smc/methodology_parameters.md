@@ -29,6 +29,18 @@ There is no numeric parameter that authorizes a one-candle exception.
 
 Do not invent ATR, body-ratio, volatility, or standard-deviation thresholds and present them as canonical methodology.
 
+## 10. Risk scoring boundary
+
+Concrete risk-quality penalties, weighted-score arithmetic, and quality-tier evaluation are implementation-owned by `SMC_mapper.py` and represented in `06_implementation.md`. This parameter document does not own those calculations and must not duplicate them as methodology rules.
+
+```text
+RISK SCORE PARAMETER
+    ≠
+STRUCTURAL QUALIFICATION
+```
+
+No scoring threshold may manufacture or validate IDM, Confirmed Swing, Protected Structural Extreme, BOS, CHoCH, or Trading Range state.
+
 ## Parameter boundaries
 
 ```text
