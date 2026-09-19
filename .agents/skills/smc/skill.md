@@ -38,7 +38,7 @@ Read the referenced documents in this order when the full methodology is require
 4. `03_structural_lifecycle_bos.md`
    - Subordinate BOS module
    - BOS prerequisites and break classification
-   - Consumes Major Structural Qualification from `03_structural_lifecycle.md)
+   - Consumes Major Structural Qualification from `03_structural_lifecycle.md`
    - Does not redefine Major Structural Qualification
 
 5. `03_structural_lifecycle_choch.md`
