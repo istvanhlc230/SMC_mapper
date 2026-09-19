@@ -146,8 +146,6 @@ If a newer Structurally Valid Pullback forms before the previous active target i
 
 Do not keep multiple competing minor IDM targets active simultaneously.
 
-Do not keep multiple competing minor IDM targets active simultaneously.
-
 This does not mean deleting historical structure. Maintain these identities separately:
 
 ```text
