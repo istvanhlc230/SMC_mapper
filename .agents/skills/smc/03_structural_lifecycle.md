@@ -15,7 +15,7 @@ RAW OHLC
   ↓
 CANDLE RELATIONSHIPS
   ↓
-CANDLE-LEVEL MINOR STRUCTURE
+MINOR STRUCTURE
   ↓
 CANDLE-LEVEL VALID PULLBACK
   ↓
@@ -154,6 +154,8 @@ A **Protected Structural Extreme** is a later lifecycle state created by valid B
 
 ### 3.3.2 — Major Structural Retracement Qualification
 
+This section is the single semantic owner of the major structural qualification rule. Other documents may consume or reference the result but must not redefine the criteria.
+
 The corrective extreme is tracked dynamically across the complete corrective window from swing confirmation until BOS. This section is the canonical semantic owner of **major structural retracement qualification**. Layer 2 produces the candle-level Valid Pullback and verified pullback extreme; Layer 3 determines whether that retracement is structurally qualified.
 
 Bullish lifecycle:
@@ -175,10 +177,10 @@ The tracked extreme must not be frozen prematurely at a local pivot, IDM-sweepin
 ```text
 >= 3 opposing candles
 AND
->= configured minimum retracement depth
+RETRACEMENT DEPTH >= 38.2%
 ```
 
-Canonical default minimum depth: **38.2%**.
+The canonical minimum depth is **38.2%**. Any configurable exposure of this numeric threshold belongs to `methodology_parameters.md` and must not alter the semantic ownership of this rule.
 
 **Exactly-two-candle exception**
 
