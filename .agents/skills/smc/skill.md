@@ -57,9 +57,10 @@ Read the referenced documents in this order when the full methodology is require
    - Execution consumes structure; it does not create structure
 
 7. `05_risk.md`
-   - Risk and scoring policy
+   - Risk policy and semantic risk boundaries
    - Structural stop / invalidation boundaries
    - Risk consumes structure; it does not create structure
+   - Concrete risk-score arithmetic is implementation-owned, not a second methodology definition
 
 ## 3. Parameters and implementation representation
 
@@ -72,6 +73,7 @@ Read the referenced documents in this order when the full methodology is require
    - Implementation representation requirements
    - State-transition requirements
    - Regression and validation requirements
+   - Implementation-owned scoring representation
    - Must consume the canonical methodology; it must not redefine it
 
 ## 4. Documentation authority
@@ -103,7 +105,7 @@ RISK
 NUMERIC / CONFIGURABLE PARAMETERS
     → methodology_parameters.md
 
-IMPLEMENTATION REPRESENTATION
+IMPLEMENTATION REPRESENTATION / EXECUTABLE SCORING MAPPING
     → 06_implementation.md
 ```
 
