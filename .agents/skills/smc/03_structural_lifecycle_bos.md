@@ -58,18 +58,17 @@ A physical external break does **not** itself establish `VALID_BOS`, Trading Ran
 
 Mandatory prerequisites remain:
 
-1. IDM takeout has occurred;
-2. governing retracement depth is at least 38.2%;
-3. the reference has correct external structural identity;
-4. the broken level is not the applicable Fallback Major IDM / Range-Boundary Proxy;
-5. the final break classification satisfies the canonical BOS predicate.
+1. retracement sufficiency is satisfied;
+2. the reference has correct external structural identity;
+3. the broken level is not the applicable Fallback Major IDM / Range-Boundary Proxy;
+4. the final break classification satisfies 3.4.3.
 
-If an external continuation break occurs before either BOS gate condition is satisfied:
+If an external continuation break occurs before retracement sufficiency is satisfied:
 
 ```text
 EXT_CONT_BREAK
 +
-BOS GATE NOT SATISFIED
+RETRACEMENT_SUFFICIENCY = NOT_SATISFIED
         ↓
 IMPULSE_EXTENSION
 ```
@@ -78,227 +77,60 @@ No `VALID_BOS` is created and the current structural lifecycle remains active.
 
 **Verdict: PASS / CLOSED.**
 
-### 3.4.3 — Canonical BOS Qualification Gate
+### 3.4.3 — Structural Qualification Consumption
 
-The BOS Qualification Gate is a **macro structural gate**. It does not define or create the candle-level Valid Pullback.
+BOS consumes the major structural retracement qualification established by `03_structural_lifecycle.md` Section 3.3.2.
 
-A candle-level Valid Pullback may exist without a 38.2% retracement. The 38.2% requirement enters only when determining whether the subsequent external swing break qualifies as `VALID_BOS`.
-
-#### Gate Condition 1 — IDM Liquidity Takeout
-
-The retracement must physically take the active, BOS-relevant Inducement liquidity.
-
-The takeout may occur by wick or body.
+The canonical qualification paths are defined **once**, at the Layer 3 Major Structure owner:
 
 ```text
-IDM_TAKEN = TRUE
-```
-
-IDM takeout alone is insufficient for BOS.
-
-#### Gate Condition 2 — Deep Retracement
-
-The governing Dealing Range retracement must reach at least **38.2%** Fibonacci depth.
-
-```text
-RETRACEMENT_DEPTH >= 0.382
-```
-
-This requirement is **not** a candle-level Valid Pullback requirement.
-
-It is a BOS Qualification Gate requirement only.
-
-#### Canonical BOS Predicate
-
-```text
-VALID_BOS
-    ⇔
-    IDM_TAKEN
-    AND
-    RETRACEMENT_DEPTH >= 0.382
-    AND
-    STRUCTURAL_SWING_BREAK
-```
-
-`STRUCTURAL_SWING_BREAK` may be a wick break or body break. Wick BOS is not required to wait for a later body close.
-
-#### Canonical Lifecycle Separation
-
-```text
-CANDLE-LEVEL VALID PULLBACK
-        ↓
-PULLBACK EXTREME
-        ↓
-IDM / LIQUIDITY REFERENCE
-        ↓
-IDM TAKEOUT
-        ↓
-DEEP RETRACEMENT >= 38.2%
-        ↓
-STRUCTURAL SWING BREAK
-        ↓
-VALID_BOS
-        ↓
-TRADING_RANGE_ROLLOVER
-```
-
-The following concepts must remain distinct:
-
-```text
-CANDLE-LEVEL VALID PULLBACK
-    ≠ DEEP RETRACEMENT
-    ≠ IDM TAKEOUT
-    ≠ VALID_BOS
-```
-
-#### Gate Outcome A — Both Conditions Satisfied
-
-```text
-IDM_TAKEN = TRUE
+STANDARD
+>= 3 OPPOSING CANDLES
 AND
-RETRACEMENT_DEPTH >= 0.382
-AND
-STRUCTURAL_SWING_BREAK
+RETRACEMENT DEPTH >= 38.2%
 ```
 
-Result:
-
-```text
-VALID_BOS
-    ↓
-TRADING_RANGE_ROLLOVER
-```
-
-The previous governing Trading Range is closed, the validated retracement extreme becomes the new Protected Structural Extreme, and the next Trading Range lifecycle begins.
-
-#### Gate Outcome B — Insufficient Retracement
-
-```text
-RETRACEMENT_DEPTH < 0.382
-```
-
-The later Confirmed Swing Point break is **not** a BOS, even if IDM liquidity was taken.
-
-```text
-NO_VALID_BOS
-    ↓
-IMPULSE_EXTENSION
-```
-
-There is no Trading Range rollover and no new Protected Structural Extreme created solely by this break.
-
-The existing governing range remains active and continues through the expansion.
-
-The retracement extreme remains the latest liquidity/IDM reference as applicable; it does not become a protected structural extreme through the rejected break.
-
-Diagnostic classification:
-
-```text
-INSUFFICIENT_RETRACEMENT
-```
-
-#### Gate Outcome C — IDM Not Taken
-
-```text
-IDM_TAKEN = FALSE
-```
-
-The later Confirmed Swing Point break is **not** a BOS, even if retracement depth is at least 38.2%.
-
-```text
-NO_VALID_BOS
-    ↓
-IMPULSE_EXTENSION
-```
-
-There is no Trading Range rollover and no new Protected Structural Extreme created solely by this break.
-
-The existing governing range remains active.
-
-Diagnostic classification:
-
-```text
-IDM_NOT_TAKEN
-```
-
-#### Gate Outcome D — Both Conditions Fail
-
-```text
-RETRACEMENT_DEPTH < 0.382
-AND
-IDM_TAKEN = FALSE
-```
-
-Result:
-
-```text
-NO_VALID_BOS
-    ↓
-IMPULSE_EXTENSION
-```
-
-Both diagnostic causes remain independently identifiable:
-
-```text
-INSUFFICIENT_RETRACEMENT
-AND
-IDM_NOT_TAKEN
-```
-
-### 3.4.4 — Non-Canonical 38.2% Exception Disqualification
-
-There is **no canonical exception** that permits a retracement below 38.2% to qualify a subsequent external break as `VALID_BOS` because of momentum, prior-extreme count, engulfment count, or any other secondary condition.
-
-The following rule is explicitly non-canonical:
-
-```text
-RETRACEMENT_DEPTH < 0.382
-AND
-PRIOR_EXTREMES_SWEPT >= 5
-    ⇒ VALID_BOS
-```
-
-Likewise, this is non-canonical:
+or:
 
 ```text
 EXACTLY 2 OPPOSING CANDLES
 AND
-HIGH_MOMENTUM
+LARGE / HIGH-MOMENTUM PRICE ACTION
 AND
-PRIOR_EXTREMES_SWEPT >= 5
-AND
-RETRACEMENT_DEPTH < 0.382
-    ⇒ VALID_BOS
+(
+    >= 5 PRIOR CANDLE EXTREMES SWEPT/ENGULFED
+    OR
+    RETRACEMENT DEPTH >= 38.2%
+)
 ```
 
-Therefore:
+There is no automatic one-candle exception.
+
+This BOS module does not create an alternative qualification rule or a second exception. It consumes the already-established structural result:
 
 ```text
-RETRACEMENT_DEPTH < 0.382
-    ⇒ BOS DISQUALIFIED
+STRUCTURAL_RETRACEMENT_QUALIFIED = TRUE
+        ↓
+BOS qualification may continue
 ```
 
-The `>=5 PRIOR CANDLE EXTREMES` condition must not bypass the canonical 38.2% BOS gate.
+If the structural qualification is not satisfied, the continuation break is classified as `IMPULSE_EXTENSION`, not `VALID_BOS`.
 
-Any future exception requires independent authoritative source validation before entering the canonical methodology.
+The qualitative `LARGE / HIGH-MOMENTUM` condition remains qualitative unless an authoritative source defines a quantitative threshold. No ATR, body-ratio, volatility, standard-deviation, or other invented threshold may be introduced here.
 
-### 3.4.5 — Canonical Break Classification
+### 3.4.4 — Canonical Break Classification
 
 The validated continuation pipeline is:
 
 ```text
 EXT_CONT_BREAK
         ↓
-BOS QUALIFICATION GATE
-        ├── INSUFFICIENT_RETRACEMENT
+RETRACEMENT QUALIFICATION GATE
+        ├── NOT_SATISFIED
         │       ↓
         │  IMPULSE_EXTENSION
         │
-        ├── IDM_NOT_TAKEN
-        │       ↓
-        │  IMPULSE_EXTENSION
-        │
-        └── BOTH CONDITIONS SATISFIED
+        └── SATISFIED
                 ↓
         BREAK PROVENANCE
                 ├── REAL
@@ -314,15 +146,13 @@ Therefore:
 
 ```text
 EXT_CONT_BREAK ≠ VALID_BOS
-IMPULSE_EXTENSION ≠ VALID_BOS
+IMPULSE_EXTENSION ≠ EVENT CLASS
 MAJOR_IDM_SWEEP ≠ VALID_BOS
 ```
 
-`IMPULSE_EXTENSION` is a lifecycle outcome of a failed BOS qualification, not a competing structural event class.
+The classification is based on structural level identity and provenance, not geometry alone.
 
-The rejection reason must remain diagnosable as `INSUFFICIENT_RETRACEMENT`, `IDM_NOT_TAKEN`, or both.
-
-### 3.4.6 — Body-Close BOS
+### 3.4.5 — Body-Close BOS
 
 Bullish:
 
@@ -338,13 +168,13 @@ Close_t < Confirmed_Swing_Low
 → VALID_BOS
 ```
 
-A body close is valid only after the canonical BOS Qualification Gate and all applicable structural/provenance prerequisites have passed.
+A body close is valid only after the retracement gate and all applicable structural/provenance prerequisites have passed.
 
 A body close alone cannot manufacture BOS.
 
 **Verdict: PASS / CLOSED.**
 
-### 3.4.7 — Wick-Break BOS
+### 3.4.6 — Wick-Break BOS
 
 Bullish:
 
@@ -368,11 +198,11 @@ Equality at the broken level is included in the wick-BOS path.
 
 Wick-BOS is immediate. It does not wait for a later body close, and a later candle cannot retroactively rewrite the event.
 
-The canonical exception is a Fallback Major IDM / Range-Boundary Proxy level, where the same wick geometry is classified as `MAJOR_IDM_SWEEP` rather than BOS.
+The only mandatory exception is a Fallback Major IDM / Range-Boundary Proxy level.
 
 **Verdict: PASS / CLOSED.**
 
-### 3.4.8 — Fallback Major IDM / Range-Boundary Proxy
+### 3.4.7 — Fallback Major IDM / Range-Boundary Proxy
 
 Fallback Major IDM is a temporary lifecycle-specific **external Range-Boundary Proxy** used after a confirmed macro event while the new expansion has not yet produced an independently qualified Real Major IDM from a post-break Structurally Valid Pullback.
 
@@ -444,7 +274,7 @@ The first SVP alone does not create Real Major IDM.
 
 **Verdict: PASS / CLOSED.**
 
-### 3.4.9 — Protected Structural Extreme Lock
+### 3.4.8 — Protected Structural Extreme Lock
 
 The corrective extreme remains dynamic until `VALID_BOS`.
 
@@ -476,7 +306,7 @@ A fallback proxy wick sweep does not lock the extreme.
 
 This module does not redefine the full Confirmed Swing / Protected Structural Extreme lifecycle; that ownership remains in `03_structural_lifecycle.md` Section 3.3.
 
-### 3.4.10 — Trading Range Rollover
+### 3.4.9 — Trading Range Rollover
 
 Only `VALID_BOS` closes the previous governing Trading Range and starts the next structural lifecycle.
 
@@ -495,14 +325,11 @@ The following do not independently roll the range:
 - Minor IDM sweep;
 - Major IDM sweep;
 - Fallback proxy sweep;
-- insufficient-retracement impulse extension;
-- IDM-not-taken impulse extension.
-
-A rejected continuation break does **not** destroy the existing Trading Range. The governing range remains active and may continue to expand through `IMPULSE_EXTENSION`.
+- insufficient-retracement impulse extension.
 
 Post-BOS retracement and liquidity collection belong to the new range lifecycle.
 
-### 3.4.11 — Post-BOS Fallback Initialization
+### 3.4.10 — Post-BOS Fallback Initialization
 
 After `VALID_BOS`, the new structural lifecycle enters the early-range phase in which a Fallback Major IDM / Range-Boundary Proxy may be active until a real post-BOS Major IDM is independently formed.
 
@@ -526,7 +353,7 @@ FALLBACK SUPERSEDED
 
 `NEW_SVP` does not itself equal `REAL_MAJOR_IDM`.
 
-### 3.4.12 — POI Lifecycle Boundary
+### 3.4.11 — POI Lifecycle Boundary
 
 BOS closes a Trading Range, but the structural engine does not directly delete POIs.
 
@@ -540,7 +367,7 @@ POI LIFECYCLE SUBSYSTEM
 
 Historical POI expiration is owned by the separate POI lifecycle/execution semantics. Structural BOS methodology must not silently redefine POI registry behavior.
 
-### 3.4.13 — Anti-Retroactive and Exclusivity Invariants
+### 3.4.12 — Anti-Retroactive and Exclusivity Invariants
 
 ```text
 MAJOR_IDM_SWEEP
@@ -561,23 +388,22 @@ MAJOR_IDM_SWEEP
 A past event classification is immutable.
 ```
 
-If `t1` is classified as `MAJOR_IDM_SWEEP` or `IMPULSE_EXTENSION`, later candles cannot rewrite `t1` as BOS. Each event is evaluated against the structural state and provenance active at its own event time.
+If `t1` is classified as `MAJOR_IDM_SWEEP`, later candles cannot rewrite `t1` as BOS. Each event is evaluated against the structural state and provenance active at its own event time.
 
-### 3.4.14 — BOS State-Transition Contract
+### 3.4.13 — BOS State-Transition Contract
 
 ```text
 EXT_CONT_BREAK
         ↓
-BOS QUALIFICATION GATE
-        ├── INSUFFICIENT_RETRACEMENT → IMPULSE_EXTENSION
-        ├── IDM_NOT_TAKEN          → IMPULSE_EXTENSION
-        ├── BOTH SATISFIED + REAL   → VALID_BOS
-        └── BOTH SATISFIED + FALLBACK → MAJOR_IDM_SWEEP
+classification
+        ├── IMPULSE_EXTENSION → current lifecycle remains active
+        ├── VALID_BOS         → POST_BOS / new range lifecycle
+        └── MAJOR_IDM_SWEEP   → current lifecycle remains active
 ```
 
-A failed BOS qualification does not roll the range. It leaves the current lifecycle active.
+The transition outcome is deterministic once event identity, retracement qualification, and level provenance are known.
 
-### 3.4.15 — BOS / CHoCH Boundary
+### 3.4.14 — BOS / CHoCH Boundary
 
 BOS and CHoCH are mutually exclusive structural outcomes for the same evaluated external event.
 
@@ -597,20 +423,18 @@ A fallback proxy event can produce `MAJOR_IDM_SWEEP`; it cannot be simultaneousl
 
 1. BOS requires an eligible Confirmed Structural Swing reference.
 2. Physical break does not equal `VALID_BOS`.
-3. BOS requires **both** IDM liquidity takeout and Deep Retracement >= 38.2% before the structural swing break can qualify as `VALID_BOS`.
-4. The 38.2% requirement belongs to the BOS Qualification Gate, not candle-level Valid Pullback creation.
-5. No automatic one-candle retracement exception exists.
-6. No prior-extreme-count or momentum exception may bypass the canonical 38.2% BOS minimum.
-7. `INSUFFICIENT_RETRACEMENT` and `IDM_NOT_TAKEN` are independent BOS disqualification causes and must remain diagnostically distinct.
-8. Wick-BOS is immediate and equality at the broken level is valid.
-9. Fallback Major IDM is a proxy, not Real Major IDM.
-10. Fallback wick breach is `MAJOR_IDM_SWEEP`, not BOS or CHoCH.
-11. `MAJOR_IDM_SWEEP` unlocks the Swing Confirmation Gate but does not automatically create a Confirmed Swing.
-12. `NEW_SVP` does not automatically create Real Major IDM.
-13. Real Major IDM supersedes the fallback proxy only through the validated post-break SVP → Verified Extreme → Eligibility → Real IDM lifecycle.
-14. Only `VALID_BOS` rolls the Trading Range and locks the Protected Structural Extreme.
-15. A failed BOS qualification leaves the governing Trading Range active; `IMPULSE_EXTENSION` does not destroy the range.
-16. BOS event classification is anti-retroactive.
-17. BOS mechanics are subordinate to `03_structural_lifecycle.md` and must not create a competing Layer 3 authority.
+3. Retracement sufficiency is a prerequisite to continuation BOS.
+4. No automatic one-candle retracement exception exists.
+5. Canonical default retracement depth is 38.2%.
+6. Exactly-two-candle qualification requires high-momentum action and either >=5 prior candle extremes swept/engulfed or retracement depth >=38.2%.
+7. Wick-BOS is immediate and equality at the broken level is valid.
+8. Fallback Major IDM is a proxy, not Real Major IDM.
+9. Fallback wick breach is `MAJOR_IDM_SWEEP`, not BOS or CHoCH.
+10. `MAJOR_IDM_SWEEP` unlocks the Swing Confirmation Gate but does not automatically create a Confirmed Swing.
+11. `NEW_SVP` does not automatically create Real Major IDM.
+12. Real Major IDM supersedes the fallback proxy only through the validated post-break SVP → Verified Extreme → Eligibility → Real IDM lifecycle.
+13. Only `VALID_BOS` rolls the Trading Range and locks the Protected Structural Extreme.
+14. BOS event classification is anti-retroactive.
+15. BOS mechanics are subordinate to `03_structural_lifecycle.md` and must not create a competing Layer 3 authority.
 
 **Section 3.4 verdict: PASS / CLOSED.**
