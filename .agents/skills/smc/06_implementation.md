@@ -622,6 +622,100 @@ The state machine must preserve provenance, prerequisite gates, and anti-retroac
 
 **Verdict: PASS / CLOSED.**
 
+## 45.1 Risk and scoring implementation mapping
+
+The mapper's concrete risk calculation is implementation-owned. The risk methodology document defines the semantic risk boundaries; this section records how the current engine represents those boundaries so documentation does not compete with executable behavior.
+
+### Weighted final score
+
+```
+Structure = 25%
+Setup     = 30%
+Location  = 20%
+Liquidity = 15%
+Risk      = 10%
+```
+
+Quality tiers:
+
+```
+HIGH   >= 70
+MEDIUM >= 55
+LOW    >= 40
+WATCH  < 40
+```
+
+### Current mapper risk-quality calculation
+
+The current implementation starts risk quality at 80 when a confirmed dealing range exists.
+
+Retracement-depth handling:
+
+```
+retracement > 100.0%
+    → depth_penalty = 80
+    → setup invalidated
+
+78.6% < retracement <= 90.0%
+    → depth_penalty = 25
+
+90.0% < retracement <= 100.0%
+    → depth_penalty = 45
+```
+
+Protected-level proximity handling:
+
+```
+invalidation distance < 10% of range
+    → prox_penalty = 25
+
+invalidation distance < 3% of range
+    → prox_penalty = 45
+```
+
+The implementation bounds these two penalty families with:
+
+```
+risk_penalty = max(depth_penalty, prox_penalty)
+risk_quality = 80 - risk_penalty
+```
+
+Additional directional risk adjustment:
+
+```
+bullish + PREMIUM → -15
+bearish + DISCOUNT → -15
+no BOS            → -10
+```
+
+Risk quality is bounded to 0–100.
+
+These are implementation facts, not additional structural SMC rules. They must not be used to manufacture IDM, swing confirmation, BOS, CHoCH, or any other structural state.
+
+### Liquidity-quality implementation values
+
+```
+Real Major IDM     = 80
+Fallback Major IDM = 40
+```
+
+These values are scoring outputs applied to already-established methodology state.
+
+### Boundary
+
+```
+05_risk.md
+    → semantic risk policy
+
+06_implementation.md
+    → executable scoring representation
+
+SMC_mapper.py
+    → actual calculation
+```
+
+Therefore, a future change to the executable risk formula must first be classified as an implementation change and must not silently become a new methodology rule.
+
 ## Implementation boundary
 
 The following must remain separate state objects or semantically equivalent state representations:
