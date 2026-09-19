@@ -1140,7 +1140,7 @@ def _process_outside_bar(state: EngineState, c: dict, i: int, candles: List[dict
 
     dbg(
         state, i,
-        f"OUTSIDE BAR — {'LOW→HIGH' if bullish_sequence else 'HIGH→LOW'}; "
+        f"OUTSIDE BAR — {'LOW->HIGH' if bullish_sequence else 'HIGH->LOW'}; "
         "single candle event; structural confirmation deferred.",
         c["time"],
     )
@@ -1547,7 +1547,7 @@ def print_detail(r: MAPPERResult, state: Optional[EngineState] = None) -> None:
 def _make_error_result(symbol: str, error: str) -> MAPPERResult:
     return MAPPERResult(
         symbol=symbol, timeframe=INTERVAL, current_price=0,
-        structural_bias="NONE", structure_state="ERROR",
+        structural_bias="NONE", bias_source="NONE", structure_state="ERROR",
         protected_high=None, protected_low=None,
         major_idm=None, major_idm_status="NONE",
         minor_idm=None, minor_idm_status="NONE",
@@ -1563,6 +1563,12 @@ def _make_error_result(symbol: str, error: str) -> MAPPERResult:
 
 
 def main():
+    import sys
+    if hasattr(sys.stdout, "reconfigure"):
+        try:
+            sys.stdout.reconfigure(errors="replace")
+        except Exception:
+            pass
     import SMC_mapper as _self
     parser = build_arg_parser()
     args = parser.parse_args()

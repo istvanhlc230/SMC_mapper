@@ -171,3 +171,76 @@ def test_existing_scanner_behavior_preserved():
     assert state.protected_low is not None
     assert state.range_has_bos is True
     assert state.trend == 'BULLISH'
+
+
+def test_main_works_without_config_json(monkeypatch):
+    """Verify main() executes end-to-end when config.json is absent."""
+    real_isfile = os.path.isfile
+    monkeypatch.setattr(os.path, 'isfile', lambda p: False if 'config.json' in str(p) else real_isfile(p))
+    candles = _make_candles()
+    with patch('SMC_mapper.fetch_candles', return_value=candles) as mock_fetch, \
+         patch('sys.argv', ['SMC_mapper.py', 'SPY']):
+        eng.main()
+    assert mock_fetch.call_count == 1
+    req = mock_fetch.call_args[0][1]
+    assert req.symbol == 'SPY'
+
+
+def test_main_all_cli_options_combined():
+    """Verify all optional arguments passed together are correctly parsed and applied."""
+    candles = _make_candles()
+    with patch('SMC_mapper.auto_detect_provider', return_value=_MOCK_PROVIDER) as mock_detect, \
+         patch('SMC_mapper.fetch_candles', return_value=candles) as mock_fetch, \
+         patch('sys.argv', ['SMC_mapper.py', 'AMD', '--interval', '1h', '--bars', '250', '--history', '15', '--no-debug', '--provider', 'demo']):
+        eng.main()
+
+    assert eng.INTERVAL == '1h'
+    assert eng.BAR_COUNT == 250
+    assert eng.HISTORY_SIZE == 15
+    assert eng.DEBUG is False
+    args, kwargs = mock_detect.call_args
+    preferred = kwargs.get('preferred') if kwargs else (args[0] if args else None)
+    assert preferred == 'demo'
+    req = mock_fetch.call_args[0][1]
+    assert req.symbol == 'AMD'
+    assert req.interval == '1h'
+    assert req.bar_count == 250
+
+
+def test_main_provider_error_handled():
+    """Verify that auto_detect_provider failure does not crash the CLI with an unhandled exception."""
+    with patch('SMC_mapper.auto_detect_provider', side_effect=RuntimeError("Provider missing")), \
+         patch('sys.argv', ['SMC_mapper.py', 'AAPL']):
+        eng.main()
+
+
+def test_main_fetch_exception_handled():
+    """Verify that fetch errors produce a clean error result instead of unhandled crash."""
+    with patch('SMC_mapper.auto_detect_provider', return_value=_MOCK_PROVIDER), \
+         patch('SMC_mapper.fetch_candles', side_effect=RuntimeError("API timeout")), \
+         patch('sys.argv', ['SMC_mapper.py', 'AAPL']):
+        eng.main()
+
+
+def test_main_insufficient_structure_handled():
+    """Verify that insufficient structure produces an error result cleanly."""
+    with patch('SMC_mapper.auto_detect_provider', return_value=_MOCK_PROVIDER), \
+         patch('SMC_mapper.fetch_candles', return_value=[]), \
+         patch('SMC_mapper.run_true_smc', return_value=(None, None, None)), \
+         patch('sys.argv', ['SMC_mapper.py', 'AAPL']):
+        eng.main()
+
+
+def test_main_subprocess_demo_end_to_end():
+    """Verify full CLI run as a real subprocess without mocks using the demo provider."""
+    result = subprocess.run(
+        [sys.executable, 'SMC_mapper.py', 'NVDA', '--provider', 'demo', '--bars', '50'],
+        capture_output=True, text=True, cwd=_WORKSPACE,
+    )
+    assert result.returncode == 0, f"Process failed: {result.stderr}"
+    assert "Provider: demo" in result.stdout
+    assert "Symbol: NVDA" in result.stdout
+    assert "TRUE SMC MAPPER" in result.stdout
+    assert "SCAN COMPLETE" in result.stdout
+
+
