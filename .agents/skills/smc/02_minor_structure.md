@@ -2,13 +2,13 @@
 
 **Role:** Canonical Layer 2 Minor Structure of the True SMC methodology.
 
-**Authority:** Authoritative for candle-level pullback qualification, structural retracement qualification, Structurally Valid Pullback, liquidity/IDM foundations, active pullback state, and Minor IDM semantics.
+**Authority:** Authoritative for candle-level pullback qualification, verified pullback extremes, liquidity/IDM foundations, active pullback state, and Minor IDM semantics.
 
-Layer 3 Structural Lifecycle rules are owned by `03_structural_lifecycle.md`.
+Major structural retracement qualification is owned by `03_structural_lifecycle.md` Section 3.3.2. Layer 2 consumes that qualification; it does not define it.
 
 ## 1. Methodology boundary
 
-Layer 2 consumes Layer 1 candle relationships and produces validated structural inputs for the Layer 3 lifecycle.
+Layer 2 consumes Layer 1 candle relationships and produces validated inputs for the Layer 3 lifecycle.
 
 ```text
 RAW OHLC
@@ -17,17 +17,13 @@ CANDLE RELATIONSHIPS
   ↓
 CANDLE-LEVEL VALID PULLBACK
   ↓
-MAJOR STRUCTURAL RETRACEMENT QUALIFICATION
+VERIFIED PULLBACK EXTREME
+  ↓
+LAYER 3 — MAJOR STRUCTURAL RETRACEMENT QUALIFICATION
   ↓
 STRUCTURALLY VALID PULLBACK
   ↓
-VERIFIED PULLBACK EXTREME
-  ↓
-BSL / SSL LIQUIDITY
-  ↓
-ACTIVE PULLBACK POINTER
-  ↓
-IDM ELIGIBILITY
+LIQUIDITY / IDM ELIGIBILITY
   ↓
 ACTIVE / MINOR IDM
   ↓
@@ -71,7 +67,7 @@ Candle-Level Valid Pullback
   ↓
 Verified Pullback Extreme
   ↓
-Structural Qualification
+Layer 3 Structural Qualification
   ↓
 Structurally Valid Pullback
   ↓
@@ -83,16 +79,6 @@ IDM Eligibility
 Major structural retracement qualification is **not owned by Layer 2 Minor Structure**. It is a Layer 3 Major Structure rule owned by `03_structural_lifecycle.md`.
 
 Layer 2 may produce the candle-level Valid Pullback and verified pullback extreme that become inputs to the Layer 3 structural qualification stage, but Layer 2 must not redefine the major-structure qualification criteria.
-
-```text
-CANDLE-LEVEL VALID PULLBACK
-        ↓
-VERIFIED PULLBACK EXTREME
-        ↓
-LAYER 3 — MAJOR MAJOR STRUCTURAL RETRACEMENT QUALIFICATION
-        ↓
-STRUCTURALLY VALID PULLBACK
-```
 
 The canonical Layer 3 qualification paths are:
 
@@ -119,11 +105,11 @@ AND
 
 There is no automatic one-candle exception.
 
-This document does not redefine or duplicate those rules. See `03_structural_lifecycle.md` Section 3.3.2 for the canonical semantic definition and `methodology_parameters.md` for numeric/configurable values.
+This section is a boundary reference, not a second semantic definition. The canonical semantic definition is `03_structural_lifecycle.md` Section 3.3.2; numeric/configurable ownership is in `methodology_parameters.md`.
 
 ## 5. Structurally Valid Pullback
 
-A candle-level Valid Pullback becomes a Structurally Valid Pullback only after structural retracement qualification.
+A candle-level Valid Pullback becomes a Structurally Valid Pullback only after Layer 3 structural retracement qualification.
 
 Only a Structurally Valid Pullback can become the basis for active/minor IDM.
 
@@ -132,7 +118,7 @@ A candle-level pullback must never directly create IDM.
 ```text
 CANDLE-LEVEL VALID PULLBACK
         ↓
-RETRACEMENT QUALIFICATION
+LAYER 3 STRUCTURAL QUALIFICATION
         ↓
 STRUCTURALLY VALID PULLBACK
 ```
@@ -157,6 +143,8 @@ Liquidity is a market-state/reference concept. It is not automatically a structu
 The active structural leg must track one active pullback pointer: the most recent Structurally Valid Pullback.
 
 If a newer Structurally Valid Pullback forms before the previous active target is swept, immediately replace the active pointer with the newer pullback.
+
+Do not keep multiple competing minor IDM targets active simultaneously.
 
 Do not keep multiple competing minor IDM targets active simultaneously.
 
@@ -258,15 +246,13 @@ CANDLE RELATIONSHIPS
         ↓
 CANDLE-LEVEL VALID PULLBACK
         ↓
-RETRACEMENT QUALIFICATION
+VERIFIED PULLBACK EXTREME
+        ↓
+LAYER 3 STRUCTURAL QUALIFICATION
         ↓
 STRUCTURALLY VALID PULLBACK
         ↓
-VERIFIED PULLBACK EXTREME
-        ↓
 LIQUIDITY
-        ↓
-ACTIVE PULLBACK POINTER
         ↓
 IDM ELIGIBILITY
         ↓
@@ -294,7 +280,7 @@ See `03_structural_lifecycle.md`.
 
 Numeric methodology parameters are defined in `methodology_parameters.md`.
 
-This document defines the semantic rule that retracement qualification is required and that the validated exception exists. The parameter document owns the configurable numeric values.
+This document defines the semantic boundary that retracement qualification is required and that the validated exception exists. The parameter document owns the configurable numeric values.
 
 ```text
 SEMANTIC RULE
