@@ -77,21 +77,20 @@ No `VALID_BOS` is created and the current structural lifecycle remains active.
 
 **Verdict: PASS / CLOSED.**
 
-### 3.4.3 — Retracement Qualification Gate
+### 3.4.3 — Structural Qualification Consumption
 
-The continuation-break classification is gated by the canonical retracement qualification rules.
+BOS consumes the major structural retracement qualification established by `03_structural_lifecycle.md` Section 3.3.2.
 
-**Standard path**
+The canonical qualification paths are defined **once**, at the Layer 3 Major Structure owner:
 
 ```text
->= 3 opposing candles
+STANDARD
+>= 3 OPPOSING CANDLES
 AND
-retracement depth >= configured minimum
+RETRACEMENT DEPTH >= 38.2%
 ```
 
-Canonical default minimum depth: **38.2%**.
-
-**Exactly-two-candle exception**
+or:
 
 ```text
 EXACTLY 2 OPPOSING CANDLES
@@ -107,21 +106,17 @@ AND
 
 There is no automatic one-candle exception.
 
-Canonical qualification matrix:
+This BOS module does not create an alternative qualification rule or a second exception. It consumes the already-established structural result:
 
-| Opposing candles | Retracement depth | Momentum / sweep condition | Result |
-|---|---|---|---|
-| 0 | any | any | INSUFFICIENT → IMPULSE_EXTENSION |
-| 1 | any | any | INSUFFICIENT → IMPULSE_EXTENSION |
-| exactly 2 | <38.2% | not qualified | INSUFFICIENT → IMPULSE_EXTENSION |
-| exactly 2 | <38.2% | high momentum + >=5 extremes swept/engulfed | QUALIFIED |
-| exactly 2 | >=38.2% | high momentum + any sweep count | QUALIFIED |
-| >=3 | <38.2% | any | INSUFFICIENT → IMPULSE_EXTENSION |
-| >=3 | >=38.2% | any | QUALIFIED |
+```text
+STRUCTURAL_RETRACEMENT_QUALIFIED = TRUE
+        ↓
+BOS qualification may continue
+```
 
-The qualitative `LARGE / HIGH-MOMENTUM` condition must not be replaced by invented ATR, body-ratio, volatility, standard-deviation, or other numeric thresholds unless separately validated and parameterized.
+If the structural qualification is not satisfied, the continuation break is classified as `IMPULSE_EXTENSION`, not `VALID_BOS`.
 
-**Verdict: PASS / CLOSED.**
+The qualitative `LARGE / HIGH-MOMENTUM` condition remains qualitative unless an authoritative source defines a quantitative threshold. No ATR, body-ratio, volatility, standard-deviation, or other invented threshold may be introduced here.
 
 ### 3.4.4 — Canonical Break Classification
 
