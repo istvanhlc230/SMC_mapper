@@ -2,7 +2,7 @@
 
 **Role:** Numeric and configurable methodology parameters.
 
-**Authority boundary:** This document owns numeric/configurable values only. It does not redefine the semantic identity or lifecycle of any methodology object. The semantic rules that consume these parameters remain authoritative in `true_smc_canonical.md` and, for Layer 3 objects, `true_smc_structural_lifecycle.md`.
+**Authority boundary:** This document owns numeric/configurable values only. It does not redefine the semantic identity or lifecycle of any methodology object. The semantic rules that consume these parameters remain authoritative in their current semantic-owner documents: `01_candle_level_foundation.md`, `02_minor_structure.md`, and `03_structural_lifecycle.md` with its subordinate BOS/CHoCH modules.
 
 ## 9. Structural retracement parameters
 
@@ -17,7 +17,7 @@ The implementation may expose `BOS_MIN_RETRACEMENT_PCT` with canonical default `
 
 ### 9.2 Exactly-two-candle exception parameters
 
-The semantic qualification rule for the exactly-two-candle exception is defined by the canonical methodology. This section owns only its numeric constraints:
+The semantic qualification rule for the exactly-two-candle major-structure exception is defined by `03_structural_lifecycle.md` Section 3.3.2. This document owns only its numeric constraints. This section owns only its numeric constraints:
 
 - the exception applies to **exactly 2 opposing candles**;
 - the prior-extreme sweep/engulfment threshold is **5 prior candle extremes**;
@@ -28,6 +28,18 @@ The qualitative requirement for `LARGE / HIGH-MOMENTUM PRICE ACTION` has no auth
 There is no numeric parameter that authorizes a one-candle exception.
 
 Do not invent ATR, body-ratio, volatility, or standard-deviation thresholds and present them as canonical methodology.
+
+## 10. Risk scoring boundary
+
+Concrete risk-quality penalties, weighted-score arithmetic, and quality-tier evaluation are implementation-owned by `SMC_mapper.py` and represented in `06_implementation.md`. This parameter document does not own those calculations and must not duplicate them as methodology rules.
+
+```text
+RISK SCORE PARAMETER
+    ≠
+STRUCTURAL QUALIFICATION
+```
+
+No scoring threshold may manufacture or validate IDM, Confirmed Swing, Protected Structural Extreme, BOS, CHoCH, or Trading Range state.
 
 ## Parameter boundaries
 
@@ -45,4 +57,4 @@ Future quantitative thresholds may be configurable, but they must remain explici
 
 ## 43. Obsolete parameter
 
-The historical sub-38.2% Fibonacci bootstrap variant is obsolete and is governed by `deprecated.md`. It must not be retained as a scoring, compatibility, fixture, logging, state-name, or entry/setup classification.
+Any historical sub-38.2% Fibonacci bootstrap wording is obsolete and must not be retained as an active scoring, compatibility, fixture, logging, state-name, or entry/setup classification.
