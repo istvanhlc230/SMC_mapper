@@ -303,11 +303,11 @@ def _load_env_file():
                     os.environ[k] = v
 
 
-def auto_detect_provider() -> ProviderConfig:
-    """Auto-detect provider from config.json, environment variables, or default to demo provider."""
+def auto_detect_provider(preferred: str = "") -> ProviderConfig:
+    """Auto-detect provider from preferred name, config.json, environment variables, or default to demo."""
     cfg_file = _load_config_file()
     api_keys = cfg_file.get("api_keys", {})
-    chosen_provider = cfg_file.get("provider", "").lower()
+    chosen_provider = preferred.lower() if preferred else cfg_file.get("provider", "").lower()
 
     # 1. Check config.json settings
     if chosen_provider == "twelvedata":
