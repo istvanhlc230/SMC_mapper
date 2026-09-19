@@ -80,6 +80,11 @@ Major structural retracement qualification is **not owned by Layer 2 Minor Struc
 
 Layer 2 may produce the candle-level Valid Pullback and verified pullback extreme that become inputs to the Layer 3 structural qualification stage, but Layer 2 must not redefine the major-structure qualification criteria.
 
+An **opposing candle** is defined strictly by candle direction / body direction relative to the active trend / dominant impulse:
+- In a bullish trend (dominant upward impulse): an opposing candle is a bearish candle (`Close < Open`).
+- In a bearish trend (dominant downward impulse): an opposing candle is a bullish candle (`Close > Open`).
+Opposing candles are NOT defined by displacement, directional movement, higher/lower extremes, or candle ranges. Candle color / body direction is the definitive criterion.
+
 The canonical Layer 3 qualification paths are:
 
 ```text
@@ -94,16 +99,12 @@ or:
 ```text
 EXACTLY 2 OPPOSING CANDLES
 AND
-LARGE / HIGH-MOMENTUM PRICE ACTION
-AND
-(
-    >= 5 PRIOR CANDLE EXTREMES SWEPT/ENGULFED
-    OR
-    RETRACEMENT DEPTH >= 38.2%
-)
+RETRACEMENT DEPTH >= 38.2%
 ```
 
-There is no automatic one-candle exception.
+The legacy rule allowing ">= 5 prior candle extremes swept/engulfed" as an alternative to 38.2% depth is **NON-CANONICAL AND REMOVED**. No heuristic, candle count sweep, or safe mode may substitute for the mandatory 38.2% depth requirement.
+
+There is no automatic one-candle exception: 1 opposing candle is NEVER sufficient for macro BOS retracement qualification under any circumstances.
 
 This section is a boundary reference, not a second semantic definition. The canonical semantic definition is `03_structural_lifecycle.md` Section 3.3.2; numeric/configurable ownership is in `methodology_parameters.md`.
 
@@ -219,19 +220,28 @@ Minor IDM ≠ BOS
 Minor IDM ≠ CHoCH
 ```
 
-## 11. Minor IDM Takeout Threshold
+## 11. Minor IDM Takeout & Swing Confirmation
 
 A qualified active/minor IDM does not require a candle body close to be breached or taken out.
 
-Wick and body interaction are both valid for the IDM liquidity takeout.
+Wick and body interaction are both valid for the IDM liquidity takeout (`IDM_TAKEN = TRUE`).
 
 ```text
 Qualified IDM
-→ Wick or Body Takeout
-→ IDM Liquidity Sweep
+→ Wick or Body Takeout (IDM_TAKEN = TRUE)
+→ Provisional Expansion Extreme becomes Confirmed Swing
 ```
 
 A body close beyond the IDM is not required.
+
+A provisional Expansion Extreme becomes a Confirmed Swing when and only when the active IDM is taken out (`IDM_TAKEN = TRUE`). Wick or body penetration of the IDM level is sufficient to trigger IDM takeout.
+
+IDM takeout confirms the swing ONLY:
+- It does NOT create BOS.
+- It does NOT create CHoCH.
+- It does NOT roll the dealing range.
+
+`Confirmed Swing ≠ VALID_BOS`. Having a Confirmed Swing is a necessary prerequisite for BOS, not BOS itself. If IDM is taken out (swing confirmed) but retracement depth is `< 38.2%`, any subsequent break of the Confirmed Swing is classified as `IMPULSE_EXTENSION`, NOT `VALID_BOS`. The dealing range remains open, no new protected extreme is established, and no range rollover occurs.
 
 A wick or body interaction with an arbitrary minor structural level, liquidity node, or local extreme does not independently create or activate an IDM. IDM identity must first be established through the eligibility rules above.
 

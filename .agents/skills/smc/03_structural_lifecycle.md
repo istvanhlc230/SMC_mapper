@@ -121,15 +121,21 @@ A Protected Structural Extreme is a later macro-state created and locked through
 ```text
 QUALIFIED IDM
     ↓
-IDM SWEEP
+IDM SWEEP (Wick or Body: IDM_TAKEN = TRUE)
     ↓
 SWING CONFIRMATION GATE
     ↓
-CONFIRMED SWING
+CONFIRMED SWING (Swing confirmed ONLY; not BOS, not CHoCH, no range rollover)
     ↓
-VALID_BOS
-    ↓
-PROTECTED STRUCTURAL EXTREME
+RETRACEMENT SUFFICIENCY GATE (Depth >= 38.2% & candle count)
+    ├─ NOT SATISFIED (Depth < 38.2%) → Break of Swing is IMPULSE_EXTENSION (Range remains open)
+    └─ SATISFIED (Depth >= 38.2%)
+            ↓
+       STRUCTURAL BREAK
+            ↓
+        VALID_BOS
+            ↓
+PROTECTED STRUCTURAL EXTREME LOCKED & RANGE ROLLS
 ```
 
 **Verdict: PASS / CLOSED.**
@@ -146,9 +152,16 @@ CONFIRMED SWING POINT
 PROTECTED STRUCTURAL EXTREME
 ```
 
-A **Confirmed Swing Point** is established through the canonical Swing Confirmation Gate after the required qualified IDM liquidity takeout and all other applicable confirmation prerequisites.
+A provisional Expansion Extreme becomes a **Confirmed Swing Point** when and only when the active IDM is taken out (`IDM_TAKEN = TRUE`). Wick or body penetration of the IDM level is sufficient to trigger IDM takeout; a candle body close beyond IDM is NOT required.
 
 A Confirmed Swing records the current expansion extreme and serves as the external structural landmark for the active lifecycle. It is not automatically protected.
+
+Crucially:
+- IDM takeout confirms the swing ONLY.
+- IDM takeout does NOT create BOS.
+- IDM takeout does NOT create CHoCH.
+- IDM takeout does NOT roll the dealing range.
+- `Confirmed Swing ≠ VALID_BOS`. Having a Confirmed Swing is a necessary prerequisite for BOS, NOT BOS itself.
 
 A **Protected Structural Extreme** is a later lifecycle state created by valid BOS. It becomes the governing trend anchor for the resulting structural lifecycle.
 
@@ -172,12 +185,34 @@ E_retrace(t) = max(High_k)
 
 The tracked extreme must not be frozen prematurely at a local pivot, IDM-sweeping candle, or internal microstructure point.
 
+**Opposing Candle Definition**
+
+An "opposing candle" is defined strictly by candle direction / body direction relative to the active trend / dominant impulse:
+- In a bullish trend (dominant upward impulse): an opposing candle is a bearish candle (`Close < Open`).
+- In a bearish trend (dominant downward impulse): an opposing candle is a bullish candle (`Close > Open`).
+
+Do NOT define opposing candles by displacement, directional movement, higher/lower extremes, or candle ranges. Candle color / body direction is the definitive criterion.
+
+**Mandatory Macro BOS Retracement Gate (38.2%)**
+
+The 38.2% retracement threshold is anchored strictly to the active Major Structure Dealing Range:
+- **Bullish trend**: Dealing range from Protected Swing Low ($ProtectedLow$, impulse origin) to provisional Expansion High ($ExpansionHigh$, Confirmed Swing):
+  $$\text{Retracement depth } R = \frac{ExpansionHigh - RetracementLow}{ExpansionHigh - ProtectedLow}$$
+  $$\text{Threshold level } P_{38.2} = ExpansionHigh - 0.382 \times (ExpansionHigh - ProtectedLow)$$
+  $$\text{Condition: } RetracementLow \le P_{38.2} \iff R \ge 0.382$$
+- **Bearish trend**: Dealing range from Protected Swing High ($ProtectedHigh$, impulse origin) to provisional Expansion Low ($ExpansionLow$, Confirmed Swing):
+  $$\text{Retracement depth } R = \frac{RetracementHigh - ExpansionLow}{ProtectedHigh - ExpansionLow}$$
+  $$\text{Threshold level } P_{38.2} = ExpansionLow + 0.382 \times (ProtectedHigh - ExpansionLow)$$
+  $$\text{Condition: } RetracementHigh \ge P_{38.2} \iff R \ge 0.382$$
+
+Retracement depth $\ge 38.2\%$ is a **MANDATORY** gate for macro BOS. Without $\ge 38.2\%$ depth ($R \ge 0.382$), NO break of the expansion extreme can be classified as `VALID_BOS`.
+
 **Standard qualification path**
 
 ```text
->= 3 opposing candles
+>= 3 OPPOSING CANDLES
 AND
-RETRACEMENT DEPTH >= 38.2%
+RETRACEMENT DEPTH >= 38.2% (R >= 0.382)
 ```
 
 The canonical minimum depth is **38.2%**. Any configurable exposure of this numeric threshold belongs to `methodology_parameters.md` and must not alter the semantic ownership of this rule.
@@ -187,18 +222,27 @@ The canonical minimum depth is **38.2%**. Any configurable exposure of this nume
 ```text
 EXACTLY 2 OPPOSING CANDLES
 AND
-LARGE / HIGH-MOMENTUM PRICE ACTION
-AND
-(
-    >= 5 PRIOR CANDLE EXTREMES SWEPT/ENGULFED
-    OR
-    RETRACEMENT DEPTH >= 38.2%
-)
+RETRACEMENT DEPTH >= 38.2% (R >= 0.382)
 ```
 
-There is no automatic one-candle exception.
+**Removal of ">= 5 prior candle extremes" exception:**
+The legacy rule stating ">= 5 prior candle extremes swept/engulfed" as an alternative to 38.2% retracement depth is **NON-CANONICAL AND REMOVED**. No heuristic, candle count sweep, or safe mode may substitute for the 38.2% depth requirement in macro BOS qualification.
 
-If retracement sufficiency is not satisfied, the attempted continuation remains `IMPULSE_EXTENSION`; it does not create a new Protected Structural Extreme or roll the Trading Range.
+**Candle Count Rule:**
+1 opposing candle is NEVER sufficient for macro BOS retracement qualification under any circumstances. There is NO 1-candle exception.
+
+**Confirmed Swing ≠ VALID_BOS & IMPULSE_EXTENSION:**
+VALID_BOS requires ALL of:
+1. `IDM_TAKEN = TRUE` (swing is confirmed)
+2. `RETRACEMENT_DEPTH >= 38.2%` (retracement sufficiency satisfied)
+3. Structural break of the Confirmed Swing (wick breach sufficient per canonical rule)
+
+If IDM is taken out (`IDM_TAKEN = TRUE`), the provisional expansion extreme becomes a Confirmed Swing. However, if retracement depth is `< 38.2%` ($R < 0.382$):
+- The swing remains confirmed.
+- Retracement sufficiency is NOT satisfied.
+- Any subsequent break of the Confirmed Swing is classified as `IMPULSE_EXTENSION`, NOT `VALID_BOS`.
+- The dealing range remains OPEN (does not roll over).
+- No new Protected Structural Extreme is established.
 
 The detailed BOS break-classification mechanics are owned by `03_structural_lifecycle_bos.md`. That module consumes the structural qualification defined here and must not redefine its semantic criteria.
 
@@ -440,7 +484,7 @@ BOS and CHoCH are mutually exclusive outcomes for the same evaluated external ev
 6. Retracement sufficiency is mandatory before continuation BOS.
 7. There is no automatic one-candle retracement exception.
 8. Canonical default retracement depth is 38.2%.
-9. Exactly-two-candle qualification requires high-momentum action and either >=5 prior candle extremes swept/engulfed or retracement depth >=38.2%.
+9. Exactly-two-candle qualification requires retracement depth >= 38.2%. The ">= 5 prior candle extremes swept/engulfed" alternative is non-canonical and removed.
 10. Physical external break does not automatically equal BOS or CHoCH.
 11. `MAJOR_IDM_SWEEP` is not BOS and not CHoCH.
 12. Fallback Major IDM is an external range-boundary proxy, not Real Major IDM or arbitrary internal liquidity.

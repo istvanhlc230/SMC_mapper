@@ -95,16 +95,10 @@ or:
 ```text
 EXACTLY 2 OPPOSING CANDLES
 AND
-LARGE / HIGH-MOMENTUM PRICE ACTION
-AND
-(
-    >= 5 PRIOR CANDLE EXTREMES SWEPT/ENGULFED
-    OR
-    RETRACEMENT DEPTH >= 38.2%
-)
+RETRACEMENT DEPTH >= 38.2%
 ```
 
-There is no automatic one-candle exception.
+The legacy ">= 5 prior candle extremes swept/engulfed" rule is **NON-CANONICAL AND REMOVED**. Opposing candles are defined strictly by candle direction / body direction (`Close < Open` for bullish, `Close > Open` for bearish). There is no automatic one-candle exception; 1 opposing candle is NEVER sufficient for macro BOS qualification under any circumstances.
 
 This BOS module does not create an alternative qualification rule or a second exception. It consumes the already-established structural result:
 
@@ -116,7 +110,6 @@ BOS qualification may continue
 
 If the structural qualification is not satisfied, the continuation break is classified as `IMPULSE_EXTENSION`, not `VALID_BOS`.
 
-The qualitative `LARGE / HIGH-MOMENTUM` condition remains qualitative unless an authoritative source defines a quantitative threshold. No ATR, body-ratio, volatility, standard-deviation, or other invented threshold may be introduced here.
 
 ### 3.4.4 — Canonical Break Classification
 
@@ -126,21 +119,37 @@ The validated continuation pipeline is:
 EXT_CONT_BREAK
         ↓
 RETRACEMENT QUALIFICATION GATE
-        ├── NOT_SATISFIED
+        ├── NOT_SATISFIED (R < 38.2% or < 3 opposing candles without 2-candle exception)
         │       ↓
-        │  IMPULSE_EXTENSION
+        │  IMPULSE_EXTENSION (Dealing range remains open, no new protected extreme)
         │
-        └── SATISFIED
+        └── SATISFIED (IDM_TAKEN = TRUE AND R >= 38.2% AND Opposing Candles Satisfied)
                 ↓
         BREAK PROVENANCE
                 ├── REAL
                 │      ↓
-                │  VALID_BOS
+                │  VALID_BOS (Dealing range rolls over, Protected Structural Extreme locks)
                 │
                 └── FALLBACK
                        ↓
                   MAJOR_IDM_SWEEP
 ```
+
+### 3.4.4.1 — Confirmed Swing ≠ VALID_BOS
+
+Having a Confirmed Swing via IDM takeout (`IDM_TAKEN = TRUE`) is a prerequisite for BOS, NOT BOS itself.
+
+`VALID_BOS` requires ALL of:
+1. `IDM_TAKEN = TRUE` (swing is confirmed via wick or body takeout)
+2. `RETRACEMENT_DEPTH >= 38.2%` (retracement sufficiency satisfied anchored to active dealing range)
+3. Structural break of the Confirmed Swing (wick breach sufficient)
+
+If IDM is taken out (`IDM_TAKEN = TRUE`) but retracement depth `< 38.2%`:
+- The swing remains confirmed.
+- Retracement sufficiency is NOT satisfied.
+- Any subsequent break of the Confirmed Swing is classified as `IMPULSE_EXTENSION`, NOT `VALID_BOS`.
+- The dealing range remains OPEN (does not roll over).
+- No new protected extreme is established.
 
 Therefore:
 
@@ -426,7 +435,7 @@ A fallback proxy event can produce `MAJOR_IDM_SWEEP`; it cannot be simultaneousl
 3. Retracement sufficiency is a prerequisite to continuation BOS.
 4. No automatic one-candle retracement exception exists.
 5. Canonical default retracement depth is 38.2%.
-6. Exactly-two-candle qualification requires high-momentum action and either >=5 prior candle extremes swept/engulfed or retracement depth >=38.2%.
+6. Exactly-two-candle qualification requires retracement depth >= 38.2%. The ">= 5 prior candle extremes swept/engulfed" alternative is non-canonical and removed.
 7. Wick-BOS is immediate and equality at the broken level is valid.
 8. Fallback Major IDM is a proxy, not Real Major IDM.
 9. Fallback wick breach is `MAJOR_IDM_SWEEP`, not BOS or CHoCH.

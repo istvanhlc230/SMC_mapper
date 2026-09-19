@@ -308,7 +308,7 @@ FIRST_POST_CHOCH_SVP ≠ FIRST_POST_CHOCH_MINOR_IDM
 FALLBACK_MAJOR_IDM ≠ REAL_MAJOR_IDM
 ```
 
-A qualifying sweep of the applicable IDM lineage unlocks the Confirmation Gate. `CONFIRMATION GATE UNLOCKED` is a process condition, not a new state enum such as `CONFIRMED_RANGE_PENDING`.
+A qualifying sweep of the applicable IDM lineage unlocks the Confirmation Gate. IDM takeout confirms the provisional swing only (`IDM_TAKEN = TRUE`); it does NOT create BOS, does NOT create CHoCH, and does NOT roll the dealing range (`Confirmed Swing ≠ VALID_BOS`). `CONFIRMATION GATE UNLOCKED` is a process condition, not a new state enum such as `CONFIRMED_RANGE_PENDING`.
 
 ```text
 CONFIRMATION_LOCKED
@@ -389,6 +389,10 @@ A later candle may advance the lifecycle but may not retroactively rewrite the e
 34. A liquidity `SWEPT` event is misclassified as a structural `BROKEN` event.
 35. `CONFIRMATION GATE UNLOCKED` is introduced as a new lifecycle state enum.
 36. `FALLBACK_MAJOR_IDM + BODY CLOSE` is treated as automatic `CHoCH_CONFIRMED`.
+37. Confirmed Swing is treated as automatic `VALID_BOS` without retracement sufficiency (>= 38.2%).
+38. Break of Confirmed Swing is classified as `VALID_BOS` when retracement depth < 38.2% (must be `IMPULSE_EXTENSION`).
+39. ">= 5 prior candle extremes swept/engulfed" or any heuristic/safe mode is used to substitute for mandatory 38.2% depth.
+40. A 1-candle retracement is permitted to qualify for macro BOS under any circumstances.
 
 ## 48. Testing requirements
 
@@ -405,11 +409,11 @@ Regression tests must cover:
 
 ### Structural qualification
 - standard >=3-candle qualification;
-- configurable minimum retracement;
-- exact 2-candle momentum exception;
-- >=5 prior extreme sweep/engulfment exception;
-- 2-candle >=38.2% exception;
-- one candle does not automatically qualify.
+- configurable minimum retracement (canonical default 38.2%);
+- exact 2-candle + depth >= 38.2% exception;
+- >=5 prior candle extremes sweep is non-canonical and removed (must NOT qualify without >= 38.2% depth);
+- sub-38.2% break with IDM taken is classified as IMPULSE_EXTENSION (not VALID_BOS);
+- one candle does not automatically qualify (1 opposing candle never qualifies macro BOS).
 
 ### IDM
 - candle-level pullback does not create IDM;
@@ -588,17 +592,17 @@ Where multiple physical relationships appear possible, the event is resolved usi
 ```text
 EXT_CONT_BREAK DETECTED
         ↓
-RETRACEMENT SUFFICIENCY GATE
-        ├─ NOT_SATISFIED
+RETRACEMENT SUFFICIENCY GATE (Depth >= 38.2% AND >= 3 opposing candles [or 2-candle exception])
+        ├─ NOT_SATISFIED (Depth < 38.2% or Opposing Candles Insufficient)
         │      ↓
-        │  OUTCOME = IMPULSE_EXTENSION
+        │  OUTCOME = IMPULSE_EXTENSION (Dealing range remains open, no new protected extreme)
         │
-        └─ SATISFIED
+        └─ SATISFIED (IDM_TAKEN = TRUE AND Depth >= 38.2% AND Opposing Candles Satisfied)
                ↓
         LEVEL PROVENANCE
           ├─ REAL
           │   ↓
-          │ OUTCOME = VALID_BOS
+          │ OUTCOME = VALID_BOS (Dealing range rolls over, Protected Structural Extreme locks)
           │
           └─ FALLBACK
               ↓

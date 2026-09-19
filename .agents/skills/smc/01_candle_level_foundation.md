@@ -145,7 +145,7 @@ Bullish pattern polarity: Close > Open
 Bearish pattern polarity: Close < Open
 ```
 
-This execution polarity rule does **not** modify Layer-1 Valid Pullback semantics. Candle color/body direction remains irrelevant to structural Valid Pullback validation.
+This execution polarity rule does **not** modify Layer-1 Valid Pullback semantics. Candle color/body direction remains irrelevant to structural Layer-1 Valid Pullback validation (which depends strictly on the reference-candle sequence). Note the strict layer separation: candle color/body direction does not govern Layer 1 Valid Pullback sequencing, but candle direction (`Close < Open` for bullish trend, `Close > Open` for bearish trend) is the definitive criterion for Layer 3 "opposing candles" in macro retracement qualification (see `03_structural_lifecycle.md` Section 3.3.2).
 
 ### 4.2 Multiple Wick Rejection
 
@@ -266,7 +266,7 @@ The strict inside-bar rule remains unchanged: an inside bar cannot independently
 
 ## 6. Candle-Level Valid Pullback — Unit of Origin
 
-The unit of origin for a candle-level Valid Pullback is a reference-candle relationship. Candle color and body size do not independently determine whether a sequence is valid.
+The unit of origin for a candle-level Valid Pullback is a reference-candle relationship. Candle color and body size do not independently determine whether a sequence is valid at Layer 1. (Layer separation: candle color/body direction is irrelevant to Layer-1 Valid Pullbacks, but candle direction/body direction defines "opposing candles" for Layer 3 macro retracement qualification).
 
 A candle-level Valid Pullback is not created by a single reference-level breach. The complete directional sequence must be satisfied.
 
@@ -306,7 +306,7 @@ A compliant implementation must preserve all of the following:
 - A single outside bar cannot activate both directional branches.
 - An inside bar cannot independently create a structural sweep or liquidity extreme.
 - Candle-level Valid Pullback requires the complete directional sequence.
-- Wick or body breach may satisfy the relevant candle-level breach; candle color does not independently determine validity.
+- Wick or body breach may satisfy the relevant candle-level breach; candle color does not independently determine Layer 1 validity (distinct from Layer 3 where opposing candles are defined by candle direction).
 - Candlestick reversal patterns are execution observations and do not manufacture structural truth.
 - Qualitative candle morphology must not be silently converted into a deterministic numeric trigger.
 - Candle-level relationships do not manufacture IDM, Confirmed Swing, BOS, CHoCH, or Trading Range.

@@ -15,17 +15,36 @@
 
 The implementation may expose `BOS_MIN_RETRACEMENT_PCT` with canonical default `38.2%`.
 
+#### Mathematical formulation (Active Major Structure Dealing Range)
+
+The 38.2% retracement threshold is anchored strictly to the active Major Structure Dealing Range:
+
+- **Bullish trend**: Dealing range from Protected Swing Low ($ProtectedLow$, impulse origin) to provisional Expansion High ($ExpansionHigh$, Confirmed Swing):
+  $$\text{Retracement depth } R = \frac{ExpansionHigh - RetracementLow}{ExpansionHigh - ProtectedLow}$$
+  $$\text{Threshold level } P_{38.2} = ExpansionHigh - 0.382 \times (ExpansionHigh - ProtectedLow)$$
+  $$\text{Condition: } RetracementLow \le P_{38.2} \iff R \ge 0.382$$
+
+- **Bearish trend**: Dealing range from Protected Swing High ($ProtectedHigh$, impulse origin) to provisional Expansion Low ($ExpansionLow$, Confirmed Swing):
+  $$\text{Retracement depth } R = \frac{RetracementHigh - ExpansionLow}{ProtectedHigh - ExpansionLow}$$
+  $$\text{Threshold level } P_{38.2} = ExpansionLow + 0.382 \times (ProtectedHigh - ExpansionLow)$$
+  $$\text{Condition: } RetracementHigh \ge P_{38.2} \iff R \ge 0.382$$
+
+Retracement depth $\ge 38.2%$ is a **MANDATORY** gate for macro BOS. Without $\ge 38.2%$ depth ($R \ge 0.382$), NO break of the expansion extreme can be classified as `VALID_BOS`.
+
+#### Layer separation
+
+The 38.2% requirement applies strictly to the **Macro BOS Retracement Gate (Layer 3)**. It does **NOT** apply to microscopic candle-level pullbacks (Layer 1) or minor internal pullback validation (Layer 2).
+
 ### 9.2 Exactly-two-candle exception parameters
 
-The semantic qualification rule for the exactly-two-candle major-structure exception is defined by `03_structural_lifecycle.md` Section 3.3.2. This document owns only its numeric constraints. This section owns only its numeric constraints:
+The semantic qualification rule for the exactly-two-candle major-structure exception is defined by `03_structural_lifecycle.md` Section 3.3.2. This section owns only its numeric constraints:
 
 - the exception applies to **exactly 2 opposing candles**;
-- the prior-extreme sweep/engulfment threshold is **5 prior candle extremes**;
-- the alternative retracement-depth threshold is **38.2%**.
+- the mandatory retracement-depth threshold is **38.2%** ($R \ge 0.382$);
+- the legacy ">= 5 prior candle extremes swept/engulfed" threshold is **NON-CANONICAL AND REMOVED**. No heuristic, candle count sweep, or "safe mode" may substitute for the 38.2% depth requirement in macro BOS qualification.
 
-The qualitative requirement for `LARGE / HIGH-MOMENTUM PRICE ACTION` has no authoritative quantitative value at present and therefore must not be invented here.
 
-There is no numeric parameter that authorizes a one-candle exception.
+There is no numeric parameter that authorizes a one-candle exception: 1 opposing candle is NEVER sufficient for macro BOS qualification under any circumstances.
 
 Do not invent ATR, body-ratio, volatility, or standard-deviation thresholds and present them as canonical methodology.
 
@@ -58,3 +77,7 @@ Future quantitative thresholds may be configurable, but they must remain explici
 ## 43. Obsolete parameter
 
 Any historical sub-38.2% Fibonacci bootstrap wording is obsolete and must not be retained as an active scoring, compatibility, fixture, logging, state-name, or entry/setup classification.
+
+### 9.3 Qualitative parameters
+
+The qualitative requirement for LARGE / HIGH-MOMENTUM PRICE ACTION has no authoritative quantitative value at present and therefore must not be invented here.
