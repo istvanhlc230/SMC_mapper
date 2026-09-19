@@ -54,9 +54,10 @@ Important boundaries:
 
 - quantitative definitions of `large/high-momentum` remain source-dependent unless independently verified;
 - do not invent ATR, body-ratio, volatility, standard-deviation, pip, tick, or similar thresholds as canonical methodology;
-- 38.2% is a canonical **BOS qualification gate**, not a universal SMC axiom and not a requirement for creating a candle-level Valid Pullback;
-- no candle-count lookback rule is part of the canonical methodology; specifically, there is **no canonical 20-candle lookback and no canonical 25-candle rule**;
-- the old exactly-two-opposing-candle / high-momentum / `>=5 prior extremes` exception is not canonical and must not be used as a BOS or structural-pullback exception.
+- 38.2% is a canonical **major structural retracement qualification threshold** and is consumed by the BOS gate; it is not a requirement for creating a candle-level Valid Pullback;
+- the exactly-two-opposing-candle / high-momentum / `>=5 prior extremes` exception is canonical major-structure qualification and must be preserved;
+- no automatic one-candle exception exists;
+- no fixed candle-count lookback rule is part of the canonical methodology; specifically, there is **no canonical 20-candle lookback and no canonical 25-candle rule**.
 
 Project-specific accepted rules remain authoritative even when their numeric parameters are not universal SMC facts.
 
@@ -103,7 +104,7 @@ CANDLE RELATIONSHIPS
  ↓
 CANDLE-LEVEL VALID PULLBACK
  ↓
-STRUCTURAL RETRACEMENT QUALIFICATION
+MAJOR STRUCTURAL RETRACEMENT QUALIFICATION
  ↓
 STRUCTURALLY VALID PULLBACK
  ↓
@@ -172,39 +173,42 @@ For a bullish candle-level Valid Pullback, within the relevant candlestick uptre
 
 This candle-level observation must not be promoted directly into IDM, BOS, CHoCH, or a Trading Range reset.
 
-### 5.2 Structural retracement qualification
+### 5.2 Major structural retracement qualification
 
-Structural retracement qualification is a separate layer. It validates the pullback extreme and its structural role; it does not manufacture a BOS.
+Major structural retracement qualification is owned by `03_structural_lifecycle.md` as part of Layer 3 Major Structure. It is a structural qualification stage between candle-level Valid Pullback and the downstream IDM / BOS lifecycle.
 
-The canonical BOS gate is:
-
-```text
-VALID_BOS
-⇔
-IDM_TAKEN
-AND RETRACEMENT_DEPTH >= 0.382
-AND STRUCTURAL_SWING_BREAK
-```
-
-Therefore:
+The canonical qualification paths are:
 
 ```text
-RETRACEMENT_DEPTH < 0.382
-→ INSUFFICIENT_RETRACEMENT
-→ NO_VALID_BOS
-→ IMPULSE_EXTENSION
+STANDARD
+>= 3 OPPOSING CANDLES
+AND
+RETRACEMENT DEPTH >= 38.2%
 ```
 
-and:
+or:
 
 ```text
-RETRACEMENT_DEPTH >= 0.382
-AND IDM_NOT_TAKEN
-→ NO_VALID_BOS
-→ IMPULSE_EXTENSION
+EXACTLY 2 OPPOSING CANDLES
+AND
+LARGE / HIGH-MOMENTUM PRICE ACTION
+AND
+(
+    >= 5 PRIOR CANDLE EXTREMES SWEPT/ENGULFED
+    OR
+    RETRACEMENT DEPTH >= 38.2%
+)
 ```
 
-The two failure causes are diagnostically distinct: `INSUFFICIENT_RETRACEMENT` and `IDM_NOT_TAKEN`.
+There is no automatic one-candle exception.
+
+The `LARGE / HIGH-MOMENTUM` condition remains qualitative unless an authoritative source defines a quantitative threshold. Do not invent one.
+
+The structural qualification itself does not create BOS. It establishes whether the pullback is structurally valid and therefore eligible to participate in the downstream IDM / swing / BOS lifecycle.
+
+The detailed semantic owner is `03_structural_lifecycle.md`; `03_structural_lifecycle_bos.md` consumes this qualification and must not redefine it.
+
+The BOS gate additionally requires IDM takeout and an eligible structural swing break.
 
 There is no `<38.2%` BOS exception based on a fixed number of opposing candles, high momentum, or prior candle extremes.
 
