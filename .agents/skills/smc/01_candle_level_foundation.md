@@ -95,7 +95,7 @@ A strict inside bar does not independently create a Valid Pullback, Structurally
 
 A break of an inside-bar relationship requires independent structural validation.
 
-**Inside-bar sweep boundary:** An inside bar cannot independently establish a structural sweep or an independent liquidity extreme. Where an Order Block refinement later uses an inside-bar base, any liquidity sweep must be attributed to the **Mother Bar**, while the inside bar supplies only the refinement coordinate. This is an execution-layer refinement rule and does not promote the inside bar to a structural object.
+An inside bar cannot independently establish a structural sweep or an independent liquidity extreme. The **Order Block refinement rule for an inside-bar base is owned by `04_execution.md`**; Layer 1 only establishes the candle relationship and its structural non-independence.
 
 ### 3.3 Outside bar
 
@@ -112,7 +112,9 @@ Directional interpretation comes from the applicable context and sequence. The o
 
 ## 4. Candlestick reversal-pattern observations
 
-Candlestick reversal patterns are **candle-level observations used by the Execution Engine as confirmation/trigger inputs**. They never create, alter, confirm, or invalidate structural objects.
+Candlestick reversal patterns are **candle-level observations consumed by the Execution Engine**. Layer 1 owns their candle anatomy and OHLC relationships; `04_execution.md` owns execution eligibility, POI/liquidity gating, trigger timing, and entry authorization.
+
+They never create, alter, confirm, or invalidate structural objects.
 
 The canonical direct-entry catalog contains six formations:
 
