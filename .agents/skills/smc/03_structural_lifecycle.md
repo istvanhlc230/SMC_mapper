@@ -152,9 +152,9 @@ A Confirmed Swing records the current expansion extreme and serves as the extern
 
 A **Protected Structural Extreme** is a later lifecycle state created by valid BOS. It becomes the governing trend anchor for the resulting structural lifecycle.
 
-### 3.3.2 — Dynamic Retracement & Sufficiency Gate
+### 3.3.2 — Major Structural Retracement Qualification
 
-The corrective extreme is tracked dynamically across the complete corrective window from swing confirmation until BOS.
+The corrective extreme is tracked dynamically across the complete corrective window from swing confirmation until BOS. This section is the canonical semantic owner of **major structural retracement qualification**. Layer 2 produces the candle-level Valid Pullback and verified pullback extreme; Layer 3 determines whether that retracement is structurally qualified.
 
 Bullish lifecycle:
 
@@ -198,7 +198,7 @@ There is no automatic one-candle exception.
 
 If retracement sufficiency is not satisfied, the attempted continuation remains `IMPULSE_EXTENSION`; it does not create a new Protected Structural Extreme or roll the Trading Range.
 
-The detailed retracement and BOS classification rules are owned by `02_minor_structure.md` and `03_structural_lifecycle_bos.md` respectively.
+The detailed BOS break-classification mechanics are owned by `03_structural_lifecycle_bos.md`. That module consumes the structural qualification defined here and must not redefine its semantic criteria.
 
 ### 3.3.3 — Protected Structural Extreme Lock
 
