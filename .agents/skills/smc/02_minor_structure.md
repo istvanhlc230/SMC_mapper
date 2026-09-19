@@ -2,7 +2,7 @@
 
 **Role:** Canonical Layer 2 Minor Structure of the True SMC methodology.
 
-**Authority:** Authoritative for candle-level pullback qualification, verified pullback extremes, liquidity/IDM foundations, active pullback state, and Minor IDM semantics.
+**Authority:** Authoritative for consumption of candle-level Valid Pullback state, verified pullback extremes, liquidity/IDM foundations, active pullback state, and Minor IDM semantics. Candle-level Valid Pullback construction is owned by `01_candle_level_foundation.md`.
 
 Major structural retracement qualification is owned by `03_structural_lifecycle.md` Section 3.3.2. Layer 2 consumes that qualification; it does not define it.
 
