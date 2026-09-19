@@ -2,7 +2,7 @@
 
 **Role:** Canonical Layer 1 Candle-Level Foundation of the True SMC methodology.
 
-**Authority:** Authoritative for raw OHLC interpretation and candle-level relationships. Candle relationships are observations and do not independently create higher-level structural objects.
+**Authority:** Authoritative for raw OHLC interpretation, candle-level relationships, and candle-level Valid Pullback construction. Candle relationships are observations and do not independently create higher-level structural objects.
 
 ## 1. Methodology boundary
 
@@ -24,6 +24,8 @@ The dependency boundary begins with raw OHLC and candle relationships. Higher-le
 RAW OHLC
   ↓
 CANDLE RELATIONSHIPS
+  ↓
+CANDLE-LEVEL VALID PULLBACK
   ↓
 Layer 2 — Minor Structure
 ```
@@ -292,7 +294,7 @@ Do not reduce this to a previous-candle-low breach.
 
 Do not reduce this to a previous-candle-high breach.
 
-A candle-level Valid Pullback is only the Layer 1/2 origin object. It is not by itself a Structurally Valid Pullback, IDM, confirmed swing, BOS, CHoCH, or Trading Range transition.
+A candle-level Valid Pullback is the Layer 1 origin object consumed by Layer 2. It is not by itself a Structurally Valid Pullback, IDM, confirmed swing, BOS, CHoCH, or Trading Range transition.
 
 ## 7. Layer 1 validation contract
 
