@@ -14,10 +14,14 @@ Read the referenced documents in this order when the full methodology is require
 ## 1. Core methodology
 
 1. `01_candle_level_foundation.md`
-   - Candle-level observations and relationships
-   - Candle-level Valid Pullback
-   - Inside / outside bar semantics
-   - Equal-extreme and candle-level foundation rules
+   - Canonical candle-level microstructure observations and relationships
+   - Candle Extreme Breach / Protection
+   - Inside Bar / Outside Bar semantics
+   - Equal High (EQH) / Equal Low (EQL)
+   - Equal Extreme Reference Transfer
+   - Candle Internal Sequence
+   - Candlestick-Based Trend
+   - Sequential Candle-Level Valid Pullback is consumed by Layer 2
 
 2. `02_minor_structure.md`
    - Layer 2 Minor Structure

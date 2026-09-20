@@ -2,7 +2,7 @@
 
 **Role:** Canonical Layer 2 Minor Structure of the True SMC methodology.
 
-**Authority:** Authoritative for consumption of candle-level Valid Pullback state, verified pullback extremes, liquidity/IDM foundations, active pullback state, and Minor IDM semantics. Candle-level Valid Pullback construction is owned by `01_candle_level_foundation.md`.
+**Authority:** Authoritative for Sequential / Minor Structure, including Pullback Formation, Candle-Level Valid Pullback, verified pullback extremes, liquidity/IDM foundations, active pullback state, and Minor IDM semantics. The candle-level microstructure primitives consumed by this layer are owned by 01_candle_level_foundation.md.
 
 Major structural retracement qualification is owned by `03_structural_lifecycle.md` Section 3.3.2. Layer 2 consumes that qualification; it does not define it.
 
@@ -78,7 +78,7 @@ IDM Eligibility
 
 Major structural retracement qualification is **not owned by Layer 2 Minor Structure**. It is a Layer 3 Major Structure rule owned by `03_structural_lifecycle.md`.
 
-Layer 2 may produce the candle-level Valid Pullback and verified pullback extreme that become inputs to the Layer 3 structural qualification stage, but Layer 2 must not redefine the major-structure qualification criteria.
+Layer 2 interprets the Layer 1 microstructure event stream into Pullback Formation and Candle-Level Valid Pullback, then produces the verified pullback extreme that becomes an input to the Layer 3 structural qualification stage. Layer 2 must not redefine the major-structure qualification criteria.
 
 An **opposing candle** is defined strictly by candle direction / body direction relative to the active trend / dominant impulse:
 - In a bullish trend (dominant upward impulse): an opposing candle is a bearish candle (`Close < Open`).
