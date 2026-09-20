@@ -77,6 +77,3 @@ Changing a threshold must never create an otherwise invalid structural event or 
 
 Future quantitative thresholds may be configurable, but they must remain explicitly classified as implementation parameters unless independently verified and approved as methodology.
 
-## 13. Obsolete parameters
-
-Any historical sub-38.2% Fibonacci bootstrap wording is obsolete and must not be retained as an active scoring, compatibility, fixture, logging, state-name, or entry/setup classification.
