@@ -258,7 +258,7 @@ PROTECTED_STRUCTURAL_EXTREME_LOCK (E_retrace LOCKED)
 
 A valid wick BOS locks `E_retrace` immediately. No later body close is required.
 
-If the penetrated external level is the Fallback Major IDM / Range-Boundary Proxy, the wick event is instead `MAJOR_IDM_SWEEP`; it is not BOS and does not lock `E_retrace`.
+If the penetrated external level is the FALLBACK_MAJOR_IDM, the wick event is instead `MAJOR_IDM_SWEEP`; it is not BOS and does not lock `E_retrace`.
 
 Detailed BOS locking mechanics are owned by `03_structural_lifecycle_bos.md`.
 
@@ -276,7 +276,7 @@ PROTECTED_STRUCTURAL_EXTREME_LOCK + TRADING_RANGE_ROLLOVER
 NEW RANGE ACTIVE
 ```
 
-Post-BOS retracement, internal liquidity collection, fallback-proxy handling, and subsequent displacement belong to the new lifecycle. A later event must not be interpreted as delayed acceptance of the preceding BOS.
+Post-BOS retracement, internal liquidity collection, fallback handling, and subsequent displacement belong to the new lifecycle. A later event must not be interpreted as delayed acceptance of the preceding BOS.
 
 POI expiration is handled through the separate POI lifecycle; the structural engine must not silently delete POI history.
 
@@ -346,9 +346,9 @@ The continuation path requires:
 1. correct external structural identity;
 2. sufficient retracement according to the canonical qualification rules;
 3. correct break provenance;
-4. non-fallback status for the final BOS outcome.
+4. canonical status for the final BOS outcome.
 
-Insufficient retracement produces `IMPULSE_EXTENSION` rather than BOS. A fallback-proxy wick breach produces `MAJOR_IDM_SWEEP` rather than BOS.
+Insufficient retracement produces `IMPULSE_EXTENSION` rather than BOS. A fallback wick breach produces `MAJOR_IDM_SWEEP` rather than BOS.
 
 The detailed Section 3.4 mechanics, including body-close BOS, wick BOS, retracement matrix, fallback provenance, and anti-retroactive behavior, are owned by:
 
@@ -361,7 +361,7 @@ Only `VALID_BOS` may:
 - close the current governing Trading Range;
 - lock the current dynamic corrective extreme as the Protected Structural Extreme;
 - initialize the next structural lifecycle;
-- initialize the temporary fallback Major IDM / Range-Boundary Proxy where applicable.
+- initialize the temporary FALLBACK_MAJOR_IDM where applicable.
 
 A physical break, Minor IDM sweep, Major IDM sweep, FALLBACK_MAJOR_IDM sweep, or `IMPULSE_EXTENSION` cannot independently roll the Trading Range.
 
@@ -379,7 +379,7 @@ OPPOSING EXTERNAL BREAK
 CHoCH LIFECYCLE
 ```
 
-The two are not interchangeable, and fallback-proxy events may resolve as `MAJOR_IDM_SWEEP` rather than either macro transition.
+The two are not interchangeable, and fallback events may resolve as `MAJOR_IDM_SWEEP` rather than either macro transition.
 
 **Detailed authority:** `03_structural_lifecycle_bos.md`
 
@@ -417,7 +417,7 @@ A physical opposing break does not automatically equal `CHoCH_CONFIRMED`.
 Body-close breaks enter the `CHoCH_ELIGIBLE` path and require all applicable CHoCH prerequisites before becoming `CHoCH_CONFIRMED`.
 
 Wick breaks require the applicable provenance and CHoCH prerequisites:
-- A fallback-proxy wick breach is `MAJOR_IDM_SWEEP`, not CHoCH.
+- A fallback wick breach is `MAJOR_IDM_SWEEP`, not CHoCH.
 - A wick break of a protected opposing boundary with an independently formed `REAL_MAJOR_IDM` is `CHoCH_ELIGIBLE` and becomes `CHoCH_CONFIRMED` only after all prerequisites pass.
 
 Detailed physical-break, body/wick, REAL_MAJOR_IDM, fallback, equality, exclusivity, and anti-retroactive rules are owned by:

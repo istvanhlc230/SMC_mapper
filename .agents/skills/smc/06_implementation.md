@@ -42,7 +42,7 @@ Functions equivalent to `detect_bos()` must require:
 2. retracement sufficiency (`RETRACEMENT_DEPTH >= 0.382`);
 3. physical external break (`STRUCTURAL_SWING_BREAK` via wick or body);
 4. `IDM_TAKEN == True`;
-5. exclusion of the Fallback Major IDM / Range-Boundary Proxy exception.
+5. exclusion of the FALLBACK_MAJOR_IDM exception.
 
 A Fallback Major IDM wick penetration must terminate as `MAJOR_IDM_SWEEP`, not BOS.
 

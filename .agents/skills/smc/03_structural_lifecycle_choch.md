@@ -117,7 +117,7 @@ ALL CHoCH PREREQUISITES
 CHoCH_CONFIRMED
 ```
 
-If the tested boundary is instead the Fallback Major IDM / Range-Boundary Proxy, the event is governed by 3.5.4 and is `MAJOR_IDM_SWEEP`, not CHoCH.
+If the tested boundary is instead the FALLBACK_MAJOR_IDM, the event is governed by 3.5.4 and is `MAJOR_IDM_SWEEP`, not CHoCH.
 
 The wick/body geometry does not determine structural identity by itself. Level provenance and the active liquidity state determine the final classification.
 
@@ -206,7 +206,7 @@ Every event is classified using the structural state active at its own event tim
 
 ### 3.5.5 — CHoCH Downstream State Changes & Post-CHoCH Dual Lineage
 
-A `CHoCH_CONFIRMED` performs a multi-phase, asymmetric regime transition. The post-CHoCH lifecycle contains two distinct lineages: an **internal structural lineage** and an **external fallback-proxy lineage**.
+A `CHoCH_CONFIRMED` performs a multi-phase, asymmetric regime transition. The post-CHoCH lifecycle contains two distinct lineages: an **internal structural lineage** and an **external fallback lineage**.
 
 ```text
                         CHoCH_CONFIRMED

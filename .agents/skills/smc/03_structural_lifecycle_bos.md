@@ -73,7 +73,7 @@ Mandatory prerequisites remain:
 1. retracement sufficiency is satisfied (`RETRACEMENT_DEPTH >= 0.382`);
 2. `IDM_TAKEN == True` (swing confirmation gate satisfied);
 3. the reference has correct external structural identity;
-4. the broken level is not the applicable Fallback Major IDM / Range-Boundary Proxy;
+4. the broken level is not the applicable FALLBACK_MAJOR_IDM;
 5. the final break classification satisfies 3.4.3.
 
 If an external continuation break occurs before retracement sufficiency is satisfied (`RETRACEMENT_DEPTH < 0.382` or `IDM_TAKEN == False`):
@@ -185,7 +185,7 @@ IMPULSE_EXTENSION ≠ EVENT CLASS
 MAJOR_IDM_SWEEP ≠ VALID_BOS
 ```
 
-The classification is based on structural level identity and provenance, not geometry alone.
+The classification is based on structural role and provenance, not geometry alone.
 
 ### 3.4.5 — Canonical Break Classification: Wick vs Body (MC-01)
 
@@ -236,7 +236,7 @@ The parser MUST NOT apply the generic logic: "Wick = always sweep". The interpre
 4. **Opposing Protected Boundary / Fallback Boundary**
    * Body Close → `CHoCH_ELIGIBLE` (→ `CHoCH_CONFIRMED`, true trend reversal, regime shift, terminates old dealing range. Requires all applicable macro CHoCH prerequisites).
 
-### 3.4.7 — Fallback Major IDM / Range-Boundary Proxy
+### 3.4.7 — FALLBACK_MAJOR_IDM
 
 Fallback Major IDM is ALWAYS an **opposing-boundary proxy**. It belongs under the opposing-boundary interaction path (`EXT_OPP_INTERACTION`), not under `EXT_CONT_BREAK`. It is a temporary lifecycle-specific external proxy used after a confirmed macro event while the new expansion has not yet produced an independently qualified Real Major IDM from a post-break Structurally Valid Pullback.
 
@@ -365,7 +365,7 @@ Post-BOS retracement and liquidity collection belong to the new range lifecycle.
 
 ### 3.4.10 — Post-BOS Fallback Initialization
 
-After `VALID_BOS`, the new structural lifecycle enters the early-range phase in which a Fallback Major IDM / Range-Boundary Proxy may be active until a real post-BOS Major IDM is independently formed.
+After `VALID_BOS`, the new structural lifecycle enters the early-range phase in which a FALLBACK_MAJOR_IDM may be active until a real post-BOS Major IDM is independently formed.
 
 ```text
 VALID_BOS
