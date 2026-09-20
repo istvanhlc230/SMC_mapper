@@ -339,7 +339,7 @@ REAL_MAJOR_IDM
 FALLBACK_PROXY → SUPERSEDED
 ```
 
-The Fallback proxy is therefore superseded by an independently qualified Real Major IDM; it is never retroactively reclassified as Real Major IDM.
+The FALLBACK_MAJOR_IDM is therefore superseded by an independently qualified Real Major IDM; it is never retroactively reclassified as Real Major IDM.
 
 ## 3.5 Canonical invariants
 

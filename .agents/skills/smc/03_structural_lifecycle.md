@@ -363,7 +363,7 @@ Only `VALID_BOS` may:
 - initialize the next structural lifecycle;
 - initialize the temporary fallback Major IDM / Range-Boundary Proxy where applicable.
 
-A physical break, Minor IDM sweep, Major IDM sweep, fallback proxy sweep, or `IMPULSE_EXTENSION` cannot independently roll the Trading Range.
+A physical break, Minor IDM sweep, Major IDM sweep, FALLBACK_MAJOR_IDM sweep, or `IMPULSE_EXTENSION` cannot independently roll the Trading Range.
 
 ### 3.4.4 — BOS State Boundary
 
@@ -442,7 +442,7 @@ The CHoCH-causing leg becomes the initial active impulsive leg.
 
 No new CONFIRMED_STRUCTURAL_SWING or BOS is created merely because CHoCH occurred. The first qualifying post-CHoCH SVP establishes the basis for the subsequent Minor IDM → sweep → Swing Confirmation lifecycle.
 
-The first post-CHoCH SVP is not itself the first Minor IDM, and a fallback Major IDM is not internal liquidity. The fallback proxy remains an external range-boundary proxy until superseded through the validated Real Major IDM lifecycle.
+The first post-CHoCH SVP is not itself the first Minor IDM, and a fallback Major IDM is not internal liquidity. The FALLBACK_MAJOR_IDM remains an external range-boundary fallback until superseded through the validated Real Major IDM lifecycle.
 
 A fallback Major IDM sweep unlocks the Swing Confirmation Gate but does not automatically create a CONFIRMED_STRUCTURAL_SWING.
 
@@ -457,7 +457,7 @@ OPPOSING REGIME BREAK
     → CHoCH
     → CHoCH_CONFIRMED
 
-FALLBACK PROXY WICK BREACH
+FALLBACK_MAJOR_IDM WICK BREACH
     → MAJOR_IDM_SWEEP
 ```
 
