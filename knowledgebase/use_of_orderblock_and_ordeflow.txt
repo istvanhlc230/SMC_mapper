@@ -1,0 +1,364 @@
+# tactiq.io free youtube transcript
+# The Correct Way to Identify Valid OrderFlows (True SMC Update 2)
+# https://www.youtube.com/watch/s9mza2almc0
+
+00:00:00.400 Hello guys, in today's video we'll be
+00:00:02.800 covering more about inducement of course
+00:00:05.440 major and minor and also dive deeper
+00:00:08.160 into identification of order flows. And
+00:00:11.280 so without further ado let's dive in. If
+00:00:14.400 you can clearly remember we said that
+00:00:16.640 the liquidity resting above in this case
+00:00:18.960 since it's bearish the recently formed
+00:00:21.359 valid pullback on that impulsive move is
+00:00:24.320 what we call the inducement. And also we
+00:00:26.720 said that if it occurs after a break of
+00:00:29.359 structure then this one here will be now
+00:00:32.479 the major inducement. But if it occurs
+00:00:34.960 before the break of structure then
+00:00:36.719 that's a minor inducement. So in this
+00:00:39.520 case right here we know when a break of
+00:00:42.000 structure is formed of course after the
+00:00:43.600 inducement is taken out. This one here
+00:00:46.079 is confirmed to be a swing point. And so
+00:00:49.520 if price reverses and breaks past this
+00:00:52.559 swing point then our break of structure
+00:00:55.280 is confirmed. So in this scenario the
+00:00:58.160 inducement here is a major inducement
+00:01:00.559 because it occurred after the break of
+00:01:03.359 structure. So this one here is our major
+00:01:05.680 inducement. And also remember the order
+00:01:08.159 flows we mark them on the impulsive
+00:01:10.159 move. This one here is the corrective
+00:01:12.640 move and this one here is the impulsive
+00:01:16.479 move. So both the order flows, the order
+00:01:18.799 blocks, everything we usually mark them
+00:01:21.119 on the impulsive move. The engineering
+00:01:23.920 liquidity, the inducement, all of them,
+00:01:26.080 we mark them on the impulsive move. So
+00:01:28.799 this one here is our major endorsement.
+00:01:30.960 And the scenario is pretty much clear
+00:01:33.360 right here. If I am to mark the order
+00:01:35.119 flows, of course, this one here is the
+00:01:37.840 extreme order flow. And the next order
+00:01:41.439 flow is this one which which is the
+00:01:43.360 decisional order flow because it is the
+00:01:45.439 swing that actually caused the breakoff
+00:01:47.840 structure. And of course the last one is
+00:01:50.399 the SMT which occurs before the
+00:01:53.280 inducement and we usually not pay any
+00:01:55.680 attention of the reaction happening
+00:01:57.520 here. And this one here is actually an
+00:01:59.680 invalid one. So that's a easy scenario
+00:02:03.040 and I was just wanting to make you guys
+00:02:06.240 uh remember what we have covered before
+00:02:08.479 before we actually cover the
+00:02:10.800 modification and exactly right here. Now
+00:02:13.120 we have covered that and we are now into
+00:02:15.120 the next scenario right here. All right.
+00:02:18.720 So this one here is our next scenario
+00:02:21.360 and we can clearly see of course the
+00:02:23.599 procedure does not change. Check out of
+00:02:26.239 inducement. This one here is confirmed
+00:02:28.000 to be a swing point and if price
+00:02:29.760 reverses and breaks past the swing point
+00:02:32.480 then our breakoff structure of course in
+00:02:34.879 this case to the downside is confirmed.
+00:02:37.599 All right. So where is our inducement?
+00:02:39.599 Because we know after the break of
+00:02:41.120 structure our next step is identifying
+00:02:43.040 the inducement. We can clearly see that
+00:02:45.760 this one here is the recently formed
+00:02:47.680 valid pullback. And most of you guys
+00:02:49.680 will identify this one here as your
+00:02:51.680 inducement. But in this case you will be
+00:02:54.000 wrong because you can check here that
+00:02:56.640 this here is happening can clearly see
+00:02:59.680 here there's this this order flow and
+00:03:02.879 this one here this pullback is inside
+00:03:05.599 this order flow and in this case is when
+00:03:08.239 now we don't use this one here we use
+00:03:10.879 this one here because this pullback was
+00:03:14.080 engulfed inside this order flow if that
+00:03:17.360 wasn't the case now and let's say price
+00:03:19.599 broke past this low I in this low right
+00:03:24.000 here. Then in this case, this one here
+00:03:26.239 will be now our inducement. And since
+00:03:28.959 this occurred before the break of
+00:03:31.440 structure, of course, now it will be our
+00:03:33.840 minor inducement. And of course, the
+00:03:35.680 trading range high, which is this one
+00:03:37.599 here will be now the major inducement.
+00:03:40.400 And so if we were to identify the order
+00:03:42.480 flows in this case, then this one here
+00:03:44.959 of course will now be our our extreme
+00:03:48.080 order flow. And in this case, we can
+00:03:49.840 clearly see it's mitigated. So this
+00:03:51.920 means it's invalid. All right, let me
+00:03:54.319 get rid of all of these or let me just
+00:03:56.959 leave that one and this or let me just
+00:03:58.640 leave it that way. All right, so this
+00:04:00.400 one here is our mitigated order flow.
+00:04:02.640 You can clearly see here it was
+00:04:03.840 mitigated by this valid pullback the
+00:04:07.280 retracement inside this extreme
+00:04:09.840 mitigated order flow. And so our extreme
+00:04:13.040 order flow now or we need to shift to
+00:04:15.040 the next of course because this one here
+00:04:16.720 is already mitigated. And so shifting to
+00:04:19.120 the next this one here becomes our
+00:04:20.720 extreme. But now this order flow will
+00:04:24.000 not be a valid order flow and we cannot
+00:04:27.120 rely on this on taking the entries
+00:04:29.040 because it occurs before the inducement
+00:04:31.840 and this is an SMT and we cannot use
+00:04:34.960 this here as a valid order flow. I know
+00:04:37.840 you'll be someone else will mark this
+00:04:39.759 one here as now the order flow this one
+00:04:42.479 here. But that's not the order flow. The
+00:04:45.120 order flow is all of this one here. This
+00:04:48.240 is not an order flow. The order flow is
+00:04:50.479 this one here. Take note of this. This
+00:04:53.120 is very very important. So this one here
+00:04:55.280 is the order flow. And you can clearly
+00:04:56.880 see that this order flow is occurring
+00:04:59.919 before the and clearly see here this
+00:05:02.400 here is our the the enducement. So
+00:05:06.240 exactly right here this here cannot be a
+00:05:08.560 valid order flow but in that case an
+00:05:10.720 S&amp;T. All right. So let's move into this
+00:05:13.199 next uh next diagram exactly right here.
+00:05:18.080 And the procedure is just the same. This
+00:05:20.320 here's a valid break of structure. You
+00:05:22.000 can clearly see inducement taken swing
+00:05:24.720 point price reversing exactly here and
+00:05:28.160 breaking past this one confirming this
+00:05:30.479 one as a bearish breakoff structure. All
+00:05:32.960 right. So where is the inducement?
+00:05:34.639 Exactly here. This is the inducement and
+00:05:37.919 in this case is the major inducement.
+00:05:40.000 Why major? because it occurred after the
+00:05:42.880 break of structure. And you can clearly
+00:05:45.280 see that our corrective move is a one
+00:05:48.000 leg exactly right here. Checking this
+00:05:50.720 previous scenario, our corrective move
+00:05:52.960 was either a double leg or a triple leg.
+00:05:55.280 Like in this one here, this here was a
+00:05:57.440 double leg. You can clearly see the
+00:05:59.520 first leg opposed then the other leg. So
+00:06:03.039 this here is a double leg. But this
+00:06:04.800 other scenario you can clearly see that
+00:06:06.800 our corrective leg is like one is a
+00:06:10.319 single one. So in this case now where is
+00:06:13.360 our order flow? How will we be marking
+00:06:15.600 the order flow? All right. So this here
+00:06:18.319 is pretty simple. This is our SMT. And I
+00:06:21.280 know someone here will mark this one
+00:06:23.199 here as the extreme order flow. But in
+00:06:26.160 this case you'll be wrong. Even if you
+00:06:28.160 mark this one here as the extreme order
+00:06:30.800 flow, you'll still be wrong. You can
+00:06:32.319 clearly see that our corrective move it
+00:06:34.319 was a one leg. It didn't have even a
+00:06:37.360 single valid pullback. So this means
+00:06:39.840 that all of our corrective move is now
+00:06:43.280 supposed to be the order flow. All of
+00:06:46.319 this one here will now be the order
+00:06:48.560 flow. And in this case then it's
+00:06:51.520 mitigated exactly right here. And so in
+00:06:53.600 this in this impulsive leg, there's no
+00:06:56.400 any order flow because this one here is
+00:06:58.720 our major inducement and this one is
+00:07:00.639 called is of course the inducement. All
+00:07:03.680 right. So in this other scenario you can
+00:07:06.080 clearly see it's also a one leg and in
+00:07:08.639 this case yeah this here is the
+00:07:10.160 inducement. Yeah. So that's the
+00:07:12.479 inducement and uh yeah that's the
+00:07:15.039 inducement right. The inducement because
+00:07:16.560 it is the valid the recently formed
+00:07:18.639 valid pullback high and the liquidity
+00:07:21.199 resting above there. It's what we call
+00:07:22.800 the inducement. Now, let's say a
+00:07:24.479 scenario like this.
+00:07:26.639 Yep. Like that. And let me take the poly
+00:07:30.960 poly line and do something like this.
+00:07:33.759 All right. So, where is now the
+00:07:37.120 in this scenario? Where is now the
+00:07:38.880 inducement? In this case, someone else
+00:07:40.639 will mark this one as the inducement.
+00:07:42.720 But that's not the inducement, guys. And
+00:07:44.639 the inducement in this case is this one
+00:07:47.360 here. Take note of that. And this is
+00:07:49.360 very, very important. And why should we
+00:07:51.680 consider this one here as the inducement
+00:07:53.599 is because this one here is engulfed. I
+00:07:56.479 mean this we cannot use this high as the
+00:07:59.199 inducement because it's engulfed inside
+00:08:01.199 this order flow. Can clearly see here
+00:08:03.759 this order flow. I know you can see a
+00:08:06.080 second leg here and someone else will
+00:08:07.840 see this one here. We'll refine this one
+00:08:09.919 here to be the order flow and so that
+00:08:12.800 now I can use this one here to be the
+00:08:14.960 order flow and mark this one here to be
+00:08:19.039 the endorsement. now, but in this case,
+00:08:20.720 you'll be wrong because the order flow
+00:08:23.280 you're marking is wrong. And the order
+00:08:25.120 flow that needs to be correct is this
+00:08:26.800 one here. And that's now the correct
+00:08:28.639 order flow that you should be using. You
+00:08:30.960 should use the whole of these. Same
+00:08:33.599 right here. This one here is supposed to
+00:08:36.159 be the order flow exactly right here.
+00:08:38.799 But now all of these, the ones that are
+00:08:40.719 marking, these are not the like we will
+00:08:43.039 not be using these are the correct order
+00:08:44.720 flows because you can clearly see that
+00:08:46.399 our corrective move is made up of a
+00:08:48.399 single leg. And so this means that all
+00:08:50.399 of these are just minor minor order
+00:08:52.880 flows. So this means that in this
+00:08:54.720 scenario we will only be considering the
+00:08:56.640 order blocks. And also in this scenario
+00:09:00.080 our minor inducement is this one here.
+00:09:04.000 And our major inducement is our external
+00:09:07.519 liquidity. All right. So guys what if
+00:09:09.600 the scenario was like this. All right.
+00:09:11.600 The same. This doesn't change. Price has
+00:09:14.080 taken out the inducement and this is our
+00:09:16.080 ultimate breakout structure. the
+00:09:18.240 downside. This means now our trading
+00:09:20.320 range ranges from that high and
+00:09:22.000 currently ending here. So now which is
+00:09:24.320 now the minor endorsement. You can
+00:09:26.959 clearly see inside here the internal
+00:09:29.200 structure price took this high and you
+00:09:31.680 can clearly see also a break past here
+00:09:34.000 and now which one here will you be using
+00:09:36.720 as now the inducement. Yeah, I mean the
+00:09:39.839 correct inducement. You can clearly see
+00:09:42.240 the same procedure here happened and we
+00:09:44.800 know that if price takes a high and
+00:09:47.680 makes a break I mean reverses and makes
+00:09:50.640 a break past this low then that's a
+00:09:52.880 break of structure. So in this case
+00:09:54.959 which now will we be using as the
+00:09:58.160 inducement? Most of you guys will mark
+00:10:00.480 this one here as the inducement but
+00:10:02.480 you'll be wrong. This one here is the
+00:10:04.720 major I mean the inducement in this case
+00:10:08.160 is minor because it occurred before this
+00:10:10.880 one here. I mean before the breakoff
+00:10:13.120 structure. So this one here will be our
+00:10:14.959 minor inducement. This here is not the
+00:10:17.519 correct inducement. Not unless now price
+00:10:20.399 broke the structure in this case. By
+00:10:22.720 breakoff structure I mean it broke the
+00:10:25.120 structure of this low. I mean this low
+00:10:27.200 here. And so it was like this. So in
+00:10:30.320 this case now you can use this one here
+00:10:32.240 to be now the correct inducement for our
+00:10:34.480 overall structure. But since that's not
+00:10:36.720 the case and the case is like this then
+00:10:39.040 in this one you will not be using this
+00:10:41.519 one here to be the inducement but rather
+00:10:43.760 this one here to be the inducement. And
+00:10:45.680 so for the same same scenario let's mark
+00:10:47.839 the order flows. All right. So the order
+00:10:50.959 flows in this case it's easy. You can
+00:10:52.720 see the corrective move is a two leg.
+00:10:55.279 Can clearly see the first leg is this
+00:10:57.360 one here. and we had a pause and then
+00:11:00.079 had the the the the second leg. So that
+00:11:02.959 was a double leg. The retracement was a
+00:11:04.880 double leg. And this means now our order
+00:11:07.519 flow is this one here. I mean the
+00:11:09.519 extreme order flow is this one. And in
+00:11:11.760 this case it's not mitigated. So this
+00:11:13.760 means it's valid. And all right. So the
+00:11:16.720 next order flow that comes after it. I
+00:11:18.640 know someone else will mark this one
+00:11:20.399 here to be the next order flow. You will
+00:11:23.040 be wrong. That's not the correct order
+00:11:25.360 flow that you'll be marking. but rather
+00:11:27.519 the correct order flow that will be
+00:11:29.200 marking it's all of this structure guys
+00:11:32.079 remember price has yet broken the
+00:11:34.079 structure so in this case even though
+00:11:36.320 this is a whole structure but the whole
+00:11:38.480 structure is in between our I mean our
+00:11:42.560 our mother structure so this is just a
+00:11:44.640 child structure and we'll be using all
+00:11:47.360 of this from this low all the way to
+00:11:49.279 that heart the correct order flow is all
+00:11:51.519 of this swing don't use this one here as
+00:11:54.720 the the order flow in this case we'll
+00:11:57.200 just be refining the order flow and
+00:11:58.880 you'll be making wrong decisions. So
+00:12:00.959 just use all of this one here to be the
+00:12:03.600 order flow and all right it will be an
+00:12:06.480 SMT of course not unless price creates
+00:12:08.959 another valid pullback down below here
+00:12:11.360 so that it can now become something like
+00:12:13.279 this and now in this case then this one
+00:12:16.399 here will now be now the the decisional
+00:12:19.200 order flow so that our endorsement now
+00:12:22.160 changes from here it is that's now the
+00:12:24.320 engineering liquidity in this case this
+00:12:26.720 one here will now be the engineering
+00:12:28.079 liquidity and our endorsement will now
+00:12:31.200 be this one here and in this case now
+00:12:34.000 this one here will be now our decisional
+00:12:36.480 order flow. So guys practice this. This
+00:12:38.480 is very very important before now I dive
+00:12:40.639 deeper into now identification of POIs
+00:12:43.600 based on our marking of this one because
+00:12:46.000 later you'll realize that uh even though
+00:12:49.279 this is the extreme order flow and this
+00:12:51.120 is the decision order flow and we said
+00:12:53.120 that if a trading range contains these
+00:12:55.760 order flows I mean the order flows are
+00:12:58.000 unmmitigated then in this case we
+00:13:00.480 completely ignore the order blocks but
+00:13:02.639 in this case now an update has happened
+00:13:05.680 that we don't ignore the order blocks we
+00:13:08.639 use the order blocks even if the order
+00:13:10.959 flows are still unmititigated in this
+00:13:13.760 case. I mean this one here of course
+00:13:16.000 will be now our decisional order block
+00:13:18.639 because it is the one that caused the
+00:13:20.079 breakoff structure. So exactly right
+00:13:22.399 here that's the decision order block and
+00:13:25.279 the extreme order block it will be
+00:13:26.959 somewhere here.
+00:13:29.040 So let's say now price comes to mitigate
+00:13:31.440 our decisional order flow without diving
+00:13:35.040 deeper into our decisional order block
+00:13:37.279 and gives a reaction and then later
+00:13:39.920 fails this reaction and goes towards our
+00:13:42.880 decision order block. Of course you'll
+00:13:44.639 see some reaction from this and this
+00:13:46.800 order block can be used as a reversal
+00:13:49.839 point. I know based on the previous
+00:13:52.160 playlist I say that this order block is
+00:13:54.240 invalid because the order flow in that
+00:13:56.639 case failed. But now here is the update.
+00:13:59.279 This order block is valid. And if you
+00:14:02.000 see a reaction, a pretty much good
+00:14:04.000 reaction, you can take the trade all the
+00:14:06.480 way towards the external liquidity and
+00:14:08.800 it will be valid even though there is
+00:14:11.040 the extreme order flow up here. This
+00:14:13.199 decision order block is still valid and
+00:14:15.279 a reaction from it will still be used
+00:14:18.079 for the reversal even if this order flow
+00:14:21.199 is on point and not mitigated. So guys
+00:14:24.320 that's it and if you yet understood
+00:14:26.720 worry less because on the next part I'll
+00:14:28.880 be explaining deeper of what I have
+00:14:30.720 explained on this last uh representation
+00:14:33.760 so that you guys can have a solid
+00:14:35.519 understanding of true SMC. So guys if
+00:14:38.800 you have learned something drop a like
+00:14:40.480 and see you in the next part.
