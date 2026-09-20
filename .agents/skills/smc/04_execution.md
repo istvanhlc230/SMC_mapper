@@ -6,10 +6,10 @@
 
 ## 36. POI ontology — canonical tradable POIs
 
-The canonical POI ontology is a closed set. A tradable Point of Interest may be either **Valid Order Flow (OF)** or **Valid Order Block (OB)**. No third POI entity may be introduced by generic SMC convention or implementation convenience.
+The canonical POI ontology is a closed set. A tradable Point of Interest may be either **Valid Order Flow (OF_CONFIRMED)** or **Valid Order Block (Valid OB)**. No third POI entity may be introduced by generic SMC convention or implementation convenience.
 
 ```text
-VALID ORDER FLOW (OF)
+OF_CONFIRMED
 VALID ORDER BLOCK (OB)
         ↓
    CANONICAL POI
@@ -27,17 +27,23 @@ The following are not canonical POI entities:
 
 These concepts may exist as structural observations, validators, liquidity, or historical annotations where separately defined, but they must not silently become tradable POIs.
 
-### Rule of Two
+### Rule of Two POIs (Structural Constraint & Origin OB)
 
-For a canonical dealing range, there may be one or two tradable POIs:
+An active dealing range may contain a MINIMUM of one and a MAXIMUM of two actively tradable POIs:
+1. **Decisional POI** (must reside in Discount for Buys, Premium for Sells)
+2. **Extreme POI** (Extreme OF / Extreme OB)
 
 ```text
 DECISIONAL POI
       +
-EXTREME POI
+ EXTREME POI
 ```
 
-Everything outside the active one-or-two-POI structure is non-tradable/SMT unless a canonical rule explicitly promotes it. Multiple arbitrary POIs must not be created merely because multiple zones are visually present.
+Everything outside the active one-or-two-POI structure is non-tradable/SMT unless a canonical rule explicitly promotes it. Multiple arbitrary POIs must not be created merely because multiple zones are visually present. Any logic that permits three simultaneously active POIs in the scanner is strictly forbidden.
+
+### Origin OB Rule
+
+Origin OB is a **LATENT reserve POI, NOT a third active POI**. It sits at the absolute origin of the dealing range. It becomes actively tradable IF AND ONLY IF Extreme Order Flow was mitigated AND Extreme Order Block fails, without price producing a CHoCH.
 
 ### POI semantic separation
 
@@ -56,7 +62,7 @@ A POI is a validated execution-location object. Its existence must never alter s
 The following invariants are mandatory:
 
 ```text
-POI ∈ {VALID_OF, VALID_OB}
+POI ∈ {OF_CONFIRMED, VALID_OB}
 STANDALONE_FVG → NOT_POI
 IDM → NOT_POI
 LIQUIDITY → NOT_POI
@@ -91,11 +97,11 @@ A Decisional POI outside its required premium/discount side is not a valid Decis
 
 The Extreme POI is the secondary/fallback execution location of the same dealing-range framework. It is used when the Decisional POI is unavailable, fails its execution conditions, or is otherwise not the applicable module according to the canonical entry sequence.
 
-The Extreme POI must still be a Valid OF or Valid OB. It is not an arbitrary fallback to any visually convenient zone.
+The Extreme POI must still be an OF_CONFIRMED or Valid OB. It is not an arbitrary fallback to any visually convenient zone.
 
-### Origin OB
+### Origin OB (Latent POI)
 
-An Origin OB is a canonical absolute range-origin Order Block. It is not required to disappear merely because its parent Valid Order Flow has been mitigated. Its validity must be evaluated according to the OB validation rules rather than by inheritance from the current OF state.
+An Origin OB is a canonical absolute range-origin Order Block acting as a latent reserve POI. It becomes actively tradable if and only if Extreme Order Flow was mitigated and Extreme Order Block fails, without price producing a CHoCH. It is not required to disappear merely because its parent Valid Order Flow has been mitigated. Its validity must be evaluated according to the OB validation rules rather than by inheritance from the current OF state.
 
 ## 38. Order Block validation
 
@@ -103,7 +109,7 @@ A candle/zone may be treated as a Valid Order Block only when the canonical thre
 
 ```text
 PILLAR 1
-Origin of impulsive displacement that causes structural BOS
+Origin of impulsive displacement that causes structural VALID_BOS
         +
 PILLAR 2
 Candle sweeps previous candle's extreme
@@ -120,9 +126,23 @@ All three pillars are required. A visually strong candle, displacement alone, or
 
 The structural BOS referenced by Pillar 1 must be independently canonical. An implementation must not manufacture BOS merely to validate an OB.
 
-### Valid Order Flow
+### Valid Order Flow Lifecycle
 
-Valid OF is a canonical POI class distinct from OB. OF and OB must not be conflated into a single generic zone type merely for implementation convenience.
+```text
+PULLBACK_CANDIDATE
+        ↓
+VALID_PULLBACK
+        ↓
+IDM_TAKEN
+        ↓
+OF_ELIGIBLE
+        ↓
+ENGULF_CHECK_PASSED
+        ↓
+OF_CONFIRMED
+```
+
+Valid OF (`OF_CONFIRMED`) is a canonical POI class distinct from OB. OF and OB must not be conflated into a single generic zone type merely for implementation convenience.
 
 ### OB mitigation
 
@@ -222,19 +242,33 @@ These are execution mechanisms, not alternative definitions of market structure.
 
 ### Module 1 — IDM Sweep
 
-The IDM Sweep module requires a canonically active IDM and its qualifying liquidity interaction. IDM sweep remains a liquidity/execution event and is not itself BOS or CHoCH.
+The IDM Sweep module requires a canonically active IDM and its qualifying liquidity interaction (`IDM_TAKEN = TRUE`). IDM sweep remains a liquidity/execution event and is not itself BOS or CHoCH.
 
 ### Module 2 — Decisional POI Mitigation
 
-The Decisional POI must be a valid OF or OB, must satisfy the directional premium/discount gate, and must meet the independent execution conditions of the module. POI mitigation does not create structural validity.
+The Decisional POI must be an OF_CONFIRMED or Valid OB, must satisfy the directional premium/discount gate, and must meet the independent execution conditions of the module. POI mitigation does not create structural validity.
 
 ### Module 3 — Engineering Liquidity Sweep
 
-Engineering liquidity is an execution-layer liquidity event. It must not be promoted to structural liquidity, IDM, BOS, or CHoCH merely because price sweeps the engineered level.
+#### Engineering Liquidity Lifecycle
+
+```text
+EXPANSION_ACTIVE
+        ↓
+ENG_LQD_CANDIDATE
+        ↓
+WICK_BOUNDARY_INTACT
+        ↓
+ENG_LQD_CONFIRMED
+        ↓
+ENG_LQD_SWEEP (optional)
+```
+
+Engineering liquidity (`ENG_LQD_CONFIRMED`) is an execution-layer liquidity event. It must not be promoted to structural liquidity, IDM, BOS, or CHoCH merely because price sweeps the engineered level.
 
 ### Module 4 — Extreme POI Mitigation
 
-The Extreme POI module is the canonical fallback execution mechanism when the Decisional POI is not the applicable execution location. The Extreme POI must independently satisfy OF/OB validity; fallback execution does not relax POI validation.
+The Extreme POI module is the canonical fallback execution mechanism when the Decisional POI is not the applicable execution location. The Extreme POI must independently satisfy OF_CONFIRMED or Valid OB validity; fallback execution does not relax POI validation.
 
 ## 40.5. Candlestick Reversal Triggers
 
@@ -260,13 +294,13 @@ DIRECT ENTRY
 
 Eligible key areas are:
 
-- mitigation of a qualified **Decisional or Extreme Valid OF/OB**;
-- a direct sweep of active **IDM**;
-- a direct sweep of **Engineering Liquidity (ENG_LQD)**.
+- mitigation of a qualified **Decisional POI or Extreme POI (OF_CONFIRMED / Valid OB)**;
+- a direct sweep of active **IDM** (`IDM_TAKEN = TRUE`);
+- a direct sweep of **Engineering Liquidity (ENG_LQD_CONFIRMED)**.
 
 A standalone/unbacked FVG is not an eligible direct-entry location.
 
-The candlestick pattern does not create the POI, IDM, ENG_LQD, or any structural condition. It only confirms an already eligible execution context.
+The candlestick pattern does not create the POI, IDM, ENG_LQD_CONFIRMED, or any structural condition. It only confirms an already eligible execution context.
 
 ### Close-only execution
 
@@ -408,10 +442,10 @@ It cannot independently authorize a direct entry.
 ```text
 CANDLE_PATTERN       ≠ POI
 CANDLE_PATTERN       ≠ IDM
-CANDLE_PATTERN       ≠ ENG_LQD
-CANDLE_PATTERN       ≠ SWING
-CANDLE_PATTERN       ≠ BOS
-CANDLE_PATTERN       ≠ CHoCH
+CANDLE_PATTERN       ≠ ENG_LQD_CONFIRMED
+CANDLE_PATTERN       ≠ CONFIRMED_STRUCTURAL_SWING
+CANDLE_PATTERN       ≠ VALID_BOS
+CANDLE_PATTERN       ≠ CHoCH_CONFIRMED
 CANDLE_PATTERN       ≠ TRADING_RANGE
 CANDLE_PATTERN       ≠ STRUCTURAL_INVALIDATION
 CANDLE_PATTERN       ≠ POI_CREATION
@@ -439,8 +473,8 @@ Execution priority and structural validation are separate domains.
 
 ```text
 EXECUTION PRIORITY ≠ STRUCTURAL VALIDATION
-ORDER FLOW FAILED ≠ BOS
-ORDER FLOW FAILED ≠ CHoCH
+ORDER FLOW FAILED ≠ VALID_BOS
+ORDER FLOW FAILED ≠ CHoCH_CONFIRMED
 POI FAILURE ≠ STRUCTURAL FAILURE
 ```
 
@@ -448,7 +482,7 @@ A failed execution condition must not be converted into a structural event. Like
 
 ### Order Flow failure / Extreme fallback
 
-Do not fail over from Valid OF to Extreme OB solely because price wicked into or through the OF. The exact failure condition must be independently satisfied by the canonical execution module. A wick touch alone is insufficient to invent an execution-state transition.
+Do not fail over from OF_CONFIRMED to Extreme OB solely because price wicked into or through the OF. The exact failure condition must be independently satisfied by the canonical execution module. A wick touch alone is insufficient to invent an execution-state transition.
 
 ### Risk and RR
 

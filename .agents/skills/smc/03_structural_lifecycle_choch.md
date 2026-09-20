@@ -2,20 +2,25 @@
 
 **Role:** Detailed Section 3.5 CHoCH lifecycle module of `03_structural_lifecycle.md`.
 
-**Authority:** This document contains the validated and closed True SMC CHoCH mechanics in Sections 3.5.1–3.5.5. It is the detailed mechanics authority for CHoCH classification and post-CHoCH regime initialization within the Structural Lifecycle. It does **not** create a separate top-level methodology category or separate lifecycle ownership.
+**Authority:** This document contains the canonical True SMC CHoCH mechanics in Sections 3.5.1–3.5.5. It is the detailed mechanics authority for CHoCH classification and post-CHoCH regime initialization within the Structural Lifecycle. It does **not** create a separate top-level methodology category or separate lifecycle ownership.
 
 **Lifecycle ownership:** `03_structural_lifecycle.md` owns Section 3.5 as part of the complete Layer 3 Structural Lifecycle. This document provides the detailed deterministic rules used by that lifecycle.
-
-**Methodology:** CLOSED / CANONICAL BASELINE  
-**Implementation:** CONDITIONAL / AUDIT OPEN  
-**Data Feed:** OHLC Intrabar Ambiguity recognized as an Implementation Limitation  
-**Safe-Mode Guard:** ACTIVE (Momentum exceptions & OF failure triggers isolated)
-
-**Validation status:** Sections 3.5.1–3.5.5 are methodologically validated and closed. No implementation change is implied by this document.
 
 ## 3.5 — Change of Character (CHoCH) Mechanics
 
 CHoCH is a governing trend-reversal transition. It is not an arbitrary internal break, liquidity event, IDM sweep, or candle pattern.
+
+### Canonical CHoCH Lifecycle
+
+```text
+OPPOSING STRUCTURAL BOUNDARY VIOLATION (Body Close)
+        ↓
+CHoCH_ELIGIBLE
+        ↓
+CHoCH_CONFIRMED
+        ↓
+OLD TREND TERMINATED + INITIAL ACTIVE IMPULSE INITIALIZED
+```
 
 ### 3.5.1 — Unit of Origin
 
@@ -24,7 +29,7 @@ The eligible CHoCH reference object is the active Dealing Range's **Protected Op
 - Bullish lifecycle → Protected Swing Low.
 - Bearish lifecycle → Protected Swing High.
 
-Minor Structure, arbitrary local highs/lows, IDM levels, liquidity nodes, and continuation Confirmed Swings cannot independently create CHoCH.
+Minor Structure, arbitrary local highs/lows, IDM levels, liquidity nodes, and continuation CONFIRMED_STRUCTURAL_SWING cannot independently create CHoCH.
 
 ```text
 Protected Opposing Structural Extreme
@@ -32,9 +37,7 @@ Protected Opposing Structural Extreme
 CHoCH Physical-Break Gate
 ```
 
-A physical violation only opens the CHoCH classification gate; it does not itself establish `VALID_CHoCH`.
-
-**Verdict: PASS / CLOSED.**
+A physical violation only opens the CHoCH classification gate; it does not itself establish `CHoCH_CONFIRMED`.
 
 ### 3.5.2 — Opposing Boundary Break: Physical Threshold
 
@@ -57,12 +60,10 @@ Physical penetration may occur through wick/shadow or candle-body penetration.
 ```text
 Physical Opposing Boundary Break
         ≠
-VALID_CHoCH
+CHoCH_CONFIRMED
 ```
 
 This gate records only the physical occurrence of the break. Final classification is determined by 3.5.3 and the Fallback Major IDM exception in 3.5.4.
-
-**Verdict: PASS / CLOSED.**
 
 ### 3.5.3 — CHoCH Break Classification: Wick vs. Body Close
 
@@ -84,7 +85,7 @@ Close_t > Protected_Swing_High
 → CHoCH_ELIGIBLE
 ```
 
-A body close beyond an eligible Protected Opposing Boundary is a CHoCH-eligible event. It becomes `VALID_CHoCH` only when **all applicable CHoCH prerequisites** pass. A body close alone is never sufficient to manufacture CHoCH, and the result does not depend on an internal Major IDM being present.
+A body close beyond an eligible Protected Opposing Boundary is a CHoCH-eligible event. It becomes `CHoCH_CONFIRMED` only when **all applicable CHoCH prerequisites** pass. A body close alone is never sufficient to manufacture CHoCH, and the result does not depend on an internal Major IDM being present.
 
 #### B. Wick-Break Reversal
 
@@ -104,7 +105,7 @@ AND
 Close_t <= Protected_Swing_High
 ```
 
-A wick break is `CHoCH_ELIGIBLE` only when the active Dealing Range contains an independently formed **REAL_MAJOR_IDM**. It becomes `VALID_CHoCH` only when all applicable CHoCH prerequisites also pass.
+A wick break is `CHoCH_ELIGIBLE` only when the active Dealing Range contains an independently formed **REAL_MAJOR_IDM**. It becomes `CHoCH_CONFIRMED` only when all applicable CHoCH prerequisites also pass.
 
 ```text
 REAL_MAJOR_IDM
@@ -113,14 +114,12 @@ OPPOSING WICK BREAK
 +
 ALL CHoCH PREREQUISITES
         ↓
-VALID_CHoCH
+CHoCH_CONFIRMED
 ```
 
 If the tested boundary is instead the Fallback Major IDM / Range-Boundary Proxy, the event is governed by 3.5.4 and is `MAJOR_IDM_SWEEP`, not CHoCH.
 
 The wick/body geometry does not determine structural identity by itself. Level provenance and the active liquidity state determine the final classification.
-
-**Verdict: PASS / CLOSED.**
 
 ### 3.5.4 — Fallback Major IDM / CHoCH Exception
 
@@ -141,13 +140,13 @@ MAJOR_IDM_SWEEP
 The event is strictly:
 
 ```text
-NOT VALID_CHoCH
+NOT CHoCH_CONFIRMED
 NOT VALID_BOS
 NOT TRADING_RANGE_ROLLOVER
 NOT PROTECTED_EXTREME_LOCK
 ```
 
-The proxy sweep satisfies the applicable liquidity requirement and **unlocks the Confirmation Gate**, but it does not automatically create a Confirmed Swing; all remaining swing-confirmation prerequisites remain mandatory.
+The proxy sweep satisfies the applicable liquidity requirement and **unlocks the Confirmation Gate**, but it does not automatically create a CONFIRMED_STRUCTURAL_SWING; all remaining swing-confirmation prerequisites remain mandatory. Trend remains intact, with no CHoCH and no rollover.
 
 #### B. Body Close Beyond the Fallback Boundary
 
@@ -159,13 +158,13 @@ BODY CLOSE BEYOND BOUNDARY
 CHoCH_ELIGIBLE
 ```
 
-A body close beyond the Fallback boundary is **not** automatically `CHoCH_CONFIRMED` and does not by itself establish `VALID_CHoCH`. It enters the CHoCH qualification gate, where all applicable structural prerequisites must pass.
+A body close beyond the Fallback boundary enters the CHoCH qualification gate (`CHoCH_ELIGIBLE`). When all applicable structural prerequisites pass, it becomes `CHoCH_CONFIRMED`, producing a true trend reversal, regime shift, and terminating the old dealing range.
 
 ```text
 BODY CLOSE
 → CHoCH_ELIGIBLE
 → ALL CHoCH PREREQUISITES
-→ VALID_CHoCH only if prerequisites pass
+→ CHoCH_CONFIRMED (true trend reversal, regime shift, terminates old dealing range)
 ```
 
 #### C. Fallback vs. Real Major IDM Lineage
@@ -184,11 +183,13 @@ REAL_MAJOR_IDM
 FALLBACK → SUPERSEDED
 ```
 
+When the first genuine post-BOS Structurally Valid Pullback forms: `REAL_MAJOR_IDM` is created, `FALLBACK_MAJOR_IDM` is permanently `SUPERSEDED`, and the boundary reverts to a protected structural pivot.
+
 Therefore:
 
 ```text
 FALLBACK_MAJOR_IDM ≠ REAL_MAJOR_IDM
-FALLBACK_PROXY + WICK ≠ CHoCH
+FALLBACK_PROXY + WICK ≠ CHoCH_CONFIRMED
 ```
 
 Anti-retroactive invariant:
@@ -203,56 +204,54 @@ later candle ≠ retroactive CHoCH at t1
 
 Every event is classified using the structural state active at its own event time.
 
-**Verdict: PASS / CLOSED.**
-
 ### 3.5.5 — CHoCH Downstream State Changes & Post-CHoCH Dual Lineage
 
-A `VALID_CHoCH` performs a multi-phase, asymmetric regime transition. The post-CHoCH lifecycle contains two distinct lineages: an **internal structural lineage** and an **external fallback-proxy lineage**.
+A `CHoCH_CONFIRMED` performs a multi-phase, asymmetric regime transition. The post-CHoCH lifecycle contains two distinct lineages: an **internal structural lineage** and an **external fallback-proxy lineage**.
 
 ```text
-                         VALID_CHoCH
-                             │
-                 ┌───────────┴───────────┐
-                 ▼                       ▼
-        OLD REGIME TERMINATED     NEW REGIME INITIALIZED
-                                         │
-                              INITIAL_ACTIVE_IMPULSE
-                                         │
-                              CONFIRMATION_LOCKED
-                                         │
-              ┌──────────────────────────┴──────────────────────────┐
-              ▼                                                     ▼
-     INTERNAL LINEAGE                                      EXTERNAL PROXY LINEAGE
-              │                                                     │
-     FIRST_POST_CHOCH_SVP                                  GOVERNING OPPOSING
-              │                                             RANGE BOUNDARY
-              ▼                                                     │
-  VERIFIED_PULLBACK_EXTREME                                          ▼
-              │                                             FALLBACK_MAJOR_IDM
-              ▼                                             (temporary proxy)
- FIRST_POST_CHOCH_MINOR_IDM                                          │
-              │                                                     │
-              └──────────────────────┬──────────────────────────────┘
-                                     ▼
-                           QUALIFYING IDM SWEEP
-                                     │
-                                     ▼
-                       CONFIRMATION GATE UNLOCKED
-                                     │
-                                     ▼
-                         CONFIRMED SWING QUALIFICATION
-                                     │
-                                     ▼
-                                  FIRST BOS
-                                     │
-                                     ▼
-                              POST-BOS SVP
-                                     │
-                                     ▼
-                              REAL_MAJOR_IDM
-                                     │
-                                     ▼
-                         FALLBACK → SUPERSEDED
+                        CHoCH_CONFIRMED
+                              │
+                  ┌───────────┴───────────┐
+                  ▼                       ▼
+         OLD REGIME TERMINATED     NEW REGIME INITIALIZED
+                                          │
+                               INITIAL_ACTIVE_IMPULSE
+                                          │
+                               CONFIRMATION_LOCKED
+                                          │
+               ┌──────────────────────────┴──────────────────────────┐
+               ▼                                                     ▼
+      INTERNAL LINEAGE                                      EXTERNAL PROXY LINEAGE
+               │                                                     │
+      FIRST_POST_CHOCH_SVP                                  GOVERNING OPPOSING
+               │                                             RANGE BOUNDARY
+               ▼                                                     │
+   VERIFIED_PULLBACK_EXTREME                                          ▼
+               │                                             FALLBACK_MAJOR_IDM
+               ▼                                             (temporary proxy)
+  FIRST_POST_CHOCH_MINOR_IDM                                          │
+               │                                                     │
+               └──────────────────────┬──────────────────────────────┘
+                                      ▼
+                            QUALIFYING IDM SWEEP
+                                      │
+                                      ▼
+                        CONFIRMATION GATE UNLOCKED
+                                      │
+                                      ▼
+                          CONFIRMED SWING QUALIFICATION
+                                      │
+                                      ▼
+                                   FIRST BOS
+                                      │
+                                      ▼
+                                POST-BOS SVP
+                                      │
+                                      ▼
+                                REAL_MAJOR_IDM
+                                      │
+                                      ▼
+                          FALLBACK → SUPERSEDED
 ```
 
 #### Phase 1 — Old regime termination
@@ -263,7 +262,7 @@ The previous governing trend terminates immediately and the previous Trading Ran
 
 Market bias switches to the new direction. The CHoCH-causing leg becomes the new trend's **initial active impulsive leg (`INITIAL_ACTIVE_IMPULSE`)**.
 
-The CHoCH-causing leg is not itself an automatic Structurally Valid Pullback, IDM, Confirmed Swing, or Protected Structural Extreme.
+The CHoCH-causing leg is not itself an automatic Structurally Valid Pullback, IDM, CONFIRMED_STRUCTURAL_SWING, or Protected Structural Extreme.
 
 #### Phase 3 — Confirmation lock
 
@@ -274,7 +273,7 @@ Candidate Detection = ALLOWED
 Confirmation Gate = LOCKED
 ```
 
-No new `CONFIRMED_SWING_POINT` and no new trend-direction `VALID_BOS` may be declared until the first qualifying **Structurally Valid Pullback (SVP)** forms on the new active leg and its IDM lifecycle is completed through the canonical liquidity/swing-confirmation gate.
+No new `CONFIRMED_STRUCTURAL_SWING` and no new trend-direction `VALID_BOS` may be declared until the first qualifying **Structurally Valid Pullback (SVP)** forms on the new active leg and its IDM lifecycle is completed through the canonical liquidity/swing-confirmation gate.
 
 #### Phase 4 — Internal lineage
 
@@ -315,12 +314,12 @@ CONFIRMATION_LOCKED
                  ↓
        CONFIRMATION GATE UNLOCKED
                  ↓
-      Confirmed Swing Qualification
+      CONFIRMED_STRUCTURAL_SWING QUALIFICATION
                  ↓
              FIRST BOS
 ```
 
-Gate unlock does not automatically create a Confirmed Swing. All remaining swing-confirmation prerequisites remain mandatory.
+Gate unlock does not automatically create a CONFIRMED_STRUCTURAL_SWING. All remaining swing-confirmation prerequisites remain mandatory.
 
 #### Phase 7 — First BOS and Real Major IDM lifecycle
 
@@ -342,8 +341,6 @@ FALLBACK_PROXY → SUPERSEDED
 
 The Fallback proxy is therefore superseded by an independently qualified Real Major IDM; it is never retroactively reclassified as Real Major IDM.
 
-**Verdict: PASS / CLOSED.**
-
 ## 3.5 Canonical invariants
 
 ```text
@@ -352,21 +349,21 @@ PHYSICAL OPPOSING BREAK
 
 BODY CLOSE
 → CHoCH_ELIGIBLE
-→ VALID_CHoCH only if all prerequisites pass
+→ CHoCH_CONFIRMED only if all prerequisites pass
 
 REAL_MAJOR_IDM + OPPOSING WICK BREAK
 + ALL CHoCH PREREQUISITES
-→ VALID_CHoCH
+→ CHoCH_CONFIRMED
 
 FALLBACK_MAJOR_IDM + OPPOSING WICK BREAK
 → MAJOR_IDM_SWEEP
-→ NOT CHoCH
-→ NOT BOS
+→ NOT CHoCH_CONFIRMED
+→ NOT VALID_BOS
 → NOT TRADING_RANGE_ROLLOVER
 
 FALLBACK_MAJOR_IDM + BODY CLOSE
 → CHoCH_ELIGIBLE
-→ NOT AUTOMATIC CHoCH_CONFIRMED
+→ CHoCH_CONFIRMED only if all prerequisites pass (true trend reversal, regime shift)
 
 FIRST_POST_CHOCH_SVP
 ≠ FIRST_POST_CHOCH_MINOR_IDM
@@ -380,12 +377,12 @@ CONFIRMATION GATE UNLOCKED
 LATER CANDLE
 ≠ RETROACTIVE CLASSIFICATION
 
-VALID_CHoCH
+CHoCH_CONFIRMED
 → NEW TREND
 → INITIAL_ACTIVE_IMPULSE
 → CONFIRMATION_LOCKED
 → POST-CHOCH SVP / IDM LINEAGE
-→ CONFIRMED SWING QUALIFICATION
+→ CONFIRMED_STRUCTURAL_SWING QUALIFICATION
 → FIRST BOS
 → POST-BOS REAL_MAJOR_IDM LIFECYCLE
 ```

@@ -4,8 +4,6 @@
 
 **Authority:** This document owns the high-level Structural Lifecycle, Sections 3.1–3.5. Detailed BOS mechanics are maintained in `03_structural_lifecycle_bos.md`. Detailed CHoCH mechanics are maintained in `03_structural_lifecycle_choch.md`. Those modules are subordinate to this document and do not create competing lifecycle authorities.
 
-**Validation status:** Sections 3.1–3.5 are methodologically validated and closed.
-
 ## Structural lifecycle invariant
 
 Higher-level structural events may consume lower-level validated state, but no stage may be skipped or manufactured by configuration, scoring, visualization, or implementation convenience.
@@ -35,13 +33,13 @@ IDM LIQUIDITY TAKEOUT
   ↓
 SWING CONFIRMATION GATE
   ↓
-CONFIRMED STRUCTURAL SWING
+CONFIRMED_STRUCTURAL_SWING
   ↓
 PHYSICAL EXTERNAL BREAK
   ↓
 BREAK CLASSIFICATION
   ↓
-BOS / CHoCH
+VALID_BOS / CHoCH_CONFIRMED
 ```
 
 Layer 1 and Layer 2 semantic foundations are owned by:
@@ -59,7 +57,7 @@ Major Structure is the governing external structural framework defined strictly 
 
 The governing range boundaries are derived from canonical external structural events and confirmed swing context. Internal Minor Structure, arbitrary local highs/lows, liquidity nodes, or IDM events cannot independently redefine the governing Trading Range.
 
-A Confirmed Swing does not automatically become a Trading Range Boundary. A Protected Structural Extreme is a distinct structural state established through the canonical swing and break lifecycle.
+A CONFIRMED_STRUCTURAL_SWING does not automatically become a Trading Range Boundary. A Protected Structural Extreme is a distinct structural state established through the canonical swing and break lifecycle.
 
 ```text
 Major Structure
@@ -76,11 +74,11 @@ Governing Range Boundary
 ### Mandatory identity separation
 
 ```text
-CONFIRMED SWING
+CONFIRMED_STRUCTURAL_SWING
 ≠ TRADING RANGE BOUNDARY
 
 PROTECTED STRUCTURAL EXTREME
-≠ ARBITRARY CONFIRMED SWING
+≠ ARBITRARY CONFIRMED_STRUCTURAL_SWING
 
 MINOR STRUCTURE
 ≠ MAJOR STRUCTURE
@@ -89,26 +87,24 @@ IDM
 ≠ MAJOR STRUCTURE
 ```
 
-**Verdict: PASS / CLOSED.**
-
 ---
 
 ## 3.2 — Genesis & Structural Unit of Origin
 
 The unit of origin for Major Structure is not an isolated candlestick, fractal pivot, or raw price extreme. Major Structure originates from the complete **Confirmed Dealing Range Cycle**, anchored by liquidity-validated structural extremes.
 
-A governing Trading Range does not exist merely because an impulse has occurred. It becomes formally established only when a qualified IDM liquidity takeout unlocks the Swing Confirmation Gate **and the subsequent canonical confirmation prerequisites establish a Confirmed Swing**. A liquidity sweep alone never establishes the range.
+A governing Trading Range does not exist merely because an impulse has occurred. It becomes formally established only when a qualified IDM liquidity takeout unlocks the SWING_CONFIRMATION_GATE **and the subsequent canonical confirmation prerequisites establish a CONFIRMED_STRUCTURAL_SWING**. A liquidity sweep alone never establishes the range.
 
 ### 3.2.1 — Genesis / Bootstrap
 
-Prior to the first confirmed IDM sweep, including chart inception or the initial active impulse following a valid CHoCH, the market resides in an unconfirmed expansion state such as `BOOTSTRAP_EXPANSION`.
+Prior to the first confirmed IDM sweep, including chart inception or the initial active impulse following a valid CHoCH_CONFIRMED, the market resides in an unconfirmed expansion state such as `BOOTSTRAP_EXPANSION`.
 
 In bootstrap:
 
 - candle-level minor structures may form;
 - candidate IDM structures may form;
 - no governing dealing range is fabricated;
-- no Confirmed Swing is manufactured without the required confirmation lifecycle.
+- no CONFIRMED_STRUCTURAL_SWING is manufactured without the required confirmation lifecycle.
 
 Bootstrap must remain distinguishable from organically confirmed structure.
 
@@ -123,22 +119,20 @@ QUALIFIED IDM
     ↓
 IDM SWEEP (Wick or Body: IDM_TAKEN = TRUE)
     ↓
-SWING CONFIRMATION GATE
+SWING_CONFIRMATION_GATE UNLOCKED
     ↓
-CONFIRMED SWING (Swing confirmed ONLY; not BOS, not CHoCH, no range rollover)
+CONFIRMED_STRUCTURAL_SWING (Swing confirmed ONLY; not BOS, not CHoCH, no range rollover)
     ↓
-RETRACEMENT SUFFICIENCY GATE (Depth >= 38.2% & candle count)
+CONSUME STORED QUALIFICATION (Depth >= 38.2% & candle count)
     ├─ NOT SATISFIED (Depth < 38.2%) → Break of Swing is IMPULSE_EXTENSION (Range remains open)
     └─ SATISFIED (Depth >= 38.2%)
             ↓
-       STRUCTURAL BREAK
+       STRUCTURAL_SWING_BREAK (Wick or Body)
             ↓
         VALID_BOS
             ↓
-PROTECTED STRUCTURAL EXTREME LOCKED & RANGE ROLLS
+PROTECTED_STRUCTURAL_EXTREME_LOCK + TRADING_RANGE_ROLLOVER
 ```
-
-**Verdict: PASS / CLOSED.**
 
 ---
 
@@ -147,21 +141,23 @@ PROTECTED STRUCTURAL EXTREME LOCKED & RANGE ROLLS
 ### 3.3.1 — Ontological Asymmetry
 
 ```text
-CONFIRMED SWING POINT
+CONFIRMED_STRUCTURAL_SWING
         ≠
 PROTECTED STRUCTURAL EXTREME
 ```
 
-A provisional Expansion Extreme becomes a **Confirmed Swing Point** when and only when the active IDM is taken out (`IDM_TAKEN = TRUE`). Wick or body penetration of the IDM level is sufficient to trigger IDM takeout; a candle body close beyond IDM is NOT required.
+A provisional Expansion Extreme becomes a **CONFIRMED_STRUCTURAL_SWING** when and only when the active IDM is taken out (`IDM_TAKEN = TRUE`). Wick or body penetration of the IDM level exclusively opens the `SWING_CONFIRMATION_GATE` and is sufficient to trigger IDM takeout; a candle body close beyond IDM is NOT required.
 
-A Confirmed Swing records the current expansion extreme and serves as the external structural landmark for the active lifecycle. It is not automatically protected.
+A CONFIRMED_STRUCTURAL_SWING records the current expansion extreme and serves as the external structural landmark for the active lifecycle. It is not automatically protected.
 
 Crucially:
 - IDM takeout confirms the swing ONLY.
-- IDM takeout does NOT create BOS.
-- IDM takeout does NOT create CHoCH.
+- IDM takeout does NOT create a new Dealing Range.
+- IDM takeout does NOT flip trend.
+- IDM takeout is NEVER a CHoCH.
+- IDM takeout does NOT create VALID_BOS.
 - IDM takeout does NOT roll the dealing range.
-- `Confirmed Swing ≠ VALID_BOS`. Having a Confirmed Swing is a necessary prerequisite for BOS, NOT BOS itself.
+- `CONFIRMED_STRUCTURAL_SWING ≠ VALID_BOS`. Having a CONFIRMED_STRUCTURAL_SWING is a necessary prerequisite for BOS, NOT BOS itself.
 
 A **Protected Structural Extreme** is a later lifecycle state created by valid BOS. It becomes the governing trend anchor for the resulting structural lifecycle.
 
@@ -196,11 +192,11 @@ Do NOT define opposing candles by displacement, directional movement, higher/low
 **Mandatory Macro BOS Retracement Gate (38.2%)**
 
 The 38.2% retracement threshold is anchored strictly to the active Major Structure Dealing Range:
-- **Bullish trend**: Dealing range from Protected Swing Low ($ProtectedLow$, impulse origin) to provisional Expansion High ($ExpansionHigh$, Confirmed Swing):
+- **Bullish trend**: Dealing range from Protected Swing Low ($ProtectedLow$, impulse origin) to provisional Expansion High ($ExpansionHigh$, CONFIRMED_STRUCTURAL_SWING):
   $$\text{Retracement depth } R = \frac{ExpansionHigh - RetracementLow}{ExpansionHigh - ProtectedLow}$$
   $$\text{Threshold level } P_{38.2} = ExpansionHigh - 0.382 \times (ExpansionHigh - ProtectedLow)$$
   $$\text{Condition: } RetracementLow \le P_{38.2} \iff R \ge 0.382$$
-- **Bearish trend**: Dealing range from Protected Swing High ($ProtectedHigh$, impulse origin) to provisional Expansion Low ($ExpansionLow$, Confirmed Swing):
+- **Bearish trend**: Dealing range from Protected Swing High ($ProtectedHigh$, impulse origin) to provisional Expansion Low ($ExpansionLow$, CONFIRMED_STRUCTURAL_SWING):
   $$\text{Retracement depth } R = \frac{RetracementHigh - ExpansionLow}{ProtectedHigh - ExpansionLow}$$
   $$\text{Threshold level } P_{38.2} = ExpansionLow + 0.382 \times (ProtectedHigh - ExpansionLow)$$
   $$\text{Condition: } RetracementHigh \ge P_{38.2} \iff R \ge 0.382$$
@@ -225,22 +221,22 @@ AND
 RETRACEMENT DEPTH >= 38.2% (R >= 0.382)
 ```
 
-**Removal of ">= 5 prior candle extremes" exception:**
-The legacy rule stating ">= 5 prior candle extremes swept/engulfed" as an alternative to 38.2% retracement depth is **NON-CANONICAL AND REMOVED**. No heuristic, candle count sweep, or safe mode may substitute for the 38.2% depth requirement in macro BOS qualification.
+**Retracement Depth Invariant:**
+No heuristic, candle count sweep (such as sweeps of prior candle extremes), or safe mode may substitute for the 38.2% depth requirement in macro BOS qualification.
 
 **Candle Count Rule:**
 1 opposing candle is NEVER sufficient for macro BOS retracement qualification under any circumstances. There is NO 1-candle exception.
 
-**Confirmed Swing ≠ VALID_BOS & IMPULSE_EXTENSION:**
+**CONFIRMED_STRUCTURAL_SWING ≠ VALID_BOS & IMPULSE_EXTENSION:**
 VALID_BOS requires ALL of:
 1. `IDM_TAKEN = TRUE` (swing is confirmed)
 2. `RETRACEMENT_DEPTH >= 38.2%` (retracement sufficiency satisfied)
-3. Structural break of the Confirmed Swing (wick breach sufficient per canonical rule)
+3. `STRUCTURAL_SWING_BREAK` (wick breach or body close beyond CONFIRMED_STRUCTURAL_SWING)
 
-If IDM is taken out (`IDM_TAKEN = TRUE`), the provisional expansion extreme becomes a Confirmed Swing. However, if retracement depth is `< 38.2%` ($R < 0.382$):
+If IDM is taken out (`IDM_TAKEN = TRUE`), the provisional expansion extreme becomes a CONFIRMED_STRUCTURAL_SWING. However, if retracement depth is `< 38.2%` ($R < 0.382$):
 - The swing remains confirmed.
 - Retracement sufficiency is NOT satisfied.
-- Any subsequent break of the Confirmed Swing is classified as `IMPULSE_EXTENSION`, NOT `VALID_BOS`.
+- Any subsequent break of the CONFIRMED_STRUCTURAL_SWING is classified as `IMPULSE_EXTENSION`, NOT `VALID_BOS`.
 - The dealing range remains OPEN (does not roll over).
 - No new Protected Structural Extreme is established.
 
@@ -257,9 +253,7 @@ Dynamic E_retrace
         ↓
 VALID_BOS
         ↓
-E_retrace LOCKED
-        ↓
-Protected Structural Extreme
+PROTECTED_STRUCTURAL_EXTREME_LOCK (E_retrace LOCKED)
 ```
 
 A valid wick BOS locks `E_retrace` immediately. No later body close is required.
@@ -277,7 +271,7 @@ VALID_BOS
    ↓
 PREVIOUS RANGE CLOSED
    ↓
-TRADING_RANGE_ROLLED_OVER
+PROTECTED_STRUCTURAL_EXTREME_LOCK + TRADING_RANGE_ROLLOVER
    ↓
 NEW RANGE ACTIVE
 ```
@@ -286,30 +280,26 @@ Post-BOS retracement, internal liquidity collection, fallback-proxy handling, an
 
 POI expiration is handled through the separate POI lifecycle; the structural engine must not silently delete POI history.
 
-**Verdict: PASS / CLOSED.**
-
 ---
 
 # 3.4 — Break of Structure (BOS): Lifecycle Ownership
 
 BOS is a macro structural continuation event. It is not a local candle pattern, arbitrary liquidity takeout, IDM sweep, or internal structural break.
 
-The high-level BOS lifecycle is:
+The canonical BOS lifecycle is:
 
 ```text
-IDM TAKEOUT
-    ↓
-CONFIRMED SWING
-    ↓
-DYNAMIC RETRACEMENT QUALIFICATION
-    ↓
-BOS QUALIFIED / DISQUALIFIED LEVEL
-    ↓
-PHYSICAL EXTERNAL BREAK
-    ↓
-STRUCTURAL SWING BREAK
-    ↓
-VALID_BOS / IMPULSE_EXTENSION
+PHYSICAL EXTERNAL BREAK (Wick OR Body)
+        ↓
+STRUCTURAL_SWING_BREAK
+        ↓
+CONSUME STORED QUALIFICATION (IDM_TAKEN == True AND RETRACEMENT_DEPTH >= 0.382)
+        ↓
+COMPLETE BOS GATE SATISFIED
+        ↓
+VALID_BOS
+        ↓
+PROTECTED_STRUCTURAL_EXTREME_LOCK + TRADING_RANGE_ROLLOVER
 ```
 
 The qualification result (`is_bos_qualified`) is established and tracked **before price returns to the BOS level**. The execution event strictly consumes the previously established qualification state. It is NOT a new BOS predicate. The canonical BOS predicate remains:
@@ -321,17 +311,24 @@ VALID_BOS ⇔
     AND STRUCTURAL_SWING_BREAK
 ```
 
+- Physical wick breach of CONFIRMED_STRUCTURAL_SWING satisfies `STRUCTURAL_SWING_BREAK`.
+- Physical body close beyond CONFIRMED_STRUCTURAL_SWING also satisfies `STRUCTURAL_SWING_BREAK`.
+- Wick breach alone != `VALID_BOS`, Body close alone != `VALID_BOS`. Full qualification gate (`IDM_TAKEN == True AND RETRACEMENT_DEPTH >= 0.382`) is required.
+- If `RETRACEMENT_DEPTH < 0.382` or `IDM_TAKEN == False`: external breach produces `IMPULSE_EXTENSION`, NOT `VALID_BOS` (no rollover, no protected extreme lock).
+- No universal body-close requirement exists for continuation BOS.
+
 ### Fallback Major IDM & Continuation Distinction
 
 `EXT_CONT_BREAK` is exclusively the continuation path for a confirmed continuation external swing.
 
-`FALLBACK_MAJOR_IDM` is an opposing-boundary external proxy and must not be an outcome or provenance branch of `EXT_CONT_BREAK`.
-
-A physical fallback wick breach yields `MAJOR_IDM_SWEEP`. It does not produce `VALID_BOS`, CHoCH confirmation, Trading Range rollover, or a Protected Structural Extreme lock.
+`FALLBACK_MAJOR_IDM` is an opposing-boundary external proxy and must not be an outcome or provenance branch of `EXT_CONT_BREAK`:
+- Wick breach past Fallback Boundary produces `MAJOR_IDM_SWEEP`, unlocks gate, trend intact, no CHoCH, no rollover.
+- Body close past Fallback Boundary produces `CHoCH_ELIGIBLE` -> `CHoCH_CONFIRMED`, true trend reversal, regime shift, terminates old dealing range.
+- When first genuine post-BOS Structurally Valid Pullback forms: `REAL_MAJOR_IDM` is created, `FALLBACK_MAJOR_IDM` is permanently `SUPERSEDED`, and boundary reverts to protected structural pivot.
 
 ### 3.4.1 — BOS Reference Ownership
 
-Continuation BOS may reference only the eligible **Confirmed Structural Swing Point** of the active lifecycle:
+Continuation BOS may reference only the eligible **CONFIRMED_STRUCTURAL_SWING** of the active lifecycle:
 
 - bullish lifecycle → Confirmed Swing High;
 - bearish lifecycle → Confirmed Swing Low.
@@ -386,40 +383,22 @@ The two are not interchangeable, and fallback-proxy events may resolve as `MAJOR
 
 **Detailed authority:** `03_structural_lifecycle_bos.md`
 
-**Verdict: PASS / CLOSED.**
-
 ---
 
 # 3.5 — Change of Character (CHoCH): Lifecycle Ownership
 
 CHoCH is the macro regime-reversal event. It is not an arbitrary local break, IDM sweep, liquidity interaction, or candle pattern.
 
-The high-level CHoCH lifecycle is:
+The canonical CHoCH lifecycle is:
 
 ```text
-ACTIVE TREND
-    ↓
-PROTECTED OPPOSING STRUCTURAL EXTREME
-    ↓
-PHYSICAL OPPOSING BREAK
-    ↓
-CHoCH ELIGIBILITY
-    ↓
-ALL CHoCH PREREQUISITES
-    ↓
-VALID_CHoCH
-    ↓
-OLD TREND TERMINATED
-    ↓
-NEW TREND INITIALIZED
-    ↓
-INITIAL ACTIVE IMPULSE
-    ↓
-CONFIRMATION LOCKED
-    ↓
-FIRST POST-CHoCH SVP
-    ↓
-MINOR IDM / CONFIRMATION LIFECYCLE
+OPPOSING STRUCTURAL BOUNDARY VIOLATION (Body Close)
+        ↓
+CHoCH_ELIGIBLE
+        ↓
+CHoCH_CONFIRMED
+        ↓
+OLD TREND TERMINATED + INITIAL ACTIVE IMPULSE INITIALIZED
 ```
 
 ### 3.5.1 — CHoCH Reference Ownership
@@ -433,11 +412,13 @@ An arbitrary local level, Minor IDM, liquidity pool, or provisional swing cannot
 
 ### 3.5.2 — CHoCH Classification Ownership
 
-A physical opposing break does not automatically equal `VALID_CHoCH`.
+A physical opposing break does not automatically equal `CHoCH_CONFIRMED`.
 
-Body-close breaks enter the `CHoCH_ELIGIBLE` path and require all applicable CHoCH prerequisites.
+Body-close breaks enter the `CHoCH_ELIGIBLE` path and require all applicable CHoCH prerequisites before becoming `CHoCH_CONFIRMED`.
 
-Wick breaks require the applicable provenance and CHoCH prerequisites. A fallback-proxy wick breach is `MAJOR_IDM_SWEEP`, not CHoCH.
+Wick breaks require the applicable provenance and CHoCH prerequisites:
+- A fallback-proxy wick breach is `MAJOR_IDM_SWEEP`, not CHoCH.
+- A wick break of a protected opposing boundary with an independently formed `REAL_MAJOR_IDM` is `CHoCH_ELIGIBLE` and becomes `CHoCH_CONFIRMED` only after all prerequisites pass.
 
 Detailed physical-break, body/wick, REAL_MAJOR_IDM, fallback, equality, exclusivity, and anti-retroactive rules are owned by:
 
@@ -445,34 +426,36 @@ Detailed physical-break, body/wick, REAL_MAJOR_IDM, fallback, equality, exclusiv
 
 ### 3.5.3 — Post-CHoCH Lifecycle
 
-A valid CHoCH produces a structural regime flip:
+A valid `CHoCH_CONFIRMED` produces a structural regime flip:
 
 ```text
-OLD_TREND_TERMINATED
+OPPOSING STRUCTURAL BOUNDARY VIOLATION (Body Close)
         ↓
-NEW_TREND
+CHoCH_ELIGIBLE
         ↓
-INITIAL_ACTIVE_IMPULSE
+CHoCH_CONFIRMED
         ↓
-CONFIRMATION_LOCKED
+OLD TREND TERMINATED + INITIAL ACTIVE IMPULSE INITIALIZED
 ```
 
 The CHoCH-causing leg becomes the initial active impulsive leg.
 
-No new Confirmed Swing or BOS is created merely because CHoCH occurred. The first qualifying post-CHoCH SVP establishes the basis for the subsequent Minor IDM → sweep → Swing Confirmation lifecycle.
+No new CONFIRMED_STRUCTURAL_SWING or BOS is created merely because CHoCH occurred. The first qualifying post-CHoCH SVP establishes the basis for the subsequent Minor IDM → sweep → Swing Confirmation lifecycle.
 
 The first post-CHoCH SVP is not itself the first Minor IDM, and a fallback Major IDM is not internal liquidity. The fallback proxy remains an external range-boundary proxy until superseded through the validated Real Major IDM lifecycle.
 
-A fallback Major IDM sweep unlocks the Swing Confirmation Gate but does not automatically create a Confirmed Swing.
+A fallback Major IDM sweep unlocks the Swing Confirmation Gate but does not automatically create a CONFIRMED_STRUCTURAL_SWING.
 
 ### 3.5.4 — CHoCH / BOS Boundary
 
 ```text
 CONTINUATION
     → BOS
+    → VALID_BOS
 
 OPPOSING REGIME BREAK
     → CHoCH
+    → CHoCH_CONFIRMED
 
 FALLBACK PROXY WICK BREACH
     → MAJOR_IDM_SWEEP
@@ -482,8 +465,6 @@ BOS and CHoCH are mutually exclusive outcomes for the same evaluated external ev
 
 **Detailed authority:** `03_structural_lifecycle_choch.md`
 
-**Verdict: PASS / CLOSED.**
-
 ---
 
 ## Canonical Layer 3 Invariants
@@ -491,23 +472,21 @@ BOS and CHoCH are mutually exclusive outcomes for the same evaluated external ev
 1. Layer 3 consumes validated Layer 1 and Layer 2 prerequisites; it does not redefine them.
 2. Major Structure is governed by the active Trading Range and canonical external boundaries.
 3. Minor Structure, IDM, arbitrary liquidity, and local extrema do not independently redefine Major Structure.
-4. Confirmed Swing and Protected Structural Extreme are distinct lifecycle states.
+4. CONFIRMED_STRUCTURAL_SWING and Protected Structural Extreme are distinct lifecycle states.
 5. Protected Structural Extreme is created by valid BOS, not by impulse origin or arbitrary swing confirmation.
 6. Retracement sufficiency is mandatory before continuation BOS.
 7. There is no automatic one-candle retracement exception.
 8. Canonical default retracement depth is 38.2%.
-9. Exactly-two-candle qualification requires retracement depth >= 38.2%. The ">= 5 prior candle extremes swept/engulfed" alternative is non-canonical and removed.
-10. Physical external break does not automatically equal BOS or CHoCH.
-11. `MAJOR_IDM_SWEEP` is not BOS and not CHoCH.
+9. Exactly-two-candle qualification requires retracement depth >= 38.2%; no prior candle extreme sweep may substitute for the depth requirement.
+10. Physical external break does not automatically equal VALID_BOS or CHoCH_CONFIRMED.
+11. `MAJOR_IDM_SWEEP` is not VALID_BOS and not CHoCH_CONFIRMED.
 12. Fallback Major IDM is an external range-boundary proxy, not Real Major IDM or arbitrary internal liquidity.
-13. A fallback sweep unlocks the Swing Confirmation Gate but does not automatically create a Confirmed Swing.
+13. A fallback sweep unlocks the Swing Confirmation Gate but does not automatically create a CONFIRMED_STRUCTURAL_SWING.
 14. `NEW_SVP` does not automatically create Real Major IDM.
 15. Only `VALID_BOS` rolls the Trading Range and locks the Protected Structural Extreme.
-16. A valid CHoCH initializes a new regime but does not itself create a new Confirmed Swing or BOS.
+16. `CHoCH_CONFIRMED` initializes a new regime but does not itself create a new CONFIRMED_STRUCTURAL_SWING or VALID_BOS.
 17. First post-CHoCH SVP and first post-CHoCH Minor IDM are distinct lifecycle states.
 18. Structural event classification is anti-retroactive.
 19. Detailed BOS mechanics are owned by `03_structural_lifecycle_bos.md`.
 20. Detailed CHoCH mechanics are owned by `03_structural_lifecycle_choch.md`.
 21. This document remains the single high-level Layer 3 Structural Lifecycle authority.
-
-**Layer 3 verdict: PASS / CLOSED.**

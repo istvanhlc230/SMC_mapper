@@ -41,10 +41,13 @@ The semantic qualification rule for the exactly-two-candle major-structure excep
 
 - the exception applies to **exactly 2 opposing candles**;
 - the mandatory retracement-depth threshold is **38.2%** ($R \ge 0.382$);
-- the legacy ">= 5 prior candle extremes swept/engulfed" threshold is **NON-CANONICAL AND REMOVED**. No heuristic, candle count sweep, or "safe mode" may substitute for the 38.2% depth requirement in macro BOS qualification.
-
+- no heuristic, candle count sweep (such as sweeps of prior candle extremes), or "safe mode" may substitute for the 38.2% depth requirement in macro BOS qualification.
 
 There is no numeric parameter that authorizes a one-candle exception: 1 opposing candle is NEVER sufficient for macro BOS qualification under any circumstances.
+
+### 9.3 Qualitative parameters
+
+The qualitative requirement for LARGE / HIGH-MOMENTUM PRICE ACTION has no authoritative quantitative value at present and therefore must not be invented here.
 
 Do not invent ATR, body-ratio, volatility, or standard-deviation thresholds and present them as canonical methodology.
 
@@ -60,7 +63,7 @@ STRUCTURAL QUALIFICATION
 
 No scoring threshold may manufacture or validate IDM, Confirmed Swing, Protected Structural Extreme, BOS, CHoCH, or Trading Range state.
 
-## Parameter boundaries
+## 11. Parameter boundaries
 
 ```text
 PARAMETER ≠ OBJECT DEFINITION
@@ -70,14 +73,10 @@ CONFIGURATION ≠ METHODOLOGY REDEFINITION
 
 Changing a threshold must never create an otherwise invalid structural event or bypass a non-numeric prerequisite.
 
-## Implementation parameters
+## 12. Implementation parameters
 
 Future quantitative thresholds may be configurable, but they must remain explicitly classified as implementation parameters unless independently verified and approved as methodology.
 
-## 43. Obsolete parameter
+## 13. Obsolete parameters
 
 Any historical sub-38.2% Fibonacci bootstrap wording is obsolete and must not be retained as an active scoring, compatibility, fixture, logging, state-name, or entry/setup classification.
-
-### 9.3 Qualitative parameters
-
-The qualitative requirement for LARGE / HIGH-MOMENTUM PRICE ACTION has no authoritative quantitative value at present and therefore must not be invented here.

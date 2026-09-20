@@ -111,7 +111,7 @@ IMPLEMENTATION REPRESENTATION / EXECUTABLE SCORING MAPPING
 
 A rule must have one primary semantic owner. Other documents may reference that rule, but must not create a competing definition.
 
-## 5. Audit rule
+## 5. Precedence rule
 
 When documents conflict:
 

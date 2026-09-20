@@ -38,14 +38,14 @@ No higher-level event may be manufactured by configuration, scoring, visualizati
 CANDLE RELATIONSHIP       ≠ VALID PULLBACK
 CANDLE RELATIONSHIP       ≠ STRUCTURALLY VALID PULLBACK
 CANDLE RELATIONSHIP       ≠ IDM
-CANDLE RELATIONSHIP       ≠ CONFIRMED SWING
-CANDLE RELATIONSHIP       ≠ BOS
-CANDLE RELATIONSHIP       ≠ CHoCH
+CANDLE RELATIONSHIP       ≠ CONFIRMED_STRUCTURAL_SWING
+CANDLE RELATIONSHIP       ≠ VALID_BOS
+CANDLE RELATIONSHIP       ≠ CHoCH_CONFIRMED
 LIQUIDITY                  ≠ STRUCTURE
 CANDLE REVERSAL PATTERN   ≠ STRUCTURE
 CANDLE REVERSAL PATTERN   ≠ IDM
-CANDLE REVERSAL PATTERN   ≠ BOS
-CANDLE REVERSAL PATTERN   ≠ CHoCH
+CANDLE REVERSAL PATTERN   ≠ VALID_BOS
+CANDLE REVERSAL PATTERN   ≠ CHoCH_CONFIRMED
 CONFIGURATION              ≠ CANONICAL METHODOLOGY RULE
 ```
 
@@ -53,7 +53,7 @@ OHLC is raw market data. Candle-level relationships describe observations in tha
 
 ## 3. Candle relationships
 
-Candle relationships include, among others, HH/HL, LH/LL, EQH/EQL, inside-bar and outside-bar relationships. Their presence alone does not establish a Valid Pullback, SVP, IDM, swing, BOS, CHoCH, or Trading Range.
+Candle relationships include, among others, HH/HL, LH/LL, EQH/EQL, inside-bar and outside-bar relationships. Their presence alone does not establish a Valid Pullback, SVP, IDM, CONFIRMED_STRUCTURAL_SWING, VALID_BOS, CHoCH_CONFIRMED, or Trading Range.
 
 ### 3.1 Equal High / Equal Low directional reference transfer
 
@@ -79,7 +79,7 @@ When two consecutive candles have equal lows:
 4. Price must then break below the **shared low**.
 5. This completes the applicable candle-level Valid Pullback sequence.
 
-Reference transfer is directional and belongs to candle-level Valid Pullback construction. It does not itself create a Structurally Valid Pullback, IDM, confirmed swing, BOS, or CHoCH.
+Reference transfer is directional and belongs to candle-level Valid Pullback construction. It does not itself create a Structurally Valid Pullback, IDM, CONFIRMED_STRUCTURAL_SWING, VALID_BOS, or CHoCH_CONFIRMED.
 
 ### 3.2 Strict inside bar
 
@@ -93,7 +93,7 @@ current.low  > mother.low
 
 Equality does not count as a strict inside bar.
 
-A strict inside bar does not independently create a Valid Pullback, Structurally Valid Pullback, IDM, confirmed swing, BOS, or CHoCH.
+A strict inside bar does not independently create a Valid Pullback, Structurally Valid Pullback, IDM, CONFIRMED_STRUCTURAL_SWING, VALID_BOS, or CHoCH_CONFIRMED.
 
 A break of an inside-bar relationship requires independent structural validation.
 
@@ -160,7 +160,7 @@ Bullish execution polarity: Close > Open
 Bearish execution polarity: Close < Open
 ```
 
-The formation is an observation of repeated rejection/absorption. It is not itself a structural sweep, IDM, BOS, or CHoCH.
+The formation is an observation of repeated rejection/absorption. It is not itself a structural sweep, IDM, VALID_BOS, or CHoCH_CONFIRMED.
 
 ### 4.3 Engulfing (Outside-Bar Reversal)
 
@@ -190,7 +190,7 @@ Close_t < Open_t
 
 The upper wick sweep is mandatory.
 
-These are candle-level pattern relationships. They do not independently establish a structural sweep, IDM, BOS, or CHoCH.
+These are candle-level pattern relationships. They do not independently establish a structural sweep, IDM, VALID_BOS, or CHoCH_CONFIRMED.
 
 ### 4.4 Momentum Candle
 
@@ -258,8 +258,8 @@ Therefore:
 
 ```text
 CANDLE WICK SWEEP ≠ IDM
-CANDLE WICK SWEEP ≠ BOS
-CANDLE WICK SWEEP ≠ CHoCH
+CANDLE WICK SWEEP ≠ VALID_BOS
+CANDLE WICK SWEEP ≠ CHoCH_CONFIRMED
 ```
 
 The strict inside-bar rule remains unchanged: an inside bar cannot independently create a sweep or liquidity extreme.
@@ -294,7 +294,7 @@ Do not reduce this to a previous-candle-low breach.
 
 Do not reduce this to a previous-candle-high breach.
 
-A candle-level Valid Pullback is the Layer 1 origin object consumed by Layer 2. It is not by itself a Structurally Valid Pullback, IDM, confirmed swing, BOS, CHoCH, or Trading Range transition.
+A candle-level Valid Pullback is the Layer 1 origin object consumed by Layer 2. It is not by itself a Structurally Valid Pullback, IDM, CONFIRMED_STRUCTURAL_SWING, VALID_BOS, CHoCH_CONFIRMED, or Trading Range transition.
 
 ## 7. Layer 1 validation contract
 
@@ -309,7 +309,7 @@ A compliant implementation must preserve all of the following:
 - Wick or body breach may satisfy the relevant candle-level breach; candle color does not independently determine Layer 1 validity (distinct from Layer 3 where opposing candles are defined by candle direction).
 - Candlestick reversal patterns are execution observations and do not manufacture structural truth.
 - Qualitative candle morphology must not be silently converted into a deterministic numeric trigger.
-- Candle-level relationships do not manufacture IDM, Confirmed Swing, BOS, CHoCH, or Trading Range.
+- Candle-level relationships do not manufacture IDM, CONFIRMED_STRUCTURAL_SWING, VALID_BOS, CHoCH_CONFIRMED, or Trading Range.
 
 ## 8. Downstream boundary
 

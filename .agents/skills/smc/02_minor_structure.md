@@ -102,7 +102,7 @@ AND
 RETRACEMENT DEPTH >= 38.2%
 ```
 
-The legacy rule allowing ">= 5 prior candle extremes swept/engulfed" as an alternative to 38.2% depth is **NON-CANONICAL AND REMOVED**. No heuristic, candle count sweep, or safe mode may substitute for the mandatory 38.2% depth requirement.
+No heuristic, candle count sweep (such as sweeps of prior candle extremes), or safe mode may substitute for the mandatory 38.2% depth requirement.
 
 There is no automatic one-candle exception: 1 opposing candle is NEVER sufficient for macro BOS retracement qualification under any circumstances.
 
@@ -212,12 +212,12 @@ Verified Pullback Extreme
            +
 Canonical IDM Eligibility
            ↓
-       MINOR IDM
+        MINOR IDM
 
-Minor IDM ≠ Confirmed Swing
+Minor IDM ≠ CONFIRMED_STRUCTURAL_SWING
 Minor IDM ≠ Protected Structural Extreme
-Minor IDM ≠ BOS
-Minor IDM ≠ CHoCH
+Minor IDM ≠ VALID_BOS
+Minor IDM ≠ CHoCH_CONFIRMED
 ```
 
 ## 11. Minor IDM Takeout & Swing Confirmation
@@ -229,19 +229,22 @@ Wick and body interaction are both valid for the IDM liquidity takeout (`IDM_TAK
 ```text
 Qualified IDM
 → Wick or Body Takeout (IDM_TAKEN = TRUE)
-→ Provisional Expansion Extreme becomes Confirmed Swing
+→ SWING_CONFIRMATION_GATE UNLOCKED
+→ Provisional Expansion Extreme becomes CONFIRMED_STRUCTURAL_SWING
 ```
 
 A body close beyond the IDM is not required.
 
-A provisional Expansion Extreme becomes a Confirmed Swing when and only when the active IDM is taken out (`IDM_TAKEN = TRUE`). Wick or body penetration of the IDM level is sufficient to trigger IDM takeout.
+A provisional Expansion Extreme becomes a CONFIRMED_STRUCTURAL_SWING when and only when the active IDM is taken out (`IDM_TAKEN = TRUE`). Wick or body penetration of the IDM level exclusively opens the `SWING_CONFIRMATION_GATE`.
 
 IDM takeout confirms the swing ONLY:
-- It does NOT create BOS.
-- It does NOT create CHoCH.
+- It does NOT create a new Dealing Range.
+- It does NOT flip trend.
+- It is NEVER a CHoCH.
+- It does NOT create VALID_BOS.
 - It does NOT roll the dealing range.
 
-`Confirmed Swing ≠ VALID_BOS`. Having a Confirmed Swing is a necessary prerequisite for BOS, not BOS itself. If IDM is taken out (swing confirmed) but retracement depth is `< 38.2%`, any subsequent break of the Confirmed Swing is classified as `IMPULSE_EXTENSION`, NOT `VALID_BOS`. The dealing range remains open, no new protected extreme is established, and no range rollover occurs.
+`CONFIRMED_STRUCTURAL_SWING ≠ VALID_BOS`. Having a CONFIRMED_STRUCTURAL_SWING is a necessary prerequisite for BOS, not BOS itself. If IDM is taken out (`IDM_TAKEN = TRUE`) but retracement depth is `< 38.2%`, any subsequent break of the CONFIRMED_STRUCTURAL_SWING is classified as `IMPULSE_EXTENSION`, NOT `VALID_BOS`. The dealing range remains open, no new protected extreme is established, and no range rollover occurs.
 
 A wick or body interaction with an arbitrary minor structural level, liquidity node, or local extreme does not independently create or activate an IDM. IDM identity must first be established through the eligibility rules above.
 
@@ -273,14 +276,14 @@ Layer 3 owns:
 
 - Major Structure;
 - Genesis / bootstrap;
-- Confirmed Swing;
+- CONFIRMED_STRUCTURAL_SWING;
 - Protected Structural Extreme;
-- Major IDM and Fallback Major IDM lifecycle;
-- IDM sweep → Swing Confirmation Gate;
+- Major IDM and FALLBACK_MAJOR_IDM lifecycle;
+- IDM sweep → SWING_CONFIRMATION_GATE;
 - Physical External Break;
-- BOS;
+- VALID_BOS;
 - Trading Range rollover;
-- CHoCH and post-CHoCH regime initialization.
+- CHoCH_CONFIRMED and post-CHoCH regime initialization.
 
 See `03_structural_lifecycle.md`.
 
@@ -313,19 +316,17 @@ A compliant implementation must preserve all of the following:
 - High-momentum remains qualitative unless independently verified quantitatively.
 - Only a Structurally Valid Pullback can become the basis for active/minor IDM.
 - Only the newest Structurally Valid Pullback remains the active Minor IDM target for the active leg.
-- Minor IDM remains distinct from Major IDM, Confirmed Swing, Protected Structural Extreme, BOS, CHoCH, and Trading Range.
-- A qualified IDM can be swept by wick or body without requiring body close.
+- Minor IDM remains distinct from Major IDM, CONFIRMED_STRUCTURAL_SWING, Protected Structural Extreme, VALID_BOS, CHoCH_CONFIRMED, and Trading Range.
+- A qualified IDM can be swept by wick or body without requiring body close (`IDM_TAKEN = TRUE`).
 - Arbitrary minor-level interaction does not manufacture IDM.
 - Layer 3 lifecycle rules are consumed only after the required Layer 1/2 prerequisites exist.
 
-## 15. Authority and supersession
+## 15. Canonical Precedence
 
-Older conflicting wording does not remain authoritative merely because it was historically stored in the canonical file.
+Semantic ownership governs canonical documentation:
 
 ```text
-NEWER EXPLICITLY VALIDATED RULE
+CURRENT SEMANTIC OWNER
         >
-OLDER CONFLICTING RULE
+CROSS-REFERENCE
 ```
-
-Superseded rules that remain necessary for historical traceability belong in repository history and must not silently re-enter canonical semantics.

@@ -6,11 +6,11 @@
 
 **Scoring boundary:** The methodology defines the risk concepts and gating semantics. The concrete risk_quality calculation and final weighted score are implementation behavior owned by SMC_mapper.py and documented in 06_implementation.md. This document must not invent a competing scoring formula.
 
-## 5.1 Structural Stop-Loss Placement — PASS / CLOSED
+## 5.1 Structural Stop-Loss Placement
 
 ### Tier 1 — Structural / Zone Boundary Stop
 
-Conservative stop placement is beyond the furthest relevant boundary of the parent Valid Order Flow / Valid Order Block according to the applicable execution module.
+Conservative stop placement is beyond the furthest relevant boundary of the parent OF_CONFIRMED / Valid Order Block according to the applicable execution module.
 
 A stop placement or stop touch does not itself create structural truth:
 
@@ -18,7 +18,7 @@ A stop placement or stop touch does not itself create structural truth:
 EXECUTION_STOPPED_OUT ≠ ORDER_FLOW_FAILED
 EXECUTION_STOPPED_OUT ≠ ORDER_BLOCK_FAILED
 EXECUTION_STOPPED_OUT ≠ VALID_BOS
-EXECUTION_STOPPED_OUT ≠ VALID_CHoCH
+EXECUTION_STOPPED_OUT ≠ CHoCH_CONFIRMED
 ```
 
 ### Tier 2 — Refined Pattern Extreme Stop
@@ -53,7 +53,7 @@ EXECUTION_STOPPED_OUT
 
 This remains an execution/risk event and is not POI failure, structural invalidation, BOS, CHoCH, or IDM creation.
 
-## 5.2 Target audit — PASS / CLOSED
+## 5.2 Target Policy
 
 ### Primary pro-trend target
 
@@ -72,7 +72,7 @@ TARGET_HIT ≠ VALID_BOS
 
 When VALID_BOS occurs, the previous external target expires and the new Trading Range external extreme becomes the active structural target.
 
-When VALID_CHoCH occurs, targets belonging exclusively to the invalidated structural regime become invalid as an execution/risk lifecycle consequence. This does not manufacture a structural event.
+When CHoCH_CONFIRMED occurs, targets belonging exclusively to the invalidated structural regime become invalid as an execution/risk lifecycle consequence. This does not manufacture a structural event.
 
 ### RR gating
 
@@ -86,13 +86,13 @@ This is an entry/setup gate, not a target-location rule.
 
 ### Counter-trend / pullback execution
 
-Counter-trend execution may use IDM/Engineering Liquidity sweep + valid POI + closed canonical reversal. Its expected structural destination may be an unmitigated parent Decisional/Extreme OF/OB, but no universal hard TP coordinate is canonicalized here.
+Counter-trend execution may use IDM/Engineering Liquidity sweep + valid POI + closed canonical reversal. Its expected structural destination may be an unmitigated parent Decisional POI / Extreme POI (OF_CONFIRMED / Valid OB), but no universal hard TP coordinate is canonicalized here.
 
 IRL is not a canonical TP category. Internal liquidity, Engineering Liquidity, internal OF/OB, and Minor IDM remain context/execution objects rather than mandatory TP coordinates.
 
 No fixed partial-TP percentage, break-even trigger, or trailing algorithm is canonicalized here.
 
-## 5.3 Pending-order and open-position lifecycle — PASS / CLOSED
+## 5.3 Pending-Order and Open-Position Lifecycle
 
 ### 5.3.1 Pending Order Invalidation
 
@@ -113,7 +113,7 @@ EXPIRED_CANCELLED
 ```
 
 ```
-VALID_CHoCH
+CHoCH_CONFIRMED
         ↓
 pending orders dependent on invalidated regime
         ↓
@@ -122,7 +122,7 @@ PENDING_ORDER_CANCELLED
 
 CHoCH_ELIGIBLE alone does not automatically cancel pending orders.
 
-A historical Origin OB may remain as a historical object after a parent OF lifecycle transition when its own validity remains canonical.
+A historical Origin OB (latent POI) may remain as a historical object after a parent OF lifecycle transition when its own validity remains canonical.
 
 ### 5.3.2 Zone Failure
 
@@ -158,7 +158,7 @@ EXECUTION_STOPPED_OUT
 ≠ ORDER_FLOW_FAILED
 ≠ ORDER_BLOCK_FAILED
 ≠ VALID_BOS
-≠ VALID_CHoCH
+≠ CHoCH_CONFIRMED
 ```
 
 ### 5.3.4 Emergency Structural Kill-Switch
@@ -166,7 +166,7 @@ EXECUTION_STOPPED_OUT
 “Kill-Switch” is project execution-control terminology, not an independent structural entity.
 
 ```
-VALID_CHoCH ↛ mandatory MARKET_CLOSE_ON_CHOCH
+CHoCH_CONFIRMED ↛ mandatory MARKET_CLOSE_ON_CHOCH
 ORDER_FLOW_FAILED ↛ mandatory MARKET_CLOSE
 ORDER_BLOCK_FAILED ↛ mandatory MARKET_CLOSE
 ```
@@ -204,12 +204,12 @@ Candle-close structural/execution events include:
 ORDER_FLOW_FAILED
 ORDER_BLOCK_FAILED
 VALID_BOS
-VALID_CHoCH
+CHoCH_CONFIRMED
 ```
 
 If STOP_TOUCH and TARGET_TOUCH are both reachable inside one OHLC candle, the methodology cannot deterministically establish which occurred first. That requires lower-timeframe/tick data or broker execution records. Do not invent microsequence from OHLC.
 
-## 5.4 Risk invariants — PASS / CLOSED
+## 5.4 Risk Invariants
 
 ```
 RISK CONSUMES STRUCTURE
@@ -219,7 +219,7 @@ POI INVALIDATION ≠ STRUCTURAL INVALIDATION
 STRUCTURAL INVALIDATION ≠ RISK STOP
 RISK STOP ≠ EXECUTION_STOPPED_OUT
 TARGET_HIT ≠ VALID_BOS
-VALID_CHoCH ↛ mandatory MARKET_CLOSE_ON_CHOCH
+CHoCH_CONFIRMED ↛ mandatory MARKET_CLOSE_ON_CHOCH
 ```
 
 ## 5.5 Scoring boundary — IMPLEMENTATION-OWNED
@@ -265,11 +265,11 @@ Fallback Major IDM = 40
 
 These values evaluate already-validated state; they cannot create or validate structure.
 
-## 5.6 Audit closure
+## 5.6 Architectural Separation
 
-Risk remains a downstream consumer of structural and execution state. No risk rule may manufacture IDM, Confirmed Swing, Protected Structural Extreme, BOS, CHoCH, Trading Range, or POI ontology.
+Risk remains a downstream consumer of structural and execution state. No risk rule may manufacture IDM, CONFIRMED_STRUCTURAL_SWING, Protected Structural Extreme, VALID_BOS, CHoCH_CONFIRMED, Trading Range, or POI ontology.
 
-The canonical separation is closed:
+The canonical separation:
 
 ```
 STRUCTURE → EXECUTION → RISK
