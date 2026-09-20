@@ -32,6 +32,25 @@ Layer 3 — Structural Lifecycle
 
 Every higher-level event must consume previously validated lower-level state. No stage may be skipped or manufactured by configuration, scoring, visualization, or implementation convenience.
 
+## 2.1. Engulfed Candle Sequence
+
+**Engulfed Candle Sequence** is a Sequential / Minor Structure concept consumed by Layer 2. It describes a source-backed sequence/context relationship in which one candle is engulfed within a larger applicable price-action sequence.
+
+It is intentionally not defined here as a universal geometric synonym for an **Inside Bar**. The source corpus uses “engulfed” in contextual sequence relationships, but does not provide a single authoritative candle-level geometry that would justify collapsing the concept into Inside Bar semantics.
+
+Therefore:
+
+```
+Engulfed Candle Sequence
+≠ Inside Bar
+≠ Candle-Level Microstructure Primitive
+≠ Structural Swing
+≠ IDM
+≠ VALID_BOS
+```
+
+Layer 2 may consume the sequence where the applicable pullback/minor-structure context requires it, without manufacturing a new Microstructure primitive.
+
 ## 2. Candle-Level Minor Structure
 
 Minor Structure consists of internal candle-level structural price action that does not define or alter the governing external Trading Range.
@@ -306,6 +325,7 @@ Configuration may change a threshold only where explicitly permitted. It must ne
 A compliant implementation must preserve all of the following:
 
 - Candle relationships are observations, not automatically higher-level structure.
+- Engulfed Candle Sequence remains a Sequential / Minor Structure concept and is not equated with Inside Bar.
 - Strict inside bars require strict containment and equality does not qualify.
 - A single outside bar cannot activate both directional branches.
 - Candle-level Valid Pullback requires the complete directional sequence.
