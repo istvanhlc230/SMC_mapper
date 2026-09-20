@@ -75,6 +75,8 @@ Structural classification is downstream.
 
 **Candle Extreme Protection** records the applicable candle-level reference/protection relationship.
 
+For a bullish candle-level directional sequence, the relevant low remains protected while the applicable high is breached. For a bearish candle-level directional sequence, the relevant high remains protected while the applicable low is breached. This is a candle-level OHLC relationship only; it does not establish structural protection.
+
 It is a microstructure object and must remain distinct from:
 
 ~~~
@@ -197,7 +199,7 @@ Equal-extreme transfer occurs only when the required equal-extreme relationship 
 
 ## 10. Candlestick-Based Trend
 
-**Candlestick-Based Trend** describes candle-level directional relationships derived from OHLC.
+**Candlestick-Based Trend** describes candle-level directional relationships derived from OHLC. In the source-backed candle-level usage, a bullish directional sequence may be observed when the applicable previous candle high is breached while the relevant low remains protected; the bearish counterpart breaches the applicable previous candle low while the relevant high remains protected. This is a directional candle relationship, not a structural-trend classification.
 
 It must remain distinct from structural trend:
 
