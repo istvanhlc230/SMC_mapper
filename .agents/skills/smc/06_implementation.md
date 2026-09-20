@@ -596,9 +596,6 @@ Regression tests must cover:
 - no fabricated protected swing;
 - no fabricated BOS.
 
-### Obsolete concepts
-- no obsolete sub-38.2% Fibonacci state, alias, or setup classification.
-
 ## 49. State-Transition Coverage & Determinism
 
 The structural state machine is formally separated into three deterministic layers. A candle must not directly manufacture a state transition.
