@@ -25,6 +25,7 @@ Read the referenced documents in this order when the full methodology is require
 
 2. `02_minor_structure.md`
    - Layer 2 Minor Structure
+   - Engulfed Candle Sequence (Sequential / Minor context)
    - Verified pullback extreme
    - Minor liquidity / IDM foundations
    - Minor structural lifecycle inputs
@@ -55,6 +56,7 @@ Read the referenced documents in this order when the full methodology is require
 
 6. `04_execution.md`
    - Execution-layer semantics
+   - Momentum Candle remains a qualitative execution observation / SOURCE-PENDING filter, not a Microstructure primitive
    - Valid POIs
    - Entry modules
    - POI refinement
