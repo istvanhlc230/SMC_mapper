@@ -720,6 +720,55 @@ The state machine must preserve provenance, prerequisite gates, and anti-retroac
 
 **Verdict: PASS / CLOSED.**
 
+
+### 49.5 Context-Dependent Wick Disambiguation (MC-01)
+
+**Wick breach is context-dependent and must not be globally classified as a sweep.** The parser MUST evaluate the structural role of the breached level before classifying a wick.
+
+Required conceptual behavior:
+
+```text
+IF breached level == CONTINUATION_EXTERNAL_BOUNDARY
+  AND level is a confirmed structural swing
+  AND physical wick penetration occurs:
+
+  STRUCTURAL_SWING_BREAK = TRUE
+
+  IF IDM_TAKEN AND RETRACEMENT_DEPTH >= 0.382:
+      classify as VALID_BOS
+      lock Protected Structural Extreme
+      perform Trading Range Rollover
+  ELSE:
+      classify according to existing insufficient-gate / IMPULSE_EXTENSION logic
+
+  (Do NOT require body close to establish STRUCTURAL_SWING_BREAK in this continuation case)
+
+IF breached level == OPPOSING_PROTECTED_BOUNDARY
+  AND REAL_MAJOR_IDM independently exists
+THEN:
+  wick breach → CHoCH_ELIGIBLE
+
+IF breached level == FALLBACK_MAJOR_IDM
+  AND REAL_MAJOR_IDM does not yet exist
+THEN:
+  wick breach → MAJOR_IDM_SWEEP
+  trend remains unchanged
+
+IF opposing protected boundary receives the required body close
+THEN:
+  CHoCH_CONFIRMED
+```
+
+### 49.6 Canonical Authority Hierarchy (MC-01)
+
+For the canonical True SMC implementation, the implementation-level structural specification governs where it provides a more specific rule than earlier generic pedagogical formulations.
+
+Therefore:
+* earlier body-close-only BOS pedagogy is NOT a universal implementation rule;
+* implementation-level Wick-BOS defines the valid STRUCTURAL_SWING_BREAK mechanism, while the complete VALID_BOS event still requires all canonical macro-BOS gates;
+* continuation external wick-BOS is canonical for establishing the break;
+* wick interpretation is structural-context dependent.
+
 ## Implementation boundary
 
 The following must remain separate state objects or semantically equivalent state representations:

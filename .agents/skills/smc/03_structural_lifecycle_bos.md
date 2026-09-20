@@ -161,53 +161,52 @@ MAJOR_IDM_SWEEP ≠ VALID_BOS
 
 The classification is based on structural level identity and provenance, not geometry alone.
 
-### 3.4.5 — Body-Close BOS
+### 3.4.5 — Canonical Break Classification: Wick vs Body (MC-01)
 
-Bullish:
+The canonical True SMC implementation distinguishes strictly between continuation boundaries and opposing boundaries. The earlier basic/pedagogical model requiring a body close for all BOS events is NOT a universal implementation rule and is superseded by this specification.
 
+#### 1. Continuation External Boundary (Confirmed Swing)
+
+When price breaks a confirmed continuation external swing, it follows the canonical **Wick-BOS** continuation rule where a wick establishes the break mechanism:
+* Physical wick penetration of a confirmed Continuation External Boundary is sufficient to establish the STRUCTURAL_SWING_BREAK component of the canonical BOS condition. It does not by itself establish VALID_BOS.
+* VALID_BOS occurs only when the canonical IDM_TAKEN, RETRACEMENT_DEPTH >= 0.382, and STRUCTURAL_SWING_BREAK gates are all satisfied.
+* If RETRACEMENT_DEPTH < 0.382, then a continuation external wick breach does NOT become VALID_BOS. It remains IMPULSE_EXTENSION.
+* A body close is NOT additionally required to establish the break; however, the break alone does not bypass the macro-BOS retracement gates.
+* Only the completed canonical VALID_BOS event triggers the Trading Range Rollover and Protected Structural Extreme lock.
+
+**Canonical Rule:**
 ```text
-Close_t > Confirmed_Swing_High
+Continuation External Boundary
++
+Physical Wick Breach
+→ STRUCTURAL_SWING_BREAK
+
+THEN:
+
+IDM_TAKEN
++
+RETRACEMENT_DEPTH >= 0.382
++
+STRUCTURAL_SWING_BREAK
 → VALID_BOS
+→ Protected Structural Extreme Lock
+→ Trading Range Rollover
 ```
 
-Bearish:
+#### 2. Context-Dependent Wick Disambiguation
 
-```text
-Close_t < Confirmed_Swing_Low
-→ VALID_BOS
-```
+The parser MUST NOT apply the generic logic: "Wick = always sweep". The interpretation of a wick breach is structural-context dependent. Do not collapse these four cases:
 
-A body close is valid only after the retracement gate and all applicable structural/provenance prerequisites have passed.
+**Canonical Disambiguation Matrix:**
 
-A body close alone cannot manufacture BOS.
-
-**Verdict: PASS / CLOSED.**
-
-### 3.4.6 — Wick-Break BOS
-
-Bullish:
-
-```text
-High_t > Confirmed_Swing_High
-AND
-Close_t <= Confirmed_Swing_High
-→ VALID_BOS
-```
-
-Bearish:
-
-```text
-Low_t < Confirmed_Swing_Low
-AND
-Close_t >= Confirmed_Swing_Low
-→ VALID_BOS
-```
-
-Equality at the broken level is included in the wick-BOS path.
-
-Wick-BOS is immediate. It does not wait for a later body close, and a later candle cannot retroactively rewrite the event.
-
-The only mandatory exception is a Fallback Major IDM / Range-Boundary Proxy level.
+1. **Continuation External Boundary / Confirmed Swing**
+   * Wick breach → STRUCTURAL_SWING_BREAK (→ VALID_BOS only if the complete BOS gate is satisfied).
+2. **Opposing Protected Boundary WITH an independently formed REAL_MAJOR_IDM**
+   * Wick breach → `CHoCH_ELIGIBLE` (does NOT by itself constitute `CHoCH_CONFIRMED`)
+3. **Opposing Boundary functioning as FALLBACK_MAJOR_IDM** (when the required post-BOS pullback / REAL_MAJOR_IDM lineage does not yet exist)
+   * Wick breach → `MAJOR_IDM_SWEEP` (trend remains unchanged, no range rollover, no protected extreme lock)
+4. **Opposing Protected Boundary**
+   * Body Close → `CHoCH_CONFIRMED
 
 **Verdict: PASS / CLOSED.**
 
@@ -427,6 +426,17 @@ CHoCH PIPELINE
 ```
 
 A fallback proxy event can produce `MAJOR_IDM_SWEEP`; it cannot be simultaneously classified as `VALID_BOS` or `VALID_CHoCH`.
+
+
+### 3.4.15 — Canonical Authority Hierarchy (MC-01)
+
+For the canonical True SMC implementation, the implementation-level structural specification governs where it provides a more specific rule than earlier generic pedagogical formulations.
+
+Therefore:
+* earlier body-close-only BOS pedagogy is NOT a universal implementation rule;
+* implementation-level Wick-BOS defines the valid STRUCTURAL_SWING_BREAK mechanism, while the complete VALID_BOS event still requires all canonical macro-BOS gates;
+* continuation external wick-BOS is canonical for establishing the break;
+* wick interpretation is structural-context dependent.
 
 ## Canonical BOS Invariants
 
