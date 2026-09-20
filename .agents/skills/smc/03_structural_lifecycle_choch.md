@@ -336,7 +336,7 @@ VERIFIED PULLBACK EXTREME
         ↓
 REAL_MAJOR_IDM
         ↓
-FALLBACK_PROXY → SUPERSEDED
+FALLBACK_MAJOR_IDM → SUPERSEDED
 ```
 
 The FALLBACK_MAJOR_IDM is therefore superseded by an independently qualified Real Major IDM; it is never retroactively reclassified as Real Major IDM.
