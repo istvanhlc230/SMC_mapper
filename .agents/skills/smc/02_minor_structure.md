@@ -2,9 +2,9 @@
 
 **Role:** Canonical Layer 2 Minor Structure of the True SMC methodology.
 
-**Authority:** Authoritative for Sequential / Minor Structure, including Pullback Formation, Candle-Level Valid Pullback, verified pullback extremes, liquidity/IDM foundations, active pullback state, and Minor IDM semantics. The candle-level microstructure primitives consumed by this layer are owned by 01_candle_level_foundation.md.
+**Authority:** Authoritative for Sequential / Minor Structure, including Pullback Formation, Candle-Level Valid Pullback, verified pullback extremes, liquidity/IDM foundations, active pullback state, and Minor IDM semantics. The candle-level microstructure primitives consumed by this layer are owned by 01_micro_structure.md.
 
-Major structural retracement qualification is owned by `03_structural_lifecycle.md` Section 3.3.2. Layer 2 consumes that qualification; it does not define it.
+Major structural retracement qualification is owned by `03_structural_semantic_authority.md` Section 3.3.2. Layer 2 consumes that qualification; it does not define it.
 
 ## 1. Methodology boundary
 
@@ -95,7 +95,7 @@ IDM Eligibility
 
 ## 4. Structural qualification boundary
 
-Major structural retracement qualification is **not owned by Layer 2 Minor Structure**. It is a Layer 3 Major Structure rule owned by `03_structural_lifecycle.md`.
+Major structural retracement qualification is **not owned by Layer 2 Minor Structure**. It is a Layer 3 Major Structure rule owned by `03_structural_semantic_authority.md`.
 
 Layer 2 interprets the Layer 1 microstructure event stream into Pullback Formation and Candle-Level Valid Pullback, then produces the verified pullback extreme that becomes an input to the Layer 3 structural qualification stage. Layer 2 must not redefine the major-structure qualification criteria.
 
@@ -125,7 +125,7 @@ No heuristic, candle count sweep (such as sweeps of prior candle extremes), or s
 
 There is no automatic one-candle exception: 1 opposing candle is NEVER sufficient for macro BOS retracement qualification under any circumstances.
 
-This section is a boundary reference, not a second semantic definition. The canonical semantic definition is `03_structural_lifecycle.md` Section 3.3.2; numeric/configurable ownership is in `methodology_parameters.md`.
+This section is a boundary reference, not a second semantic definition. The canonical semantic definition is `03_structural_semantic_authority.md` Section 3.3.2; numeric/configurable ownership is in `methodology_parameters.md`.
 
 ## 5. Structurally Valid Pullback
 
@@ -177,7 +177,7 @@ ACTIVE PULLBACK POINTER
 ≠ HISTORICAL STRUCTURE
 ```
 
-Major IDM, Fallback Major IDM, Confirmed Swing, Protected Structural Extreme, Trading Range, BOS, and CHoCH lifecycle ownership begins in Layer 3 and is defined in `03_structural_lifecycle.md`.
+Major IDM, Fallback Major IDM, Confirmed Swing, Protected Structural Extreme, Trading Range, BOS, and CHoCH lifecycle ownership begins in Layer 3 and is defined in `03_structural_semantic_authority.md`.
 
 ## 8. IDM Definition — Layer 2 Eligibility
 
@@ -304,7 +304,7 @@ Layer 3 owns:
 - Trading Range rollover;
 - CHoCH_CONFIRMED and post-CHoCH regime initialization.
 
-See `03_structural_lifecycle.md`.
+See `03_structural_semantic_authority.md`.
 
 ## 13. Parameter ownership boundary
 
