@@ -189,7 +189,7 @@ Therefore:
 
 ```text
 FALLBACK_MAJOR_IDM ≠ REAL_MAJOR_IDM
-FALLBACK_PROXY + WICK ≠ CHoCH_CONFIRMED
+FALLBACK_MAJOR_IDM + WICK ≠ CHoCH_CONFIRMED
 ```
 
 Anti-retroactive invariant:
@@ -206,7 +206,7 @@ Every event is classified using the structural state active at its own event tim
 
 ### 3.5.5 — CHoCH Downstream State Changes & Post-CHoCH Dual Lineage
 
-A `CHoCH_CONFIRMED` performs a multi-phase, asymmetric regime transition. The post-CHoCH lifecycle contains two distinct lineages: an **internal structural lineage** and an **external fallback lineage**.
+A `CHoCH_CONFIRMED` performs a multi-phase, asymmetric regime transition. The post-CHoCH lifecycle contains two distinct lineages: an **internal structural lineage** and an ****.
 
 ```text
                         CHoCH_CONFIRMED
