@@ -388,7 +388,7 @@ FIRST_POST_CHOCH_SVP ≠ FIRST_POST_CHOCH_MINOR_IDM
 FALLBACK_MAJOR_IDM ≠ REAL_MAJOR_IDM
 ```
 
-A qualifying sweep of the applicable IDM lineage unlocks the Confirmation Gate. IDM takeout exclusively opens the `SWING_CONFIRMATION_GATE` and confirms the provisional swing only (`IDM_TAKEN = TRUE`); it does NOT create a new Dealing Range, does NOT flip trend, is NEVER a CHoCH, does NOT create `VALID_BOS`, and does NOT roll the dealing range (`CONFIRMED_STRUCTURAL_SWING ≠ VALID_BOS`). `CONFIRMATION GATE UNLOCKED` is a process condition, not a new state enum such as `CONFIRMED_RANGE_PENDING`.
+A qualifying sweep of the applicable IDM lineage unlocks the Confirmation Gate. IDM takeout exclusively opens the `SWING_CONFIRMATION_GATE` and confirms the provisional swing only (`IDM_TAKEN = TRUE`); it does NOT create a new Dealing Range, does NOT flip trend, is NEVER a CHoCH, does NOT create `VALID_BOS`, and does NOT roll the dealing range (`CONFIRMED_STRUCTURAL_SWING ≠ VALID_BOS`). `CONFIRMATION GATE UNLOCKED` is a process condition, not a new state enum such as `non-canonical pending-range state`.
 
 ```text
 CONFIRMATION_LOCKED
