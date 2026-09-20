@@ -13,106 +13,84 @@ Read the referenced documents in this order when the full methodology is require
 
 ## 1. Core methodology
 
-1. `01_candle_level_foundation.md`
+1. `01_micro_structure.md`
    - Canonical candle-level microstructure observations and relationships
-   - Candle Extreme Breach / Protection
-   - Inside Bar / Outside Bar semantics
-   - Equal High (EQH) / Equal Low (EQL)
-   - Equal Extreme Reference Transfer
-   - Candle Internal Sequence
-   - Candlestick-Based Trend
-   - Sequential Candle-Level Valid Pullback is consumed by Layer 2
 
 2. `02_minor_structure.md`
    - Layer 2 Minor Structure
-   - Engulfed Candle Sequence (Sequential / Minor context)
-   - Verified pullback extreme
+   - Pullback Formation, Candle-Level Valid Pullback, verified pullback extreme
    - Minor liquidity / IDM foundations
-   - Minor structural lifecycle inputs
-   - Does **not** own Major Structural Retracement Qualification
+   - Does **not** own Major Structural Qualification
 
-3. `03_structural_lifecycle.md`
-   - Layer 3 Major Structural Lifecycle
-   - Major Structural Retracement Qualification
-   - Structurally Valid Pullback
-   - Structural extremes and swing lifecycle
-   - IDM lifecycle
-   - Structural state transitions
-   - Canonical semantic owner of Major Structural Qualification
+3. `03_structural_semantic_authority.md`
+   - Shared Layer 3 Major Structural Semantic Authority
+   - Major Structure ontology and structural qualification
+   - Confirmed Structural Swing / Protected Structural Extreme lifecycle
+   - Shared lifecycle invariants
 
-4. `03_structural_lifecycle_bos.md`
-   - Subordinate BOS module
-   - BOS prerequisites and break classification
-   - Consumes Major Structural Qualification from `03_structural_lifecycle.md`
-   - Does not redefine Major Structural Qualification
+4. `04_BOS_mechanics.md`
+   - Dedicated BOS mechanics and lifecycle
+   - Continuation and opposing-break classification boundaries
+   - Consumes shared structural qualification; does not redefine it
 
-5. `03_structural_lifecycle_choch.md`
-   - Subordinate CHoCH module
-   - CHoCH prerequisites and lifecycle
+5. `05_CHOCH_mechanics.md`
+   - Dedicated CHoCH mechanics and lifecycle
    - Fallback Major IDM / Major IDM Sweep distinctions
-   - Consumes structural state from `03_structural_lifecycle.md`
+   - Consumes shared structural state; does not redefine it
 
 ## 2. Execution and risk
 
-6. `04_execution.md`
+6. `06_execution.md`
    - Execution-layer semantics
-   - Momentum Candle remains a qualitative execution observation / SOURCE-PENDING filter, not a Microstructure primitive
-   - Valid POIs
-   - Entry modules
-   - POI refinement
+   - Momentum Candle remains a qualitative execution observation / SOURCE-PENDING filter
    - Execution consumes structure; it does not create structure
 
-7. `05_risk.md`
-   - Risk policy and semantic risk boundaries
-   - Structural stop / invalidation boundaries
+7. `07_risk.md`
+   - Risk policy and structural risk boundaries
    - Risk consumes structure; it does not create structure
-   - Concrete risk-score arithmetic is implementation-owned, not a second methodology definition
 
 ## 3. Parameters and implementation representation
 
 8. `methodology_parameters.md`
    - Numeric and configurable methodology parameters
    - Parameter ownership only
-   - Does not redefine semantic methodology
 
-9. `06_implementation.md`
+9. `08_implementation.md`
    - Implementation representation requirements
-   - State-transition requirements
-   - Regression and validation requirements
-   - Implementation-owned scoring representation
-   - Must consume the canonical methodology; it must not redefine it
+   - State-transition and validation requirements
+   - Must consume canonical methodology; it must not redefine it
 
 ## 4. Documentation authority
 
 Semantic ownership is:
 
 ```text
-CANDLE-LEVEL FOUNDATION
-    → 01_candle_level_foundation.md
+MICRO STRUCTURE
+    → 01_micro_structure.md
 
 MINOR STRUCTURE
     → 02_minor_structure.md
 
-MAJOR STRUCTURAL LIFECYCLE
-    → 03_structural_lifecycle.md
+STRUCTURAL SEMANTIC AUTHORITY
+    → 03_structural_semantic_authority.md
 
-BOS DETAILS
-    → 03_structural_lifecycle_bos.md
+BOS MECHANICS
+    → 04_BOS_mechanics.md
 
-CHoCH DETAILS
-    → 03_structural_lifecycle_choch.md
+CHoCH MECHANICS
+    → 05_CHOCH_mechanics.md
 
 EXECUTION
-    → 04_execution.md
+    → 06_execution.md
 
 RISK
-    → 05_risk.md
+    → 07_risk.md
 
 NUMERIC / CONFIGURABLE PARAMETERS
     → methodology_parameters.md
 
 IMPLEMENTATION REPRESENTATION / EXECUTABLE SCORING MAPPING
-    → 06_implementation.md
+    → 08_implementation.md
 ```
 
 A rule must have one primary semantic owner. Other documents may reference that rule, but must not create a competing definition.
@@ -136,13 +114,13 @@ Do not use generic SMC knowledge to override the project's canonical semantic-ow
 ```text
 .agents/skills/smc/
 ├── skill.md
-├── 01_candle_level_foundation.md
+├── 01_micro_structure.md
 ├── 02_minor_structure.md
-├── 03_structural_lifecycle.md
-├── 03_structural_lifecycle_bos.md
-├── 03_structural_lifecycle_choch.md
-├── 04_execution.md
-├── 05_risk.md
-├── 06_implementation.md
+├── 03_structural_semantic_authority.md
+├── 04_BOS_mechanics.md
+├── 05_CHOCH_mechanics.md
+├── 06_execution.md
+├── 07_risk.md
+├── 08_implementation.md
 └── methodology_parameters.md
 ```
