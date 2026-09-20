@@ -2,7 +2,7 @@
 
 **Role:** Numeric and configurable methodology parameters.
 
-**Authority boundary:** This document owns numeric/configurable values only. It does not redefine the semantic identity or lifecycle of any methodology object. The semantic rules that consume these parameters remain authoritative in their current semantic-owner documents: `01_candle_level_foundation.md`, `02_minor_structure.md`, and `03_structural_lifecycle.md` with its subordinate BOS/CHoCH modules.
+**Authority boundary:** This document owns numeric/configurable values only. It does not redefine the semantic identity or lifecycle of any methodology object. The semantic rules that consume these parameters remain authoritative in their current semantic-owner documents: `01_micro_structure.md`, `02_minor_structure.md`, and `03_structural_semantic_authority.md` with its subordinate BOS/CHoCH modules.
 
 ## 9. Structural retracement parameters
 
@@ -37,7 +37,7 @@ The 38.2% requirement applies strictly to the **Macro BOS Retracement Gate (Laye
 
 ### 9.2 Exactly-two-candle exception parameters
 
-The semantic qualification rule for the exactly-two-candle major-structure exception is defined by `03_structural_lifecycle.md` Section 3.3.2. This section owns only its numeric constraints:
+The semantic qualification rule for the exactly-two-candle major-structure exception is defined by `03_structural_semantic_authority.md` Section 3.3.2. This section owns only its numeric constraints:
 
 - the exception applies to **exactly 2 opposing candles**;
 - the mandatory retracement-depth threshold is **38.2%** ($R \ge 0.382$);
@@ -53,7 +53,7 @@ Do not invent ATR, body-ratio, volatility, or standard-deviation thresholds and 
 
 ## 10. Risk scoring boundary
 
-Concrete risk-quality penalties, weighted-score arithmetic, and quality-tier evaluation are implementation-owned by `SMC_mapper.py` and represented in `06_implementation.md`. This parameter document does not own those calculations and must not duplicate them as methodology rules.
+Concrete risk-quality penalties, weighted-score arithmetic, and quality-tier evaluation are implementation-owned by `SMC_mapper.py` and represented in `08_implementation.md`. This parameter document does not own those calculations and must not duplicate them as methodology rules.
 
 ```text
 RISK SCORE PARAMETER
