@@ -297,25 +297,37 @@ BOS is a macro structural continuation event. It is not a local candle pattern, 
 The high-level BOS lifecycle is:
 
 ```text
-ELIGIBLE CONFIRMED CONTINUATION SWING
-        ↓
+IDM TAKEOUT
+    ↓
+CONFIRMED SWING
+    ↓
+DYNAMIC RETRACEMENT QUALIFICATION
+    ↓
+BOS QUALIFIED / DISQUALIFIED LEVEL
+    ↓
 PHYSICAL EXTERNAL BREAK
-        ↓
-RETRACEMENT / STRUCTURAL GATES
-        ↓
-PROVENANCE / LEVEL IDENTITY
-        ↓
-BOS CLASSIFICATION
-        ├── IMPULSE_EXTENSION
-        ├── MAJOR_IDM_SWEEP (fallback)
-        └── VALID_BOS
-                ↓
-        PROTECTED EXTREME LOCK
-                ↓
-        TRADING RANGE ROLLOVER
-                ↓
-        POST_BOS LIFECYCLE
+    ↓
+STRUCTURAL SWING BREAK
+    ↓
+VALID_BOS / IMPULSE_EXTENSION
 ```
+
+The qualification result (`is_bos_qualified`) is established and tracked **before price returns to the BOS level**. The execution event strictly consumes the previously established qualification state. It is NOT a new BOS predicate. The canonical BOS predicate remains:
+
+```text
+VALID_BOS ⇔
+    IDM_TAKEN
+    AND RETRACEMENT_DEPTH >= 0.382
+    AND STRUCTURAL_SWING_BREAK
+```
+
+### Fallback Major IDM & Continuation Distinction
+
+`EXT_CONT_BREAK` is exclusively the continuation path for a confirmed continuation external swing.
+
+`FALLBACK_MAJOR_IDM` is an opposing-boundary external proxy and must not be an outcome or provenance branch of `EXT_CONT_BREAK`.
+
+A physical fallback wick breach yields `MAJOR_IDM_SWEEP`. It does not produce `VALID_BOS`, CHoCH confirmation, Trading Range rollover, or a Protected Structural Extreme lock.
 
 ### 3.4.1 — BOS Reference Ownership
 

@@ -77,9 +77,22 @@ No `VALID_BOS` is created and the current structural lifecycle remains active.
 
 **Verdict: PASS / CLOSED.**
 
-### 3.4.3 — Structural Qualification Consumption
+### 3.4.3 — Qualification Phase vs Execution Phase
 
-BOS consumes the major structural retracement qualification established by `03_structural_lifecycle.md` Section 3.3.2.
+The structural lifecycle explicitly separates the temporal **Qualification Phase** from the **Execution Phase**.
+
+#### 1. Qualification Phase
+
+Qualification occurs *before* price returns to the BOS level. The engine dynamically tracks retracement depth and opposing candles anchored to the active dealing range.
+
+```text
+IDM_TAKEN
+→ CONFIRMED_STRUCTURAL_SWING
+→ RETRACEMENT_TRACKING
+→
+    ├── BOS_QUALIFIED_LEVEL
+    └── BOS_DISQUALIFIED_LEVEL
+```
 
 The canonical qualification paths are defined **once**, at the Layer 3 Major Structure owner:
 
@@ -98,41 +111,42 @@ AND
 RETRACEMENT DEPTH >= 38.2%
 ```
 
-The legacy ">= 5 prior candle extremes swept/engulfed" rule is **NON-CANONICAL AND REMOVED**. Opposing candles are defined strictly by candle direction / body direction (`Close < Open` for bullish, `Close > Open` for bearish). There is no automatic one-candle exception; 1 opposing candle is NEVER sufficient for macro BOS qualification under any circumstances.
+The legacy ">= 5 prior candle extremes swept/engulfed" rule is **NON-CANONICAL AND REMOVED**. Opposing candles are defined strictly by candle direction / body direction (`Close < Open` for bullish, `Close > Open` for bearish). There is no automatic one-candle exception; 1 opposing candle is NEVER sufficient for macro BOS qualification under any circumstances. No momentum, ATR, pip, body-ratio, or volatility thresholds are canonical.
 
-This BOS module does not create an alternative qualification rule or a second exception. It consumes the already-established structural result:
+The qualification result (`is_bos_qualified`) is stored state. It is **not** a new BOS predicate. It is strictly the result of the preceding qualification phase.
+
+#### 2. Execution Phase
+
+Execution occurs when price later returns to the structural level. The engine does *not* recompute the opposing-candle qualification from scratch at the physical break moment. It evaluates the already established stored qualification.
 
 ```text
-STRUCTURAL_RETRACEMENT_QUALIFIED = TRUE
-        ↓
-BOS qualification may continue
+price returns to structural level
+→ PHYSICAL_EXTERNAL_BREAK
+→ STRUCTURAL_SWING_BREAK
+→
+    ├── qualified → VALID_BOS
+    └── disqualified → IMPULSE_EXTENSION
 ```
 
-If the structural qualification is not satisfied, the continuation break is classified as `IMPULSE_EXTENSION`, not `VALID_BOS`.
-
+Only `VALID_BOS` triggers Protected Structural Extreme Lock and Trading Range Rollover.
 
 ### 3.4.4 — Canonical Break Classification
+
+`EXT_CONT_BREAK` exclusively represents a confirmed continuation swing break. Fallback Major IDM is an opposing-boundary proxy and must not be evaluated under the continuation path.
 
 The validated continuation pipeline is:
 
 ```text
 EXT_CONT_BREAK
         ↓
-RETRACEMENT QUALIFICATION GATE
-        ├── NOT_SATISFIED (R < 38.2% or < 3 opposing candles without 2-candle exception)
+RETRACEMENT QUALIFICATION GATE (Stored Qualification State)
+        ├── BOS_DISQUALIFIED_LEVEL (R < 38.2% or < 3 opposing candles without 2-candle exception)
         │       ↓
         │  IMPULSE_EXTENSION (Dealing range remains open, no new protected extreme)
         │
-        └── SATISFIED (IDM_TAKEN = TRUE AND R >= 38.2% AND Opposing Candles Satisfied)
+        └── BOS_QUALIFIED_LEVEL (IDM_TAKEN = TRUE AND R >= 38.2% AND Opposing Candles Satisfied)
                 ↓
-        BREAK PROVENANCE
-                ├── REAL
-                │      ↓
-                │  VALID_BOS (Dealing range rolls over, Protected Structural Extreme locks)
-                │
-                └── FALLBACK
-                       ↓
-                  MAJOR_IDM_SWEEP
+           VALID_BOS (Dealing range rolls over, Protected Structural Extreme locks)
 ```
 
 ### 3.4.4.1 — Confirmed Swing ≠ VALID_BOS
@@ -167,12 +181,15 @@ The canonical True SMC implementation distinguishes strictly between continuatio
 
 #### 1. Continuation External Boundary (Confirmed Swing)
 
-When price breaks a confirmed continuation external swing, it follows the canonical **Wick-BOS** continuation rule where a wick establishes the break mechanism:
-* Physical wick penetration of a confirmed Continuation External Boundary is sufficient to establish the STRUCTURAL_SWING_BREAK component of the canonical BOS condition. It does not by itself establish VALID_BOS.
-* VALID_BOS occurs only when the canonical IDM_TAKEN, RETRACEMENT_DEPTH >= 0.382, and STRUCTURAL_SWING_BREAK gates are all satisfied.
-* If RETRACEMENT_DEPTH < 0.382, then a continuation external wick breach does NOT become VALID_BOS. It remains IMPULSE_EXTENSION.
-* A body close is NOT additionally required to establish the break; however, the break alone does not bypass the macro-BOS retracement gates.
-* Only the completed canonical VALID_BOS event triggers the Trading Range Rollover and Protected Structural Extreme lock.
+When price breaks a confirmed continuation external swing, physical wick penetration immediately establishes the `STRUCTURAL_SWING_BREAK` mechanism when the continuation external boundary is an eligible structural level.
+
+It does NOT by itself establish `VALID_BOS`.
+
+* Wick penetration is sufficient for the structural break mechanism;
+* Body close is NOT additionally required for continuation BOS;
+* Wick penetration does NOT bypass retracement qualification;
+* Only the completed canonical `VALID_BOS` causes Trading Range rollover and Protected Structural Extreme locking.
+* If `RETRACEMENT_DEPTH < 0.382`, then a continuation external wick breach becomes `IMPULSE_EXTENSION` (no `VALID_BOS`, no range rollover).
 
 **Canonical Rule:**
 ```text
@@ -189,8 +206,6 @@ RETRACEMENT_DEPTH >= 0.382
 +
 STRUCTURAL_SWING_BREAK
 → VALID_BOS
-→ Protected Structural Extreme Lock
-→ Trading Range Rollover
 ```
 
 #### 2. Context-Dependent Wick Disambiguation
@@ -199,20 +214,20 @@ The parser MUST NOT apply the generic logic: "Wick = always sweep". The interpre
 
 **Canonical Disambiguation Matrix:**
 
-1. **Continuation External Boundary / Confirmed Swing**
-   * Wick breach → STRUCTURAL_SWING_BREAK (→ VALID_BOS only if the complete BOS gate is satisfied).
-2. **Opposing Protected Boundary WITH an independently formed REAL_MAJOR_IDM**
-   * Wick breach → `CHoCH_ELIGIBLE` (does NOT by itself constitute `CHoCH_CONFIRMED`)
-3. **Opposing Boundary functioning as FALLBACK_MAJOR_IDM** (when the required post-BOS pullback / REAL_MAJOR_IDM lineage does not yet exist)
+1. **Continuation External Boundary / Confirmed Swing (`EXT_CONT_BREAK`)**
+   * Wick breach → `STRUCTURAL_SWING_BREAK` (→ `VALID_BOS` only if the complete macro BOS qualification gate is satisfied).
+2. **Opposing Protected Boundary WITH an independently formed REAL_MAJOR_IDM (`EXT_OPP_INTERACTION`)**
+   * Wick breach → `CHoCH_ELIGIBLE` (→ `CHoCH_CONFIRMED` only after all applicable macro CHoCH prerequisites pass).
+3. **Opposing Boundary functioning as FALLBACK_MAJOR_IDM (`EXT_OPP_INTERACTION`)**
    * Wick breach → `MAJOR_IDM_SWEEP` (trend remains unchanged, no range rollover, no protected extreme lock)
-4. **Opposing Protected Boundary**
-   * Body Close → `CHoCH_CONFIRMED
+4. **Opposing Protected Boundary / Fallback Boundary**
+   * Body Close → `CHoCH_ELIGIBLE` (→ `CHoCH_CONFIRMED` only after all applicable macro CHoCH prerequisites pass. Body close alone does NOT automatically confirm CHoCH).
 
 **Verdict: PASS / CLOSED.**
 
 ### 3.4.7 — Fallback Major IDM / Range-Boundary Proxy
 
-Fallback Major IDM is a temporary lifecycle-specific **external Range-Boundary Proxy** used after a confirmed macro event while the new expansion has not yet produced an independently qualified Real Major IDM from a post-break Structurally Valid Pullback.
+Fallback Major IDM is ALWAYS an **opposing-boundary proxy**. It belongs under the opposing-boundary interaction path (`EXT_OPP_INTERACTION`), not under `EXT_CONT_BREAK`. It is a temporary lifecycle-specific external proxy used after a confirmed macro event while the new expansion has not yet produced an independently qualified Real Major IDM from a post-break Structurally Valid Pullback.
 
 ```text
 FALLBACK_MAJOR_IDM
@@ -308,7 +323,7 @@ E_retrace LOCKED
 PROTECTED STRUCTURAL EXTREME
 ```
 
-A valid wick BOS locks the dynamic corrective extreme immediately. No later body close is required.
+The completed `VALID_BOS` event locks the dynamic corrective extreme immediately. No later body close is required.
 
 A fallback proxy wick sweep does not lock the extreme.
 
@@ -400,13 +415,14 @@ If `t1` is classified as `MAJOR_IDM_SWEEP`, later candles cannot rewrite `t1` as
 
 ### 3.4.13 — BOS State-Transition Contract
 
+`EXT_CONT_BREAK` applies exclusively to continuation boundaries.
+
 ```text
 EXT_CONT_BREAK
         ↓
-classification
-        ├── IMPULSE_EXTENSION → current lifecycle remains active
-        ├── VALID_BOS         → POST_BOS / new range lifecycle
-        └── MAJOR_IDM_SWEEP   → current lifecycle remains active
+evaluate stored qualification
+        ├── DISQUALIFIED → IMPULSE_EXTENSION (current lifecycle remains active)
+        └── QUALIFIED    → VALID_BOS (POST_BOS / new range lifecycle)
 ```
 
 The transition outcome is deterministic once event identity, retracement qualification, and level provenance are known.
