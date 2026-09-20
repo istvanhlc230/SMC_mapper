@@ -458,7 +458,7 @@ A later candle may advance the lifecycle but may not retroactively rewrite the e
 23. A `VALID_BOS` is delayed pending a later body close when the wick-BOS path is already valid.
 24. A FALLBACK_MAJOR_IDM wick causes Trading Range rollover.
 25. Genesis manufactures IDM or protected structure.
-26. The obsolete sub-38.2% Fibonacci variant remains anywhere in methodology semantics.
+26. A sub-38.2% Fibonacci qualification must never produce VALID_BOS.
 27. Scoring creates structural validity.
 28. Historical liquidity remains active merely because it exists in history.
 29. One outside bar activates both directional branches.
@@ -577,7 +577,7 @@ Regression tests must cover:
 - POI ontology accepts only Valid OF or Valid OB;
 - Rule of Two limits canonical tradable POIs to Decisional POI and Extreme POI;
 - Origin OB is a latent reserve POI (mitigation transfer target when Extreme POI is mitigated), never a 3rd active POI;
-- scanner must never permit 3 simultaneously active POIs;
+- the Rule of Two permits at most two actively tradable POIs;
 - Decisional buy POI is in discount;
 - Decisional sell POI is in premium;
 - Origin OB remains independently valid after parent OF mitigation when its own pillars remain valid;
