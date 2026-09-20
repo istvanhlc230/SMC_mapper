@@ -220,30 +220,147 @@ VALID_BOS
 TRADING_RANGE_ROLLOVER
 ```
 
-The break-classification branch is:
+## 6.X — Canonical BOS Execution Model
+
+The BOS execution model strictly consumes a previously established qualification state.
+Execution never recalculates BOS eligibility and never bypasses the qualification gate.
+
+### Canonical BOS Lifecycle (Execution Phase)
 
 ```text
-PHYSICAL EXTERNAL BREAK
+PHYSICAL_EXTERNAL_BREAK (wick or body)
         ↓
-     LEVEL IDENTITY
-        │
-   ┌────┴─────────────┐
-   │                  │
-NON-FALLBACK        FALLBACK PROXY
-   │                  │
-   ├─ Body Close      ├─ Wick Breach
-   │    ↓              │    ↓
-   │ VALID_BOS         │ MAJOR_IDM_SWEEP
-   │                   │    ↓
-   └─ Wick Break       │ Gate unlocked only
-        ↓              │
-    VALID_BOS          └─ Body Close through
-                           opposing boundary
-                              ↓
-                         CHoCH_ELIGIBILITY
+STRUCTURAL_SWING_BREAK
+        ↓
+CONSUME STORED QUALIFICATION
+        ↓
+COMPLETE BOS GATE
+        ↓
+VALID_BOS
+   or
+IMPULSE_EXTENSION
 ```
 
-Wick-BOS is immediate for an eligible non-fallback external continuation level. It is not delayed waiting for a later body close.
+### Execution Rules
+
+**PHYSICAL_EXTERNAL_BREAK**
+
+A wick or body breach of the eligible continuation external boundary.
+This event does not determine BOS classification.
+
+**STRUCTURAL_SWING_BREAK**
+
+The wick/body breach satisfies the structural break condition.
+It is not `VALID_BOS` by itself.
+
+**CONSUME STORED QUALIFICATION**
+
+`is_bos_qualified` is the stored result of the qualification phase.
+
+Execution does not recalculate:
+
+* opposing-candle count
+* retracement depth
+* IDM prerequisites
+
+The physical break supplies `STRUCTURAL_SWING_BREAK`; the stored qualification is then consumed by the canonical BOS gate.
+
+**COMPLETE BOS GATE**
+
+The canonical BOS predicate:
+
+```text
+VALID_BOS ⇔
+    IDM_TAKEN
+    AND RETRACEMENT_DEPTH >= 0.382
+    AND STRUCTURAL_SWING_BREAK
+```
+
+If any prerequisite is missing, the break cannot produce `VALID_BOS`.
+
+**VALID_BOS**
+
+If the BOS gate is satisfied, the dealing range rolls over and the Protected Structural Extreme locks.
+
+**IMPULSE_EXTENSION**
+
+If qualification is not satisfied, the break is classified as `IMPULSE_EXTENSION`.
+
+No rollover occurs, and no Protected Structural Extreme is locked.
+
+---
+
+## 6.X — Fallback Major IDM Interaction (Opposing Boundary Only)
+
+Fallback Major IDM is never part of continuation BOS provenance.
+
+It appears only on the opposing boundary when no post-BOS structurally valid pullback exists.
+
+### Fallback Interaction Rules
+
+```text
+FALLBACK_MAJOR_IDM + wick breach
+→ MAJOR_IDM_SWEEP
+
+FALLBACK_MAJOR_IDM + body close
+→ CHoCH_ELIGIBLE
+→ CHoCH_CONFIRMED (only if all CHoCH prerequisites pass)
+```
+
+`MAJOR_IDM_SWEEP` never produces `VALID_BOS`.
+
+`MAJOR_IDM_SWEEP` never produces `CHoCH_CONFIRMED`.
+
+`MAJOR_IDM_SWEEP` never rolls over the dealing range.
+
+`MAJOR_IDM_SWEEP` never locks a Protected Structural Extreme.
+
+When the first valid post-BOS pullback forms:
+
+```text
+REAL_MAJOR_IDM is created
+FALLBACK_MAJOR_IDM is permanently superseded
+```
+
+---
+
+## 6.X — Deterministic Invariants
+
+The following invariants must be preserved:
+
+```text
+PHYSICAL_EXTERNAL_BREAK ≠ STRUCTURAL_SWING_BREAK ≠ VALID_BOS
+
+MAJOR_IDM_SWEEP ≠ VALID_BOS ≠ CHoCH_CONFIRMED
+
+Later candles may advance state but may not rewrite previously classified events.
+```
+
+---
+
+## 6.X — Prohibited Legacy Constructs
+
+The following constructs must not appear anywhere in the BOS execution logic:
+
+```text
+LEVEL IDENTITY
+
+NON-FALLBACK / FALLBACK PROXY branches
+
+Body Close → VALID_BOS direct mapping
+
+Wick Break → VALID_BOS direct mapping
+
+EXT_CONT_BREAK → FALLBACK provenance
+
+Fallback continuation exception
+
+Any diagram implying qualification-free BOS
+
+Any recomputation of BOS qualification at execution time
+```
+
+All of these violate the canonical BOS predicate and the qualification-before-execution model.
 
 ### CHoCH path
 
@@ -252,7 +369,6 @@ CURRENT RANGE
  ↓
 GOVERNING OPPOSING PROTECTED EXTREME
  ↓
-```text
 OPPOSING STRUCTURAL BOUNDARY VIOLATION (Body Close)
         ↓
 CHoCH_ELIGIBLE
