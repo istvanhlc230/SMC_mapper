@@ -67,7 +67,7 @@ The ontology is nested:
 CLOSE_BREACH ⊂ BODY_BREACH ⊂ PHYSICAL_BREACH
 ~~~
 
-A Body Breach is a static body-endpoint/range relation. It does not establish the historical intrabar path. A gap may satisfy BODY_BREACH without exposing an intrabar crossing path.
+A Body Breach is a static body-endpoint/range relation. Historical intrabar crossing requires independent sequence evidence. A gap may satisfy BODY_BREACH without exposing an intrabar crossing path.
 
 ## 4. Candle Extreme Protection
 
