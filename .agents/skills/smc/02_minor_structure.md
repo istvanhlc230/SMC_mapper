@@ -2,378 +2,285 @@
 
 **Role:** Canonical Layer 2 Minor Structure of the True SMC methodology.
 
-**Authority:** Authoritative for Sequential / Minor Structure, including Pullback Formation, Candle-Level Valid Pullback, verified pullback extremes, liquidity/IDM foundations, active pullback state, and Minor IDM semantics. The candle-level microstructure primitives consumed by this layer are owned by 01_micro_structure.md.
+**Authority:** This document owns Sequential / Minor Structure, including Pullback Formation, Candle-Level Valid Pullback, verified pullback extremes, active pullback state, liquidity formation for the active minor leg, and Minor IDM eligibility. Candle-level primitives consumed by this layer are owned by 01_micro_structure.md.
 
-Major structural retracement qualification is owned by `03_structural_semantic_authority.md` Section 3.3.2. Layer 2 consumes that qualification; it does not define it.
+Major structural qualification is owned by 03_structural_semantic_authority.md.
 
 ## 1. Methodology boundary
 
-Layer 2 consumes Layer 1 candle relationships and produces validated inputs for the Layer 3 lifecycle.
+Layer 2 consumes the canonical Layer 1 candle observations and assembles them into sequential/minor-structure events.
 
-```text
-RAW OHLC
-  ↓
-CANDLE RELATIONSHIPS
-  ↓
+~~~
+LAYER 1 CANDLE OBSERVATIONS
+        ↓
 CANDLE-LEVEL VALID PULLBACK
-  ↓
+        ↓
 VERIFIED PULLBACK EXTREME
-  ↓
-LAYER 3 — MAJOR STRUCTURAL RETRACEMENT QUALIFICATION
-  ↓
-STRUCTURALLY VALID PULLBACK
-  ↓
-LIQUIDITY / IDM ELIGIBILITY
-  ↓
-ACTIVE / MINOR IDM
-  ↓
-Layer 3 — Structural Lifecycle
-```
-
-Every higher-level event must consume previously validated lower-level state. No stage may be skipped or manufactured by configuration, scoring, visualization, or implementation convenience.
-
-## 2.1. Engulfed Candle Sequence
-
-**Engulfed Candle Sequence** is a Sequential / Minor Structure concept consumed by Layer 2. It describes a source-backed sequence/context relationship in which one candle is engulfed within a larger applicable price-action sequence.
-
-It is intentionally not defined here as a universal geometric synonym for an **Inside Bar**. The source corpus uses “engulfed” in contextual sequence relationships, but does not provide a single authoritative candle-level geometry that would justify collapsing the concept into Inside Bar semantics.
-
-Therefore:
-
-```
-Engulfed Candle Sequence
-≠ Inside Bar
-≠ Candle-Level Microstructure Primitive
-≠ Structural Swing
-≠ IDM
-≠ VALID_BOS
-```
-
-Layer 2 may consume the sequence where the applicable pullback/minor-structure context requires it, without manufacturing a new Microstructure primitive.
-
-## 2.1. Outside Bar consumption
-
-An **Outside Bar** is consumed by Layer 2 as one Layer 1 candle-level geometric observation. Its two-sided extreme breach does not by itself establish a pullback direction, reversal, or higher-level structure.
-
-When an Outside Bar participates in Candle-Level Valid Pullback formation, Layer 2 must resolve the directional branch from the applicable candle-level sequence and reference context. The same Outside Bar must not independently activate both bullish and bearish pullback branches merely because it breached both extremes.
-
-```text
-OUTSIDE_BAR
-    ↓
-CANDLE-LEVEL SEQUENCE / REFERENCE CONTEXT
-    ↓
-ONE APPLICABLE PULLBACK BRANCH
-```
-
-Outside Bar status must therefore remain separate from reversal classification:
-
-```text
-OUTSIDE_BAR
-    ≠
-REVERSAL_CLASSIFICATION
-```
-
-Layer 2 uses Outside Bar only as an input to its own sequential/minor-structure predicates. It does not infer an execution-layer reversal from the Outside Bar relationship.
-
-If the aggregate OHLC data does not expose the intrabar order required to distinguish the applicable directional branch, Layer 2 must not manufacture historical sequence evidence. Canonical methodology sequence and historical observability remain separate according to `01_micro_structure.md` and `08_implementation.md`.
-
-## 2. Candle-Level Minor Structure
-
-Minor Structure consists of internal candle-level structural price action that does not define or alter the governing external Trading Range.
-
-Within an established Trading Range, Minor Structure exists inside the governing external boundaries. Minor structural levels may provide liquidity references and may participate in IDM formation only when the independent IDM prerequisites are satisfied.
-
-```text
-Minor Structure
-≠ Major Structure
-≠ Liquidity
-≠ IDM
-≠ BOS
-≠ CHoCH
-```
-
-A minor structural level or arbitrary local high/low does not become an IDM merely because price interacts with it.
-
-## 3. Verified Pullback Extreme
-
-After a candle-level Valid Pullback:
-
-```text
-Bullish: verified pullback extreme = Pullback Low
-Bearish: verified pullback extreme = Pullback High
-```
-
-This extreme is a candidate liquidity reference, not automatic IDM.
-
-The required dependency is:
-
-```text
-Candle-Level Valid Pullback
-  ↓
-Verified Pullback Extreme
-  ↓
-Layer 3 Structural Qualification
-  ↓
-Structurally Valid Pullback
-  ↓
-IDM Eligibility
-```
-
-## 4. Structural qualification boundary
-
-Major structural retracement qualification is **not owned by Layer 2 Minor Structure**. It is a Layer 3 Major Structure rule owned by `03_structural_semantic_authority.md`.
-
-Layer 2 interprets the Layer 1 microstructure event stream into Pullback Formation and Candle-Level Valid Pullback, then produces the verified pullback extreme that becomes an input to the Layer 3 structural qualification stage. Layer 2 must not redefine the major-structure qualification criteria.
-
-An **opposing candle** is defined strictly by candle direction / body direction relative to the active trend / dominant impulse:
-- In a bullish trend (dominant upward impulse): an opposing candle is a bearish candle (`Close < Open`).
-- In a bearish trend (dominant downward impulse): an opposing candle is a bullish candle (`Close > Open`).
-Opposing candles are NOT defined by displacement, directional movement, higher/lower extremes, or candle ranges. Candle color / body direction is the definitive criterion.
-
-The canonical Layer 3 qualification paths are:
-
-```text
-STANDARD
->= 3 OPPOSING CANDLES
-AND
-RETRACEMENT DEPTH >= 38.2%
-```
-
-or:
-
-```text
-EXACTLY 2 OPPOSING CANDLES
-AND
-RETRACEMENT DEPTH >= 38.2%
-```
-
-No heuristic, candle count sweep (such as sweeps of prior candle extremes), or safe mode may substitute for the mandatory 38.2% depth requirement.
-
-There is no automatic one-candle exception: 1 opposing candle is NEVER sufficient for macro BOS retracement qualification under any circumstances.
-
-This section is a boundary reference, not a second semantic definition. The canonical semantic definition is `03_structural_semantic_authority.md` Section 3.3.2; numeric/configurable ownership is in `methodology_parameters.md`.
-
-## 5. Structurally Valid Pullback
-
-A candle-level Valid Pullback becomes a Structurally Valid Pullback only after Layer 3 structural retracement qualification.
-
-Only a Structurally Valid Pullback can become the basis for active/minor IDM.
-
-A candle-level pullback must never directly create IDM.
-
-```text
-CANDLE-LEVEL VALID PULLBACK
         ↓
 LAYER 3 STRUCTURAL QUALIFICATION
         ↓
 STRUCTURALLY VALID PULLBACK
-```
+        ↓
+ACTIVE PULLBACK / LIQUIDITY
+        ↓
+MINOR IDM ELIGIBILITY
+~~~
 
-The semantic identity of the object is independent of any configured numeric threshold name.
+Each downstream state is produced only from the validated prerequisite state supplied by the preceding stage.
 
-## 6. Liquidity Taxonomy
+## 2. Candle-Level Valid Pullback
 
-For the active structural leg:
+A **Candle-Level Valid Pullback** is a completed sequential candle-level event within an established Candlestick-Based Trend.
 
-```text
-Uptrend pullback low    → Sell-Side Liquidity (SSL)
-Downtrend pullback high → Buy-Side Liquidity (BSL)
-```
+The pullback is defined by the ordered use of the applicable reference candle from the Layer 1 candle sequence.
 
-Every Structurally Valid Pullback extreme may represent liquidity, but not every liquidity node is IDM.
+### 2.1 Bullish Candle-Level Valid Pullback
 
-Liquidity is a market-state/reference concept. It is not automatically a structural event.
+In a bullish Candlestick-Based Trend:
 
-## 7. Single Active Pullback Pointer
+1. The applicable reference candle is a bullish candle whose high was used to continue the candle-level uptrend.
+2. The pullback begins when price takes out that reference candle's low through a canonical Layer 1 Candle Extreme Breach.
+3. The breach may occur through a wick or candle body. The Layer 1 breach classification is consumed rather than redefined here.
+4. The candle that performs the breach may be bullish or bearish.
+5. Price then reverses in the prevailing bullish direction.
+6. The pullback completes when price breaks above the high of the same reference candle.
+7. The lowest price reached from pullback start until completion is the Pullback Low.
+8. The sequence may contain one candle or multiple candles.
 
-The active structural leg must track one active pullback pointer: the most recent Structurally Valid Pullback.
+~~~
+BULLISH CANDLE-LEVEL VALID PULLBACK
 
-If a newer Structurally Valid Pullback forms before the previous active target is swept, immediately replace the active pointer with the newer pullback.
+reference bullish candle
+        ↓
+take reference LOW
+        ↓
+pullback begins
+        ↓
+prevailing-direction reversal
+        ↓
+break reference HIGH
+        ↓
+Pullback Low = lowest point reached
+~~~
 
-Do not keep multiple competing minor IDM targets active simultaneously.
+### 2.2 Bearish Candle-Level Valid Pullback
 
-This does not mean deleting historical structure. Maintain these identities separately:
+In a bearish Candlestick-Based Trend:
 
-```text
+1. The applicable reference candle is a bearish candle whose low was used to continue the candle-level downtrend.
+2. The pullback begins when price takes out that reference candle's high through a canonical Layer 1 Candle Extreme Breach.
+3. The breach may occur through a wick or candle body.
+4. The candle that performs the breach may be bullish or bearish.
+5. Price then reverses in the prevailing bearish direction.
+6. The pullback completes when price breaks below the low of the same reference candle.
+7. The highest price reached from pullback start until completion is the Pullback High.
+8. The sequence may contain one candle or multiple candles.
+
+~~~
+BEARISH CANDLE-LEVEL VALID PULLBACK
+
+reference bearish candle
+        ↓
+take reference HIGH
+        ↓
+pullback begins
+        ↓
+prevailing-direction reversal
+        ↓
+break reference LOW
+        ↓
+Pullback High = highest point reached
+~~~
+
+### 2.3 Candle color and sequence length
+
+The candle performing the opposing-side breach does not need to match the direction of the pullback. Candle color is therefore not a validity discriminator for the breach candle.
+
+The pullback may complete after one candle or after multiple candles. No candle-count threshold is part of the Candle-Level Valid Pullback definition.
+
+### 2.4 Inside Bar reference handling
+
+When a Layer 1 INSIDE_BAR occurs during pullback formation, the mother candle remains the applicable candle-level reference according to the Layer 1 definition.
+
+The inner candle contributes its candle-level observations to the sequence, while the pullback reference continues to be evaluated against the applicable mother-candle context.
+
+## 3. Outside Bar consumption
+
+Layer 2 may consume a Layer 1 OUTSIDE_BAR observation as part of Candle-Level Valid Pullback formation.
+
+The Outside Bar is evaluated inside the applicable directional sequence and reference context. The pullback remains an ordered event: one side is taken and the corresponding reference side is later broken after reversal.
+
+**Derived architectural invariant:** one Outside Bar observation is evaluated within one applicable directional pullback branch for the active sequence state. Layer 2 does not create competing bullish and bearish pullback states from the same Outside Bar/reference context.
+
+~~~
+OUTSIDE_BAR
+    ↓
+APPLICABLE CANDLE SEQUENCE
+    ↓
+PULLBACK FORMATION
+~~~
+
+When aggregate OHLC does not expose the intrabar order needed by the sequence, Layer 2 uses the observability state provided by Layer 1 instead of manufacturing historical path evidence.
+
+## 4. Pullback Extreme Verification
+
+After a Candle-Level Valid Pullback completes, Layer 2 records its directional extreme:
+
+~~~
+Bullish Valid Pullback → Pullback Low = lowest Low reached
+Bearish Valid Pullback → Pullback High = highest High reached
+~~~
+
+The verified pullback extreme is derived across the complete pullback sequence, from pullback initiation through completion.
+
+~~~
+CANDLE-LEVEL VALID PULLBACK
+        ↓
+COMPLETE PULLBACK WINDOW
+        ↓
+EXTREME VERIFICATION
+        ↓
+VERIFIED PULLBACK EXTREME
+~~~
+
+## 5. Structurally Valid Pullback handoff
+
+A Candle-Level Valid Pullback is supplied to Layer 3 for structural qualification.
+
+Layer 3 evaluates the major structural retracement requirements and returns the structural qualification result. When accepted, the pullback becomes a Structurally Valid Pullback for the structural lifecycle.
+
+~~~
+CANDLE-LEVEL VALID PULLBACK
+        ↓
+LAYER 3 QUALIFICATION
+        ↓
+STRUCTURALLY VALID PULLBACK
+~~~
+
+The detailed major retracement criteria, including depth, opposing-candle qualification, displacement-outlier handling, and higher-timeframe structural qualification are defined only by 03_structural_semantic_authority.md.
+
+## 6. Active Pullback Pointer
+
+The active pullback state tracks the **most recent structurally accepted pullback** relevant to the active impulsive leg.
+
+When a newer Structurally Valid Pullback is established before the current active liquidity target is consumed, the active pointer transfers to the newer pullback.
+
+~~~
+NEWER STRUCTURALLY VALID PULLBACK
+        ↓
+ACTIVE PULLBACK POINTER TRANSFER
+        ↓
+CURRENT LIQUIDITY REFERENCE
+~~~
+
+Historical pullbacks remain part of the structural history.
+
+## 7. Minor liquidity and IDM eligibility
+
+For the active impulsive leg:
+
+~~~
+Bullish active leg
+    Pullback Low
+        ↓
+Sell-Side Liquidity reference
+
+Bearish active leg
+    Pullback High
+        ↓
+Buy-Side Liquidity reference
+~~~
+
+A Minor IDM becomes eligible from the liquidity associated with the most recent structurally accepted pullback on the active impulsive leg.
+
+The eligibility sequence is:
+
+~~~
+STRUCTURALLY VALID PULLBACK
+        ↓
+VERIFIED PULLBACK EXTREME
+        ↓
+ACTIVE LIQUIDITY REFERENCE
+        ↓
+MINOR IDM ELIGIBILITY
+        ↓
+MINOR IDM
+~~~
+
+The Minor IDM state inherits the provenance of the pullback from which its liquidity reference was derived.
+
+## 8. Minor IDM lifecycle
+
+Within the active impulsive leg, the current Minor IDM follows the active pullback pointer.
+
+~~~
+NEW VALID PULLBACK
+        ↓
+NEW VERIFIED EXTREME
+        ↓
+ACTIVE PULLBACK POINTER TRANSFER
+        ↓
+MINOR IDM REFERENCE TRANSFER
+~~~
+
+The latest qualifying pullback is the active IDM reference. Historical IDM references remain available as history.
+
+## 9. Layer 2 → Layer 3 handoff
+
+Layer 2 delivers the following validated objects to Layer 3:
+
+~~~
+CANDLE-LEVEL VALID PULLBACK
+VERIFIED PULLBACK EXTREME
+STRUCTURALLY VALID PULLBACK STATUS
 ACTIVE PULLBACK POINTER
-≠ MINOR IDM STATE
-≠ MAJOR IDM STATE
-≠ CONFIRMED SWING
-≠ TRADING RANGE
-≠ HISTORICAL STRUCTURE
-```
+MINOR IDM ELIGIBILITY
+MINOR IDM
+~~~
 
-Major IDM, Fallback Major IDM, Confirmed Swing, Protected Structural Extreme, Trading Range, BOS, and CHoCH lifecycle ownership begins in Layer 3 and is defined in `03_structural_semantic_authority.md`.
+Layer 3 then owns the subsequent structural lifecycle, including:
 
-## 8. IDM Definition — Layer 2 Eligibility
+~~~
+IDM LIQUIDITY TAKEOUT
+SWING CONFIRMATION
+CONFIRMED_STRUCTURAL_SWING
+MAJOR STRUCTURAL RETRACEMENT QUALIFICATION
+VALID_BOS
+IMPULSE_EXTENSION
+TRADING RANGE ROLLOVER
+CHoCH
+~~~
 
-IDM is liquidity resting beyond the most recent Structurally Valid Pullback on the active impulsive leg.
+The Layer 3 definitions are consumed through their canonical owner document; Layer 2 does not redefine them.
 
-Therefore an active/minor IDM must be:
+## 10. Layer 2 validation contract
 
-1. derived from a Structurally Valid Pullback;
-2. associated with the active impulsive leg;
-3. the most recent qualifying pullback;
-4. represented by its relevant liquidity extreme.
+A compliant implementation preserves:
 
-Random bars, arbitrary pivots, inside bars, generic local highs/lows, Fibonacci levels, or every visible liquidity node are not IDM.
+- Candle-Level Valid Pullback as a sequential Layer 2 construct built from Layer 1 observations.
+- Bullish pullback formation through reference-low takeout followed by reversal and reference-high break.
+- Bearish pullback formation through reference-high takeout followed by reversal and reference-low break.
+- Wick and body breach modes through the Layer 1 Candle Extreme Breach taxonomy.
+- Candle color of the breach candle as non-discriminating for Candle-Level Valid Pullback validity.
+- Pullback completion over one or multiple candles.
+- Inside Bar handling through the Layer 1 mother-candle reference.
+- Outside Bar as an input to pullback formation, with its applicable branch resolved from the active sequence context.
+- Pullback Extreme Verification across the complete pullback window.
+- Structural qualification through the Layer 3 owner.
+- Active Pullback Pointer following the most recent structurally accepted pullback.
+- Minor IDM eligibility following the active pullback and verified extreme provenance.
+- Structural lifecycle events being handed to Layer 3 rather than recreated in Layer 2.
 
-The existence of liquidity is not sufficient to establish IDM identity.
+## 11. Canonical precedence
 
-## 9. Minor / Active IDM Lifecycle
+Semantic ownership governs documentation:
 
-The active/minor IDM shifts immediately to the newest Structurally Valid Pullback on the same active impulsive leg.
-
-Historical IDM may remain in history but must not remain an active competing target.
-
-```text
-NEWER VALID STRUCTURALLY VALID PULLBACK
+~~~
+LAYER 1 DEFINITION
         ↓
-ACTIVE PULLBACK POINTER TRANSFERS
+LAYER 2 CONSUMPTION / SEQUENCE
         ↓
-ACTIVE / MINOR IDM TARGET TRANSFERS
-```
+LAYER 3 QUALIFICATION / LIFECYCLE
+~~~
 
-This transfer does not mutate Major IDM state, Confirmed Swing state, Protected Structural Extreme state, Trading Range state, or historical structure.
-
-## 10. Minor IDM — Classification and Structural Role
-
-A Minor IDM is a qualified inducement/liquidity structure associated with the active impulsive leg within the current structural lifecycle.
-
-A Minor IDM must satisfy all canonical IDM eligibility requirements and must be derived directly from a Structurally Valid Pullback and its verified pullback extreme.
-
-The mere existence of a pre-BOS state, post-CHoCH state, or arbitrary internal liquidity does not establish a Minor IDM.
-
-The Minor IDM functions strictly as internal liquidity within the active structural leg. It is ontologically distinct from Confirmed Structural Swing and Protected Structural Extreme.
-
-```text
-Active Structural Lifecycle
-           +
-Active Impulsive Leg
-           +
-Structurally Valid Pullback
-           +
-Verified Pullback Extreme
-           +
-Canonical IDM Eligibility
-           ↓
-        MINOR IDM
-
-Minor IDM ≠ CONFIRMED_STRUCTURAL_SWING
-Minor IDM ≠ Protected Structural Extreme
-Minor IDM ≠ VALID_BOS
-Minor IDM ≠ CHoCH_CONFIRMED
-```
-
-## 11. Minor IDM Takeout & Swing Confirmation
-
-A qualified active/minor IDM does not require a candle body close to be breached or taken out.
-
-Wick and body interaction are both valid for the IDM liquidity takeout (`IDM_TAKEN = TRUE`).
-
-```text
-Qualified IDM
-→ Wick or Body Takeout (IDM_TAKEN = TRUE)
-→ SWING_CONFIRMATION_GATE UNLOCKED
-→ Provisional Expansion Extreme becomes CONFIRMED_STRUCTURAL_SWING
-```
-
-A body close beyond the IDM is not required.
-
-A provisional Expansion Extreme becomes a CONFIRMED_STRUCTURAL_SWING when and only when the active IDM is taken out (`IDM_TAKEN = TRUE`). Wick or body penetration of the IDM level exclusively opens the `SWING_CONFIRMATION_GATE`.
-
-IDM takeout confirms the swing ONLY:
-- It does NOT create a new Dealing Range.
-- It does NOT flip trend.
-- It is NEVER a CHoCH.
-- It does NOT create VALID_BOS.
-- It does NOT roll the dealing range.
-
-`CONFIRMED_STRUCTURAL_SWING ≠ VALID_BOS`. Having a CONFIRMED_STRUCTURAL_SWING is a necessary prerequisite for BOS, not BOS itself. If IDM is taken out (`IDM_TAKEN = TRUE`) but retracement depth is `< 38.2%`, any subsequent break of the CONFIRMED_STRUCTURAL_SWING is classified as `IMPULSE_EXTENSION`, NOT `VALID_BOS`. The dealing range remains open, no new protected extreme is established, and no range rollover occurs.
-
-A wick or body interaction with an arbitrary minor structural level, liquidity node, or local extreme does not independently create or activate an IDM. IDM identity must first be established through the eligibility rules above.
-
-## 12. Layer 2 → Layer 3 Interface
-
-Layer 2 produces validated structural inputs consumed by the Structural Lifecycle:
-
-```text
-CANDLE RELATIONSHIPS
-        ↓
-CANDLE-LEVEL VALID PULLBACK
-        ↓
-VERIFIED PULLBACK EXTREME
-        ↓
-LAYER 3 STRUCTURAL QUALIFICATION
-        ↓
-STRUCTURALLY VALID PULLBACK
-        ↓
-LIQUIDITY
-        ↓
-IDM ELIGIBILITY
-        ↓
-ACTIVE / MINOR IDM
-        ↓
-LAYER 3
-```
-
-Layer 3 owns:
-
-- Major Structure;
-- Genesis / bootstrap;
-- CONFIRMED_STRUCTURAL_SWING;
-- Protected Structural Extreme;
-- Major IDM and FALLBACK_MAJOR_IDM lifecycle;
-- IDM sweep → SWING_CONFIRMATION_GATE;
-- Physical External Break;
-- VALID_BOS;
-- Trading Range rollover;
-- CHoCH_CONFIRMED and post-CHoCH regime initialization.
-
-See `03_structural_semantic_authority.md`.
-
-## 13. Parameter ownership boundary
-
-Numeric methodology parameters are defined in `methodology_parameters.md`.
-
-This document defines the semantic boundary that retracement qualification is required and that the validated exception exists. The parameter document owns the configurable numeric values.
-
-```text
-SEMANTIC RULE
-    ≠
-CONFIGURATION VALUE
-```
-
-Configuration may change a threshold only where explicitly permitted. It must never change the identity of Valid Pullback, Structurally Valid Pullback, IDM, Minor IDM, or any Layer 3 structural object.
-
-## 14. Layer 2 Validation Contract
-
-A compliant implementation must preserve all of the following:
-
-- Candle relationships are observations, not automatically higher-level structure.
-- Engulfed Candle Sequence remains a Sequential / Minor Structure concept and is not equated with Inside Bar.
-- Strict inside bars require strict containment and equality does not qualify.
-- A single outside bar cannot activate both directional branches.
-- Candle-level Valid Pullback requires the complete directional sequence.
-- A valid pullback extreme may be initiated by either a canonical WICK_ONLY_BREACH or BODY_BREACH; breach mode does not change the Layer 2 ownership boundary.
-- EQ High / EQ Low reference transfer is directional and uses the second candle as the active reference.
-- Verified Pullback Extreme follows the candle-level Valid Pullback and is not automatically IDM.
-- Major structural retracement qualification is owned by Layer 3 and has the standard path and exactly-two-candle exception.
-- There is no automatic one-candle exception.
-- High-momentum remains qualitative unless independently verified quantitatively.
-- Only a Structurally Valid Pullback can become the basis for active/minor IDM.
-- Only the newest Structurally Valid Pullback remains the active Minor IDM target for the active leg.
-- Minor IDM remains distinct from Major IDM, CONFIRMED_STRUCTURAL_SWING, Protected Structural Extreme, VALID_BOS, CHoCH_CONFIRMED, and Trading Range.
-- A qualified IDM can be swept by wick or body without requiring body close (`IDM_TAKEN = TRUE`).
-- Arbitrary minor-level interaction does not manufacture IDM.
-- Layer 3 lifecycle rules are consumed only after the required Layer 1/2 prerequisites exist.
-
-## 15. Canonical Precedence
-
-Semantic ownership governs canonical documentation:
-
-```text
-CURRENT SEMANTIC OWNER
-        >
-CROSS-REFERENCE
-```
+A downstream layer uses the upstream semantic definition instead of creating a competing definition for the same object.
