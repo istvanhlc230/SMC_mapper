@@ -274,6 +274,16 @@ The Extreme POI module is the canonical fallback execution mechanism when the De
 
 Candlestick reversal patterns are **execution confirmation/trigger objects only**. They are downstream consumers of structural and execution eligibility and have zero structural authority.
 
+Layer 6 may consume Layer 1 OUTSIDE_BAR state and its geometric metrics. It owns the semantic evaluation of OUTSIDE_BAR_REVERSAL; that state is never auto-derived merely because an Outside Bar exists.
+
+~~~text
+OUTSIDE_BAR
+    ↓
+LAYER 6 REVERSAL PREDICATE
+    ↓
+OUTSIDE_BAR_REVERSAL (only if Layer 6 conditions pass)
+~~~
+
 ### Architectural gate
 
 A candlestick reversal pattern may authorize a direct entry only when an existing canonical execution route is already eligible:
