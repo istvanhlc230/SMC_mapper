@@ -256,18 +256,33 @@ The subsequent multi-event interpretation belongs to Sequential / Minor Structur
 
 ## 9. Candle Internal Sequence
 
-**Candle Internal Sequence** records the order in which relevant candle extremes are breached within the applicable candle relationship.
+**Candle Internal Sequence** is the canonical methodology model for the order in which relevant candle extremes are reached.
 
-Canonical directional forms include:
+The source-backed directional formation models are:
 
+~~~text
+Bullish candle model:
+OPEN → LOW → HIGH → CLOSE
+(OLHC)
+
+Bearish candle model:
+OPEN → HIGH → LOW → CLOSE
+(OHLC)
 ~~~
-LOW → HIGH
-HIGH → LOW
+
+These are methodology formation models. They are not historical observability states and do not imply that aggregate OHLC data proves the sequence for a specific historical candle.
+
+For an Outside Bar, the geometric relationship and the intrabar sequence are separate observations:
+
+~~~text
+OUTSIDE_BAR
+    ≠
+INTRABAR_SEQUENCE_EVIDENCE
 ~~~
 
-This observation does not by itself establish EQH/EQL, Pullback Formation, IDM, BOS, or CHoCH.
+A single Outside Bar remains one candle-level relationship. It must not be decomposed into two independent structural events merely because both extremes were exceeded.
 
-Equal-extreme transfer occurs only when the required equal-extreme relationship also exists.
+Candle Internal Sequence does not by itself establish EQH/EQL, Pullback Formation, IDM, BOS, or CHoCH.
 
 ## 10. Candlestick-Based Trend
 
