@@ -1,48 +1,40 @@
-# Phase 1 Change Set — Targeted C1–C4 Investigation
+# Phase 1 Change Set — C1–C5 Implementation
 
-Status: **NO CANONICAL EDIT APPROVED**
+Status: **IMPLEMENTED / VALIDATION PENDING**
 
-## Findings
+## Implemented changes
 
-The targeted source investigation found direct evidence supporting parts of the existing Phase 1 canonical model. The evidence does **not** justify an automatic rewrite of `01_micro_structure.md`.
+### C1
+Added deterministic Physical/Wick-Only/Body/Close breach taxonomy with the no-crossing invariant.
 
-### C1 — Candle Extreme Breach
-Source evidence supports:
-- breach may occur by wick or candle close;
-- candle color does not determine whether the breach qualifies;
-- the candle-level breach remains distinct from structural BOS/CHoCH/IDM.
+### C2
+Separated EQH/EQL geometric confirmation from independent active-high/active-low reference identity transfer. Reference identity preserves price, candle ID, and role.
 
-Existing canonical wording is aligned in substance.
+### C3
+Canonical Layer 1 now records only the OLHC/OHLC methodology model. Implementation owns sequence observability.
 
-### C2 — Protection / Equal Extreme Reference Transfer
-Source evidence supports:
-- equal relevant extremes cause the first candle to be ignored for the active reference;
-- the second candle becomes the applicable reference;
-- the opposite extreme of that second candle can become the protected reference.
+### C4
+Outside Bar is a Layer 1 geometric relationship. Outside-Bar Reversal remains Layer 6-owned and is not auto-derived.
 
-Existing canonical wording is aligned in substance.
+### C5
+Added the explicit methodology-versus-observability boundary and implementation-only INTRABAR_SEQUENCE_EVIDENCE states.
 
-### C3 — Candle Internal Sequence
-Source evidence supports the methodology's explanatory candle-path model:
-- bullish: Open → Low → High → Close;
-- bearish: Open → High → Low → Close.
+## Files changed
 
-However, no targeted source explicitly defines an Outside Bar's internal sequence as a separate contract. Therefore no change is approved.
+- .agents/skills/smc/01_micro_structure.md
+- .agents/skills/smc/08_implementation.md
+- .agents/skills/smc/02_minor_structure.md
+- .agents/skills/smc/06_execution.md
+- SMC_mapper.py
+- test_micro_breach.py
+- test_reference_transfer.py
+- test_outside_bar.py
+- test_layer_boundaries.py
 
-### C4 — Reversal Formation Boundary
-Source evidence supports treating reversal patterns as observations/reaction or execution material rather than silently turning them into structural state. It does not define a complete deterministic Layer 1 predicate set. No change is approved.
+## Source protection
 
-## Deferred human gates
+main/knowledgebase/ was not modified.
 
-1. Approve C1 as closed and source-aligned, or request exact predicate wording.
-2. Approve C2 as closed and source-aligned, or request exact state-transition wording.
-3. Decide whether C3 requires explicit Outside-Bar source evidence or whether the source candle-path model is sufficient.
-4. Approve the C4 ownership boundary; keep deterministic reversal-pattern predicates out of Layer 1 unless separately specified.
+## Deferred
 
-## Higher-layer conflict
-
-The 38.2% / 50% retracement discrepancy remains outside Phase 1 and must be reconciled under the structural/BOS semantic owners.
-
-## Implementation rule
-
-Until the above gates are explicitly resolved, do not modify the canonical semantic owner merely to make the source and canonical documents look textually identical.
+No structural redesign, retracement-threshold reconciliation, or new reversal-pattern predicate was introduced.
