@@ -60,6 +60,13 @@ Read the referenced documents in this order when the full methodology is require
    - State-transition and validation requirements
    - Must consume canonical methodology; it must not redefine it
 
+## 4. Source reconciliation governance
+
+`source_reconciliation.md`
+- Controlled source-to-canonical reconciliation workflow
+- Human approval gate, contract ledger, change set, and independent validation
+- Process authority only; it does not define SMC methodology
+
 ## 4. Documentation authority
 
 Semantic ownership is:
