@@ -1,41 +1,29 @@
-# Phase 1 Validation Report — Targeted C1–C4 Investigation
+# Phase 1 Validation Report — C1–C5 Implementation
 
-Status: **PASS — EVIDENCE UPDATED / NO CANONICAL CHANGE IMPLEMENTED**
+Status: **IMPLEMENTED / FULL SUITE EXECUTION PENDING**
 
-## Validation checks
+## Contract validation matrix
 
-- Extended the source review beyond the initial seven transcripts: PASS
-- Direct C1 source evidence identified: PASS
-- Direct C2 source evidence identified: PASS
-- General C3 candle-path evidence identified: PASS
-- Explicit Outside-Bar-specific C3 contract found: NO — correctly left unresolved
-- C4 boundary evidence identified: PASS
-- Complete deterministic C4 reversal anatomy found: NO — correctly left unresolved
-- Existing `01_micro_structure.md` remains semantically aligned with identified evidence: PASS
-- No unapproved canonical methodology change: PASS
-- `main/knowledgebase/` treated as read-only source material: PASS
-- 38.2% / 50% higher-layer discrepancy kept outside Phase 1: PASS
-
-## Source-backed conclusions
-
-### C1
-The source explicitly permits wick or candle-close breach and does not make candle color a requirement. The canonical document's Wick Breach / Body Breach distinction is therefore source-compatible.
-
-### C2
-The source explicitly transfers the active reference to the second candle when the relevant extreme is equal. This is direct evidence for the existing Equal Extreme Reference Transfer rule.
-
-### C3
-The source describes a methodology candle-path model: bullish O→L→H→C and bearish O→H→L→C. This is useful evidence for Candle Internal Sequence, but it does not by itself constitute an Outside-Bar-specific state-transition contract.
-
-### C4
-The source material names reversal formations and discusses reaction/trade initiation, but it does not provide a complete deterministic Layer 1 contract. Keeping anatomy/observation separate from execution authorization remains appropriate.
+| Contract | Documentation | Implementation | Dedicated test |
+|---|---|---|---|
+| C1 | PASS | PASS | test_micro_breach.py |
+| C2 | PASS | PASS | test_reference_transfer.py |
+| C3 | PASS | PASS | test_outside_bar.py |
+| C4 | PASS | PASS | test_layer_boundaries.py |
+| C5 | PASS | PASS | test_outside_bar.py |
 
 ## Determinism boundary
 
-Where a source does not explicitly establish an event order for a specific composite relationship, the canonical workflow must not fabricate that order. The source candle-path model may be used only where the methodology explicitly treats it as the applicable model; otherwise the sequence remains undetermined.
+The implementation no longer infers LOW_FIRST or HIGH_FIRST from aggregate single-timeframe Outside Bar OHLC. Such sequence state is UNAVAILABLE unless independent historical evidence is supplied.
 
-## Current acceptance state
+## Layer boundary
 
-Phase 1 semantic closure is **not yet claimed**.
+Layer 1 contains canonical OLHC/OHLC methodology semantics only. INTRABAR_SEQUENCE_EVIDENCE is implementation-owned. Outside-Bar Reversal remains Layer 6-owned.
 
-The next gate is human approval of the four contract dispositions recorded in `contract_ledger.md`.
+## Source protection
+
+main/knowledgebase/ was not modified.
+
+## Acceptance
+
+Dedicated Phase 1 contract tests have been added. The repository's complete regression suite still requires execution before Phase 1 can be marked fully validated and sealed.
