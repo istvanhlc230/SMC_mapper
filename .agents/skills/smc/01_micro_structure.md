@@ -303,6 +303,20 @@ Candlestick-Based Trend
 
 Candle-level trend observations do not independently establish structural state.
 
+## 10.1. Methodology semantics and historical observability
+
+**Methodology semantics do not imply historical observability.**
+
+Layer 1 records the canonical OLHC/OHLC methodology model only. Implementation observability states belong to 08_implementation.md and the executable data model.
+
+~~~text
+CANONICAL METHODOLOGY
+    ≠
+HISTORICALLY OBSERVED INTRABAR PATH
+~~~
+
+A single aggregate OHLC candle may establish that an Outside Bar occurred while leaving its intrabar order unavailable. The absence of sequence evidence must not be silently converted into an observed sequence.
+
 ## 11. Candlestick reversal observations
 
 Candlestick reversal formations remain candle-level observations consumed by the Execution Engine. Layer 1 owns their candle anatomy and OHLC relationships; 06_execution.md owns execution eligibility, POI/liquidity gating, trigger timing, and entry authorization.
