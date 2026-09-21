@@ -1,6 +1,6 @@
 # Phase 1 Source Map — Targeted C1–C4 Investigation
 
-Status: **SOURCE INVESTIGATION COMPLETE / NO CANONICAL CHANGE APPROVED**
+Status: **SOURCE INVESTIGATION COMPLETE / C1–C5 IMPLEMENTATION ALIGNED**
 
 ## Scope
 Phase 1 concepts: Candle Extreme Breach, Candle Extreme Protection, Inside Bar, Outside Bar, EQH, EQL, Equal Extreme Reference Transfer, Candle Internal Sequence, Candlestick-Based Trend.
@@ -46,6 +46,10 @@ This remains a **higher-layer** reconciliation item. It must not be copied into 
 The targeted investigation found real source evidence for C1, C2, and the general candle-path model underlying C3. That evidence is **supporting evidence for the existing canonical Layer 1 definitions**, not automatic authorization to change them.
 
 Absence of an explicit Outside-Bar sequence contract and absence of a complete deterministic reversal-anatomy contract mean C3 and C4 cannot be declared fully closed.
+
+## Implementation alignment
+
+The approved C1–C5 interpretation has now been reflected in the canonical documents and implementation boundary. Source material remains unchanged.
 
 ## Negative evidence rule
 
