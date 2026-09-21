@@ -319,7 +319,17 @@ A single aggregate OHLC candle may establish that an Outside Bar occurred while 
 
 ## 11. Candlestick reversal observations
 
-Candlestick reversal formations remain candle-level observations consumed by the Execution Engine. Layer 1 owns their candle anatomy and OHLC relationships; 06_execution.md owns execution eligibility, POI/liquidity gating, trigger timing, and entry authorization.
+Layer 1 owns primitive candle geometry and microstructure relationships. It does **not** own the semantic validity of reversal formations.
+
+Reversal pattern classification and execution semantics are owned by 06_execution.md (Layer 6). Layer 6 may consume Layer 1 Outside Bar state and geometric metrics, but it must evaluate its own reversal predicate.
+
+~~~text
+OUTSIDE_BAR
+    ≠
+OUTSIDE_BAR_REVERSAL
+~~~
+
+An Outside Bar does not automatically produce a reversal trigger. Conversely, Layer 6 must not write reversal classification back into Layer 1 microstructure state.
 
 They do not create, alter, confirm, or invalidate structural objects.
 
