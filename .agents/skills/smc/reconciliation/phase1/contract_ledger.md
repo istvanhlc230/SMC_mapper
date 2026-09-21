@@ -1,27 +1,30 @@
-# Phase 1 Contract Ledger — Targeted C1–C4 Investigation
+# Phase 1 Contract Ledger — C1–C5 Closure
 
-Status: **SOURCE EVIDENCE FOUND / CANONICAL ALIGNMENT REVIEW REQUIRED**
+Status: **IMPLEMENTATION COMPLETE / VALIDATION PENDING**
 
-| Contract | Status | Source evidence | Current canonical alignment | Required next step |
-|---|---|---|---|---|
-| C1 — Candle Extreme Breach deterministic OHLC model | EVIDENCE FOUND / OPEN | `true_smc123.txt` states that the relevant previous candle extreme may be broken by wick or candle close; candle color does not matter. | Existing `01_micro_structure.md` defines wick/body breach modes and keeps the event separate from BOS/CHoCH/IDM. | Human approval to mark the contract closed against this source-backed interpretation, or request refinement of the breach predicate wording. |
-| C2 — Candle Extreme Protection + Equal Extreme Reference Transfer | EVIDENCE FOUND / OPEN | `true_smc123.txt` and `true_smc_21dayBootCamp.txt` explicitly select the second candle when equal highs/lows occur; the second candle's opposite extreme becomes the applicable protected reference. | Existing `01_micro_structure.md` already defines second-candle reference transfer and keeps it separate from pullback/swing formation. | Human approval to close the contract as source-aligned. |
-| C3 — Outside Bar internal sequence / state transition | PARTIAL EVIDENCE / OPEN | `truesmc2026.txt` provides the source's candle-path model: bullish O→L→H→C; bearish O→H→L→C. No explicit Outside-Bar-specific sequence contract was found. | Existing canonical rule correctly separates Outside Bar from Candle Internal Sequence and represents LOW→HIGH / HIGH→LOW without manufacturing structural events. | Decide whether the source candle-path model is authoritative enough to close C3 or whether Outside-Bar-specific evidence is required. |
-| C4 — Reversal formations ownership / layer boundary | BOUNDARY EVIDENCE / OPEN | Bootcamp and 2026 material names reversal patterns and discusses reactions/trade initiation, but does not supply a complete deterministic Layer 1 predicate set. | Existing canonical document keeps reversal observations separate from structural objects and assigns execution gating to the execution layer. | Human approval of the ownership boundary; deterministic pattern predicates remain separate work if required. |
+| Contract | Status | Canonical disposition | Implementation evidence |
+|---|---|---|---|
+| C1 — Candle Extreme Breach deterministic OHLC model | CLOSED | Four-level ontology: PHYSICAL_BREACH, WICK_ONLY_BREACH, BODY_BREACH, CLOSE_BREACH. Body breach does not prove intrabar crossing. | 01_micro_structure.md + SMC_mapper.py breach classifier + test_micro_breach.py |
+| C2 — Protection + Equal Extreme Reference Transfer | CLOSED | EQH/EQL relationship is evaluated before independent high/low reference identity transfer. Protection remains CandleTrendState-owned. | 01_micro_structure.md + ActiveExtremeReference + test_reference_transfer.py |
+| C3 — Candle Internal Sequence / Outside Bar | CLOSED | OLHC/OHLC is methodology semantics. Outside Bar does not infer LOW_FIRST/HIGH_FIRST from aggregate OHLC. | 01_micro_structure.md + 08_implementation.md + test_outside_bar.py |
+| C4 — Reversal ownership / layer boundary | CLOSED | Layer 1 owns Outside Bar geometry; Layer 6 owns Outside-Bar Reversal semantics. Outside Bar is never an automatic reversal trigger. | 01_micro_structure.md + 06_execution.md + test_layer_boundaries.py |
+| C5 — Methodology vs historical observability | CLOSED | Methodology semantics do not imply historical observability. Observability state is implementation-owned. | 08_implementation.md + SMC_mapper.py |
 
-## Gate rule
+## Mandatory invariants
 
-A source-backed finding does not automatically modify the canonical semantic owner.
+~~~text
+BODY_BREACH != PROVEN_INTRABAR_CROSSING
+EQH/EQL != PROTECTION_STATE
+OUTSIDE_BAR != OUTSIDE_BAR_REVERSAL
+METHODOLOGY_ASSUMED != OBSERVED
+UNAVAILABLE != OBSERVED
+UNAVAILABLE MUST NOT BE AUTO-PROMOTED TO OBSERVED
+~~~
 
-No contract is marked **CLOSED** until the evidence and the exact canonical wording have passed the human approval gate.
+## Untouched source
 
-## Key conclusion
+main/knowledgebase/ remains read-only. No canonical source material was modified.
 
-The targeted investigation materially changes the evidence state:
+## Acceptance gate
 
-- C1 now has direct source support.
-- C2 now has direct source support.
-- C3 has direct support for the general candle-path model but not an Outside-Bar-specific contract.
-- C4 has boundary evidence but not a complete deterministic anatomy contract.
-
-The existing `01_micro_structure.md` is currently consistent with the source evidence identified in this pass. No source-driven canonical edit is authorized by this investigation alone.
+The semantic contracts are now closed in documentation and implementation. Final acceptance remains conditional on execution of the complete test suite and independent validation.
