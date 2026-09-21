@@ -188,6 +188,14 @@ REAL_MAJOR_IDM
 FALLBACK_MAJOR_IDM → SUPERSEDED
 ~~~
 
+### Canonical IDM Ontology & Lifecycle Proxies
+
+1. **Single Semantic Definition:** There is only one canonical definition of Inducement: the liquidity resting beyond the extreme of the most recently formed valid pullback.
+2. **Instance Classification:**
+   - `MINOR_IDM`: formed prior to the structural BOS.
+   - `REAL_MAJOR_IDM`: a validated pullback formed after the structural BOS.
+3. **Structural Engine Proxy Invariant:** `FALLBACK_MAJOR_IDM` is **NOT** a second semantic definition of IDM. It is strictly a temporary lifecycle proxy state used by the structural engine to manage dealing-range boundaries until a verified post-BOS `REAL_MAJOR_IDM` forms. Once a validated post-BOS pullback occurs, `FALLBACK_MAJOR_IDM` is superseded.
+
 FALLBACK_MAJOR_IDM is a lifecycle proxy and is not the same semantic object as REAL_MAJOR_IDM.
 
 ### IDM takeout
