@@ -444,13 +444,14 @@ def test_ambiguous_outside_bar_preserves_state():
     assert state.trend == "UNCONFIRMED"
     assert state.weak_high.price == 15
 
-def test_non_ambiguous_outside_bar():
+def test_outside_bar_does_not_infer_sequence_from_candle_color():
     bars = setup_bull_genesis()
-    bars.append(candle("t04", 11, 11, 9, 11)) # PB extreme 9
-    bars.append(candle("t05", 11, 16, 9.5, 15)) # Outside mother, but low (9.5) > extreme! Unambiguous
+    bars.append(candle("t04", 11, 11, 9, 11))
+    bars.append(candle("t05", 11, 16, 9.5, 15)) # Aggregate OHLC does not prove LOW_FIRST.
     state = run(bars)
-    assert state.minor_idm is not None
-    assert state.minor_idm.price == 9
+    assert state.outside_bar is True
+    assert state.intrabar_sequence_evidence == "UNAVAILABLE"
+    assert state.outside_bar_reversal is None
 
 
 # =========================================================================================
@@ -1125,10 +1126,11 @@ def test_dr_01_boundary_provenance():
     assert state.pullback is not None
     assert state.pullback.extreme == 12
     
-    bars.append(candle("t11", 16, 24, 10, 22)) # Outside bar sweeps pullback deeper
+    bars.append(candle("t11", 16, 24, 10, 22)) # Outside bar: physical low is observed, sequence is unavailable.
     state = run(bars)
     assert state.pullback is not None
-    assert state.pullback.extreme == 10
+    assert state.pullback.extreme == 12
+    assert state.intrabar_sequence_evidence == "UNAVAILABLE"
 
 def test_cp04_candidate_neq_protected():
     bars = setup_bull_genesis()
