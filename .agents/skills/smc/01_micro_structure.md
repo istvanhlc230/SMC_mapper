@@ -42,22 +42,46 @@ These names are canonical. Other documents may reference them, but must not intr
 
 ## 3. Candle Extreme Breach
 
-A Candle Extreme Breach occurs when the current candle exceeds a referenced candle extreme:
+A **Candle Extreme Breach** is classified against an applicable reference extreme using four deterministic levels:
 
+~~~text
+1. PHYSICAL_BREACH
+   H_t > H_ref OR L_t < L_ref
+
+2. WICK_ONLY_BREACH
+   Up: H_t > H_ref AND max(O_t, C_t) <= H_ref
+   Down: L_t < L_ref AND min(O_t, C_t) >= L_ref
+
+3. BODY_BREACH
+   Up: max(O_t, C_t) > H_ref
+   Down: min(O_t, C_t) < L_ref
+
+4. CLOSE_BREACH
+   Up: C_t > H_ref
+   Down: C_t < L_ref
 ~~~
-High_t > High_ref
-OR
-Low_t < Low_ref
+
+The classifications are relations of the completed candle's OHLC values. Candle color is irrelevant.
+
+The ontology is nested:
+
+~~~text
+CLOSE_BREACH ⊂ BODY_BREACH ⊂ PHYSICAL_BREACH
 ~~~
 
-The breach mode may be:
+A **Body Breach** is a static body-endpoint/range relation. It does **not** prove that the price path crossed the reference intrabar.
 
-- **Wick Breach**
-- **Body Breach**
-
-The breach mode describes **how** the extreme was breached; it does not create a separate microstructure object.
-
+~~~text
+BODY_BREACH
+    ≠
+PROVEN_INTRABAR_CROSSING
 ~~~
+
+A gap may therefore satisfy BODY_BREACH without providing evidence of an intrabar crossing path.
+
+A Candle Extreme Breach remains distinct from higher-level structural events:
+
+~~~text
 Candle Extreme Breach
     ≠
 STRUCTURAL_SWING_BREAK
