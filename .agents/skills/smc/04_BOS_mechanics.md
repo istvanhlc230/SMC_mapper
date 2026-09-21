@@ -279,7 +279,7 @@ First Qualifying Post-Break SVP
         ↓
 Verified Pullback Extreme
         ↓
-Major IDM Eligibility
+Layer 3 IDM Classification
         ↓
 REAL_MAJOR_IDM
         ↓
