@@ -108,16 +108,14 @@ The inner candle does not replace the applicable reference. Pullback evaluation 
 
 Layer 2 may consume a Layer 1 OUTSIDE_BAR observation as part of Candle-Level Valid Pullback formation.
 
-The Outside Bar is evaluated inside the applicable directional sequence and reference context. The pullback remains an ordered event: one side is taken and the corresponding reference side is later broken after reversal.
-
-**Derived architectural invariant:** one Outside Bar observation is evaluated within one applicable directional pullback branch for the active sequence state. Layer 2 does not create competing bullish and bearish pullback states from the same Outside Bar/reference context.
+An Outside Bar can participate in pullback formation when its breached extremes occur within the applicable directional sequence and satisfy the pullback's canonical start, reversal, and completion conditions. The pullback remains an ordered event: one side is taken and the corresponding reference side is later broken after reversal.
 
 ~~~
 OUTSIDE_BAR
     ↓
 APPLICABLE CANDLE SEQUENCE
     ↓
-PULLBACK FORMATION
+CANDLE-LEVEL PULLBACK FORMATION
 ~~~
 
 When aggregate OHLC does not expose the intrabar order needed by the sequence, Layer 2 uses the observability state provided by Layer 1 instead of manufacturing historical path evidence.
