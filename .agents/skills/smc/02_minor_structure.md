@@ -51,6 +51,32 @@ Engulfed Candle Sequence
 
 Layer 2 may consume the sequence where the applicable pullback/minor-structure context requires it, without manufacturing a new Microstructure primitive.
 
+## 2.1. Outside Bar consumption
+
+An **Outside Bar** is consumed by Layer 2 as one Layer 1 candle-level geometric observation. Its two-sided extreme breach does not by itself establish a pullback direction, reversal, or higher-level structure.
+
+When an Outside Bar participates in Candle-Level Valid Pullback formation, Layer 2 must resolve the directional branch from the applicable candle-level sequence and reference context. The same Outside Bar must not independently activate both bullish and bearish pullback branches merely because it breached both extremes.
+
+```text
+OUTSIDE_BAR
+    ↓
+CANDLE-LEVEL SEQUENCE / REFERENCE CONTEXT
+    ↓
+ONE APPLICABLE PULLBACK BRANCH
+```
+
+Outside Bar status must therefore remain separate from reversal classification:
+
+```text
+OUTSIDE_BAR
+    ≠
+REVERSAL_CLASSIFICATION
+```
+
+Layer 2 uses Outside Bar only as an input to its own sequential/minor-structure predicates. It does not infer an execution-layer reversal from the Outside Bar relationship.
+
+If the aggregate OHLC data does not expose the intrabar order required to distinguish the applicable directional branch, Layer 2 must not manufacture historical sequence evidence. Canonical methodology sequence and historical observability remain separate according to `01_micro_structure.md` and `08_implementation.md`.
+
 ## 2. Candle-Level Minor Structure
 
 Minor Structure consists of internal candle-level structural price action that does not define or alter the governing external Trading Range.
