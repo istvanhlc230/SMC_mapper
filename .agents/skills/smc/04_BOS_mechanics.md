@@ -169,57 +169,32 @@ MAJOR_IDM_SWEEP ≠ VALID_BOS
 
 The classification is based on structural role and provenance, not geometry alone.
 
-### 3.4.5 — Canonical Break Classification: Wick vs Body (MC-01)
+### 3.4.5 — Structural BOS Validation Gate
 
-The canonical True SMC implementation distinguishes strictly between continuation boundaries and opposing boundaries. The earlier basic/pedagogical model requiring a body close for all BOS events is NOT a universal implementation rule and is superseded by this specification.
+Layer 4 is the mechanical consumer of Layer 3 authority. Layer 4 does not perform Fibonacci depth calculations, candle counting, displacement evaluation, or HTF pullback verification.
 
-#### 1. Continuation External Boundary (CONFIRMED_STRUCTURAL_SWING)
+A Break of Structure (BOS) is confirmed **if and only if** all three of the following predicates are satisfied simultaneously:
 
-When price breaks a confirmed continuation external swing, physical wick penetration immediately establishes the `STRUCTURAL_SWING_BREAK` mechanism when the continuation external boundary is an eligible structural level.
-
-It does NOT by itself establish `VALID_BOS`.
-
-* Wick penetration is sufficient for the structural break mechanism;
-* Physical body close beyond CONFIRMED_STRUCTURAL_SWING also satisfies `STRUCTURAL_SWING_BREAK`;
-* Body close is NOT additionally required for continuation BOS;
-* Wick penetration alone != `VALID_BOS`, Body close alone != `VALID_BOS`;
-* `MAJOR_RETRACEMENT_QUALIFIED == TRUE` is the canonical Layer 3 qualification prerequisite;
-* Layer 4 does not evaluate Fibonacci levels, candle counts, or displacement exceptions. Those criteria are evaluated exclusively by Layer 3 and represented by the stored qualification state;
-* If `MAJOR_RETRACEMENT_QUALIFIED == FALSE` or `IDM_TAKEN == FALSE`: external breach produces `IMPULSE_EXTENSION`, NOT `VALID_BOS` (no rollover, no protected extreme lock);
-* Only the completed canonical `VALID_BOS` causes Trading Range rollover and Protected Structural Extreme locking.
-
-**Canonical Rule:**
 ```text
-Continuation External Boundary
-+
-Physical Wick Breach OR Body Close
-→ STRUCTURAL_SWING_BREAK
-
-THEN:
-
-IDM_TAKEN
-+
-MAJOR_RETRACEMENT_QUALIFIED
-+
-STRUCTURAL_SWING_BREAK
-→ VALID_BOS
+VALID_BOS <=> (IDM_TAKEN == TRUE)
+          AND (MAJOR_RETRACEMENT_QUALIFIED == TRUE)
+          AND (STRUCTURAL_SWING_BREAK == TRUE)
 ```
 
-#### 2. Context-Dependent Wick Disambiguation
+Where:
 
-The parser MUST NOT apply the generic logic: "Wick = always sweep". The interpretation of a wick breach is structural-context dependent. Do not collapse these four cases:
+- `IDM_TAKEN`: supplied exclusively by Layer 3.
+- `MAJOR_RETRACEMENT_QUALIFIED`: supplied exclusively by Layer 3 and represents either the standard 50% equilibrium qualification path or the conditional 38.2%–<50% HTF-represented qualification path.
+- `STRUCTURAL_SWING_BREAK`: evaluated by Layer 4 geometry when price breaks the `CONFIRMED_STRUCTURAL_SWING` level via wick or body, provided the level is not functioning as a Major Inducement.
 
-**Canonical Disambiguation Matrix:**
+Layer 4 consumes these upstream outputs. It does not know or independently evaluate:
 
-1. **Continuation External Boundary / CONFIRMED_STRUCTURAL_SWING (`EXT_CONT_BREAK`)**
-   * Wick breach → `STRUCTURAL_SWING_BREAK` (→ `VALID_BOS` only if the complete macro BOS qualification gate is satisfied).
-2. **Opposing Protected Boundary WITH an independently formed REAL_MAJOR_IDM (`EXT_OPP_INTERACTION`)**
-   * Wick breach → `CHoCH_ELIGIBLE` (→ `CHoCH_CONFIRMED` only after all applicable macro CHoCH prerequisites pass).
-3. **Opposing Boundary functioning as FALLBACK_MAJOR_IDM (`EXT_OPP_INTERACTION`)**
-   * Wick breach → `MAJOR_IDM_SWEEP` (unlocks gate, trend remains unchanged, no CHoCH, no rollover, no protected extreme lock).
-4. **Opposing Protected Boundary / Fallback Boundary**
-   * Body Close → `CHoCH_ELIGIBLE` (→ `CHoCH_CONFIRMED`, true trend reversal, regime shift, terminates old dealing range. Requires all applicable macro CHoCH prerequisites).
+- 38.2% or 50% retracement depth;
+- opposing-candle count;
+- displacement-outlier thresholds;
+- HTF pullback validity.
 
+Those criteria are owned exclusively by Layer 3.
 ### 3.4.7 — FALLBACK_MAJOR_IDM
 
 Fallback Major IDM is ALWAYS an **opposing-boundary proxy**. It belongs under the opposing-boundary interaction path (`EXT_OPP_INTERACTION`), not under `EXT_CONT_BREAK`. It is a temporary lifecycle-specific external proxy used after a confirmed macro event while the new expansion has not yet produced an independently qualified Real Major IDM from a post-break Structurally Valid Pullback.
@@ -454,7 +429,7 @@ Therefore:
 2. Physical break does not equal `VALID_BOS`.
 3. Retracement sufficiency is a prerequisite to continuation BOS.
 4. Major retracement qualification is produced by Layer 3 and consumed here as stored state.
-5. Canonical default retracement depth is 38.2%; deeper retracements, including 50%, remain instances of the same depth criterion.
+5. Layer 3 owns the canonical retracement qualification thresholds: 50% standard equilibrium and the conditional 38.2%–<50% HTF-represented path.
 6. Reduced-candle displacement and higher-timeframe qualification are evaluated by Layer 3 and are not redefined here.
 7. Wick-BOS is immediate and equality at the broken level is valid.
 8. Fallback Major IDM is a proxy, not Real Major IDM.
