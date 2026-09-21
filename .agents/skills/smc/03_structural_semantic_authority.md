@@ -125,9 +125,9 @@ SWING_CONFIRMATION_GATE UNLOCKED
     ↓
 CONFIRMED_STRUCTURAL_SWING (Swing confirmed ONLY; not BOS, not CHoCH, no range rollover)
     ↓
-CONSUME STORED QUALIFICATION (Depth >= 38.2% & candle count)
-    ├─ NOT SATISFIED (Depth < 38.2%) → Break of Swing is IMPULSE_EXTENSION (Range remains open)
-    └─ SATISFIED (Depth >= 38.2%)
+CONSUME STORED MAJOR-RETRACEMENT QUALIFICATION
+    ├─ NOT QUALIFIED → Break of Swing is IMPULSE_EXTENSION (Range remains open)
+    └─ QUALIFIED
             ↓
        STRUCTURAL_SWING_BREAK (Wick or Body)
             ↓
@@ -213,32 +213,37 @@ AND
 RETRACEMENT DEPTH >= 38.2% (R >= 0.382)
 ```
 
-The canonical minimum depth is **38.2%**. Any configurable exposure of this numeric threshold belongs to `methodology_parameters.md` and must not alter the semantic ownership of this rule.
+The canonical minimum retracement depth is **38.2%**. A retracement reaching 50% is a deeper instance of the same qualified depth condition; this document does not define a separate 50% pass/fail gate.
 
-**Exactly-two-candle exception**
+**Reduced-candle displacement exception**
 
-```text
-EXACTLY 2 OPPOSING CANDLES
-AND
-RETRACEMENT DEPTH >= 38.2% (R >= 0.382)
-```
+The source material also recognizes rare retracements that contain fewer than three opposing candles when the retracement candles are exceptionally large and represent significant displacement. A source-backed displacement-outlier qualification may be used when:
 
-**Retracement Depth Invariant:**
-No heuristic, candle count sweep (such as sweeps of prior candle extremes), or safe mode may substitute for the 38.2% depth requirement in macro BOS qualification.
+1. the retracement depth reaches the canonical 38.2% minimum; and
+2. the displacement retracement takes at least five previous candle extremes in the retracement direction.
 
-**Candle Count Rule:**
-1 opposing candle is NEVER sufficient for macro BOS retracement qualification under any circumstances. There is NO 1-candle exception.
+A single exceptionally large retracement candle can satisfy the displacement-outlier condition when it independently meets these source-backed criteria. The exception is a structural qualification path, not a Layer 2 pullback rule.
 
-**CONFIRMED_STRUCTURAL_SWING ≠ VALID_BOS & IMPULSE_EXTENSION:**
+**Higher-timeframe structural qualification**
+
+A Higher-Timeframe Valid Pullback may correspond to a complete lower-timeframe structure. This is a hierarchy relationship used by the structural qualification process: a validated HTF pullback can be represented by its lower-timeframe completed structure when the applicable multi-timeframe context is in force.
+
+HTF representation does not redefine the Layer 2 Candle-Level Valid Pullback and does not remove the mandatory macro retracement-depth gate for continuation BOS.
+
+**Qualification integrity**
+
+No heuristic or configuration mode may substitute for the canonical retracement-depth requirement. The displacement-outlier condition is evaluated only through the source-backed exceptional path above.
+
+**CONFIRMED_STRUCTURAL_SWING → VALID_BOS qualification:**
 VALID_BOS requires ALL of:
-1. `IDM_TAKEN = TRUE` (swing is confirmed)
-2. `RETRACEMENT_DEPTH >= 38.2%` (retracement sufficiency satisfied)
+1. `IDM_TAKEN = TRUE` (swing confirmation prerequisite satisfied)
+2. `MAJOR_RETRACEMENT_QUALIFIED = TRUE` (the canonical Layer 3 qualification defined above is satisfied)
 3. `STRUCTURAL_SWING_BREAK` (wick breach or body close beyond CONFIRMED_STRUCTURAL_SWING)
 
-If IDM is taken out (`IDM_TAKEN = TRUE`), the provisional expansion extreme becomes a CONFIRMED_STRUCTURAL_SWING. However, if retracement depth is `< 38.2%` ($R < 0.382$):
+If IDM is taken out (`IDM_TAKEN = TRUE`), the provisional expansion extreme becomes a CONFIRMED_STRUCTURAL_SWING. However, if MAJOR_RETRACEMENT_QUALIFIED is false:
 - The swing remains confirmed.
-- Retracement sufficiency is NOT satisfied.
-- Any subsequent break of the CONFIRMED_STRUCTURAL_SWING is classified as `IMPULSE_EXTENSION`, NOT `VALID_BOS`.
+- Macro retracement qualification is not satisfied.
+- Any subsequent break of the CONFIRMED_STRUCTURAL_SWING is classified as IMPULSE_EXTENSION, not VALID_BOS.
 - The dealing range remains OPEN (does not roll over).
 - No new Protected Structural Extreme is established.
 
