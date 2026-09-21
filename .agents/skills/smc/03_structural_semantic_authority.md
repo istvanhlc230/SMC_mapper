@@ -188,14 +188,13 @@ REAL_MAJOR_IDM
 FALLBACK_MAJOR_IDM → SUPERSEDED
 ~~~
 
-### Canonical IDM Ontology & Lifecycle Proxies
+### Canonical Inducement Ontology & Lifecycle Proxy
 
-1. **Single Semantic Definition:** There is only one canonical definition of Inducement: the liquidity resting beyond the extreme of the most recently formed valid pullback.
-2. **Instance Classification:**
-   - `MINOR_IDM`: formed prior to the structural BOS.
-   - `REAL_MAJOR_IDM`: a validated pullback formed after the structural BOS.
-3. **Structural Engine Proxy Invariant:** `FALLBACK_MAJOR_IDM` is **NOT** a second semantic definition of IDM. It is strictly a temporary lifecycle proxy state used by the structural engine to manage dealing-range boundaries until a verified post-BOS `REAL_MAJOR_IDM` forms. Once a validated post-BOS pullback occurs, `FALLBACK_MAJOR_IDM` is superseded.
+1. **Single Semantic Definition:** Inducement (IDM) is defined solely as the liquidity resting beyond the extreme of the most recently formed valid pullback.
+   - `MINOR_IDM`: A valid pullback formed prior to structural BOS.
+   - `REAL_MAJOR_IDM`: A validated pullback formed after structural BOS.
 
+2. **Structural Engine Lifecycle Proxy:** `FALLBACK_MAJOR_IDM` is **NOT** an alternative or secondary IDM definition. It is strictly a temporary lifecycle proxy state used by the structural engine to maintain dealing range bounds following a BOS until a verified post-BOS `REAL_MAJOR_IDM` is printed by price action. Once a valid pullback forms on the new impulsive leg, `FALLBACK_MAJOR_IDM` is immediately superseded.
 FALLBACK_MAJOR_IDM is a lifecycle proxy and is not the same semantic object as REAL_MAJOR_IDM.
 
 ### IDM takeout
@@ -220,115 +219,56 @@ This section owns the IDM semantic object and lifecycle. BOS and CHoCH modules c
 
 ## 3.3 — Confirmed Swing & Protected Structural Extreme Lifecycle
 
-### 3.3.1 — Ontological Asymmetry
+### Structural Lifecycle State Machine
 
-```text
-CONFIRMED_STRUCTURAL_SWING
-        ≠
-PROTECTED STRUCTURAL EXTREME
-```
+The confirmation of structural swings and the lifecycle of the dealing range strictly follow this sequential state machine:
 
-A provisional Expansion Extreme becomes a **CONFIRMED_STRUCTURAL_SWING** when and only when the active IDM is taken out (`IDM_TAKEN = TRUE`). Wick or body penetration of the IDM level exclusively opens the `SWING_CONFIRMATION_GATE` and is sufficient to trigger IDM takeout; a candle body close beyond IDM is NOT required.
+1. **IDM_TAKEN:** Price sweeps or closes beyond the active Inducement (most recent valid pullback).
 
-A CONFIRMED_STRUCTURAL_SWING records the current expansion extreme and serves as the external structural landmark for the active lifecycle. It is not automatically protected.
+2. **SWING_CANDIDATE:** The external extreme of the dealing range is marked as a candidate structural swing point (Swing High in uptrends, Swing Low in downtrends).
 
-Crucially:
-- IDM takeout confirms the swing ONLY.
-- IDM takeout does NOT create a new Dealing Range.
-- IDM takeout does NOT flip trend.
-- IDM takeout is NEVER a CHoCH.
-- IDM takeout does NOT create VALID_BOS.
-- IDM takeout does NOT roll the dealing range.
-- `CONFIRMED_STRUCTURAL_SWING ≠ VALID_BOS`. Having a CONFIRMED_STRUCTURAL_SWING is a necessary prerequisite for BOS, NOT BOS itself.
+3. **STRUCTURAL_RETRACEMENT_EVALUATION:** The market evaluates the depth, candle structure, and HTF representation of the retracement wave.
 
-A **Protected Structural Extreme** is a later lifecycle state created by valid BOS. It becomes the governing trend anchor for the resulting structural lifecycle.
+   - **If QUALIFIED:**
+     - State transitions to `CONFIRMED_STRUCTURAL_SWING`.
+     - Emits `MAJOR_RETRACEMENT_QUALIFIED = TRUE`.
+     - Awaits `STRUCTURAL_SWING_BREAK` by price (downstream Layer 4 BOS).
 
-### 3.3.2 — Major Structural Retracement Qualification
+   - **If NOT QUALIFIED (Shallow Retracement Failure):**
+     - State transitions to `SWING_REVOKED`.
+     - Emits `MAJOR_RETRACEMENT_QUALIFIED = FALSE`.
+     - Dealing range remains unexpanded (single impulsive leg).
+     - `PULLBACK_REFERENCE_SHIFT`: The extreme reached by the shallow retracement becomes the new active Inducement reference.
+     - Awaits the next qualification attempt.
 
-This section is the single semantic owner of the major structural qualification rule. Other documents may consume or reference the result but must not redefine the criteria.
+This separation is mandatory: `IDM_TAKEN` creates a `SWING_CANDIDATE`; it does not manufacture a `CONFIRMED_STRUCTURAL_SWING` before retracement qualification succeeds.
+### Major Retracement Qualification Architecture
 
-The corrective extreme is tracked dynamically across the complete corrective window from swing confirmation until BOS. This section is the canonical semantic owner of **major structural retracement qualification**. Layer 2 produces the candle-level Valid Pullback and verified pullback extreme; Layer 3 determines whether that retracement is structurally qualified.
+Layer 3 is the sole semantic owner of structural qualification. A retracement wave is evaluated through the following hierarchical gates:
 
-Bullish lifecycle:
+#### Gate 1: Equilibrium Retracement (Standard Path)
 
-```text
-E_retrace(t) = min(Low_k)
-```
+- **Condition:** `RetracementDepth >= 50%` of the active dealing range.
+- **Structural Validation:**
+  - **Normal Case:** Requires `>= 3` opposing closing candles within the retracement leg.
+  - **Displacement Outlier Exception:** If `< 3` opposing candles exist, the qualification is satisfied **if and only if** a single candlestick displacement outlier sweeps the bodies/extremes of `>= 5` preceding candles.
+- **Output:** `MAJOR_RETRACEMENT_QUALIFIED = TRUE`.
 
-Bearish lifecycle:
+#### Gate 2: HTF-Represented Retracement (Conditional Path)
 
-```text
-E_retrace(t) = max(High_k)
-```
+- **Condition:** `38.2% <= RetracementDepth < 50%` of the active dealing range.
+- **HTF Evidence Gate:**
+  - Depth between 38.2% and 49.9% is **never sufficient on its own**.
+  - It is qualified **if and only if** the entire retracement move constitutes a valid single candlestick pullback on the applicable immediate Higher Timeframe (`HTF_VALID_PULLBACK == TRUE`).
+  - **Axiom:** “A higher timeframe valid pullback is a lower timeframe complete structure.”
+  - If the HTF displays an inside bar or an invalid pullback: `MAJOR_RETRACEMENT_QUALIFIED = FALSE`.
 
-The tracked extreme must not be frozen prematurely at a local pivot, IDM-sweeping candle, or internal microstructure point.
+#### Gate 3: Insufficient Retracement
 
-**Opposing Candle Definition**
+- **Condition:** `RetracementDepth < 38.2%`.
+- **Output:** `MAJOR_RETRACEMENT_QUALIFIED = FALSE`.
 
-An "opposing candle" is defined strictly by candle direction / body direction relative to the active trend / dominant impulse:
-- In a bullish trend (dominant upward impulse): an opposing candle is a bearish candle (`Close < Open`).
-- In a bearish trend (dominant downward impulse): an opposing candle is a bullish candle (`Close > Open`).
-
-Do NOT define opposing candles by displacement, directional movement, higher/lower extremes, or candle ranges. Candle color / body direction is the definitive criterion.
-
-**Mandatory Macro BOS Retracement Gate (38.2%)**
-
-The 38.2% retracement threshold is anchored strictly to the active Major Structure Dealing Range:
-- **Bullish trend**: Dealing range from Protected Swing Low ($ProtectedLow$, impulse origin) to provisional Expansion High ($ExpansionHigh$, CONFIRMED_STRUCTURAL_SWING):
-  $$\text{Retracement depth } R = \frac{ExpansionHigh - RetracementLow}{ExpansionHigh - ProtectedLow}$$
-  $$\text{Threshold level } P_{38.2} = ExpansionHigh - 0.382 \times (ExpansionHigh - ProtectedLow)$$
-  $$\text{Condition: } RetracementLow \le P_{38.2} \iff R \ge 0.382$$
-- **Bearish trend**: Dealing range from Protected Swing High ($ProtectedHigh$, impulse origin) to provisional Expansion Low ($ExpansionLow$, CONFIRMED_STRUCTURAL_SWING):
-  $$\text{Retracement depth } R = \frac{RetracementHigh - ExpansionLow}{ProtectedHigh - ExpansionLow}$$
-  $$\text{Threshold level } P_{38.2} = ExpansionLow + 0.382 \times (ProtectedHigh - ExpansionLow)$$
-  $$\text{Condition: } RetracementHigh \ge P_{38.2} \iff R \ge 0.382$$
-
-Retracement depth $\ge 38.2\%$ is a **MANDATORY** gate for macro BOS. Without $\ge 38.2\%$ depth ($R \ge 0.382$), NO break of the expansion extreme can be classified as `VALID_BOS`.
-
-**Standard qualification path**
-
-```text
->= 3 OPPOSING CANDLES
-AND
-RETRACEMENT DEPTH >= 38.2% (R >= 0.382)
-```
-
-The canonical minimum retracement depth is **38.2%**. A retracement reaching 50% is a deeper instance of the same qualified depth condition; this document does not define a separate 50% pass/fail gate.
-
-**Reduced-candle displacement exception**
-
-The source material also recognizes rare retracements that contain fewer than three opposing candles when the retracement candles are exceptionally large and represent significant displacement. A source-backed displacement-outlier qualification may be used when:
-
-1. the retracement depth reaches the canonical 38.2% minimum; and
-2. the displacement retracement takes at least five previous candle extremes in the retracement direction.
-
-A single exceptionally large retracement candle can satisfy the displacement-outlier condition when it independently meets these source-backed criteria. The exception is a structural qualification path, not a Layer 2 pullback rule.
-
-**Higher-timeframe structural qualification**
-
-A Higher-Timeframe Valid Pullback may correspond to a complete lower-timeframe structure. This is a hierarchy relationship used by the structural qualification process: a validated HTF pullback can be represented by its lower-timeframe completed structure when the applicable multi-timeframe context is in force.
-
-HTF representation does not redefine the Layer 2 Candle-Level Valid Pullback and does not remove the mandatory macro retracement-depth gate for continuation BOS.
-
-**Qualification integrity**
-
-No heuristic or configuration mode may substitute for the canonical retracement-depth requirement. The displacement-outlier condition is evaluated only through the source-backed exceptional path above.
-
-**CONFIRMED_STRUCTURAL_SWING → VALID_BOS qualification:**
-VALID_BOS requires ALL of:
-1. `IDM_TAKEN = TRUE` (swing confirmation prerequisite satisfied)
-2. `MAJOR_RETRACEMENT_QUALIFIED = TRUE` (the canonical Layer 3 qualification defined above is satisfied)
-3. `STRUCTURAL_SWING_BREAK` (wick breach or body close beyond CONFIRMED_STRUCTURAL_SWING)
-
-If IDM is taken out (`IDM_TAKEN = TRUE`), the provisional expansion extreme becomes a CONFIRMED_STRUCTURAL_SWING. However, if MAJOR_RETRACEMENT_QUALIFIED is false:
-- The swing remains confirmed.
-- Macro retracement qualification is not satisfied.
-- Any subsequent break of the CONFIRMED_STRUCTURAL_SWING is classified as IMPULSE_EXTENSION, not VALID_BOS.
-- The dealing range remains OPEN (does not roll over).
-- No new Protected Structural Extreme is established.
-
-The detailed BOS break-classification mechanics are owned by `04_BOS_mechanics.md`. That module consumes the structural qualification defined here and must not redefine its semantic criteria.
-
+The gates are hierarchical and mutually exclusive by depth. Gate 2 is the only qualification path below 50%; Gate 3 cannot qualify. Qualification is evaluated before the structural swing break and is stored for downstream Layer 4 consumption.
 ### 3.3.3 — Protected Structural Extreme Lock
 
 The absolute corrective extreme remains dynamically tracked until the structural event that produces `VALID_BOS`.
@@ -379,7 +319,8 @@ POI expiration is handled through the separate POI lifecycle; the structural eng
 5. Protected Structural Extreme is created by valid BOS, not by impulse origin or arbitrary swing confirmation.
 6. Retracement sufficiency is mandatory before continuation BOS.
 7. One candle alone does not establish retracement validity; a reduced-candle retracement may qualify only when the canonical depth and source-supported displacement/extreme-taking conditions are satisfied.
-8. Canonical default retracement depth is 38.2%.
+8. The standard equilibrium retracement threshold is 50%; the 38.2% threshold is conditional and may qualify only through the applicable immediate Higher Timeframe valid-pullback path.
+9. A `SWING_CANDIDATE` is not a `CONFIRMED_STRUCTURAL_SWING` until the canonical retracement qualification succeeds; failed shallow retracement revokes the candidate and shifts the active pullback/IDM reference.
 10. Physical external break does not automatically equal VALID_BOS or CHoCH_CONFIRMED.
 11. `MAJOR_IDM_SWEEP` is not VALID_BOS and not CHoCH_CONFIRMED.
 12. Fallback Major IDM is an external range-boundary proxy, not Real Major IDM or arbitrary internal liquidity.
