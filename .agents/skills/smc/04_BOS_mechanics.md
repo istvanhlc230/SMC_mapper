@@ -145,7 +145,7 @@ STORED LAYER 3 QUALIFICATION
 
 ### 3.4.4.1 — CONFIRMED_STRUCTURAL_SWING ≠ VALID_BOS
 
-Having a CONFIRMED_STRUCTURAL_SWING via IDM takeout (`IDM_TAKEN = TRUE`) is a prerequisite for BOS, NOT BOS itself.
+IDM takeout (`IDM_TAKEN = TRUE`) creates a SWING_CANDIDATE; a CONFIRMED_STRUCTURAL_SWING exists only after Layer 3 structural retracement qualification succeeds. The confirmed swing is a prerequisite for BOS, NOT BOS itself.
 
 `VALID_BOS` requires ALL of:
 1. `IDM_TAKEN = TRUE` (swing is confirmed via wick or body takeout)
@@ -153,11 +153,10 @@ Having a CONFIRMED_STRUCTURAL_SWING via IDM takeout (`IDM_TAKEN = TRUE`) is a pr
 3. `STRUCTURAL_SWING_BREAK` (physical wick breach or body close beyond CONFIRMED_STRUCTURAL_SWING)
 
 If IDM is taken out but Layer 3 has not produced MAJOR_RETRACEMENT_QUALIFIED:
-- The swing remains confirmed.
-- Macro retracement qualification is not satisfied.
-- Any subsequent break of the CONFIRMED_STRUCTURAL_SWING is classified as IMPULSE_EXTENSION, NOT VALID_BOS.
-- The dealing range remains OPEN (does not roll over).
-- No new protected extreme is established.
+- The SWING_CANDIDATE remains unconfirmed.
+- A failed qualification revokes the candidate and shifts the active pullback/IDM reference.
+- The dealing range remains unexpanded.
+- No CONFIRMED_STRUCTURAL_SWING exists to support a continuation BOS.
 
 Therefore:
 
