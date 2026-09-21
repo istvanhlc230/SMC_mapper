@@ -138,6 +138,78 @@ PROTECTED_STRUCTURAL_EXTREME_LOCK + TRADING_RANGE_ROLLOVER
 
 ---
 
+## 3.2.3 — Inducement Semantic Authority
+
+Layer 3 is the single semantic owner of Inducement (IDM). Layer 2 supplies the validated pullback and pullback-derived liquidity reference; Layer 3 determines whether that reference constitutes IDM and which IDM class is active.
+
+For a bullish active impulsive leg, inducement is the liquidity resting below the low of the most recently formed valid pullback relevant to that leg. For a bearish active impulsive leg, inducement is the liquidity resting above the high of the most recently formed valid pullback.
+
+~~~text
+LAYER 2
+VERIFIED PULLBACK EXTREME
+        ↓
+PULLBACK-DERIVED LIQUIDITY REFERENCE
+        ↓
+LAYER 3
+IDM CLASSIFICATION
+~~~
+
+### Minor vs Major IDM
+
+The IDM class is determined by the structural lifecycle:
+
+~~~text
+BEFORE VALID BOS
+        ↓
+MINOR_IDM
+
+AFTER VALID BOS
+        ↓
+MAJOR_IDM
+~~~
+
+The classification is structural, not a separate candle-pattern definition. A newly formed valid pullback can supersede the current IDM reference when the lifecycle rules identify that newer pullback as the active reference. Historical IDM objects remain part of structural history and are not retroactively rewritten.
+
+### Real Major IDM and fallback proxy
+
+After a valid BOS, the first independently qualified post-BOS Structurally Valid Pullback can establish the REAL_MAJOR_IDM from its verified pullback extreme. Until that real post-BOS IDM exists, the lifecycle may expose a FALLBACK_MAJOR_IDM as an opposing-boundary proxy.
+
+~~~text
+VALID_BOS
+    ↓
+NEW STRUCTURAL LIFECYCLE
+    ↓
+POST-BOS STRUCTURALLY VALID PULLBACK
+    ↓
+VERIFIED PULLBACK EXTREME
+    ↓
+REAL_MAJOR_IDM
+    ↓
+FALLBACK_MAJOR_IDM → SUPERSEDED
+~~~
+
+FALLBACK_MAJOR_IDM is a lifecycle proxy and is not the same semantic object as REAL_MAJOR_IDM.
+
+### IDM takeout
+
+IDM_TAKEN = TRUE when price physically takes the active IDM reference according to the applicable directional level. Wick or body penetration is sufficient for IDM takeout; a candle close beyond IDM is not required.
+
+IDM takeout is a structural lifecycle event that can unlock the Swing Confirmation Gate. It does not by itself create VALID_BOS, roll the Trading Range, or lock the Protected Structural Extreme.
+
+~~~text
+ACTIVE IDM
+    ↓
+PHYSICAL IDM TAKEOUT
+    ↓
+IDM_TAKEN = TRUE
+    ↓
+SWING CONFIRMATION GATE
+~~~
+
+This section owns the IDM semantic object and lifecycle. BOS and CHoCH modules consume the resulting IDM state and takeout status; they must not redefine IDM.
+
+---
+
 ## 3.3 — Confirmed Swing & Protected Structural Extreme Lifecycle
 
 ### 3.3.1 — Ontological Asymmetry
@@ -298,9 +370,8 @@ POI expiration is handled through the separate POI lifecycle; the structural eng
 4. CONFIRMED_STRUCTURAL_SWING and Protected Structural Extreme are distinct lifecycle states.
 5. Protected Structural Extreme is created by valid BOS, not by impulse origin or arbitrary swing confirmation.
 6. Retracement sufficiency is mandatory before continuation BOS.
-7. There is no automatic one-candle retracement exception.
+7. One candle alone does not establish retracement validity; a reduced-candle retracement may qualify only when the canonical depth and source-supported displacement/extreme-taking conditions are satisfied.
 8. Canonical default retracement depth is 38.2%.
-9. Exactly-two-candle qualification requires retracement depth >= 38.2%; no prior candle extreme sweep may substitute for the depth requirement.
 10. Physical external break does not automatically equal VALID_BOS or CHoCH_CONFIRMED.
 11. `MAJOR_IDM_SWEEP` is not VALID_BOS and not CHoCH_CONFIRMED.
 12. Fallback Major IDM is an external range-boundary proxy, not Real Major IDM or arbitrary internal liquidity.
