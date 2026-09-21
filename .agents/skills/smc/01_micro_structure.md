@@ -137,25 +137,29 @@ An Inside Bar does not independently establish a structural sweep or liquidity e
 
 ## 6. Outside Bar
 
-An **Outside Bar** satisfies:
+An **Outside Bar** is a candle-level geometric relationship against an applicable reference candle:
 
-~~~
-current.high > reference.high
+~~~text
+OUTSIDE_BAR(C_t, C_ref)
+⇔
+H_t > H_ref
 AND
-current.low  < reference.low
+L_t < L_ref
 ~~~
 
-The Outside Bar relationship and the internal order of the two breached extremes are separate observations.
+The Outside Bar definition is independent of the reference-management mechanics described under Equal Extreme Reference Transfer. The applicable reference candle must already be established by the governing candle-level context; Outside Bar classification does not itself create or mutate that reference identity.
 
-The internal order is represented by **Candle Internal Sequence**:
+Outside Bar is an atomic single-candle relationship:
 
+~~~text
+OUTSIDE_BAR
+    ≠
+OUTSIDE_BAR_REVERSAL
 ~~~
-LOW → HIGH
-or
-HIGH → LOW
-~~~
 
-A single Outside Bar must not be treated as two independent structural events merely because both extremes were breached.
+An Outside Bar has no intrinsic directional reversal bias. Reversal classification is owned by Layer 6 and requires that layer's own execution-pattern predicate and eligibility context.
+
+The internal order of the breached extremes is a separate observability concern. Layer 1 does not infer LOW_FIRST or HIGH_FIRST from aggregate single-timeframe OHLC alone.
 
 ## 7. Equal High (EQH) / Equal Low (EQL)
 
