@@ -4,54 +4,33 @@
 
 **Authority boundary:** This document owns numeric/configurable values only. It does not redefine the semantic identity or lifecycle of any methodology object. The semantic rules that consume these parameters remain authoritative in their current semantic-owner documents: `01_micro_structure.md`, `02_minor_structure.md`, and `03_structural_semantic_authority.md` with its subordinate BOS/CHoCH modules.
 
-## 9. Structural retracement parameters
+## 9. Structural Retracement & Equilibrium
 
-### 9.1 Standard minimum retracement depth
+### 9.1 Standard equilibrium threshold
 
-- Canonical default: `38.2%`.
-- The minimum retracement depth may be exposed as a configurable engine parameter where explicitly permitted.
-- Configuration changes the numeric threshold only; it does not redefine the semantic meaning of Valid Pullback, Structurally Valid Pullback, IDM, or any higher-level structural state.
-- Do not encode the numeric default into semantic state names.
+- `STANDARD_EQUILIBRIUM_THRESHOLD: 0.50`
+- This is the canonical standard qualification threshold for the normal major retracement path.
 
-The implementation may expose `BOS_MIN_RETRACEMENT_PCT` with canonical default `38.2%`.
+### 9.2 Conditional HTF threshold
 
-#### Mathematical formulation (Active Major Structure Dealing Range)
+- `HTF_CONDITIONAL_THRESHOLD: 0.382`
+- The 38.2% threshold is not sufficient on its own.
+- The 38.2%–<50% path qualifies only when the entire retracement constitutes a valid single candlestick pullback on the applicable immediate Higher Timeframe.
+- The semantic qualification rule is owned by `03_structural_semantic_authority.md`.
 
-The 38.2% retracement threshold is anchored strictly to the active Major Structure Dealing Range:
+### 9.3 Candle counts & displacement exception
 
-- **Bullish trend**: Dealing range from Protected Swing Low ($ProtectedLow$, impulse origin) to provisional Expansion High ($ExpansionHigh$, Confirmed Swing):
-  $$\text{Retracement depth } R = \frac{ExpansionHigh - RetracementLow}{ExpansionHigh - ProtectedLow}$$
-  $$\text{Threshold level } P_{38.2} = ExpansionHigh - 0.382 \times (ExpansionHigh - ProtectedLow)$$
-  $$\text{Condition: } RetracementLow \le P_{38.2} \iff R \ge 0.382$$
+- `NORMAL_RETRACEMENT_CANDLE_COUNT: 3`
+- Normal qualification uses at least three opposing closing candles.
+- Fewer than three opposing candles can qualify only through the documented displacement-outlier exception.
+- `MIN_OUTLIER_EXTREMES_TAKEN: 5`
+- These are numeric support parameters only; they do not redefine the semantic qualification rule.
 
-- **Bearish trend**: Dealing range from Protected Swing High ($ProtectedHigh$, impulse origin) to provisional Expansion Low ($ExpansionLow$, Confirmed Swing):
-  $$\text{Retracement depth } R = \frac{RetracementHigh - ExpansionLow}{ProtectedHigh - ExpansionLow}$$
-  $$\text{Threshold level } P_{38.2} = ExpansionLow + 0.382 \times (ProtectedHigh - ExpansionLow)$$
-  $$\text{Condition: } RetracementHigh \ge P_{38.2} \iff R \ge 0.382$$
+### 9.4 Higher-timeframe evaluation scope
 
-Retracement depth $\ge 38.2%$ is a **MANDATORY** gate for macro BOS. Without $\ge 38.2%$ depth ($R \ge 0.382$), NO break of the expansion extreme can be classified as `VALID_BOS`.
-
-#### Layer separation
-
-The 38.2% requirement applies strictly to the **Macro BOS Retracement Gate (Layer 3)**. It does **NOT** apply to microscopic candle-level pullbacks (Layer 1) or minor internal pullback validation (Layer 2).
-
-### 9.2 Reduced-candle displacement parameter
-
-The semantic reduced-candle displacement qualification is defined by `03_structural_semantic_authority.md` Section 3.3.2. This section owns the numeric source-backed support value used by that semantic rule:
-
-- canonical support value: **5 previous candle extremes** in the retracement direction;
-- the condition applies to rare retracements containing fewer than three opposing candles when the displacement is exceptionally large;
-- the canonical macro retracement-depth minimum remains **38.2%**;
-- the value may be exposed as a parameter only where explicitly approved; changing it must not redefine the semantic identity of the displacement-outlier condition.
-
-This parameter replaces the former exactly-two-candle rule. No one-candle prohibition is encoded here.
-
-### 9.3 Qualitative parameters
-
-The qualitative requirement for LARGE / HIGH-MOMENTUM PRICE ACTION has no authoritative quantitative value at present and therefore must not be invented here.
-
-Do not invent ATR, body-ratio, volatility, or standard-deviation thresholds and present them as canonical methodology.
-
+- `HTF_PULLBACK_EVALUATION_SCOPE: "applicable_immediate_higher_timeframe"`
+- No rigid timeframe-pairing table is encoded here.
+- The applicable immediate Higher Timeframe is determined by the structural context.
 ## 10. Risk scoring boundary
 
 Concrete risk-quality penalties, weighted-score arithmetic, and quality-tier evaluation are implementation-owned by `SMC_mapper.py` and represented in `08_implementation.md`. This parameter document does not own those calculations and must not duplicate them as methodology rules.
