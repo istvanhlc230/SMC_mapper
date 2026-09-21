@@ -182,8 +182,10 @@ It does NOT by itself establish `VALID_BOS`.
 * Wick penetration is sufficient for the structural break mechanism;
 * Physical body close beyond CONFIRMED_STRUCTURAL_SWING also satisfies `STRUCTURAL_SWING_BREAK`;
 * Body close is NOT additionally required for continuation BOS;
-* Wick penetration alone != `VALID_BOS`, Body close alone != `VALID_BOS`. Full qualification gate (`IDM_TAKEN == True AND RETRACEMENT_DEPTH >= 0.382`) is required;
-* If `RETRACEMENT_DEPTH < 0.382` or `IDM_TAKEN == False`: external breach produces `IMPULSE_EXTENSION`, NOT `VALID_BOS` (no rollover, no protected extreme lock);
+* Wick penetration alone != `VALID_BOS`, Body close alone != `VALID_BOS`;
+* `MAJOR_RETRACEMENT_QUALIFIED == TRUE` is the canonical Layer 3 qualification prerequisite;
+* Layer 4 does not evaluate Fibonacci levels, candle counts, or displacement exceptions. Those criteria are evaluated exclusively by Layer 3 and represented by the stored qualification state;
+* If `MAJOR_RETRACEMENT_QUALIFIED == FALSE` or `IDM_TAKEN == FALSE`: external breach produces `IMPULSE_EXTENSION`, NOT `VALID_BOS` (no rollover, no protected extreme lock);
 * Only the completed canonical `VALID_BOS` causes Trading Range rollover and Protected Structural Extreme locking.
 
 **Canonical Rule:**
@@ -197,7 +199,7 @@ THEN:
 
 IDM_TAKEN
 +
-RETRACEMENT_DEPTH >= 0.382
+MAJOR_RETRACEMENT_QUALIFIED
 +
 STRUCTURAL_SWING_BREAK
 → VALID_BOS
