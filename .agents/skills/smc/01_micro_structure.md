@@ -107,7 +107,7 @@ L_t < L_ref
 
 The applicable reference candle is established by the governing candle-level context.
 
-Outside Bar has no intrinsic reversal classification. Reversal formations are owned by Layer 6 execution semantics, which may consume the Layer 1 Outside Bar observation together with their own predicates.
+Outside Bar is a canonical candle-geometry observation that can be consumed by downstream sequence and execution owners. Layer 2 may use the observation as an input to Candle-Level Pullback formation, while Layer 6 may use it as an input to its own reversal predicate.
 
 The order in which the two breached extremes were reached is represented separately by Candle Internal Sequence when evidence is available.
 
