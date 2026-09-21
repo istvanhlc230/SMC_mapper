@@ -226,9 +226,6 @@ The Layer 3 definitions are consumed through their canonical owner document; Lay
 
 A compliant implementation preserves:
 
-
-A compliant implementation preserves:
-
 - Candle-Level Valid Pullback as a sequential Layer 2 construct built from Layer 1 observations.
 - Bullish pullback formation through reference-low takeout followed by reversal and reference-high break.
 - Bearish pullback formation through reference-high takeout followed by reversal and reference-low break.
