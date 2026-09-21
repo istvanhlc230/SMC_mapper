@@ -2,7 +2,7 @@
 
 **Role:** Canonical Layer 2 Minor Structure of the True SMC methodology.
 
-**Authority:** This document owns Sequential / Minor Structure, including Pullback Formation, Candle-Level Valid Pullback, verified pullback extremes, active pullback state, liquidity formation for the active minor leg, and Minor IDM eligibility. Candle-level primitives consumed by this layer are owned by 01_micro_structure.md.
+**Authority:** This document owns Sequential / Minor Structure, including Pullback Formation, Candle-Level Valid Pullback, verified pullback extremes, active pullback state, and pullback-derived liquidity references for the active minor leg. Candle-level primitives consumed by this layer are owned by 01_micro_structure.md.
 
 Major structural qualification is owned by 03_structural_semantic_authority.md.
 
@@ -21,9 +21,9 @@ LAYER 3 STRUCTURAL QUALIFICATION
         ↓
 STRUCTURALLY VALID PULLBACK
         ↓
-ACTIVE PULLBACK / LIQUIDITY
+ACTIVE PULLBACK / LIQUIDITY REFERENCE
         ↓
-MINOR IDM ELIGIBILITY
+LAYER 3 IDM CLASSIFICATION
 ~~~
 
 Each downstream state is produced only from the validated prerequisite state supplied by the preceding stage.
@@ -173,9 +173,9 @@ CURRENT LIQUIDITY REFERENCE
 
 Historical pullbacks remain part of the structural history.
 
-## 7. Minor liquidity and IDM eligibility
+## 7. Pullback-derived liquidity reference
 
-For the active impulsive leg:
+For the active impulsive leg, Layer 2 exposes the liquidity reference implied by the verified extreme of the most recent structurally accepted pullback:
 
 ~~~
 Bullish active leg
@@ -189,41 +189,9 @@ Bearish active leg
 Buy-Side Liquidity reference
 ~~~
 
-A Minor IDM becomes eligible from the liquidity associated with the most recent structurally accepted pullback on the active impulsive leg.
+This is a Layer 2 input object, not an IDM definition. Layer 2 does not classify the reference as Minor IDM or Major IDM and does not own IDM lifecycle state.
 
-The eligibility sequence is:
-
-~~~
-STRUCTURALLY VALID PULLBACK
-        ↓
-VERIFIED PULLBACK EXTREME
-        ↓
-ACTIVE LIQUIDITY REFERENCE
-        ↓
-MINOR IDM ELIGIBILITY
-        ↓
-MINOR IDM
-~~~
-
-The Minor IDM state inherits the provenance of the pullback from which its liquidity reference was derived.
-
-## 8. Minor IDM lifecycle
-
-Within the active impulsive leg, the current Minor IDM follows the active pullback pointer.
-
-~~~
-NEW VALID PULLBACK
-        ↓
-NEW VERIFIED EXTREME
-        ↓
-ACTIVE PULLBACK POINTER TRANSFER
-        ↓
-MINOR IDM REFERENCE TRANSFER
-~~~
-
-The latest qualifying pullback is the active IDM reference. Historical IDM references remain available as history.
-
-## 9. Layer 2 → Layer 3 handoff
+## 8. Layer 2 → Layer 3 handoff
 
 Layer 2 delivers the following validated objects to Layer 3:
 
@@ -232,13 +200,16 @@ CANDLE-LEVEL VALID PULLBACK
 VERIFIED PULLBACK EXTREME
 STRUCTURALLY VALID PULLBACK STATUS
 ACTIVE PULLBACK POINTER
-MINOR IDM ELIGIBILITY
-MINOR IDM
+PULLBACK-DERIVED LIQUIDITY REFERENCE
 ~~~
 
-Layer 3 then owns the subsequent structural lifecycle, including:
+Layer 3 then owns:
 
 ~~~
+IDM DEFINITION
+MINOR_IDM / MAJOR_IDM CLASSIFICATION
+ACTIVE IDM LIFECYCLE
+IDM REFERENCE SHIFT
 IDM LIQUIDITY TAKEOUT
 SWING CONFIRMATION
 CONFIRMED_STRUCTURAL_SWING
@@ -251,7 +222,10 @@ CHoCH
 
 The Layer 3 definitions are consumed through their canonical owner document; Layer 2 does not redefine them.
 
-## 10. Layer 2 validation contract
+## 9. Layer 2 validation contract
+
+A compliant implementation preserves:
+
 
 A compliant implementation preserves:
 
@@ -266,7 +240,7 @@ A compliant implementation preserves:
 - Pullback Extreme Verification across the complete pullback window.
 - Structural qualification through the Layer 3 owner.
 - Active Pullback Pointer following the most recent structurally accepted pullback.
-- Minor IDM eligibility following the active pullback and verified extreme provenance.
+- Pullback-derived liquidity references following the active pullback and verified extreme provenance; IDM classification is owned by Layer 3.
 - Structural lifecycle events being handed to Layer 3 rather than recreated in Layer 2.
 
 ## 11. Canonical precedence
