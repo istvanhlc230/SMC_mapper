@@ -459,7 +459,7 @@ Therefore:
 9. FALLBACK_MAJOR_IDM wick breach is `MAJOR_IDM_SWEEP`, not VALID_BOS or CHoCH_CONFIRMED.
 10. `MAJOR_IDM_SWEEP` unlocks the Swing Confirmation Gate but does not automatically create a CONFIRMED_STRUCTURAL_SWING.
 11. `NEW_SVP` does not automatically create Real Major IDM.
-12. Real Major IDM supersedes the FALLBACK_MAJOR_IDM only through the validated post-break SVP → Verified Extreme → Eligibility → Real IDM lifecycle.
+12. Real Major IDM supersedes the FALLBACK_MAJOR_IDM only through the validated post-break SVP → Verified Extreme → Layer 3 IDM Classification → Real IDM lifecycle.
 13. Only `VALID_BOS` rolls the Trading Range and locks the Protected Structural Extreme.
 14. BOS event classification is anti-retroactive.
 15. BOS mechanics are subordinate to `03_structural_semantic_authority.md` and must not create a competing Layer 3 authority.
