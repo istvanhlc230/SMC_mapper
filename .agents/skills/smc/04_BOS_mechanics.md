@@ -148,7 +148,7 @@ STORED LAYER 3 QUALIFICATION
 IDM takeout (`IDM_TAKEN = TRUE`) creates a SWING_CANDIDATE; a CONFIRMED_STRUCTURAL_SWING exists only after Layer 3 structural retracement qualification succeeds. The confirmed swing is a prerequisite for BOS, NOT BOS itself.
 
 `VALID_BOS` requires ALL of:
-1. `IDM_TAKEN = TRUE` (swing is confirmed via wick or body takeout)
+1. `IDM_TAKEN = TRUE` (the Layer 3 swing-candidate prerequisite is satisfied by wick or body takeout)
 2. `MAJOR_RETRACEMENT_QUALIFIED = TRUE` (Layer 3 stored qualification result)
 3. `STRUCTURAL_SWING_BREAK` (physical wick breach or body close beyond CONFIRMED_STRUCTURAL_SWING)
 
