@@ -67,7 +67,7 @@ Read the referenced documents in this order when the full methodology is require
 - Human approval gate, contract ledger, change set, and independent validation
 - Process authority only; it does not define SMC methodology
 
-## 4. Documentation authority
+## 5. Documentation authority
 
 Semantic ownership is:
 
@@ -102,7 +102,7 @@ IMPLEMENTATION REPRESENTATION / EXECUTABLE SCORING MAPPING
 
 A rule must have one primary semantic owner. Other documents may reference that rule, but must not create a competing definition.
 
-## 5. Precedence rule
+## 6. Precedence rule
 
 When documents conflict:
 
@@ -116,7 +116,7 @@ OLDER / SUPERSEDED WORDING
 
 Do not use generic SMC knowledge to override the project's canonical semantic-owner documents.
 
-## 6. Canonical document set
+## 7. Canonical document set
 
 ```text
 .agents/skills/smc/
