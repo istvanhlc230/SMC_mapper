@@ -102,7 +102,7 @@ The pullback may complete after one candle or after multiple candles. No candle-
 
 When a Layer 1 INSIDE_BAR occurs during pullback formation, the mother candle remains the applicable candle-level reference according to the Layer 1 definition.
 
-The inner candle contributes its candle-level observations to the sequence, while the pullback reference continues to be evaluated against the applicable mother-candle context.
+The inner candle does not replace the applicable reference. Pullback evaluation continues against the mother-candle context.
 
 ## 3. Outside Bar consumption
 
