@@ -177,27 +177,75 @@ EQH/EQL do not independently create IDM, Confirmed Structural Swing, VALID_BOS, 
 
 ## 8. Equal Extreme Reference Transfer
 
-**Equal Extreme Reference Transfer** is the candle-level transfer of the active reference when the applicable equal-extreme relationship is formed.
+**Equal Extreme Reference Transfer** separates the geometric equality relationship from the reference-identity state transition.
 
-For a bullish directional sequence:
+The canonical logical order is:
 
-~~~
-Equal High relationship
-        ↓
-second candle becomes active reference
-~~~
-
-For a bearish directional sequence:
-
-~~~
-Equal Low relationship
-        ↓
-second candle becomes active reference
+~~~text
+CANDIDATE EQUALITY
+      ↓
+EQH / EQL RELATIONSHIP CONFIRMED
+      ↓
+REFERENCE IDENTITY TRANSFER
 ~~~
 
-Reference transfer is still a microstructure/reference operation.
+### 8.1 Equal-extreme relationship
 
+For the applicable reference candle:
+
+~~~text
+EQH(C_t, C_ref) ⇔ H_t == H_ref
+EQL(C_t, C_ref) ⇔ L_t == L_ref
 ~~~
+
+The equality relationship is geometric. It does not itself mutate reference state.
+
+### 8.2 Reference identity state
+
+The implementation maintains independent identities for the active high and low references:
+
+~~~text
+ActiveHighReference = (price_value, candle_id, role)
+ActiveLowReference  = (price_value, candle_id, role)
+~~~
+
+When an EQH relationship is confirmed, the current candle becomes the active high reference. When an EQL relationship is confirmed, the current candle becomes the active low reference.
+
+~~~text
+IF EQH(C_t, ActiveHighReference)
+→ ActiveHighReference ← (H_t, candle_id_t, ACTIVE_HIGH)
+
+IF EQL(C_t, ActiveLowReference)
+→ ActiveLowReference ← (L_t, candle_id_t, ACTIVE_LOW)
+~~~
+
+The reference identity preserves both the extreme value and its candle provenance. High-reference and low-reference transfers are independent and may coexist with a breach of the opposite extreme.
+
+### 8.3 Protection independence
+
+REFERENCE_IDENTITY_TRANSFER is not PROTECTION_STATE.
+
+Protection remains context-bound to CandleTrendState:
+
+~~~text
+CandleTrendState = Uptrend
+    → Low is protected
+
+CandleTrendState = Downtrend
+    → High is protected
+~~~
+
+EQH/EQL does not automatically assign, invert, or remove protection.
+
+~~~text
+EQH/EQL
+    ≠
+PROTECTION_STATE
+~~~
+
+Equal Extreme Reference Transfer remains a reference operation:
+
+~~~text
 Equal Extreme Reference Transfer
 ≠ Pullback Formation
 ≠ Pullback Extreme
