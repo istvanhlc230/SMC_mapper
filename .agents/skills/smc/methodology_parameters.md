@@ -35,15 +35,16 @@ Retracement depth $\ge 38.2%$ is a **MANDATORY** gate for macro BOS. Without $\g
 
 The 38.2% requirement applies strictly to the **Macro BOS Retracement Gate (Layer 3)**. It does **NOT** apply to microscopic candle-level pullbacks (Layer 1) or minor internal pullback validation (Layer 2).
 
-### 9.2 Exactly-two-candle exception parameters
+### 9.2 Reduced-candle displacement parameter
 
-The semantic qualification rule for the exactly-two-candle major-structure exception is defined by `03_structural_semantic_authority.md` Section 3.3.2. This section owns only its numeric constraints:
+The semantic reduced-candle displacement qualification is defined by `03_structural_semantic_authority.md` Section 3.3.2. This section owns the numeric source-backed support value used by that semantic rule:
 
-- the exception applies to **exactly 2 opposing candles**;
-- the mandatory retracement-depth threshold is **38.2%** ($R \ge 0.382$);
-- no heuristic, candle count sweep (such as sweeps of prior candle extremes), or "safe mode" may substitute for the 38.2% depth requirement in macro BOS qualification.
+- canonical support value: **5 previous candle extremes** in the retracement direction;
+- the condition applies to rare retracements containing fewer than three opposing candles when the displacement is exceptionally large;
+- the canonical macro retracement-depth minimum remains **38.2%**;
+- the value may be exposed as a parameter only where explicitly approved; changing it must not redefine the semantic identity of the displacement-outlier condition.
 
-There is no numeric parameter that authorizes a one-candle exception: 1 opposing candle is NEVER sufficient for macro BOS qualification under any circumstances.
+This parameter replaces the former exactly-two-candle rule. No one-candle prohibition is encoded here.
 
 ### 9.3 Qualitative parameters
 
