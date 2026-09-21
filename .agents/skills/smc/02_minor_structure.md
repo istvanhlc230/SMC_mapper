@@ -329,6 +329,7 @@ A compliant implementation must preserve all of the following:
 - Strict inside bars require strict containment and equality does not qualify.
 - A single outside bar cannot activate both directional branches.
 - Candle-level Valid Pullback requires the complete directional sequence.
+- A valid pullback extreme may be initiated by either a canonical WICK_ONLY_BREACH or BODY_BREACH; breach mode does not change the Layer 2 ownership boundary.
 - EQ High / EQ Low reference transfer is directional and uses the second candle as the active reference.
 - Verified Pullback Extreme follows the candle-level Valid Pullback and is not automatically IDM.
 - Major structural retracement qualification is owned by Layer 3 and has the standard path and exactly-two-candle exception.
