@@ -182,6 +182,44 @@ SMC_mapper.py
 
 Therefore, a future change to the executable risk formula must first be classified as an implementation change and must not silently become a new methodology rule.
 
+## 45.2. Intrabar Sequence Evidence
+
+INTRABAR_SEQUENCE_EVIDENCE is an implementation/data-model state. It does not redefine the Layer 1 methodology model.
+
+Allowed states:
+
+~~~text
+OBSERVED
+    → sequence verified from sub-timeframe, tick, replay, or equivalent historical evidence.
+
+METHODOLOGY_ASSUMED
+    → sequence represented using the canonical True SMC OLHC/OHLC methodology model
+      when implementation explicitly needs a modeled path.
+
+UNAVAILABLE
+    → aggregate OHLC does not expose sufficient historical evidence to establish
+      the intrabar order.
+~~~
+
+For an Outside Bar derived from a single aggregate timeframe, the default evidence state is:
+
+~~~text
+OUTSIDE_BAR = TRUE
+INTRABAR_SEQUENCE_EVIDENCE = UNAVAILABLE
+~~~
+
+The implementation must never infer LOW_FIRST or HIGH_FIRST from the completed candle's open/close color alone.
+
+Mandatory invariants:
+
+~~~text
+METHODOLOGY_ASSUMED ≠ OBSERVED
+UNAVAILABLE ≠ OBSERVED
+UNAVAILABLE MUST NOT BE AUTO-PROMOTED TO OBSERVED
+~~~
+
+If stronger sequence evidence later becomes available, the implementation may replace UNAVAILABLE with OBSERVED only on the basis of that evidence. The methodology model may not be used as retrospective proof.
+
 ## 46. Structural state machine
 
 The mapper is a state machine. Each event must be evaluated against current structural state, not only against the current candle.
