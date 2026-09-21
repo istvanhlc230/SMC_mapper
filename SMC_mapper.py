@@ -1166,6 +1166,9 @@ def run_true_smc(candles: List[dict], init_end_index: Optional[int] = None):
         c = candles[i]
         state.bos = None
         state.choch = None
+        state.outside_bar = False
+        state.intrabar_sequence_evidence = "UNAVAILABLE"
+        state.outside_bar_reversal = None
 
         bH = c["high"] > state.reference_high if state.reference_high else False
         bL = c["low"]  < state.reference_low  if state.reference_low  else False
