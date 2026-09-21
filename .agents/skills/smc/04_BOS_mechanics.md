@@ -15,7 +15,7 @@ PHYSICAL EXTERNAL BREAK (Wick OR Body)
         ↓
 STRUCTURAL_SWING_BREAK
         ↓
-CONSUME STORED QUALIFICATION (IDM_TAKEN == True AND RETRACEMENT_DEPTH >= 0.382)
+CONSUME STORED MAJOR-RETRACEMENT QUALIFICATION FROM LAYER 3
         ↓
 COMPLETE BOS GATE SATISFIED
         ↓
@@ -70,13 +70,13 @@ A physical external break does **not** itself establish `VALID_BOS`, Trading Ran
 
 Mandatory prerequisites remain:
 
-1. retracement sufficiency is satisfied (`RETRACEMENT_DEPTH >= 0.382`);
+1. Layer 3 has produced a qualified major-retracement result;
 2. `IDM_TAKEN == True` (swing confirmation gate satisfied);
 3. the reference has correct external structural identity;
 4. the broken level is not the applicable FALLBACK_MAJOR_IDM;
 5. the final break classification satisfies 3.4.3.
 
-If an external continuation break occurs before retracement sufficiency is satisfied (`RETRACEMENT_DEPTH < 0.382` or `IDM_TAKEN == False`):
+If an external continuation break occurs before the Layer 3 qualification result is satisfied or before `IDM_TAKEN == True`:
 
 ```text
 EXT_CONT_BREAK
@@ -94,35 +94,16 @@ The structural lifecycle explicitly separates the temporal **Qualification Phase
 
 #### 1. Qualification Phase
 
-Qualification occurs *before* price returns to the BOS level. The engine dynamically tracks retracement depth and opposing candles anchored to the active dealing range.
+Qualification occurs *before* price returns to the BOS level. Layer 3 dynamically evaluates the major retracement and structural qualification using its canonical semantic owner rules.
 
 ```text
 IDM_TAKEN
 → CONFIRMED_STRUCTURAL_SWING
-→ RETRACEMENT_TRACKING
-→
-    ├── BOS_QUALIFIED_LEVEL
-    └── BOS_DISQUALIFIED_LEVEL
+→ LAYER 3 RETRACEMENT / STRUCTURAL QUALIFICATION
+→ STORED QUALIFICATION RESULT
 ```
 
-The canonical qualification paths are defined **once**, at the Layer 3 Major Structure owner:
-
-```text
-STANDARD
->= 3 OPPOSING CANDLES
-AND
-RETRACEMENT DEPTH >= 38.2%
-```
-
-or:
-
-```text
-EXACTLY 2 OPPOSING CANDLES
-AND
-RETRACEMENT DEPTH >= 38.2%
-```
-
-No heuristic, candle count sweep (such as sweeps of prior candle extremes), or safe mode may substitute for the 38.2% depth requirement in macro BOS qualification. Opposing candles are defined strictly by candle direction / body direction (`Close < Open` for bullish, `Close > Open` for bearish). There is no automatic one-candle exception; 1 opposing candle is NEVER sufficient for macro BOS qualification under any circumstances. No momentum, ATR, pip, body-ratio, or volatility thresholds are canonical.
+The canonical qualification rules are defined once in 03_structural_semantic_authority.md. This module consumes the stored result and does not reproduce the opposing-candle, displacement-outlier, higher-timeframe, or retracement-depth rules.
 
 The qualification result (`is_bos_qualified`) is stored state. It is **not** a new BOS predicate. It is strictly the result of the preceding qualification phase.
 
@@ -134,7 +115,7 @@ Execution occurs when price later returns to the structural level. The engine do
 price returns to structural level
 → PHYSICAL_EXTERNAL_BREAK (Wick OR Body)
 → STRUCTURAL_SWING_BREAK
-→ CONSUME STORED QUALIFICATION (IDM_TAKEN == True AND RETRACEMENT_DEPTH >= 0.382)
+→ CONSUME STORED LAYER 3 QUALIFICATION
 →
     ├── COMPLETE BOS GATE SATISFIED → VALID_BOS → PROTECTED_STRUCTURAL_EXTREME_LOCK + TRADING_RANGE_ROLLOVER
     └── DISQUALIFIED → IMPULSE_EXTENSION
@@ -151,15 +132,16 @@ The validated continuation pipeline is:
 ```text
 EXT_CONT_BREAK
         ↓
-RETRACEMENT QUALIFICATION GATE (Stored Qualification State)
-        ├── BOS_DISQUALIFIED_LEVEL (R < 38.2% or < 3 opposing candles without 2-candle exception)
+STORED LAYER 3 QUALIFICATION
+        ├── NOT QUALIFIED
         │       ↓
-        │  IMPULSE_EXTENSION (Dealing range remains open, no new protected extreme)
+        │  IMPULSE_EXTENSION (Dealing range remains open)
         │
-        └── BOS_QUALIFIED_LEVEL (IDM_TAKEN = TRUE AND R >= 38.2% AND Opposing Candles Satisfied)
+        └── QUALIFIED
                 ↓
            VALID_BOS (Dealing range rolls over, Protected Structural Extreme locks)
 ```
+
 
 ### 3.4.4.1 — CONFIRMED_STRUCTURAL_SWING ≠ VALID_BOS
 
@@ -167,13 +149,13 @@ Having a CONFIRMED_STRUCTURAL_SWING via IDM takeout (`IDM_TAKEN = TRUE`) is a pr
 
 `VALID_BOS` requires ALL of:
 1. `IDM_TAKEN = TRUE` (swing is confirmed via wick or body takeout)
-2. `RETRACEMENT_DEPTH >= 38.2%` (retracement sufficiency satisfied anchored to active dealing range)
+2. `MAJOR_RETRACEMENT_QUALIFIED = TRUE` (Layer 3 stored qualification result)
 3. `STRUCTURAL_SWING_BREAK` (physical wick breach or body close beyond CONFIRMED_STRUCTURAL_SWING)
 
-If IDM is taken out (`IDM_TAKEN = TRUE`) but retracement depth `< 38.2%`:
+If IDM is taken out but Layer 3 has not produced MAJOR_RETRACEMENT_QUALIFIED:
 - The swing remains confirmed.
-- Retracement sufficiency is NOT satisfied.
-- Any subsequent break of the CONFIRMED_STRUCTURAL_SWING is classified as `IMPULSE_EXTENSION`, NOT `VALID_BOS`.
+- Macro retracement qualification is not satisfied.
+- Any subsequent break of the CONFIRMED_STRUCTURAL_SWING is classified as IMPULSE_EXTENSION, NOT VALID_BOS.
 - The dealing range remains OPEN (does not roll over).
 - No new protected extreme is established.
 
@@ -469,9 +451,9 @@ Therefore:
 1. BOS requires an eligible CONFIRMED_STRUCTURAL_SWING reference.
 2. Physical break does not equal `VALID_BOS`.
 3. Retracement sufficiency is a prerequisite to continuation BOS.
-4. No automatic one-candle retracement exception exists.
-5. Canonical default retracement depth is 38.2%.
-6. Exactly-two-candle qualification requires retracement depth >= 38.2%; sweeps of prior candle extremes do not substitute for the depth requirement.
+4. Major retracement qualification is produced by Layer 3 and consumed here as stored state.
+5. Canonical default retracement depth is 38.2%; deeper retracements, including 50%, remain instances of the same depth criterion.
+6. Reduced-candle displacement and higher-timeframe qualification are evaluated by Layer 3 and are not redefined here.
 7. Wick-BOS is immediate and equality at the broken level is valid.
 8. Fallback Major IDM is a proxy, not Real Major IDM.
 9. FALLBACK_MAJOR_IDM wick breach is `MAJOR_IDM_SWEEP`, not VALID_BOS or CHoCH_CONFIRMED.
