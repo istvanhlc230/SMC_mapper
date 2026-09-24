@@ -348,7 +348,7 @@ RISK METHODOLOGY
     ↓
 consumes canonical structural/execution state
     ↓
-08_implementation.md / SMC_mapper.py
+08_implementation.md / mapper implementation
     ↓
 concrete scoring arithmetic
 ```
