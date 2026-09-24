@@ -445,14 +445,14 @@ LTF INTERACTION
    ↓
 LTF STRUCTURAL RESPONSE
    ↓
-BOS / CHoCH CLASSIFICATION (Against POI direction)
+CHoCH CLASSIFICATION (Against POI direction)
    ↓
 CONTROL SHIFT
    ↓
 POI FAILURE
 ```
 
-`06_execution.md` consumes this canonical `BOS` / `CHoCH` state to determine `POI_FAILURE`, but does NOT redefine them. The structural classifications of BOS and CHoCH remain solely owned by `04_BOS_mechanics.md` and `05_CHOCH_mechanics.md`. 
+`06_execution.md` consumes the canonical `CHoCH` state to determine `POI_FAILURE`, but does NOT redefine it. The structural classifications of BOS and CHoCH remain solely owned by `04_BOS_mechanics.md` and `05_CHOCH_mechanics.md`. 
 
 Because POI Failure is an execution state dependent on structural confirmation, a `POI_FAILURE` event does not itself create a new HTF BOS or CHoCH. Execution failure and structural failure remain strictly separate. A failed POI must not authorize arbitrary replacement zones; fallback must follow the canonical hierarchy.
 
