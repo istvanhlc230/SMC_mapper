@@ -256,7 +256,7 @@ Layer 3 is the sole semantic owner of structural qualification. A retracement wa
 - **Condition:** `RetracementDepth >= 50%` of the active dealing range.
 - **Structural Validation:**
   - **Normal Case:** Requires `>= 3` opposing closing candles within the retracement leg.
-  - **Displacement Outlier Exception:** If `< 3` opposing candles exist, the qualification is satisfied **if and only if** a single candlestick displacement outlier sweeps the bodies/extremes of `>= 5` preceding candles.
+  - **Reduced-Candle Displacement Exception:** If `< 3` opposing candles exist, qualification may occur only under the rare source-described displacement case: the reduced-candle retracement contains unusually large candle(s) that collectively take the bodies/extremes of `>= 5` preceding candles and produce the required deep retracement. This exception does not make a short candle sequence automatically valid.
 - **Output:** `MAJOR_RETRACEMENT_QUALIFIED = TRUE`.
 
 #### Gate 2: HTF-Represented Retracement (Conditional Path)
@@ -264,7 +264,7 @@ Layer 3 is the sole semantic owner of structural qualification. A retracement wa
 - **Condition:** `38.2% <= RetracementDepth < 50%` of the active dealing range.
 - **HTF Evidence Gate:**
   - Depth between 38.2% and 49.9% is **never sufficient on its own**.
-  - It is qualified **if and only if** the entire retracement move constitutes a valid single candlestick pullback on the applicable immediate Higher Timeframe (`HTF_VALID_PULLBACK == TRUE`).
+  - It is qualified **if and only if** the entire retracement move constitutes a single valid pullback event on the applicable immediate Higher Timeframe (`HTF_VALID_PULLBACK == TRUE`).
   - **Axiom:** “A higher timeframe valid pullback is a lower timeframe complete structure.”
   - If the HTF displays an inside bar or an invalid pullback: `MAJOR_RETRACEMENT_QUALIFIED = FALSE`.
 
