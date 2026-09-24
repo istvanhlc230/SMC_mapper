@@ -1,6 +1,6 @@
 # TRUE SMC — Full Methodology / Platform Gap Audit
 
-Status: **CANONICALIZATION IN PROGRESS — LTF-CHoCH AND ORDER FLOW/SMT CLOSED**
+Status: **CANONICALIZATION PHASE COMPLETE — C6–C15 CLOSED; PLATFORM-SPECIFIC IMPLEMENTATION REMAINS**
 
 Scope:
 - canonical SMC skill under `.agents/skills/smc/`;
@@ -32,7 +32,7 @@ The current skill is sufficient to specify a substantial **market-structure and 
 - target and 1:2 RR gating;
 - execution/risk separation.
 
-It is **not yet sufficient as a deterministic specification for a complete live trading platform**.
+It is **not by itself a broker-specific live trading platform specification**. The SMC methodology, execution authorization, trading policy, countertrend scenarios, and generic platform execution boundary are now canonicalized; venue-specific implementation still requires broker/exchange contracts and infrastructure.
 
 The main reason is not lack of source material. The knowledgebase contains most of the additional concepts needed for the strategy. The gap is that several source scenarios are still expressed as examples, qualitative guidance, or trader-plan rules and have not yet been reconciled into deterministic contracts.
 
@@ -166,117 +166,55 @@ Canonical result:
 - no canonical target blocks automatic TP submission.
 
 Classification: **CANONICALIZED — SOURCE-DIRECT + SOURCE-DERIVED FORMALIZATION**.
-### 3.8 Position sizing and risk-budget controls — HIGH PRIORITY for live trading
+### 3.7.1 Status update — Target hierarchy canonicalized
 
-Source:
-`knowledgebase/Become-a-TRUE-Forex-Trader-Become-a-TRUE-Forex-Trader_text_format.txt` contains explicit position-sizing methodology:
-- fixed risk approximately 0.5% per trade in the example trading plan;
-- risk amount = account balance × risk percentage;
-- position size = risk amount ÷ (stop-loss pips × pip value);
-- stop distance determines position size, not vice versa.
-
-The same source's example trading plan contains:
-- maximum running risk: 0.5%;
-- maximum one trade per session;
-- maximum two trades per day;
-- maximum daily loss: 1.0%;
-- record/log every trade.
-
-Current skill:
-- 1:2 RR and risk boundaries exist;
-- the actual position-sizing algorithm and account-level risk budget do not.
-
-Classification:
-**SOURCE-BACKED TRADING-PLAN CONTRACT, NOT CURRENT CORE SMC SEMANTIC OWNERSHIP**.
-
-Important:
-The source material provides a concrete example plan. It should not automatically be hard-coded as universal SMC methodology. It should become an explicit configurable trading-policy layer if the platform is intended to reproduce this exact plan.
-
-### 3.9 Session and news filters — HIGH PRIORITY for reproducing the documented plan
-
-Source:
-`knowledgebase/everything_behind_the_trading_system.txt` and the book's Trading Plan specify:
-- London window;
-- New York window;
-- one trade per session;
-- two trades per day;
-- high-impact GBP/USD news avoidance;
-- entries confined to the chosen execution timeframe.
-
-Current skill:
-- no session policy;
-- no economic-calendar/news gate;
-- no session-aware order cancellation/expiry.
-
-Classification:
-**SOURCE-BACKED TRADING-PLAN CONTRACT**.
-
-Additional external platform knowledge required:
-- authoritative economic-calendar feed;
-- timezone/DST handling;
-- release timestamps and pre/post news blackout windows;
-- symbol/currency exposure mapping.
-
-### 3.10 Performance logging / trade journal — MEDIUM PRIORITY
-
-The source trading plan explicitly requires every trade to be recorded/logged and describes fields such as:
-- date;
-- asset;
-- direction;
-- setup;
-- session/key window;
-- rule adherence.
-
-Current skill:
-- no canonical trade-journal schema.
-
-Classification:
-**SOURCE-BACKED PLATFORM REQUIREMENT**.
-
-### 3.11 Backtesting / replay / historical observability — HIGH PRIORITY
-
-The source repeatedly relies on replay/front-test examples and lower-timeframe structural reconstruction.
-
-Current implementation correctly distinguishes:
-- `OBSERVED`;
-- `METHODOLOGY_ASSUMED`;
-- `UNAVAILABLE`.
-
-But a complete backtester still needs:
-- deterministic bar-close model;
-- lower-timeframe/tick reconstruction when needed;
-- spread/bid/ask model;
-- slippage;
-- order-fill rules;
-- intrabar ordering policy;
-- no-lookahead constraints;
-- session/news data replay;
-- cancellation/expiry model;
-- position sizing over time;
-- account equity/margin simulation.
-
-These are not presently specified.
-
-### 3.8 Status update — Position sizing and trading policy
-
-The source-backed trading-policy gap is now canonicalized as a separate owner in `trading_policy.md`.
+The target hierarchy is now canonicalized in `07_risk.md` and `08_implementation.md`.
 
 Canonical result:
-- position size is resolved only after entry and stop;
-- risk amount and position-size formula are explicit;
-- the documented 0.5% / running-risk / trade-count / daily-loss values are configurable example-plan values;
-- session windows and high-impact news gating are explicit policy inputs;
-- policy state is persistent/reconciled;
-- missing required policy inputs block automatic order submission.
+- direct same-timeframe pro-trend -> confirmed external extreme/external liquidity;
+- LTF -> explicit HTF-external or LTF-structural target policy;
+- countertrend -> setup-specific next canonical destination;
+- absent target prevents automatic TP submission.
+
+Classification: **CANONICALIZED — SOURCE-DIRECT + SOURCE-DERIVED FORMALIZATION**.
+
+### 3.8 Status update — Position sizing and risk-budget controls canonicalized
+
+The source-backed position-sizing and risk-budget rules are now canonicalized in `trading_policy.md`.
+
+Canonical result:
+- position size is calculated only after canonical entry and stop resolution;
+- risk amount = account equity × configured risk percentage;
+- position size uses exact stop distance and instrument pip/tick value;
+- source example values (0.5% fixed risk, 0.5% running risk, one trade/session, two trades/day, 1.0% daily loss) are configurable policy values;
+- policy state must persist and reconcile with account/broker history.
 
 Classification: **CANONICALIZED AS CONFIGURABLE TRADING POLICY**.
 
-### 3.9 Session and news policy
+### 3.9 Status update — Session and news policy canonicalized
 
-This gap is closed by `trading_policy.md`; the policy remains distinct from structural SMC semantics and requires external economic-calendar data for live execution.
+Session and high-impact news rules are now canonicalized in `trading_policy.md`.
+
+Canonical result:
+- same-timeframe and optional HTF→LTF routes are explicit;
+- source example London/New York windows are configurable UK-local-time policy values;
+- DST-aware timezone evaluation is required;
+- high-impact GBP/USD news avoidance is a configurable gate;
+- live news gating requires an external economic-calendar dependency and fails closed when enabled and required data is unavailable.
 
 Classification: **CANONICALIZED AS CONFIGURABLE TRADING POLICY + EXTERNAL DATA DEPENDENCY**.
 
+### 3.10 Status update — Performance logging / trade journal
+
+The trade-journal requirement is now represented in `trading_policy.md`, including structural context, authorization, stop, target, risk, session, news, and final execution outcome.
+
+Classification: **CANONICALIZED AS PLATFORM AUDITABILITY POLICY**.
+
+### 3.11 Status update — Backtesting / replay / historical observability
+
+The methodology observability boundary is already canonicalized. The platform execution contract now defines the deterministic backtest/replay boundary: no lookahead, explicit spread/slippage/fill assumptions, LTF/tick evidence where needed, explicit session/news replay, and account/risk evolution from simulated fills.
+
+Classification: **CANONICALIZED PLATFORM EXECUTION CONTRACT; VENUE-SPECIFIC FILL DATA/ASSUMPTIONS REMAIN CONFIGURATION**.
 
 ## 4. Current runtime versus canonical skill
 
