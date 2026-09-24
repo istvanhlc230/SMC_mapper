@@ -39,7 +39,7 @@
 - The applicable immediate Higher Timeframe is determined by the structural context.
 ## 10. Risk scoring boundary
 
-Concrete risk-quality penalties, weighted-score arithmetic, and quality-tier evaluation are implementation-owned by `SMC_mapper.py` and represented in `08_implementation.md`. This parameter document does not own those calculations and must not duplicate them as methodology rules.
+Concrete risk-quality penalties, weighted-score arithmetic, and quality-tier evaluation are implementation-owned by the mapper implementation and represented in `08_implementation.md`. This parameter document does not own those calculations and must not duplicate them as methodology rules.
 
 ```text
 RISK SCORE PARAMETER
