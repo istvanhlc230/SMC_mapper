@@ -748,6 +748,45 @@ Regression tests must cover:
 - deep retracement does not automatically reset range;
 - FALLBACK_MAJOR_IDM wick does not roll the range.
 
+### Entry Authorization / Execution Order Mapping
+
+The implementation must separate canonical entry authorization from broker/exchange order submission and fill state.
+
+```text
+ENTRY_CONTEXT_VALID
+        ↓
+ENTRY_AUTHORIZED
+        ↓
+ENTRY_REFERENCE_PRICE
+        ↓
+EXECUTION POLICY
+        ↓
+ORDER_SUBMITTED
+        ↓
+ORDER_FILLED
+        ↓
+POSITION_OPEN
+```
+
+Required mappings:
+- IDM Sweep: active IDM + IDM_TAKEN + reversal/directional confirmation -> ENTRY_AUTHORIZED; direct confirmation price reference = completed confirmation-candle close;
+- Decisional POI Mitigation: valid Decisional POI + mitigation + independent reversal/directional confirmation -> ENTRY_AUTHORIZED; direct confirmation price reference = completed confirmation-candle close;
+- Engineering Liquidity Sweep: confirmed ENG_LQD + sweep + directional confirmation -> ENTRY_AUTHORIZED; direct confirmation price reference = completed confirmation-candle close;
+- Extreme POI Mitigation: valid Extreme POI + mitigation + reversal/directional confirmation -> ENTRY_AUTHORIZED; direct confirmation price reference = completed confirmation-candle close;
+- broker order type is not a True SMC semantic fact unless a separate canonical trading-plan rule specifies it;
+- an entry authorization must never be treated as an order fill or open position;
+- pending-order expiry, cancellation, replacement, and re-entry belong to the order-lifecycle policy and must not rewrite historical entry authorization.
+
+Forbidden shortcuts:
+```text
+ENTRY_AUTHORIZED → POSITION_OPEN
+ENTRY_CONTEXT_VALID → ORDER_FILLED
+POI_TOUCH → ENTRY_AUTHORIZED
+IDM_SWEEP → ENTRY_AUTHORIZED (without confirmation)
+ENG_LQD_SWEEP → ENTRY_AUTHORIZED (without confirmation)
+POI_MITIGATION → ENTRY_AUTHORIZED (without confirmation)
+```
+
 ### POI / Entry
 - POI ontology accepts only Valid OF or Valid OB;
 - Rule of Two limits canonical tradable POIs to Decisional POI and Extreme POI;
