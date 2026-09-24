@@ -98,9 +98,8 @@ Qualification occurs *before* price returns to the BOS level. Layer 3 dynamicall
 
 ```text
 IDM_TAKEN
-→ SWING_CANDIDATE
-→ LAYER 3 RETRACEMENT / STRUCTURAL QUALIFICATION
 → CONFIRMED_STRUCTURAL_SWING
+→ LAYER 3 RETRACEMENT / STRUCTURAL QUALIFICATION
 → STORED QUALIFICATION RESULT
 ```
 
@@ -146,18 +145,18 @@ STORED LAYER 3 QUALIFICATION
 
 ### 3.4.4.1 — CONFIRMED_STRUCTURAL_SWING ≠ VALID_BOS
 
-IDM takeout (`IDM_TAKEN = TRUE`) creates a SWING_CANDIDATE; a CONFIRMED_STRUCTURAL_SWING exists only after Layer 3 structural retracement qualification succeeds. The confirmed swing is a prerequisite for BOS, NOT BOS itself.
+IDM takeout (`IDM_TAKEN = TRUE`) confirms the relevant `CONFIRMED_STRUCTURAL_SWING`. The later Layer 3 retracement qualification determines whether a subsequent break of that swing can qualify as `VALID_BOS`. The confirmed swing is a prerequisite for BOS, NOT BOS itself.
 
 `VALID_BOS` requires ALL of:
 1. `IDM_TAKEN = TRUE` (the Layer 3 swing-candidate prerequisite is satisfied by wick or body takeout)
 2. `MAJOR_RETRACEMENT_QUALIFIED = TRUE` (Layer 3 stored qualification result)
 3. `STRUCTURAL_SWING_BREAK` (physical wick breach or body close beyond CONFIRMED_STRUCTURAL_SWING)
 
-If IDM is taken out but Layer 3 has not produced MAJOR_RETRACEMENT_QUALIFIED:
-- The SWING_CANDIDATE remains unconfirmed.
-- A failed qualification revokes the candidate and shifts the active pullback/IDM reference.
+If IDM is taken out but Layer 3 has not yet produced `MAJOR_RETRACEMENT_QUALIFIED`:
+- The `CONFIRMED_STRUCTURAL_SWING` may already exist from the IDM takeout.
+- A later external break is not `VALID_BOS` until the stored retracement qualification is satisfied.
+- If an attempted break occurs on an insufficient retracement, the break is rejected as `IMPULSE_EXTENSION` and the newer retracement extreme becomes the active pullback/IDM reference for the next structural attempt.
 - The dealing range remains unexpanded.
-- No CONFIRMED_STRUCTURAL_SWING exists to support a continuation BOS.
 
 Therefore:
 
