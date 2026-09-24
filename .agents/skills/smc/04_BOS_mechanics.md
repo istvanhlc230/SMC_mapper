@@ -71,7 +71,7 @@ A physical external break does **not** itself establish `VALID_BOS`, Trading Ran
 Mandatory prerequisites remain:
 
 1. Layer 3 has produced a qualified major-retracement result;
-2. `IDM_TAKEN == True` (the Layer 3 swing-candidate prerequisite is established);
+2. `IDM_TAKEN == True` (the Layer 3 IDM-takeout prerequisite is established);
 3. the reference has correct external structural identity;
 4. the broken level is not the applicable FALLBACK_MAJOR_IDM;
 5. the final break classification satisfies 3.4.3.
