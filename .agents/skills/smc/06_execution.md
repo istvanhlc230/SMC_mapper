@@ -6,14 +6,17 @@
 
 ## 36. POI ontology — canonical tradable POIs
 
-The project's tradable POI ontology is currently a closed execution set: **Valid Order Flow (OF_CONFIRMED)**, **Valid Order Block (Valid OB)**, or a **Rejection Block**. The OF/OB POI roles are source-backed; the Rejection Block's ability to occupy the active Extreme POI role is a **project-composed execution representation** of a source-defined PD-array/execution location and must not be described as a source-direct redefinition of POI ontology.
+The project's canonical tradable POI ontology is the source-backed OF/OB execution-location model: **Valid Order Flow (OF_CONFIRMED)** and **Valid Order Block (Valid OB)**. A **Rejection Block is not a POI ontology class**; it is a separately identified PD-array/execution-location concept that becomes relevant as the next PD array after the applicable Extreme Order Block fails. Any project representation that exposes a Rejection Block alongside POIs must preserve that semantic distinction and must not redefine it as a source-direct POI class.
 
 ```text
 OF_CONFIRMED
 VALID ORDER BLOCK (OB)
-REJECTION BLOCK (project-composed Extreme POI role)
         ↓
-   PROJECT-CANONICAL POI
+   CANONICAL POI
+
+REJECTION BLOCK
+   ↓
+SEPARATE PD-ARRAY / EXECUTION CONCEPT
 ```
 
 The following are not canonical POI entities:
@@ -32,7 +35,7 @@ These concepts may exist as structural observations, validators, liquidity, or h
 
 An active dealing range may contain a MINIMUM of one and a MAXIMUM of two actively tradable POIs at any given time:
 1. **Decisional POI** (must reside in Discount for Buys, Premium for Sells)
-2. **Extreme POI** (Extreme OF / Extreme OB, or active fallback)
+2. **Extreme POI** (Extreme OF / Extreme OB)
 
 ```text
 DECISIONAL POI
@@ -42,16 +45,13 @@ DECISIONAL POI
 
 Everything outside the active one-or-two-POI structure is non-tradable/SMT unless a canonical rule explicitly promotes it. Multiple arbitrary POIs must not be created merely because multiple zones are visually present. Any logic that permits three simultaneously active POIs in the scanner is strictly forbidden.
 
-### Latent Reserve POIs (Origin OB & Rejection Block)
+### Latent Origin Reserve and Rejection Block
 
-**Origin OB** and **Rejection Block** are **LATENT reserve POIs, NOT third active POIs**. They sit at the absolute origin/extreme of the dealing range.
+The **Origin OB** is a latent reserve within the POI/Rule-of-Two architecture. It is not a third active POI and may become the applicable Extreme POI only when its own canonical activation conditions are satisfied.
 
-Because both act as the latent Extreme POI fallback, their activation is **mutually exclusive**. They share the single Extreme POI slot and can never be simultaneously active.
+The **Rejection Block is separate from the POI ontology**. It is a PD-array/execution location at the extreme/origin area. It becomes relevant only after the applicable Extreme Order Block fails, according to the source-defined sequence. It does not occupy the Extreme POI slot merely by being identified.
 
-- **Rejection Block Activation:** Becomes the active Extreme POI IF AND ONLY IF the primary Extreme Order Block fails AND the canonical rejection wick remains valid and unmitigated.
-- **Origin OB Activation:** Becomes the active Extreme POI IF AND ONLY IF the primary Extreme Order Block fails, Extreme Order Flow was previously mitigated, AND no valid Rejection Block exists (or it was already consumed).
-
-They assume the role of the Extreme POI when the primary Extreme POI is invalidated, guaranteeing the strict Rule-of-Two maximum (`ACTIVE_DECISIONAL_POI + ACTIVE_EXTREME_POI`).
+This distinction prevents the Rule of Two from turning a source-defined PD array into a third POI class. If an implementation exposes the Rejection Block in the same execution record, its type/provenance must remain explicitly distinct from `POI`.
 
 ### POI semantic separation
 
@@ -70,9 +70,9 @@ A POI is a validated execution-location object. Its existence must never alter s
 The following invariants are mandatory:
 
 ```text
-POI ∈ {OF_CONFIRMED, VALID_OB, REJECTION_BLOCK}
-REJECTION_BLOCK → EXTREME_POI ROLE ONLY
-REJECTION_BLOCK → NOT_DECISIONAL_POI
+POI ∈ {OF_CONFIRMED, VALID_OB}
+REJECTION_BLOCK → NOT_POI
+REJECTION_BLOCK → SEPARATE_PD_ARRAY_EXECUTION_ROLE
 STANDALONE_FVG → NOT_POI
 IDM → NOT_POI
 LIQUIDITY → NOT_POI
@@ -247,7 +247,7 @@ If no valid pullback immediately preceding the active Extreme POI exists, no Eng
 
 ### Extreme POI dependency
 
-The active Extreme POI may resolve to `EXTREME_OF`, `EXTREME_OB`, or the **project-composed Rejection Block Extreme role** according to the canonical POI/OB execution lifecycle. The source-defined Engineering Liquidity relationship is explicit for Extreme OF / Extreme OB; extending the same sequencing to the Rejection Block Extreme role is a **project-composed representation**, not a source-direct Engineering Liquidity definition. Engineering Liquidity is therefore resolved **after** the active Extreme POI identity is established.
+The active Extreme POI resolves only to `EXTREME_OF` or `EXTREME_OB`. The source-defined Engineering Liquidity relationship is explicit for these Extreme POI types. A Rejection Block is not an Extreme POI, so it must not be used as an Extreme-POI dependency for Engineering Liquidity. Engineering Liquidity is therefore resolved from the valid-pullback-before-Extreme-OF/Extreme-OB relationship.
 
 When the active Extreme POI identity changes, the Engineering Liquidity reference must be recomputed from the corresponding valid-pullback-before-Extreme-POI relation. Historical references remain historical and are not silently rewritten.
 
@@ -479,7 +479,7 @@ REJECTION BLOCK BECOMES NEXT PD ARRAY
 mitigation / valid execution context
 ```
 
-The Rejection Block must not be treated as an arbitrary third active POI. It remains subject to the existing Rule-of-Two POI architecture and execution eligibility rules. Do not create a generic "fallback to any rejection wick" rule. Do not convert this transition into a universal structural-failure rule; it is strictly an execution/PD-array transition. The applicable Rejection Block must already satisfy the canonical identification conditions.
+The Rejection Block must not be treated as a POI class or as an additional Rule-of-Two slot. Do not create a generic "fallback to any rejection wick" rule. Do not convert this transition into a universal structural-failure rule; it is strictly an execution/PD-array transition. The applicable Rejection Block must already satisfy the canonical identification conditions.
 
 ### Negative Rules
 
