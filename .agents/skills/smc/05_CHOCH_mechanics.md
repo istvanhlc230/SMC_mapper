@@ -121,6 +121,92 @@ If the tested boundary is instead the FALLBACK_MAJOR_IDM, the event is governed 
 
 The wick/body geometry does not determine structural identity by itself. Level provenance and the active liquidity state determine the final classification.
 
+### 3.5.3A — LTF-CHoCH Context After HTF Interaction
+
+The knowledgebase defines a specific lower-timeframe CHoCH route after price has interacted with a higher-timeframe Point of Interest or a core-liquidity level. This route is a **context-gated representation of the same CHoCH concept**, not a new lifecycle state.
+
+#### Activation precondition
+
+```text
+ACTIVE HTF DIRECTIONAL NARRATIVE
+        AND
+HTF POI INTERACTION
+        OR
+HTF CORE-LIQUIDITY TAKEOUT
+        ↓
+LTF-CHoCH CONTEXT ACTIVE
+```
+
+HTF POI interaction means mitigation/reaction against a canonical HTF POI. HTF core-liquidity takeout means a canonical HTF IDM or Engineering Liquidity interaction. The LTF context may refine execution, but it must not independently reverse the HTF bias.
+
+#### LTF governing reference
+
+While the LTF-CHoCH context is active:
+
+```text
+MOST RECENTLY FORMED VALID LTF PULLBACK
+        ↓
+VERIFIED PULLBACK EXTREME
+        ↓
+LTF ACTIVE INDUCEMENT REFERENCE
+        ↓
+GOVERNING LTF CHoCH REFERENCE
+```
+
+The reference is the most recently formed **valid** LTF pullback. An arbitrary local pivot, invalid pullback, SMT, or visually convenient high/low cannot replace it.
+
+The reference may represent a Minor IDM or another valid LTF pullback-derived IDM role. The source's determining property is recency and validity, not the label "major" versus "minor".
+
+#### LTF break qualification
+
+The source examples treat the LTF CHoCH trigger as a break of the governing LTF inducement/pullback reference. The canonical implementation route uses a **completed-candle close beyond that reference**:
+
+Bullish HTF context / bearish LTF reversal:
+
+```text
+Close_LTF < LTF_Inducement_Reference_Low
+        ↓
+LTF_CHoCH_ELIGIBLE
+```
+
+Bearish HTF context / bullish LTF reversal:
+
+```text
+Close_LTF > LTF_Inducement_Reference_High
+        ↓
+LTF_CHoCH_ELIGIBLE
+```
+
+A wick-only penetration of the LTF inducement reference does not confirm this special route. It remains an unconfirmed physical interaction unless another canonical CHoCH route independently applies.
+
+#### Confirmation and scope
+
+```text
+LTF_CHoCH_ELIGIBLE
+        ↓
+ALL APPLICABLE CHoCH PREREQUISITES
+        ├─ FAIL → REMAIN / CONTEXT CONTINUES
+        └─ PASS
+             ↓
+        CHoCH_CONFIRMED
+             ↓
+        NEW TREND / REGIME SHIFT
+```
+
+The special LTF reference replaces the normal HTF external boundary **only while the LTF-CHoCH context is active**. Once CHoCH_CONFIRMED occurs, the normal post-CHoCH lifecycle in 3.5.5 applies and the prior LTF context is cleared.
+
+This route does not create a new top-level lifecycle state and does not convert the LTF inducement into a Real Major IDM. The LTF reference is a temporary CHoCH reference object for the active context.
+
+#### Non-equivalences
+
+```text
+HTF POI INTERACTION ≠ CHoCH
+HTF CORE-LIQUIDITY TAKEOUT ≠ CHoCH
+LTF VALID PULLBACK ≠ CHoCH
+LTF INDUCEMENT SWEEP ≠ CHoCH
+LTF CHoCH CONTEXT ≠ NEW LIFECYCLE STATE
+LTF CHoCH REFERENCE ≠ REAL_MAJOR_IDM
+```
 ### 3.5.4 — Fallback Major IDM / CHoCH Exception
 
 When the tested opposing boundary carries `FALLBACK_MAJOR_IDM` provenance and the active lifecycle has not yet produced an independently qualified Real Major IDM, the proxy exception applies.
