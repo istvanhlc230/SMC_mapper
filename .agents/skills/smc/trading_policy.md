@@ -36,13 +36,13 @@ The source provides example timeframe pairings for different trading styles, but
 Position sizing is determined only after the canonical entry and stop are resolved.
 
 ```text
-RISK_AMOUNT = ACCOUNT_EQUITY × RISK_PERCENT
+RISK_AMOUNT = ACCOUNT_BALANCE × RISK_PERCENT
 
 POSITION_SIZE = RISK_AMOUNT ÷ (STOP_DISTANCE_PIPS × PIP_VALUE_PER_POSITION_UNIT)
 ```
 
 Required inputs:
-- current account/equity value;
+- current account balance;
 - configured risk percentage;
 - exact entry/reference price;
 - exact stop price;
