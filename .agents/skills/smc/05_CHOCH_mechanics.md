@@ -292,7 +292,7 @@ Every event is classified using the structural state active at its own event tim
 
 ### 3.5.5 — CHoCH Downstream State Changes & Post-CHoCH Dual Lineage
 
-A `CHoCH_CONFIRMED` performs a multi-phase, asymmetric regime transition. The post-CHoCH lifecycle contains two distinct lineages: an **internal structural lineage** and an ****.
+A `CHoCH_CONFIRMED` performs a multi-phase, asymmetric regime transition. The post-CHoCH lifecycle contains two distinct lineages: an **internal structural lineage** and an **external proxy lineage**.
 
 ```text
                         CHoCH_CONFIRMED
