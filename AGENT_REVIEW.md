@@ -4,9 +4,9 @@ Phase 2 Pre-implementation Design: Canonical mapping, data contracts, and test s
 # DEVELOPER REPORT
 **Current Repository State:**
 * **Branch:** main
-* **HEAD:** 14b581f
+* **HEAD:** e09e0b9
 * **Working-tree status:** clean
-* **Implementation decisions:** Revised Phase 2 design artifacts based on final Validator feedback (categorizing semantic types, separating process stages from lifecycle, and enforcing exact Target/RR eligibility contracts). No code implemented yet.
+* **Implementation decisions:** Revised Phase 2 design artifacts to finalize explicit target RR behavior and persistent lifecycle execution paths. No code implemented yet.
 * **Exact smc_skill files relied upon:** 
   - `01_micro_structure.md`
   - `02_minor_structure.md`
@@ -18,7 +18,8 @@ Phase 2 Pre-implementation Design: Canonical mapping, data contracts, and test s
 
 ## 1. Canonical Rule Matrix & Resolution Checklist
 - [x] **Categorization Fixed:** Explicit distinction between `LIFECYCLE STATE`, `STRUCTURAL OBJECT/FACT`, `PROCESS CONDITION`, `EVENT DETECTION`, and `CLASSIFICATION OUTCOME`.
-- [x] **Target/RR Contract Fixed:** Target remains `None`, RR remains `NOT_EVALUABLE`. Invented targets are strictly forbidden. Non-evaluable POIs are output as `StructuralPOICandidate`, not executable setups.
+- [x] **Persistent Lifecycle Chain:** Explicit chain defined (IDM_TAKEN to VALID_BOS) where each stage persists its state to be consumed sequentially. No opaque multi-stage collapse.
+- [x] **Target/RR Contract Fixed:** Fixed wording regarding RR evaluability. Target is unresolved, therefore RR is NOT_EVALUABLE. No executable setup is permitted.
 
 | Rule Concept | Canonical Source | Key Constraints |
 |---|---|---|
@@ -30,8 +31,8 @@ Phase 2 Pre-implementation Design: Canonical mapping, data contracts, and test s
 | CHoCH | `05_CHOCH_mechanics.md` | Body close beyond opposing protected extreme -> `CHoCH_ELIGIBLE`. Requires full canonical gate. Fallback IDM wick = `MAJOR_IDM_SWEEP` (not BOS/CHoCH). |
 | POIs | `06_execution.md` | Tradable POI Class: `OF_CONFIRMED` or `VALID_OB`. Execution Role: `DECISIONAL` (premium/discount) or `EXTREME`. Origin OB is latent reserve. |
 
-## 2. Structural State Machine & Semantic Categorization
-To prevent silent opaque advancements, the engine strictly categorizes components. The analyzer must persist prerequisites in the canonical structural state and consume them stage by stage.
+## 2. Structural State Machine & Persistent Prerequisites
+**Determinism Claim:** `EVENT DETECTION → exactly ONE event`. `EVENT CLASSIFICATION → exactly ONE outcome`. `STATE TRANSITION → exactly ONE next state`. 
 
 **A. LIFECYCLE STATE (The only 5 enums representing macro range state):**
 - `BOOTSTRAP`
@@ -40,27 +41,27 @@ To prevent silent opaque advancements, the engine strictly categorizes component
 - `POST_BOS`
 - `POST_CHOCH`
 
-**B. EVENT DETECTION (Exactly 7 classes representing physical OHLC observation):**
-`NO_EVENT / INTERNAL_PB`, `MINOR_IDM_EVENT`, `EXT_CONT_BREAK`, `EXT_OPP_BREAK`, `FALLBACK_EVENT`, `REAL_MAJOR_IDM_EVENT`, `NEW_SVP_QUALIFIED`.
+**B. PERSISTENT LIFECYCLE CHAIN (Execution Pipeline)**
+The analyzer MUST NOT implement one candle/event by silently advancing through canonical stages opaquely. Each prerequisite must be persisted in the canonical structural state and consumed by the next stage:
 
-**C. PROCESS CONDITION (Intermediate logic gating):**
-- `IDM_TAKEN`
-- `STRUCTURAL_RETRACEMENT_EVALUATION`
-- `CONFIRMATION GATE UNLOCKED`
+`IDM_TAKEN`
+→ `SWING_CANDIDATE`
+→ `STRUCTURAL_RETRACEMENT_EVALUATION`
+→ `QUALIFIED / NOT_QUALIFIED`
+→ `CONFIRMED_STRUCTURAL_SWING` OR `SWING_REVOKED`
+→ `STRUCTURAL_SWING_BREAK`
+→ `VALID_BOS` / `IMPULSE_EXTENSION`
 
-**D. STRUCTURAL OBJECT/FACT (Persisted physical or conceptual anchor points):**
-- `SWING_CANDIDATE`
-- `CONFIRMED_STRUCTURAL_SWING`
-- `STRUCTURAL_SWING_BREAK`
-
-**E. CLASSIFICATION OUTCOME (The deterministic result of applying a Process Condition to an Event):**
-- `VALID_BOS`
-- `IMPULSE_EXTENSION`
-- `MAJOR_IDM_SWEEP`
-- `CHoCH_ELIGIBLE`
-- `CHoCH_CONFIRMED`
-
-*Implementation Contract:* A single event like `NEW_SVP_QUALIFIED` does not jump through the pipeline. It produces facts/conditions (e.g., `ACTIVE IDM`), which sit in memory until a later event (`IDM_TAKEN`) produces the next fact (`SWING_CANDIDATE`). 
+**Strict Process Constraints:**
+- `IDM_TAKEN` does NOT create a confirmed swing.
+- `SWING_CANDIDATE` does NOT imply retracement qualification.
+- Retracement evaluation produces an explicit qualification result.
+- Failed qualification produces `SWING_REVOKED` + `PULLBACK_REFERENCE_SHIFT`.
+- Successful qualification produces `CONFIRMED_STRUCTURAL_SWING` + `MAJOR_RETRACEMENT_QUALIFIED`.
+- Only a later structural swing break can consume that qualification for BOS.
+- Physical break, structural swing break, and `VALID_BOS` remain distinct.
+- Later candles may advance the lifecycle but may NOT retroactively rewrite an already classified event.
+- These intermediate facts/conditions do NOT become artificial lifecycle enums.
 
 ## 3. Normalized OHLC Data Contract
 To preserve exact determinism, float arithmetic is strictly forbidden. 
@@ -89,8 +90,8 @@ class Candle:
 - **Insufficient History:** Analyzer halts with specific `INSUFFICIENT_HISTORY` code.
 - **Intrabar Sequence:** Never silently inferred. Defaults to `UNAVAILABLE`.
 
-## 4. Analyzer Output Contract & Target/RR Rule
-Since target derivation is unresolved, 1:2 RR is `NOT_EVALUABLE`. Therefore, no POI can claim to be a fully qualified executable setup yet. It must be emitted as a non-executable structural candidate.
+## 4. Analyzer Output Contract (Target / RR)
+The contract for executable outputs is explicitly restricted until target calculation logic is defined.
 ```python
 from typing import Optional
 
@@ -102,13 +103,18 @@ class StructuralPOICandidate:
     poi_bottom: Decimal
     poi_class: str # "OF_CONFIRMED" | "VALID_OB"
     execution_role: str # "DECISIONAL" | "EXTREME"
-    target: Optional[Decimal] = None # Unresolved gap.
-    is_executable: bool = False # False because RR = NOT_EVALUABLE due to target=None
+    target: Optional[Decimal] = None
+    is_executable: bool = False
 ```
-**Constraints:**
-- If `target = None`, executable RR is `UNKNOWN / NOT_EVALUABLE`.
-- The analyzer MUST NOT claim the 1:2 RR requirement is satisfied.
-- The analyzer MUST NOT invent a target merely to make the RR pass.
+**Exact Target/RR Semantic Behavior:**
+- `target=None` means target derivation is unresolved.
+- Executable RR status MUST be `NOT_EVALUABLE` / `UNKNOWN`.
+- The analyzer MUST NOT claim that the 1:2 RR requirement is satisfied when target is unresolved.
+- The analyzer MUST NOT invent or synthesize a fallback target.
+- A `StructuralPOICandidate` may exist with `is_executable=False`.
+- An executable setup may be emitted ONLY when a canonical target exists and the 1:2 RR calculation can actually be evaluated.
+- Therefore, the current implementation phase MUST NOT produce a fully executable setup merely because a POI is structurally valid.
+- Target derivation explicitly remains an **OPEN specification gap**.
 
 ## 5. Proposed zones.json schema change
 **Status:** Blocked/Deferred. No changes until structural mapping is validated and implementation is complete.
@@ -127,8 +133,9 @@ class StructuralPOICandidate:
 
 ## 7. Specification Gaps
 **SPECIFICATION GAP 1: Target Price Derivation**
-* **DESCRIPTION:** The rule mandates minimum 1:2 RR and states the primary target is the "confirmed external range extreme where the applicable entry module requires it." It does not explicitly define behavior when multiple valid target candidates exist or when the external extreme does not satisfy 1:2 RR. 
-* **RESOLUTION:** EXPLICITLY OPEN. `target` output is `None`. Consequently, setups are currently emitted as non-executable `StructuralPOICandidate` objects because the 1:2 RR check cannot be mathematically evaluated.
+* **CANONICAL SOURCE CHECKED:** `06_execution.md` (Section 41)
+* **DESCRIPTION:** The rule mandates minimum 1:2 RR and states the primary target is the "confirmed external range extreme where the applicable entry module requires it." It does not explicitly define target behavior when multiple valid target candidates exist or when the external extreme does not satisfy 1:2 RR.
+* **RESOLUTION:** EXPLICITLY OPEN. `target` output is `None`. Target derivation is unresolved, and executable RR remains NOT_EVALUABLE until the formula is supplied. No invented fallback target is permitted.
 
 # VALIDATION REPORT
 [Awaiting Independent Validation Agent]
