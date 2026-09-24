@@ -4,7 +4,7 @@
 
 **Authority boundary:** Risk is downstream from canonical structural validation. It consumes canonical structural/execution state and must never create, validate, reinterpret, or redefine structural truth.
 
-**Scoring boundary:** The methodology defines the risk concepts and gating semantics. The concrete risk_quality calculation and final weighted score are implementation behavior owned by SMC_mapper.py and documented in 08_implementation.md. This document must not invent a competing scoring formula.
+**Scoring boundary:** The methodology defines the risk concepts and gating semantics. The concrete risk_quality calculation and final weighted score are implementation behavior owned by the mapper implementation and documented in 08_implementation.md. This document must not invent a competing scoring formula.
 
 ## 5.1 Structural Stop-Loss Placement
 
