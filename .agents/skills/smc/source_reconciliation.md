@@ -139,6 +139,20 @@ Required outcome:
 - Extreme OF is the furthest unmitigated eligible OF at the origin and shifts to the next such OF when mitigated;
 - SMT and OF remain distinct ontology classes.
 
+### C8 — Engineering Liquidity identification and lifecycle
+
+Canonicalize Engineering Liquidity as a core-liquidity reference derived from the valid pullback immediately preceding the active Extreme POI.
+
+Required outcome:
+- the active Extreme POI must be established first;
+- the reference pullback is the most recently formed valid pullback immediately preceding that active Extreme POI;
+- bullish ENG_LQD is liquidity below that pullback low;
+- bearish ENG_LQD is liquidity above that pullback high;
+- no valid pullback before the active Extreme POI means no ENG_LQD reference;
+- changing Extreme POI provenance requires recomputing the active ENG_LQD reference;
+- ENG_LQD is distinct from IDM, POI, BOS, CHoCH, and Extreme POI mitigation;
+- ENG_LQD may be coincident in price with IDM while retaining separate provenance.
+
 ## 4. Source analysis
 
 For every relevant source passage create a source record:
