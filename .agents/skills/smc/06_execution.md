@@ -6,11 +6,12 @@
 
 ## 36. POI ontology — canonical tradable POIs
 
-The canonical POI ontology is a closed set. A tradable Point of Interest may be either **Valid Order Flow (OF_CONFIRMED)** or **Valid Order Block (Valid OB)**. No third POI entity may be introduced by generic SMC convention or implementation convenience.
+The canonical POI ontology is a closed set. A tradable Point of Interest may be **Valid Order Flow (OF_CONFIRMED)**, **Valid Order Block (Valid OB)**, or a **Rejection Block**. No other POI entity may be introduced by generic SMC convention or implementation convenience.
 
 ```text
 OF_CONFIRMED
 VALID ORDER BLOCK (OB)
+REJECTION BLOCK
         ↓
    CANONICAL POI
 ```
@@ -27,11 +28,11 @@ The following are not canonical POI entities:
 
 These concepts may exist as structural observations, validators, liquidity, or historical annotations where separately defined, but they must not silently become tradable POIs.
 
-### Rule of Two POIs (Structural Constraint & Origin OB)
+### Rule of Two POIs (Structural Constraint)
 
-An active dealing range may contain a MINIMUM of one and a MAXIMUM of two actively tradable POIs:
+An active dealing range may contain a MINIMUM of one and a MAXIMUM of two actively tradable POIs at any given time:
 1. **Decisional POI** (must reside in Discount for Buys, Premium for Sells)
-2. **Extreme POI** (Extreme OF / Extreme OB)
+2. **Extreme POI** (Extreme OF / Extreme OB, or active fallback)
 
 ```text
 DECISIONAL POI
@@ -41,9 +42,12 @@ DECISIONAL POI
 
 Everything outside the active one-or-two-POI structure is non-tradable/SMT unless a canonical rule explicitly promotes it. Multiple arbitrary POIs must not be created merely because multiple zones are visually present. Any logic that permits three simultaneously active POIs in the scanner is strictly forbidden.
 
-### Origin OB Rule
+### Latent Reserve POIs (Origin OB & Rejection Block)
 
-Origin OB is a **LATENT reserve POI, NOT a third active POI**. It sits at the absolute origin of the dealing range. It becomes actively tradable IF AND ONLY IF Extreme Order Flow was mitigated AND Extreme Order Block fails, without price producing a CHoCH.
+**Origin OB** and **Rejection Block** are **LATENT reserve POIs, NOT third active POIs**. They sit at the absolute origin/extreme of the dealing range.
+- The **Origin OB** becomes actively tradable IF AND ONLY IF Extreme Order Flow was mitigated AND Extreme Order Block fails, without price producing a CHoCH.
+- The **Rejection Block** becomes the active Extreme POI IF AND ONLY IF the Extreme Order Block fails.
+They assume the role of the Extreme POI when the primary Extreme POI is invalidated, preserving the strict Rule-of-Two maximum.
 
 ### POI semantic separation
 
@@ -62,7 +66,7 @@ A POI is a validated execution-location object. Its existence must never alter s
 The following invariants are mandatory:
 
 ```text
-POI ∈ {OF_CONFIRMED, VALID_OB}
+POI ∈ {OF_CONFIRMED, VALID_OB, REJECTION_BLOCK}
 STANDALONE_FVG → NOT_POI
 IDM → NOT_POI
 LIQUIDITY → NOT_POI
@@ -97,7 +101,7 @@ A Decisional POI outside its required premium/discount side is not a valid Decis
 
 The Extreme POI is the secondary/fallback execution location of the same dealing-range framework. It is used when the Decisional POI is unavailable, fails its execution conditions, or is otherwise not the applicable module according to the canonical entry sequence.
 
-The Extreme POI must still be an OF_CONFIRMED or Valid OB. It is not an arbitrary fallback to any visually convenient zone.
+The Extreme POI must still be an OF_CONFIRMED, Valid OB, or a qualified Rejection Block. It is not an arbitrary fallback to any visually convenient zone.
 
 ### Origin OB (Latent POI)
 
