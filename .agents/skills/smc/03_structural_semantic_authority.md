@@ -33,7 +33,7 @@ ACTIVE IDM
   ↓
 IDM LIQUIDITY TAKEOUT
   ↓
-SWING_CANDIDATE
+CONFIRMED_STRUCTURAL_SWING
   ↓
 STRUCTURAL RETRACEMENT EVALUATION
   ├── QUALIFIED → CONFIRMED_STRUCTURAL_SWING
@@ -97,7 +97,7 @@ IDM
 
 The unit of origin for Major Structure is not an isolated candlestick, fractal pivot, or raw price extreme. Major Structure originates from the complete **Confirmed Dealing Range Cycle**, anchored by liquidity-validated structural extremes.
 
-A governing Trading Range does not exist merely because an impulse has occurred. The lifecycle must first progress from IDM takeout to a SWING_CANDIDATE and then through canonical structural retracement qualification to establish a CONFIRMED_STRUCTURAL_SWING. The confirmation gate is a process condition within that lifecycle; an IDM liquidity takeout alone never establishes the range.
+A governing Trading Range does not exist merely because an impulse has occurred. The lifecycle first requires IDM takeout to confirm the relevant swing point. Structural retracement qualification is then evaluated as a prerequisite for a subsequent continuation BOS. The confirmed swing point and the validity of the eventual BOS are distinct semantic decisions; IDM takeout confirms the swing point but does not by itself create a VALID_BOS or roll the Trading Range.
 
 ### 3.2.1 — Genesis / Bootstrap
 
@@ -123,7 +123,7 @@ QUALIFIED IDM
     ↓
 IDM SWEEP (Wick or Body: IDM_TAKEN = TRUE)
     ↓
-SWING_CANDIDATE
+CONFIRMED_STRUCTURAL_SWING
     ↓
 STRUCTURAL RETRACEMENT EVALUATION
     ├─ NOT QUALIFIED → SWING_REVOKED + PULLBACK_REFERENCE_SHIFT
@@ -222,7 +222,7 @@ FALLBACK_MAJOR_IDM is a lifecycle proxy and is not the same semantic object as R
 
 IDM_TAKEN = TRUE when price physically takes the active IDM reference according to the applicable directional level. Wick or body penetration is sufficient for IDM takeout; a candle close beyond IDM is not required.
 
-IDM takeout is a structural lifecycle event that can unlock the Swing Confirmation Gate. It does not by itself create VALID_BOS, roll the Trading Range, or lock the Protected Structural Extreme.
+IDM takeout is the structural lifecycle event that confirms the relevant swing point. It does not by itself create VALID_BOS, roll the Trading Range, or lock the Protected Structural Extreme.
 
 ~~~text
 ACTIVE IDM
@@ -231,7 +231,7 @@ PHYSICAL IDM TAKEOUT
     ↓
 IDM_TAKEN = TRUE
     ↓
-SWING_CANDIDATE
+CONFIRMED_STRUCTURAL_SWING
     ↓
 STRUCTURAL_RETRACEMENT_EVALUATION
 ~~~
@@ -244,27 +244,27 @@ This section owns the IDM semantic object and lifecycle. BOS and CHoCH modules c
 
 ### Structural Lifecycle State Machine
 
-The confirmation of structural swings and the lifecycle of the dealing range strictly follow this sequential state machine:
+The confirmation of a structural swing point and the qualification of the later continuation BOS are separate sequential decisions. The 2026 market-structure source treats IDM takeout as the event that confirms the swing point; retracement depth and candle structure then determine whether a later break of that swing can qualify as a valid BOS.
 
 1. **IDM_TAKEN:** Price sweeps or closes beyond the active Inducement (most recent valid pullback).
 
-2. **SWING_CANDIDATE:** The external extreme of the dealing range is marked as a candidate structural swing point (Swing High in uptrends, Swing Low in downtrends).
+2. **CONFIRMED_STRUCTURAL_SWING:** The external extreme associated with the taken IDM is confirmed as the structural swing point for the active lifecycle.
 
-3. **STRUCTURAL_RETRACEMENT_EVALUATION:** The market evaluates the depth, candle structure, and HTF representation of the retracement wave.
+3. **STRUCTURAL_RETRACEMENT_QUALIFICATION:** The subsequent retracement is evaluated for continuation-BOS sufficiency.
 
    - **If QUALIFIED:**
-     - State transitions to `CONFIRMED_STRUCTURAL_SWING`.
-     - Emits `MAJOR_RETRACEMENT_QUALIFIED = TRUE`.
-     - Awaits `STRUCTURAL_SWING_BREAK` by price (downstream Layer 4 BOS).
+     - `MAJOR_RETRACEMENT_QUALIFIED = TRUE`.
+     - The existing `CONFIRMED_STRUCTURAL_SWING` remains the eligible continuation-BOS reference.
+     - The engine awaits `STRUCTURAL_SWING_BREAK`.
 
-   - **If NOT QUALIFIED (Shallow Retracement Failure):**
-     - State transitions to `SWING_REVOKED`.
-     - Emits `MAJOR_RETRACEMENT_QUALIFIED = FALSE`.
-     - Dealing range remains unexpanded (single impulsive leg).
-     - `PULLBACK_REFERENCE_SHIFT`: The extreme reached by the shallow retracement becomes the new active Inducement reference.
-     - Awaits the next qualification attempt.
+   - **If an attempted external break occurs before retracement qualification succeeds:**
+     - the break is not `VALID_BOS`;
+     - the shallow retracement extreme becomes the newer active pullback/reference;
+     - the prior swing is no longer the current eligible BOS reference for that failed continuation attempt;
+     - the active IDM/pullback reference shifts accordingly.
 
-This separation is mandatory: `IDM_TAKEN` creates a `SWING_CANDIDATE`; it does not manufacture a `CONFIRMED_STRUCTURAL_SWING` before retracement qualification succeeds.
+This preserves the source distinction between swing confirmation after IDM takeout and later BOS qualification after sufficient retracement.
+
 ### Major Retracement Qualification Architecture
 
 Layer 3 is the sole semantic owner of structural qualification. A retracement wave is evaluated through the following hierarchical gates:
@@ -343,11 +343,11 @@ POI expiration is handled through the separate POI lifecycle; the structural eng
 6. Retracement sufficiency is mandatory before continuation BOS.
 7. A retracement must contain **at least 2 opposing candles** to enter a positive qualification path. A **2-candle retracement** may qualify only when the canonical depth and source-supported displacement/extreme-taking conditions are satisfied; a 1-candle retracement does not qualify through the reduced-candle path.
 8. The standard equilibrium retracement threshold is 50%; the 38.2% threshold is conditional and may qualify only through the applicable immediate Higher Timeframe valid-pullback path.
-9. A `SWING_CANDIDATE` is not a `CONFIRMED_STRUCTURAL_SWING` until the canonical retracement qualification succeeds; failed shallow retracement revokes the candidate and shifts the active pullback/IDM reference.
+9. IDM takeout confirms the relevant `CONFIRMED_STRUCTURAL_SWING`. Retracement qualification determines whether a subsequent external break can be classified as `VALID_BOS`; it does not retrospectively create the swing point.
 10. Physical external break does not automatically equal VALID_BOS or CHoCH_CONFIRMED.
 11. `MAJOR_IDM_SWEEP` is not VALID_BOS and not CHoCH_CONFIRMED.
 12. Fallback Major IDM is an external range-boundary proxy, not Real Major IDM or arbitrary internal liquidity.
-13. A fallback sweep unlocks the Swing Confirmation Gate but does not automatically create a CONFIRMED_STRUCTURAL_SWING.
+13. A fallback Major IDM takeout may confirm the corresponding swing reference, but it does not by itself create VALID_BOS, Trading Range rollover, or Protected Structural Extreme lock.
 14. `NEW_SVP` does not automatically create Real Major IDM.
 15. Only `VALID_BOS` rolls the Trading Range and locks the Protected Structural Extreme.
 16. `CHoCH_CONFIRMED` initializes a new regime but does not itself create a new CONFIRMED_STRUCTURAL_SWING or VALID_BOS.
