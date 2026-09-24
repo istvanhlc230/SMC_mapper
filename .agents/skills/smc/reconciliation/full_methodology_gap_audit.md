@@ -236,7 +236,7 @@ Post-fix validation:
 - POI failure is CHoCH/control-shift based;
 - position sizing uses Account Balance.
 
-The remaining items are **source-under-specified implementation choices**, not identified source contradictions: exact LTF target-selection hierarchy, universal countertrend target coordinate, exact numeric candle-pattern formalizations where the source is qualitative, and platform-specific execution contracts. These must remain explicitly marked as project-composed/configurable rather than presented as source-direct rules.
+The remaining items are **source-under-specified implementation choices**, not identified source contradictions: exact LTF target-selection hierarchy, universal countertrend target coordinate, and platform-specific execution contracts. The deterministic candle-pattern predicates are retained only as explicitly source-derived formalizations, with qualitative morphology kept non-binary.
 ## 4. Current runtime versus canonical skill
 
 The current `main` runtime does not implement the full skill.
