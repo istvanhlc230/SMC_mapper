@@ -62,7 +62,7 @@ Source material may be used to detect boundary violations, but higher-layer rule
 
 ## 3. Five Phase 1 contracts under reconciliation
 
-The current audit tracks these four explicit contracts. They must not be silently closed by implementation:
+The reconciliation workflow now tracks the Phase 1 contracts plus higher-layer contracts C6–C14. They must not be silently closed by implementation:
 
 ### C1 — Candle Extreme Breach deterministic OHLC model
 
