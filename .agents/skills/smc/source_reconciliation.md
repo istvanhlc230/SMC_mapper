@@ -123,7 +123,7 @@ Canonicalize Engineering Liquidity as a core-liquidity reference derived from th
 
 Required outcome:
 - [SOURCE_DIRECT] the active Extreme OF or Extreme OB must be established first;
-- [SOURCE_DIRECT] Rejection Block is a separate PD-array/execution concept, not an Extreme POI and not an Engineering Liquidity dependency;
+- [SOURCE_DIRECT] Rejection Block is a separately typed PD-array/execution concept; source examples may use POI as a broad execution-location term, but RB is not an OF/OB-equivalent Extreme POI or an Engineering Liquidity dependency;
 - [SOURCE_DIRECT] the reference pullback is the most recently formed valid pullback immediately preceding that active Extreme POI;
 - [SOURCE_DIRECT] bullish ENG_LQD is liquidity below that pullback low;
 - [SOURCE_DIRECT] bearish ENG_LQD is liquidity above that pullback high;
