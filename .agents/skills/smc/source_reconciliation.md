@@ -166,6 +166,19 @@ Required outcome:
 - order submission, fill, and open-position state remain distinct from entry authorization;
 - pending-order expiry/cancellation/re-entry are handled by the separate order-lifecycle policy.
 
+### C10 — Stop-loss anchor and buffer contract
+
+Canonicalize the source-backed stop-loss anchor for each entry module while keeping the unspecified buffer as a separate execution configuration.
+
+Required outcome:
+- IDM Sweep -> sweeping-candle extreme;
+- Decisional POI Mitigation -> confirming/reversal-pattern extreme;
+- Engineering Liquidity Sweep -> validated sweep/confirmation extreme;
+- Extreme POI Mitigation -> confirming/reversal-pattern extreme;
+- `P` is an explicit downstream execution parameter;
+- the knowledgebase does not define one universal numeric pip/tick buffer;
+- missing `P` must block automatic order submission rather than invent a default.
+
 ## 4. Source analysis
 
 For every relevant source passage create a source record:
