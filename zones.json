@@ -1,0 +1,37 @@
+{
+  "setups": [
+    {
+      "ticker": "CCCC",
+      "name": "CCCC D1 Decisional",
+      "direction": "BUY",
+      "htf": "1h",
+      "ltf": "15m",
+      "top_price": 3.30,
+      "bottom_price": 3.05,
+      "target": 4.38,
+      "probability_pct": 55
+    },
+    {
+      "ticker": "DTE.DE",
+      "name": "Telekom D1 Decisional",
+      "direction": "BUY",
+      "htf": "1h",
+      "ltf": "15m",
+      "top_price": 27.20,
+      "bottom_price": 26.60,
+      "target": 29.34,
+      "probability_pct": 60
+    },
+    {
+      "ticker": "BABA",
+      "name": "Alibaba D1 Decisional",
+      "direction": "BUY",
+      "htf": "1h",
+      "ltf": "15m",
+      "top_price": 110.00,
+      "bottom_price": 105.00,
+      "target": 130.62,
+      "probability_pct": 60
+    }
+  ]
+}
