@@ -6,7 +6,7 @@
 
 ## 36. POI ontology — canonical tradable POIs
 
-The project's canonical tradable POI ontology is the source-backed OF/OB execution-location model: **Valid Order Flow (OF_CONFIRMED)** and **Valid Order Block (Valid OB)**. A **Rejection Block is not a POI ontology class**; it is a separately identified PD-array/execution-location concept that becomes relevant as the next PD array after the applicable Extreme Order Block fails. Any project representation that exposes a Rejection Block alongside POIs must preserve that semantic distinction and must not redefine it as a source-direct POI class.
+The project's canonical tradable POI ontology is the source-backed OF/OB execution-location model: **Valid Order Flow (OF_CONFIRMED)** and **Valid Order Block (Valid OB)**. A **Rejection Block is a separately identified PD-array/execution-location concept** that becomes relevant as the next PD array after the applicable Extreme Order Block fails. Source examples may refer to that execution location as a POI in ordinary usage; the canonical typed representation keeps its Rejection Block identity distinct from the OF/OB POI classes and from the Rule-of-Two POI slots. Any project representation must preserve that provenance rather than silently redefining RB as an OF/OB-equivalent POI class.
 
 ```text
 OF_CONFIRMED
@@ -49,9 +49,9 @@ Everything outside the active one-or-two-POI structure is non-tradable/SMT unles
 
 The **Origin OB** is a latent reserve within the POI/Rule-of-Two architecture. It is not a third active POI and may become the applicable Extreme POI only when its own canonical activation conditions are satisfied.
 
-The **Rejection Block is separate from the POI ontology**. It is a PD-array/execution location at the extreme/origin area. It becomes relevant only after the applicable Extreme Order Block fails, according to the source-defined sequence. It does not occupy the Extreme POI slot merely by being identified.
+The **Rejection Block is a separately typed PD-array/execution location** at the extreme/origin area. Source examples may use POI as a broad execution-location term, but the canonical typed model keeps RB distinct from the OF/OB POI classes. It becomes relevant only after the applicable Extreme Order Block fails, according to the source-defined sequence. It does not occupy the Extreme POI slot merely by being identified.
 
-This distinction prevents the Rule of Two from turning a source-defined PD array into a third POI class. If an implementation exposes the Rejection Block in the same execution record, its type/provenance must remain explicitly distinct from `POI`.
+This distinction prevents the Rule of Two from treating the source-defined PD array as an additional OF/OB POI class or an automatic third slot. If an implementation exposes the Rejection Block in the same execution record, its type/provenance must remain explicitly distinct from `POI`.
 
 ### POI semantic separation
 
@@ -663,7 +663,7 @@ ORDER_FILLED ≠ POSITION_OPEN
 A later structural or execution event may invalidate a pending order according to the dedicated order-lifecycle policy; such invalidation must not rewrite the historical entry authorization event.
 ### Module 4 — Extreme POI Mitigation
 
-The Extreme POI module is the canonical fallback execution mechanism when the Decisional POI is not the applicable execution location. The Extreme POI must independently satisfy `EXTREME_OF` or `EXTREME_OB` validity; fallback execution does not relax POI validation. A Rejection Block is outside the POI ontology and follows its separate PD-array execution lifecycle.
+The Extreme POI module is the canonical fallback execution mechanism when the Decisional POI is not the applicable execution location. The Extreme POI must independently satisfy `EXTREME_OF` or `EXTREME_OB` validity; fallback execution does not relax POI validation. A Rejection Block follows its separate PD-array execution lifecycle and must retain its own type/provenance even when represented alongside POI execution data.
 
 ## 40.5. Candlestick Reversal Triggers
 
