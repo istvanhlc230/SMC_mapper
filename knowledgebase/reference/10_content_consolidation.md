@@ -52,3 +52,22 @@ The book consolidates timeframe/candlestick foundations; valid pullbacks; BOS/CH
 - smc_trader_another_missing_piece.txt → active recent-pullback reference and retracement-depth examples.
 - use_of_orderblock.txt → refined Decisional OB selection.
 - use_of_orderblock_and_ordeflow.txt → Major/Minor IDM timing and OF/OB provenance.
+
+# Cross-source reconciliation
+
+## Valid pullback
+
+The four primary families repeatedly distinguish valid and invalid pullbacks. Wick or body can satisfy the relevant previous-candle extreme takeout; candle color does not by itself determine validity. Equal-extreme/reference-transfer scenarios are represented. The canonical skill owns the deterministic implementation contract.
+
+## IDM
+
+IDM is repeatedly tied to liquidity associated with the most recently formed valid pullback. A newer valid pullback can become the active reference before the previous IDM is taken. Major/Minor timing is retained as source terminology. The canonical skill owns lifecycle/state semantics.
+
+## BOS and CHoCH
+
+The sources establish structural provenance: a raw candle break is not sufficient when the required IDM/swing sequence is absent. Wick breaks can receive different classifications depending on the tested level and its provenance. The canonical skill controls classification and does not permit a generic wick-only fallback.
+
+## Retracement
+
+The book and advanced mapping source explicitly discuss a 38.2% minimum in their written methodology/examples. The canonical reconciliation uses the skill-owned 50% normal baseline and the conditional 38.2% route; downstream layers consume the qualification result and must not repeat raw Fibonacci tests.
+
