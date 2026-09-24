@@ -244,7 +244,7 @@ These values are scoring outputs applied to already-established methodology stat
 08_implementation.md
     → executable scoring representation
 
-SMC_mapper.py
+the mapper implementation
     → actual calculation
 ```
 
