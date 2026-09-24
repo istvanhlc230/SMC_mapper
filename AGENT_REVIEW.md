@@ -122,20 +122,105 @@ To support the existing monitor while enabling structural change detection, the 
   1. The analyzer will strictly ignore these qualitative filters for automated structural mapping and execution bounds, unless an explicit quantifiable rule is provided.
 
 # VALIDATION REPORT
-[Awaiting Independent Validation Agent]
+
+**Independent validation status: NOT APPROVED FOR IMPLEMENTATION**
+
+I re-checked the Phase 2 artifacts against the current canonical `.agents/skills/smc/` files on `main`.
+
+### Confirmed
+
+- The canonical source file list is correct: `01_micro_structure.md`, `02_minor_structure.md`, `03_structural_semantic_authority.md`, `04_BOS_mechanics.md`, `05_CHOCH_mechanics.md`, `06_execution.md`, `08_implementation.md`.
+- The analyzer/monitor separation is directionally correct.
+- The three-layer architecture is required and correctly identified.
+- Outside-bar historical intrabar evidence must remain explicit; `UNAVAILABLE` cannot be silently promoted to observed sequence evidence.
+- IDM, swing, BOS, CHoCH, fallback IDM, POI, and execution semantics must remain distinct.
+- Target derivation is genuinely not fully specified for every executable-module case; this remains an implementation-contract gap rather than something the analyzer may invent.
+
+### Corrections required before coding
+
+**1. Rule Matrix: retracement qualification is oversimplified.**
+
+The matrix must state the actual hierarchical gates from `03_structural_semantic_authority.md`: `>=50%` standard equilibrium path; normally `>=3` opposing closing candles; fewer than 3 requires the documented displacement-outlier condition; `38.2% <= depth < 50%` qualifies only through the applicable immediate-HTF valid-pullback evidence gate; `<38.2%` is not qualified.
+
+Do not describe this generically as a “2-candle + 38.2% exception” unless the exact canonical source language is identified and reconciled. The current skill text contains both the standard/outlier formulation and a testing bullet mentioning a 2-candle exception; this must be resolved explicitly rather than silently choosing one interpretation.
+
+**2. Analyzer output contract is internally contradictory.**
+
+The report says a valid setup is only Decisional or Extreme, but the proposed `poi_type` includes `ORIGIN_RESERVE`. Canonical `06_execution.md` says Origin OB is a latent reserve POI, not a third active tradable POI.
+
+Executable setup output must not represent Origin Reserve as an active setup. Distinguish POI semantic class (`OF_CONFIRMED` / `VALID_OB`) from execution role (`DECISIONAL` / `EXTREME`). Represent Origin OB separately as latent/reserve state if it is emitted at all. Never let the output contract imply a third active POI.
+
+**3. POI ontology must be represented explicitly.**
+
+The proposed output contract currently conflates “POI type” with execution role. Canonical ontology is: tradable POI class = `OF_CONFIRMED` or `VALID_OB`; execution role = Decisional or Extreme; Origin OB = latent reserve, not an active third POI.
+
+**4. Event-class matrix must use the exact canonical seven detection classes.**
+
+`08_implementation.md` defines exactly: `NO_EVENT / INTERNAL_PB`, `MINOR_IDM_EVENT`, `EXT_CONT_BREAK`, `EXT_OPP_BREAK`, `FALLBACK_EVENT`, `REAL_MAJOR_IDM_EVENT`, `NEW_SVP_QUALIFIED`.
+
+The report's illustrative event names are acceptable only if they map exactly to these canonical classes. Do not introduce competing event classes or use classification outcomes as event classes.
+
+**5. State machine wording must distinguish lifecycle states from process conditions and outcomes.**
+
+Canonical lifecycle states are `BOOTSTRAP`, `CONFIRMATION_LOCKED`, `CONFIRMED_RANGE`, `POST_BOS`, `POST_CHOCH`. `CONFIRMATION GATE UNLOCKED`, `VALID_BOS`, `IMPULSE_EXTENSION`, and `CHoCH_CONFIRMED` are not additional lifecycle-state enums.
+
+**6. BOS contract must not be simplified to body close.**
+
+Canonical implementation rules permit continuation external wick-BOS when all BOS prerequisites are satisfied. A later body close must not be required for a valid continuation BOS. Preserve `PHYSICAL_EXTERNAL_BREAK != STRUCTURAL_SWING_BREAK != VALID_BOS` and consume stored qualification at the break event.
+
+**7. CHoCH must remain prerequisite-gated.**
+
+A body close beyond the opposing protected boundary creates `CHoCH_ELIGIBLE`, not automatic `CHoCH_CONFIRMED`. Fallback IDM wick is `MAJOR_IDM_SWEEP`, not BOS/CHoCH/range rollover. Fallback IDM body close is `CHoCH_ELIGIBLE`, then the full canonical gate.
+
+**8. Data contract needs evidence/provenance fields.**
+
+The proposed Candle dataclass is too thin for the canonical observability model. Preserve candle identity/order, completed versus unconfirmed status, intrabar sequence evidence (`OBSERVED`, `METHODOLOGY_ASSUMED`, `UNAVAILABLE`), and deterministic provider normalization/order. Never infer historical OLHC/OHLC path from aggregate OHLC alone.
+
+**9. JSON proposal is premature.**
+
+Do not modify `zones.json` or the monitor yet. Proposed timestamps/hash may be useful provenance/cache metadata, but they are not canonical structural facts and must remain separate from executable setup semantics.
+
+**10. Historical `zones.json` must not be a correctness oracle.**
+
+Regression fixtures may preserve historical examples, but correctness must be asserted against canonical invariants from `smc_skill`, not reproduction of current hardcoded zones.
+
+**11. Qualitative filters must remain SOURCE-PENDING.**
+
+`06_execution.md` explicitly keeps Momentum Candle qualitative/SOURCE-PENDING and Shrinking Candles as an approach filter, not an entry trigger. Do not invent ATR/body-ratio formulas or use these as structural validity gates.
+
+**12. Target is still a specification gap.**
+
+`06_execution.md` states minimum RR 1:2 and says the primary target is the confirmed external range extreme where the applicable entry module requires it. Do not invent a universal target formula, alternative target, or fallback target.
+
+Before executable `target` output is frozen, document which entry modules require the primary target, which confirmed external extreme is used for BUY/SELL in that module, behavior with multiple valid target candidates, and behavior when the external extreme does not satisfy 1:2.
+
+### Gate decision
+
+**STOP before implementation.** The developer must revise `AGENT_REVIEW.md` so the Rule Matrix, State Machine, Data Contract, Output Contract, JSON proposal, and Test Matrix are internally consistent with the canonical skill. Only after these corrections are resolved should implementation begin.
 
 # REQUIRED CORRECTIONS
-[None]
+
+1. Correct retracement qualification hierarchy and explicitly reconcile the 2-candle/outlier wording conflict in the current skill.
+2. Remove `ORIGIN_RESERVE` from the active ValidSetup enum; separate POI class from execution role and latent Origin OB state.
+3. Use exact seven event-detection classes and keep classification outcomes/state enums separate.
+4. Expand normalized candle/data contract to preserve observability and deterministic identity.
+5. Keep JSON/monitor changes blocked until semantic contracts are approved.
+6. Treat target derivation as an unresolved specification gap; no invented fallback.
+7. Keep qualitative Momentum/Shrinking semantics non-invented and execution-only where applicable.
+8. Add canonical negative/invariant tests from `03`/`08`/`06`, especially anti-retroactive classification, fallback-vs-real IDM, wick-BOS, CHoCH gating, POI ontology, and Rule-of-Two.
 
 # OPEN SPECIFICATION GAPS
-See Developer Report Section 7.
+
+- Target derivation/output behavior remains open.
+- The current canonical skill text itself contains a reconciliation point between the standard “<3 opposing candles + displacement outlier” wording and the testing requirement referring to an “exact 2-candle exception”; the developer must cite the exact governing subsection/precedence before encoding this as a test or rule.
 
 # IMPLEMENTATION STATUS
-Phase 2 Pre-implementation Design complete. Awaiting validation.
+
+Phase 2 design **rejected for implementation pending correction**.
 
 # COMMITS
 
-COMMIT: 1f4fc8c
+VALIDATOR UPDATE: current remote canonical validation appended to `AGENT_REVIEW.md`.
 FILES: AGENT_REVIEW.md
-PURPOSE: Initial creation of AGENT_REVIEW.md containing Phase 2 pre-implementation artifacts.
-TESTS: N/A
+PURPOSE: Independent validation of developer Phase 2 artifacts against `.agents/skills/smc/`.
+TESTS: N/A — design validation only.
