@@ -787,6 +787,27 @@ ENG_LQD_SWEEP → ENTRY_AUTHORIZED (without confirmation)
 POI_MITIGATION → ENTRY_AUTHORIZED (without confirmation)
 ```
 
+### Target Resolution implementation mapping
+
+Target resolution must produce a canonical target object before broker TP submission.
+
+```text
+EXECUTION CONTEXT
+   ↓
+TARGET POLICY
+   ↓
+TARGET_REFERENCE
+   ↓
+EXACT TP COORDINATE
+```
+
+Required mappings:
+- direct same-timeframe pro-trend -> current confirmed external extreme / external liquidity;
+- LTF execution -> explicit policy selecting `HTF_EXTERNAL_TARGET` or `LTF_STRUCTURAL_TARGET`; no implicit default;
+- countertrend -> setup-specific next canonical destination, such as the next valid POI, IDM, Engineering Liquidity, or external liquidity, according to the active setup contract;
+- RR calculation consumes the target; RR calculation must not create the target;
+- absent canonical target -> no automatic TP submission.
+
 ### Stop Placement implementation mapping
 
 Stop placement must be derived from the canonical entry-module anchor before position sizing or broker submission.
