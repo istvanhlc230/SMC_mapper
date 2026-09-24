@@ -226,6 +226,7 @@ The latest full knowledgebase re-audit identified and corrected the following ca
 3. **Wick-path CHoCH:** a Real Major IDM is no longer a positive prerequisite. The source-backed rule is an external wick break that is CHoCH-eligible unless the tested external level has Major IDM provenance; a Major IDM wick takeout is excluded from CHoCH.
 4. **POI failure:** the execution failure transition now consumes CHoCH/control-shift confirmation rather than treating a generic BOS-or-CHoCH classification as sufficient.
 5. **Position sizing basis:** the risk formula now uses Account Balance, matching the explicit source position-sizing example. The risk percentage and risk-budget values remain configurable trading-policy values rather than universal SMC constants.
+6. **Reversal predicates:** exact OHLC inequalities are now explicitly documented as deterministic formalizations of source-described reversal patterns; qualitative morphology remains a non-binary filter and no unsupported numeric threshold is introduced.
 
 Post-fix validation:
 - no remaining SWING_CANDIDATE terminology in the canonical repository search;
