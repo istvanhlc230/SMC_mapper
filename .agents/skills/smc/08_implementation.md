@@ -311,13 +311,11 @@ ACTIVE IDM
  ↓
 IDM_TAKEN
  ↓
-SWING_CANDIDATE
+CONFIRMED_STRUCTURAL_SWING
  ↓
 LAYER 3 RETRACEMENT QUALIFICATION
- ├─ NOT QUALIFIED → SWING_REVOKED + PULLBACK_REFERENCE_SHIFT
+ ├─ NOT QUALIFIED AT ATTEMPTED BREAK → REFERENCE_SHIFT / SWING_REPLACEMENT
  └─ QUALIFIED
-      ↓
-   CONFIRMED_STRUCTURAL_SWING
       ↓
    PHYSICAL_EXTERNAL_BREAK
       ↓
@@ -624,7 +622,7 @@ A later candle may advance the lifecycle but may not retroactively rewrite the e
 17. CHoCH-causing leg is ignored as the initial active impulse.
 18. Fallback Major IDM is treated as a real Major IDM.
 19. Fallback Major IDM wick penetration becomes BOS or CHoCH.
-20. `MAJOR_IDM_SWEEP` automatically confirms a swing instead of only unlocking the Swing Confirmation Gate.
+20. `MAJOR_IDM_SWEEP` must be handled as an IDM-takeout lifecycle event; it may confirm the relevant swing reference but does not itself create VALID_BOS, range rollover, or protected-extreme lock.
 21. A body close beyond the opposing boundary is treated as CHoCH without all CHoCH prerequisites.
 22. A later candle retroactively rewrites an earlier `MAJOR_IDM_SWEEP` or BOS classification.
 23. A `VALID_BOS` is delayed pending a later body close when the wick-BOS path is already valid.
@@ -690,8 +688,8 @@ Regression tests must cover:
 - `BROKEN` and `SWEPT` remain semantically distinct even if an implementation shares a technical field.
 
 ### Swing / Protected Extreme
-- qualified IDM sweep unlocks the Swing Confirmation Gate;
-- qualified IDM sweep creates a `SWING_CANDIDATE`, not a Confirmed Swing;
+- qualified IDM sweep confirms the relevant `CONFIRMED_STRUCTURAL_SWING`;
+- retracement qualification is evaluated separately as the prerequisite for a subsequent continuation BOS;
 - dynamic absolute retracement extreme tracking;
 - 50% standard qualification with the normal >=3-candle rule;
 - reduced-candle qualification only through the documented rare displacement case taking >=5 preceding bodies/extremes; the reduced-candle branch is explicitly the **2-candle case**, while **>=3 candles** remains the normal-case count; candle count alone never establishes qualification;
@@ -770,7 +768,7 @@ POSITION_OPEN
 
 Required mappings:
 - IDM Sweep: active IDM + IDM_TAKEN + reversal/directional confirmation -> ENTRY_AUTHORIZED; direct confirmation price reference = completed confirmation-candle close;
-- Decisional POI Mitigation: valid Decisional POI + mitigation + independent reversal/directional confirmation -> ENTRY_AUTHORIZED; direct confirmation price reference = completed confirmation-candle close;
+- Decisional POI Mitigation: active IDM + `IDM_TAKEN` + valid Decisional POI + mitigation + independent reversal/directional confirmation -> ENTRY_AUTHORIZED; direct confirmation price reference = completed confirmation-candle close;
 - Engineering Liquidity Sweep: confirmed ENG_LQD + sweep + directional confirmation -> ENTRY_AUTHORIZED; direct confirmation price reference = completed confirmation-candle close;
 - Extreme POI Mitigation: valid Extreme POI + mitigation + reversal/directional confirmation -> ENTRY_AUTHORIZED; direct confirmation price reference = completed confirmation-candle close;
 - broker order type is not a True SMC semantic fact unless a separate canonical trading-plan rule specifies it;
@@ -846,7 +844,7 @@ Required invariants:
 - stop movement after entry belongs to a separate trade-management policy and must not rewrite the historical entry/SL anchor.
 
 ### POI / Entry
-- POI ontology accepts only Valid OF or Valid OB;
+- POI ontology accepts Valid OF, Valid OB, or the project-composed Rejection Block Extreme role;
 - Rule of Two limits canonical tradable POIs to Decisional POI and Extreme POI;
 - Origin OB is a latent reserve POI (mitigation transfer target when Extreme POI is mitigated), never a 3rd active POI;
 - the Rule of Two permits at most two actively tradable POIs;
@@ -860,7 +858,7 @@ Required invariants:
 - IDM never becomes POI;
 - OF failure does not automatically promote Extreme POI;
 - all four entry modules remain execution-layer mechanisms;
-- minimum 1:2 RR is enforced for executable setups;
+- executable setups are gated by `Projected_RR_to_Primary_Target >= Configured_Minimum_RR` when the configured trading policy requires an RR gate;
 - closed-range POIs become non-tradable after lifecycle expiration.
 
 ### Genesis
