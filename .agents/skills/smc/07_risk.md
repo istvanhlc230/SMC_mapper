@@ -224,46 +224,23 @@ CHoCH_CONFIRMED ↛ mandatory MARKET_CLOSE_ON_CHOCH
 
 ## 5.5 Scoring boundary — IMPLEMENTATION-OWNED
 
-The mapper exposes a weighted quality score. The weights and concrete penalty arithmetic are implementation behavior, not independent SMC structural rules.
+The mapper exposes a weighted quality score, but the weights, tier thresholds, penalty arithmetic, and liquidity-quality values are implementation behavior rather than independent SMC methodology.
 
-Current implementation weighting:
+`07_risk.md` does not own those numeric values. The single detailed implementation mapping is maintained in `08_implementation.md`, alongside the executable risk-quality calculation.
 
-```
-Structure = 25%
-Setup     = 30%
-Location  = 20%
-Liquidity = 15%
-Risk      = 10%
-```
-
-Current quality-tier thresholds:
+This document therefore records only the ownership boundary:
 
 ```
-HIGH   >= 70
-MEDIUM >= 55
-LOW    >= 40
-WATCH  < 40
+RISK METHODOLOGY
+    ↓
+consumes canonical structural/execution state
+    ↓
+08_implementation.md / SMC_mapper.py
+    ↓
+concrete scoring arithmetic
 ```
 
-The implementation currently derives risk quality from downstream state using bounded penalties for:
-
-- excessive retracement depth;
-- proximity to the protected structural invalidation level;
-- directionally unfavorable premium/discount location;
-- absence of BOS.
-
-The implementation also invalidates the setup when retracement exceeds 100%.
-
-The exact numeric arithmetic belongs to SMC_mapper.py and its implementation mapping in 08_implementation.md. It must not be duplicated here as a second canonical scoring definition.
-
-Liquidity-quality values are likewise implementation scoring values. For the current mapper:
-
-```
-Real Major IDM     = 80
-Fallback Major IDM = 40
-```
-
-These values evaluate already-validated state; they cannot create or validate structure.
+No risk score, tier, or implementation penalty may manufacture or validate IDM, CONFIRMED_STRUCTURAL_SWING, Protected Structural Extreme, VALID_BOS, CHoCH_CONFIRMED, Trading Range, or POI ontology.
 
 ## 5.6 Architectural Separation
 
