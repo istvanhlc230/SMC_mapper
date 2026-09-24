@@ -1,27 +1,26 @@
 # CURRENT TASK
-Phase 4: Resolve Origin OB vs Rejection Block lifecycle ambiguity and complete POI Failure semantics.
+Phase 4: Resolve internal consistency of Rejection Block downstream references and POI Failure structural dependencies.
 
 # DEVELOPER REPORT
 **Current Repository State:**
 * **Branch:** main
-* **HEAD:** f488dc3
-* **Working-tree status:** clean (after committing POI lifecycle and failure semantics)
+* **HEAD:** c4d8ca0
+* **Working-tree status:** clean (after committing downstream consistency fixes)
 * **Implementation decisions:** 
-  - Defined the **Mutually Exclusive Activation** between Origin OB and Rejection Block. They share a single Latent Reserve POI slot to ensure the Rule of Two is strictly enforced (Active Decisional POI + Active Extreme POI).
-  - Enforced `REJECTION_BLOCK → EXTREME_POI ROLE ONLY` and `REJECTION_BLOCK → NOT_DECISIONAL_POI` as canonical invariants.
-  - Explicitly defined the `POI_INTERACTION → POI_FAILURE` transition path: POI failure strictly requires an HTF→LTF structural response (a CHoCH against the POI direction) and cannot be deduced from a physical touch or penetration alone.
-  - Re-stated the strict boundary: `06_execution.md` consumes CHoCH and BOS, but does not redefine them, preserving structural ownership in `04_BOS_mechanics.md` and `05_CHOCH_mechanics.md`.
-  - Preserved `DECISIONAL_OB = VALID_OB THAT CAUSED VALID_BOS` and avoided regressions.
+  - **Downstream References Audited:** Updated "Module 4 — Extreme POI Mitigation" and "Candlestick Reversal Triggers" to explicitly include `Rejection Block` alongside `OF_CONFIRMED` and `Valid OB` for the Extreme POI fallback condition.
+  - **Rejection Block Exclusivity:** Confirmed that `Rejection Block` is strictly an Extreme POI. The Decisional POI correctly retains its restriction to `OF_CONFIRMED / Valid OB`.
+  - **POI Failure Structural Dependency:** Corrected the POI Failure transition diagram to strictly require a `CHoCH CLASSIFICATION (Against POI direction)`. Removed the ambiguous `BOS` reference that could have implied a BOS alone causes failure.
+  - Re-stated the strict boundary: `06_execution.md` consumes CHoCH but does not redefine it, preserving structural ownership in `05_CHOCH_mechanics.md`.
   - Python implementation files are completely untouched.
 
 ## Semantic Ownership Verification
-- `06_execution.md` fully owns POI role allocation and execution lifecycle (touch, mitigation, failure, invalidation).
-- Latent POIs (Origin OB & Rejection Block) strictly respect the Rule of Two maximum limit.
-- Structural evaluation of BOS/CHoCH required for POI Failure is strictly deferred to the structural semantic owners.
+- `06_execution.md` fully owns POI role allocation and execution lifecycle.
+- Downstream execution modules now fully respect the updated canonical POI ontology while maintaining strict role limits (Rule of Two).
+- Structural evaluation of CHoCH required for POI Failure is strictly deferred to the structural semantic owners.
 
 # VALIDATION REPORT
-Phase 4 (POI Semantics) Origin OB vs Rejection Block ambiguity has been resolved.
-Independent validation confirmed Rejection Block operates mutually exclusively with the Origin OB and cannot serve as a Decisional POI, preserving the canonical Rule of Two limits. POI Failure requires explicit LTF structural confirmation and does not create synthetic structure.
+Phase 4 (POI Semantics) final internal consistency audit complete.
+Independent validation requirements regarding downstream Rejection Block references and explicit CHoCH transition dependencies are resolved.
 
 # REQUIRED CORRECTIONS
 [None active]
@@ -30,12 +29,13 @@ Independent validation confirmed Rejection Block operates mutually exclusively w
 - Target Price Derivation remains OPEN.
 
 # IMPLEMENTATION STATUS
-Phase 4 (POI Semantics) final ambiguity resolved and semantics finalized.
-- [x] Phase 4: Rejection Block and POI Failure semantics added and reconciled with the closed POI ontology in `06_execution.md`.
+Phase 4 (POI Semantics) is completed and internally consistent.
+- [x] Phase 4: Rejection Block formally integrated into POI ontology and downstream execution modules.
+- [x] Phase 4: POI Failure strictly defined with required CHoCH structural dependency.
 - [x] Phase 4: Origin OB vs Rejection Block mutually exclusive lifecycle codified.
 
 # COMMITS
-COMMIT: f488dc3
+COMMIT: c4d8ca0
 FILES: .agents/skills/smc/06_execution.md, AGENT_REVIEW.md
-PURPOSE: Resolve Origin OB and Rejection Block mutual exclusivity and formalize POI Failure structural dependencies.
+PURPOSE: Resolve downstream Extreme POI references for Rejection Block and correct POI_FAILURE CHoCH transition diagram.
 TESTS: N/A (Documentation update only)
