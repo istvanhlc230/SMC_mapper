@@ -1,0 +1,998 @@
+[00:00:00] Hello guys. In today's video, I'll be
+[00:00:02] freestyle trading using true SMC on one
+[00:00:06] timeframe to prove that top-down
+[00:00:08] analysis is not a must. And so, without
+[00:00:12] further ado, then let's dive in.
+[00:00:15] All right. So, onto this chart on the
+[00:00:17] left here, we can clearly see that price
+[00:00:19] has taken out this major inducement,
+[00:00:22] exactly right there. Of course, making
+[00:00:25] this here a swing point low. And after
+[00:00:28] that, price reversed and made a break
+[00:00:30] past that swing point low. And we know
+[00:00:32] once that happens, that's of course a
+[00:00:35] bearish break of structure. Again, you
+[00:00:37] can clearly see the pattern continues.
+[00:00:39] Price takes out the major inducement,
+[00:00:41] exactly right there.
+[00:00:43] And if I am to mark the POIs here, we
+[00:00:46] can clearly see that this one here is
+[00:00:48] the extreme order flow, of which it's
+[00:00:50] already mitigated. You can clearly see
+[00:00:52] that. So, this makes it invalid. And we
+[00:00:55] can clearly see the one that uh
+[00:00:57] comes after it, it's this one here, of
+[00:01:00] which it's not mitigated, but in this
+[00:01:02] case, it's weak because it was created
+[00:01:04] after the break of structure. So, this
+[00:01:06] is what we call a weak order flow. And
+[00:01:08] you can clearly see price gave a
+[00:01:10] reaction from it, but then later that
+[00:01:13] reaction, I mean, that reaction didn't
+[00:01:15] make it through the external liquidity,
+[00:01:18] and price failed that order flow all the
+[00:01:20] way towards this engineering liquidity,
+[00:01:23] exactly right there. And after taking
+[00:01:25] out the engineering liquidity, we can
+[00:01:28] clearly see price made that asymmetric
+[00:01:30] reversal all the way towards this
+[00:01:33] external liquidity, exactly right there.
+[00:01:36] So, the reason is why I marked this as
+[00:01:38] the engineering liquidity, we can
+[00:01:39] clearly see that this here is the
+[00:01:42] extreme order block. And of course,
+[00:01:45] that's the buy-side liquidity right
+[00:01:46] before that extreme bearish order block.
+[00:01:50] And so, that makes the engineering
+[00:01:52] liquidity. And you can clearly see
+[00:01:54] exactly right here, price swept that
+[00:01:57] engineering liquidity. I mean, exactly
+[00:02:00] right there. Price swept the engineering
+[00:02:02] liquidity and gave that ultimate
+[00:02:04] reversal. So, if I was to take the entry
+[00:02:06] from this area, we can clearly see this
+[00:02:10] bullish, I mean, bearish engulfing
+[00:02:12] pattern here.
+[00:02:14] So, let me get rid of this.
+[00:02:17] So, we can clearly see that bearish
+[00:02:18] engulfing followed by this bearish
+[00:02:21] candle here. So, this would have been
+[00:02:23] enough confirmation to take that sale.
+[00:02:25] Of course, your stop loss should be some
+[00:02:27] few pips above that. And of course,
+[00:02:29] you'll be targeting the external low,
+[00:02:31] exactly right there. And you can clearly
+[00:02:34] see that this one here would have end up
+[00:02:36] being a winner, exactly right there with
+[00:02:38] 2.9 RR. So, that's of course would be a
+[00:02:41] break of structure right there. And that
+[00:02:44] means we are currently in a new trading
+[00:02:47] range. So, exactly right there, we can
+[00:02:49] clearly see, if I am to mark the swing
+[00:02:52] points here, you can clearly see that
+[00:02:54] that's the high. And of course, the
+[00:02:56] swing point or the lower low that price
+[00:02:58] broke is that one. And of course, the
+[00:03:01] current lower low is this one here. And
+[00:03:04] you can clearly see again, after the
+[00:03:05] break of structure, price reversed back
+[00:03:08] and took out that minor inducement,
+[00:03:11] exactly right there. So, price has taken
+[00:03:13] out the minor inducement and also
+[00:03:16] mitigated that extreme order block,
+[00:03:18] exactly right there. So, you can clearly
+[00:03:20] see, price also mitigated that extreme
+[00:03:24] order block, exactly right there. That
+[00:03:26] is extreme bearish order block. And
+[00:03:29] that's where price made the reversal.
+[00:03:31] All right, so let me mark this one here.
+[00:03:34] And by the way, if you're finding it
+[00:03:36] difficult to identify these order
+[00:03:38] blocks, make sure you watch the previous
+[00:03:40] parts, whereby you'll get to learn more
+[00:03:42] about this. Okay, so the reason as to
+[00:03:44] why I chose this one here as the extreme
+[00:03:46] order block, we can clearly see that
+[00:03:48] this one here was the extreme and price
+[00:03:51] mitigated that. So, the next one is this
+[00:03:54] one here and we can clearly see price
+[00:03:56] mitigated that. And here I would have
+[00:03:59] picked this bullish order block, but it
+[00:04:01] was not associated with a fair value gap
+[00:04:04] and so I had to shift all the way to the
+[00:04:06] candle that is associated with the fair
+[00:04:08] value gap and here it is, the extreme
+[00:04:11] order block. Okay, so let me get rid of
+[00:04:13] these ones because we have just
+[00:04:15] identified the extreme order block. And
+[00:04:17] of course, upon seeing that big momentum
+[00:04:20] candle and to our favor, of course, we'd
+[00:04:22] be taking that entry, stop loss above
+[00:04:24] that high. And of course, we'll be
+[00:04:26] targeting this low, but that will give
+[00:04:28] you a bad RR. And so, if I was to take
+[00:04:31] that entry, I would extend this one here
+[00:04:34] for a 1:2 exactly right there and you
+[00:04:37] can clearly see price made it there.
+[00:04:40] Okay, so now we are now on the current
+[00:04:42] dealing range and yeah. All right, so
+[00:04:45] exactly right here we can clearly see
+[00:04:47] that this one here is our break of
+[00:04:50] structure.
+[00:04:51] Okay, so that's the boss. And of course,
+[00:04:54] the high or our trading range high is
+[00:04:57] none other than that one there. Okay, so
+[00:04:59] what's next? Marking the inducement. And
+[00:05:02] I can clearly see that this one here is
+[00:05:04] the minor inducement or that's the
+[00:05:06] inducement and in that case, minor
+[00:05:08] because it occurred before the break of
+[00:05:09] structure. If I am to continue running
+[00:05:12] price, we can clearly see price, all
+[00:05:14] right, so price is heading higher,
+[00:05:16] probably
+[00:05:17] Okay, so let's see.
+[00:05:19] Price is consolidating there.
+[00:05:24] Okay, so let me make this fast.
+[00:05:28] Okay, so exactly right there we can
+[00:05:29] clearly see price made
+[00:05:32] All right. Yeah, so exactly right here
+[00:05:35] you can clearly see price created
+[00:05:36] another valid pullback, again another
+[00:05:39] one below here. So, that is now our
+[00:05:41] major inducement. So, this one is our
+[00:05:44] major inducement. Okay, so let me
+[00:05:46] continue running price.
+[00:05:48] Because we know that before the
+[00:05:50] inducement is taken out, there's no need
+[00:05:52] to tire self marking the POIs. So
+[00:05:54] exactly right there, we can clearly see
+[00:05:56] price has taken out the major inducement
+[00:05:58] now. And now this is the time whereby we
+[00:06:01] will be marking the POIs. So I'll be
+[00:06:03] starting to mark the order flows and I
+[00:06:05] can clearly see that this one here is
+[00:06:07] the extreme of which is already
+[00:06:08] mitigated there. So what does this mean?
+[00:06:12] This means that this becomes an invalid
+[00:06:14] order flow. And the one that follows
+[00:06:16] it's this one here and it's not
+[00:06:18] mitigated. So this makes the extreme
+[00:06:21] order flow. So exactly right there, it's
+[00:06:23] the extreme order flow. And of course,
+[00:06:25] at the same time it is the order flow
+[00:06:27] that caused the break of structure. So
+[00:06:29] anyway, but the correct word is the
+[00:06:31] extreme because it is the furthest
+[00:06:33] unmitigated order flow at the origin of
+[00:06:35] the dealing range. All right, so right
+[00:06:38] here, any other POI after the break of
+[00:06:40] structure is weak.
+[00:06:42] You can clearly see this order block
+[00:06:43] here. This order block is weak. So
+[00:06:46] exactly right there, that order block is
+[00:06:48] weak. Yeah.
+[00:06:49] And of course, you can clearly see this
+[00:06:51] order block above the extreme. So this
+[00:06:54] is what we call the origin order block.
+[00:06:56] So let me just uh
+[00:06:58] do this origin order block. And this
+[00:07:01] here is what we call a weak order block.
+[00:07:04] So this is what we call a weak order
+[00:07:05] block because it was created after the
+[00:07:07] break of structure. Okay, so let me
+[00:07:09] continue running price.
+[00:07:11] And I can clearly see price is heading
+[00:07:13] higher exactly right there.
+[00:07:16] Price, you can clearly see there was not
+[00:07:17] even a sing a a spike reaction from here
+[00:07:21] and price came for this uh okay, so
+[00:07:23] price hasn't mitigated the extreme order
+[00:07:25] flow, but we can confirm our swing point
+[00:07:28] low exactly right here. So that's our
+[00:07:31] swing point low, meaning if price now
+[00:07:32] mitigates a valid zone here, probably
+[00:07:35] this extreme order flow or this origin
+[00:07:37] order block and makes the reversal, then
+[00:07:40] that will be of course
+[00:07:42] uh a good trade or a good entry. Okay,
+[00:07:44] so let me continue running price and we
+[00:07:47] can clearly see price is reversing back.
+[00:07:49] By the way, we can clearly see that this
+[00:07:51] one here is the engineering liquidity.
+[00:07:54] We didn't mark the engineering liquidity
+[00:07:56] and it's very important to mark the
+[00:07:57] engineering liquidity and you can
+[00:07:59] clearly see after price has taken out
+[00:08:01] the engineering liquidity, you can
+[00:08:03] clearly see price has yet mitigated the
+[00:08:04] extreme but it has taken out the
+[00:08:06] engineering liquidity. So, this would
+[00:08:08] have been of course a good entry, of
+[00:08:11] course exactly right there.
+[00:08:13] And that would have been your entry or
+[00:08:14] maybe you can be conservative and place
+[00:08:17] your stop loss above that high. And of
+[00:08:19] course you'll be targeting this
+[00:08:22] external low or extended for a 1:2
+[00:08:25] exactly right there. Yeah.
+[00:08:28] So, let's see the fate of this trade and
+[00:08:30] you can clearly see exactly right there,
+[00:08:33] price made it to the Yeah. So, this one
+[00:08:35] here makes the break of structure.
+[00:08:38] Okay, and by the way, since price has
+[00:08:40] made a break of structure, these POIs,
+[00:08:44] you can clearly see they're unmitigated,
+[00:08:46] they're no longer valid, they're just
+[00:08:48] reaction zones. If price makes it to
+[00:08:50] them again after a change of character
+[00:08:52] later, these POIs will not be valid to
+[00:08:57] make a reversal towards the external
+[00:08:59] liquidity but rather just reaction
+[00:09:02] zones. Okay, so exactly right there, we
+[00:09:04] can clearly see that price has created a
+[00:09:07] break of structure and we can clearly
+[00:09:09] see that this one here is our swing
+[00:09:12] point high. So, yeah, you can clearly
+[00:09:15] see that the swing point high and if I
+[00:09:17] am to mark the inducement, I can clearly
+[00:09:20] see that this one here is our minor
+[00:09:22] inducement. So, that's our minor
+[00:09:24] inducement, let me mark it. Okay, so let
+[00:09:27] me continue running price and
+[00:09:30] see what price does here.
+[00:09:32] Okay, price is Okay, price created
+[00:09:34] another valid pullback here. So, this
+[00:09:37] pullback high, the liquidity resting
+[00:09:39] above that is what we call the major
+[00:09:41] inducement because it was created after
+[00:09:43] the break of structure. Okay, so let me
+[00:09:46] continue running price.
+[00:09:48] And all right, so exactly right there,
+[00:09:51] price created another one. So, we shift
+[00:09:53] to the recent.
+[00:09:55] Okay, so
+[00:09:56] let me continue running price.
+[00:09:59] And you can clearly see price is now
+[00:10:01] heading higher. Price has taken out the
+[00:10:04] major inducement and now is the moment
+[00:10:06] where we mark our POIs. Okay, so if I
+[00:10:09] start with the order flows, we can
+[00:10:11] clearly see all the order flows are
+[00:10:12] mitigated here because this here is the
+[00:10:15] order flow and you can clearly see the
+[00:10:17] ones that come after that, they're all
+[00:10:19] mitigated. So, in this case, we're just
+[00:10:21] left with the order blocks. I can
+[00:10:23] clearly see this order block, but as I
+[00:10:25] said, guys, any order block that is
+[00:10:27] created after a break of structure is
+[00:10:29] what we call a weak order block. And you
+[00:10:31] can clearly see price didn't even make a
+[00:10:33] reaction from that order block. So, this
+[00:10:36] means that our valid order block is none
+[00:10:38] other than this one here, the one on the
+[00:10:41] extreme, of course. So, exactly right
+[00:10:44] there, that's the order block that I'm
+[00:10:45] looking forward for. And this is what we
+[00:10:48] call the extreme bearish order block.
+[00:10:50] And we can clearly see that the buy-side
+[00:10:52] liquidity right before the extreme order
+[00:10:54] block is none other than that one there
+[00:10:57] and it's very important to mark that.
+[00:10:59] Okay, so now price has taken out that.
+[00:11:01] So, if I see a reaction here, I mean a
+[00:11:05] bearish reaction from there, then that
+[00:11:06] would be a good entry.
+[00:11:09] Okay, so
+[00:11:11] that is. So, you can clearly see that
+[00:11:13] bearish candle after price has taken out
+[00:11:15] that engineering liquidity. So, I would
+[00:11:17] take that, of course, my stop loss there
+[00:11:20] and of course, I'll be targeting this
+[00:11:21] external low. And that will give me a
+[00:11:23] 2.7. So, that's a favorable RR. We can
+[00:11:27] clearly see that that's our external
+[00:11:28] low.
+[00:11:29] And by the way, you know that the
+[00:11:30] engineering liquidity sweep can fail and
+[00:11:32] if it fails, then we'll be looking
+[00:11:34] forward for the extreme OB, of which it
+[00:11:36] is the most probability zone to take a
+[00:11:39] trade from. Okay, so let me continue
+[00:11:41] running price.
+[00:11:43] And let me make this fast.
+[00:11:46] Okay, so you can clearly see that the
+[00:11:48] engineering liquidity failed, so we got
+[00:11:50] stopped out and that's fine. Okay, so
+[00:11:54] exactly right there and you can clearly
+[00:11:55] see there was no reaction from the
+[00:11:57] extreme order block, exactly right
+[00:11:59] there. Instead, price headed higher
+[00:12:02] towards making a break of structure.
+[00:12:06] So exactly right there and this is what
+[00:12:07] we call now a change of character. So
+[00:12:09] this means price has shifted bias from
+[00:12:12] being bearish to now bullish. The reason
+[00:12:15] as to why I marked that as a change of
+[00:12:17] character, even though it was a break by
+[00:12:18] a week, is because this trading range
+[00:12:21] involved a major inducement. So this
+[00:12:24] means that a break past the external
+[00:12:26] high will be, of course, a change of
+[00:12:29] character. It doesn't matter whether by
+[00:12:31] a body closure or by a week. Okay, so
+[00:12:34] right here we can clearly see that uh
+[00:12:37] price has mitigated that order flow from
+[00:12:39] the previous dealing range and I said
+[00:12:41] that once price has mitigated these, I
+[00:12:44] mean these POIs that were valid on the
+[00:12:47] previous dealing range, that price
+[00:12:49] didn't mitigated, now there will be
+[00:12:51] nothing but just reaction zones. They
+[00:12:54] will not be valid to push price all the
+[00:12:57] way towards this external low. Okay, so
+[00:12:59] you can clearly see after price has
+[00:13:01] mitigated that order flow that was valid
+[00:13:04] on the previous dealing range, exactly
+[00:13:06] right here, you can clearly see that
+[00:13:08] this here was the order flow and price
+[00:13:11] didn't mitigated. Here you can clearly
+[00:13:12] see the reversal was after the take out
+[00:13:14] of the engineering liquidity. Now price
+[00:13:16] has mitigated that, but price has
+[00:13:18] already created a change of character.
+[00:13:20] So this here we cannot sell from that
+[00:13:23] day, even though you can clearly see
+[00:13:24] that good evening star pattern there, we
+[00:13:27] cannot sell. I mean, you should not sell
+[00:13:29] from here. Stop loss there and of course
+[00:13:32] target this one here because price has
+[00:13:34] shifted bias to bullish and we know that
+[00:13:37] we trade by the trend. Okay, so right
+[00:13:40] now I'll just be calling this one here a
+[00:13:42] reaction zone. Yeah. So, price has
+[00:13:45] mitigated that reaction zone there and
+[00:13:47] if I am to continue running price, we
+[00:13:49] can clearly see okay, by the way, this
+[00:13:52] one here is our minor inducement of
+[00:13:55] course after the change of character.
+[00:13:57] So, we can clearly see that
+[00:14:00] yeah, this one here is our minor
+[00:14:01] inducement.
+[00:14:03] So, yep, that one.
+[00:14:06] Let me mark it and I can clearly see
+[00:14:09] this candle. So, let's see what price
+[00:14:11] does here. If that will be a sweep of
+[00:14:13] the minor inducement or what price okay.
+[00:14:16] So, it happened that price is continuing
+[00:14:19] lower. Okay, so price is heading higher.
+[00:14:24] All right here. So, you can clearly see
+[00:14:27] okay. So, right there this is what we
+[00:14:30] call a minor inducement sweep. You can
+[00:14:31] clearly see after price has taken out
+[00:14:33] that can clearly see this low is still
+[00:14:35] protected and price is reversing back.
+[00:14:37] So, probably the entry would have been
+[00:14:39] after seeing this
+[00:14:42] bullish candle there. Stop loss below
+[00:14:44] there and of course you'll be targeting
+[00:14:46] this high. But in this case, the risk
+[00:14:48] reward is not favorable and of course in
+[00:14:51] this case I would skip. Okay, and I can
+[00:14:54] clearly see that this one here is our
+[00:14:56] external high. So, a break of that will
+[00:14:58] make a bullish break of structure. Okay,
+[00:15:01] so let me mark our swing point high. So,
+[00:15:05] that's our swing point high and in this
+[00:15:06] case it's a bullish swing point.
+[00:15:08] Okay, so let me continue running price.
+[00:15:12] Let me get it fast.
+[00:15:15] Okay, you can clearly see price is
+[00:15:16] reversing back.
+[00:15:19] And uh we can clearly see that uh
+[00:15:22] the minor inducement sweep failed
+[00:15:25] exactly right there. So, this means that
+[00:15:27] we can now mark our POIs, and I can
+[00:15:29] clearly see that this one here is our
+[00:15:31] order flow
+[00:15:32] exactly right there. I mean, the extreme
+[00:15:34] order flow, and price has mitigated that
+[00:15:36] extreme order flow, so that's the valid
+[00:15:39] order flow. And I can also see this uh
+[00:15:43] order block at the
+[00:15:45] the very end exactly right there. So,
+[00:15:47] that's what we call an extreme bullish
+[00:15:48] order block. And of course, after seeing
+[00:15:50] that exactly right there, I would take
+[00:15:53] that entry. Stop loss, of course, below
+[00:15:55] here, and of course, we're targeting
+[00:15:57] that external high exactly right there.
+[00:16:00] And uh let's see what price does. You
+[00:16:02] can clearly see price made it to the
+[00:16:04] You can clearly see that price made it
+[00:16:06] to the external liquidity after
+[00:16:08] mitigating that extreme order flow. So,
+[00:16:11] that's what we call a bullish break of
+[00:16:14] structure, and now we are currently in a
+[00:16:16] new trading range. Of course, this one
+[00:16:19] here is what we call our swing point
+[00:16:21] low. I mean, that one there. And this
+[00:16:24] one here is what we call the external
+[00:16:26] low. Okay, so now price has already
+[00:16:29] taken out the major inducement exactly
+[00:16:31] right there. So, price has already taken
+[00:16:33] out the major inducement, so now let's
+[00:16:35] mark the POIs. I can clearly see that uh
+[00:16:39] this one here is the order flow. I mean,
+[00:16:41] all of this is the extreme order flow.
+[00:16:44] But uh even if I see a reaction from
+[00:16:45] there, I won't buy because price hasn't
+[00:16:48] yet even make it to the 50% of the
+[00:16:50] dealing range, and also that
+[00:16:53] risk-to-reward won't be favorable. So,
+[00:16:55] I'll just be waiting for a reaction from
+[00:16:57] this
+[00:16:58] I mean, this bullish order block below
+[00:17:00] here. So, the extreme bullish order
+[00:17:02] block below here. So, this one here
+[00:17:04] also, it was a bullish extreme order
+[00:17:06] block. But now, since price has made a
+[00:17:08] break of structure, this is no longer
+[00:17:10] valid. It's just a reaction zone if
+[00:17:12] price makes that change of character, of
+[00:17:15] course, here. And you can clearly see
+[00:17:17] that this reaction, similar here, is
+[00:17:20] from this origin order block here. You
+[00:17:22] can clearly see that that's was our
+[00:17:24] origin order block here. And like I
+[00:17:26] said, this origin order block is not
+[00:17:29] valid anymore, but just a reaction zone.
+[00:17:32] It will cause a reaction probably
+[00:17:34] towards this uh extreme order block. And
+[00:17:37] then after that, price will continue
+[00:17:38] towards its prevailing trend, that is
+[00:17:41] uptrend. But anyway, sometimes price can
+[00:17:44] get that and of course make a change of
+[00:17:46] character. But that shouldn't convince
+[00:17:48] you that that is correct, or you can do
+[00:17:50] it next time. No. Just know that those
+[00:17:53] are just reaction zones. Once price has
+[00:17:55] created a new trading range, the POIs
+[00:17:58] that we are not mitigated on the
+[00:18:00] previous dealing range, they're just
+[00:18:02] reaction zones, but not valid anymore.
+[00:18:06] Okay, so if I am to run price here, we
+[00:18:08] can clearly see that price is heading
+[00:18:09] lower, and eventually price has
+[00:18:11] mitigated that I mean, our extreme
+[00:18:15] exactly right there.
+[00:18:16] Gave a little bit of reaction, not
+[00:18:18] enough to buy, but uh can clearly see
+[00:18:21] eventually price made a change of
+[00:18:23] character exactly right there. So, in
+[00:18:25] this situation, you can clearly see
+[00:18:27] price mitigated the origin order block
+[00:18:29] and made that reaction all the way
+[00:18:31] towards this and you can clearly see
+[00:18:33] also this order block. Price has not
+[00:18:36] even made a reaction from it. But
+[00:18:38] anyway, this should not sway you, or
+[00:18:41] this should not convince you that next
+[00:18:42] time you can actually sell from there
+[00:18:45] and target that external low below here.
+[00:18:49] In that case, you will be trading
+[00:18:50] against the trend. Anyway, price has
+[00:18:53] made a change of character exactly right
+[00:18:55] there. So, let me continue running
+[00:18:57] price.
+[00:18:59] So, let me continue running price here.
+[00:19:02] And I can clearly see that price is
+[00:19:04] creating Okay.
+[00:19:07] Okay, so that is not a valid pullback
+[00:19:09] because price hasn't broken past the
+[00:19:11] low, so let me continue running price.
+[00:19:15] And we can clearly see exactly right
+[00:19:16] there now price has created that valid
+[00:19:18] pullback.
+[00:19:20] And I can see the recent one there, so
+[00:19:23] that is what we call the major
+[00:19:24] inducement.
+[00:19:26] Okay, so if I'm to continue running
+[00:19:27] price,
+[00:19:29] you can clearly see that price has taken
+[00:19:30] out the major inducement, so this is the
+[00:19:32] time to mark the POIs. Okay, so this one
+[00:19:36] here is our swing point low, and of
+[00:19:38] course our swing point high. Okay, so
+[00:19:41] swing point low, so meaning bear swing
+[00:19:42] point. So this one is what we call a
+[00:19:45] bear swing point, and of course this one
+[00:19:47] here is our high.
+[00:19:49] Okay, so right now let me mark the POIs,
+[00:19:52] and I can clearly see that
+[00:19:54] this one here is our extreme order flow.
+[00:19:57] So that is our valid order flow, of
+[00:19:59] course, and I can also see this other
+[00:20:02] order flow here, and of course this is
+[00:20:04] what we call the bearish order flow. And
+[00:20:06] exactly right there you can clearly see
+[00:20:08] price has mitigated that.
+[00:20:10] And also I can clearly see that this one
+[00:20:14] here is what we call
+[00:20:16] the decisional order block, of course.
+[00:20:19] So right there.
+[00:20:21] So what that's what we call the
+[00:20:23] decisional order block.
+[00:20:25] Decisional bearish order block. This one
+[00:20:27] here is what we call the engineering
+[00:20:29] liquidity.
+[00:20:30] Yeah, so you can clearly see there the
+[00:20:33] engineering liquidity.
+[00:20:35] Yep, and price has mitigated the
+[00:20:36] decisional order flow. So if we see a
+[00:20:38] good reaction from there, we can
+[00:20:40] actually entry. Okay, so let me continue
+[00:20:43] running price.
+[00:20:45] Okay, let me make it slow.
+[00:20:47] And exactly right there you can clearly
+[00:20:48] see price is
+[00:20:50] Okay.
+[00:20:52] Yeah, and upon seeing that bearish
+[00:20:54] reaction, okay, price headed higher, but
+[00:20:57] upon seeing that bearish reaction, of
+[00:20:59] course you would have sell.
+[00:21:01] Of course exactly right there.
+[00:21:04] And stop loss you You set it above the
+[00:21:05] decisional order block, or even better
+[00:21:07] above the decisional order flow there.
+[00:21:10] But you can clearly see price there has
+[00:21:11] mitigated the decisional order block.
+[00:21:13] So, let's see if we get a reaction
+[00:21:16] there.
+[00:21:17] I'm anticipating one and exactly right
+[00:21:19] there you can clearly see that reaction.
+[00:21:21] So, there and of course now I can place
+[00:21:23] the stop loss above there and of course
+[00:21:25] I'll be targeting the external low.
+[00:21:28] Or the external liquidity that is.
+[00:21:30] And we can clearly see exactly right
+[00:21:32] there that price is heading onto our
+[00:21:34] favor. So, let me make it fast.
+[00:21:38] Okay, so
+[00:21:41] faster than that.
+[00:21:47] Okay, so price has taken out these
+[00:21:50] You can clearly see price has taken out
+[00:21:52] these high exactly right there.
+[00:21:55] So, that's the recent one. You can
+[00:21:57] clearly see price has taken that high
+[00:21:59] exactly right there.
+[00:22:01] And of course additional buy side
+[00:22:02] liquidity above here. You can clearly
+[00:22:05] see all of these are just buy side
+[00:22:07] liquidity. So, price has taken all of
+[00:22:09] that
+[00:22:10] and let's see if price will make a
+[00:22:13] Okay, so price is heading lower and you
+[00:22:15] can clearly see price has yet You can
+[00:22:17] clearly see our stop loss is yet hit.
+[00:22:19] So, this means that price has created a
+[00:22:22] break of structure inside our major
+[00:22:24] structure.
+[00:22:26] So, we can clearly see exactly right
+[00:22:28] there.
+[00:22:31] So, I mean exactly right there you can
+[00:22:33] clearly see that's our break of
+[00:22:35] structure. And of course we have our
+[00:22:37] high there. This one here is what we
+[00:22:40] call
+[00:22:41] the major inducement. So, that's our
+[00:22:43] major inducement exactly right there. If
+[00:22:45] I'm to continue running price, you can
+[00:22:47] clearly see price has taken out that
+[00:22:50] major inducement and mitigated that
+[00:22:52] extreme order block exactly right there.
+[00:22:55] You can clearly see that that's our
+[00:22:56] extreme order block. And after price has
+[00:22:58] mitigated that extreme order block, you
+[00:23:00] You clearly see that reaction to the to
+[00:23:03] the downside. So, that was what we call
+[00:23:04] the extreme. So, and you can clearly see
+[00:23:07] if I am to take that entry, of course, I
+[00:23:09] would have taken it from this area. Stop
+[00:23:12] loss above that high. And of course,
+[00:23:14] I'll be targeting the external low.
+[00:23:17] Yeah.
+[00:23:18] And if I am to continue running price,
+[00:23:20] you can clearly see that price is
+[00:23:22] heading onto our favor.
+[00:23:23] Okay. So, exactly right there, you can
+[00:23:25] clearly see if it was a sell limit
+[00:23:27] order, it would have still been
+[00:23:28] triggered. And eventually, I am
+[00:23:31] anticipating that price will be making
+[00:23:34] I mean, will make it to exactly exactly
+[00:23:36] right there. We can clearly see price
+[00:23:38] made it to the external low.
+[00:23:40] So, yeah, this is this happens that
+[00:23:43] price creates a structure like this
+[00:23:45] inside our major structure. And if that
+[00:23:47] happens, of course, you can actually
+[00:23:49] capitalize on it also. So, you can
+[00:23:52] clearly see exactly right there, that's
+[00:23:54] our final break of structure
+[00:23:57] or our ultimate break of structure. And
+[00:23:59] after the price has made that break of
+[00:24:01] structure, all of this is now
+[00:24:03] unnecessary. You see what you've marked
+[00:24:05] here? All of that is now unnecessary, so
+[00:24:07] get rid of them. Of course, also get rid
+[00:24:10] of this, and you have now acquired a
+[00:24:12] full structure with this one here being
+[00:24:15] the high. So, this means that you'll be
+[00:24:17] starting the analysis from that high all
+[00:24:19] the way to that low. And if I am to
+[00:24:22] to mark the major inducement here, I
+[00:24:24] mean, minor inducement, you can clearly
+[00:24:26] see that that's our minor inducement
+[00:24:28] exactly right there. So, that's our
+[00:24:30] minor inducement, and our price has yet
+[00:24:33] taken out the minor inducement there.
+[00:24:35] So, let me do this.
+[00:24:38] And exactly right there, you can clearly
+[00:24:40] see that reaction. So, right there, we
+[00:24:43] can clearly see that reaction that price
+[00:24:46] has made after sweeping or after taking
+[00:24:48] out that minor inducement. So, this is
+[00:24:51] of course a
+[00:24:53] a valid entry model. So, stop loss above
+[00:24:55] that high, and of course, targeting this
+[00:24:57] low. We can clearly see also that this
+[00:24:59] if I am to take the fib measure from
+[00:25:02] that low all the way to I mean measure
+[00:25:04] from that high all the way to this low.
+[00:25:06] We can clearly see that this made it to
+[00:25:07] the 50%. So, confident enough to take
+[00:25:12] that entry. And of course if I am to
+[00:25:14] mark the order blocks here, you can
+[00:25:16] clearly see that uh
+[00:25:18] Okay, so there's this order block that
+[00:25:20] it was already mitigated. So, meaning
+[00:25:23] invalid. This order flow, I mean this
+[00:25:26] order block here mitigated. So, yeah, by
+[00:25:29] this wing long wick there. And so, that
+[00:25:33] becomes our order block exactly right
+[00:25:35] there. So, this means that I can get rid
+[00:25:37] of these ones. So, I can get rid of that
+[00:25:40] one. And since this one is extreme order
+[00:25:42] block, let me
+[00:25:44] mark it.
+[00:25:46] Of course extreme bearish order block,
+[00:25:47] and that is of course the only valid
+[00:25:50] order block that is available on the
+[00:25:52] dealing range. Of course I didn't mark
+[00:25:54] the order blocks. You cannot expect such
+[00:25:56] a dealing range to have a valid order
+[00:25:58] flow. You can clearly see how
+[00:26:00] consolidating it was. Anyway, let me
+[00:26:02] continue running price. Let me make it
+[00:26:04] fast here. And if I'm to continue
+[00:26:06] running price, you can clearly see price
+[00:26:08] is heading on to our favor.
+[00:26:10] And okay.
+[00:26:12] That's not good. But you can clearly see
+[00:26:14] eventually price made it to the break of
+[00:26:17] structure exactly right there. So, this
+[00:26:20] means that we have just created a new
+[00:26:22] dealing range exactly right there.
+[00:26:25] So, break of structure. And uh let me
+[00:26:28] get rid of this. And like I said, once
+[00:26:30] price has created another break of
+[00:26:32] structure, this POI is no longer valid.
+[00:26:35] And yeah, it is just a reaction zone. If
+[00:26:38] price now makes a change of character
+[00:26:40] and comes to mitigate that, it will just
+[00:26:43] be a reaction zone. Okay, so exactly
+[00:26:45] right there we can clearly see that we
+[00:26:47] are in a new trading range. This one
+[00:26:49] here is our major inducement. Of course,
+[00:26:53] that one I mean this one here is what we
+[00:26:55] call the decision order block.
+[00:26:58] And the extreme order block is none
+[00:27:01] other than
+[00:27:02] Okay, so that is mitigated. You can
+[00:27:04] clearly see exactly right there it's
+[00:27:06] mitigated. So the extreme order block
+[00:27:08] will be this one here.
+[00:27:10] And of course, this one here will be a
+[00:27:12] weak order block.
+[00:27:14] Exactly right there. So this one here is
+[00:27:16] mitigated. So I'll be using this color.
+[00:27:19] This one here is our extreme. So extreme
+[00:27:22] bearish order block. This one here is a
+[00:27:24] weak order block.
+[00:27:26] So that's a weak order block. This one
+[00:27:28] here is what we call the decisional
+[00:27:30] bearish order block. And of course, our
+[00:27:32] engineering liquidity is none other than
+[00:27:35] this one here.
+[00:27:36] So that's our engineering liquidity.
+[00:27:40] Exactly right there. And by the way, on
+[00:27:42] the previous dealing range, the
+[00:27:44] engineering liquidity was this one here.
+[00:27:46] I forgot to mark that, but it is very
+[00:27:49] important to mark it. So exactly like
+[00:27:52] that, that was the engineering
+[00:27:53] liquidity. But now it's of no use
+[00:27:55] because price has already made a break
+[00:27:57] of structure and we are currently in a
+[00:27:59] new trading range. Okay, so let me
+[00:28:01] continue running price here. And we can
+[00:28:04] clearly see price has taken out the
+[00:28:06] minor inducement exactly I mean major
+[00:28:08] inducement. And in this case, I am not
+[00:28:10] interested for the sell.
+[00:28:13] The reason is true I'm not interested
+[00:28:14] for the sell. Reason number one, we can
+[00:28:16] clearly see that if I am to take that,
+[00:28:18] of course I'll place my stop loss here.
+[00:28:20] I will not place my stop loss above that
+[00:28:22] high. So I'll place the stop loss above
+[00:28:24] there. And of course, okay, so
+[00:28:28] So you can clearly see this is also a
+[00:28:30] mitigation of the decisional. Exactly
+[00:28:32] right there. You can clearly see price
+[00:28:34] also mitigated the decisional. So even
+[00:28:37] after that, I will still not take this
+[00:28:39] entry. I mean direct entry that is. Not
+[00:28:41] unless it is a lower time frame
+[00:28:43] execution, but a direct entry here it
+[00:28:45] will give you a a small risk to reward.
+[00:28:48] As you can clearly see, your target is
+[00:28:50] this low, and you can clearly see that's
+[00:28:52] a 1.34, so that's not favorable. So,
+[00:28:55] maybe extend it for 1:2. And maybe
+[00:28:58] extend it for 1:2, but at the same time,
+[00:29:00] you can clearly see if I do I mean if I
+[00:29:03] measure this uh range here, you can
+[00:29:05] clearly see price is
+[00:29:07] price has yet made it to the 0.5%.
+[00:29:10] So, this means we are selling in
+[00:29:12] discount, and that is not recommended.
+[00:29:14] It will eventually lower your risk
+[00:29:16] reward if you don't consider the selling
+[00:29:18] premium and buying discount. It's
+[00:29:20] actually a very important rule. But
+[00:29:21] anyway, this here is a valid entry. So,
+[00:29:25] I'll just be doing that, but that's not
+[00:29:27] actually Okay, and you can clearly see
+[00:29:30] price has yet even made it to that uh
+[00:29:32] low, but it's okay, let's see.
+[00:29:35] Okay, price made it to that. You can
+[00:29:36] clearly see exactly right there. Price
+[00:29:38] made it to that low. But you know that
+[00:29:40] this one here will not be a valid break
+[00:29:42] of structure. The reason is why this one
+[00:29:45] here is not a valid break of structure
+[00:29:47] is because we can clearly see that this
+[00:29:50] dealing range has yet made it to the 50%
+[00:29:53] of our previous dealing range, and this
+[00:29:56] means that that retracement is not uh
+[00:29:59] deep enough to confirm this one here as
+[00:30:01] a valid break of structure. So, what
+[00:30:02] does this mean? This means that now
+[00:30:05] Okay, so in this case, the decision is
+[00:30:07] already mitigated, and now this Okay, so
+[00:30:11] this one here shifts this one. So, this
+[00:30:13] major inducement shifts to that, of
+[00:30:16] which now it's no longer that one, but
+[00:30:18] this one here because price created
+[00:30:20] another low below there. And so, that
+[00:30:22] becomes our major inducement. So, now
+[00:30:24] I'll continue running price here. And uh
+[00:30:28] exactly right there, you can clearly see
+[00:30:30] price has
+[00:30:32] Okay, so exactly there, and you can
+[00:30:33] clearly see that reaction. Again, you
+[00:30:36] can clearly see that uh if you take that
+[00:30:40] entry, even though it is a valid uh I
+[00:30:42] mean, a valid one. This here is not like
+[00:30:46] you will not be selling in premium, you
+[00:30:48] will be selling in discount. So, again,
+[00:30:52] I said an important rule to always sell
+[00:30:56] in premium and buy in discount, and you
+[00:30:58] can clearly see stopped out. Even though
+[00:31:00] that's a valid entry, this time around
+[00:31:03] you'll be stopped out. And you will have
+[00:31:05] a low win rate if you will be taking
+[00:31:07] this kind of entries that, I mean, if
+[00:31:10] you will not be considering that rule to
+[00:31:12] sell in premium
+[00:31:14] and buy in discount. Okay, anyway, let
+[00:31:18] me get rid of that. You can clearly see
+[00:31:20] now we are left with these two POIs.
+[00:31:23] Yeah, I mean, we are left with this POI
+[00:31:25] and of course the engineering liquidated
+[00:31:27] there. So, let me continue running
+[00:31:29] price.
+[00:31:31] And exactly right there, we can clearly
+[00:31:33] see price has mitigated the extreme
+[00:31:36] exactly right there, and we can clearly
+[00:31:38] see what price is doing here. So, that
+[00:31:41] was fast, but if I was to take the
+[00:31:42] entry, of course, after that bull, I
+[00:31:45] mean, that bearish engulfing, stop loss
+[00:31:47] above that high, and of course you'll be
+[00:31:50] targeting this low.
+[00:31:52] And even better, we can clearly see that
+[00:31:54] this one here is the extreme OB. So, of
+[00:31:57] course here, it wouldn't hurt to set a
+[00:31:59] sell limit order there. Of course, your
+[00:32:02] stop loss above that high, or even
+[00:32:05] better, okay, I don't Okay, you can set
+[00:32:08] it there, but it would be better you set
+[00:32:09] it that high. And of course you'll be
+[00:32:11] targeting that external low. You can
+[00:32:13] clearly see, of course, that will be a
+[00:32:14] good risk to reward. So, yeah, you can
+[00:32:17] clearly see price has made a break of
+[00:32:19] structure, of course, here. And this is
+[00:32:22] what we call now a bearish break of
+[00:32:24] structure, and we are now in a new
+[00:32:26] trading range, of course. So, let me
+[00:32:28] continue running price here.
+[00:32:30] And we can clearly see price has Okay,
+[00:32:33] so this one here
+[00:32:35] You clearly see that this
+[00:32:38] is the extreme OB.
+[00:32:41] Price has already taken out the major
+[00:32:43] inducement exactly right there. So, this
+[00:32:46] means that a reaction from there a good
+[00:32:48] reaction from there will be taking the
+[00:32:50] sell. As you can clearly see that these
+[00:32:52] ones here are our swing points. So, we
+[00:32:54] have that one.
+[00:32:56] And we also have this one here.
+[00:33:00] And of course, our lower low is none
+[00:33:02] other than this one here. Price has
+[00:33:04] already taken out the major inducement
+[00:33:06] and that's the area. So, if I get a good
+[00:33:08] reaction from there, of course, that
+[00:33:10] will be a good sell. Okay, so let's see.
+[00:33:13] And I can clearly see exactly right
+[00:33:16] there. So, that would have been a great
+[00:33:17] sell, of course, upon seeing that. Of
+[00:33:20] course, stop loss above that high and
+[00:33:22] you'll be targeting the external low.
+[00:33:25] Okay, so that's a good That's a
+[00:33:27] favorable risk to reward. You can
+[00:33:28] clearly see that's a
+[00:33:30] two, yeah, one one is to two is a good
+[00:33:33] risk to reward. Okay, so let's see what
+[00:33:36] price is doing here. Okay, so price
+[00:33:38] consolidated a little bit, but
+[00:33:40] eventually price
+[00:33:42] uh made a change of character. So, if
+[00:33:44] price makes a change of character, so
+[00:33:46] then this means that uh we have shifted
+[00:33:48] bias to bullish because you can clearly
+[00:33:51] see that this one here is what we call a
+[00:33:53] coach or a change of character. Okay.
+[00:33:56] So, now here we can clearly see this one
+[00:33:59] here is the extreme OB that it wasn't
+[00:34:01] created on that dealing range and price
+[00:34:03] has made it there.
+[00:34:05] We can clearly see that this one here is
+[00:34:07] our major inducement.
+[00:34:08] So, exactly right there.
+[00:34:13] Major inducement in the firm to continue
+[00:34:14] running price. You can clearly see price
+[00:34:17] is reversing from there. It's not a
+[00:34:18] coincidence. Okay, so someone else will
+[00:34:22] be taking that entry, of course, after
+[00:34:24] seeing that. Stop loss above that high
+[00:34:27] and of course, they'll be targeting this
+[00:34:29] lower low. Like I said, once price has
+[00:34:33] created a new trading range, this here,
+[00:34:36] even though it was a valid POI, and
+[00:34:39] price didn't mitigated it, now it's none
+[00:34:42] other than a reaction zone because we
+[00:34:44] have just shifted bias to bullish. You
+[00:34:48] can clearly see this one here was a
+[00:34:49] bearish zone, but now we are bullish.
+[00:34:52] So, if you sell from this zone, you'll
+[00:34:54] be selling you'll be trading against the
+[00:34:57] trend, and we all know that the trend is
+[00:34:59] your friend. So, just know that these
+[00:35:02] ones here are just reaction zones and
+[00:35:04] nothing more than that. Okay, so price
+[00:35:06] has taken out the major inducement, and
+[00:35:09] I can clearly see this one here is our
+[00:35:11] extreme order flow, exactly right there.
+[00:35:14] So, extreme order flow, so valid order
+[00:35:17] flow. Of course, the engineering
+[00:35:19] liquidity is none other than this one
+[00:35:21] here.
+[00:35:22] So, that is our engineering liquidity,
+[00:35:25] and of course, I don't see any
+[00:35:27] decisional here. So, the extreme is none
+[00:35:30] other than this one here, so that's our
+[00:35:31] extreme order block.
+[00:35:33] Yep, and um
+[00:35:35] yeah, I think uh
+[00:35:37] the dealing range is now fully marked.
+[00:35:39] Of course, we have our swing point high
+[00:35:41] at this area.
+[00:35:43] Exactly right there, that's what we call
+[00:35:45] a bull swing point.
+[00:35:47] Okay, so now let me continue running
+[00:35:49] price here and see where price reverses
+[00:35:51] from.
+[00:35:52] Okay, so price took out this major
+[00:35:54] inducement, and you can clearly see it's
+[00:35:56] giving that reaction. Like I said, buy
+[00:35:59] in discount and sell in premium. If I am
+[00:36:02] to take this here
+[00:36:04] and drag it all the way to that high, we
+[00:36:07] can clearly see we are yet in discount,
+[00:36:09] so why buy in premium? And we all know
+[00:36:11] that we want a good win rate, and this
+[00:36:12] is one of the things that you need to
+[00:36:14] consider, buying in discount and selling
+[00:36:16] in premium. Just by following that one
+[00:36:19] rule, you may find an increase in your
+[00:36:21] win rate, trust me. Okay, so let me
+[00:36:23] continue running price here. I will not
+[00:36:25] buy from there because I don't want to
+[00:36:27] buy in premium. Okay, so I'll continue
+[00:36:29] running price and you can clearly see
+[00:36:31] that person was stopped out even though
+[00:36:33] sometimes it works and price may
+[00:36:36] continue all the way towards the
+[00:36:37] external high, but in that case you'll
+[00:36:39] be lowering your win rate. Anyway, let
+[00:36:42] me continue running price you can see
+[00:36:44] price is reversing from there. No valid
+[00:36:46] zone there until price mitigated this
+[00:36:49] extreme and took out the engineering
+[00:36:51] liquidity there. So, this is where now
+[00:36:54] I'll be buying of course after seeing
+[00:36:56] this
+[00:36:57] good reversal pattern of course buy all
+[00:37:00] the way to that high. And now if I am to
+[00:37:02] continue running price here
+[00:37:04] Okay, so exactly right there.
+[00:37:06] You can clearly see that price is
+[00:37:08] heading on to our favor. It's continuing
+[00:37:11] with this prevailing trend and that's
+[00:37:13] the reason as to why you should never
+[00:37:15] sell from these areas. Yep, you can
+[00:37:18] clearly see I have the confident that
+[00:37:20] price will eventually make it to
+[00:37:23] Yeah, to our full TP. Price took long
+[00:37:25] but you can clearly see price made it to
+[00:37:28] our full TP exactly right there. So,
+[00:37:30] this is what I mean or this is what I'm
+[00:37:32] emphasizing guys.
+[00:37:34] This is just a reaction zone.
+[00:37:36] Yeah. Just a reaction zone. Probably
+[00:37:39] cause a reaction towards the order block
+[00:37:42] that aligns with the prevailing trend of
+[00:37:44] that POI that aligns with the with the
+[00:37:46] prevailing trend but it will not cause a
+[00:37:48] shift all the way towards the change of
+[00:37:50] character or all the way towards the
+[00:37:52] external low. And even sometimes price
+[00:37:56] may not even give a reaction from it.
+[00:37:57] Price may just spike through it without
+[00:38:00] even giving a reaction from it. Anyway,
+[00:38:02] let me not make the video long. I know
+[00:38:04] you have learned something and as you
+[00:38:06] can clearly see top down analysis is
+[00:38:08] actually not a must. You can actually
+[00:38:10] become a profitable trader just by using
+[00:38:13] one time frame and this is it. And if
+[00:38:16] you have made it to this end, that's
+[00:38:18] true dedication and I'll see you at the
+[00:38:21] top. So, do me a favor, drop a like, and
+[00:38:24] I'll see you in the next video.
