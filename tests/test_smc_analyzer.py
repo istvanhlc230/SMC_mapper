@@ -77,10 +77,21 @@ def test_incomplete_candle_exclusion():
     assert candles[-1].index == 13
     assert candles[-1].timestamp == raw[13]['timestamp']
 
-def test_insufficient_history():
-    raw = make_dummy_data(9)
-    with pytest.raises(InsufficientHistoryError, match="Insufficient history"):
-        MarketDataNormalizer.normalize(raw)
+def test_detection_event_enum():
+    from smc_analyzer import DetectionEvent
+    # Ensure exactly 7 canonical event classes exist
+    assert len(DetectionEvent) == 7
+    expected_names = {
+        "NO_EVENT_INTERNAL_PB",
+        "MINOR_IDM_EVENT",
+        "EXT_CONT_BREAK",
+        "EXT_OPP_BREAK",
+        "FALLBACK_EVENT",
+        "REAL_MAJOR_IDM_EVENT",
+        "NEW_SVP_QUALIFIED"
+    }
+    actual_names = {e.name for e in DetectionEvent}
+    assert actual_names == expected_names
 
 def test_float_input_conversion():
     raw = make_dummy_data(15)

@@ -1,12 +1,9 @@
-# CURRENT TASK
-Phase 2 Pre-implementation Design: Canonical mapping, data contracts, and test strategy for `smc_analyzer.py`.
-
 # DEVELOPER REPORT
 **Current Repository State:**
 * **Branch:** main
-* **HEAD:** e09e0b9
-* **Working-tree status:** clean
-* **Implementation decisions:** Revised Phase 2 design artifacts to finalize explicit target RR behavior and persistent lifecycle execution paths. No code implemented yet.
+* **HEAD:** 2138bc0 (Before correction)
+* **Working-tree status:** clean (after committing corrections)
+* **Implementation decisions:** Corrected Phase 3 Step 1 based on validation. Consolidated `NO_EVENT` and `INTERNAL_PB` into a single `NO_EVENT_INTERNAL_PB` enum member to strictly enforce the 7 canonical event classes. Removed the arbitrary 10-candle threshold from `MarketDataNormalizer`; insufficient history will be handled dynamically by specific structural operations based on their canonical prerequisites.
 * **Exact smc_skill files relied upon:** 
   - `01_micro_structure.md`
   - `02_minor_structure.md`
@@ -20,6 +17,8 @@ Phase 2 Pre-implementation Design: Canonical mapping, data contracts, and test s
 - [x] **Categorization Fixed:** Explicit distinction between `LIFECYCLE STATE`, `STRUCTURAL OBJECT/FACT`, `PROCESS CONDITION`, `EVENT DETECTION`, and `CLASSIFICATION OUTCOME`.
 - [x] **Persistent Lifecycle Chain:** Explicit chain defined (IDM_TAKEN to VALID_BOS) where each stage persists its state to be consumed sequentially. No opaque multi-stage collapse.
 - [x] **Target/RR Contract Fixed:** Fixed wording regarding RR evaluability. Target is unresolved, therefore RR is NOT_EVALUABLE. No executable setup is permitted.
+- [x] **Event Enum Fixed:** Exactly 7 disjoint canonical detection events (`NO_EVENT_INTERNAL_PB`, etc).
+- [x] **Global History Threshold Removed:** No arbitrary `len(candles) < 10` minimum.
 
 | Rule Concept | Canonical Source | Key Constraints |
 |---|---|---|
@@ -87,7 +86,7 @@ class Candle:
 - **Invalid OHLC / Missing Bars:** Hard error if high < low; missing bars are treated as gaps, but structural relationships rely purely on the available ordered `Candle` array.
 - **Completed Eligibility:** The most recent live candle is strictly excluded until provider marks it closed.
 - **Adjusted vs Unadjusted:** Unadjusted OHLC must be used to preserve exact structural price bounds.
-- **Insufficient History:** Analyzer halts with specific `INSUFFICIENT_HISTORY` code.
+- **Insufficient History:** Analyzer halts with specific `INSUFFICIENT_HISTORY` code (determined dynamically per specific operation).
 - **Intrabar Sequence:** Never silently inferred. Defaults to `UNAVAILABLE`.
 
 ## 4. Analyzer Output Contract (Target / RR)
@@ -138,17 +137,17 @@ class StructuralPOICandidate:
 * **RESOLUTION:** EXPLICITLY OPEN. `target` output is `None`. Target derivation is unresolved, and executable RR remains NOT_EVALUABLE until the formula is supplied. No invented fallback target is permitted.
 
 # VALIDATION REPORT
-[Awaiting Independent Validation Agent]
+[Awaiting Independent Validation Agent for Step 1 Corrections]
 
 # REQUIRED CORRECTIONS
-[None]
+[None active]
 
 # OPEN SPECIFICATION GAPS
 See Developer Report Section 7.
 
 # IMPLEMENTATION STATUS
-Phase 3 (Implementation) in progress.
-- [x] Step 1: Normalized data model + deterministic event/state architecture and tests.
+Phase 3 (Implementation) Step 1 corrected based on validation. Awaiting final Step 1 approval.
+- [x] Step 1: Normalized data model + deterministic event/state architecture and tests (Corrected).
 - [ ] Step 2: Micro/Minor structure layer (Candle relationships, Pullback, IDM detection).
 - [ ] Step 3: Major structure layer (Swing Confirmation, BOS, CHoCH gating).
 - [ ] Step 4: POI Identification (Decisional/Extreme rule of two).
@@ -157,5 +156,5 @@ Phase 3 (Implementation) in progress.
 # COMMITS
 COMMIT: [Will append commit SHA after review]
 FILES: smc_analyzer.py, tests/test_smc_analyzer.py, AGENT_REVIEW.md
-PURPOSE: Step 1: Implement canonical enums (LifecycleState, DetectionEvent, ProcessCondition, etc.) and MarketDataNormalizer with Decimal precision and strictly ordered UTC checks.
-TESTS: pytest tests/test_smc_analyzer.py (8 passed)
+PURPOSE: Fix Step 1 implementation contract violations (exactly 7 DetectionEvents via `NO_EVENT_INTERNAL_PB`, and remove arbitrary 10-candle threshold).
+TESTS: python -m pytest tests/test_smc_analyzer.py (8 passed)

@@ -17,8 +17,7 @@ class LifecycleState(Enum):
     POST_CHOCH = auto()
 
 class DetectionEvent(Enum):
-    NO_EVENT = auto()
-    INTERNAL_PB = auto()  # Combined with NO_EVENT in docs, separating for clarity or keep combined
+    NO_EVENT_INTERNAL_PB = auto()
     MINOR_IDM_EVENT = auto()
     EXT_CONT_BREAK = auto()
     EXT_OPP_BREAK = auto()
@@ -123,9 +122,6 @@ class MarketDataNormalizer:
                 is_completed=True,
                 intrabar_sequence_evidence=IntrabarSequenceEvidence.UNAVAILABLE
             ))
-            
-        if len(candles) < 10: # Arbitrary minimum, usually needs much more for SMC
-            raise InsufficientHistoryError(f"Only {len(candles)} completed candles available. Insufficient history.")
             
         return candles
 
