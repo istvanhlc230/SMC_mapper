@@ -35,11 +35,17 @@ The second pass extended the initial seven-file review to the remaining known kn
 
 The source material continues to distinguish valid pullback / BOS / inducement / order-flow concepts from candle-level observations. These remain higher-layer concepts.
 
-## Important higher-layer conflict
+## Historical higher-layer reconciliation note
 
 `smc_trader_another_missing_piece.txt` presents 50% as the normal deep-retracement criterion and 38.2% as an exception when a higher-timeframe valid pullback corresponds to lower-timeframe complete structure. `advanced_market_structure_mapping.txt` also uses at least 38.2% in BOS qualification.
 
-This remains a **higher-layer** reconciliation item. It must not be copied into `01_micro_structure.md`.
+This item was outside the Phase 1 contract scope and is retained here as source-history evidence. The current canonical resolution is owned by `03_structural_semantic_authority.md`:
+
+- 50% is the standard major-retracement qualification path;
+- 38.2%–<50% is conditional and requires the applicable immediate Higher Timeframe valid-pullback path;
+- the Layer 4 BOS module consumes the stored qualification result and does not recompute these thresholds.
+
+This is therefore no longer an unresolved current canonical conflict.
 
 ## Interpretation rule
 
