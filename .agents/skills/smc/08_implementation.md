@@ -787,6 +787,33 @@ ENG_LQD_SWEEP → ENTRY_AUTHORIZED (without confirmation)
 POI_MITIGATION → ENTRY_AUTHORIZED (without confirmation)
 ```
 
+### Stop Placement implementation mapping
+
+Stop placement must be derived from the canonical entry-module anchor before position sizing or broker submission.
+
+```text
+ENTRY MODULE
+   ↓
+SL_ANCHOR
+   ↓
+CONFIGURED P
+   ↓
+EXACT STOP PRICE
+```
+
+Required anchors:
+- IDM Sweep -> sweeping-candle extreme;
+- Decisional POI Mitigation -> confirming/reversal-pattern extreme;
+- Engineering Liquidity Sweep -> validated sweep/confirmation extreme;
+- Extreme POI Mitigation -> confirming/reversal-pattern extreme.
+
+Required invariants:
+- `P` is explicit execution configuration, not an invented methodology constant;
+- missing `P` prevents automatic broker order submission;
+- stop placement must not create or validate structural state;
+- stop touch remains an execution event;
+- stop movement after entry belongs to a separate trade-management policy and must not rewrite the historical entry/SL anchor.
+
 ### POI / Entry
 - POI ontology accepts only Valid OF or Valid OB;
 - Rule of Two limits canonical tradable POIs to Decisional POI and Extreme POI;
