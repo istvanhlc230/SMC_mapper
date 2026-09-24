@@ -189,13 +189,13 @@ NO_CANONICAL_TARGET → NO_AUTOMATIC_TP_SUBMISSION
 ```
 ### RR gating
 
-Where required by the canonical execution layer:
+Where required by the configurable execution layer policy:
 
-```
-Projected_RR_to_Primary_Target >= 1:2
+```text
+Projected_RR_to_Primary_Target >= Configured_Minimum_RR
 ```
 
-This is an entry/setup gate, not a target-location rule.
+RR gating is a configurable trading policy, not a universal structural requirement. This is an entry/setup gate, not a target-location rule.
 
 ### Counter-trend / pullback execution
 

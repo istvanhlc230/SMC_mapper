@@ -126,9 +126,9 @@ The scenario determines **why and where the countertrend opportunity exists**. T
 
 ## 7. Target composition
 
-Countertrend target resolution is delegated to the canonical target-policy contract.
+Countertrend target resolution is delegated to the current target/risk handling policy. Exact universal target coordinate resolution remains an open specification gap where source evidence is insufficient.
 
-The scenario may identify the next canonical destination, but the exact target coordinate must come from the applicable target policy. No countertrend scenario may invent an arbitrary TP coordinate.
+The scenario can identify the source-defined destination class (e.g., the next canonical liquidity pool or POI), but exact target coordinate resolution must be handled by the downstream execution layer. No countertrend scenario may invent an arbitrary TP coordinate.
 
 ## 8. Invariants
 

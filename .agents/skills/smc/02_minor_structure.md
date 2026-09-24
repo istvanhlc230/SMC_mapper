@@ -120,7 +120,28 @@ CANDLE-LEVEL PULLBACK FORMATION
 
 When aggregate OHLC does not expose the intrabar order needed by the sequence, Layer 2 uses the observability state provided by Layer 1 instead of manufacturing historical path evidence.
 
-## 4. Layer 3 Structural Qualification Handoff
+## 4. Pullback Extreme Verification
+
+After a Candle-Level Valid Pullback completes, Layer 2 records its directional extreme:
+
+~~~
+Bullish Valid Pullback → Pullback Low = lowest Low reached
+Bearish Valid Pullback → Pullback High = highest High reached
+~~~
+
+The verified pullback extreme is derived across the complete pullback sequence, from pullback initiation through completion.
+
+~~~
+CANDLE-LEVEL VALID PULLBACK
+        ↓
+COMPLETE PULLBACK WINDOW
+        ↓
+EXTREME VERIFICATION
+        ↓
+VERIFIED PULLBACK EXTREME
+~~~
+
+## 5. Structurally Valid Pullback handoff
 
 A Candle-Level Valid Pullback is supplied to Layer 3 for structural qualification.
 
@@ -129,47 +150,16 @@ Layer 3 evaluates the major structural retracement requirements and returns the 
 ~~~
 CANDLE-LEVEL VALID PULLBACK
         ↓
-LAYER 3 STRUCTURAL QUALIFICATION
+LAYER 3 QUALIFICATION
         ↓
 STRUCTURALLY VALID PULLBACK
 ~~~
 
-The detailed major retracement criteria, including depth, opposing-candle qualification, displacement-outlier handling, and higher-timeframe structural qualification are defined only by `03_structural_semantic_authority.md`.
+The detailed major retracement criteria, including depth, opposing-candle qualification, displacement-outlier handling, and higher-timeframe structural qualification are defined only by 03_structural_semantic_authority.md.
 
-## 5. Pullback Extreme Verification
+## 6. Active Pullback Pointer
 
-After a Structurally Valid Pullback is established, Layer 2 records its directional extreme:
-
-~~~
-Bullish Structurally Valid Pullback → Pullback Low = lowest Low reached
-Bearish Structurally Valid Pullback → Pullback High = highest High reached
-~~~
-
-The verified pullback extreme is derived across the complete pullback sequence.
-
-~~~
-STRUCTURALLY VALID PULLBACK
-        ↓
-EXTREME VERIFICATION
-        ↓
-VERIFIED PULLBACK EXTREME
-~~~
-
-## 6. Pullback-derived liquidity reference
-
-For the active impulsive leg, Layer 2 exposes the liquidity reference implied by the verified extreme of the most recent structurally valid pullback:
-
-~~~
-VERIFIED PULLBACK EXTREME
-        ↓
-PULLBACK-DERIVED LIQUIDITY REFERENCE
-~~~
-
-This is a Layer 2 input object, not an IDM definition. Layer 2 does not classify the reference as Minor IDM or Major IDM and does not own IDM lifecycle state.
-
-## 7. Active Pullback Pointer
-
-The active pullback state tracks the **most recent structurally valid pullback** relevant to the active impulsive leg.
+The active pullback state tracks the **most recent structurally accepted pullback** relevant to the active impulsive leg.
 
 When a newer Structurally Valid Pullback is established before the current active liquidity target is consumed, the active pointer transfers to the newer pullback.
 
@@ -177,9 +167,29 @@ When a newer Structurally Valid Pullback is established before the current activ
 NEWER STRUCTURALLY VALID PULLBACK
         ↓
 ACTIVE PULLBACK POINTER TRANSFER
+        ↓
+CURRENT LIQUIDITY REFERENCE
 ~~~
 
 Historical pullbacks remain part of the structural history.
+
+## 7. Pullback-derived liquidity reference
+
+For the active impulsive leg, Layer 2 exposes the liquidity reference implied by the verified extreme of the most recent structurally accepted pullback:
+
+~~~
+Bullish active leg
+    Pullback Low
+        ↓
+Sell-Side Liquidity reference
+
+Bearish active leg
+    Pullback High
+        ↓
+Buy-Side Liquidity reference
+~~~
+
+This is a Layer 2 input object, not an IDM definition. Layer 2 does not classify the reference as Minor IDM or Major IDM and does not own IDM lifecycle state.
 
 ## 8. Layer 2 → Layer 3 handoff
 
@@ -187,21 +197,27 @@ Layer 2 delivers the following validated objects to Layer 3:
 
 ~~~
 CANDLE-LEVEL VALID PULLBACK
-STRUCTURALLY VALID PULLBACK
 VERIFIED PULLBACK EXTREME
-PULLBACK-DERIVED LIQUIDITY REFERENCE
+STRUCTURALLY VALID PULLBACK STATUS
 ACTIVE PULLBACK POINTER
+PULLBACK-DERIVED LIQUIDITY REFERENCE
 ~~~
 
 Layer 3 then owns:
 
 ~~~
 IDM DEFINITION
-IDM CLASSIFICATION
+MINOR_IDM / MAJOR_IDM CLASSIFICATION
 ACTIVE IDM LIFECYCLE
 IDM REFERENCE SHIFT
-IDM_TAKEN (LIQUIDITY TAKEOUT)
-... (and all other Layer 3 states)
+IDM LIQUIDITY TAKEOUT
+SWING CONFIRMATION
+CONFIRMED_STRUCTURAL_SWING
+MAJOR STRUCTURAL RETRACEMENT QUALIFICATION
+VALID_BOS
+IMPULSE_EXTENSION
+TRADING RANGE ROLLOVER
+CHoCH
 ~~~
 
 The Layer 3 definitions are consumed through their canonical owner document; Layer 2 does not redefine them.

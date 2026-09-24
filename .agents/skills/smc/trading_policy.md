@@ -104,7 +104,7 @@ RUNNING RISK >= LIMIT         → NO NEW ENTRY
 
 Policy counters must survive process restarts and must be reconciled from broker/account history rather than maintained only in volatile memory.
 
-## 7. Logging
+## 7. Logging (Implementation Policy)
 
 Every executed or rejected candidate trade should retain at minimum:
 
@@ -122,9 +122,9 @@ Every executed or rejected candidate trade should retain at minimum:
 - news-gate result;
 - final order/fill/position outcome.
 
-Logging is an auditability requirement and does not alter structural truth.
+Logging is an engineering auditability requirement (Implementation Policy) and does not alter structural truth.
 
-## 8. Fail-safe policy
+## 8. Fail-safe and Engineering Policies (Implementation Policy)
 
 Missing account data, pip/tick value, volume constraints, configured risk limits, or required session/news data must prevent automatic order submission when the corresponding policy is enabled.
 
@@ -133,3 +133,11 @@ INCOMPLETE RISK/EXECUTION INPUT
         ↓
 NO AUTOMATIC ORDER SUBMISSION
 ```
+
+Engineering requirements such as:
+- stale/missing news feed → fail closed;
+- persistent counters;
+- broker reconciliation;
+- restart recovery;
+- logging requirements;
+are strictly **Implementation/Platform Policy**. They are required for robust automated execution but are not source-derived SMC methodology.

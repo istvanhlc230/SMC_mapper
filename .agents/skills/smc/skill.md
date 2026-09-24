@@ -155,5 +155,9 @@ Do not use generic SMC knowledge to override the project's canonical semantic-ow
 ├── 06_execution.md
 ├── 07_risk.md
 ├── 08_implementation.md
-└── methodology_parameters.md
+├── methodology_parameters.md
+├── trading_policy.md
+├── platform_execution.md
+├── countertrend_scenarios.md
+└── source_reconciliation.md
 ```

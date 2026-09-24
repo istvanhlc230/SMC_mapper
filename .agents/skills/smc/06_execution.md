@@ -247,7 +247,7 @@ If no valid pullback immediately preceding the active Extreme POI exists, no Eng
 
 ### Extreme POI dependency
 
-The active Extreme POI may be an `EXTREME_OF`, an `EXTREME_OB`, or an active LATENT_RESERVE (Origin OB / Rejection Block) according to the canonical POI/OB lifecycle. Engineering Liquidity is therefore resolved **after** the active Extreme POI identity is established.
+The active Extreme POI may be an `EXTREME_OF` or an `EXTREME_OB` according to the canonical POI/OB lifecycle. Engineering Liquidity is therefore resolved **after** the active Extreme POI identity is established.
 
 When the active Extreme POI identity changes, the Engineering Liquidity reference must be recomputed from the corresponding valid-pullback-before-Extreme-POI relation. Historical references remain historical and are not silently rewritten.
 
@@ -445,14 +445,14 @@ LTF INTERACTION
    ↓
 LTF STRUCTURAL RESPONSE
    ↓
-CHoCH CLASSIFICATION (Against POI direction)
+BOS / CHoCH CLASSIFICATION (Against POI direction)
    ↓
 CONTROL SHIFT
    ↓
-POI_FAILURE
+POI FAILURE
 ```
 
-`06_execution.md` consumes this canonical `CHoCH` state to determine `POI_FAILURE`, but does NOT redefine it. The structural classification of CHoCH remains solely owned by `05_CHOCH_mechanics.md`. 
+`06_execution.md` consumes this canonical `BOS` / `CHoCH` state to determine `POI_FAILURE`, but does NOT redefine them. The structural classifications of BOS and CHoCH remain solely owned by `04_BOS_mechanics.md` and `05_CHOCH_mechanics.md`. 
 
 Because POI Failure is an execution state dependent on structural confirmation, a `POI_FAILURE` event does not itself create a new HTF BOS or CHoCH. Execution failure and structural failure remain strictly separate. A failed POI must not authorize arbitrary replacement zones; fallback must follow the canonical hierarchy.
 
@@ -659,7 +659,7 @@ ORDER_FILLED ≠ POSITION_OPEN
 A later structural or execution event may invalidate a pending order according to the dedicated order-lifecycle policy; such invalidation must not rewrite the historical entry authorization event.
 ### Module 4 — Extreme POI Mitigation
 
-The Extreme POI module is the canonical fallback execution mechanism when the Decisional POI is not the applicable execution location. The Extreme POI must independently satisfy OF_CONFIRMED, Valid OB, or Rejection Block validity; fallback execution does not relax POI validation.
+The Extreme POI module is the canonical fallback execution mechanism when the Decisional POI is not the applicable execution location. The Extreme POI must independently satisfy OF_CONFIRMED or Valid OB validity; fallback execution does not relax POI validation.
 
 ## 40.5. Candlestick Reversal Triggers
 
@@ -695,7 +695,7 @@ DIRECT ENTRY
 
 Eligible key areas are:
 
-- mitigation of a qualified **Decisional POI (OF_CONFIRMED / Valid OB) or Extreme POI (OF_CONFIRMED / Valid OB / Rejection Block)**;
+- mitigation of a qualified **Decisional POI or Extreme POI (OF_CONFIRMED / Valid OB)**;
 - a direct sweep of active **IDM** (`IDM_TAKEN = TRUE`);
 - a direct sweep of **Engineering Liquidity (ENG_LQD_CONFIRMED)**.
 
@@ -887,4 +887,4 @@ Do not fail over from OF_CONFIRMED to Extreme OB solely because price wicked int
 
 ### Risk and RR
 
-A canonical executable setup must satisfy a minimum risk/reward of **1:2**. The primary target is the confirmed external range extreme where the applicable entry module requires it. Risk management must consume structural state; it must not redefine structure.
+Risk management and Reward-to-Risk (RR) gating are downstream execution/trading-policy constraints. The primary target is the confirmed external range extreme where the applicable entry module requires it. Risk management must consume structural state; it must not redefine structure. Minimum RR thresholds (e.g., 1:2) are configurable project policy, not universal canonical methodology.
