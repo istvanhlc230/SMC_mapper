@@ -247,7 +247,7 @@ If no valid pullback immediately preceding the active Extreme POI exists, no Eng
 
 ### Extreme POI dependency
 
-The active Extreme POI may be an `EXTREME_OF` or an `EXTREME_OB` according to the canonical POI/OB lifecycle. Engineering Liquidity is therefore resolved **after** the active Extreme POI identity is established.
+The active Extreme POI must be resolved from the canonical set: `ACTIVE EXTREME POI ∈ { EXTREME_OF, EXTREME_OB, REJECTION_BLOCK }` according to the canonical POI/OB lifecycle. Engineering Liquidity is therefore resolved **after** the active Extreme POI identity is established.
 
 When the active Extreme POI identity changes, the Engineering Liquidity reference must be recomputed from the corresponding valid-pullback-before-Extreme-POI relation. Historical references remain historical and are not silently rewritten.
 
@@ -644,7 +644,7 @@ REVERSAL / DIRECTIONAL CONFIRMATION
 ENTRY_AUTHORIZED
 ```
 
-Extreme POI mitigation does not itself create an entry. The Extreme POI must remain canonical under the Rule-of-Two and its own OF/OB validity conditions. With direct candle confirmation, the `ENTRY_REFERENCE_PRICE` is the completed confirmation-candle close.
+Extreme POI mitigation does not itself create an entry. The Extreme POI must remain canonical under the Rule-of-Two and its own OF_CONFIRMED, Valid OB, or Rejection Block validity conditions. With direct candle confirmation, the `ENTRY_REFERENCE_PRICE` is the completed confirmation-candle close.
 
 #### Unfilled orders, cancellation, and re-entry
 
@@ -659,7 +659,7 @@ ORDER_FILLED ≠ POSITION_OPEN
 A later structural or execution event may invalidate a pending order according to the dedicated order-lifecycle policy; such invalidation must not rewrite the historical entry authorization event.
 ### Module 4 — Extreme POI Mitigation
 
-The Extreme POI module is the canonical fallback execution mechanism when the Decisional POI is not the applicable execution location. The Extreme POI must independently satisfy OF_CONFIRMED or Valid OB validity; fallback execution does not relax POI validation.
+The Extreme POI module is the canonical fallback execution mechanism when the Decisional POI is not the applicable execution location. The Extreme POI must independently satisfy OF_CONFIRMED, Valid OB, or Rejection Block validity; fallback execution does not relax POI validation.
 
 ## 40.5. Candlestick Reversal Triggers
 
@@ -695,7 +695,7 @@ DIRECT ENTRY
 
 Eligible key areas are:
 
-- mitigation of a qualified **Decisional POI or Extreme POI (OF_CONFIRMED / Valid OB)**;
+- mitigation of a qualified **Decisional POI (OF_CONFIRMED / Valid OB) or Extreme POI (OF_CONFIRMED / Valid OB / Rejection Block)**;
 - a direct sweep of active **IDM** (`IDM_TAKEN = TRUE`);
 - a direct sweep of **Engineering Liquidity (ENG_LQD_CONFIRMED)**.
 

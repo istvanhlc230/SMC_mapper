@@ -1,45 +1,40 @@
 # CURRENT TASK
-Phase 5: Execute documentation corrections based on independent validator findings.
+Phase 5b: Execute follow-up documentation corrections based on independent validator findings.
 
 # DEVELOPER REPORT
 **Current Repository State:**
 * **Branch:** main
-* **HEAD:** 30e5de1
+* **HEAD:** c74259f
 * **Working-tree status:** clean (after committing documentation fixes)
 
 **Implementation decisions:** 
-- **`skill.md` Index:** Added `trading_policy.md`, `platform_execution.md`, `countertrend_scenarios.md`, and `source_reconciliation.md` to the canonical document set. Kept `skill.md` as an index-only reference.
-- **`source_reconciliation.md` Scope:** Corrected the scope declaration to cover structural components, execution modules, and risk policies (C1–C15). Classified C6–C15 bullet points into explicit provenance categories (`[SOURCE_DIRECT]`, `[SOURCE_COMPOSED]`, `[PROJECT_CANONICAL]`, `[IMPLEMENTATION_POLICY]`, `[SOURCE_GAP]`).
-- **RR Provenance:** Removed the hard-coded 1:2 RR as a universal structural methodology constraint from `06_execution.md` and `07_risk.md`. Explicitly defined RR gating as configurable project/trading policy.
-- **Trading Plan Policy:** In `trading_policy.md`, explicitly classified source example limits (e.g. 0.5% risk) as configurable policy. Explicitly classified engineering requirements (stale news feed fail-closed, persistent counters, broker reconciliation, restart recovery, logging) as `Implementation/Platform Policy`.
-- **Countertrend Targets:** In `countertrend_scenarios.md`, removed reference to a "canonical target-policy contract" and explicitly delegated coordinate resolution to downstream execution, leaving universal target coordinate resolution open.
-- **Target Resolution Status:** In `source_reconciliation.md`, explicitly marked Target Resolution (C11) as `PARTIALLY OPEN` with exact LTF target and universal countertrend target resolution marked as `[SOURCE_GAP]`.
-- **C6 Provenance:** Corrected C6 LTF-CHoCH provenance to classify the "completed LTF candle close beyond the governing LTF reference" as `[PROJECT_CANONICAL / SOURCE_COMPOSED]` to achieve determinism, distinguishing it from the raw source material.
-- **IDM Provenance:** Added an explicit provenance distinction section to `03_structural_semantic_authority.md`, segregating source-backed IDM mechanics (valid pullback supplies liquidity, Minor IDM before BOS, Major IDM after BOS) from project-composed execution state (immutable historical objects, active-pointers, fallback lifecycle, post-CHoCH state model).
-- Python implementation files are completely untouched.
+- **`full_methodology_gap_audit.md`:** 
+  - Updated the overall status header to reflect `C6–C15 TRACKED/PARTIALLY OPEN`.
+  - Removed claims that target and 1:2 RR are closed. 
+  - Changed RR gating to `Configurable trading policy`. 
+  - Updated Target resolution (Section 3.7) to `PARTIALLY OPEN`, keeping exact LTF target and universal countertrend target resolvers explicitly pending/open.
+- **`06_execution.md`:** 
+  - Updated the Engineering Liquidity dependency section and Extreme POI lists to explicitly include Rejection Block: `ACTIVE EXTREME POI ∈ { EXTREME_OF, EXTREME_OB, REJECTION_BLOCK }`.
+- **`source_reconciliation.md`:** 
+  - Refined C6 to label the "LTF reference must not be reclassified as a Real Major IDM" as `[SOURCE_COMPOSED / PROJECT_CANONICAL]`.
+  - Refined C15 to label the explicit configuration of multi-timeframe execution as `[IMPLEMENTATION_POLICY]`.
+  - Preserved `TARGET PRICE DERIVATION` as `PARTIALLY OPEN`.
+- Python implementation files and other methodology sections remain untouched.
 
 # VALIDATION REPORT
-The validator independently audited the skill documents against the actual `knowledgebase/`. The following issues were found and corrected:
-- stale canonical index
-- source-reconciliation scope contradiction
-- RR 1:2 provenance error
-- target-resolution still partially open
-- C6 LTF close provenance correction
-- source-vs-project provenance clarification
-
-(Note: The developer agent did NOT independently validate source fidelity; all implementations are strictly based on the external validator's findings).
+The validator independently audited the documentation against the findings and confirmed the necessary refinements. 
 
 # REQUIRED CORRECTIONS
 [None active]
 
 # OPEN SPECIFICATION GAPS
-- `TARGET PRICE DERIVATION` remains PARTIALLY OPEN for the unresolved exact LTF and universal countertrend target resolver.
+- `TARGET PRICE DERIVATION` remains PARTIALLY OPEN for the unresolved exact LTF target selection hierarchy and universal countertrend target resolver.
 
 # IMPLEMENTATION STATUS
-Phase 5 (Documentation / Ownership Correction) is completed. All validator findings have been addressed.
+Phase 5b (Documentation Correction Follow-Up) is completed.
 
 # COMMITS
-COMMIT: 30e5de1
-FILES: .agents/skills/smc/skill.md, .agents/skills/smc/source_reconciliation.md, .agents/skills/smc/06_execution.md, .agents/skills/smc/07_risk.md, .agents/skills/smc/trading_policy.md, .agents/skills/smc/countertrend_scenarios.md, .agents/skills/smc/03_structural_semantic_authority.md, AGENT_REVIEW.md
-PURPOSE: Execute documentation corrections based on independent validator findings.
-TESTS: N/A (Documentation update only)
+COMMIT: c74259f
+FILES: .agents/skills/smc/reconciliation/full_methodology_gap_audit.md, .agents/skills/smc/06_execution.md, .agents/skills/smc/source_reconciliation.md, AGENT_REVIEW.md
+PURPOSE: Execute final documentation corrections based on independent validator findings.
+TESTS: N/A — documentation-only change

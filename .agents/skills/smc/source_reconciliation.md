@@ -102,7 +102,7 @@ Required outcome:
 - [PROJECT_CANONICAL / SOURCE_COMPOSED] the deterministic trigger is a completed LTF candle close beyond the governing LTF reference (the source establishes the LTF structural requirement, while the strict close-only trigger is project-composed for determinism);
 - [SOURCE_DIRECT] the route must not independently alter the HTF bias;
 - [SOURCE_DIRECT] confirmation still requires the applicable CHoCH prerequisite gate;
-- [SOURCE_DIRECT] the LTF reference must not be reclassified as a Real Major IDM.
+- [SOURCE_COMPOSED / PROJECT_CANONICAL] the LTF reference must not be reclassified as a Real Major IDM.
 
 ### C7 — Order Flow / SMT identification and selection
 
@@ -212,7 +212,7 @@ Canonicalize the source-supported choice between direct same-timeframe execution
 
 Required outcome:
 - [SOURCE_DIRECT] direct same-timeframe execution remains valid;
-- [SOURCE_DIRECT] multi-timeframe execution is optional and explicitly configured;
+- [IMPLEMENTATION_POLICY] multi-timeframe execution is optional and explicitly configured;
 - [SOURCE_DIRECT] HTF supplies narrative, structure, POI, and liquidity context;
 - [SOURCE_DIRECT] LTF refines execution and may activate the canonical LTF-CHoCH route;
 - [SOURCE_DIRECT] LTF must not silently redefine the HTF narrative;

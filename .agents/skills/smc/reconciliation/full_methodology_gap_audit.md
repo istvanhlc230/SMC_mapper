@@ -1,6 +1,6 @@
 # TRUE SMC — Full Methodology / Platform Gap Audit
 
-Status: **CANONICALIZATION PHASE COMPLETE — C6–C15 CLOSED; PLATFORM-SPECIFIC IMPLEMENTATION REMAINS**
+Status: **CANONICALIZATION PHASE COMPLETE — C6–C15 TRACKED/PARTIALLY OPEN; PLATFORM-SPECIFIC IMPLEMENTATION REMAINS**
 
 Scope:
 - canonical SMC skill under `.agents/skills/smc/`;
@@ -29,7 +29,7 @@ The current skill is sufficient to specify a substantial **market-structure and 
 - four execution modules;
 - reversal-trigger semantics;
 - structural/zone stop concepts;
-- target and 1:2 RR gating;
+- target configuration and RR policy gating;
 - execution/risk separation.
 
 It is **not by itself a broker-specific live trading platform specification**. The SMC methodology, execution authorization, trading policy, countertrend scenarios, and generic platform execution boundary are now canonicalized; venue-specific implementation still requires broker/exchange contracts and infrastructure.
@@ -55,7 +55,7 @@ A complete platform also requires non-SMC infrastructure specifications that are
 | Reversal triggers | Canonical | Covered at current deterministic/qualitative boundary |
 | Stop loss | Canonical concept | Exact platform placement rules incomplete |
 | Target | Canonical concept | Pro-trend path clearer than countertrend path |
-| RR | Canonical 1:2 gate | Covered |
+| RR | Configurable trading policy | Covered |
 | Position sizing | Source-backed | Not represented in current risk skill |
 | Session windows | Source-backed trading-plan rule | Not represented in current skill |
 | News filter | Source-backed trading-plan rule | Not represented in current skill |
@@ -154,29 +154,19 @@ Canonical result:
 - missing buffer blocks automatic broker submission.
 
 Classification: **CANONICALIZED — SOURCE-DIRECT + CONFIGURATION BOUNDARY**.
-### 3.7 Status update — Target hierarchy canonicalized; LTF/countertrend target policy remains explicit
+### 3.7 Status update — Target Price Derivation PARTIALLY OPEN
 
-Target resolution is now canonicalized in `07_risk.md` and mapped in `08_implementation.md`.
+Target resolution is now canonicalized in `07_risk.md` and mapped in `08_implementation.md` for pro-trend execution, but remains partially open for exact LTF and countertrend resolvers.
 
 Canonical result:
 - direct same-timeframe pro-trend -> current confirmed external extreme/external liquidity;
-- LTF -> explicit HTF-external versus LTF-structural target policy;
-- countertrend -> setup-specific next canonical destination;
+- LTF target selection hierarchy remains an open specification gap;
+- universal countertrend target resolver remains an open specification gap;
 - RR consumes a resolved target and does not create one;
 - no canonical target blocks automatic TP submission.
 
-Classification: **CANONICALIZED — SOURCE-DIRECT + SOURCE-DERIVED FORMALIZATION**.
-### 3.7.1 Status update — Target hierarchy canonicalized
+Classification: **PARTIALLY OPEN — PRO-TREND CANONICALIZED; EXACT LTF/COUNTERTREND RESOLVERS PENDING**.
 
-The target hierarchy is now canonicalized in `07_risk.md` and `08_implementation.md`.
-
-Canonical result:
-- direct same-timeframe pro-trend -> confirmed external extreme/external liquidity;
-- LTF -> explicit HTF-external or LTF-structural target policy;
-- countertrend -> setup-specific next canonical destination;
-- absent target prevents automatic TP submission.
-
-Classification: **CANONICALIZED — SOURCE-DIRECT + SOURCE-DERIVED FORMALIZATION**.
 
 ### 3.8 Status update — Position sizing and risk-budget controls canonicalized
 
