@@ -23,7 +23,7 @@ ACTIVE/MINOR IDM
 REAL MAJOR IDM
 FALLBACK MAJOR IDM
 IDM SWEEP
-TENTATIVE SWING
+SWING_CANDIDATE
 CONFIRMED_STRUCTURAL_SWING
 PROTECTED STRUCTURAL EXTREME
 PHYSICAL EXTERNAL BREAK
@@ -39,7 +39,7 @@ Functions equivalent to `detect_idm_sweep()` must operate on the active qualifie
 Functions equivalent to `detect_bos()` must require:
 
 1. eligible CONFIRMED_STRUCTURAL_SWING;
-2. retracement sufficiency (`RETRACEMENT_DEPTH >= 0.382`);
+2. `MAJOR_RETRACEMENT_QUALIFIED == TRUE`, supplied by Layer 3;
 3. physical external break (`STRUCTURAL_SWING_BREAK` via wick or body);
 4. `IDM_TAKEN == True`;
 5. exclusion of the FALLBACK_MAJOR_IDM exception.
@@ -426,7 +426,7 @@ FIRST_POST_CHOCH_SVP ≠ FIRST_POST_CHOCH_MINOR_IDM
 FALLBACK_MAJOR_IDM ≠ REAL_MAJOR_IDM
 ```
 
-A qualifying sweep of the applicable IDM lineage unlocks the Confirmation Gate. IDM takeout exclusively opens the `SWING_CONFIRMATION_GATE` and confirms the provisional swing only (`IDM_TAKEN = TRUE`); it does NOT create a new Dealing Range, does NOT flip trend, is NEVER a CHoCH, does NOT create `VALID_BOS`, and does NOT roll the dealing range (`CONFIRMED_STRUCTURAL_SWING ≠ VALID_BOS`). `CONFIRMATION GATE UNLOCKED` is a process condition, not a new state enum such as `non-canonical pending-range state`.
+A qualifying sweep of the applicable IDM lineage unlocks the Confirmation Gate. IDM takeout creates the `SWING_CANDIDATE` prerequisite (`IDM_TAKEN = TRUE`); it does NOT create a `CONFIRMED_STRUCTURAL_SWING`, new Dealing Range, trend flip, `CHoCH_CONFIRMED`, `VALID_BOS`, or Trading Range rollover. `CONFIRMATION GATE UNLOCKED` is a process condition, not a new lifecycle state enum.
 
 ```text
 CONFIRMATION_LOCKED
