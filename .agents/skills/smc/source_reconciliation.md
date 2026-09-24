@@ -205,6 +205,17 @@ Required outcome:
 - missing required policy inputs fail closed for automatic order submission;
 - trade logging does not alter structural truth.
 
+### C13 — Countertrend scenario composition
+
+Canonicalize the three source-defined countertrend scenarios as composition contracts without redefining their underlying structural semantics.
+
+Required outcome:
+- Internal Structure Toward Inducement Takeout consumes the prevailing HTF context, active IDM, LTF internal structure, and pre-IDM SMT exclusion;
+- Inducement Liquidity Run consumes IDM_TAKEN and permits continued delivery toward additional canonical liquidity/POI before reversal;
+- Core Liquidity Sweep Failure / POI Failure consumes initial liquidity interaction, reaction failure, deeper canonical POI/core-liquidity delivery, and the existing CHoCH route when its prerequisites pass;
+- countertrend scenarios use existing entry modules and target/risk policies;
+- no scenario creates an alternate IDM, POI, BOS, CHoCH, or broker-order definition.
+
 ## 4. Source analysis
 
 For every relevant source passage create a source record:
