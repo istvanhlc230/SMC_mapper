@@ -6,14 +6,14 @@
 
 ## 36. POI ontology — canonical tradable POIs
 
-The canonical POI ontology is a closed set. A tradable Point of Interest may be **Valid Order Flow (OF_CONFIRMED)**, **Valid Order Block (Valid OB)**, or a **Rejection Block**. No other POI entity may be introduced by generic SMC convention or implementation convenience.
+The project's tradable POI ontology is currently a closed execution set: **Valid Order Flow (OF_CONFIRMED)**, **Valid Order Block (Valid OB)**, or a **Rejection Block**. The OF/OB POI roles are source-backed; the Rejection Block's ability to occupy the active Extreme POI role is a **project-composed execution representation** of a source-defined PD-array/execution location and must not be described as a source-direct redefinition of POI ontology.
 
 ```text
 OF_CONFIRMED
 VALID ORDER BLOCK (OB)
-REJECTION BLOCK
+REJECTION BLOCK (project-composed Extreme POI role)
         ↓
-   CANONICAL POI
+   PROJECT-CANONICAL POI
 ```
 
 The following are not canonical POI entities:
@@ -247,7 +247,7 @@ If no valid pullback immediately preceding the active Extreme POI exists, no Eng
 
 ### Extreme POI dependency
 
-The active Extreme POI must be resolved from the canonical set: `ACTIVE EXTREME POI ∈ { EXTREME_OF, EXTREME_OB, REJECTION_BLOCK }` according to the canonical POI/OB lifecycle. Engineering Liquidity is therefore resolved **after** the active Extreme POI identity is established.
+The active Extreme POI may resolve to `EXTREME_OF`, `EXTREME_OB`, or the **project-composed Rejection Block Extreme role** according to the canonical POI/OB execution lifecycle. The source-defined Engineering Liquidity relationship is explicit for Extreme OF / Extreme OB; extending the same sequencing to the Rejection Block Extreme role is a **project-composed representation**, not a source-direct Engineering Liquidity definition. Engineering Liquidity is therefore resolved **after** the active Extreme POI identity is established.
 
 When the active Extreme POI identity changes, the Engineering Liquidity reference must be recomputed from the corresponding valid-pullback-before-Extreme-POI relation. Historical references remain historical and are not silently rewritten.
 
@@ -552,7 +552,7 @@ The IDM Sweep module requires a canonically active IDM and its qualifying liquid
 
 ### Module 2 — Decisional POI Mitigation
 
-The Decisional POI must be an OF_CONFIRMED or Valid OB, must satisfy the directional premium/discount gate, and must meet the independent execution conditions of the module. POI mitigation does not create structural validity.
+The Decisional POI must be an OF_CONFIRMED or Valid OB, must occur after the active IDM has been taken out, must satisfy the directional premium/discount gate, and must meet the independent execution conditions of the module. POI mitigation does not create structural validity.
 
 ### Module 3 — Engineering Liquidity Sweep
 
@@ -607,6 +607,10 @@ A liquidity sweep alone is not an entry. When direct candle confirmation is used
 #### Module 2 — Decisional POI Mitigation entry
 
 ```text
+ACTIVE IDM
+   ↓
+IDM_TAKEN = TRUE
+   ↓
 VALID DECISIONAL POI
    ↓
 POI MITIGATION
