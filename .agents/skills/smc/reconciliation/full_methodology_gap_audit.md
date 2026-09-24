@@ -19,8 +19,8 @@ The current skill is sufficient to specify a substantial **market-structure and 
 - candle-level semantics;
 - valid pullbacks and verified pullback extremes;
 - IDM lifecycle and classification;
-- structural swing qualification;
-- 50% standard retracement;
+- structural swing confirmation after IDM takeout;
+- 50% standard retracement as a later BOS qualification gate;
 - explicit 2-candle reduced-candle path;
 - conditional 38.2%–<50% immediate-HTF valid-pullback path;
 - BOS and CHoCH lifecycle boundaries;
@@ -45,7 +45,7 @@ A complete platform also requires non-SMC infrastructure specifications that are
 | Layer 1 candle semantics | Canonical | Covered |
 | Layer 2 pullback / verified extreme | Canonical | Covered |
 | IDM definition / lifecycle | Canonical | Covered |
-| Structural qualification | Canonical | Covered, including explicit 2-candle path |
+| Structural qualification | Canonical | Covered; IDM takeout confirms the swing, while retracement sufficiency qualifies the later BOS |
 | BOS | Canonical | Covered |
 | CHoCH | Canonical | Covered for standard lifecycle; LTF-specific exception is missing |
 | POI ontology | Canonical | Covered |
@@ -75,8 +75,8 @@ Source:
 - `knowledgebase/true_smc123.txt`, Top-Down / LTF sections provide concrete LTF mapping examples.
 
 Current skill:
-- `05_CHOCH_mechanics.md` does not contain this explicit LTF-specific confirmation route.
-- `08_implementation.md` does not contain this route as a deterministic event/state rule.
+- `05_CHOCH_mechanics.md` contains the explicit LTF-specific confirmation route.
+- `08_implementation.md` contains the deterministic execution representation.
 
 Classification:
 **CANONICALIZED — SOURCE-DIRECT + SOURCE-DERIVED FORMALIZATION**.
@@ -200,7 +200,18 @@ The trade-journal requirement is now represented in `trading_policy.md`, includi
 
 Classification: **CANONICALIZED AS PLATFORM AUDITABILITY POLICY**.
 
-### 3.11 Status update — Backtesting / replay / historical observability
+### 3.11 Status update — 2026 market-structure ordering reconciliation
+
+The 2026 market-structure source was reconciled into the canonical Layer 3 lifecycle with the following explicit ordering:
+
+- `IDM_TAKEN` confirms the relevant structural swing point.
+- Retracement depth/candle-structure qualification is evaluated after swing confirmation and determines whether a later external break can qualify as `VALID_BOS`.
+- An insufficient retracement does not retroactively erase the historical IDM-takeout swing confirmation; it prevents the attempted continuation break from qualifying as BOS and shifts the active pullback/IDM reference for the next attempt.
+- The former ordering `IDM_TAKEN → SWING_CANDIDATE → retracement qualification → CONFIRMED_STRUCTURAL_SWING` is no longer canonical.
+
+Classification: **RECONCILED — SOURCE-DIRECT 2026 MARKET-STRUCTURE RULE**.
+
+## 3.12 Status update — Backtesting / replay / historical observability
 
 The methodology observability boundary is already canonicalized. The platform execution contract now defines the deterministic backtest/replay boundary: no lookahead, explicit spread/slippage/fill assumptions, LTF/tick evidence where needed, explicit session/news replay, and account/risk evolution from simulated fills.
 
@@ -333,7 +344,7 @@ These are platform-engineering requirements, not replacements for the True SMC s
 
 No knowledgebase file was modified.
 
-No runtime production file was modified.
+No runtime production file was modified. The reconciliation changed only canonical skill documentation and its audit ledger.
 
 The findings classified as **NEW_CANONICAL_CANDIDATE** or **SOURCE-BACKED BUT UNDER-SPECIFIED** should not be silently promoted to canonical methodology until their source evidence is reconciled into deterministic contracts.
 
