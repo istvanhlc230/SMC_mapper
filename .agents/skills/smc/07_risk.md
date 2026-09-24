@@ -144,6 +144,49 @@ When VALID_BOS occurs, the previous external target expires and the new Trading 
 
 When CHoCH_CONFIRMED occurs, targets belonging exclusively to the invalidated structural regime become invalid as an execution/risk lifecycle consequence. This does not manufacture a structural event.
 
+### 5.2.1 Canonical Target Resolution by Execution Context
+
+The target is resolved from structural/liquidity provenance. A target may not be invented merely to satisfy an RR calculation.
+
+#### Direct same-timeframe pro-trend execution
+
+```text
+ACTIVE TRADING RANGE
+        ↓
+CONFIRMED EXTERNAL EXTREME / EXTERNAL LIQUIDITY
+        ↓
+PRIMARY TARGET
+```
+
+The source repeatedly uses the external liquidity / external range extreme as the final pro-trend target for direct execution.
+
+#### LTF execution
+
+The source contains more than one target convention for LTF execution: some examples target the higher-timeframe external liquidity, while others use a lower-timeframe structural/BOS destination. Therefore the platform must expose an explicit target-policy selection for LTF execution rather than infer one silently.
+
+```text
+LTF EXECUTION
+    ├─ HTF_EXTERNAL_TARGET
+    └─ LTF_STRUCTURAL_TARGET
+```
+
+No automatic LTF target may be submitted until the target policy is explicitly selected.
+
+#### Countertrend execution
+
+Countertrend source scenarios target the next canonical destination in the opposite direction of the prevailing move, such as the next valid POI, inducement, Engineering Liquidity, or external liquidity level depending on the named setup.
+
+The current source material does not establish one universal numeric TP coordinate for all countertrend setups. Therefore countertrend target resolution remains a setup-specific target-policy input until separately canonicalized.
+
+#### Target invariants
+
+```text
+TARGET ≠ STRUCTURAL_VALIDATION
+TARGET_HIT ≠ VALID_BOS
+TARGET_HIT ≠ CHoCH
+RR_CALCULATION ≠ TARGET_CREATION
+NO_CANONICAL_TARGET → NO_AUTOMATIC_TP_SUBMISSION
+```
 ### RR gating
 
 Where required by the canonical execution layer:
