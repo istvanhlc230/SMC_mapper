@@ -89,38 +89,23 @@ A body close beyond an eligible Protected Opposing Boundary is a CHoCH-eligible 
 
 #### B. Wick-Break Reversal
 
-Bullish:
+A wick break of an eligible **Protected Opposing Structural Extreme / Governing Opposing Range Boundary** is `CHoCH_ELIGIBLE` unless the tested external level carries **Major IDM provenance**. A Real Major IDM is therefore **not a positive prerequisite** for a wick-path CHoCH.
 
 ```text
-Low_t < Protected_Swing_Low
-AND
-Close_t >= Protected_Swing_Low
-```
-
-Bearish:
-
-```text
-High_t > Protected_Swing_High
-AND
-Close_t <= Protected_Swing_High
-```
-
-A wick break is `CHoCH_ELIGIBLE` only when the active Dealing Range contains an independently formed **REAL_MAJOR_IDM**. It becomes `CHoCH_CONFIRMED` only when all applicable CHoCH prerequisites also pass.
-
-```text
-REAL_MAJOR_IDM
-+
+ELIGIBLE OPPOSING EXTERNAL BOUNDARY
+       ↓
 OPPOSING WICK BREAK
-+
-ALL CHoCH PREREQUISITES
-        ↓
-CHoCH_CONFIRMED
+       ↓
+IF TESTED LEVEL = MAJOR IDM
+       → NOT CHoCH
+OTHERWISE
+       → ALL APPLICABLE CHoCH PREREQUISITES
+       → CHoCH_CONFIRMED
 ```
 
-If the tested boundary is instead the FALLBACK_MAJOR_IDM, the event is governed by 3.5.4 and is `MAJOR_IDM_SWEEP`, not CHoCH.
+If the tested boundary is `FALLBACK_MAJOR_IDM`, the event is governed by 3.5.4 and is `MAJOR_IDM_SWEEP`, not CHoCH. The same exclusion applies whenever the tested external level has Major IDM provenance; a later reclassification must not be inferred from the wick geometry alone.
 
 The wick/body geometry does not determine structural identity by itself. Level provenance and the active liquidity state determine the final classification.
-
 ### 3.5.3A — LTF-CHoCH Context After HTF Interaction
 
 The knowledgebase defines a specific lower-timeframe CHoCH route after price has interacted with a higher-timeframe Point of Interest or a core-liquidity level. This route is a **context-gated representation of the same CHoCH concept**, not a new lifecycle state.
@@ -437,7 +422,8 @@ BODY CLOSE
 → CHoCH_ELIGIBLE
 → CHoCH_CONFIRMED only if all prerequisites pass
 
-REAL_MAJOR_IDM + OPPOSING WICK BREAK
+ELIGIBLE OPPOSING EXTERNAL BOUNDARY + OPPOSING WICK BREAK
++ TESTED LEVEL IS NOT MAJOR IDM
 + ALL CHoCH PREREQUISITES
 → CHoCH_CONFIRMED
 
