@@ -15,7 +15,7 @@
 
 - `HTF_CONDITIONAL_THRESHOLD: 0.382`
 - The 38.2% threshold is not sufficient on its own.
-- The 38.2%–<50% path qualifies only when the entire retracement constitutes a valid single candlestick pullback on the applicable immediate Higher Timeframe.
+- The 38.2%–<50% path qualifies only when the entire retracement constitutes a valid single pullback event on the applicable immediate Higher Timeframe.
 - The semantic qualification rule is owned by `03_structural_semantic_authority.md`.
 
 ### 9.3 Candle counts & displacement exception
