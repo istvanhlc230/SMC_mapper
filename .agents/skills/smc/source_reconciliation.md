@@ -190,6 +190,21 @@ Required outcome:
 - RR is evaluated against an already resolved target and must not create the target;
 - absence of a canonical target blocks automatic TP submission.
 
+### C12 — Trading policy: position sizing, risk budget, sessions, news, and logging
+
+Canonicalize the source-backed trading-plan rules as a separate configurable policy layer.
+
+Required outcome:
+- position size is calculated only after canonical entry and stop resolution;
+- risk amount is account equity multiplied by configured risk percentage;
+- position size uses exact stop distance and instrument pip/tick value;
+- source example values (0.5% fixed risk, 0.5% max running risk, one trade/session, two trades/day, 1.0% daily loss) are configurable policy values, not universal SMC structure;
+- session windows use UK local time with DST-aware timezone handling;
+- high-impact GBP/USD news avoidance is a configurable news gate for the documented GBPUSD plan;
+- policy state survives restarts and is reconciled with account/broker history;
+- missing required policy inputs fail closed for automatic order submission;
+- trade logging does not alter structural truth.
+
 ## 4. Source analysis
 
 For every relevant source passage create a source record:
