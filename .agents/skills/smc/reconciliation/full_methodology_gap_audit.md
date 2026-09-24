@@ -217,6 +217,25 @@ The methodology observability boundary is already canonicalized. The platform ex
 
 Classification: **CANONICALIZED PLATFORM EXECUTION CONTRACT; VENUE-SPECIFIC FILL DATA/ASSUMPTIONS REMAIN CONFIGURATION**.
 
+## 3.13 Latest direct source-reconciliation pass
+
+The latest full knowledgebase re-audit identified and corrected the following canonical documentation conflicts:
+
+1. **Rejection Block ontology:** RB is now represented as a separately typed PD-array/execution-location concept. The source's ordinary use of “POI” for a Rejection Block is preserved as broad execution-location language, while the canonical typed model does not make RB an OF/OB-equivalent POI class or an automatic Rule-of-Two slot.
+2. **Engineering Liquidity:** ENG_LQD is now explicitly derived from the valid pullback immediately preceding the active Extreme OF or Extreme OB. The earlier project-composed extension to a Rejection Block Extreme role has been removed.
+3. **Wick-path CHoCH:** a Real Major IDM is no longer a positive prerequisite. The source-backed rule is an external wick break that is CHoCH-eligible unless the tested external level has Major IDM provenance; a Major IDM wick takeout is excluded from CHoCH.
+4. **POI failure:** the execution failure transition now consumes CHoCH/control-shift confirmation rather than treating a generic BOS-or-CHoCH classification as sufficient.
+5. **Position sizing basis:** the risk formula now uses Account Balance, matching the explicit source position-sizing example. The risk percentage and risk-budget values remain configurable trading-policy values rather than universal SMC constants.
+
+Post-fix validation:
+- no remaining SWING_CANDIDATE terminology in the canonical repository search;
+- no remaining canonical REAL_MAJOR_IDM + OPPOSING WICK BREAK positive gate;
+- no remaining Rejection Block → Engineering Liquidity dependency;
+- no remaining Rejection Block-as-OF/OB-equivalent POI statement in the implementation mapping;
+- POI failure is CHoCH/control-shift based;
+- position sizing uses Account Balance.
+
+The remaining items are **source-under-specified implementation choices**, not identified source contradictions: exact LTF target-selection hierarchy, universal countertrend target coordinate, exact numeric candle-pattern formalizations where the source is qualitative, and platform-specific execution contracts. These must remain explicitly marked as project-composed/configurable rather than presented as source-direct rules.
 ## 4. Current runtime versus canonical skill
 
 The current `main` runtime does not implement the full skill.
