@@ -48,6 +48,41 @@ A Fallback Major IDM wick penetration must terminate as `MAJOR_IDM_SWEEP`, not B
 
 Functions equivalent to `detect_choch()` must use the governing opposing Protected Structural Extreme / Trading Range boundary and must enforce the complete CHoCH prerequisites. A body close beyond the boundary is not, by itself, sufficient to declare `CHoCH_CONFIRMED`.
 
+### 45.0 Order Flow / SMT implementation mapping
+
+The implementation must preserve the canonical distinction between Order Flow observations, eligible Order Flow, SMT exclusions, and POI selection.
+
+```text
+OF_CANDIDATE
+    ↓
+ELIGIBILITY
+    ├─ PRE-IDM → SMT / INDUCEMENT_TRAP
+    ├─ MITIGATED → INVALID_FOR_EXECUTION
+    └─ ELIGIBLE + UNMITIGATED → OF_CONFIRMED
+```
+
+Required representation:
+
+- `OF_CANDIDATE` stores the whole relevant opposing corrective move, including multiple internal legs while its protected endpoint remains intact;
+- `OF_CONFIRMED` requires canonical eligibility conditions and unmitigated status;
+- `SMT / INDUCEMENT_TRAP` is a non-tradable contextual exclusion and must not be emitted as a Valid OF;
+- touching an OF does not mark it mitigated unless a canonical Valid Pullback confirms the mitigation;
+- `DECISIONAL_OF` is selected from the valid OF lineage associated with the displacement that causes `VALID_BOS`;
+- `EXTREME_OF` is the furthest unmitigated eligible OF at the origin of the active dealing range;
+- when the current Extreme OF is mitigated, selection shifts to the next furthest eligible unmitigated OF;
+- a Decisional or Extreme OF remains a POI candidate only after the POI ontology and Rule-of-Two constraints are satisfied.
+
+Forbidden shortcuts:
+
+```text
+PRE-IDM FORMATION → OF_CONFIRMED
+OF TOUCH → OF_MITIGATED
+ARBITRARY LOCAL MOVE → OF_CONFIRMED
+OF_CONFIRMED → VALID_BOS
+OF_CONFIRMED → IDM
+SMT → POI
+```
+
 ### 45.1 Entity lifecycle schemas
 
 Liquidity levels and protected structural boundaries are different ontology classes. Their lifecycle semantics must not be collapsed into one undifferentiated state enum.
