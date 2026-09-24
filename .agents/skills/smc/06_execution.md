@@ -406,6 +406,71 @@ OB_bottom = High_t      # Inside Bar High
 
 No alternative geometry such as an unspecified “sweeping wick range” is permitted. The inside-bar refinement is an execution-coordinate refinement only.
 
+## 38.5. POI Failure and Rejection Block semantics
+
+### POI Interaction vs. Failure
+
+The skill distinguishes distinct levels of POI interaction:
+
+```text
+POI TOUCH
+POI INTERACTION
+POI MITIGATION
+POI FAILURE
+POI INVALIDATION
+```
+
+- A physical wick **touch** alone must not be declared a POI failure.
+- Physical **penetration** alone must not automatically be declared a POI failure.
+- **Execution failure** and **structural failure** must remain separate.
+- **POI failure** must not create BOS or CHoCH.
+- A failed POI must not authorize arbitrary replacement zones.
+- Fallback must follow the canonical POI hierarchy.
+
+Where the source material requires an HTF→LTF structural response before declaring failure, that dependency must be explicitly satisfied; failure cannot be reduced to a simple zone-close test.
+
+### Rejection Block Identification
+
+A Rejection Block is the rejection wick of the candle that takes the liquidity of the previous candle's relevant high/low. The preceding liquidity take may occur by wick OR body.
+
+- **Bearish context:** The candle takes the previous bullish candle high. The rejection wick is the relevant upper wick region. That rejection region is the bearish Rejection Block.
+- **Bullish context:** The candle takes the previous bearish candle low. The rejection wick is the relevant lower wick region. That rejection region is the bullish Rejection Block.
+
+A Rejection Block may be physically contained within an Order Block, but this is NOT guaranteed. It is independently identifiable. Do not require an FVG for Rejection Block identification (the FVG requirement belongs to OB validation). Identifying a Rejection Block does not create a new structural event and does not redefine IDM, BOS, CHoCH, swing, or Trading Range.
+
+### Extreme OB → Rejection Block Transition
+
+A Rejection Block is a PD-array/execution-location concept associated with the extreme/origin area of the dealing range. It becomes relevant as the next PD-array only after the applicable Extreme Order Block fails, according to the source-defined sequence.
+
+```text
+ACTIVE EXTREME OB
+      ↓
+EXTREME OB FAILURE
+      ↓
+REJECTION BLOCK BECOMES NEXT PD ARRAY
+      ↓
+mitigation / valid execution context
+```
+
+The Rejection Block must not be treated as an arbitrary third active POI. It remains subject to the existing Rule-of-Two POI architecture and execution eligibility rules. Do not create a generic "fallback to any rejection wick" rule. Do not convert this transition into a universal structural-failure rule; it is strictly an execution/PD-array transition. The applicable Rejection Block must already satisfy the canonical identification conditions.
+
+### Negative Rules
+
+The following non-equivalences are strictly enforced:
+
+```text
+REJECTION_BLOCK ≠ ORDER_BLOCK
+REJECTION_BLOCK ≠ FVG
+REJECTION_BLOCK ≠ IDM
+REJECTION_BLOCK ≠ BOS
+REJECTION_BLOCK ≠ CHoCH
+REJECTION_BLOCK ≠ AUTOMATIC_ENTRY
+POI_TOUCH ≠ POI_FAILURE
+POI_MITIGATION ≠ POI_FAILURE
+POI_FAILURE ≠ STRUCTURAL_FAILURE
+FAILED_POI ≠ ARBITRARY_ZONE_SUBSTITUTION
+```
+
 ## 39. FVG / imbalance ontology
 
 FVG exists in the canonical methodology, but it is **strictly a validator/property and never a standalone tradable POI**.

@@ -43,6 +43,7 @@ Read the referenced documents in this order when the full methodology is require
 
 6. `06_execution.md`
    - Execution-layer semantics
+   - POI / Order Flow / Order Block / Rejection Block semantics
    - Momentum Candle remains a qualitative execution observation / SOURCE-PENDING filter
    - Execution consumes structure; it does not create structure
 
