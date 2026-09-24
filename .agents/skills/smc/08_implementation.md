@@ -514,7 +514,7 @@ A later candle may advance the lifecycle but may not retroactively rewrite the e
 37. Confirmed Swing is treated as automatic `VALID_BOS` without `MAJOR_RETRACEMENT_QUALIFIED`.
 38. A continuation break is classified as `VALID_BOS` without the complete Layer 3 qualification result (must remain non-BOS / `IMPULSE_EXTENSION` as applicable).
 39. Any heuristic/safe mode is used to substitute for the canonical Layer 3 qualification result.
-40. A reduced-candle retracement is permitted to qualify without satisfying the canonical standard or documented displacement-outlier exception.
+40. A 2-candle (or other reduced-candle) retracement is permitted to qualify only when the canonical depth and documented rare displacement/extreme-taking exception are satisfied.
 
 ## 48. Testing requirements
 
@@ -564,7 +564,7 @@ Regression tests must cover:
 - qualified IDM sweep creates a `SWING_CANDIDATE`, not a Confirmed Swing;
 - dynamic absolute retracement extreme tracking;
 - 50% standard qualification with the normal >=3-candle rule;
-- reduced-candle qualification only through the documented rare displacement case taking >=5 preceding bodies/extremes;
+- reduced-candle qualification only through the documented rare displacement case taking >=5 preceding bodies/extremes; this explicitly includes a possible 2-candle retracement, but never makes two candles sufficient by count alone;
 - 38.2%–<50% qualification only through the applicable immediate-HTF valid-pullback path;
 - below 38.2% does not qualify;
 - shallow qualification failure revokes the candidate and shifts the active pullback/IDM reference;
