@@ -103,7 +103,98 @@ The Extreme POI must still be an OF_CONFIRMED or Valid OB. It is not an arbitrar
 
 An Origin OB is a canonical absolute range-origin Order Block acting as a latent reserve POI. It becomes actively tradable if and only if Extreme Order Flow was mitigated and Extreme Order Block fails, without price producing a CHoCH. It is not required to disappear merely because its parent Valid Order Flow has been mitigated. Its validity must be evaluated according to the OB validation rules rather than by inheritance from the current OF state.
 
+## 37.5 Order Flow Identification and Selection
+
+Order Flow is a canonical execution-location precursor. It is not synonymous with an Order Block, POI, IDM, or liquidity level.
+
+### Order Flow candidate
+
+An `OF_CANDIDATE` is the **last opposing move** that occurs before price continues or displaces in the dominant direction on the active impulsive leg.
+
+```text
+OPPOSING MOVE
+    ↓
+CONTINUATION / DISPLACEMENT
+    ↓
+OF_CANDIDATE
+```
+
+When the corrective move contains multiple internal legs and its protected endpoint remains intact, the Order Flow represents the **whole corrective move**, not merely its final internal sub-leg.
+
+### Valid / unmitigated Order Flow
+
+An OF candidate is execution-eligible only when it remains unmitigated under the canonical pullback-based mitigation rule and it is not excluded by the active inducement boundary.
+
+```text
+OF_CANDIDATE
+   ├─ MITIGATED → INVALID_FOR_EXECUTION
+   ├─ BEFORE_ACTIVE_INDUCEMENT → SMT / INDUCEMENT_TRAP
+   └─ UNMITIGATED + ELIGIBLE → OF_CONFIRMED
+```
+
+A physical touch or penetration alone does **not** confirm OF mitigation. The mitigation state is confirmed only through a canonical Valid Pullback interaction. If the interaction is not validated by a Valid Pullback, the OF remains unmitigated.
+
+### SMT / pre-inducement exclusion
+
+For the active dealing-range execution process, an Order Flow or equivalent formation that occurs **before the active inducement** is classified as an `SMT / INDUCEMENT_TRAP` observation and is not eligible to become a tradable OF.
+
+Pre-inducement status is contextual to the active dealing range and inducement lifecycle. It must not be inferred from candle appearance alone.
+
+```text
+PRE-IDM FORMATION
+    ↓
+SMT / INDUCEMENT_TRAP
+    ↓
+NOT A TRADABLE OF
+```
+
+This exclusion preserves the source-defined distinction between liquidity delivery toward inducement and post-inducement executable order flow.
+
+### Decisional Order Flow
+
+A `DECISIONAL_OF` is the canonical Order Flow associated with the structural continuation that produces `VALID_BOS`: it is the relevant last opposing move/corrective leg before the reversal displacement that causes the canonical BOS.
+
+```text
+LAST OPPOSING OF
+      ↓
+REVERSAL DISPLACEMENT
+      ↓
+STRUCTURAL SWING BREAK
+      ↓
+VALID_BOS
+```
+
+The Decisional Order Flow is selected from the already eligible/unmitigated OF lineage. It must not be manufactured merely because a candle appears strong.
+
+### Extreme Order Flow
+
+An `EXTREME_OF` is the **furthest unmitigated eligible Order Flow at the origin of the active dealing range**.
+
+If the current origin OF becomes mitigated, the Extreme OF reference shifts to the next furthest unmitigated eligible OF in the same dealing-range lineage.
+
+```text
+ORIGIN OF
+   ├─ UNMITIGATED → EXTREME_OF
+   └─ MITIGATED
+          ↓
+NEXT FURTHEST ELIGIBLE UNMITIGATED OF
+```
+
+An Extreme OF is not automatically valid merely because it is geometrically furthest; it must remain an eligible, unmitigated OF in the active lifecycle.
+
+### OF / SMT non-equivalences
+
+```text
+OF_CANDIDATE ≠ VALID_OB
+OF_CONFIRMED ≠ IDM
+OF_CONFIRMED ≠ LIQUIDITY
+OF_CONFIRMED ≠ VALID_BOS
+SMT ≠ OF_CONFIRMED
+PRE-IDM OF ≠ TRADABLE_POI
+OF TOUCH ≠ OF_MITIGATED
+```
 ## 38. Order Block validation
+
 
 A candle/zone may be treated as a Valid Order Block only when the canonical three-pillar validation is satisfied.
 
