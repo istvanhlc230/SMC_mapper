@@ -308,6 +308,56 @@ OF_CONFIRMED
 
 Valid OF (`OF_CONFIRMED`) is a canonical POI class distinct from OB. OF and OB must not be conflated into a single generic zone type merely for implementation convenience.
 
+### 38.1 Decisional / Extreme Order Block Selection Update
+
+The current source update supersedes the earlier shortcut that treated the first valid Order Block formed immediately after inducement as the Decisional Order Block.
+
+#### Decisional Order Block
+
+A `DECISIONAL_OB` is the valid Order Block that **causes the canonical structural break / VALID_BOS**. It is selected from the impulse-side Order Block lineage associated with the canonical Decisional Order Flow and the displacement that actually produces the BOS.
+
+```text
+VALID ORDER BLOCK CANDIDATE
+        ↓
+CAUSAL DISPLACEMENT
+        ↓
+STRUCTURAL SWING BREAK
+        ↓
+VALID_BOS
+        ↓
+DECISIONAL_OB = OB THAT CAUSED THE BOS
+```
+
+The Decisional OB is therefore **not defined by temporal proximity to inducement alone**. The earlier rule "first valid OB after inducement" is superseded and must not be implemented as a canonical shortcut.
+
+Once canonicalized, the Decisional OB identity remains tied to the causal BOS event. A later mitigation or failure of another Order Flow does not retroactively change the Decisional OB identity.
+
+#### Extreme Order Block
+
+An `EXTREME_OB` is selected from the furthest canonical Order Block at the origin-side extreme of the active dealing-range impulse, subject to its own OB validity and mitigation state.
+
+#### Independent OB validity
+
+Order Block validity is determined by its own canonical validation pillars. It is not automatically invalidated merely because the parent/containing Order Flow is unmitigated or because another Order Flow has failed.
+
+```text
+OB_PILLARS_VALID → OB_VALID
+OF_STATE_CHANGE ↛ AUTOMATIC OB INVALIDATION
+OF_UNMITIGATED ↛ OB_INVALID
+OF_FAILURE ↛ OB_INVALID
+```
+
+The source update explicitly permits use of a valid Decisional OB even while the associated Order Flow remains unmitigated. This does not remove the Rule-of-Two constraint or create additional active POIs.
+
+#### OF / OB selection priority
+
+The source describes Order Flow as the primary selection context and Order Block as the secondary refinement/selection context, but this is **not** a validity dependency.
+
+```text
+OF_PRIMARY_CONTEXT ≠ OB_INVALID_WHEN_OF_EXISTS
+OB_VALIDITY = INDEPENDENT
+RULE_OF_TWO → selects active tradable POIs
+```
 ### OB mitigation
 
 Mitigation changes execution eligibility; it does not rewrite historical structural meaning. A mitigated OF does not automatically invalidate a separately valid Origin OB. A failed Decisional POI does not authorize arbitrary zone substitution; the canonical Extreme POI must be used when its own validity conditions are satisfied.
