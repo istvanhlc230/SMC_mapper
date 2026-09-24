@@ -98,8 +98,9 @@ Qualification occurs *before* price returns to the BOS level. Layer 3 dynamicall
 
 ```text
 IDM_TAKEN
-→ CONFIRMED_STRUCTURAL_SWING
+→ SWING_CANDIDATE
 → LAYER 3 RETRACEMENT / STRUCTURAL QUALIFICATION
+→ CONFIRMED_STRUCTURAL_SWING
 → STORED QUALIFICATION RESULT
 ```
 
@@ -185,6 +186,7 @@ Where:
 - `IDM_TAKEN`: supplied exclusively by Layer 3.
 - `MAJOR_RETRACEMENT_QUALIFIED`: supplied exclusively by Layer 3 and represents either the standard 50% equilibrium qualification path or the conditional 38.2%–<50% HTF-represented qualification path.
 - `STRUCTURAL_SWING_BREAK`: evaluated by Layer 4 geometry when price breaks the `CONFIRMED_STRUCTURAL_SWING` level via wick or body, provided the level is not functioning as a Major Inducement.
+- The Layer 3 qualification result is established before the continuation break is consumed; Layer 4 must not manufacture a confirmed swing or recompute qualification during break execution.
 
 Layer 4 consumes these upstream outputs. It does not know or independently evaluate:
 
