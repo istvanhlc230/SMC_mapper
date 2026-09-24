@@ -60,7 +60,7 @@ Higher-layer concepts remain outside Phase 1 even when source transcripts discus
 
 Source material may be used to detect boundary violations, but higher-layer rules must be routed to their existing semantic owners.
 
-## 3. Four open Phase 1 contracts
+## 3. Five Phase 1 contracts under reconciliation
 
 The current audit tracks these four explicit contracts. They must not be silently closed by implementation:
 
@@ -101,6 +101,17 @@ Required outcome:
 - Layer 1 may define deterministic candle anatomy/relationships;
 - `06_execution.md` owns execution eligibility, POI/liquidity gating, trigger timing, and entry authorization;
 - qualitative source language must not silently become numeric methodology.
+
+### C5 — Methodology semantics vs historical observability
+
+Define the epistemic boundary between the canonical methodology formation model and what aggregate historical OHLC data can actually establish.
+
+Required outcome:
+- methodology formation semantics may be recorded as methodology assumptions;
+- historical observability must be represented separately in implementation-owned state;
+- `METHODOLOGY_ASSUMED` must never be treated as `OBSERVED`;
+- `UNAVAILABLE` must never be silently promoted to `OBSERVED`;
+- absence of intrabar evidence must not manufacture an event sequence.
 
 ## 4. Source analysis
 
@@ -249,7 +260,7 @@ A Phase 1 reconciliation run is complete only when:
 
 - relevant source passages are mapped;
 - canonical comparison is complete;
-- C1–C4 are explicitly resolved or remain explicitly blocked;
+- C1–C5 are explicitly resolved or remain explicitly blocked;
 - unresolved source conflicts are not hidden;
 - semantic ownership is preserved;
 - deterministic behavior is validated;
