@@ -669,6 +669,8 @@ The Extreme POI module is the canonical fallback execution mechanism when the De
 
 Candlestick reversal patterns are **execution confirmation/trigger objects only**. They are downstream consumers of structural and execution eligibility and have zero structural authority.
 
+The source describes the reversal families and their qualitative characteristics; the exact OHLC inequalities below are **project-derived deterministic formalizations** of those source patterns, not additional source rules. Where the source remains qualitative (for example body-size/morphology), the canonical model keeps that characteristic as a non-binary filter rather than inventing a numeric threshold.
+
 Layer 6 may consume Layer 1 OUTSIDE_BAR state and its geometric metrics. It owns the semantic evaluation of OUTSIDE_BAR_REVERSAL; that state is never auto-derived merely because an Outside Bar exists.
 
 ~~~text
