@@ -228,6 +228,18 @@ Required outcome:
 - a valid Decisional OB may be used while the associated OF remains unmitigated, provided Rule-of-Two and execution gates remain satisfied;
 - historical Decisional OB identity is immutable once tied to the causal BOS event.
 
+### C15 — Timeframe execution route
+
+Canonicalize the source-supported choice between direct same-timeframe execution and optional HTF→LTF execution refinement.
+
+Required outcome:
+- direct same-timeframe execution remains valid;
+- multi-timeframe execution is optional and explicitly configured;
+- HTF supplies narrative, structure, POI, and liquidity context;
+- LTF refines execution and may activate the canonical LTF-CHoCH route;
+- LTF must not silently redefine the HTF narrative;
+- source timeframe-pair tables are examples, not universal SMC constants.
+
 ## 4. Source analysis
 
 For every relevant source passage create a source record:
