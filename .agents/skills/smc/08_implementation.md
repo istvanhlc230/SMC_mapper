@@ -305,16 +305,16 @@ The physical break supplies `STRUCTURAL_SWING_BREAK`; the stored qualification i
 
 **COMPLETE BOS GATE**
 
-The canonical BOS predicate:
+The implementation consumes the canonical Layer 3 qualification result rather than evaluating retracement thresholds locally:
 
 ```text
 VALID_BOS ⇔
     IDM_TAKEN
-    AND RETRACEMENT_DEPTH >= 0.382
+    AND MAJOR_RETRACEMENT_QUALIFIED
     AND STRUCTURAL_SWING_BREAK
 ```
 
-If any prerequisite is missing, the break cannot produce `VALID_BOS`.
+Layer 3 owns whether qualification was established through the standard 50% path or the conditional 38.2%–<50% immediate-HTF valid-pullback path. If any prerequisite is missing, the break cannot produce `VALID_BOS`.
 
 **VALID_BOS**
 
@@ -496,7 +496,7 @@ A later candle may advance the lifecycle but may not retroactively rewrite the e
 23. A `VALID_BOS` is delayed pending a later body close when the wick-BOS path is already valid.
 24. A FALLBACK_MAJOR_IDM wick causes Trading Range rollover.
 25. Genesis manufactures IDM or protected structure.
-26. A sub-38.2% Fibonacci qualification must never produce VALID_BOS.
+26. A retracement below the canonical qualification floor must never produce VALID_BOS.
 27. Scoring creates structural validity.
 28. Historical liquidity remains active merely because it exists in history.
 29. One outside bar activates both directional branches.
@@ -507,10 +507,10 @@ A later candle may advance the lifecycle but may not retroactively rewrite the e
 34. A liquidity `SWEPT` event is misclassified as a structural `BROKEN` event.
 35. `CONFIRMATION GATE UNLOCKED` is introduced as a new lifecycle state enum.
 36. `FALLBACK_MAJOR_IDM + BODY CLOSE` is treated as automatic `CHoCH_CONFIRMED`.
-37. Confirmed Swing is treated as automatic `VALID_BOS` without retracement sufficiency (>= 38.2%).
-38. Break of Confirmed Swing is classified as `VALID_BOS` when retracement depth < 38.2% (must be `IMPULSE_EXTENSION`).
-39. Any heuristic/safe mode is used to substitute for mandatory 38.2% depth.
-40. A 1-candle retracement is permitted to qualify for macro BOS under any circumstances.
+37. Confirmed Swing is treated as automatic `VALID_BOS` without `MAJOR_RETRACEMENT_QUALIFIED`.
+38. A continuation break is classified as `VALID_BOS` without the complete Layer 3 qualification result (must remain non-BOS / `IMPULSE_EXTENSION` as applicable).
+39. Any heuristic/safe mode is used to substitute for the canonical Layer 3 qualification result.
+40. A reduced-candle retracement is permitted to qualify without satisfying the canonical standard or documented displacement-outlier exception.
 
 ## 48. Testing requirements
 
@@ -526,12 +526,12 @@ Regression tests must cover:
 - outside-bar HIGH→LOW sequencing.
 
 ### Structural qualification
-- standard >=3-candle qualification;
-- configurable minimum retracement (canonical default 38.2%);
-- exact 2-candle + depth >= 38.2% exception;
-- candle count sweep must NOT qualify without >= 38.2% depth;
-- sub-38.2% break with IDM taken is classified as IMPULSE_EXTENSION (not VALID_BOS);
-- one candle does not automatically qualify (1 opposing candle never qualifies macro BOS).
+- standard >=3-opposing-closing-candle qualification on the 50% path;
+- reduced-candle qualification only through the documented single displacement-outlier exception taking >=5 preceding bodies/extremes;
+- 38.2%–<50% qualifies only through a valid single pullback on the applicable immediate Higher Timeframe;
+- HTF inside-bar or invalid-pullback representation does not qualify;
+- below 38.2% does not qualify;
+- a continuation break without stored `MAJOR_RETRACEMENT_QUALIFIED` remains non-BOS / `IMPULSE_EXTENSION` as applicable.
 
 ### IDM
 - candle-level pullback does not create IDM;
@@ -556,11 +556,13 @@ Regression tests must cover:
 
 ### Swing / Protected Extreme
 - qualified IDM sweep unlocks the Swing Confirmation Gate;
-- qualified IDM sweep does not automatically create Confirmed Swing;
+- qualified IDM sweep creates a `SWING_CANDIDATE`, not a Confirmed Swing;
 - dynamic absolute retracement extreme tracking;
-- standard retracement sufficiency;
-- exact 2-candle exception;
-- insufficient retracement remains `IMPULSE_EXTENSION`;
+- 50% standard qualification with the normal >=3-candle rule;
+- reduced-candle qualification only through the documented displacement-outlier exception;
+- 38.2%–<50% qualification only through the applicable immediate-HTF valid-pullback path;
+- below 38.2% does not qualify;
+- shallow qualification failure revokes the candidate and shifts the active pullback/IDM reference;
 - Protected Structural Extreme locks only at valid BOS;
 - FALLBACK_MAJOR_IDM wick does not lock Protected Structural Extreme.
 
@@ -709,12 +711,12 @@ Where multiple physical relationships appear possible, the event is resolved usi
 ```text
 EXT_CONT_BREAK DETECTED
         ↓
-CONSUME STORED QUALIFICATION (Depth >= 38.2% AND >= 3 opposing candles [or 2-candle exception])
-        ├─ DISQUALIFIED (Depth < 38.2% or Opposing Candles Insufficient)
+CONSUME STORED LAYER 3 QUALIFICATION
+        ├─ MAJOR_RETRACEMENT_QUALIFIED = FALSE
         │      ↓
         │  OUTCOME = IMPULSE_EXTENSION (Dealing range remains open, no new protected extreme)
         │
-        └─ QUALIFIED (IDM_TAKEN = TRUE AND Depth >= 38.2% AND Opposing Candles Satisfied)
+        └─ MAJOR_RETRACEMENT_QUALIFIED = TRUE
                ↓
            OUTCOME = VALID_BOS (Dealing range rolls over, Protected Structural Extreme locks)
 ```
@@ -843,12 +845,14 @@ IF breached level == CONTINUATION_EXTERNAL_BOUNDARY
 
   STRUCTURAL_SWING_BREAK = TRUE
 
-  IF IDM_TAKEN AND RETRACEMENT_DEPTH >= 0.382:
+  IF IDM_TAKEN
+  AND MAJOR_RETRACEMENT_QUALIFIED
+  THEN:
       classify as VALID_BOS
       lock Protected Structural Extreme
       perform Trading Range Rollover
   ELSE:
-      classify according to existing insufficient-gate / IMPULSE_EXTENSION logic
+      classify according to the canonical insufficient-gate / IMPULSE_EXTENSION logic
 
   (Do NOT require body close to establish STRUCTURAL_SWING_BREAK in this continuation case)
 
