@@ -66,6 +66,11 @@ Read the referenced documents in this order when the full methodology is require
    - Position sizing, risk budgets, session windows, news gate, trade-count limits, logging
    - Does not redefine structural SMC semantics
 
+11. `platform_execution.md`
+   - Broker/exchange execution and deterministic backtest contract
+   - Order, fill, position, quote, slippage, reconciliation, and failure semantics
+   - Does not redefine True SMC methodology or trading-policy semantics
+
 ## 4. Source reconciliation governance
 
 `source_reconciliation.md`
@@ -104,6 +109,12 @@ NUMERIC / CONFIGURABLE PARAMETERS
 
 IMPLEMENTATION REPRESENTATION / EXECUTABLE SCORING MAPPING
     → 08_implementation.md
+
+TRADING POLICY
+    → trading_policy.md
+
+PLATFORM EXECUTION / BACKTEST
+    → platform_execution.md
 ```
 
 A rule must have one primary semantic owner. Other documents may reference that rule, but must not create a competing definition.
