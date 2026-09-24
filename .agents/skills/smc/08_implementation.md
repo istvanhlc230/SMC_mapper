@@ -83,6 +83,39 @@ OF_CONFIRMED → IDM
 SMT → POI
 ```
 
+### 45.0.1 Engineering Liquidity implementation mapping
+
+The implementation resolves Engineering Liquidity only after the active Extreme POI identity is known.
+
+```text
+ACTIVE EXTREME POI
+    ↓
+MOST RECENT VALID PULLBACK IMMEDIATELY BEFORE IT
+    ↓
+PULLBACK EXTREME
+    ↓
+ENG_LQD_REFERENCE
+```
+
+Required representation:
+- bullish: liquidity below the valid pullback low immediately preceding the active Extreme POI;
+- bearish: liquidity above the valid pullback high immediately preceding the active Extreme POI;
+- no valid pullback before the active Extreme POI -> no Engineering Liquidity reference;
+- invalid pullbacks, SMTs, arbitrary pivots, and generic equal highs/lows cannot manufacture ENG_LQD;
+- when the active Extreme POI changes from one canonical POI to another, the Engineering Liquidity reference is recomputed for the new provenance;
+- historical ENG_LQD references remain immutable observations;
+- ENG_LQD sweep is distinct from IDM sweep, Extreme POI mitigation, BOS, and CHoCH;
+- if IDM and ENG_LQD occupy the same numeric price, preserve the distinct semantic roles rather than collapsing provenance.
+
+Deterministic lifecycle:
+
+```text
+ENG_LQD_REFERENCE
+        ↓
+ENG_LQD_CONFIRMED
+        ↓
+ENG_LQD_SWEEP (optional)
+```
 ### 45.1 Entity lifecycle schemas
 
 Liquidity levels and protected structural boundaries are different ontology classes. Their lifecycle semantics must not be collapsed into one undifferentiated state enum.
