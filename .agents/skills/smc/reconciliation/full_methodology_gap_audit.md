@@ -104,136 +104,68 @@ Canonical result:
 
 Classification: **CANONICALIZED — SOURCE-DIRECT + SOURCE-DERIVED FORMALIZATION**.
 
-### 3.3 Engineering Liquidity definition and selection — HIGH PRIORITY
+### 3.3 Status update — Engineering Liquidity canonicalized
 
-Sources:
-- `knowledgebase/truesmc2026.txt`, Part 7;
-- `knowledgebase/true_smc123.txt`, Part 7;
-- `knowledgebase/true_smc_21dayBootCamp.txt`, Day 8.
+Engineering Liquidity is now canonicalized in `06_execution.md` and mapped in `08_implementation.md`.
 
-Source definition:
-Engineering Liquidity is liquidity above/below the high/low of the valid pullback immediately preceding the Extreme POI.
+Canonical result:
+- core-liquidity reference, not IDM or POI;
+- derived from the most recent valid pullback immediately preceding the active Extreme POI;
+- invalid pullback/arbitrary pivot cannot create ENG_LQD;
+- recomputed when Extreme POI provenance changes;
+- sweep does not itself create reversal, BOS, or CHoCH.
 
-Source scenarios further state that:
-- it is a core-liquidity layer similar to IDM;
-- it depends on the presence/mitigation state of order flows and POIs;
-- it may be the next liquidity target when inducement does not immediately produce reversal;
-- the relevant pullback must actually be valid.
+Classification: **CANONICALIZED — SOURCE-DIRECT + SOURCE-DERIVED FORMALIZATION**.
+### 3.4 Status update — POI / Order Block selection canonicalized
 
-Current skill:
-- `06_execution.md` has an Engineering Liquidity lifecycle and entry module.
-- It does not fully own the source-backed identification/selection algorithm or its relationship to decisional/extreme OF/OB availability.
+The later source update is now canonicalized in `06_execution.md` and `08_implementation.md`.
 
-Classification:
-**PARTIALLY CANONICAL / NEEDS DETERMINISTIC FORMALIZATION**.
+Canonical result:
+- Decisional OB = valid OB that actually causes canonical VALID_BOS;
+- the earlier “first valid OB after inducement” shortcut is superseded;
+- Extreme OB = furthest valid origin-side OB;
+- OB validity is based on its own pillars;
+- OF state does not automatically invalidate a valid OB;
+- a valid Decisional OB may be used while associated OF remains unmitigated, subject to Rule-of-Two and execution gates.
 
-### 3.4 POI selection priority and weak-zone/SMT handling — HIGH PRIORITY
+Classification: **CANONICALIZED — SOURCE-DIRECT + SOURCE-DERIVED FORMALIZATION**.
+### 3.5 Status update — Entry authorization canonicalized; broker order type remains platform policy
 
-Sources:
-- `knowledgebase/truesmc2026.txt`, Part 6;
-- `knowledgebase/use_of_orderblock.txt`;
-- `knowledgebase/use_of_orderblock_and_ordeflow.txt`;
-- `knowledgebase/true_smc123.txt`, Parts 5–6.
+Entry authorization and methodology price reference are now canonicalized in `06_execution.md` and `08_implementation.md`.
 
-Source-backed scenarios include:
-- maximum two active tradable POIs;
-- Decisional + Extreme;
-- pre-inducement formations may be traps/weak zones;
-- decisional and extreme POIs are selected from relevant valid OF/OB lineage;
-- some order blocks remain valid despite surrounding OF state after later methodology updates.
+Canonical result:
+- all four entry modules have explicit prerequisite chains;
+- direct candle confirmation uses the completed confirmation-candle close as the methodology reference price;
+- sweep/mitigation alone is insufficient;
+- broker order type remains a platform-order policy, not an inferred methodology fact;
+- authorization, submission, fill, and open-position state remain distinct.
 
-Current skill:
-- Rule of Two and POI classes are covered.
-- The precise selection algorithm across competing OF/OB candidates is not fully deterministic.
+Classification: **CANONICALIZED — SOURCE-DIRECT + PLATFORM-BOUNDARY FORMALIZATION**.
+### 3.6 Status update — Stop anchor canonicalized; numeric buffer remains configurable
 
-Classification:
-**PARTIALLY CANONICAL / NEEDS SOURCE RECONCILIATION**.
+Stop anchors are now canonicalized in `07_risk.md` and mapped in `08_implementation.md`.
 
-### 3.5 Entry order-type and exact entry-price semantics — HIGH PRIORITY
+Canonical result:
+- IDM Sweep -> sweep extreme;
+- Decisional POI -> confirmation/reversal pattern extreme;
+- ENG LQD Sweep -> validated sweep/confirmation extreme;
+- Extreme POI -> confirmation/reversal pattern extreme;
+- exact numeric buffer remains explicit configuration because the source says “few pips” rather than one universal value;
+- missing buffer blocks automatic broker submission.
 
-Sources:
-- `knowledgebase/true_smc123.txt`, Parts 8–11 and LTF sections;
-- `knowledgebase/truesmc2026.txt`, Part 8;
-- `knowledgebase/Become-a-TRUE-Forex-Trader-Become-a-TRUE-Forex-Trader_text_format.txt`, Entry Modules and Multi-Timeframe Entry sections.
+Classification: **CANONICALIZED — SOURCE-DIRECT + CONFIGURATION BOUNDARY**.
+### 3.7 Status update — Target hierarchy canonicalized; LTF/countertrend target policy remains explicit
 
-Observed source behaviors include:
-- direct same-timeframe entries after rejection/confirmation;
-- limit-order examples;
-- LTF execution to refine entries;
-- entry from Decisional POI;
-- entry after IDM sweep;
-- entry after Engineering Liquidity sweep;
-- entry from Extreme POI;
-- different entry/confirmation timing depending on route.
+Target resolution is now canonicalized in `07_risk.md` and mapped in `08_implementation.md`.
 
-Current skill:
-- Four entry modules are named and context-gated.
-- Candle-pattern close-only execution is defined.
-- Exact order type and price coordinate are not deterministically specified for every module.
+Canonical result:
+- direct same-timeframe pro-trend -> current confirmed external extreme/external liquidity;
+- LTF -> explicit HTF-external versus LTF-structural target policy;
+- countertrend -> setup-specific next canonical destination;
+- RR consumes a resolved target and does not create one;
+- no canonical target blocks automatic TP submission.
 
-Missing deterministic contract:
-- market versus limit versus stop order per module;
-- exact price coordinate for each order type;
-- whether entry is at POI edge, sweep price, pattern close, midpoint, or another source-defined coordinate;
-- expiration of unfilled limit orders;
-- re-entry after missed trigger;
-- cancellation priority when another structural event appears.
-
-Classification:
-**IMPLEMENTATION-BLOCKING EXECUTION CONTRACT GAP**.
-
-### 3.6 Stop-loss exact placement — HIGH PRIORITY
-
-Sources:
-- `knowledgebase/Become-a-TRUE-Forex-Trader-Become-a-TRUE-Forex-Trader_text_format.txt`;
-- `knowledgebase/true_smc123.txt`;
-- `knowledgebase/truesmc2026.txt`;
-- `knowledgebase/advanced_market_structure_mapping.txt`.
-
-Source examples use:
-- a few pips beyond the sweep;
-- beyond a pattern/sweeping candle high/low;
-- beyond a structural/zone boundary;
-- external structural invalidation.
-
-Current skill:
-- Tier 1 and Tier 2 stop concepts exist.
-- A configurable buffer `P` exists conceptually.
-
-Missing:
-- exact canonical buffer semantics;
-- whether buffer is fixed pips, ticks, spread-adjusted, ATR-like, or broker minimum-distance based;
-- exact stop anchor for each of the four entry modules;
-- exact stop anchor for each reversal pattern;
-- what happens when a valid stop would make RR < 1:2.
-
-Classification:
-**SOURCE-BACKED BUT UNDER-SPECIFIED**.
-
-A platform cannot calculate a deterministic executable SL from the current skill alone.
-
-### 3.7 Target hierarchy — MEDIUM/HIGH PRIORITY
-
-Sources repeatedly target:
-- current external structural liquidity;
-- external high/low;
-- next liquidity layer;
-- POI destination in countertrend scenarios;
-- sometimes slightly beyond an external liquidity level.
-
-Current skill:
-- Pro-trend primary target is reasonably defined.
-- Countertrend target policy explicitly avoids a universal hard coordinate.
-
-Missing:
-- deterministic TP selection hierarchy for each entry module;
-- whether TP is exact external extreme, liquidity level, POI, or offset beyond;
-- behavior when multiple candidate targets have equal provenance;
-- partial TP / breakeven / trailing policy if intended for a platform.
-
-Classification:
-**PARTIAL CANONICAL COVERAGE**.
-
+Classification: **CANONICALIZED — SOURCE-DIRECT + SOURCE-DERIVED FORMALIZATION**.
 ### 3.8 Position sizing and risk-budget controls — HIGH PRIORITY for live trading
 
 Source:
