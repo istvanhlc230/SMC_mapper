@@ -97,7 +97,7 @@ IDM
 
 The unit of origin for Major Structure is not an isolated candlestick, fractal pivot, or raw price extreme. Major Structure originates from the complete **Confirmed Dealing Range Cycle**, anchored by liquidity-validated structural extremes.
 
-A governing Trading Range does not exist merely because an impulse has occurred. It becomes formally established only when a qualified IDM liquidity takeout unlocks the SWING_CONFIRMATION_GATE **and the subsequent canonical confirmation prerequisites establish a CONFIRMED_STRUCTURAL_SWING**. A liquidity sweep alone never establishes the range.
+A governing Trading Range does not exist merely because an impulse has occurred. The lifecycle must first progress from IDM takeout to a SWING_CANDIDATE and then through canonical structural retracement qualification to establish a CONFIRMED_STRUCTURAL_SWING. The confirmation gate is a process condition within that lifecycle; an IDM liquidity takeout alone never establishes the range.
 
 ### 3.2.1 — Genesis / Bootstrap
 
@@ -213,7 +213,9 @@ PHYSICAL IDM TAKEOUT
     ↓
 IDM_TAKEN = TRUE
     ↓
-SWING CONFIRMATION GATE
+SWING_CANDIDATE
+    ↓
+STRUCTURAL_RETRACEMENT_EVALUATION
 ~~~
 
 This section owns the IDM semantic object and lifecycle. BOS and CHoCH modules consume the resulting IDM state and takeout status; they must not redefine IDM.
