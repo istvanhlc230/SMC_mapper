@@ -41,6 +41,76 @@ P is a downstream/configurable buffer. The methodology does not define a univers
 
 Tier 2 is not available for a direct limit entry without deterministic candle confirmation, and qualitative-only Momentum/Shrinking filters cannot authorize it.
 
+### 5.1.1 Canonical Stop Anchors by Entry Module
+
+The stop-loss anchor is determined by the canonical execution context. The stop buffer is a separate platform configuration and must never be guessed.
+
+#### IDM Sweep
+
+```text
+IDM_SWEEP_ENTRY
+    ↓
+SWEEPING_CANDLE_EXTREME
+    ↓
+SL anchor = sweep extreme
+```
+
+Source examples support either the sweeping-candle extreme itself or a conservative buffer beyond it. The aggressive/conservative choice is execution policy; the structural anchor remains the sweep extreme.
+
+#### Decisional POI Mitigation
+
+```text
+DECISIONAL_POI_MITIGATION
+    ↓
+CONFIRMATION_PATTERN
+    ↓
+PATTERN_EXTREME
+    ↓
+SL anchor = pattern extreme
+```
+
+The source examples place the stop a few pips beyond the confirming/reversal pattern extreme. The exact buffer is not canonically specified.
+
+#### Engineering Liquidity Sweep
+
+```text
+ENG_LQD_SWEEP
+    ↓
+SWEEP / CONFIRMATION STRUCTURE
+    ↓
+SWEEP_OR_CONFIRMATION_EXTREME
+    ↓
+SL anchor = validated sweep/confirmation extreme
+```
+
+The source examples consistently place the stop beyond the relevant sweep/confirmation low or high. The exact buffer remains configurable.
+
+#### Extreme POI Mitigation
+
+```text
+EXTREME_POI_MITIGATION
+    ↓
+CONFIRMATION_PATTERN
+    ↓
+PATTERN_EXTREME
+    ↓
+SL anchor = pattern extreme
+```
+
+The source examples place the stop a few pips beyond the confirmation/rejection extreme. The exact buffer remains configurable.
+
+### 5.1.2 Stop Buffer Contract
+
+`P` is a required downstream execution parameter:
+
+```text
+STOP_PRICE = SL_ANCHOR ± P
+```
+
+`P` must be explicitly supplied by the platform execution configuration. It must not be silently defaulted to an invented number. The True SMC knowledgebase does not define one universal pip/tick value for all instruments or modules.
+
+If `P` is unavailable, the setup may be analyzed and scored but an automatic broker order must not be submitted.
+
 ### Tier-2 stop-out semantics
 
 ```
