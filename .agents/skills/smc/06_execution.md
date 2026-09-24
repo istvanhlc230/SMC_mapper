@@ -430,6 +430,91 @@ ENG_LQD_SWEEP (optional)
 
 Engineering liquidity (`ENG_LQD_CONFIRMED`) is an execution-layer liquidity event. It must not be promoted to structural liquidity, IDM, BOS, or CHoCH merely because price sweeps the engineered level.
 
+### 40.1 Entry Authorization and Price-Reference Contract
+
+The methodology determines when an entry is **authorized** and which canonical market reference produced that authorization. It does not by itself mandate a broker/exchange order type.
+
+```text
+CANONICAL ENTRY CONTEXT
+        ↓
+ENTRY AUTHORIZED
+        ↓
+ENTRY_REFERENCE_PRICE
+        ↓
+PLATFORM EXECUTION POLICY
+        ↓
+MARKET / LIMIT / STOP ORDER
+```
+
+The broker order type is therefore an implementation/infrastructure choice unless a separate canonical trading-plan rule explicitly fixes it.
+
+#### Module 1 — IDM Sweep entry
+
+```text
+ACTIVE IDM
+   ↓
+IDM_TAKEN = TRUE
+   ↓
+REVERSAL / DIRECTIONAL CONFIRMATION
+   ↓
+ENTRY_AUTHORIZED
+```
+
+A liquidity sweep alone is not an entry. When direct candle confirmation is used, the `ENTRY_REFERENCE_PRICE` is the close of the completed confirmation candle.
+
+#### Module 2 — Decisional POI Mitigation entry
+
+```text
+VALID DECISIONAL POI
+   ↓
+POI MITIGATION
+   ↓
+REVERSAL / DIRECTIONAL CONFIRMATION
+   ↓
+ENTRY_AUTHORIZED
+```
+
+The Decisional POI may be `OF_CONFIRMED` or `VALID_OB`. Mitigation without an independent execution confirmation does not create an entry. With direct candle confirmation, the `ENTRY_REFERENCE_PRICE` is the completed confirmation-candle close.
+
+#### Module 3 — Engineering Liquidity Sweep entry
+
+```text
+ENG_LQD_CONFIRMED
+   ↓
+ENG_LQD_SWEEP
+   ↓
+DIRECTIONAL CONFIRMATION
+   ↓
+ENTRY_AUTHORIZED
+```
+
+An Engineering Liquidity sweep does not itself create an entry. With direct candle confirmation, the `ENTRY_REFERENCE_PRICE` is the completed confirmation-candle close.
+
+#### Module 4 — Extreme POI Mitigation entry
+
+```text
+VALID EXTREME POI
+   ↓
+POI MITIGATION
+   ↓
+REVERSAL / DIRECTIONAL CONFIRMATION
+   ↓
+ENTRY_AUTHORIZED
+```
+
+Extreme POI mitigation does not itself create an entry. The Extreme POI must remain canonical under the Rule-of-Two and its own OF/OB validity conditions. With direct candle confirmation, the `ENTRY_REFERENCE_PRICE` is the completed confirmation-candle close.
+
+#### Unfilled orders, cancellation, and re-entry
+
+These are platform order-lifecycle policies rather than independent SMC semantic definitions. A pending order must never be assumed to be canonical merely because an entry context exists. Until the dedicated trading-plan/order-lifecycle contract is canonicalized, the implementation must preserve the distinction between:
+
+```text
+ENTRY_AUTHORIZED ≠ ORDER_SUBMITTED
+ORDER_SUBMITTED ≠ ORDER_FILLED
+ORDER_FILLED ≠ POSITION_OPEN
+```
+
+A later structural or execution event may invalidate a pending order according to the dedicated order-lifecycle policy; such invalidation must not rewrite the historical entry authorization event.
 ### Module 4 — Extreme POI Mitigation
 
 The Extreme POI module is the canonical fallback execution mechanism when the Decisional POI is not the applicable execution location. The Extreme POI must independently satisfy OF_CONFIRMED or Valid OB validity; fallback execution does not relax POI validation.
