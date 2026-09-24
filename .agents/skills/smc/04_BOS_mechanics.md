@@ -183,7 +183,7 @@ VALID_BOS <=> (IDM_TAKEN == TRUE)
 
 Where:
 
-- `IDM_TAKEN`: supplied exclusively by Layer 3.
+- `IDM_TAKEN`: supplied exclusively by Layer 3, referring strictly to the **active IDM reference** at the time of the event. A historical IDM object cannot be used to satisfy the `IDM_TAKEN` prerequisite.
 - `MAJOR_RETRACEMENT_QUALIFIED`: supplied exclusively by Layer 3 and represents either the standard 50% equilibrium qualification path or the conditional 38.2%–<50% HTF-represented qualification path.
 - `STRUCTURAL_SWING_BREAK`: evaluated by Layer 4 geometry when price breaks the `CONFIRMED_STRUCTURAL_SWING` level via wick or body, provided the level is not functioning as a Major Inducement.
 - The Layer 3 qualification result is established before the continuation break is consumed; Layer 4 must not manufacture a confirmed swing or recompute qualification during break execution.
