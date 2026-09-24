@@ -4,7 +4,7 @@ Phase 4: Strengthen POI semantics in 06_execution.md (Rejection Block and POI Fa
 # DEVELOPER REPORT
 **Current Repository State:**
 * **Branch:** main
-* **HEAD:** 00efb4e
+* **HEAD:** ecd1aee
 * **Working-tree status:** clean (after committing POI ontology fix)
 * **Implementation decisions:** 
   - Added Rejection Block to the canonical POI ontology as a **Latent reserve POI**.
@@ -35,7 +35,7 @@ Phase 4 (POI Semantics) documentation updated and conflict resolved.
 - [x] Phase 4: Rejection Block and POI Failure semantics added and reconciled with the closed POI ontology in `06_execution.md`.
 
 # COMMITS
-COMMIT: 00efb4e
+COMMIT: ecd1aee
 FILES: .agents/skills/smc/06_execution.md, .agents/skills/smc/skill.md, AGENT_REVIEW.md
 PURPOSE: Resolve Rejection Block POI ontology conflict and formally integrate it as a Latent Reserve POI.
 TESTS: N/A (Documentation update only)
