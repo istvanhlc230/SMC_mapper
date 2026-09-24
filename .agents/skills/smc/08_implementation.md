@@ -845,7 +845,7 @@ Required invariants:
 
 ### POI / Entry
 - POI ontology accepts Valid OF and Valid OB;
-- Rejection Block is a separate PD-array/execution concept, not a POI class;
+- Rejection Block is a separately typed PD-array/execution concept; source examples may use POI as a broad execution-location term, but RB is not an OF/OB-equivalent POI class or an automatic Rule-of-Two slot;
 - Rule of Two limits canonical tradable POIs to Decisional POI and Extreme POI (Extreme OF / Extreme OB);
 - Origin OB is a latent reserve POI (mitigation transfer target when Extreme POI is mitigated), never a 3rd active POI;
 - the Rule of Two permits at most two actively tradable POIs;
