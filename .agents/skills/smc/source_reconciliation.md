@@ -216,6 +216,18 @@ Required outcome:
 - countertrend scenarios use existing entry modules and target/risk policies;
 - no scenario creates an alternate IDM, POI, BOS, CHoCH, or broker-order definition.
 
+### C14 — Updated Decisional / Extreme Order Block selection
+
+Canonicalize the later source update that supersedes the earlier "first valid OB after inducement" shortcut.
+
+Required outcome:
+- Decisional OB = valid Order Block that actually causes the canonical BOS;
+- selection is tied to causal BOS provenance, not merely timing after inducement;
+- Extreme OB remains the furthest valid origin-side Order Block;
+- Order Block validity is based on its own validation pillars and is not automatically invalidated by an unmitigated/failed Order Flow;
+- a valid Decisional OB may be used while the associated OF remains unmitigated, provided Rule-of-Two and execution gates remain satisfied;
+- historical Decisional OB identity is immutable once tied to the causal BOS event.
+
 ## 4. Source analysis
 
 For every relevant source passage create a source record:
