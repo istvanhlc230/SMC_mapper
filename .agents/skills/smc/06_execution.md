@@ -699,7 +699,7 @@ DIRECT ENTRY
 
 Eligible key areas are:
 
-- mitigation of a qualified **Decisional POI (OF_CONFIRMED / Valid OB) or Extreme POI (OF_CONFIRMED / Valid OB / Rejection Block)**;
+- mitigation of a qualified **Decisional POI (OF_CONFIRMED / Valid OB) or Extreme POI (EXTREME_OF / EXTREME_OB)**;
 - a direct sweep of active **IDM** (`IDM_TAKEN = TRUE`);
 - a direct sweep of **Engineering Liquidity (ENG_LQD_CONFIRMED)**.
 
