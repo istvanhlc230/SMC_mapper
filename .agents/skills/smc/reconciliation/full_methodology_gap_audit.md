@@ -1,6 +1,6 @@
 # TRUE SMC — Full Methodology / Platform Gap Audit
 
-Status: **AUDIT IN PROGRESS — FULL PLATFORM SPECIFICATION NOT COMPLETE**
+Status: **CANONICALIZATION IN PROGRESS — LTF-CHoCH AND ORDER FLOW/SMT CLOSED**
 
 Scope:
 - canonical SMC skill under `.agents/skills/smc/`;
@@ -66,7 +66,7 @@ A complete platform also requires non-SMC infrastructure specifications that are
 
 ## 3. Source-backed scenarios not yet deterministically represented
 
-### 3.1 LTF-CHoCH after HTF POI / core-liquidity interaction — HIGH PRIORITY
+### 3.1 Status update — LTF-CHoCH after HTF POI / core-liquidity interaction
 
 Source:
 - `knowledgebase/Become-a-TRUE-Forex-Trader-Become-a-TRUE-Forex-Trader_text_format.txt`
@@ -79,7 +79,7 @@ Current skill:
 - `08_implementation.md` does not contain this route as a deterministic event/state rule.
 
 Classification:
-**NEW_CANONICAL_CANDIDATE / SOURCE-DIRECT**.
+**CANONICALIZED — SOURCE-DIRECT + SOURCE-DERIVED FORMALIZATION**.
 
 Required reconciliation:
 - exact precondition for switching from HTF to LTF confirmation;
@@ -90,37 +90,19 @@ Required reconciliation:
 
 Do not silently infer this route from generic CHoCH rules.
 
-### 3.2 Order Flow identification and SMT exclusion — HIGH PRIORITY
+### 3.2 Status update — Order Flow / SMT
 
-Sources:
-- `knowledgebase/truesmc2026.txt`, Part 4 — OrderFlow Identification;
-- Part 6 — POI Identification Secret;
-- Part 8 — Entry Modules;
-- `knowledgebase/use_of_orderblock_and_ordeflow.txt`;
-- `knowledgebase/true_smc123.txt`, Parts 4–6 and 8–11.
+The Order Flow / SMT gap is now canonicalized in `06_execution.md` and mapped in `08_implementation.md`.
 
-Source scenarios include:
-- order flows before inducement can be treated as SMT / inducement traps;
-- the decisional order flow is tied to the swing that caused BOS;
-- the extreme order flow is the furthest unmitigated relevant order flow;
-- some intermediate order flows/blocks are weak or invalid;
-- later source updates change how certain order blocks are treated even when an order flow remains unmitigated;
-- valid Order Flow mitigation is associated with a valid pullback, not arbitrary wick interaction.
+Canonical result:
+- OF candidate = last opposing move before dominant continuation/displacement;
+- multi-leg correction is represented as the whole relevant corrective move while its protected endpoint remains intact;
+- pre-inducement formations are contextual SMT / inducement traps and are execution-excluded;
+- touch or penetration alone does not establish mitigation;
+- Decisional OF is selected from the eligible OF lineage associated with the displacement causing canonical VALID_BOS;
+- Extreme OF is the furthest unmitigated eligible OF at the origin, shifting to the next eligible OF after mitigation.
 
-Current skill:
-- `06_execution.md` contains an OF lifecycle but not the complete deterministic source-driven OF identification/selection algorithm.
-- SMT appears only as a boundary idea, not as a complete canonical entity/selection rule.
-
-Classification:
-**NEW_CANONICAL_CANDIDATE / SOURCE-DIRECT + SOURCE-DERIVED FORMALIZATION NEEDED**.
-
-Required reconciliation:
-- deterministic OF start/end geometry;
-- OF validity/mitigation predicate;
-- SMT exclusion rule;
-- decisional versus extreme OF selection priority;
-- what happens when multiple valid OFs coexist;
-- how source updates interact with earlier examples.
+Classification: **CANONICALIZED — SOURCE-DIRECT + SOURCE-DERIVED FORMALIZATION**.
 
 ### 3.3 Engineering Liquidity definition and selection — HIGH PRIORITY
 
