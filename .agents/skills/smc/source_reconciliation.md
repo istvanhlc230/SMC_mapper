@@ -126,6 +126,19 @@ Required outcome:
 - confirmation still requires the applicable CHoCH prerequisite gate;
 - the LTF reference must not be reclassified as a Real Major IDM.
 
+### C7 — Order Flow / SMT identification and selection
+
+Canonicalize the source-defined distinction between Order Flow candidate moves, valid/unmitigated Order Flow, pre-inducement SMT/inducement traps, Decisional Order Flow, and Extreme Order Flow.
+
+Required outcome:
+- the Order Flow candidate is the last opposing move before dominant continuation/displacement on the active impulsive leg;
+- a multi-leg corrective move is represented as the whole relevant corrective leg while its protected endpoint remains intact;
+- a physical touch does not by itself establish OF mitigation;
+- pre-inducement formations are execution-excluded SMT/inducement traps;
+- Decisional OF is selected from the eligible OF lineage associated with the displacement causing canonical VALID_BOS;
+- Extreme OF is the furthest unmitigated eligible OF at the origin and shifts to the next such OF when mitigated;
+- SMT and OF remain distinct ontology classes.
+
 ## 4. Source analysis
 
 For every relevant source passage create a source record:
