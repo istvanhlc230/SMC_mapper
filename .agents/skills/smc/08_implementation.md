@@ -808,6 +808,16 @@ Required mappings:
 - RR calculation consumes the target; RR calculation must not create the target;
 - absent canonical target -> no automatic TP submission.
 
+### Decisional / Extreme Order Block selection implementation mapping
+
+Required implementation behavior:
+- `DECISIONAL_OB` is the valid Order Block that actually causes the canonical `VALID_BOS` event; it is not selected solely because it is the first valid OB after inducement;
+- the earlier `first valid OB after inducement` shortcut is superseded;
+- `EXTREME_OB` is selected from the furthest valid origin-side Order Block in the active dealing-range impulse;
+- OB validity is evaluated from the canonical OB validation pillars independently of parent Order Flow mitigation/failure state;
+- a valid Decisional OB may remain executable even while its associated Order Flow is unmitigated, subject to Rule-of-Two and all execution gates;
+- later OF mitigation/failure must not retroactively rewrite the causal Decisional OB identity.
+
 ### Stop Placement implementation mapping
 
 Stop placement must be derived from the canonical entry-module anchor before position sizing or broker submission.
