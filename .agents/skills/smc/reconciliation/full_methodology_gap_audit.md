@@ -325,6 +325,27 @@ But a complete backtester still needs:
 
 These are not presently specified.
 
+### 3.8 Status update — Position sizing and trading policy
+
+The source-backed trading-policy gap is now canonicalized as a separate owner in `trading_policy.md`.
+
+Canonical result:
+- position size is resolved only after entry and stop;
+- risk amount and position-size formula are explicit;
+- the documented 0.5% / running-risk / trade-count / daily-loss values are configurable example-plan values;
+- session windows and high-impact news gating are explicit policy inputs;
+- policy state is persistent/reconciled;
+- missing required policy inputs block automatic order submission.
+
+Classification: **CANONICALIZED AS CONFIGURABLE TRADING POLICY**.
+
+### 3.9 Session and news policy
+
+This gap is closed by `trading_policy.md`; the policy remains distinct from structural SMC semantics and requires external economic-calendar data for live execution.
+
+Classification: **CANONICALIZED AS CONFIGURABLE TRADING POLICY + EXTERNAL DATA DEPENDENCY**.
+
+
 ## 4. Current runtime versus canonical skill
 
 The current `main` runtime does not implement the full skill.
