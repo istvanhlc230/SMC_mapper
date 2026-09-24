@@ -107,7 +107,7 @@ A Decisional POI outside its required premium/discount side is not a valid Decis
 
 The Extreme POI is the secondary/fallback execution location of the same dealing-range framework. It is used when the Decisional POI is unavailable, fails its execution conditions, or is otherwise not the applicable module according to the canonical entry sequence.
 
-The Extreme POI must still be an OF_CONFIRMED, Valid OB, or a qualified Rejection Block. It is not an arbitrary fallback to any visually convenient zone.
+The Extreme POI must still be an `EXTREME_OF` or `EXTREME_OB`. A Rejection Block is a separate PD-array/execution concept and is not promoted into the Extreme POI ontology.
 
 ### Origin OB (Latent POI)
 
@@ -648,7 +648,7 @@ REVERSAL / DIRECTIONAL CONFIRMATION
 ENTRY_AUTHORIZED
 ```
 
-Extreme POI mitigation does not itself create an entry. The Extreme POI must remain canonical under the Rule-of-Two and its own OF_CONFIRMED, Valid OB, or Rejection Block validity conditions. With direct candle confirmation, the `ENTRY_REFERENCE_PRICE` is the completed confirmation-candle close.
+Extreme POI mitigation does not itself create an entry. The Extreme POI must remain canonical under the Rule-of-Two and its own `EXTREME_OF` or `EXTREME_OB` validity conditions. A Rejection Block follows its separate PD-array lifecycle and is not treated as an Extreme POI. With direct candle confirmation, the `ENTRY_REFERENCE_PRICE` is the completed confirmation-candle close.
 
 #### Unfilled orders, cancellation, and re-entry
 
@@ -663,7 +663,7 @@ ORDER_FILLED ≠ POSITION_OPEN
 A later structural or execution event may invalidate a pending order according to the dedicated order-lifecycle policy; such invalidation must not rewrite the historical entry authorization event.
 ### Module 4 — Extreme POI Mitigation
 
-The Extreme POI module is the canonical fallback execution mechanism when the Decisional POI is not the applicable execution location. The Extreme POI must independently satisfy OF_CONFIRMED, Valid OB, or Rejection Block validity; fallback execution does not relax POI validation.
+The Extreme POI module is the canonical fallback execution mechanism when the Decisional POI is not the applicable execution location. The Extreme POI must independently satisfy `EXTREME_OF` or `EXTREME_OB` validity; fallback execution does not relax POI validation. A Rejection Block is outside the POI ontology and follows its separate PD-array execution lifecycle.
 
 ## 40.5. Candlestick Reversal Triggers
 
