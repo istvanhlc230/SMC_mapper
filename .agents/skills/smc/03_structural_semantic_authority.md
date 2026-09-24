@@ -256,7 +256,7 @@ Layer 3 is the sole semantic owner of structural qualification. A retracement wa
 - **Condition:** `RetracementDepth >= 50%` of the active dealing range.
 - **Structural Validation:**
   - **Normal Case:** Requires `>= 3` opposing closing candles within the retracement leg.
-  - **Reduced-Candle Displacement Exception:** If `< 3` opposing candles exist, including a **2-candle retracement**, qualification may occur only under the rare source-described displacement case: the reduced-candle retracement contains unusually large candle(s) that collectively take the bodies/extremes of `>= 5` preceding candles and produce the required retracement depth. The knowledgebase explicitly discusses a 2-candle case as potentially reasonable when these size/extreme-taking conditions are met. This exception does not make a short candle sequence automatically valid.
+  - **Reduced-Candle Displacement Exception:** If **exactly 2 opposing candles** form the retracement, qualification may occur only under the rare source-described displacement case: the reduced-candle retracement contains unusually large candle(s) that collectively take the bodies/extremes of `>= 5` preceding candles and produce the required retracement depth. The knowledgebase explicitly discusses a 2-candle case as potentially reasonable when these size/extreme-taking conditions are met. This exception does not make a short candle sequence automatically valid.
 - **Output:** `MAJOR_RETRACEMENT_QUALIFIED = TRUE`.
 
 #### Gate 2: HTF-Represented Retracement (Conditional Path)
@@ -323,7 +323,7 @@ POI expiration is handled through the separate POI lifecycle; the structural eng
 4. CONFIRMED_STRUCTURAL_SWING and Protected Structural Extreme are distinct lifecycle states.
 5. Protected Structural Extreme is created by valid BOS, not by impulse origin or arbitrary swing confirmation.
 6. Retracement sufficiency is mandatory before continuation BOS.
-7. One candle alone does not establish retracement validity; a reduced-candle retracement may qualify only when the canonical depth and source-supported displacement/extreme-taking conditions are satisfied.
+7. A retracement must contain **at least 2 opposing candles** to enter a positive qualification path. A **2-candle retracement** may qualify only when the canonical depth and source-supported displacement/extreme-taking conditions are satisfied; a 1-candle retracement does not qualify through the reduced-candle path.
 8. The standard equilibrium retracement threshold is 50%; the 38.2% threshold is conditional and may qualify only through the applicable immediate Higher Timeframe valid-pullback path.
 9. A `SWING_CANDIDATE` is not a `CONFIRMED_STRUCTURAL_SWING` until the canonical retracement qualification succeeds; failed shallow retracement revokes the candidate and shifts the active pullback/IDM reference.
 10. Physical external break does not automatically equal VALID_BOS or CHoCH_CONFIRMED.

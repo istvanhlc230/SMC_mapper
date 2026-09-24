@@ -20,11 +20,15 @@
 
 ### 9.3 Candle counts & displacement exception
 
+- `MIN_RETRACEMENT_CANDLE_COUNT: 2`
 - `NORMAL_RETRACEMENT_CANDLE_COUNT: 3`
+- A retracement with **>=2 opposing candles** may enter qualification evaluation.
 - Normal qualification uses at least three opposing closing candles.
-- A **2-candle retracement is not a separate normal qualification rule**. It is a permitted reduced-candle case only when the documented rare displacement exception is satisfied.
-- Reduced-candle qualification therefore covers a 2-candle retracement when the unusually large candle(s) collectively take at least five preceding bodies/extremes and the required retracement depth is reached.
-- A short retracement is not automatically valid merely because it contains two candles.
+- A **2-candle retracement is the explicit reduced-candle case**, not a separate normal qualification rule, and is permitted only when the documented rare displacement exception is satisfied.
+- Reduced-candle qualification therefore covers the **2-candle retracement case** when the unusually large candle(s) collectively take at least five preceding bodies/extremes and the required retracement depth is reached.
+- A 1-candle retracement is not a positive reduced-candle qualification path; the `>=2` minimum only establishes eligibility for qualification evaluation.
+- **38.2%–<50% retracements may contain 2 or more candles** and are evaluated through the separate applicable-immediate-HTF valid-pullback gate.
+- A short retracement is not automatically valid merely because it contains two or more candles.
 - `MIN_OUTLIER_EXTREMES_TAKEN: 5`
 - These are numeric support parameters only; they do not redefine the semantic qualification rule.
 
