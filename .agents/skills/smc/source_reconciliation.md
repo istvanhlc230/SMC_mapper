@@ -179,6 +179,17 @@ Required outcome:
 - the knowledgebase does not define one universal numeric pip/tick buffer;
 - missing `P` must block automatic order submission rather than invent a default.
 
+### C11 — Target resolution hierarchy
+
+Canonicalize target resolution separately for direct pro-trend, LTF, and countertrend execution.
+
+Required outcome:
+- direct same-timeframe pro-trend uses the current confirmed external extreme / external liquidity as primary target;
+- LTF execution must explicitly select between the source-supported higher-timeframe external target and lower-timeframe structural/BOS destination;
+- countertrend target is setup-specific and resolves to the next canonical destination defined by the active scenario;
+- RR is evaluated against an already resolved target and must not create the target;
+- absence of a canonical target blocks automatic TP submission.
+
 ## 4. Source analysis
 
 For every relevant source passage create a source record:
