@@ -398,6 +398,68 @@ OLD TREND TERMINATED + INITIAL ACTIVE IMPULSE INITIALIZED
 
 The engine must not skip prerequisites because a later price movement appears visually obvious.
 
+### LTF-CHoCH Context Route
+
+The implementation must support the source-defined LTF CHoCH route without creating a sixth lifecycle state.
+
+Activation:
+```text
+ACTIVE HTF DIRECTIONAL NARRATIVE
+        AND
+HTF POI INTERACTION
+        OR
+HTF CORE-LIQUIDITY TAKEOUT
+        ↓
+LTF_CHoCH_CONTEXT_ACTIVE
+```
+
+While active, the governing opposing reference for the LTF route is the most recently formed **valid LTF pullback**, represented by its verified pullback extreme / active inducement reference. Invalid pullbacks, arbitrary local pivots, SMT levels, and non-validated extremes must not be substituted.
+
+```text
+MOST_RECENT_VALID_LTF_PULLBACK
+        ↓
+VERIFIED_PULLBACK_EXTREME
+        ↓
+LTF_ACTIVE_INDUCEMENT_REFERENCE
+        ↓
+LTF CHoCH REFERENCE
+```
+
+The source-aligned execution representation uses a completed LTF candle close beyond that reference:
+
+```text
+BULLISH HTF CONTEXT
+Close_LTF < LTF_Inducement_Low
+        ↓
+LTF_CHoCH_ELIGIBLE
+
+BEARISH HTF CONTEXT
+Close_LTF > LTF_Inducement_High
+        ↓
+LTF_CHoCH_ELIGIBLE
+```
+
+Wick-only penetration of this LTF reference does not confirm the special LTF route.
+
+```text
+LTF_CHoCH_ELIGIBLE
+        ↓
+ALL APPLICABLE CHoCH PREREQUISITES
+        ├─ FAIL → REMAIN / CONTEXT CONTINUES
+        └─ PASS → CHoCH_CONFIRMED
+```
+
+`LTF_CHoCH_CONTEXT_ACTIVE` is a process/context condition, not a lifecycle state enum. It expires when `CHoCH_CONFIRMED` occurs or when its qualifying HTF interaction context is no longer the active execution context.
+
+Non-equivalences:
+```text
+HTF POI INTERACTION ≠ CHoCH
+HTF CORE-LIQUIDITY TAKEOUT ≠ CHoCH
+LTF VALID PULLBACK ≠ CHoCH
+LTF INDUCEMENT SWEEP ≠ CHoCH
+LTF_CHoCH_CONTEXT_ACTIVE ≠ NEW STATE ENUM
+LTF CHoCH REFERENCE ≠ REAL_MAJOR_IDM
+```
 ### Post-CHoCH dual lineage
 
 `CHoCH_CONFIRMED` initializes the new regime without inventing a new lifecycle enum. The new trend remains in `CONFIRMATION_LOCKED` while candidate detection is allowed and confirmation is gated.
