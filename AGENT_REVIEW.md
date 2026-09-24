@@ -147,7 +147,15 @@ class StructuralPOICandidate:
 See Developer Report Section 7.
 
 # IMPLEMENTATION STATUS
-Phase 2 Pre-implementation Design revised based on validator feedback. Awaiting validation.
+Phase 3 (Implementation) in progress.
+- [x] Step 1: Normalized data model + deterministic event/state architecture and tests.
+- [ ] Step 2: Micro/Minor structure layer (Candle relationships, Pullback, IDM detection).
+- [ ] Step 3: Major structure layer (Swing Confirmation, BOS, CHoCH gating).
+- [ ] Step 4: POI Identification (Decisional/Extreme rule of two).
+- [ ] Step 5: JSON execution output projection (with `target=None`).
 
 # COMMITS
-[Will append commit SHA after review]
+COMMIT: [Will append commit SHA after review]
+FILES: smc_analyzer.py, tests/test_smc_analyzer.py, AGENT_REVIEW.md
+PURPOSE: Step 1: Implement canonical enums (LifecycleState, DetectionEvent, ProcessCondition, etc.) and MarketDataNormalizer with Decimal precision and strictly ordered UTC checks.
+TESTS: pytest tests/test_smc_analyzer.py (8 passed)
