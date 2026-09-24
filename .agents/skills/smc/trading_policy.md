@@ -8,6 +8,29 @@
 
 The knowledgebase contains a concrete example trading plan, including fixed per-trade risk, running-risk limits, trade-count limits, daily loss limits, session windows, news avoidance, and trade logging. These values are treated as **configurable trading-policy parameters**, not universal structural SMC constants.
 
+## 1.5 Timeframe Execution Route
+
+The source material supports both direct same-timeframe execution and optional Higher Timeframe → Lower Timeframe refinement.
+
+```text
+DIRECT ROUTE
+ANALYSIS TIMEFRAME = EXECUTION TIMEFRAME
+
+MULTI-TIMEFRAME ROUTE
+HTF → narrative / structure / POI / liquidity
+LTF → execution refinement
+```
+
+The platform must explicitly configure the active route. It must not require LTF execution for every setup.
+
+When the multi-timeframe route is active:
+- HTF defines the directional narrative and canonical structural context;
+- LTF refines execution only;
+- LTF may expose internal structure and activate the canonical LTF-CHoCH context when its prerequisites pass;
+- LTF must not silently redefine the HTF structural narrative.
+
+The source provides example timeframe pairings for different trading styles, but these are examples rather than universal SMC constants. A deployment must store an explicit HTF/LTF pair when using the multi-timeframe route.
+
 ## 2. Position sizing
 
 Position sizing is determined only after the canonical entry and stop are resolved.
