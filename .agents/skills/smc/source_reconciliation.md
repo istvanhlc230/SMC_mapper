@@ -123,6 +123,7 @@ Canonicalize Engineering Liquidity as a core-liquidity reference derived from th
 
 Required outcome:
 - [SOURCE_DIRECT] the active Extreme POI must be established first;
+- [PROJECT_CANONICAL] any Rejection Block Extreme-role composition remains an execution-layer representation; it must not be used to redefine the source-level Engineering Liquidity concept;
 - [SOURCE_DIRECT] the reference pullback is the most recently formed valid pullback immediately preceding that active Extreme POI;
 - [SOURCE_DIRECT] bullish ENG_LQD is liquidity below that pullback low;
 - [SOURCE_DIRECT] bearish ENG_LQD is liquidity above that pullback high;
@@ -138,6 +139,7 @@ Canonicalize the distinction between True SMC entry authorization and broker/exc
 Required outcome:
 - [SOURCE_DIRECT] each of the four entry modules has an explicit structural/execution prerequisite chain;
 - [SOURCE_DIRECT] a sweep or mitigation alone never authorizes an entry;
+- [SOURCE_DIRECT] the Decisional POI execution route is downstream of active IDM takeout; IDM_TAKEN must precede Decisional POI mitigation/confirmation in the canonical route;
 - [SOURCE_COMPOSED] direct candle-confirmation entries use the completed confirmation-candle close as the methodology price reference;
 - [SOURCE_DIRECT] Decisional and Extreme POI entries require independent execution confirmation after mitigation;
 - [IMPLEMENTATION_POLICY] broker order type (market/limit/stop) is not a methodology fact unless a separate canonical trading-plan rule explicitly fixes it;
