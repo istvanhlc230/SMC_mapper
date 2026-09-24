@@ -531,7 +531,8 @@ Regression tests must cover:
 
 ### Structural qualification
 - standard >=3-opposing-closing-candle qualification on the 50% path;
-- reduced-candle qualification only through the documented rare displacement case: unusually large reduced-candle retracement candle(s) collectively taking >=5 preceding bodies/extremes;
+- a 2-candle retracement is permitted only through the documented rare reduced-candle displacement case: unusually large retracement candle(s) collectively taking >=5 preceding bodies/extremes and reaching the required retracement depth;
+- reduced-candle qualification below three candles is not automatic;
 - 38.2%–<50% qualifies only through a valid single pullback event on the applicable immediate Higher Timeframe;
 - HTF inside-bar or invalid-pullback representation does not qualify;
 - below 38.2% does not qualify;
