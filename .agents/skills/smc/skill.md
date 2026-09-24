@@ -61,6 +61,11 @@ Read the referenced documents in this order when the full methodology is require
    - State-transition and validation requirements
    - Must consume canonical methodology; it must not redefine it
 
+10. `trading_policy.md`
+   - Configurable trading-plan and account-risk policy
+   - Position sizing, risk budgets, session windows, news gate, trade-count limits, logging
+   - Does not redefine structural SMC semantics
+
 ## 4. Source reconciliation governance
 
 `source_reconciliation.md`
