@@ -102,7 +102,7 @@ Required representation:
 - bearish: liquidity above the valid pullback high immediately preceding the active Extreme POI;
 - no valid pullback before the active Extreme POI -> no Engineering Liquidity reference;
 - invalid pullbacks, SMTs, arbitrary pivots, and generic equal highs/lows cannot manufacture ENG_LQD;
-- when the active Extreme POI changes from one canonical POI to another, the Engineering Liquidity reference is recomputed for the new provenance;
+- when the active Extreme POI changes between canonical `EXTREME_OF` and `EXTREME_OB` provenance, the Engineering Liquidity reference is recomputed for the new provenance;
 - historical ENG_LQD references remain immutable observations;
 - ENG_LQD sweep is distinct from IDM sweep, Extreme POI mitigation, BOS, and CHoCH;
 - if IDM and ENG_LQD occupy the same numeric price, preserve the distinct semantic roles rather than collapsing provenance.
@@ -802,7 +802,7 @@ EXACT TP COORDINATE
 Required mappings:
 - direct same-timeframe pro-trend -> current confirmed external extreme / external liquidity;
 - LTF execution -> explicit policy selecting `HTF_EXTERNAL_TARGET` or `LTF_STRUCTURAL_TARGET`; no implicit default;
-- countertrend -> setup-specific next canonical destination, such as the next valid POI, IDM, Engineering Liquidity, or external liquidity, according to the active setup contract;
+- countertrend -> setup-specific next canonical destination, such as the next valid POI, IDM, Engineering Liquidity, Rejection Block, or external liquidity, according to the active setup contract;
 - RR calculation consumes the target; RR calculation must not create the target;
 - absent canonical target -> no automatic TP submission.
 
@@ -844,8 +844,9 @@ Required invariants:
 - stop movement after entry belongs to a separate trade-management policy and must not rewrite the historical entry/SL anchor.
 
 ### POI / Entry
-- POI ontology accepts Valid OF, Valid OB, or the project-composed Rejection Block Extreme role;
-- Rule of Two limits canonical tradable POIs to Decisional POI and Extreme POI;
+- POI ontology accepts Valid OF and Valid OB;
+- Rejection Block is a separate PD-array/execution concept, not a POI class;
+- Rule of Two limits canonical tradable POIs to Decisional POI and Extreme POI (Extreme OF / Extreme OB);
 - Origin OB is a latent reserve POI (mitigation transfer target when Extreme POI is mitigated), never a 3rd active POI;
 - the Rule of Two permits at most two actively tradable POIs;
 - Decisional buy POI is in discount;
