@@ -113,6 +113,19 @@ Required outcome:
 - `UNAVAILABLE` must never be silently promoted to `OBSERVED`;
 - absence of intrabar evidence must not manufacture an event sequence.
 
+### C6 — LTF-CHoCH context after HTF interaction
+
+Canonicalize the source-defined lower-timeframe CHoCH route used after an HTF Point of Interest interaction or canonical core-liquidity takeout.
+
+Required outcome:
+- activation is a context condition, not a new lifecycle state;
+- the most recently formed valid LTF pullback / verified extreme supplies the governing LTF inducement reference;
+- arbitrary local pivots and invalid pullbacks cannot replace the reference;
+- the source-aligned deterministic trigger is a completed LTF candle close beyond the governing LTF reference;
+- the route must not independently alter the HTF bias;
+- confirmation still requires the applicable CHoCH prerequisite gate;
+- the LTF reference must not be reclassified as a Real Major IDM.
+
 ## 4. Source analysis
 
 For every relevant source passage create a source record:
