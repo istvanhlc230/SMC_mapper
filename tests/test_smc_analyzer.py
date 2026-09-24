@@ -77,6 +77,18 @@ def test_incomplete_candle_exclusion():
     assert candles[-1].index == 13
     assert candles[-1].timestamp == raw[13]['timestamp']
 
+def test_missing_is_completed_halts():
+    raw = make_dummy_data(15)
+    del raw[5]['is_completed']
+    with pytest.raises(DataNormalizationError, match="Missing 'is_completed' status"):
+        MarketDataNormalizer.normalize(raw)
+
+def test_non_boolean_is_completed_halts():
+    raw = make_dummy_data(15)
+    raw[5]['is_completed'] = "True"
+    with pytest.raises(DataNormalizationError, match="'is_completed' must be a boolean"):
+        MarketDataNormalizer.normalize(raw)
+
 def test_detection_event_enum():
     from smc_analyzer import DetectionEvent
     # Ensure exactly 7 canonical event classes exist
@@ -99,3 +111,4 @@ def test_float_input_conversion():
     raw[0]['open'] = 1.1000
     candles = MarketDataNormalizer.normalize(raw)
     assert candles[0].open == Decimal("1.1")
+

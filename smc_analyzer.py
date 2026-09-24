@@ -107,7 +107,12 @@ class MarketDataNormalizer:
                 raise DataNormalizationError(f"Invalid OHLC at {ts_utc}: high ({c_high}) < low ({c_low}).")
                 
             # Incomplete candle exclusion
-            is_completed = bool(row.get('is_completed', True))
+            if 'is_completed' not in row:
+                raise DataNormalizationError(f"Missing 'is_completed' status at {ts_utc}.")
+            is_completed = row['is_completed']
+            if not isinstance(is_completed, bool):
+                raise DataNormalizationError(f"'is_completed' must be a boolean at {ts_utc}.")
+                
             if not is_completed:
                 # We skip uncompleted candles for historical mapping
                 continue
@@ -135,3 +140,4 @@ class StructuralPOICandidate:
     execution_role: str # "DECISIONAL" | "EXTREME"
     target: Optional[Decimal] = None
     is_executable: bool = False # RR NOT_EVALUABLE
+

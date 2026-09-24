@@ -1,9 +1,9 @@
 # DEVELOPER REPORT
 **Current Repository State:**
 * **Branch:** main
-* **HEAD:** 2138bc0 (Before correction)
-* **Working-tree status:** clean (after committing corrections)
-* **Implementation decisions:** Corrected Phase 3 Step 1 based on validation. Consolidated `NO_EVENT` and `INTERNAL_PB` into a single `NO_EVENT_INTERNAL_PB` enum member to strictly enforce the 7 canonical event classes. Removed the arbitrary 10-candle threshold from `MarketDataNormalizer`; insufficient history will be handled dynamically by specific structural operations based on their canonical prerequisites.
+* **HEAD:** 28737c0
+* **Working-tree status:** clean (after committing final `is_completed` fix)
+* **Implementation decisions:** Fixed `MarketDataNormalizer` to strictly enforce `is_completed` as a boolean, failing closed if missing or malformed. Added corresponding tests. Step 1 implementation remains fully compliant with canonical rule 7-member event enum and history handling.
 * **Exact smc_skill files relied upon:** 
   - `01_micro_structure.md`
   - `02_minor_structure.md`
@@ -18,7 +18,8 @@
 - [x] **Persistent Lifecycle Chain:** Explicit chain defined (IDM_TAKEN to VALID_BOS) where each stage persists its state to be consumed sequentially. No opaque multi-stage collapse.
 - [x] **Target/RR Contract Fixed:** Fixed wording regarding RR evaluability. Target is unresolved, therefore RR is NOT_EVALUABLE. No executable setup is permitted.
 - [x] **Event Enum Fixed:** Exactly 7 disjoint canonical detection events (`NO_EVENT_INTERNAL_PB`, etc).
-- [x] **Global History Threshold Removed:** No arbitrary `len(candles) < 10` minimum.
+- [x] **Global History Threshold Removed:** No arbitrary global minimum.
+- [x] **Boolean Contract Hardened:** `is_completed` is strictly validated.
 
 | Rule Concept | Canonical Source | Key Constraints |
 |---|---|---|
@@ -84,7 +85,7 @@ class Candle:
 - **Deterministic Order & Timezone:** Must be strictly ordered by UTC timestamp.
 - **Duplicate Timestamps:** Hard error; execution halts to prevent corrupted sequences.
 - **Invalid OHLC / Missing Bars:** Hard error if high < low; missing bars are treated as gaps, but structural relationships rely purely on the available ordered `Candle` array.
-- **Completed Eligibility:** The most recent live candle is strictly excluded until provider marks it closed.
+- **Completed Eligibility:** The most recent live candle is strictly excluded until provider marks it closed. Missing or non-boolean `is_completed` fields halt execution immediately.
 - **Adjusted vs Unadjusted:** Unadjusted OHLC must be used to preserve exact structural price bounds.
 - **Insufficient History:** Analyzer halts with specific `INSUFFICIENT_HISTORY` code (determined dynamically per specific operation).
 - **Intrabar Sequence:** Never silently inferred. Defaults to `UNAVAILABLE`.
@@ -121,7 +122,7 @@ class StructuralPOICandidate:
 ## 6. Expanded Test Matrix
 | Test Category | Target | Description |
 |---|---|---|
-| Determinism | OHLC Data | Asserts exact `Decimal` arithmetic, timezone handling, missing/duplicate data halts, incomplete candle exclusion, and `UNAVAILABLE` sequence inference. |
+| Determinism | OHLC Data | Asserts exact `Decimal` arithmetic, timezone handling, missing/duplicate data halts, incomplete candle exclusion, strict `is_completed` types, and `UNAVAILABLE` sequence inference. |
 | Semantic | Component Separation | Asserts intermediate process conditions (`IDM_TAKEN`, `SWING_CANDIDATE`) are persisted and consumed sequentially, not opaquely skipped. |
 | Invariant | Lifecycle Sequencing | Asserts `IDM_TAKEN` creates `SWING_CANDIDATE` (process condition), NOT confirmed swing or `VALID_BOS`. |
 | Invariant | Revoked Swings | Asserts failed retracement qualification revokes candidate and shifts the active pullback/IDM reference. |
@@ -137,7 +138,7 @@ class StructuralPOICandidate:
 * **RESOLUTION:** EXPLICITLY OPEN. `target` output is `None`. Target derivation is unresolved, and executable RR remains NOT_EVALUABLE until the formula is supplied. No invented fallback target is permitted.
 
 # VALIDATION REPORT
-[Awaiting Independent Validation Agent for Step 1 Corrections]
+Step 1 Structural Implementation has PASSED Independent Validation. Authorized for final Step 1 closure.
 
 # REQUIRED CORRECTIONS
 [None active]
@@ -146,15 +147,15 @@ class StructuralPOICandidate:
 See Developer Report Section 7.
 
 # IMPLEMENTATION STATUS
-Phase 3 (Implementation) Step 1 corrected based on validation. Awaiting final Step 1 approval.
-- [x] Step 1: Normalized data model + deterministic event/state architecture and tests (Corrected).
+Phase 3 (Implementation) Step 1 fully implemented and validated. Awaiting authorization for Step 2.
+- [x] Step 1: Normalized data model + deterministic event/state architecture and tests (Validated and Completed).
 - [ ] Step 2: Micro/Minor structure layer (Candle relationships, Pullback, IDM detection).
 - [ ] Step 3: Major structure layer (Swing Confirmation, BOS, CHoCH gating).
 - [ ] Step 4: POI Identification (Decisional/Extreme rule of two).
 - [ ] Step 5: JSON execution output projection (with `target=None`).
 
 # COMMITS
-COMMIT: [Will append commit SHA after review]
+COMMIT: [Will append final Step 1 commit SHA]
 FILES: smc_analyzer.py, tests/test_smc_analyzer.py, AGENT_REVIEW.md
-PURPOSE: Fix Step 1 implementation contract violations (exactly 7 DetectionEvents via `NO_EVENT_INTERNAL_PB`, and remove arbitrary 10-candle threshold).
-TESTS: python -m pytest tests/test_smc_analyzer.py (8 passed)
+PURPOSE: Finalize Step 1 by hardening `is_completed` boolean contract and marking Step 1 as validated.
+TESTS: python -m pytest tests/test_smc_analyzer.py (10 passed)
