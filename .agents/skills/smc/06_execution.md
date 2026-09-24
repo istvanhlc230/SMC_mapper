@@ -193,6 +193,79 @@ SMT ≠ OF_CONFIRMED
 PRE-IDM OF ≠ TRADABLE_POI
 OF TOUCH ≠ OF_MITIGATED
 ```
+## 37.6 Engineering Liquidity Identification and Lifecycle
+
+Engineering Liquidity (`ENG_LQD`) is a canonical **core-liquidity reference**, distinct from IDM and distinct from POI.
+
+### Source-defined origin
+
+Engineering Liquidity is the liquidity resting beyond the relevant extreme of the **most recently formed valid pullback immediately preceding the active Extreme POI**.
+
+```text
+VALID PULLBACK
+      ↓
+EXTREME OF / EXTREME OB
+      ↓
+LIQUIDITY BEYOND THE PULLBACK EXTREME
+      ↓
+ENG_LQD_REFERENCE
+```
+
+For bullish structure:
+
+```text
+VALID_PULLBACK_LOW_BEFORE_EXTREME_POI
+        ↓
+liquidity below that low
+        ↓
+ENG_LQD_REFERENCE (SELL-SIDE)
+```
+
+For bearish structure:
+
+```text
+VALID_PULLBACK_HIGH_BEFORE_EXTREME_POI
+        ↓
+liquidity above that high
+        ↓
+ENG_LQD_REFERENCE (BUY-SIDE)
+```
+
+The reference pullback must be canonical and valid. An invalid pullback, arbitrary local pivot, SMT, or visually convenient extreme cannot create Engineering Liquidity.
+
+If no valid pullback immediately preceding the active Extreme POI exists, no Engineering Liquidity reference is created.
+
+### Extreme POI dependency
+
+The active Extreme POI may be an `EXTREME_OF` or an `EXTREME_OB` according to the canonical POI/OB lifecycle. Engineering Liquidity is therefore resolved **after** the active Extreme POI identity is established.
+
+When the active Extreme POI identity changes, the Engineering Liquidity reference must be recomputed from the corresponding valid-pullback-before-Extreme-POI relation. Historical references remain historical and are not silently rewritten.
+
+### Core-liquidity lifecycle
+
+```text
+ENG_LQD_REFERENCE
+        ↓
+ENG_LQD_CONFIRMED
+        ↓
+ENG_LQD_SWEEP (optional)
+```
+
+A sweep of Engineering Liquidity is a liquidity/execution event. It does not by itself create IDM, BOS, CHoCH, a structural swing, or a Trading Range rollover. Reversal remains a separate execution/structural decision.
+
+Engineering Liquidity and IDM can exist as distinct role objects even when their physical price levels coincide. Provenance must not be collapsed merely because the numeric level is equal.
+
+### Engineering Liquidity non-equivalences
+
+```text
+ENG_LQD ≠ IDM
+ENG_LQD ≠ POI
+ENG_LQD ≠ VALID_BOS
+ENG_LQD ≠ CHoCH
+ENG_LQD_SWEEP ≠ AUTOMATIC_REVERSAL
+ENG_LQD_SWEEP ≠ EXTREME_POI_MITIGATION
+NO_VALID_PULLBACK_BEFORE_EXTREME_POI → NO ENG_LQD
+```
 ## 38. Order Block validation
 
 
