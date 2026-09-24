@@ -802,7 +802,7 @@ EXACT TP COORDINATE
 Required mappings:
 - direct same-timeframe pro-trend -> current confirmed external extreme / external liquidity;
 - LTF execution -> explicit policy selecting `HTF_EXTERNAL_TARGET` or `LTF_STRUCTURAL_TARGET`; no implicit default;
-- countertrend -> setup-specific next canonical destination, such as the next valid POI, IDM, Engineering Liquidity, Rejection Block, or external liquidity, according to the active setup contract;
+- countertrend -> setup-specific next canonical destination, such as the next valid POI, IDM, Engineering Liquidity, or external liquidity, according to the active setup contract;
 - RR calculation consumes the target; RR calculation must not create the target;
 - absent canonical target -> no automatic TP submission.
 
