@@ -119,16 +119,16 @@ Required outcome:
 
 ### C8 — Engineering Liquidity identification and lifecycle
 
-Canonicalize Engineering Liquidity as a core-liquidity reference derived from the valid pullback immediately preceding the active Extreme POI.
+Canonicalize Engineering Liquidity as a core-liquidity reference derived from the valid pullback immediately preceding the active Extreme OF or Extreme OB.
 
 Required outcome:
-- [SOURCE_DIRECT] the active Extreme POI must be established first;
-- [PROJECT_CANONICAL] any Rejection Block Extreme-role composition remains an execution-layer representation; it must not be used to redefine the source-level Engineering Liquidity concept;
+- [SOURCE_DIRECT] the active Extreme OF or Extreme OB must be established first;
+- [SOURCE_DIRECT] Rejection Block is a separate PD-array/execution concept, not an Extreme POI and not an Engineering Liquidity dependency;
 - [SOURCE_DIRECT] the reference pullback is the most recently formed valid pullback immediately preceding that active Extreme POI;
 - [SOURCE_DIRECT] bullish ENG_LQD is liquidity below that pullback low;
 - [SOURCE_DIRECT] bearish ENG_LQD is liquidity above that pullback high;
-- [SOURCE_DIRECT] no valid pullback before the active Extreme POI means no ENG_LQD reference;
-- [SOURCE_COMPOSED] changing Extreme POI provenance requires recomputing the active ENG_LQD reference;
+- [SOURCE_DIRECT] no valid pullback before the active Extreme OF/Extreme OB means no ENG_LQD reference;
+- [SOURCE_COMPOSED] changing Extreme OF/Extreme OB provenance requires recomputing the active ENG_LQD reference;
 - [SOURCE_DIRECT] ENG_LQD is distinct from IDM, POI, BOS, CHoCH, and Extreme POI mitigation;
 - [SOURCE_COMPOSED] ENG_LQD may be coincident in price with IDM while retaining separate provenance.
 
