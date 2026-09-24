@@ -153,6 +153,19 @@ Required outcome:
 - ENG_LQD is distinct from IDM, POI, BOS, CHoCH, and Extreme POI mitigation;
 - ENG_LQD may be coincident in price with IDM while retaining separate provenance.
 
+### C9 — Entry authorization, price reference, and platform-order boundary
+
+Canonicalize the distinction between True SMC entry authorization and broker/exchange order submission.
+
+Required outcome:
+- each of the four entry modules has an explicit structural/execution prerequisite chain;
+- a sweep or mitigation alone never authorizes an entry;
+- direct candle-confirmation entries use the completed confirmation-candle close as the methodology price reference;
+- Decisional and Extreme POI entries require independent execution confirmation after mitigation;
+- broker order type (market/limit/stop) is not a methodology fact unless a separate canonical trading-plan rule explicitly fixes it;
+- order submission, fill, and open-position state remain distinct from entry authorization;
+- pending-order expiry/cancellation/re-entry are handled by the separate order-lifecycle policy.
+
 ## 4. Source analysis
 
 For every relevant source passage create a source record:
