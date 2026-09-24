@@ -85,10 +85,10 @@ SMT → POI
 
 ### 45.0.1 Engineering Liquidity implementation mapping
 
-The implementation resolves Engineering Liquidity only after the active Extreme POI identity is known.
+The implementation resolves Engineering Liquidity only for a canonical `EXTREME_OF` or `EXTREME_OB`.
 
 ```text
-ACTIVE EXTREME POI
+ACTIVE EXTREME_OF / EXTREME_OB
     ↓
 MOST RECENT VALID PULLBACK IMMEDIATELY BEFORE IT
     ↓
