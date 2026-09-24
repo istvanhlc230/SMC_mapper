@@ -45,9 +45,13 @@ Everything outside the active one-or-two-POI structure is non-tradable/SMT unles
 ### Latent Reserve POIs (Origin OB & Rejection Block)
 
 **Origin OB** and **Rejection Block** are **LATENT reserve POIs, NOT third active POIs**. They sit at the absolute origin/extreme of the dealing range.
-- The **Origin OB** becomes actively tradable IF AND ONLY IF Extreme Order Flow was mitigated AND Extreme Order Block fails, without price producing a CHoCH.
-- The **Rejection Block** becomes the active Extreme POI IF AND ONLY IF the Extreme Order Block fails.
-They assume the role of the Extreme POI when the primary Extreme POI is invalidated, preserving the strict Rule-of-Two maximum.
+
+Because both act as the latent Extreme POI fallback, their activation is **mutually exclusive**. They share the single Extreme POI slot and can never be simultaneously active.
+
+- **Rejection Block Activation:** Becomes the active Extreme POI IF AND ONLY IF the primary Extreme Order Block fails AND the canonical rejection wick remains valid and unmitigated.
+- **Origin OB Activation:** Becomes the active Extreme POI IF AND ONLY IF the primary Extreme Order Block fails, Extreme Order Flow was previously mitigated, AND no valid Rejection Block exists (or it was already consumed).
+
+They assume the role of the Extreme POI when the primary Extreme POI is invalidated, guaranteeing the strict Rule-of-Two maximum (`ACTIVE_DECISIONAL_POI + ACTIVE_EXTREME_POI`).
 
 ### POI semantic separation
 
@@ -67,6 +71,8 @@ The following invariants are mandatory:
 
 ```text
 POI ∈ {OF_CONFIRMED, VALID_OB, REJECTION_BLOCK}
+REJECTION_BLOCK → EXTREME_POI ROLE ONLY
+REJECTION_BLOCK → NOT_DECISIONAL_POI
 STANDALONE_FVG → NOT_POI
 IDM → NOT_POI
 LIQUIDITY → NOT_POI
@@ -414,24 +420,41 @@ No alternative geometry such as an unspecified “sweeping wick range” is perm
 
 ### POI Interaction vs. Failure
 
-The skill distinguishes distinct levels of POI interaction:
+The skill strictly distinguishes distinct lifecycle states for a POI:
 
 ```text
-POI TOUCH
-POI INTERACTION
-POI MITIGATION
-POI FAILURE
-POI INVALIDATION
+POI_TOUCH
+POI_INTERACTION
+POI_MITIGATION
+POI_FAILURE
+POI_INVALIDATION
 ```
 
-- A physical wick **touch** alone must not be declared a POI failure.
-- Physical **penetration** alone must not automatically be declared a POI failure.
-- **Execution failure** and **structural failure** must remain separate.
-- **POI failure** must not create BOS or CHoCH.
-- A failed POI must not authorize arbitrary replacement zones.
-- Fallback must follow the canonical POI hierarchy.
+- **POI_TOUCH / INTERACTION:** Price enters the POI zone. A physical wick touch or zone penetration alone does NOT equal failure.
+- **POI_MITIGATION:** Price successfully interacts with the POI, consuming its liquidity for execution.
+- **POI_FAILURE:** The execution setup fails when the opposing side takes control. This is explicitly defined by a structural shift (CHoCH) against the POI's intended direction.
+- **POI_INVALIDATION:** The POI is permanently removed from the active dealing range (e.g., fully consumed or structurally breached beyond repair).
 
-Where the source material requires an HTF→LTF structural response before declaring failure, that dependency must be explicitly satisfied; failure cannot be reduced to a simple zone-close test.
+**POI_FAILURE Canonical Transition:**
+Failure cannot be reduced to a simple physical penetration or single-candle zone close. It strictly requires an HTF→LTF structural response:
+
+```text
+HTF POI
+   ↓
+LTF INTERACTION
+   ↓
+LTF STRUCTURAL RESPONSE
+   ↓
+BOS / CHoCH CLASSIFICATION (Against POI direction)
+   ↓
+CONTROL SHIFT
+   ↓
+POI FAILURE
+```
+
+`06_execution.md` consumes this canonical `BOS` / `CHoCH` state to determine `POI_FAILURE`, but does NOT redefine them. The structural classifications of BOS and CHoCH remain solely owned by `04_BOS_mechanics.md` and `05_CHOCH_mechanics.md`. 
+
+Because POI Failure is an execution state dependent on structural confirmation, a `POI_FAILURE` event does not itself create a new HTF BOS or CHoCH. Execution failure and structural failure remain strictly separate. A failed POI must not authorize arbitrary replacement zones; fallback must follow the canonical hierarchy.
 
 ### Rejection Block Identification
 
