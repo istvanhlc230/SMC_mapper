@@ -527,8 +527,8 @@ Regression tests must cover:
 
 ### Structural qualification
 - standard >=3-opposing-closing-candle qualification on the 50% path;
-- reduced-candle qualification only through the documented single displacement-outlier exception taking >=5 preceding bodies/extremes;
-- 38.2%–<50% qualifies only through a valid single pullback on the applicable immediate Higher Timeframe;
+- reduced-candle qualification only through the documented rare displacement case: unusually large reduced-candle retracement candle(s) collectively taking >=5 preceding bodies/extremes;
+- 38.2%–<50% qualifies only through a valid single pullback event on the applicable immediate Higher Timeframe;
 - HTF inside-bar or invalid-pullback representation does not qualify;
 - below 38.2% does not qualify;
 - a continuation break without stored `MAJOR_RETRACEMENT_QUALIFIED` remains non-BOS / `IMPULSE_EXTENSION` as applicable.
@@ -559,7 +559,7 @@ Regression tests must cover:
 - qualified IDM sweep creates a `SWING_CANDIDATE`, not a Confirmed Swing;
 - dynamic absolute retracement extreme tracking;
 - 50% standard qualification with the normal >=3-candle rule;
-- reduced-candle qualification only through the documented displacement-outlier exception;
+- reduced-candle qualification only through the documented rare displacement case taking >=5 preceding bodies/extremes;
 - 38.2%–<50% qualification only through the applicable immediate-HTF valid-pullback path;
 - below 38.2% does not qualify;
 - shallow qualification failure revokes the candidate and shifts the active pullback/IDM reference;
