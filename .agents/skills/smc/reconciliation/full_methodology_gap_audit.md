@@ -1,6 +1,6 @@
 # TRUE SMC — Full Methodology / Platform Gap Audit
 
-Status: **CANONICALIZATION PHASE COMPLETE — C6–C15 TRACKED/PARTIALLY OPEN; PLATFORM-SPECIFIC IMPLEMENTATION REMAINS**
+Status: **CANONICALIZATION PHASE COMPLETE — C1–C15 RECONCILED AT THE CURRENT SEMANTIC BOUNDARY; CONTROLLED IMPLEMENTATION/POLICY GAPS REMAIN**
 
 Scope:
 - canonical SMC skill under `.agents/skills/smc/`;
@@ -34,7 +34,7 @@ The current skill is sufficient to specify a substantial **market-structure and 
 
 It is **not by itself a broker-specific live trading platform specification**. The SMC methodology, execution authorization, trading policy, countertrend scenarios, and generic platform execution boundary are now canonicalized; venue-specific implementation still requires broker/exchange contracts and infrastructure.
 
-The main reason is not lack of source material. The knowledgebase contains most of the additional concepts needed for the strategy. The gap is that several source scenarios are still expressed as examples, qualitative guidance, or trader-plan rules and have not yet been reconciled into deterministic contracts.
+The remaining uncertainty is deliberately bounded. The canonical skill now covers the current structural/execution semantics and the configurable Target Plan architecture. What remains is either (a) implementation/policy behavior that the sources do not universally fix, such as target choice among simultaneous candidates, or (b) venue-specific infrastructure contracts. These must remain outside canonical methodology unless source evidence later supplies a deterministic rule.
 
 A complete platform also requires non-SMC infrastructure specifications that are not methodology semantics: broker/exchange order handling, bid/ask and spread behavior, slippage, fills, margin/leverage, contract specifications, position sizing mechanics, session/news data, persistence, monitoring, backtesting, and operational failure handling.
 
@@ -54,7 +54,7 @@ A complete platform also requires non-SMC infrastructure specifications that are
 | Four entry modules | Canonical | Covered at authorization/reference-price boundary; order lifecycle remains platform policy |
 | Reversal triggers | Canonical | Covered at current deterministic/qualitative boundary |
 | Stop loss | Canonical concept | Semantic anchors covered; numeric buffer remains configurable |
-| Target | Canonical concept | Covered as candidate discovery + configurable target plan; source gaps remain for universal priority/countertrend coordinate |
+| Target | Canonical concept | Covered as candidate discovery + configurable Target Plan; universal priority/countertrend coordinate intentionally remains a policy choice for automatic TP |
 | RR | Configurable trading policy | Covered |
 | Position sizing | Configurable trading policy | Canonicalized |
 | Session windows | Configurable trading policy | Canonicalized |
@@ -241,6 +241,25 @@ Post-fix validation:
 - position sizing uses Account Balance.
 
 The remaining items are **source-under-specified implementation choices**, not identified source contradictions: exact LTF target-selection hierarchy, universal countertrend target coordinate, and platform-specific execution contracts. The deterministic candle-pattern predicates are retained only as explicitly source-derived formalizations, with qualitative morphology kept non-binary.
+## 3.14 Remaining-gap audit — current disposition
+
+The remaining items were re-audited against the current canonical skill and implementation boundary.
+
+| Item | Current disposition | Meaning |
+|---|---|---|
+| POI Failure provenance | **CLOSED / CANONICALIZED** | `POI_FAILURE` now consumes canonical CHoCH/control-shift state and is not reduced to a raw zone breach. |
+| Rejection Block → Engineering Liquidity | **CLOSED / CANONICALIZED** | Engineering Liquidity is derived only from the valid pullback immediately preceding active Extreme OF/Extreme OB; RB is separate. |
+| Reversal predicates | **CLOSED at current boundary** | Deterministic OHLC predicates are explicitly project-derived formalizations; qualitative morphology remains non-binary and no unsupported numeric threshold is invented. |
+| Premium/discount gate | **SEMANTICALLY CANONICALIZED** | Directional Decisional-POI location is explicit. Any remaining provenance uncertainty concerns source traceability, not a missing implementation rule. |
+| LTF target selection hierarchy | **CONTROLLED IMPLEMENTATION/POLICY GAP** | Two source-supported candidate classes exist; no universal priority is defined. Current notification-only monitoring does not require automatic target selection. |
+| Universal countertrend target coordinate | **CONTROLLED IMPLEMENTATION/POLICY GAP** | Sources describe setup-specific destinations, not one universal numeric TP. Do not invent one. |
+| Fixed-R target | **POLICY ONLY** | May be enabled only where the applicable trading policy permits; it is not canonical structural target provenance. |
+| BE / profit lock / trailing | **FUTURE TRADE-MANAGEMENT POLICY** | These are actions after target events, not target semantics and not current monitor behavior. |
+| Broker order-type / pending-order lifecycle details | **PLATFORM IMPLEMENTATION GAP** | The platform contract defines the boundary; venue-specific order semantics, cancellation/expiry/re-entry policy, and broker integration still require implementation/configuration. |
+| `smc_analyzer.py` runtime | **IMPLEMENTATION GAP** | The file contains foundational models but not the full canonical structural detector/classifier/state-transition engine. This is a runtime implementation task, not a methodology gap. |
+
+The audit therefore finds **no unresolved canonical-methodology contradiction requiring new SMC rules at this time**. The remaining target-choice items are intentionally not canonicalized because the sources do not provide a universal deterministic selection rule.
+
 ## 4. Current runtime versus canonical skill
 
 The current `main` runtime does not implement the full skill.
@@ -252,9 +271,10 @@ Current content provides:
 - completed-candle filtering;
 - intrabar evidence state;
 - lifecycle/event/outcome enums;
+- `TargetCandidate` / `TargetLeg` / `TargetPlan` models;
 - a StructuralPOICandidate data class.
 
-It does not currently contain the full structural detector/classifier/state-transition engine described by `03`/`04`/`05`/`08`.
+It does not currently contain the full structural detector/classifier/state-transition engine described by `03`/`04`/`05`/`08`. The runtime still contains legacy `SWING_CANDIDATE` representation even though the canonical documentation removed that terminology; this is a runtime synchronization issue, not a reason to alter canonical methodology.
 
 ### `smc_htf_ltf_monitor.py`
 
@@ -285,55 +305,53 @@ Examples of current non-canonical shortcuts:
 - no broker execution;
 - no real position/open-order lifecycle.
 
-### Repository-level inconsistency
+### Repository-level synchronization
 
-The current repository does **not** contain `SMC_mapper.py`, while `08_implementation.md` still refers to `SMC_mapper.py` as the executable implementation owner.
-
-This is a documentation/runtime synchronization issue and should be resolved before implementation work is treated as complete.
+The current runtime owner is `smc_analyzer.py`. The canonical `08_implementation.md` no longer depends on a missing `SMC_mapper.py` owner reference. Remaining synchronization work is therefore between the canonical lifecycle and the current analyzer implementation.
 
 ## 5. Full-platform sufficiency assessment
 
 ### Signal / structure engine
 
-**The skill is close, but not yet complete.**
+**Canonical specification: sufficient at the current methodology boundary. Runtime: incomplete.**
 
-The structural backbone and the currently canonicalized execution-selection contracts are sufficiently specified for implementation at the methodology boundary. Remaining strategy-level source gaps are controlled rather than silently invented: target priority among simultaneous valid candidates and a universal countertrend target coordinate. Venue-specific execution details remain platform configuration.
+The structural backbone, BOS/CHoCH lifecycle, POI/OF/OB/RB boundaries, and retracement gates are sufficiently specified for implementation. The analyzer runtime is not yet equivalent to that specification.
 
 ### Entry engine
 
-**Not yet complete.**
+**Canonical authorization: covered. Platform execution: implementation remains.**
 
-The four module taxonomy exists, but exact order-type, price-coordinate, cancellation, expiry, and re-entry semantics are still incomplete.
+The four entry modules, prerequisites, and methodology reference-price rules are canonicalized. Broker order type, pending-order cancellation/expiry/re-entry behavior, and venue integration remain platform-policy/implementation concerns.
 
 ### Stop engine
 
-**Not yet complete.**
+**Canonical anchors: covered. Numeric buffer/platform constraints: configurable implementation.**
 
-The semantic anchors exist, but exact deterministic stop coordinates/buffer rules are not fully specified.
+The four module-specific anchors are canonicalized. No universal numeric buffer is invented; platform-specific tick/pip/contract constraints remain required for live execution.
 
 ### Target engine
 
-**Partially complete.**
+**Canonical architecture: covered with intentionally controlled policy choices.**
 
-Pro-trend targeting is clearer; countertrend targeting needs explicit deterministic hierarchy if the platform must automatically place exits.
+Target candidate discovery and the configurable multi-leg Target Plan are canonicalized as project architecture. No universal priority among simultaneous LTF candidates and no universal countertrend coordinate is specified because the sources do not establish one.
 
 ### Position sizing / risk engine
 
-**Not yet complete.**
+**Canonical trading policy: covered. Runtime/platform integration: implementation remains.**
 
-The knowledgebase contains a usable source-backed position-sizing model and a concrete example risk plan, but the canonical skill has not yet represented them as an explicit configurable policy.
+Risk percentage, account-balance basis, sizing inputs, trade/session/daily limits, news/session gates, and fail-closed policy boundaries are represented as configurable policy. Actual account/instrument/broker integration remains implementation work.
 
 ### Live broker platform
 
-**No.**
+**Generic contract: defined. Venue integration: not implemented.**
 
-The current skill does not by itself specify the broker/exchange integration layer, execution guarantees, fills, slippage, margin, contract specifications, or account reconciliation required for a complete live trading platform.
+The platform contract defines order states, quotes, order types, fills, slippage, position reconciliation, and backtest boundaries. A real venue still requires broker/exchange-specific API, contract, and operational implementation.
 
 ### Backtester
 
-**No.**
+**Generic contract: defined. Execution simulator: not implemented.**
 
-The methodology can drive a backtester after the execution/fill/risk contracts are completed, but the current skill does not fully specify the market microstructure simulation required for trustworthy results.
+The no-lookahead, completed-candle, intrabar-evidence, spread/slippage, fill, and risk-evolution boundaries are specified. A trustworthy backtester still requires the executable simulation layer and explicit venue/data assumptions.
 
 ## 6. Additional knowledge required outside the current SMC skill
 
@@ -366,7 +384,7 @@ No knowledgebase file was modified.
 
 No runtime production file was modified. The reconciliation changed only canonical skill documentation and its audit ledger.
 
-The findings classified as **NEW_CANONICAL_CANDIDATE** or **SOURCE-BACKED BUT UNDER-SPECIFIED** should not be silently promoted to canonical methodology until their source evidence is reconciled into deterministic contracts.
+The findings classified as **NEW_CANONICAL_CANDIDATE** or **SOURCE-BACKED BUT UNDER-SPECIFIED** must not be silently promoted to canonical methodology. The currently known target-choice items are intentionally retained as controlled policy/implementation choices because no universal deterministic source rule has been established.
 
 The 2-candle retracement correction is already canonicalized elsewhere:
 - `MIN_RETRACEMENT_CANDLE_COUNT = 2`;
