@@ -146,7 +146,7 @@ The reference may represent a Minor IDM or another valid LTF pullback-derived ID
 
 #### LTF break qualification
 
-The source examples treat the LTF CHoCH trigger as a break of the governing LTF inducement/pullback reference. The canonical implementation route uses a **completed-candle close beyond that reference**:
+The True SMC source defines the LTF CHoCH confirmation gate as a **completed LTF candle body close beyond the governing LTF Inducement reference**. A wick-only penetration is a liquidity sweep/physical interaction, not LTF CHoCH confirmation:
 
 Bullish HTF context / bearish LTF reversal:
 
