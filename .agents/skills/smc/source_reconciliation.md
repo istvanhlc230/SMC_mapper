@@ -111,11 +111,13 @@ Canonicalize the source-defined lower-timeframe CHoCH route used after an HTF Po
 Required outcome:
 - [SOURCE_DIRECT] activation is a context condition, not a new lifecycle state;
 - [SOURCE_DIRECT] the most recently formed valid LTF pullback / verified extreme supplies the governing LTF inducement reference;
+- [SOURCE_DIRECT] the 2026 source explicitly calls this the LTF structure-cycle “glitch”: after HTF POI/core-liquidity interaction, the inducement pullback can be the CHoCH reference before the ordinary LTF external boundary is broken;
 - [SOURCE_DIRECT] arbitrary local pivots and invalid pullbacks cannot replace the reference;
-- [SOURCE_DIRECT] the deterministic trigger is a completed LTF candle body close beyond the governing LTF reference; wick-only penetration is a liquidity sweep/physical interaction and does not satisfy the LTF CHoCH confirmation gate;
+- [SOURCE_RECONCILED] the break mode is inherited from the active LTF IDM classification: Major IDM permits the normal wick-break CHoCH path; when only Minor IDM exists, the external protected boundary functions as Major IDM, a wick is `MAJOR_IDM_SWEEP`, and CHoCH requires a completed body close beyond the applicable LTF reference;
 - [SOURCE_DIRECT] the route must not independently alter the HTF bias;
 - [SOURCE_DIRECT] confirmation still requires the applicable CHoCH prerequisite gate;
-- [SOURCE_COMPOSED / PROJECT_CANONICAL] the LTF reference must not be reclassified as a Major IDM merely because it participates in the LTF-CHoCH route.
+- [SOURCE_COMPOSED / PROJECT_CANONICAL] the LTF reference must not be reclassified as a Major IDM merely because it participates in the LTF-CHoCH route;
+- [SOURCE_COMPOSED / PROJECT_CANONICAL] the implementation must not generalize the Minor-Inducement body-close condition to every LTF CHoCH.
 
 ### C7 — Order Flow / SMT identification and selection
 
