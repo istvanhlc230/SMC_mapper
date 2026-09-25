@@ -277,6 +277,34 @@ The confirmation of a structural swing point and the qualification of the later 
 
 This preserves the source distinction between swing confirmation after IDM takeout and later BOS qualification after sufficient retracement.
 
+### Impulsive-leg structural scope
+
+Structural qualification, IDM-derived mapping, and POI-relevant structural context are evaluated on the active **impulsive leg**. Internal complexity that belongs only to the corrective leg is not promoted into separate structural candidates.
+
+### Reduced-candle displacement outlier exception
+
+The normal reduced-candle gate must not reject a source-defined one-candle displacement outlier. A **single exceptional displacement candle** may constitute the complete qualifying retracement / structural leg when it takes the bodies or extremes of **at least 5 preceding candles** and reaches the otherwise applicable structural retracement requirement.
+
+This is an explicit exception to the normal candle-count gate, not a general one-candle qualification rule:
+
+```text
+NORMAL PATH
+>= 2 opposing candles
+        ↓
+qualification gates
+
+OUTLIER EXCEPTION
+1 exceptional displacement candle
+        ↓
+takes >= 5 preceding bodies/extremes
+        ↓
+required retracement depth / structural conditions
+        ↓
+qualification may proceed
+```
+
+The one-candle outlier must independently satisfy all other applicable structural prerequisites. Candle count alone never establishes qualification.
+
 ### Major Retracement Qualification Architecture
 
 Layer 3 is the sole semantic owner of structural qualification. A retracement wave is evaluated through the following hierarchical gates:
@@ -353,7 +381,7 @@ POI expiration is handled through the separate POI lifecycle; the structural eng
 4. CONFIRMED_STRUCTURAL_SWING and Protected Structural Extreme are distinct lifecycle states.
 5. Protected Structural Extreme is created by valid BOS, not by impulse origin or arbitrary swing confirmation.
 6. Retracement sufficiency is mandatory before continuation BOS.
-7. A retracement must contain **at least 2 opposing candles** to enter a positive qualification path. A **2-candle retracement** may qualify only when the canonical depth and source-supported displacement/extreme-taking conditions are satisfied; a 1-candle retracement does not qualify through the reduced-candle path.
+7. A normal retracement must contain **at least 2 opposing candles** to enter the standard positive qualification path; the one-candle displacement-outlier exception bypasses this normal count gate only when its source-defined extreme-taking condition and all other canonical gates pass. A **2-candle retracement** may qualify through the documented reduced-candle displacement exception, and a **1-candle displacement outlier is an explicit additional exception** when it takes `>= MIN_OUTLIER_EXTREMES_TAKEN` preceding bodies/extremes and all other canonical conditions pass.
 8. The standard equilibrium retracement threshold is 50%; the 38.2% threshold is conditional and may qualify only through the applicable immediate Higher Timeframe valid-pullback path.
 9. IDM takeout confirms the relevant `CONFIRMED_STRUCTURAL_SWING`. Retracement qualification determines whether a subsequent external break can be classified as `VALID_BOS`; it does not retrospectively create the swing point.
 10. Physical external break does not automatically equal VALID_BOS or CHoCH_CONFIRMED.
