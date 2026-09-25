@@ -374,11 +374,11 @@ Therefore:
 5. Layer 3 owns the canonical retracement qualification thresholds: 50% standard equilibrium and the conditional 38.2%–<50% HTF-represented path.
 6. Reduced-candle displacement and higher-timeframe qualification are evaluated by Layer 3 and are not redefined here.
 7. Wick-BOS is immediate and equality at the broken level is valid.
-8. Major IDM is a proxy, not Major IDM.
+8. Major IDM is the single canonical Major IDM semantic class; provenance does not create a separate Major IDM ontology.
 9. MAJOR_IDM wick breach is `MAJOR_IDM_SWEEP`, not VALID_BOS or CHoCH_CONFIRMED.
 10. `MAJOR_IDM_SWEEP` unlocks the Swing Confirmation Gate but does not automatically create a CONFIRMED_STRUCTURAL_SWING.
 11. `NEW_SVP` does not automatically create Major IDM.
-12. Major IDM supersedes the MAJOR_IDM only through the validated post-break SVP → Verified Extreme → Layer 3 IDM Classification → Real IDM lifecycle.
+12. A new Major IDM supersedes the active Major IDM only when it independently qualifies through the validated post-BOS SVP → Verified Extreme → Layer 3 IDM Classification lifecycle.
 13. Only `VALID_BOS` rolls the Trading Range and locks the Protected Structural Extreme.
 14. BOS event classification is anti-retroactive.
 15. BOS mechanics are subordinate to `03_structural_semantic_authority.md` and must not create a competing Layer 3 authority.
