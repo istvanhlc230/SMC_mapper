@@ -471,21 +471,30 @@ LTF_ACTIVE_INDUCEMENT_REFERENCE
 LTF CHoCH REFERENCE
 ```
 
-The canonical LTF execution representation requires a completed LTF candle body close beyond that reference:
+This is the source-defined **LTF Structural Glitch** route. The normal LTF external boundary is temporarily replaced by the most recently formed valid LTF pullback / inducement reference.
+
+The implementation must then resolve the break mode from the LTF IDM classification:
 
 ```text
-BULLISH HTF CONTEXT
-Close_LTF < LTF_Inducement_Low
+LTF STRUCTURAL GLITCH
         ↓
-LTF_CHoCH_ELIGIBLE
-
-BEARISH HTF CONTEXT
-Close_LTF > LTF_Inducement_High
+MOST RECENT VALID LTF PULLBACK / IDM REFERENCE
         ↓
-LTF_CHoCH_ELIGIBLE
+IDM TYPE
+   ├─ MAJOR IDM
+   │    ↓
+   │  WICK BREACH MAY ENTER CHoCH GATE
+   │
+   └─ MINOR IDM ONLY
+        ↓
+     BODY CLOSE BEYOND ACTIVE LTF REFERENCE
+        ↓
+     CHoCH_ELIGIBLE
 ```
 
-Wick-only penetration of this LTF reference does not confirm the special LTF route.
+When the active LTF range contains only Minor IDM, its external protected boundary functions as the Major IDM. A wick penetration of that external Major IDM is classified as `MAJOR_IDM_SWEEP`; it does not become CHoCH merely because the Structural Glitch context is active.
+
+A body close is therefore **not** a universal LTF requirement. It is mandatory only for the Minor-Inducement case defined above. A Major-Inducement LTF CHoCH can be confirmed through the applicable wick-break path, subject to the complete CHoCH prerequisites.
 
 ```text
 LTF_CHoCH_ELIGIBLE
@@ -505,6 +514,8 @@ LTF VALID PULLBACK ≠ CHoCH
 LTF INDUCEMENT SWEEP ≠ CHoCH
 LTF_CHoCH_CONTEXT_ACTIVE ≠ NEW STATE ENUM
 LTF CHoCH REFERENCE ≠ MAJOR_IDM
+LTF STRUCTURAL GLITCH ≠ UNIVERSAL BODY-CLOSE RULE
+LTF CHoCH CONFIRMATION MODE = IDM-TYPE DEPENDENT
 ```
 ### Post-CHoCH dual lineage
 
