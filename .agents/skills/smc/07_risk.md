@@ -187,6 +187,106 @@ TARGET_HIT ≠ CHoCH
 RR_CALCULATION ≠ TARGET_CREATION
 NO_CANONICAL_TARGET → NO_AUTOMATIC_TP_SUBMISSION
 ```
+
+### 5.2.2 Target Plan / Multi-Leg Management
+
+The target system does **not** require the analyzer to predict one universally correct final price. The analyzer first identifies currently valid, source-backed structural/liquidity destination candidates. A downstream configurable Target Plan may associate multiple trade legs with different valid targets.
+
+This is a **project execution architecture**, not a new universal True SMC target-selection rule. The source does not define one deterministic priority among all simultaneously valid target candidates, so the system must not invent one.
+
+```text
+STRUCTURAL / LIQUIDITY ANALYSIS
+        ↓
+VALID TARGET CANDIDATES
+        ↓
+CONFIGURABLE TARGET PLAN
+        ├─ T1 → Trade Leg 1
+        ├─ T2 → Trade Leg 2
+        └─ T3 → Trade Leg 3
+```
+
+A Target Plan may contain any number of configured legs supported by the platform. A common three-leg configuration is illustrative only:
+
+```text
+Leg 1 → T1
+Leg 2 → T2
+Leg 3 → T3
+```
+
+The plan must preserve target provenance. It must never turn an arbitrary price, a fixed-R calculation, or a risk threshold into a canonical structural target.
+
+Each configured leg must resolve to one of:
+
+- a currently valid canonical target candidate;
+- an explicitly configured non-structural policy target, where the applicable trading policy permits it.
+
+If no valid target can be resolved for a leg, that leg is not automatically submitted.
+
+### 5.2.3 Target-Reached and Profit-Protection Separation
+
+Target achievement and position protection are separate lifecycle concepts.
+
+```text
+TARGET_REACHED
+    ↓
+NOTIFICATION / ALERT
+    ↓
+USER OR FUTURE POSITION MANAGER
+```
+
+The current monitor phase is notification-only. `TARGET_REACHED` does not imply that a position was closed, partially closed, or that a stop was moved.
+
+Future trade-management policies may react to a reached target, for example:
+
+```text
+T1_REACHED
+    ├─ close Leg 1
+    └─ protect remaining legs
+
+T2_REACHED
+    ├─ close Leg 2
+    └─ protect remaining runner
+```
+
+Such actions are configuration/execution-policy concerns, not canonical structural semantics.
+
+A future profit-protection policy may define transitions such as:
+
+```text
+BREAK_EVEN
+PROFIT_LOCK_AT_PREVIOUS_TARGET
+TRAILING_PROTECTION
+```
+
+No one of these is currently a universal methodology rule. In particular, `BREAK_EVEN` must not be treated as a canonical fallback target. It is a stop-management action.
+
+### 5.2.4 Target Notification Contract — Current Phase
+
+The monitor may emit a notification when the market price reaches a configured active target:
+
+```text
+ACTIVE TARGET
+    ↓
+PRICE REACHES TARGET
+    ↓
+TARGET_REACHED
+    ↓
+TARGET_NOTIFICATION_SENT
+```
+
+The notification should identify at minimum:
+
+- symbol/instrument;
+- direction;
+- target identifier;
+- target type/provenance;
+- target price;
+- event timestamp.
+
+The monitor must not claim `POSITION_CLOSED` unless a later platform component has independently verified that broker/user action.
+
+The target event is mechanical/execution observability and must not manufacture BOS, CHoCH, POI failure, or any structural state.
+
 ### RR gating
 
 Where required by the configurable execution layer policy:
