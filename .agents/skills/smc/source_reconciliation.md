@@ -112,7 +112,7 @@ Required outcome:
 - [SOURCE_DIRECT] activation is a context condition, not a new lifecycle state;
 - [SOURCE_DIRECT] the most recently formed valid LTF pullback / verified extreme supplies the governing LTF inducement reference;
 - [SOURCE_DIRECT] arbitrary local pivots and invalid pullbacks cannot replace the reference;
-- [PROJECT_CANONICAL / SOURCE_COMPOSED] the deterministic trigger is a completed LTF candle close beyond the governing LTF reference (the source establishes the LTF structural requirement, while the strict close-only trigger is project-composed for determinism);
+- [SOURCE_DIRECT] the deterministic trigger is a completed LTF candle body close beyond the governing LTF reference; wick-only penetration is a liquidity sweep/physical interaction and does not satisfy the LTF CHoCH confirmation gate;
 - [SOURCE_DIRECT] the route must not independently alter the HTF bias;
 - [SOURCE_DIRECT] confirmation still requires the applicable CHoCH prerequisite gate;
 - [SOURCE_COMPOSED / PROJECT_CANONICAL] the LTF reference must not be reclassified as a Major IDM merely because it participates in the LTF-CHoCH route.
