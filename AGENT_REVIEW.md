@@ -32,11 +32,11 @@ Targeted repository validation after the edits confirms:
 [None active for this reconciliation pass]
 
 # OPEN SPECIFICATION GAPS
-- Exact LTF target-selection hierarchy remains a controlled implementation/policy choice because the sources provide multiple legitimate target conventions and no universal priority.
-- Universal countertrend single-coordinate target remains source-under-specified and must remain setup/policy configurable.
-- Premium/discount provenance may require further source traceability review, but the semantic directional gate is already canonicalized.
+- Target selection priority and countertrend target-coordinate selection are downstream implementation/trading-policy decisions, not canonical methodology gaps.
+- Fixed-R target generation and break-even/profit-lock/trailing are downstream implementation/trade-management decisions, not canonical methodology gaps.
+- Premium/discount semantic gate is canonicalized; any residual issue is source traceability only.
 - `POI_FAILURE` provenance, Rejection Block separation, and Engineering Liquidity derivation are canonicalized; no active reconciliation gap remains there.
-- The runtime `smc_analyzer.py` remains incomplete relative to the canonical structural engine; this is now the principal implementation gap.
+- The runtime `smc_analyzer.py` remains incomplete relative to the canonical structural engine; this is the principal strategy-runtime implementation gap.
 
 # IMPLEMENTATION STATUS
 Phase 5c documentation reconciliation is complete.
@@ -103,13 +103,16 @@ The remaining implementation/specification gaps were re-audited after the target
 - **Rejection Block / Engineering Liquidity:** closed/canonicalized. Engineering Liquidity is derived only from the valid pullback immediately preceding active Extreme OF/Extreme OB; RB remains a separate PD-array concept.
 - **Reversal predicates:** closed at the current boundary. Exact OHLC predicates are explicitly project-derived deterministic formalizations; qualitative morphology remains non-binary.
 - **Premium/discount gate:** semantically canonicalized. Any residual issue is source-traceability/provenance, not a missing semantic gate.
-- **LTF target-selection hierarchy:** intentionally remains a configurable implementation/trading-policy choice because the sources contain multiple legitimate conventions and no universal priority.
-- **Universal countertrend target coordinate:** intentionally remains setup/policy-specific; no universal numeric resolver is to be invented.
-- **Target Plan / multi-leg management:** implementation architecture is canonicalized; leg count/allocation is configurable and not methodology.
+- **Target selection/use:** implementation scope, not canonical SMC methodology. Chart analysis supplies the structural/liquidity levels that can serve as target inputs.
+- **LTF target selection priority:** implementation/trading-policy decision; not a canonical gap.
+- **Universal countertrend target coordinate:** implementation/trading-policy decision; not a canonical gap.
+- **Fixed-R target:** implementation/trading-policy decision; not canonical SMC methodology.
+- **BE / profit-lock / trailing:** downstream trade-management implementation; not canonical target semantics.
+- **Target Plan / multi-leg management:** implementation architecture; leg count/allocation is configurable and not methodology.
 
 ### Runtime / platform gaps
 - `smc_analyzer.py` remains materially incomplete versus the canonical structural engine and still contains legacy `SWING_CANDIDATE` representation that must eventually be synchronized with the canonical lifecycle.
 - Platform-specific broker/exchange integration, venue constraints, order-type behavior, pending-order lifecycle, fills/slippage, reconciliation, and executable backtest simulation remain implementation work under `platform_execution.md`.
 
 ### Audit disposition
-**AUDIT PART 2 = COMPLETE.** The canonical SMC methodology should not be reopened for the remaining target-choice or platform/runtime items. Next implementation work should concentrate on the analyzer/runtime synchronization and platform contracts, while preserving the existing semantic ownership boundaries.
+**AUDIT PART 2 = COMPLETE.** The canonical SMC methodology should not be reopened for target-choice or trade-management behavior. Remaining work is implementation/runtime/platform work built on the skill, while preserving the existing semantic ownership boundaries.
