@@ -176,7 +176,7 @@ Canonicalize the source-backed trading-plan rules as a separate configurable pol
 
 Required outcome:
 - [IMPLEMENTATION_POLICY] position size is calculated only after canonical entry and stop resolution;
-- [IMPLEMENTATION_POLICY] risk amount is account equity multiplied by configured risk percentage;
+- [IMPLEMENTATION_POLICY] risk amount is account balance multiplied by configured risk percentage;
 - [IMPLEMENTATION_POLICY] position size uses exact stop distance and instrument pip/tick value;
 - [IMPLEMENTATION_POLICY] source example values (0.5% fixed risk, 0.5% max running risk, one trade/session, two trades/day, 1.0% daily loss) are configurable policy values, not universal SMC structure;
 - [IMPLEMENTATION_POLICY] session windows use UK local time with DST-aware timezone handling;
