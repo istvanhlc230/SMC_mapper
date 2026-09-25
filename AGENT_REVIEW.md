@@ -31,7 +31,7 @@ Targeted repository validation after the edits confirms:
 # REQUIRED CORRECTIONS
 See the latest DIRECT VALIDATOR RE-AUDIT section below. Eight canonical issues were identified and corrected.
 
-# OPEN SPECIFICATION GAPS
+# HISTORICAL SPECIFICATION GAPS — CLOSED / SUPERSEDED
 - Target selection priority and countertrend target-coordinate selection are downstream implementation/trading-policy decisions, not canonical methodology gaps.
 - Fixed-R target generation and break-even/profit-lock/trailing are downstream implementation/trade-management decisions, not canonical methodology gaps.
 - Premium/discount semantic gate is canonicalized; any residual issue is source traceability only.
@@ -428,4 +428,4 @@ Canonical chapters rechecked: 01, 02, 03, 04, 05, 06, 07, 08, methodology_parame
 
 Runtime Python, analyzed JSON and knowledgebase source files remain untouched.
 
-**LATEST SOURCE-PRECEDENCE CORRECTION: IMPLEMENTED; FINAL VALIDATION PENDING.**
+**LATEST SOURCE-PRECEDENCE CORRECTION: IMPLEMENTED; FINAL VALIDATION PASSED.**
