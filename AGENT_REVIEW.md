@@ -4,7 +4,7 @@ Phase 5c: Direct validator reconciliation of the canonical SMC documentation aga
 # DEVELOPER REPORT
 **Current Repository State:**
 * **Branch:** main
-* **HEAD before this review sync:** 3f25488
+* **HEAD before latest correction sync:** 97fe112e145cce29dc6e26f6c419921294a8bf3a
 * **Repository writes:** completed through GitHub; documentation-only commits.
 * **Knowledgebase:** untouched.
 * **Runtime Python files / analyzed JSON:** untouched.
@@ -17,7 +17,7 @@ Phase 5c: Direct validator reconciliation of the canonical SMC documentation aga
 - **`08_implementation.md` synchronized:** structural lifecycle, Decisional POI prerequisites, and configurable RR gating were corrected; the stale universal minimum 1:2 RR requirement was removed.
 - **`source_reconciliation.md` synchronized:** C9 records the IDM-takeout prerequisite for Decisional POI execution; the Rejection Block Extreme role remains an execution-layer composition.
 - **`full_methodology_gap_audit.md` synchronized:** the 2026 ordering correction and current LTF-CHoCH canonicalization status are recorded.
-- No changes were made to `05_CHOCH_mechanics.md` or `07_risk.md`; the prior protected-semantics issue remains withdrawn, and no unsupported CHoCH relaxation was introduced.
+- The latest correction reopens and canonicalizes the LTF-CHoCH route in `05_CHOCH_mechanics.md`, `08_implementation.md`, and `source_reconciliation.md`; no runtime Python, analyzed JSON, or knowledgebase file is modified.
 
 # VALIDATION REPORT
 Targeted repository validation after the edits confirms:
@@ -325,21 +325,21 @@ The latest full source-by-source audit produced seven follow-up items. This ledg
 5. **Stale “fallback provenance” terminology — CLOSED**
    - Replaced it with traceable Major IDM provenance and explicitly removed the notion of a separate fallback Major IDM ontology/provenance class.
 
-### OPEN — user decision required before canonicalization
+### CLOSED — user decisions reconciled and re-audited
 
-6. **LTF-CHoCH trigger: completed close vs source-defined wick/body behavior**
-   - Current skill uses a completed LTF candle close beyond the LTF inducement reference.
-   - Direct source review did not establish this exact close-only condition with sufficient multi-source support.
-   - No change should be made until the user decides whether this remains a deterministic project-derived implementation formalization or should be marked SOURCE-UNDER-SPECIFIED rather than canonicalized.
+6. **LTF-CHoCH trigger / Structural Glitch — CLOSED / VERIFIED**
+   - The prior universal completed-LTF-close rule is withdrawn.
+   - The 2026 source explicitly defines the post-HTF-interaction LTF **Structural Glitch**: the most recently formed valid LTF pullback/inducement becomes the operative CHoCH reference instead of the ordinary LTF external boundary.
+   - Break confirmation remains IDM-dependent. A Major-Inducement LTF path may use the canonical wick-break CHoCH route. When only Minor IDM exists, the external protected boundary functions as Major IDM; a wick is `MAJOR_IDM_SWEEP`, and CHoCH requires a completed body close beyond the applicable LTF reference.
+   - Therefore `completed LTF candle CLOSE` is not a universal condition and the term/concept `LTF Structural Glitch` remains canonical.
 
-7. **Reduced-candle extreme-taking threshold: >= 5 vs source wording “more than five”**
-   - Current skill uses a threshold of five prior extremes.
-   - Direct source evidence includes explicit wording equivalent to “more than five previous candle highs”, while the broader reduced-candle rule is otherwise supported.
-   - No change should be made until the user decides whether the canonical threshold should remain >= 5 or follow the literal source wording > 5 (i.e. at least 6).
+7. **Reduced-candle extreme-taking threshold — CLOSED / VERIFIED**
+   - The canonical project decision remains `>= 5` prior extremes.
+   - The earlier source-wording ambiguity was explicitly resolved by user decision and is not reopened by this CHoCH correction.
 
 ### Rule for continuation
 
-Do not close the overall audit while items 6–7 remain unresolved. After user decisions, re-audit the affected source passages and canonical downstream references, then update this ledger and only then mark each item CLOSED/VERIFIED.
+Items 6–7 are now closed after source reconciliation. Future audits must preserve the IDM-dependent LTF CHoCH rule and must not reintroduce a universal LTF body-close requirement.
 
 
 ## FOLLOW-UP — FINAL AUDIT CORRECTION — 2026-09-25
@@ -352,3 +352,46 @@ The full-skill audit identified exactly two stale wording defects in `.agents/sk
 No other skill, knowledgebase, runtime Python file, or analyzed JSON was modified in this correction. Post-edit stale-term validation found no active `REAL_IDM`, `REAL_MAJOR_IDM`, `FALLBACK_MAJOR_IDM`, or proxy-Major-IDM wording in `04_BOS_mechanics.md`.
 
 **FINAL AUDIT CORRECTION: CLOSED / VERIFIED.**
+ 
+## LATEST DIRECT VALIDATOR CORRECTION — LTF STRUCTURAL GLITCH + IDM-DEPENDENT CHoCH — 2026-09-25
+
+The previous canonical LTF body-close-only rule is superseded by the source-reconciled fractal CHoCH model.
+
+### Source-backed correction
+
+`knowledgebase/sources/truesmc2026.txt` Part 5 explicitly describes the LTF **small glitch in the structure cycle** after HTF POI/core-liquidity interaction. The source states that the CHoCH reference can be the most recently formed valid LTF pullback/inducement rather than the ordinary LTF external boundary.
+
+The same source set also documents the Major-Inducement CHoCH distinction: when the trading range involves a Major IDM, the external break may be by wick or body; when the external boundary functions as Major IDM because only Minor IDM exists, a wick is a sweep and body confirmation is required.
+
+### Canonical rule
+
+```text
+HTF POI / CORE-LIQUIDITY INTERACTION
+        ↓
+LTF STRUCTURAL GLITCH
+        ↓
+MOST RECENT VALID LTF PULLBACK / IDM
+        ↓
+IDM-TYPE BREAK MODE
+   ├─ MAJOR IDM → wick path may confirm CHoCH
+   └─ MINOR IDM ONLY → body close required
+```
+
+The LTF route remains the ordinary CHoCH concept applied fractally in an HTF→LTF execution context. The Structural Glitch changes the governing reference; it does not create a new lifecycle state.
+
+### Documentation/consistency corrections included in this pass
+
+- `.agents/skills/smc/05_CHOCH_mechanics.md`: removed universal LTF body-close requirement; restored canonical Structural Glitch terminology and IDM-dependent validation.
+- `.agents/skills/smc/08_implementation.md`: execution contract now resolves LTF CHoCH wick/body mode from IDM classification.
+- `.agents/skills/smc/source_reconciliation.md`: C6 now records the source-direct Structural Glitch and the reconciled IDM-dependent break rule.
+- `.agents/skills/smc/reconciliation/full_methodology_gap_audit.md`: stale close-only canonicalization replaced with the reconciled rule.
+- `.agents/skills/smc/04_BOS_mechanics.md`: removed the stale claim that equality at the broken level is itself a valid break.
+- `.agents/skills/smc/countertrend_scenarios.md`: removed the stale open-specification-gap wording for countertrend target-coordinate resolution; it remains downstream implementation/trading-policy scope.
+
+Runtime and knowledgebase integrity:
+- `smc_analyzer.py` untouched.
+- `smc_htf_ltf_monitor.py` untouched.
+- `zones.json` untouched.
+- `knowledgebase/` untouched.
+
+**LATEST CHoCH / CONSISTENCY CORRECTION: IMPLEMENTED; FINAL VALIDATION PENDING.**
