@@ -237,3 +237,64 @@ No unresolved contradiction from the eight-item validator set remains. Exact bou
 ### Final disposition
 
 The eight-item correction set is CLOSED / CANONICALIZED or CLOSED / VERIFIED as listed above. The prior AUDIT PART 2 completion statement is superseded by this evidence-backed correction record.
+
+## DIRECT VALIDATOR RE-AUDIT — MAJOR IDM CONTINUITY CORRECTION — 2026-09-25
+
+The previous fallback-IDM finding was re-audited against the primary knowledgebase sources after the explicit clarification that, after BOS, a post-BOS sequence may create only Minor IDM. In that case the previous Protected Low (bullish) or Protected High (bearish) remains the Major IDM reference.
+
+### Source-backed finding
+
+The following source evidence was rechecked:
+- `knowledgebase/sources/truesmc2026.txt`
+- `knowledgebase/sources/market_structure_mapping_update.txt`
+- `knowledgebase/sources/major_minor_inducement.txt`
+- `knowledgebase/sources/true_smc123.txt`
+
+The sources explicitly support the external-boundary Major IDM case when a range contains a Minor IDM but no separately formed Major IDM. They also support shifting the Major IDM when a newer valid Major-Inducement pullback is formed.
+
+### Canonical correction
+
+The previous `FALLBACK_MAJOR_IDM` / `REAL_MAJOR_IDM` distinction was too elaborate and incorrectly promoted a project-composed lifecycle representation into a separate ontology.
+
+Canonical rule now:
+
+```text
+VALID_BOS
+    ↓
+POST-BOS PRICE ACTION
+    ├─ NEW MAJOR IDM QUALIFIED
+    │      ↓
+    │   NEW MAJOR IDM becomes active
+    │
+    └─ MINOR IDM ONLY / NO NEW MAJOR IDM
+           ↓
+    PREVIOUS PROTECTED EXTERNAL BOUNDARY
+           ↓
+       REMAINS MAJOR IDM
+```
+
+Bullish: previous Protected Low remains Major IDM.
+Bearish: previous Protected High remains Major IDM.
+
+A new Major IDM supersedes the prior Major IDM only when it independently qualifies. Minor IDM alone does not replace it.
+
+### Files corrected
+
+- `.agents/skills/smc/03_structural_semantic_authority.md`
+- `.agents/skills/smc/04_BOS_mechanics.md`
+- `.agents/skills/smc/05_CHOCH_mechanics.md`
+- `.agents/skills/smc/08_implementation.md`
+- `.agents/skills/smc/source_reconciliation.md`
+- `.agents/skills/smc/reconciliation/full_methodology_gap_audit.md`
+
+Runtime/data files were not modified:
+- `smc_analyzer.py`
+- `smc_htf_ltf_monitor.py`
+- `zones.json`
+- `knowledgebase/`
+
+### Validation status
+
+The obsolete `FALLBACK_MAJOR_IDM` and `REAL_MAJOR_IDM` lifecycle model has been removed from the canonical implementation contract. Remaining occurrences, if any, are only explicit historical/audit wording documenting the correction; they are not active canonical rules or event classes.
+
+**AUDIT STATUS: OPEN — Major IDM continuity correction applied; full cross-skill stale-reference verification remains required before closing this audit.**
