@@ -174,7 +174,7 @@ The source-backed position-sizing and risk-budget rules are now canonicalized in
 
 Canonical result:
 - position size is calculated only after canonical entry and stop resolution;
-- risk amount = account equity × configured risk percentage;
+- risk amount = account balance × configured risk percentage;
 - position size uses exact stop distance and instrument pip/tick value;
 - source example values (0.5% fixed risk, 0.5% running risk, one trade/session, two trades/day, 1.0% daily loss) are configurable policy values;
 - policy state must persist and reconcile with account/broker history.
