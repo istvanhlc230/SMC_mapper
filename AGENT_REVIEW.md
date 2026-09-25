@@ -29,7 +29,7 @@ Targeted repository validation after the edits confirms:
 - Tests: N/A — documentation-only reconciliation.
 
 # REQUIRED CORRECTIONS
-[None active for this reconciliation pass]
+See the latest DIRECT VALIDATOR RE-AUDIT section below. Eight canonical issues were identified and corrected.
 
 # OPEN SPECIFICATION GAPS
 - Target selection priority and countertrend target-coordinate selection are downstream implementation/trading-policy decisions, not canonical methodology gaps.
@@ -115,4 +115,125 @@ The remaining implementation/specification gaps were re-audited after the target
 - Platform-specific broker/exchange integration, venue constraints, order-type behavior, pending-order lifecycle, fills/slippage, reconciliation, and executable backtest simulation remain implementation work under `platform_execution.md`.
 
 ### Audit disposition
-**AUDIT PART 2 = COMPLETE.** The canonical SMC methodology should not be reopened for target-choice or trade-management behavior. Remaining work is implementation/runtime/platform work built on the skill, while preserving the existing semantic ownership boundaries.
+**AUDIT PART 2 = SUPERSEDED.** The previous completion disposition was invalidated by the direct validator re-audit recorded below. Target-choice/trade-management scope remains implementation work, but the canonical documentation required the eight-item correction pass documented below.
+
+
+## DIRECT VALIDATOR RE-AUDIT — EIGHT-ITEM CANONICAL CORRECTION PASS — 2026-09-25
+
+The previous AUDIT PART 2 = COMPLETE disposition is superseded. A direct validator audit against the indexed knowledgebase evidence found eight remaining documentation issues. The canonical skill was corrected without modifying runtime implementation.
+
+### Eight-item disposition
+
+1. **Layer-2 / Layer-3 IDM ordering — CLOSED / CANONICALIZED**
+   - Layer 2 now ends the initial pullback path at Verified Pullback Extreme and Pullback-Derived Liquidity Reference.
+   - Layer 3 consumes that reference for IDM classification.
+   - Structural Retracement Qualification is later, after CONFIRMED_STRUCTURAL_SWING, as a continuation-BOS gate.
+
+2. **Premium/Discount hard gate — CLOSED / CANONICALIZED**
+   - BUY → DISCOUNT.
+   - SELL → PREMIUM.
+   - This remains a hard execution eligibility gate, not a score/preference.
+   - Existing canonical normalized-location wording was retained because it already uses the canonical dealing-range model; no fallback rule was introduced.
+
+3. **OB/FVG validation — CLOSED / CANONICALIZED**
+   - Pillar 3 now requires an associated FVG/imbalance that exists and has not been completely filled/consumed.
+   - Completely untouched/unmitigated FVG status is not required.
+   - Standalone FVG remains non-POI and non-entry.
+
+4. **OB → next FVG candle shift — CLOSED / CANONICALIZED**
+   - A candidate OB candle lacking the required FVG association is rejected.
+   - Selection shifts to the next eligible candle in the relevant source-defined sequence.
+   - FVG association is evaluated again.
+   - The selected candle must independently satisfy all OB validation pillars.
+
+5. **Extreme OB lineage — CLOSED / CANONICALIZED**
+   - Extreme OF is resolved first.
+   - Extreme OB is the furthest unmitigated valid OB inside the active Extreme OF lineage.
+   - Global origin-side OB search is not canonical.
+   - Origin OB remains a separate latent reserve.
+
+6. **1-candle reduced retracement — CLOSED / VERIFIED**
+   - Positive reduced-retracement qualification requires exactly two candles.
+   - One-candle Layer-2 Candle-Level Valid Pullback remains valid.
+   - No global one-candle prohibition exists.
+
+7. **Rule-of-Two minimum-one — CLOSED / CANONICALIZED**
+   - In an applicable Rule-of-Two dealing-range execution context, active canonical tradable POIs have cardinality 1..2.
+   - No valid POI means fail-closed NO_EVIDENCE / no executable POI.
+   - No synthetic POI is created.
+   - Decisional and Extreme remain the canonical active roles.
+   - Origin OB is latent; Rejection Block is separately typed.
+
+8. **IMPULSE_EXTENSION — CLOSED / VERIFIED**
+   - IMPULSE_EXTENSION remains a classification outcome of EXT_CONT_BREAK when continuation-BOS qualification is insufficient.
+   - It is not an eighth event class.
+
+### Canonical lifecycle verified
+
+Candle-Level Valid Pullback
+→ Verified Pullback Extreme
+→ Pullback-Derived Liquidity Reference
+→ IDM
+→ IDM_TAKEN
+→ CONFIRMED_STRUCTURAL_SWING
+→ Structural Retracement Qualification
+→ Structural Swing Break
+→ VALID_BOS
+
+### Files changed in this correction pass
+
+- .agents/skills/smc/02_minor_structure.md
+- .agents/skills/smc/03_structural_semantic_authority.md
+- .agents/skills/smc/06_execution.md
+- .agents/skills/smc/08_implementation.md
+- .agents/skills/smc/source_reconciliation.md
+- .agents/skills/smc/reconciliation/full_methodology_gap_audit.md
+- AGENT_REVIEW.md
+
+04_BOS_mechanics.md required no edit after verification.
+
+### Stale-wording search
+
+Post-edit search across the canonical skill confirmed:
+
+- no fully unmitigated FVG;
+- no fully unmitigated imbalance;
+- no furthest valid origin-side OB;
+- no stale zero, one, or two Rule-of-Two formulation;
+- no canonical use of IMPULSE_EXTENSION as an event class;
+- no Layer-2 requirement that structural retracement qualification precede the initial IDM reference;
+- one-candle occurrences are confined to the valid Layer-2 pullback boundary; no one-candle positive reduced-retracement rule remains;
+- remaining STRUCTURALLY VALID PULLBACK occurrences are post-BOS/Layer-3 lifecycle uses and do not reintroduce the initial IDM prerequisite;
+- Extreme OB references are lineage-qualified.
+
+### Knowledgebase evidence used
+
+- knowledgebase/00_INDEX.md
+- knowledgebase/03_SOURCE_EVIDENCE.md
+- knowledgebase/reference/03_pullback_retracement.md
+- knowledgebase/reference/06_poi_ob_fvg_rejection.md
+
+The knowledgebase was used only as source evidence. .agents/skills/smc/ remains canonical authority.
+
+### Runtime / data integrity
+
+Confirmed untouched:
+
+- smc_analyzer.py
+- smc_htf_ltf_monitor.py
+- zones.json
+- knowledgebase/
+
+This was a canonical-documentation-only correction pass.
+
+### Last substantive documentation commit before this ledger update
+
+e0593a49f0d6799422b0516408649ff83c1d31af
+
+### Remaining genuine source gaps
+
+No unresolved contradiction from the eight-item validator set remains. Exact boundaries that are not deterministically specified by the underlying source remain under-specified implementation/documentation boundaries and were not converted into invented numeric rules.
+
+### Final disposition
+
+The eight-item correction set is CLOSED / CANONICALIZED or CLOSED / VERIFIED as listed above. The prior AUDIT PART 2 completion statement is superseded by this evidence-backed correction record.
