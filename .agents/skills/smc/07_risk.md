@@ -125,9 +125,9 @@ This remains an execution/risk event and is not POI failure, structural invalida
 
 ## 5.2 Target Policy
 
-### Primary pro-trend target
+### Primary pro-trend target candidate
 
-The primary final target is the current Trading Range confirmed external extreme where the applicable execution module requires it:
+The primary pro-trend target candidate is the current Trading Range confirmed external extreme where the applicable execution module requires it:
 
 ```
 bullish → Confirmed_Swing_High
@@ -140,7 +140,7 @@ The target is an execution/risk object. It does not validate BOS.
 TARGET_HIT ≠ VALID_BOS
 ```
 
-When VALID_BOS occurs, the previous external target expires and the new Trading Range external extreme becomes the active structural target.
+When VALID_BOS occurs, the previous range-dependent external target candidate expires and the new Trading Range external extreme becomes an active structural target candidate.
 
 When CHoCH_CONFIRMED occurs, targets belonging exclusively to the invalidated structural regime become invalid as an execution/risk lifecycle consequence. This does not manufacture a structural event.
 
