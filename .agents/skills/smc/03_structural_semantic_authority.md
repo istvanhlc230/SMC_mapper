@@ -270,15 +270,15 @@ Layer 3 is the sole semantic owner of structural qualification. A retracement wa
 
 #### Gate 1: Equilibrium Retracement (Standard Path)
 
-- **Condition:** `RetracementDepth >= 50%` of the active dealing range.
+- **Condition:** `RetracementDepth >= STANDARD_EQUILIBRIUM_THRESHOLD` of the active dealing range, where `STANDARD_EQUILIBRIUM_THRESHOLD` is owned by `methodology_parameters.md`.
 - **Structural Validation:**
-  - **Normal Case:** Requires `>= 3` opposing closing candles within the retracement leg.
-  - **Reduced-Candle Displacement Exception:** If **exactly 2 opposing candles** form the retracement, qualification may occur only under the rare source-described displacement case: the reduced-candle retracement contains unusually large candle(s) that collectively take the bodies/extremes of `>= 5` preceding candles and produce the required retracement depth. The knowledgebase explicitly discusses a 2-candle case as potentially reasonable when these size/extreme-taking conditions are met. This exception does not make a short candle sequence automatically valid.
+  - **Normal Case:** Requires `>= NORMAL_RETRACEMENT_CANDLE_COUNT` opposing closing candles within the retracement leg.
+  - **Reduced-Candle Displacement Exception:** If exactly `MIN_RETRACEMENT_CANDLE_COUNT` opposing candles form the retracement, qualification may occur only under the rare source-described displacement case: the reduced-candle retracement contains unusually large candle(s) that collectively take the bodies/extremes of `>= MIN_OUTLIER_EXTREMES_TAKEN` preceding candles and produce the required retracement depth. The knowledgebase explicitly discusses a 2-candle case as potentially reasonable when these size/extreme-taking conditions are met. This exception does not make a short candle sequence automatically valid.
 - **Output:** `MAJOR_RETRACEMENT_QUALIFIED = TRUE`.
 
 #### Gate 2: HTF-Represented Retracement (Conditional Path)
 
-- **Condition:** `38.2% <= RetracementDepth < 50%` of the active dealing range.
+- **Condition:** `HTF_CONDITIONAL_THRESHOLD <= RetracementDepth < STANDARD_EQUILIBRIUM_THRESHOLD` of the active dealing range. `HTF_CONDITIONAL_THRESHOLD` and `STANDARD_EQUILIBRIUM_THRESHOLD` are owned by `methodology_parameters.md`.
 - **HTF Evidence Gate:**
   - Depth between 38.2% and 49.9% is **never sufficient on its own**.
   - It is qualified **if and only if** the entire retracement move constitutes a single valid pullback event on the applicable immediate Higher Timeframe (`HTF_VALID_PULLBACK == TRUE`).
@@ -287,7 +287,7 @@ Layer 3 is the sole semantic owner of structural qualification. A retracement wa
 
 #### Gate 3: Insufficient Retracement
 
-- **Condition:** `RetracementDepth < 38.2%`.
+- **Condition:** `RetracementDepth < HTF_CONDITIONAL_THRESHOLD`.
 - **Output:** `MAJOR_RETRACEMENT_QUALIFIED = FALSE`.
 
 The gates are hierarchical and mutually exclusive by depth. Gate 2 is the only qualification path below 50%; Gate 3 cannot qualify. Qualification is evaluated before the structural swing break and is stored for downstream Layer 4 consumption.
