@@ -16,8 +16,8 @@ The structural engine must conceptually separate:
 
 ```text
 CANDLE-LEVEL PULLBACK
-STRUCTURALLY VALID PULLBACK
 VERIFIED PULLBACK EXTREME
+PULLBACK-DERIVED LIQUIDITY REFERENCE
 ACTIVE LIQUIDITY POINTER
 ACTIVE/MINOR IDM
 REAL MAJOR IDM
@@ -297,10 +297,6 @@ The mapper is a state machine. Each event must be evaluated against current stru
 OBSERVATION
  ↓
 CANDLE-LEVEL VALID PULLBACK
- ↓
-STRUCTURAL QUALIFICATION
- ↓
-STRUCTURALLY VALID PULLBACK
  ↓
 VERIFIED PULLBACK EXTREME
  ↓
@@ -666,8 +662,8 @@ Regression tests must cover:
 - a continuation break without stored `MAJOR_RETRACEMENT_QUALIFIED` remains non-BOS / `IMPULSE_EXTENSION` as applicable.
 
 ### IDM
-- candle-level pullback does not create IDM;
-- structurally valid pullback can create IDM;
+- the verified extreme and pullback-derived liquidity reference from a Candle-Level Valid Pullback are consumed by Layer 3 for IDM classification;
+- structural retracement qualification is a later continuation-BOS gate after `CONFIRMED_STRUCTURAL_SWING`, not an initial IDM prerequisite;
 - newest valid pullback replaces old active IDM;
 - only one active minor IDM;
 - real versus fallback Major IDM;
@@ -885,7 +881,7 @@ The monitor must not emit `POSITION_CLOSED` unless an independent execution/acco
 Required implementation behavior:
 - `DECISIONAL_OB` is the valid Order Block that actually causes the canonical `VALID_BOS` event; it is not selected solely because it is the first valid OB after inducement;
 - the earlier `first valid OB after inducement` shortcut is superseded;
-- `EXTREME_OB` is selected from the furthest valid origin-side Order Block in the active dealing-range impulse;
+- `EXTREME_OB` is selected as the furthest unmitigated valid Order Block within the active `EXTREME_OF` lineage; it is not selected by a global search across all origin-side Order Blocks;
 - OB validity is evaluated from the canonical OB validation pillars independently of parent Order Flow mitigation/failure state;
 - a valid Decisional OB may remain executable even while its associated Order Flow is unmitigated, subject to Rule-of-Two and all execution gates;
 - later OF mitigation/failure must not retroactively rewrite the causal Decisional OB identity.
@@ -922,8 +918,8 @@ Required invariants:
 - Rejection Block is a separately typed PD-array/execution concept; source examples may use POI as a broad execution-location term, but RB is not an OF/OB-equivalent POI class or an automatic Rule-of-Two slot;
 - Rule of Two limits canonical tradable POIs to Decisional POI and Extreme POI (Extreme OF / Extreme OB);
 - Origin OB is a latent reserve POI (mitigation transfer target when Extreme POI is mitigated), never a 3rd active POI;
-- the Rule of Two permits at most two actively tradable POIs;
-- Decisional buy POI is in discount;
+- when an applicable Rule-of-Two dealing-range execution context exists, the active canonical tradable POI set has cardinality 1..2; if no valid canonical POI exists, execution fails closed with no executable POI / `NO_EVIDENCE`; no synthetic POI is created;
+- Decisional buy POI is in discount, and Decisional sell POI is in premium as a hard execution eligibility gate;
 - Decisional sell POI is in premium;
 - Origin OB remains independently valid after parent OF mitigation when its own pillars remain valid;
 - all three OB validation pillars are required;
