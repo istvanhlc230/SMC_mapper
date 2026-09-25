@@ -32,11 +32,11 @@ Targeted repository validation after the edits confirms:
 [None active for this reconciliation pass]
 
 # OPEN SPECIFICATION GAPS
-- Target Price Derivation remains partially open for the exact LTF target-selection hierarchy and universal countertrend target resolver.
-- POI Failure provenance remains a future reconciliation item.
-- Premium/discount hard-gate provenance and numeric reversal predicates remain to be independently reconciled where source evidence is not explicit.
-- Engineering Liquidity for the Rejection Block Extreme role remains explicitly project-composed rather than source-direct.
-- The runtime `smc_analyzer.py` remains incomplete relative to the canonical structural engine; implementation work should follow only after the canonical documentation audit is accepted.
+- Exact LTF target-selection hierarchy remains a controlled implementation/policy choice because the sources provide multiple legitimate target conventions and no universal priority.
+- Universal countertrend single-coordinate target remains source-under-specified and must remain setup/policy configurable.
+- Premium/discount provenance may require further source traceability review, but the semantic directional gate is already canonicalized.
+- `POI_FAILURE` provenance, Rejection Block separation, and Engineering Liquidity derivation are canonicalized; no active reconciliation gap remains there.
+- The runtime `smc_analyzer.py` remains incomplete relative to the canonical structural engine; this is now the principal implementation gap.
 
 # IMPLEMENTATION STATUS
 Phase 5c documentation reconciliation is complete.
