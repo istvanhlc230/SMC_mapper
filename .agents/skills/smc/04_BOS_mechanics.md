@@ -266,34 +266,27 @@ The following do not independently roll the range:
 - wick penetration;
 - Minor IDM sweep;
 - Major IDM sweep;
-- MAJOR_IDM sweep;
 - insufficient-retracement impulse extension.
 
 Post-BOS retracement and liquidity collection belong to the new range lifecycle.
 
-### 3.4.10 — Post-BOS Fallback Initialization
+### 3.4.10 — Post-BOS Major IDM continuity
 
-After `VALID_BOS`, the new structural lifecycle enters the early-range phase in which a MAJOR_IDM may be active until a new post-BOS Major IDM is independently formed.
+After `VALID_BOS`, the new structural lifecycle does not manufacture a separate fallback IDM object.
 
 ```text
 VALID_BOS
     ↓
 NEW STRUCTURAL LIFECYCLE
     ↓
-FALLBACK MAJOR IDM ACTIVE
-    ↓
-First Qualifying Post-BOS SVP
-    ↓
-Verified Pullback Extreme
-    ↓
-Layer 3 IDM Classification
-    ↓
-REAL_MAJOR_IDM
-    ↓
-MAJOR_IDM superseded
+POST-BOS PRICE ACTION
+    ├─ NEW MAJOR IDM QUALIFIED → NEW MAJOR IDM ACTIVE
+    └─ MINOR IDM ONLY → PRIOR PROTECTED EXTERNAL BOUNDARY REMAINS MAJOR IDM
 ```
 
-`NEW_SVP` does not itself equal `REAL_MAJOR_IDM`.
+The prior protected low in a bullish range, or prior protected high in a bearish range, remains the Major IDM reference when post-BOS price action creates only Minor IDM and no new Major IDM.
+
+`NEW_SVP` does not itself equal `MAJOR_IDM`; the full canonical IDM qualification chain remains required.
 
 ### 3.4.11 — POI Lifecycle Boundary
 
