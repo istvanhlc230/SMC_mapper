@@ -47,22 +47,22 @@ A complete platform also requires non-SMC infrastructure specifications that are
 | IDM definition / lifecycle | Canonical | Covered |
 | Structural qualification | Canonical | Covered; IDM takeout confirms the swing, while retracement sufficiency qualifies the later BOS |
 | BOS | Canonical | Covered |
-| CHoCH | Canonical | Covered for standard lifecycle; LTF-specific exception is missing |
-| POI ontology | Canonical | Covered |
-| OB validation | Canonical | Partially executable; source contains further selection/refinement cases |
+| CHoCH | Canonical | Covered, including the source-backed LTF context route |
+| POI ontology | Canonical | Covered; RB remains a separately typed PD-array |
+| OB validation | Canonical | Covered at current semantic boundary; venue/execution details remain platform policy |
 | FVG | Canonical property/validator | Covered |
-| Four entry modules | Canonical | Module existence covered; exact order/price semantics are incomplete |
+| Four entry modules | Canonical | Covered at authorization/reference-price boundary; order lifecycle remains platform policy |
 | Reversal triggers | Canonical | Covered at current deterministic/qualitative boundary |
-| Stop loss | Canonical concept | Exact platform placement rules incomplete |
-| Target | Canonical concept | Pro-trend path clearer than countertrend path |
+| Stop loss | Canonical concept | Semantic anchors covered; numeric buffer remains configurable |
+| Target | Canonical concept | Covered as candidate discovery + configurable target plan; source gaps remain for universal priority/countertrend coordinate |
 | RR | Configurable trading policy | Covered |
-| Position sizing | Source-backed | Not represented in current risk skill |
-| Session windows | Source-backed trading-plan rule | Not represented in current skill |
-| News filter | Source-backed trading-plan rule | Not represented in current skill |
-| Daily/concurrent risk controls | Source-backed trading-plan rule | Not represented in current skill |
-| Trade logging | Source-backed | Not represented as platform contract |
-| Backtesting/fill simulation | Source-backed need, but not methodology specification | Missing |
-| Broker/exchange execution | Platform requirement | Missing |
+| Position sizing | Configurable trading policy | Canonicalized |
+| Session windows | Configurable trading policy | Canonicalized |
+| News filter | Configurable trading policy | Canonicalized with external-data dependency |
+| Daily/concurrent risk controls | Configurable trading policy | Canonicalized |
+| Trade logging | Platform auditability policy | Canonicalized |
+| Backtesting/fill simulation | Platform requirement | Contract defined; venue-specific fill assumptions remain configuration |
+| Broker/exchange execution | Platform requirement | Boundary defined; venue-specific contract remains external |
 
 ## 3. Source-backed scenarios not yet deterministically represented
 
@@ -297,7 +297,7 @@ This is a documentation/runtime synchronization issue and should be resolved bef
 
 **The skill is close, but not yet complete.**
 
-The structural backbone is sufficiently specified for implementation, but LTF-CHoCH, OF/SMT selection, Engineering Liquidity selection, and some competing-zone cases need deterministic reconciliation.
+The structural backbone and the currently canonicalized execution-selection contracts are sufficiently specified for implementation at the methodology boundary. Remaining strategy-level source gaps are controlled rather than silently invented: target priority among simultaneous valid candidates and a universal countertrend target coordinate. Venue-specific execution details remain platform configuration.
 
 ### Entry engine
 
@@ -355,14 +355,10 @@ These are platform-engineering requirements, not replacements for the True SMC s
 
 ## 7. Recommended canonicalization order
 
-1. Resolve the LTF-CHoCH source scenario.
-2. Formalize Order Flow + SMT + decisional/extreme selection.
-3. Formalize Engineering Liquidity selection.
-4. Formalize the exact four entry-module order/price/cancellation semantics.
-5. Formalize stop anchors and buffer policy.
-6. Formalize target hierarchy.
-7. Add an explicit configurable trading-plan/risk-policy layer for position sizing, session limits, news filters, and daily risk budgets.
-8. Define broker/backtest execution contracts separately from methodology.
+1. Preserve the current Layer 1–3, BOS/CHoCH, POI/OF/OB/RB, Engineering Liquidity, entry, stop, target-plan, and trading-policy ownership boundaries.
+2. Resolve only source-backed deterministic gaps when evidence becomes sufficient; do not invent a universal target priority or universal countertrend target coordinate.
+3. Keep venue-specific broker/exchange, fill, quote, spread, slippage, margin, and backtest assumptions outside True SMC semantic ownership.
+4. Keep runtime synchronization separate from methodology canonicalization.
 
 ## 8. Audit disposition
 
