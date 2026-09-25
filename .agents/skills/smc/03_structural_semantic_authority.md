@@ -147,15 +147,17 @@ For a bullish active impulsive leg, inducement is the liquidity resting below th
 The IDM lifecycle architecture distinguishes source-backed methodology from the project's internal execution representation.
 
 **Source-backed semantics:**
-- The most recent valid pullback supplies IDM liquidity.
-- A newer valid pullback shifts the IDM reference.
-- Minor IDM occurs before BOS.
-- Major IDM occurs after BOS.
+- The most recently formed valid pullback supplies the ordinary IDM liquidity reference.
+- A newer valid pullback supersedes the previous active IDM reference.
+- Minor IDM is the internal inducement role.
+- Major IDM is the governing major-liquidity reference.
+- After BOS, a newly formed valid post-BOS pullback can establish the new Major IDM.
+- If a range contains only a Minor IDM and no newly formed Major IDM, the governing external boundary/liquidity — the prior protected low in a bullish range or prior protected high in a bearish range — serves as the Major IDM.
 
 **Project-canonical / Composed representation:**
 - Historical IDM objects are immutable once formed.
 - The active IDM is represented via an active-pointer reference.
-- The `FALLBACK_MAJOR_IDM` lifecycle proxy is a deterministic structural engine state.
+- Major IDM provenance may therefore be either pullback-derived or governing-external-boundary-derived.
 - The detailed post-CHoCH dual-lineage state model is a composed tracking architecture.
 
 These project-composed tracking mechanisms must not be rewritten as direct knowledgebase quotations, but they remain canonical for this implementation.
@@ -172,46 +174,61 @@ IDM CLASSIFICATION
 
 ### Minor vs Major IDM
 
-The IDM class is determined by the structural lifecycle:
+Major/Minor classification is determined by structural role, not by a blanket rule that every pullback after BOS is automatically Major IDM.
 
-~~~text
-BEFORE VALID BOS
+```text
+INTERNAL / PRE-BOS VALID PULLBACK
         ↓
 MINOR_IDM
 
-AFTER VALID BOS
+VALID_BOS
         ↓
-MAJOR_IDM
-~~~
+        ├─ NEW MAJOR IDM QUALIFIED
+        │      ↓
+        │   MAJOR_IDM becomes active
+        │
+        └─ MINOR IDM ONLY / NO NEW MAJOR IDM
+               ↓
+        PRIOR PROTECTED EXTERNAL BOUNDARY
+               ↓
+           REMAINS MAJOR IDM
+```
 
-The classification is structural, not a separate candle-pattern definition. A newly formed valid pullback can supersede the current IDM reference when the lifecycle rules identify that newer pullback as the active reference. Historical IDM objects remain part of structural history and are not retroactively rewritten.
+In a bullish range, the protected external boundary is the prior protected low; in a bearish range it is the prior protected high. The associated external liquidity serves as the governing Major IDM reference while no newer Major IDM has been established.
 
-### Real Major IDM and fallback proxy
+A newly formed valid pullback supersedes the active IDM only when the canonical lifecycle classifies that pullback as the new active Major or Minor IDM. Historical IDM objects remain immutable.
 
-After a valid BOS, the first independently qualified post-BOS Structurally Valid Pullback can establish the REAL_MAJOR_IDM from its verified pullback extreme. Until that real post-BOS IDM exists, the lifecycle may expose a FALLBACK_MAJOR_IDM as an opposing-boundary proxy.
+### Major IDM lifecycle
 
-~~~text
+After a valid BOS, a qualifying post-BOS Structurally Valid Pullback can establish the new Major IDM from its verified pullback extreme.
+
+If the post-BOS price action produces only a Minor IDM and no new Major IDM, the previous protected external boundary remains the active Major IDM reference. No synthetic fallback IDM object is created.
+
+```text
 VALID_BOS
     ↓
 NEW STRUCTURAL LIFECYCLE
     ↓
-POST-BOS STRUCTURALLY VALID PULLBACK
-    ↓
-VERIFIED PULLBACK EXTREME
-    ↓
-REAL_MAJOR_IDM
-    ↓
-FALLBACK_MAJOR_IDM → SUPERSEDED
-~~~
+POST-BOS PRICE ACTION
+    ├─ NEW MAJOR IDM QUALIFIED
+    │      ↓
+    │   NEW MAJOR IDM becomes active
+    │
+    └─ MINOR IDM ONLY
+           ↓
+    PREVIOUS PROTECTED EXTERNAL BOUNDARY
+           ↓
+       REMAINS MAJOR IDM
+```
 
-### Canonical Inducement Ontology & Lifecycle Proxy
+### Canonical Inducement Ontology
 
-1. **Single Semantic Definition:** Inducement (IDM) is defined solely as the liquidity resting beyond the extreme of the most recently formed valid pullback.
-   - `MINOR_IDM`: A valid pullback formed prior to structural BOS.
-   - `REAL_MAJOR_IDM`: A validated pullback formed after structural BOS.
-
-2. **Structural Engine Lifecycle Proxy:** `FALLBACK_MAJOR_IDM` is **NOT** an alternative or secondary IDM definition. It is strictly a temporary lifecycle proxy state used by the structural engine to maintain dealing range bounds following a BOS until a verified post-BOS `REAL_MAJOR_IDM` is printed by price action. Once a valid pullback forms on the new impulsive leg, `FALLBACK_MAJOR_IDM` is immediately superseded.
-FALLBACK_MAJOR_IDM is a lifecycle proxy and is not the same semantic object as REAL_MAJOR_IDM.
+1. **Single semantic owner:** Layer 3 owns IDM classification and active-reference lifecycle.
+2. **Minor IDM:** internal inducement role associated with a valid internal/pre-BOS pullback.
+3. **Major IDM:** governing major-liquidity reference. It may be established from a qualifying post-BOS pullback or, when only Minor IDM exists, from the prior protected external boundary/liquidity.
+4. A newer valid pullback supersedes the active IDM only when it independently satisfies the applicable Major/Minor classification.
+5. There is no separate `REAL_MAJOR_IDM` or `FALLBACK_MAJOR_IDM` ontology class.
+6. Historical IDM objects remain immutable; active-pointer changes are forward-only and event-time provenance is preserved.
 
 ### IDM takeout
 
@@ -303,7 +320,7 @@ PROTECTED_STRUCTURAL_EXTREME_LOCK (E_retrace LOCKED)
 
 A valid wick BOS locks `E_retrace` immediately. No later body close is required.
 
-If the penetrated external level is the FALLBACK_MAJOR_IDM, the wick event is instead `MAJOR_IDM_SWEEP`; it is not BOS and does not lock `E_retrace`.
+If the penetrated external level carries Major IDM provenance, the wick event is instead `MAJOR_IDM_SWEEP`; it is not BOS and does not lock `E_retrace`.
 
 Detailed BOS locking mechanics are owned by `04_BOS_mechanics.md`.
 
@@ -341,9 +358,9 @@ POI expiration is handled through the separate POI lifecycle; the structural eng
 9. IDM takeout confirms the relevant `CONFIRMED_STRUCTURAL_SWING`. Retracement qualification determines whether a subsequent external break can be classified as `VALID_BOS`; it does not retrospectively create the swing point.
 10. Physical external break does not automatically equal VALID_BOS or CHoCH_CONFIRMED.
 11. `MAJOR_IDM_SWEEP` is not VALID_BOS and not CHoCH_CONFIRMED.
-12. Fallback Major IDM is an external range-boundary proxy, not Real Major IDM or arbitrary internal liquidity.
-13. A fallback Major IDM takeout may confirm the corresponding swing reference, but it does not by itself create VALID_BOS, Trading Range rollover, or Protected Structural Extreme lock.
-14. `NEW_SVP` does not automatically create Real Major IDM.
+12. Major IDM may be pullback-derived or the prior protected external boundary when only Minor IDM exists; it is never arbitrary internal liquidity.
+13. A Major IDM takeout may confirm the corresponding swing reference, but it does not by itself create VALID_BOS, Trading Range rollover, or Protected Structural Extreme lock.
+14. `NEW_SVP` does not automatically create Major IDM.
 15. Only `VALID_BOS` rolls the Trading Range and locks the Protected Structural Extreme.
 16. `CHoCH_CONFIRMED` initializes a new regime but does not itself create a new CONFIRMED_STRUCTURAL_SWING or VALID_BOS.
 17. First post-CHoCH SVP and first post-CHoCH Minor IDM are distinct lifecycle states.
