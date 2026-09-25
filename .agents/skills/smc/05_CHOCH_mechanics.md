@@ -13,7 +13,9 @@ CHoCH is a governing trend-reversal transition. It is not an arbitrary internal 
 ### Canonical CHoCH Lifecycle
 
 ```text
-OPPOSING STRUCTURAL BOUNDARY VIOLATION (Body Close)
+OPPOSING STRUCTURAL BOUNDARY VIOLATION (Wick OR Body)
+        ↓
+CHoCH CLASSIFICATION GATE
         ↓
 CHoCH_ELIGIBLE
         ↓
