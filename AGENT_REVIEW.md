@@ -300,3 +300,43 @@ The obsolete `FALLBACK_MAJOR_IDM` and `REAL_MAJOR_IDM` lifecycle model has been 
 **MAJOR IDM CORRECTION STATUS: CLOSED / VERIFIED.** Cross-skill stale-reference verification found no active `FALLBACK_MAJOR_IDM`, `REAL_MAJOR_IDM`, `FALLBACK_EVENT`, or `REAL_MAJOR_IDM_EVENT` implementation rule. Remaining token occurrences are historical audit statements explicitly documenting the removed model.
 
 **OVERALL FULL-SKILL AUDIT STATUS: OPEN.** This closure applies only to the Major IDM continuity issue; it does not constitute a claim that the entire skill has no further source-backed discrepancies.
+
+
+## FULL-SKILL AUDIT — PERSISTENT CORRECTION LEDGER — 2026-09-25
+
+The latest full source-by-source audit produced seven follow-up items. This ledger remains OPEN until every item is either source-backed and corrected or explicitly resolved by user decision. No item may be silently dropped.
+
+### Closed in current correction pass
+
+1. **Stale Major IDM reference in skill index — CLOSED**
+   - Removed the obsolete “Fallback Major IDM / Major IDM Sweep distinctions” wording from .agents/skills/smc/skill.md.
+   - The index now references the canonical Major IDM / Major IDM Sweep interaction and lifecycle.
+
+2. **Incorrect event-class count — CLOSED**
+   - .agents/skills/smc/08_implementation.md now defines six disjoint event classes, matching the actual six-item enumeration.
+   - The explanatory diagram and event-detection statement were synchronized to six.
+
+3. **Duplicate MAJOR_IDM_EVENT precedence entry — CLOSED**
+   - Removed the duplicated MAJOR_IDM_EVENT entry from event-detection precedence.
+
+4. **Stale “real Major IDM” terminology — CLOSED**
+   - Replaced the obsolete wording with the single canonical Major IDM semantic class plus explicit provenance.
+
+5. **Stale “fallback provenance” terminology — CLOSED**
+   - Replaced it with traceable Major IDM provenance and explicitly removed the notion of a separate fallback Major IDM ontology/provenance class.
+
+### OPEN — user decision required before canonicalization
+
+6. **LTF-CHoCH trigger: completed close vs source-defined wick/body behavior**
+   - Current skill uses a completed LTF candle close beyond the LTF inducement reference.
+   - Direct source review did not establish this exact close-only condition with sufficient multi-source support.
+   - No change should be made until the user decides whether this remains a deterministic project-derived implementation formalization or should be marked SOURCE-UNDER-SPECIFIED rather than canonicalized.
+
+7. **Reduced-candle extreme-taking threshold: >= 5 vs source wording “more than five”**
+   - Current skill uses a threshold of five prior extremes.
+   - Direct source evidence includes explicit wording equivalent to “more than five previous candle highs”, while the broader reduced-candle rule is otherwise supported.
+   - No change should be made until the user decides whether the canonical threshold should remain >= 5 or follow the literal source wording > 5 (i.e. at least 6).
+
+### Rule for continuation
+
+Do not close the overall audit while items 6–7 remain unresolved. After user decisions, re-audit the affected source passages and canonical downstream references, then update this ledger and only then mark each item CLOSED/VERIFIED.
