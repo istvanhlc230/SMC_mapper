@@ -408,3 +408,24 @@ Validation completed after the six canonical-document updates plus this review r
 - runtime Python, analyzed JSON, and knowledgebase files remain untouched.
 
 FINAL VALIDATION STATUS: PASS.
+
+
+## LATEST DIRECT VALIDATOR CORRECTION — DISPLACEMENT OUTLIER + POI RANGE EXPIRATION — 2026-09-25
+
+The latest source-precedence audit identified and corrected two canonical documentation gaps plus one implementation consistency defect.
+
+### Canonical corrections
+
+1. **Impulsive-leg scope** is explicit in Layers 1–3: structural mapping, IDM identification and POI-relevant structural context follow the active impulsive leg; corrective-leg internal complexity is not independently promoted.
+2. **One-candle displacement outlier** is canonical as an explicit exception to the normal >=2 opposing-candle qualification gate. One exceptional candle may qualify when it takes >=5 preceding bodies/extremes and satisfies the required retracement depth and all other structural gates.
+3. **POI range expiration** is owned by Layer 6: when a new VALID_BOS establishes a new Dealing Range, all unmitigated POIs originating from the previous range leave the active tradable set and become historical/reaction-only. Layer 8 consumes this lifecycle state.
+4. **08 implementation equality defect** is corrected: equality at the broken level is not physical penetration and therefore is not Wick-BOS.
+5. **Policy boundary preserved:** 0.5% risk and break-even restrictions remain trading-policy controls, not structural methodology rules.
+
+### Validation scope
+
+Canonical chapters rechecked: 01, 02, 03, 04, 05, 06, 07, 08, methodology_parameters, trading_policy, countertrend_scenarios, source_reconciliation and the persistent audit ledger.
+
+Runtime Python, analyzed JSON and knowledgebase source files remain untouched.
+
+**LATEST SOURCE-PRECEDENCE CORRECTION: IMPLEMENTED; FINAL VALIDATION PENDING.**
