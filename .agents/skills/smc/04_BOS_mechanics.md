@@ -64,7 +64,7 @@ Bearish:
 Low_t < Confirmed_Swing_Low
 ```
 
-The penetration may occur through wick/shadow or candle body. Both physical wick breach and physical body close beyond CONFIRMED_STRUCTURAL_SWING satisfy `STRUCTURAL_SWING_BREAK`.
+The penetration may occur through wick/shadow or candle body. Both physical wick breach and physical body close beyond `CONFIRMED_STRUCTURAL_SWING` satisfy `STRUCTURAL_SWING_BREAK`; merely touching/equaling the reference level does not.
 
 A physical external break does **not** itself establish `VALID_BOS`, Trading Range rollover, or Protected Structural Extreme locking. It opens the break-classification path.
 
@@ -373,7 +373,7 @@ Therefore:
 4. Major retracement qualification is produced by Layer 3 and consumed here as stored state.
 5. Layer 3 owns the canonical retracement qualification thresholds: 50% standard equilibrium and the conditional 38.2%–<50% HTF-represented path.
 6. Reduced-candle displacement and higher-timeframe qualification are evaluated by Layer 3 and are not redefined here.
-7. Wick-BOS is immediate and equality at the broken level is valid.
+7. Wick-BOS is immediate once price physically penetrates beyond the reference; equality at the level alone is not a break.
 8. Major IDM is the single canonical Major IDM semantic class; provenance does not create a separate Major IDM ontology.
 9. MAJOR_IDM wick breach is `MAJOR_IDM_SWEEP`, not VALID_BOS or CHoCH_CONFIRMED.
 10. `MAJOR_IDM_SWEEP` unlocks the Swing Confirmation Gate but does not automatically create a CONFIRMED_STRUCTURAL_SWING.
