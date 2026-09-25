@@ -394,10 +394,11 @@ No runtime production file was modified. The reconciliation changed only canonic
 
 The findings classified as **NEW_CANONICAL_CANDIDATE** or **SOURCE-BACKED BUT UNDER-SPECIFIED** must not be silently promoted to canonical methodology. The currently known target-choice items are intentionally retained as controlled policy/implementation choices because no universal deterministic source rule has been established.
 
-The 2-candle retracement correction is already canonicalized elsewhere:
-- `MIN_RETRACEMENT_CANDLE_COUNT = 2`;
+The normal retracement parameterization is canonicalized elsewhere:
+- `MIN_RETRACEMENT_CANDLE_COUNT = 2` for the normal path;
 - `NORMAL_RETRACEMENT_CANDLE_COUNT = 3`;
-- exactly 2 candles use the reduced-candle exception;
+- the one-candle displacement outlier is an explicit exception when it takes `>=5` preceding bodies/extremes and passes all other qualification gates;
+- two-candle reduced retracements remain source-supported through the displacement/extreme-taking exception;
 - 38.2%–<50% remains a separate immediate-HTF valid-pullback path.
 
 
