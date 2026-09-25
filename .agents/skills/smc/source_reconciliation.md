@@ -159,7 +159,7 @@ Required outcome:
 - [SOURCE_GAP] the knowledgebase does not define one universal numeric pip/tick buffer;
 - [IMPLEMENTATION_POLICY] missing `P` must block automatic order submission rather than invent a default.
 
-### C11 — Target resolution and configurable Target Plan (PARTIALLY OPEN)
+### C11 — Target resolution and configurable Target Plan (RECONCILED — CONTROLLED POLICY CHOICES REMAIN)
 
 The source material does not define one universal priority rule that selects a single target when multiple legitimate destination candidates are simultaneously available. This is therefore not converted into an invented methodology priority.
 
@@ -167,7 +167,7 @@ Required outcome:
 - [SOURCE_DIRECT] direct same-timeframe pro-trend uses the current confirmed external extreme / external liquidity as a canonical target candidate;
 - [SOURCE_DIRECT] LTF execution may use the source-supported higher-timeframe external target or lower-timeframe structural/BOS destination, but the source does not define one universal priority between them;
 - [SOURCE_COMPOSED] countertrend target candidates are setup-specific and may resolve to inducement, Engineering Liquidity, external liquidity, or the next canonical POI/destination according to the active scenario;
-- [SOURCE_GAP] a universal countertrend single-coordinate resolver is not source-defined and must not be invented;
+- [SOURCE_GAP / CONTROLLED POLICY] a universal countertrend single-coordinate resolver is not source-defined; this remains a setup-specific implementation/policy choice and must not be invented as methodology;
 - [PROJECT_CANONICAL] Target Discovery produces valid target candidates with preserved structural/liquidity provenance rather than forcing one universal winner;
 - [IMPLEMENTATION_POLICY] a configurable Target Plan may assign multiple valid target candidates to separate trade legs (for example T1/T2/T3). Leg count and allocation are configurable and are not methodology constants;
 - [IMPLEMENTATION_POLICY] fixed-R, where permitted by the applicable trading policy, is a non-structural policy target and must not be mislabeled as canonical structural/liquidity provenance;
