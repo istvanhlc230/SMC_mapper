@@ -35,7 +35,7 @@ Read the referenced documents in this order when the full methodology is require
 
 5. `05_CHOCH_mechanics.md`
    - Dedicated CHoCH mechanics and lifecycle
-   - Fallback Major IDM / Major IDM Sweep distinctions
+   - Major IDM / Major IDM Sweep interaction and lifecycle
    - LTF-CHoCH context route after HTF POI/core-liquidity interaction
    - Consumes shared structural state; does not redefine it
 
