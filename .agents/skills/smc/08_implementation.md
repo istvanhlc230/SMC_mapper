@@ -600,7 +600,7 @@ A later candle may advance the lifecycle but may not retroactively rewrite the e
 15. CHoCH resets the new trend to an empty state.
 16. CHoCH creates a Protected Structural Extreme automatically.
 17. CHoCH-causing leg is ignored as the initial active impulse.
-18. Major IDM is treated as a real Major IDM.
+18. Major IDM remains one canonical semantic class; its provenance may be pullback-derived or prior-protected-boundary-derived.
 19. Major IDM wick penetration becomes BOS or CHoCH.
 20. `MAJOR_IDM_SWEEP` must be handled as an IDM-takeout lifecycle event; it may confirm the relevant swing reference but does not itself create VALID_BOS, range rollover, or protected-extreme lock.
 21. A body close beyond the opposing boundary is treated as CHoCH without all CHoCH prerequisites.
@@ -657,7 +657,7 @@ Regression tests must cover:
 - historical IDM is not an active competing target;
 - IDM wick takeout;
 - IDM body takeout;
-- fallback provenance remains distinct from Major IDM provenance.
+- Major IDM provenance remains traceable; there is no separate fallback Major IDM ontology or provenance class.
 
 ### Entity lifecycle ontology
 - liquidity entity can transition `ACTIVE → SWEPT`;
@@ -933,7 +933,7 @@ The structural state machine is formally separated into three deterministic laye
 │ 1. EVENT DETECTION                                            │
 │                                                               │
 │ Physical OHLC/level relations select exactly ONE of the       │
-│ seven disjoint event classes.                                 │
+│ six disjoint event classes.                                 │
 └───────────────────────────────┬───────────────────────────────┘
                                 ↓
 ┌───────────────────────────────────────────────────────────────┐
@@ -954,9 +954,9 @@ The structural state machine is formally separated into three deterministic laye
 
 `IMPULSE_EXTENSION`, `VALID_BOS`, `CHoCH_CONFIRMED`, `MAJOR_IDM_SWEEP`, and `NO_CHoCH_BREAK` are **classification outcomes**, not additional event classes.
 
-### 49.2 Seven disjoint event classes
+### 49.2 Six disjoint event classes
 
-Exactly one event class is emitted by Event Detection:
+Exactly one of the six event classes is emitted by Event Detection:
 
 ```text
 1. NO_EVENT / INTERNAL_PB
@@ -973,9 +973,7 @@ Detection precedence is:
 EXT_OPP_BREAK
 >
 EXT_CONT_BREAK
->
-MAJOR_IDM_EVENT
->
+ >
 MAJOR_IDM_EVENT
 >
 MINOR_IDM_EVENT
