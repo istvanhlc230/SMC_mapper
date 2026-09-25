@@ -21,7 +21,7 @@ PULLBACK-DERIVED LIQUIDITY REFERENCE
 ACTIVE LIQUIDITY POINTER
 ACTIVE/MINOR IDM
 REAL MAJOR IDM
-FALLBACK MAJOR IDM
+MAJOR IDM
 IDM SWEEP
 CONFIRMED_STRUCTURAL_SWING
 PROTECTED STRUCTURAL EXTREME
@@ -41,9 +41,9 @@ Functions equivalent to `detect_bos()` must require:
 2. `MAJOR_RETRACEMENT_QUALIFIED == TRUE`, supplied by Layer 3;
 3. physical external break (`STRUCTURAL_SWING_BREAK` via wick or body);
 4. `IDM_TAKEN == True`;
-5. exclusion of the FALLBACK_MAJOR_IDM exception.
+5. exclusion of the MAJOR_IDM exception.
 
-A Fallback Major IDM wick penetration must terminate as `MAJOR_IDM_SWEEP`, not BOS.
+A Major IDM wick penetration must terminate as `MAJOR_IDM_SWEEP`, not BOS.
 
 Functions equivalent to `detect_choch()` must use the governing opposing Protected Structural Extreme / Trading Range boundary and must enforce the complete CHoCH prerequisites. A body close beyond the boundary is not, by itself, sufficient to declare `CHoCH_CONFIRMED`.
 
@@ -121,7 +121,7 @@ Liquidity levels and protected structural boundaries are different ontology clas
 
 #### LiquidityState
 
-Applies to liquidity entities such as Minor IDM, Real Major IDM, and Engineering Liquidity:
+Applies to liquidity entities such as Minor IDM, Major IDM, and Engineering Liquidity:
 
 - `ACTIVE` — live liquidity level that has not yet been swept.
 - `SWEPT` — liquidity level has been taken out by the applicable wick/body event.
@@ -228,8 +228,7 @@ These are implementation facts, not additional structural SMC rules. They must n
 ### Liquidity-quality implementation values
 
 ```
-Real Major IDM     = 80
-Fallback Major IDM = 40
+Major IDM = 80
 ```
 
 These values are scoring outputs applied to already-established methodology state.
@@ -393,19 +392,19 @@ No rollover occurs, and no Protected Structural Extreme is locked.
 
 ---
 
-## 6.X — Fallback Major IDM Interaction (Opposing Boundary Only)
+## 6.X — Major IDM Interaction (Opposing Boundary)
 
-Fallback Major IDM is never part of continuation BOS provenance.
+Major IDM is never part of continuation BOS provenance.
 
-It appears only on the opposing boundary when no post-BOS structurally valid pullback exists.
+When no newly qualified post-BOS Major IDM exists, the prior protected external boundary remains the active Major IDM reference.
 
 ### Fallback Interaction Rules
 
 ```text
-FALLBACK_MAJOR_IDM + wick breach
+MAJOR_IDM + wick breach
 → MAJOR_IDM_SWEEP
 
-FALLBACK_MAJOR_IDM + body close
+MAJOR_IDM + body close
 → CHoCH_ELIGIBLE
 → CHoCH_CONFIRMED (only if all CHoCH prerequisites pass)
 ```
@@ -421,8 +420,8 @@ FALLBACK_MAJOR_IDM + body close
 When the first valid post-BOS pullback forms:
 
 ```text
-REAL_MAJOR_IDM is created
-FALLBACK_MAJOR_IDM is permanently superseded
+MAJOR_IDM is created
+MAJOR_IDM is permanently superseded
 ```
 
 ---
@@ -519,7 +518,7 @@ HTF CORE-LIQUIDITY TAKEOUT ≠ CHoCH
 LTF VALID PULLBACK ≠ CHoCH
 LTF INDUCEMENT SWEEP ≠ CHoCH
 LTF_CHoCH_CONTEXT_ACTIVE ≠ NEW STATE ENUM
-LTF CHoCH REFERENCE ≠ REAL_MAJOR_IDM
+LTF CHoCH REFERENCE ≠ MAJOR_IDM
 ```
 ### Post-CHoCH dual lineage
 
@@ -543,14 +542,14 @@ CHoCH_CONFIRMED
     └── EXTERNAL PROXY LINEAGE
            └── GOVERNING OPPOSING RANGE BOUNDARY
                   ↓
-              FALLBACK_MAJOR_IDM
+              MAJOR_IDM
 ```
 
 The two lineages are not interchangeable:
 
 ```text
 FIRST_POST_CHOCH_SVP ≠ FIRST_POST_CHOCH_MINOR_IDM
-FALLBACK_MAJOR_IDM ≠ REAL_MAJOR_IDM
+Major IDM provenance ≠ Minor IDM provenance
 ```
 
 A qualifying sweep of the applicable IDM lineage unlocks the Confirmation Gate. IDM takeout establishes `IDM_TAKEN = TRUE`, which is the prerequisite for the canonical `CONFIRMED_STRUCTURAL_SWING` confirmation path; it does NOT by itself create a new Dealing Range, trend flip, `CHoCH_CONFIRMED`, `VALID_BOS`, or Trading Range rollover. `CONFIRMATION GATE UNLOCKED` is a process condition, not a new lifecycle state enum.
@@ -560,7 +559,7 @@ CONFIRMATION_LOCKED
         │
         ├─ FIRST_POST_CHOCH_MINOR_IDM sweep
         │
-        └─ FALLBACK_MAJOR_IDM sweep
+        └─ MAJOR_IDM sweep
                  ↓
        CONFIRMATION GATE UNLOCKED
                  ↓
@@ -572,7 +571,7 @@ CONFIRMATION_LOCKED
                  ↓
              POST-BOS SVP
                  ↓
-          REAL_MAJOR_IDM
+          MAJOR_IDM
                  ↓
        FALLBACK → SUPERSEDED
 ```
@@ -580,7 +579,7 @@ CONFIRMATION_LOCKED
 Fallback boundary classification remains provenance-sensitive:
 
 ```text
-FALLBACK_MAJOR_IDM + WICK BREACH
+MAJOR_IDM + WICK BREACH
 → MAJOR_IDM_SWEEP
 → trend unchanged
 → no BOS
@@ -588,7 +587,7 @@ FALLBACK_MAJOR_IDM + WICK BREACH
 → no Trading Range rollover
 → Gate may unlock, subject to remaining swing prerequisites
 
-FALLBACK_MAJOR_IDM + BODY CLOSE
+MAJOR_IDM + BODY CLOSE
 → CHoCH_ELIGIBLE
 → NOT AUTOMATIC CHoCH_CONFIRMED
 → full CHoCH prerequisite gate required
@@ -615,13 +614,13 @@ A later candle may advance the lifecycle but may not retroactively rewrite the e
 15. CHoCH resets the new trend to an empty state.
 16. CHoCH creates a Protected Structural Extreme automatically.
 17. CHoCH-causing leg is ignored as the initial active impulse.
-18. Fallback Major IDM is treated as a real Major IDM.
-19. Fallback Major IDM wick penetration becomes BOS or CHoCH.
+18. Major IDM is treated as a real Major IDM.
+19. Major IDM wick penetration becomes BOS or CHoCH.
 20. `MAJOR_IDM_SWEEP` must be handled as an IDM-takeout lifecycle event; it may confirm the relevant swing reference but does not itself create VALID_BOS, range rollover, or protected-extreme lock.
 21. A body close beyond the opposing boundary is treated as CHoCH without all CHoCH prerequisites.
 22. A later candle retroactively rewrites an earlier `MAJOR_IDM_SWEEP` or BOS classification.
 23. A `VALID_BOS` is delayed pending a later body close when the wick-BOS path is already valid.
-24. A FALLBACK_MAJOR_IDM wick causes Trading Range rollover.
+24. A MAJOR_IDM wick causes Trading Range rollover.
 25. Genesis manufactures IDM or protected structure.
 26. A retracement below the canonical qualification floor must never produce VALID_BOS.
 27. Scoring creates structural validity.
@@ -633,7 +632,7 @@ A later candle may advance the lifecycle but may not retroactively rewrite the e
 33. `BROKEN` is applied to a liquidity entity.
 34. A liquidity `SWEPT` event is misclassified as a structural `BROKEN` event.
 35. `CONFIRMATION GATE UNLOCKED` is introduced as a new lifecycle state enum.
-36. `FALLBACK_MAJOR_IDM + BODY CLOSE` is treated as automatic `CHoCH_CONFIRMED`.
+36. `MAJOR_IDM + BODY CLOSE` is treated as automatic `CHoCH_CONFIRMED`.
 37. Confirmed Swing is treated as automatic `VALID_BOS` without `MAJOR_RETRACEMENT_QUALIFIED`.
 38. A continuation break is classified as `VALID_BOS` without the complete Layer 3 qualification result (must remain non-BOS / `IMPULSE_EXTENSION` as applicable).
 39. Any heuristic/safe mode is used to substitute for the canonical Layer 3 qualification result.
@@ -666,13 +665,13 @@ Regression tests must cover:
 - structural retracement qualification is a later continuation-BOS gate after `CONFIRMED_STRUCTURAL_SWING`, not an initial IDM prerequisite;
 - newest valid pullback replaces old active IDM;
 - only one active minor IDM;
-- real versus fallback Major IDM;
-- correct Real Major IDM lifecycle after BOS;
+- real versus Major IDM;
+- correct Major IDM lifecycle after BOS;
 - CHoCH does not automatically apply the BOS Major IDM lifecycle;
 - historical IDM is not an active competing target;
 - IDM wick takeout;
 - IDM body takeout;
-- fallback provenance remains distinct from Real Major IDM provenance.
+- fallback provenance remains distinct from Major IDM provenance.
 
 ### Entity lifecycle ontology
 - liquidity entity can transition `ACTIVE → SWEPT`;
@@ -692,7 +691,7 @@ Regression tests must cover:
 - below 38.2% does not qualify;
 - shallow qualification failure revokes the candidate and shifts the active pullback/IDM reference;
 - Protected Structural Extreme locks only at valid BOS;
-- FALLBACK_MAJOR_IDM wick does not lock Protected Structural Extreme.
+- MAJOR_IDM wick does not lock Protected Structural Extreme.
 
 ### BOS
 - BOS requires eligible Confirmed Continuation Swing;
@@ -702,11 +701,11 @@ Regression tests must cover:
 - external Wick-Break BOS;
 - wick-BOS does not require a later body close;
 - close exactly at the broken level remains valid Wick-BOS;
-- FALLBACK_MAJOR_IDM wick is `MAJOR_IDM_SWEEP`;
-- FALLBACK_MAJOR_IDM wick is not BOS;
-- FALLBACK_MAJOR_IDM wick is not CHoCH;
-- FALLBACK_MAJOR_IDM wick does not roll the Trading Range;
-- FALLBACK_MAJOR_IDM body close is only CHoCH-eligible pending prerequisites;
+- MAJOR_IDM wick is `MAJOR_IDM_SWEEP`;
+- MAJOR_IDM wick is not BOS;
+- MAJOR_IDM wick is not CHoCH;
+- MAJOR_IDM wick does not roll the Trading Range;
+- MAJOR_IDM body close is only CHoCH-eligible pending prerequisites;
 - later candles cannot retroactively rewrite an earlier classification.
 
 ### BOS downstream lifecycle
@@ -715,8 +714,8 @@ Regression tests must cover:
 - `VALID_BOS` emits `TRADING_RANGE_ROLLED_OVER`;
 - previous-range POIs transition to `EXPIRED_HISTORICAL` through the POI lifecycle subsystem;
 - expired historical POIs are non-tradable;
-- new range initializes Fallback Major IDM until a Real Major IDM is independently qualified;
-- first post-break SVP does not directly equal Real Major IDM; the full eligibility chain is required.
+- new range retains the prior protected external boundary as Major IDM until a new Major IDM is independently qualified;
+- first post-break SVP does not directly equal Major IDM; the full eligibility chain is required.
 
 ### CHoCH
 - correct governing opposing Protected Structural Extreme is used;
@@ -730,16 +729,16 @@ Regression tests must cover:
 - CHoCH-causing leg becomes initial active impulse;
 - CHoCH does not create a Protected Structural Extreme automatically;
 - first post-CHoCH SVP and first post-CHoCH Minor IDM remain distinct lineage objects;
-- FALLBACK_MAJOR_IDM lineage remains distinct from internal Minor IDM lineage;
+- MAJOR_IDM lineage remains distinct from internal Minor IDM lineage;
 - confirmation gate unlock is a process condition, not a new state enum;
-- FALLBACK_MAJOR_IDM exception remains distinct from normal CHoCH qualification.
+- MAJOR_IDM exception remains distinct from normal CHoCH qualification.
 
 ### Trading Range
 - bullish/bearish BOS establishes the new range;
 - internal fluctuations do not shift the primary boundary;
 - minor high/low does not create a new range;
 - deep retracement does not automatically reset range;
-- FALLBACK_MAJOR_IDM wick does not roll the range.
+- MAJOR_IDM wick does not roll the range.
 
 ### Entry Authorization / Execution Order Mapping
 
@@ -978,9 +977,8 @@ Exactly one event class is emitted by Event Detection:
 2. MINOR_IDM_EVENT
 3. EXT_CONT_BREAK
 4. EXT_OPP_BREAK
-5. FALLBACK_EVENT
-6. REAL_MAJOR_IDM_EVENT
-7. NEW_SVP_QUALIFIED
+5. MAJOR_IDM_EVENT
+6. NEW_SVP_QUALIFIED
 ```
 
 Detection precedence is:
@@ -990,9 +988,9 @@ EXT_OPP_BREAK
 >
 EXT_CONT_BREAK
 >
-FALLBACK_EVENT
+MAJOR_IDM_EVENT
 >
-REAL_MAJOR_IDM_EVENT
+MAJOR_IDM_EVENT
 >
 MINOR_IDM_EVENT
 >
@@ -1054,7 +1052,7 @@ GEOMETRIC CLASSIFICATION
           └─ FAIL → REJECTION / REMAIN
 ```
 
-A Real Major IDM is not a positive prerequisite for the opposing-wick CHoCH path. The exclusion is provenance-based: if the tested external level itself carries Major IDM provenance, the wick is not CHoCH; otherwise an eligible opposing external-boundary wick may enter the CHoCH prerequisite gate.
+A Major IDM is not a positive prerequisite for the opposing-wick CHoCH path. The exclusion is provenance-based: if the tested external level itself carries Major IDM provenance, the wick is not CHoCH; otherwise an eligible opposing external-boundary wick may enter the CHoCH prerequisite gate.
 
 A body close beyond the opposing boundary is never `CHoCH_CONFIRMED` by geometry alone. It first creates CHoCH eligibility and must pass the complete canonical prerequisite gate.
 
@@ -1080,19 +1078,19 @@ MINOR_IDM_EVENT
 EXT_CONT_BREAK
 EXT_OPP_BREAK
 FALLBACK_EVENT
-REAL_MAJOR_IDM_EVENT
+MAJOR_IDM_EVENT
 NEW_SVP_QUALIFIED
 ```
 
 The transition matrix is exhaustive and deterministic:
 
-| Current State | NO_EVENT / INTERNAL_PB | MINOR_IDM_EVENT | EXT_CONT_BREAK | EXT_OPP_BREAK | FALLBACK_EVENT | REAL_MAJOR_IDM_EVENT | NEW_SVP_QUALIFIED |
-|---|---|---|---|---|---|---|---|
-| **BOOTSTRAP** | REMAIN; update provisional extremes/internal sequence | REMAIN; no confirmed range | DISQUALIFIED; no confirmed swing, therefore no BOS | DISQUALIFIED; no protected boundary, therefore no CHoCH | NOT_APPLICABLE; no fallback level | NOT_APPLICABLE; no Real Major IDM | SVP → Verified Extreme → IDM → Sweep → Gate → **CONFIRMED_RANGE** |
-| **CONFIRMATION_LOCKED** | REMAIN; track active expansion/retrace state | Gate UNLOCKED; remaining prerequisites required before **CONFIRMED_RANGE** | DISQUALIFIED; BOS prohibited while confirmation is locked | CHoCH pipeline; qualifying break + all prerequisites → **POST_CHOCH**, otherwise REMAIN | REMAIN; FALLBACK_MAJOR_IDM wick → `MAJOR_IDM_SWEEP`, Gate UNLOCKED, no automatic swing | NOT_APPLICABLE; no Real Major IDM in this phase | FIRST_POST_CHOCH_SVP → Verified Extreme → FIRST_POST_CHOCH_MINOR_IDM; remain confirmation-locked until applicable sweep/gate prerequisites complete |
-| **CONFIRMED_RANGE** | REMAIN; dynamic `E_retrace` tracking | REMAIN; Minor IDM sweep unlocks gate, trend/range remain active | `IMPULSE_EXTENSION` → REMAIN; `VALID_BOS` → **POST_BOS** | `CHoCH_CONFIRMED` → **POST_CHOCH**; `MAJOR_IDM_SWEEP` → REMAIN; `NO_CHoCH_BREAK` → REMAIN | REMAIN; FALLBACK_MAJOR_IDM wick → `MAJOR_IDM_SWEEP`, no CHoCH | REMAIN; Real Major IDM sweep unlocks/updates the applicable gate state | REMAIN; new SVP supersedes the previous active pullback reference where canonical lifecycle rules require it |
-| **POST_BOS** | REMAIN; new expansion tracked, closed-range POIs expire through POI lifecycle | NOT_APPLICABLE until a qualifying post-BOS SVP creates the new Minor IDM lifecycle | DISQUALIFIED; another BOS is not interpreted until the new swing lifecycle is established | CHoCH classification pipeline; qualifying opposing break + all prerequisites → **POST_CHOCH**, otherwise REMAIN | REMAIN; FALLBACK_MAJOR_IDM wick → `MAJOR_IDM_SWEEP`, Gate UNLOCKED | NOT_APPLICABLE until the post-BOS SVP → Extreme → Eligibility pipeline exists | SVP → Verified Extreme → Major IDM Eligibility → **REAL_MAJOR_IDM** → FALLBACK_MAJOR_IDM superseded → **CONFIRMED_RANGE** |
-| **POST_CHOCH** | remain in `CONFIRMATION_LOCKED` | first post-CHoCH Minor IDM pipeline; no automatic state promotion | BOS prohibited while confirmation remains locked | body close → `CHoCH_ELIGIBLE` pending prerequisites; FALLBACK_MAJOR_IDM wick → `MAJOR_IDM_SWEEP`; Real Major IDM + qualifying opposing wick → CHoCH pipeline | FALLBACK_MAJOR_IDM wick → `MAJOR_IDM_SWEEP`, Gate UNLOCKED, trend unchanged | NOT_APPLICABLE until independent post-BOS Real Major IDM lifecycle | FIRST_POST_CHOCH_SVP → Verified Extreme → FIRST_POST_CHOCH_MINOR_IDM; remain `CONFIRMATION_LOCKED` until applicable sweep/gate prerequisites complete |
+| Current State | NO_EVENT / INTERNAL_PB | MINOR_IDM_EVENT | EXT_CONT_BREAK | EXT_OPP_BREAK | MAJOR_IDM_EVENT | NEW_SVP_QUALIFIED |
+|---|---|---|---|---|---|---|
+| **BOOTSTRAP** | REMAIN; update provisional extremes/internal sequence | REMAIN; no confirmed range | DISQUALIFIED; no confirmed swing, therefore no BOS | DISQUALIFIED; no protected boundary, therefore no CHoCH | NOT_APPLICABLE; no fallback level | NOT_APPLICABLE; no Major IDM | SVP → Verified Extreme → IDM → Sweep → Gate → **CONFIRMED_RANGE** |
+| **CONFIRMATION_LOCKED** | REMAIN; track active expansion/retrace state | Gate UNLOCKED; remaining prerequisites required before **CONFIRMED_RANGE** | DISQUALIFIED; BOS prohibited while confirmation is locked | CHoCH pipeline; qualifying break + all prerequisites → **POST_CHOCH**, otherwise REMAIN | REMAIN; MAJOR_IDM wick → `MAJOR_IDM_SWEEP`, Gate UNLOCKED, no automatic swing | NOT_APPLICABLE; no Major IDM in this phase | FIRST_POST_CHOCH_SVP → Verified Extreme → FIRST_POST_CHOCH_MINOR_IDM; remain confirmation-locked until applicable sweep/gate prerequisites complete |
+| **CONFIRMED_RANGE** | REMAIN; dynamic `E_retrace` tracking | REMAIN; Minor IDM sweep unlocks gate, trend/range remain active | `IMPULSE_EXTENSION` → REMAIN; `VALID_BOS` → **POST_BOS** | `CHoCH_CONFIRMED` → **POST_CHOCH**; `MAJOR_IDM_SWEEP` → REMAIN; `NO_CHoCH_BREAK` → REMAIN | REMAIN; MAJOR_IDM wick → `MAJOR_IDM_SWEEP`, no CHoCH | REMAIN; Major IDM sweep unlocks/updates the applicable gate state | REMAIN; new SVP supersedes the previous active pullback reference where canonical lifecycle rules require it |
+| **POST_BOS** | REMAIN; new expansion tracked, closed-range POIs expire through POI lifecycle | NOT_APPLICABLE until a qualifying post-BOS SVP creates the new Minor IDM lifecycle | DISQUALIFIED; another BOS is not interpreted until the new swing lifecycle is established | CHoCH classification pipeline; qualifying opposing break + all prerequisites → **POST_CHOCH**, otherwise REMAIN | REMAIN; MAJOR_IDM wick → `MAJOR_IDM_SWEEP`, Gate UNLOCKED | NOT_APPLICABLE until the post-BOS SVP → Extreme → Eligibility pipeline exists | SVP → Verified Extreme → Major IDM Eligibility → **MAJOR_IDM** → MAJOR_IDM superseded → **CONFIRMED_RANGE** |
+| **POST_CHOCH** | remain in `CONFIRMATION_LOCKED` | first post-CHoCH Minor IDM pipeline; no automatic state promotion | BOS prohibited while confirmation remains locked | body close → `CHoCH_ELIGIBLE` pending prerequisites; MAJOR_IDM wick → `MAJOR_IDM_SWEEP`; Major IDM + qualifying opposing wick → CHoCH pipeline | MAJOR_IDM wick → `MAJOR_IDM_SWEEP`, Gate UNLOCKED, trend unchanged | NOT_APPLICABLE until independent post-BOS Major IDM lifecycle | FIRST_POST_CHOCH_SVP → Verified Extreme → FIRST_POST_CHOCH_MINOR_IDM; remain `CONFIRMATION_LOCKED` until applicable sweep/gate prerequisites complete |
 
 The `POST_CHOCH` row is intentionally not a blanket `CONFIRMATION_LOCKED` transition for every event. The state remains `CONFIRMATION_LOCKED`, while the event-specific lineage and gate logic determine the next process step.
 
@@ -1114,14 +1112,14 @@ STATE TRANSITION
 Additional invariants:
 
 ```text
-NO_REAL_MAJOR_IDM ≠ FALLBACK
+NO_MAJOR_IDM ≠ FALLBACK
 MINOR_IDM_SWEEP ≠ AUTOMATIC CONFIRMED_SWING
 MAJOR_IDM_SWEEP ≠ AUTOMATIC CONFIRMED_SWING
-NEW_SVP ≠ AUTOMATIC REAL_MAJOR_IDM
+NEW_SVP ≠ AUTOMATIC MAJOR_IDM
 EXT_CONT_BREAK ≠ AUTOMATIC VALID_BOS
 EXT_OPP_BREAK ≠ AUTOMATIC CHoCH_CONFIRMED
-FALLBACK_MAJOR_IDM + WICK ≠ CHoCH
-FALLBACK_MAJOR_IDM + BODY CLOSE ≠ AUTOMATIC CHoCH_CONFIRMED
+MAJOR_IDM + WICK ≠ CHoCH
+MAJOR_IDM + BODY CLOSE ≠ AUTOMATIC CHoCH_CONFIRMED
 CONFIRMATION GATE UNLOCKED ≠ NEW STATE ENUM
 BROKEN ≠ SWEPT
 IMPULSE_EXTENSION ≠ EVENT CLASS
@@ -1160,7 +1158,7 @@ IF breached level == OPPOSING_PROTECTED_BOUNDARY
 THEN:
   wick breach → CHoCH_ELIGIBLE
 
-IF breached level == FALLBACK_MAJOR_IDM
+IF breached level == MAJOR_IDM
   OR the tested external level otherwise carries Major IDM provenance
 THEN:
   wick breach → MAJOR_IDM_SWEEP / NOT CHoCH
@@ -1190,7 +1188,6 @@ The following must remain separate state objects or semantically equivalent stat
 ACTIVE PULLBACK POINTER
 ≠ MINOR IDM STATE
 ≠ MAJOR IDM STATE
-≠ FALLBACK MAJOR IDM STATE
 ≠ CONFIRMED SWING
 ≠ PROTECTED STRUCTURAL EXTREME
 ≠ TRADING RANGE
