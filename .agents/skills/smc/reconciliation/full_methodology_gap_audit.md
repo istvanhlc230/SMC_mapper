@@ -154,9 +154,9 @@ Canonical result:
 - missing buffer blocks automatic broker submission.
 
 Classification: **CANONICALIZED — SOURCE-DIRECT + CONFIGURATION BOUNDARY**.
-### 3.7 Status update — Target Plan / Multi-Leg Management CANONICALIZED WITH CONTROLLED SOURCE GAPS
+### 3.7 Status update — Target source and downstream target-use boundary
 
-Target handling is now reconciled as a two-stage model: source-backed target discovery followed by configurable downstream target planning.
+Chart analysis identifies structural/liquidity destination levels that may be used as target inputs. Selection and use of those levels are downstream implementation/trading-policy concerns, not canonical SMC methodology.
 
 Canonical result:
 - direct same-timeframe pro-trend -> current confirmed external extreme/external liquidity is a valid target candidate;
@@ -169,7 +169,7 @@ Canonical result:
 - the current monitor phase is notification-only: `TARGET_REACHED` produces an alert/notification and does not imply position closure, partial closure, stop movement, or broker fill;
 - `BREAK_EVEN` is a future stop-management action, not a fallback target.
 
-Classification: **CANONICALIZED ARCHITECTURE + CONTROLLED SOURCE GAPS — no universal target-priority or universal countertrend coordinate is invented.**
+Classification: **IMPLEMENTATION SCOPE — no universal target-priority or universal countertrend coordinate is required by the canonical methodology.**
 
 
 ### 3.8 Status update — Position sizing and risk-budget controls canonicalized
@@ -251,14 +251,15 @@ The remaining items were re-audited against the current canonical skill and impl
 | Rejection Block → Engineering Liquidity | **CLOSED / CANONICALIZED** | Engineering Liquidity is derived only from the valid pullback immediately preceding active Extreme OF/Extreme OB; RB is separate. |
 | Reversal predicates | **CLOSED at current boundary** | Deterministic OHLC predicates are explicitly project-derived formalizations; qualitative morphology remains non-binary and no unsupported numeric threshold is invented. |
 | Premium/discount gate | **SEMANTICALLY CANONICALIZED** | Directional Decisional-POI location is explicit. Any remaining provenance uncertainty concerns source traceability, not a missing implementation rule. |
-| LTF target selection hierarchy | **CONTROLLED IMPLEMENTATION/POLICY GAP** | Two source-supported candidate classes exist; no universal priority is defined. Current notification-only monitoring does not require automatic target selection. |
-| Universal countertrend target coordinate | **CONTROLLED IMPLEMENTATION/POLICY GAP** | Sources describe setup-specific destinations, not one universal numeric TP. Do not invent one. |
-| Fixed-R target | **POLICY ONLY** | May be enabled only where the applicable trading policy permits; it is not canonical structural target provenance. |
-| BE / profit lock / trailing | **FUTURE TRADE-MANAGEMENT POLICY** | These are actions after target events, not target semantics and not current monitor behavior. |
+| Target selection/use | **IMPLEMENTATION SCOPE** | Chart analysis supplies structural/liquidity destination inputs; implementation decides which are used as targets. |
+| LTF target selection priority | **IMPLEMENTATION / TRADING POLICY** | Multiple source-supported target conventions exist; no canonical priority is required. |
+| Universal countertrend target coordinate | **IMPLEMENTATION / TRADING POLICY** | No universal numeric TP is required by canonical methodology. |
+| Fixed-R target | **IMPLEMENTATION / TRADING POLICY** | Non-structural policy mechanism, outside canonical target provenance. |
+| BE / profit lock / trailing | **TRADE-MANAGEMENT IMPLEMENTATION** | Post-target management actions, outside canonical target semantics. |
 | Broker order-type / pending-order lifecycle details | **PLATFORM IMPLEMENTATION GAP** | The platform contract defines the boundary; venue-specific order semantics, cancellation/expiry/re-entry policy, and broker integration still require implementation/configuration. |
 | `smc_analyzer.py` runtime | **IMPLEMENTATION GAP** | The file contains foundational models but not the full canonical structural detector/classifier/state-transition engine. This is a runtime implementation task, not a methodology gap. |
 
-The audit therefore finds **no unresolved canonical-methodology contradiction requiring new SMC rules at this time**. The remaining target-choice items are intentionally not canonicalized because the sources do not provide a universal deterministic selection rule.
+The audit therefore finds **no unresolved canonical-methodology contradiction requiring new SMC rules at this time**. Target selection/use and trade-management behavior are implementation concerns built on chart-analysis outputs, not missing canonical SMC rules.
 
 ## 4. Current runtime versus canonical skill
 
