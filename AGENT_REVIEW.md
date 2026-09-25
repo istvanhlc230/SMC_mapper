@@ -340,3 +340,15 @@ The latest full source-by-source audit produced seven follow-up items. This ledg
 ### Rule for continuation
 
 Do not close the overall audit while items 6–7 remain unresolved. After user decisions, re-audit the affected source passages and canonical downstream references, then update this ledger and only then mark each item CLOSED/VERIFIED.
+
+
+## FOLLOW-UP — FINAL AUDIT CORRECTION — 2026-09-25
+
+The full-skill audit identified exactly two stale wording defects in `.agents/skills/smc/04_BOS_mechanics.md`. Only those audited defects were corrected:
+
+1. Replaced the obsolete “Major IDM is a proxy” wording with the canonical single Major IDM semantic class plus provenance.
+2. Replaced the obsolete “Real IDM lifecycle” wording with the canonical post-BOS Major IDM qualification/supersession lifecycle.
+
+No other skill, knowledgebase, runtime Python file, or analyzed JSON was modified in this correction. Post-edit stale-term validation found no active `REAL_IDM`, `REAL_MAJOR_IDM`, `FALLBACK_MAJOR_IDM`, or proxy-Major-IDM wording in `04_BOS_mechanics.md`.
+
+**FINAL AUDIT CORRECTION: CLOSED / VERIFIED.**
