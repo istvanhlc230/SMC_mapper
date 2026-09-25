@@ -436,6 +436,30 @@ OB_bottom = High_t      # Inside Bar High
 
 No alternative geometry such as an unspecified “sweeping wick range” is permitted. The inside-bar refinement is an execution-coordinate refinement only.
 
+## 38.4. Dealing-Range POI Expiration
+
+**Layer 6 owns the execution lifecycle of canonical POIs across Dealing Range rollover.** When a new `VALID_BOS` establishes a new Dealing Range, every unmitigated tradable POI that originated from the previous Dealing Range immediately leaves the active tradable set and becomes historical/reactive-only.
+
+```text
+OLD DEALING RANGE POI
+        ↓
+NEW VALID_BOS
+        ↓
+NEW DEALING RANGE
+        ↓
+ALL PREVIOUS UNMITIGATED POIs
+        ↓
+EXPIRED_HISTORICAL / REACTION_ZONE
+        ↓
+NOT TRADABLE
+```
+
+Expiration is a lifecycle transition, not structural invalidation of the historical price zone. The historical reaction-zone record may be retained for chart context and auditability, but it cannot be selected as an active POI or promoted to a canonical external target merely because the old zone remains visually present.
+
+Mitigated or already failed POIs retain their historical lifecycle outcome; they are not revived by a later range rollover.
+
+Layer 8 consumes this state and must not independently decide which previous-range POIs expire.
+
 ## 38.5. POI Failure and Rejection Block semantics
 
 ### POI Interaction vs. Failure
