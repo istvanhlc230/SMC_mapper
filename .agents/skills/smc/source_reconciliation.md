@@ -38,6 +38,19 @@ This workflow currently audits methodology layers across both the structural and
 
 Source material is used to detect boundary violations, and higher-layer rules are routed to their existing semantic owners.
 
+## IDM reconciliation — Major IDM continuity after BOS
+
+The source set distinguishes Minor IDM from Major IDM and explicitly supports the external-boundary case: when a trading range contains only a Minor IDM and no newly formed Major IDM, the governing external liquidity / prior protected boundary serves as the Major Inducement. After BOS, if price creates only Minor IDM and does not establish a new Major IDM, the previous Protected Low in a bullish range or Protected High in a bearish range therefore remains the active Major IDM reference.
+
+Canonical consequence:
+- `MAJOR_IDM` is a single semantic class.
+- A post-BOS valid pullback may establish a new Major IDM.
+- Minor IDM alone does not replace the prior Major IDM.
+- No `FALLBACK_MAJOR_IDM` or `REAL_MAJOR_IDM` ontology class is required.
+- Major IDM provenance may be pullback-derived or protected-boundary-derived.
+
+This is source reconciliation, not a new implementation heuristic.
+
 ## 3. Contracts under reconciliation
 
 The reconciliation workflow tracks the following structural and execution contracts (C1–C15). They must not be silently closed by implementation:
@@ -102,7 +115,7 @@ Required outcome:
 - [PROJECT_CANONICAL / SOURCE_COMPOSED] the deterministic trigger is a completed LTF candle close beyond the governing LTF reference (the source establishes the LTF structural requirement, while the strict close-only trigger is project-composed for determinism);
 - [SOURCE_DIRECT] the route must not independently alter the HTF bias;
 - [SOURCE_DIRECT] confirmation still requires the applicable CHoCH prerequisite gate;
-- [SOURCE_COMPOSED / PROJECT_CANONICAL] the LTF reference must not be reclassified as a Real Major IDM.
+- [SOURCE_COMPOSED / PROJECT_CANONICAL] the LTF reference must not be reclassified as a Major IDM merely because it participates in the LTF-CHoCH route.
 
 ### C7 — Order Flow / SMT identification and selection
 
