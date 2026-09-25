@@ -130,6 +130,42 @@ class MarketDataNormalizer:
             
         return candles
 
+@dataclass(frozen=True)
+class TargetCandidate:
+    """A source-backed structural/liquidity destination candidate.
+
+    This object describes a candidate only. It does not decide which candidate
+    is universally "the" target and it does not imply broker execution.
+    """
+    target_id: str
+    target_type: str
+    price: Decimal
+    provenance: str
+
+
+@dataclass(frozen=True)
+class TargetLeg:
+    """Configurable mapping of one trade leg to a target candidate."""
+    leg_id: str
+    target_id: str
+    allocation_pct: Decimal
+
+
+@dataclass(frozen=True)
+class TargetPlan:
+    """Configurable multi-leg target plan.
+
+    Leg count and allocation are policy/configuration, not methodology
+    constants.
+    """
+    candidates: List[TargetCandidate]
+    legs: List[TargetLeg]
+
+    def candidate_by_id(self, target_id: str) -> Optional[TargetCandidate]:
+        return next((candidate for candidate in self.candidates
+                     if candidate.target_id == target_id), None)
+
+
 @dataclass
 class StructuralPOICandidate:
     ticker: str
