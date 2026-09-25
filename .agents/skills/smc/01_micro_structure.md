@@ -22,6 +22,21 @@ STRUCTURAL QUALIFICATION
 STRUCTURAL LIFECYCLE
 ~~~
 
+## 1.5 Impulsive-leg scope
+
+When Layer 1 observations are consumed for structural mapping, IDM identification, or POI identification, the applicable structural analysis is anchored to the **active impulsive leg**. Internal complexity that belongs only to the corrective leg is not independently promoted into structural mapping, IDM, or POI candidates.
+
+This is a downstream consumption-scope rule, not a redefinition of the candle-level primitives owned by Layer 1.
+
+```text
+ACTIVE IMPULSIVE LEG
+        ↓
+STRUCTURAL MAPPING / IDM / POI INPUT
+        ↓
+CORRECTIVE-LEG INTERNAL COMPLEXITY
+        → NOT INDEPENDENTLY PROMOTED
+```
+
 ## 2. Canonical microstructure ontology
 
 The canonical Layer 1 vocabulary is:
