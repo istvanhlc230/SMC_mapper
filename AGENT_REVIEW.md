@@ -394,4 +394,17 @@ Runtime and knowledgebase integrity:
 - `zones.json` untouched.
 - `knowledgebase/` untouched.
 
-**LATEST CHoCH / CONSISTENCY CORRECTION: IMPLEMENTED; FINAL VALIDATION PENDING.**
+**LATEST CHoCH / CONSISTENCY CORRECTION: IMPLEMENTED; FINAL VALIDATION PASSED.**
+
+ 
+### Final validation — 2026-09-25
+
+Validation completed after the six canonical-document updates plus this review record:
+- no stale universal LTF body-close formulation remains in the affected canonical documents;
+- LTF Structural Glitch terminology and reference-substitution rule are present;
+- LTF CHoCH break mode is explicitly IDM-type dependent;
+- the 04_BOS equality wording now requires physical penetration beyond the level;
+- countertrend target coordinate resolution is no longer described as an unresolved methodology gap;
+- runtime Python, analyzed JSON, and knowledgebase files remain untouched.
+
+FINAL VALIDATION STATUS: PASS.
