@@ -79,14 +79,15 @@ Current skill:
 - `08_implementation.md` contains the deterministic execution representation.
 
 Classification:
-**CANONICALIZED — SOURCE-DIRECT + SOURCE-DERIVED FORMALIZATION**.
+**CLOSED / VERIFIED — SOURCE-DIRECT CANONICAL LTF CHoCH GATE**.
 
-Required reconciliation:
-- exact precondition for switching from HTF to LTF confirmation;
-- exact identity of the LTF reference;
-- whether the LTF break is wick/body/close;
-- interaction with the existing Major IDM lineage;
-- whether this is a CHoCH variant or a lower-timeframe representation of the same CHoCH.
+Resolved canonicalization:
+- HTF POI/core-liquidity interaction activates the LTF-CHoCH context;
+- the most recently formed valid LTF pullback / verified extreme supplies the governing LTF Inducement reference;
+- the LTF CHoCH confirmation gate requires a completed LTF candle body close beyond that reference;
+- wick-only penetration is treated as liquidity sweep/physical interaction and does not satisfy the LTF CHoCH gate;
+- the route remains the same CHoCH concept represented in an HTF→LTF execution context, not a new lifecycle state;
+- the LTF reference is not reclassified as Major IDM merely because it is used by the LTF-CHoCH route.
 
 Do not silently infer this route from generic CHoCH rules.
 
