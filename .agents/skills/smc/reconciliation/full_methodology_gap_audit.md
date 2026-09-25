@@ -211,7 +211,7 @@ The 2026 market-structure source was reconciled into the canonical Layer 3 lifec
 - `IDM_TAKEN` confirms the relevant structural swing point.
 - Retracement depth/candle-structure qualification is evaluated after swing confirmation and determines whether a later external break can qualify as `VALID_BOS`.
 - An insufficient retracement does not retroactively erase the historical IDM-takeout swing confirmation; it prevents the attempted continuation break from qualifying as BOS and shifts the active pullback/IDM reference for the next attempt.
-- The former ordering `IDM_TAKEN → SWING_CANDIDATE → retracement qualification → CONFIRMED_STRUCTURAL_SWING` is no longer canonical.
+- The former ordering `IDM_TAKEN → provisional swing state → retracement qualification → CONFIRMED_STRUCTURAL_SWING` is no longer canonical.
 
 Classification: **RECONCILED — SOURCE-DIRECT 2026 MARKET-STRUCTURE RULE**.
 
@@ -233,7 +233,7 @@ The latest full knowledgebase re-audit identified and corrected the following ca
 6. **Reversal predicates:** exact OHLC inequalities are now explicitly documented as deterministic formalizations of source-described reversal patterns; qualitative morphology remains a non-binary filter and no unsupported numeric threshold is introduced.
 
 Post-fix validation:
-- no remaining SWING_CANDIDATE terminology in the canonical repository search;
+- no remaining obsolete provisional-swing terminology in the canonical methodology documents;
 - no remaining canonical REAL_MAJOR_IDM + OPPOSING WICK BREAK positive gate;
 - no remaining Rejection Block → Engineering Liquidity dependency;
 - no remaining Rejection Block-as-OF/OB-equivalent POI statement in the implementation mapping;
