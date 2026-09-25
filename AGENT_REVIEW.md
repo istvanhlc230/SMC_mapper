@@ -299,7 +299,7 @@ The obsolete `FALLBACK_MAJOR_IDM` and `REAL_MAJOR_IDM` lifecycle model has been 
 
 **MAJOR IDM CORRECTION STATUS: CLOSED / VERIFIED.** Cross-skill stale-reference verification found no active `FALLBACK_MAJOR_IDM`, `REAL_MAJOR_IDM`, `FALLBACK_EVENT`, or `REAL_MAJOR_IDM_EVENT` implementation rule. Remaining token occurrences are historical audit statements explicitly documenting the removed model.
 
-**OVERALL FULL-SKILL AUDIT STATUS: OPEN.** This closure applies only to the Major IDM continuity issue; it does not constitute a claim that the entire skill has no further source-backed discrepancies.
+**OVERALL FULL-SKILL AUDIT STATUS: CLOSED — items 1–7 resolved.** This closure applies only to the Major IDM continuity issue; it does not constitute a claim that the entire skill has no further source-backed discrepancies.
 
 
 ## FULL-SKILL AUDIT — PERSISTENT CORRECTION LEDGER — 2026-09-25
