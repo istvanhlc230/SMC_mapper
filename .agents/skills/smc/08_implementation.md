@@ -398,7 +398,7 @@ Major IDM is never part of continuation BOS provenance.
 
 When no newly qualified post-BOS Major IDM exists, the prior protected external boundary remains the active Major IDM reference.
 
-### Fallback Interaction Rules
+### Major IDM interaction rules
 
 ```text
 MAJOR_IDM + wick breach
@@ -406,25 +406,12 @@ MAJOR_IDM + wick breach
 
 MAJOR_IDM + body close
 → CHoCH_ELIGIBLE
-→ CHoCH_CONFIRMED (only if all CHoCH prerequisites pass)
+→ CHoCH_CONFIRMED only if all CHoCH prerequisites pass
 ```
 
-`MAJOR_IDM_SWEEP` never produces `VALID_BOS`.
+`MAJOR_IDM_SWEEP` never produces `VALID_BOS`, `CHoCH_CONFIRMED`, Trading Range rollover, or Protected Structural Extreme lock.
 
-`MAJOR_IDM_SWEEP` never produces `CHoCH_CONFIRMED`.
-
-`MAJOR_IDM_SWEEP` never rolls over the dealing range.
-
-`MAJOR_IDM_SWEEP` never locks a Protected Structural Extreme.
-
-When the first valid post-BOS pullback forms:
-
-```text
-MAJOR_IDM is created
-MAJOR_IDM is permanently superseded
-```
-
----
+When a new post-BOS Major IDM is independently qualified, it supersedes the previous active Major IDM from that point forward. Historical IDM provenance is immutable.
 
 ## 6.X — Deterministic Invariants
 
@@ -1039,7 +1026,7 @@ GEOMETRIC CLASSIFICATION
         └─ WICK BREACH
                ↓
         LEVEL PROVENANCE
-          ├─ FALLBACK / MAJOR IDM PROVENANCE
+          ├─ MAJOR IDM PROVENANCE
           │    ↓
           │  MAJOR_IDM_SWEEP / NOT CHoCH
           │
@@ -1070,14 +1057,14 @@ POST_CHOCH
 
 `CONFIRMATION GATE UNLOCKED` is not a sixth state. It is a process condition within the applicable lifecycle state.
 
-The seven detected event classes are:
+The six detected event classes are:
 
 ```text
 NO_EVENT / INTERNAL_PB
 MINOR_IDM_EVENT
 EXT_CONT_BREAK
 EXT_OPP_BREAK
-FALLBACK_EVENT
+MAJOR_IDM_EVENT
 MAJOR_IDM_EVENT
 NEW_SVP_QUALIFIED
 ```
@@ -1112,7 +1099,7 @@ STATE TRANSITION
 Additional invariants:
 
 ```text
-NO_MAJOR_IDM ≠ FALLBACK
+NO_NEW_MAJOR_IDM → PRIOR_PROTECTED_BOUNDARY_REMAINS_MAJOR_IDM
 MINOR_IDM_SWEEP ≠ AUTOMATIC CONFIRMED_SWING
 MAJOR_IDM_SWEEP ≠ AUTOMATIC CONFIRMED_SWING
 NEW_SVP ≠ AUTOMATIC MAJOR_IDM
