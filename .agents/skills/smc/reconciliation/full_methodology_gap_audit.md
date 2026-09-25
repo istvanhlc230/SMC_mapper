@@ -123,7 +123,8 @@ The later source update is now canonicalized in `06_execution.md` and `08_implem
 Canonical result:
 - Decisional OB = valid OB that actually causes canonical VALID_BOS;
 - the earlier “first valid OB after inducement” shortcut is superseded;
-- Extreme OB = furthest valid origin-side OB;
+- Extreme OF lineage is resolved first; Extreme OB = furthest unmitigated valid OB within the active Extreme OF lineage; global origin-side OB search is not canonical;
+- OB FVG association is a validation/selection property: if a candidate candle lacks the required FVG association, selection shifts to the next eligible source-defined candle and the FVG association is re-evaluated; the selected candle must independently satisfy all OB pillars;
 - OB validity is based on its own pillars;
 - OF state does not automatically invalidate a valid OB;
 - a valid Decisional OB may be used while associated OF remains unmitigated, subject to Rule-of-Two and execution gates.
@@ -393,3 +394,36 @@ The 2-candle retracement correction is already canonicalized elsewhere:
 - exactly 2 candles use the reduced-candle exception;
 - 38.2%–<50% remains a separate immediate-HTF valid-pullback path.
 
+
+
+## 3.14 Status update — Direct validator re-audit of the eight remaining canonical issues
+
+The previous AUDIT PART 2 = COMPLETE disposition was superseded by a direct validator re-audit against the indexed knowledgebase evidence.
+
+Current canonical disposition:
+
+1. **Layer-2 / Layer-3 IDM ordering — CLOSED / CANONICALIZED.** Candle-Level Valid Pullback → Verified Pullback Extreme → Pullback-Derived Liquidity Reference → Layer-3 IDM classification. Structural retracement qualification is a later continuation-BOS gate after CONFIRMED_STRUCTURAL_SWING.
+2. **Premium/Discount hard gate — CLOSED / CANONICALIZED.** Decisional BUY requires Discount and SELL requires Premium. The gate is execution eligibility, not scoring; canonical Dealing Range provenance remains required and no lowest-low/highest-high or OTE/Fibonacci fallback is authorized.
+3. **OB/FVG validation — CLOSED / CANONICALIZED.** The required associated FVG/imbalance must exist and must not have been completely filled/consumed; complete non-mitigation is not required.
+4. **OB → next FVG candle shift — CLOSED / CANONICALIZED.** A candidate candle lacking the required FVG association is rejected and selection shifts to the next eligible source-defined candle; the new candle is independently re-evaluated against all OB pillars.
+5. **Extreme OB lineage — CLOSED / CANONICALIZED.** Extreme OF is resolved first; Extreme OB is the furthest unmitigated valid OB inside that active Extreme OF lineage. Origin OB remains a separate latent reserve.
+6. **1-candle reduced retracement — CLOSED / VERIFIED.** The positive reduced-retracement path requires exactly two candles; a one-candle Layer-2 Candle-Level Valid Pullback remains valid and is not globally prohibited.
+7. **Rule-of-Two minimum-one — CLOSED / CANONICALIZED.** In an applicable Rule-of-Two execution context, active canonical tradable POIs have cardinality 1..2. No valid POI results in fail-closed NO_EVIDENCE; no synthetic POI is created. Origin OB is latent and Rejection Block is separately typed.
+8. **IMPULSE_EXTENSION — CLOSED / VERIFIED.** IMPULSE_EXTENSION remains a classification outcome of EXT_CONT_BREAK when continuation-BOS qualification is insufficient; it is not an event class.
+
+The canonical lifecycle is:
+
+Candle-Level Valid Pullback → Verified Pullback Extreme → Pullback-Derived Liquidity Reference → IDM → IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING → Structural Retracement Qualification → Structural Swing Break → VALID_BOS.
+
+### Knowledgebase evidence used
+
+- knowledgebase/00_INDEX.md
+- knowledgebase/03_SOURCE_EVIDENCE.md
+- knowledgebase/reference/03_pullback_retracement.md
+- knowledgebase/reference/06_poi_ob_fvg_rejection.md
+
+The knowledgebase remains evidence only; .agents/skills/smc/ remains canonical authority.
+
+### Remaining genuine source gaps
+
+No remaining contradiction from the eight-item validator set is left open. Any exact source-sequence boundary not explicitly deterministic in the underlying source remains an implementation/documentation boundary rather than an invented numeric rule.
