@@ -33,7 +33,7 @@ These concepts may exist as structural observations, validators, liquidity, or h
 
 ### Rule of Two POIs (Structural Constraint)
 
-An active dealing range may contain a MINIMUM of one and a MAXIMUM of two actively tradable POIs at any given time:
+An active dealing range may contain **zero, one, or two** actively tradable POIs at any given time. The canonical maximum is two:
 1. **Decisional POI** (must reside in Discount for Buys, Premium for Sells)
 2. **Extreme POI** (Extreme OF / Extreme OB)
 
@@ -43,7 +43,7 @@ DECISIONAL POI
  EXTREME POI
 ```
 
-Everything outside the active one-or-two-POI structure is non-tradable/SMT unless a canonical rule explicitly promotes it. Multiple arbitrary POIs must not be created merely because multiple zones are visually present. Any logic that permits three simultaneously active POIs in the scanner is strictly forbidden.
+No synthetic POI may be created merely to satisfy the Rule of Two. When no valid Decisional or Extreme POI exists, the active tradable-POI set is empty. Any candidate outside the active one-or-two-POI structure is non-tradable/SMT unless a canonical rule explicitly promotes it. Multiple arbitrary POIs must not be created merely because multiple zones are visually present. Any logic that permits three simultaneously active POIs in the scanner is strictly forbidden.
 
 ### Latent Origin Reserve and Rejection Block
 
@@ -311,9 +311,9 @@ IDM_TAKEN
         ↓
 OF_ELIGIBLE
         ↓
-ENGULF_CHECK_PASSED
-        ↓
 OF_CONFIRMED
+
+OF_CONFIRMED requires the canonical OF eligibility conditions defined above; no additional undefined `ENGULF_CHECK_PASSED` state is introduced here.
 ```
 
 Valid OF (`OF_CONFIRMED`) is a canonical POI class distinct from OB. OF and OB must not be conflated into a single generic zone type merely for implementation convenience.
@@ -436,14 +436,12 @@ POI_INVALIDATION
 - **POI_INVALIDATION:** The POI is permanently removed from the active dealing range (e.g., fully consumed or structurally breached beyond repair).
 
 **POI_FAILURE Canonical Transition:**
-Failure cannot be reduced to a simple physical penetration or single-candle zone close. It strictly requires an HTF→LTF structural response:
+Failure cannot be reduced to a simple physical penetration or single-candle zone close. It requires the canonical structural shift (CHoCH) against the POI's intended direction. When the active setup is an HTF→LTF execution context, the applicable LTF CHoCH route from `05_CHOCH_mechanics.md` is consumed; that context is not a universal requirement for every POI failure.
 
 ```text
-HTF POI
+POI
    ↓
-LTF INTERACTION
-   ↓
-LTF STRUCTURAL RESPONSE
+STRUCTURAL RESPONSE
    ↓
 CHoCH CLASSIFICATION (Against POI direction)
    ↓
