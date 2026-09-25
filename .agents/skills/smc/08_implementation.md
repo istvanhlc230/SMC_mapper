@@ -23,7 +23,6 @@ ACTIVE/MINOR IDM
 REAL MAJOR IDM
 FALLBACK MAJOR IDM
 IDM SWEEP
-SWING_CANDIDATE
 CONFIRMED_STRUCTURAL_SWING
 PROTECTED STRUCTURAL EXTREME
 PHYSICAL EXTERNAL BREAK
@@ -558,7 +557,7 @@ FIRST_POST_CHOCH_SVP ≠ FIRST_POST_CHOCH_MINOR_IDM
 FALLBACK_MAJOR_IDM ≠ REAL_MAJOR_IDM
 ```
 
-A qualifying sweep of the applicable IDM lineage unlocks the Confirmation Gate. IDM takeout creates the `SWING_CANDIDATE` prerequisite (`IDM_TAKEN = TRUE`); it does NOT create a `CONFIRMED_STRUCTURAL_SWING`, new Dealing Range, trend flip, `CHoCH_CONFIRMED`, `VALID_BOS`, or Trading Range rollover. `CONFIRMATION GATE UNLOCKED` is a process condition, not a new lifecycle state enum.
+A qualifying sweep of the applicable IDM lineage unlocks the Confirmation Gate. IDM takeout establishes `IDM_TAKEN = TRUE`, which is the prerequisite for the canonical `CONFIRMED_STRUCTURAL_SWING` confirmation path; it does NOT by itself create a new Dealing Range, trend flip, `CHoCH_CONFIRMED`, `VALID_BOS`, or Trading Range rollover. `CONFIRMATION GATE UNLOCKED` is a process condition, not a new lifecycle state enum.
 
 ```text
 CONFIRMATION_LOCKED
