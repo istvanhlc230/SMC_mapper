@@ -973,7 +973,7 @@ Detection precedence is:
 EXT_OPP_BREAK
 >
 EXT_CONT_BREAK
- >
+>
 MAJOR_IDM_EVENT
 >
 MINOR_IDM_EVENT
