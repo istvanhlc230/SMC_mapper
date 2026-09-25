@@ -73,7 +73,6 @@ Mandatory prerequisites remain:
 1. Layer 3 has produced a qualified major-retracement result;
 2. `IDM_TAKEN == True` (the Layer 3 IDM-takeout prerequisite is established);
 3. the reference has correct external structural identity;
-4. the broken level is not the applicable FALLBACK_MAJOR_IDM;
 5. the final break classification satisfies 3.4.3.
 
 If an external continuation break occurs before the Layer 3 qualification result is satisfied or before `IDM_TAKEN == True`:
@@ -125,7 +124,7 @@ Only `VALID_BOS` triggers Protected Structural Extreme Lock and Trading Range Ro
 
 ### 3.4.4 — Canonical Break Classification
 
-`EXT_CONT_BREAK` exclusively represents a confirmed continuation swing break. Fallback Major IDM is an opposing-boundary proxy and must not be evaluated under the continuation path.
+`EXT_CONT_BREAK` exclusively represents a confirmed continuation swing break. Major IDM is a liquidity reference and is not a continuation-BOS reference.
 
 The validated continuation pipeline is:
 
@@ -195,76 +194,26 @@ Layer 4 consumes these upstream outputs. It does not know or independently evalu
 - HTF pullback validity.
 
 Those criteria are owned exclusively by Layer 3.
-### 3.4.7 — FALLBACK_MAJOR_IDM
+### 3.4.7 — Major IDM interaction
 
-Fallback Major IDM is ALWAYS an **opposing-boundary proxy**. It belongs under the opposing-boundary interaction path (`EXT_OPP_INTERACTION`), not under `EXT_CONT_BREAK`. It is a temporary lifecycle-specific external proxy used after a confirmed macro event while the new expansion has not yet produced an independently qualified Real Major IDM from a post-break Structurally Valid Pullback.
-
-```text
-FALLBACK_MAJOR_IDM
-≠ REAL_MAJOR_IDM
-≠ INTERNAL_LIQUIDITY
-```
-
-It bridges the early-range liquidity/reference gap and is not a direct Real Major IDM substitute.
-
-#### Proxy wick breach
-
-Bullish:
+Major IDM is a liquidity reference, not a continuation-BOS reference. If the tested external level carries Major IDM provenance, a wick takeout is classified as `MAJOR_IDM_SWEEP`, not as a continuation BOS.
 
 ```text
-High_t > Level
-AND
-Close_t <= Level
-```
-
-Bearish:
-
-```text
-Low_t < Level
-AND
-Close_t >= Level
-```
-
-Classification:
-
-```text
+MAJOR_IDM
++
+WICK BREACH
+    ↓
 MAJOR_IDM_SWEEP
 ```
 
-The event is terminal for the current evaluation:
+The sweep:
+- is not `VALID_BOS`;
+- does not roll the Trading Range;
+- does not lock the Protected Structural Extreme;
+- may satisfy the applicable IDM-takeout requirement and unlock the relevant swing-confirmation gate;
+- does not itself create `CONFIRMED_STRUCTURAL_SWING` unless all remaining prerequisites are satisfied.
 
-```text
-MAJOR_IDM_SWEEP
-≠ VALID_BOS
-≠ CHoCH_CONFIRMED
-≠ TRADING_RANGE_ROLLOVER
-≠ PROTECTED_EXTREME_LOCK
-```
-
-The sweep unlocks the Swing Confirmation Gate but does **not** automatically create a CONFIRMED_STRUCTURAL_SWING. All remaining swing-confirmation prerequisites remain mandatory.
-
-#### Proxy body close through opposing boundary
-
-A body close through a fallback opposing boundary is geometrically eligible for the CHoCH pipeline (`CHoCH_ELIGIBLE`). It becomes `CHoCH_CONFIRMED` only when all applicable Section 3.5 prerequisites pass, producing a true trend reversal, regime shift, and terminating the old dealing range.
-
-#### Fallback lifecycle
-
-Fallback does not convert directly into Real Major IDM:
-
-```text
-First Qualifying Post-Break SVP
-        ↓
-Verified Pullback Extreme
-        ↓
-Layer 3 IDM Classification
-        ↓
-REAL_MAJOR_IDM
-        ↓
-FALLBACK_MAJOR_IDM → SUPERSEDED
-```
-
-When the first genuine post-BOS Structurally Valid Pullback forms: `REAL_MAJOR_IDM` is created, `FALLBACK_MAJOR_IDM` is permanently `SUPERSEDED`, and the boundary reverts to a protected structural pivot.
-
+Major IDM remains a single canonical IDM class. It may be pullback-derived or the prior protected external boundary when only Minor IDM exists.
 ### 3.4.8 — Protected Structural Extreme Lock
 
 The corrective extreme remains dynamic until `VALID_BOS`.
@@ -293,7 +242,7 @@ PROTECTED STRUCTURAL EXTREME
 
 The completed `VALID_BOS` event locks the dynamic corrective extreme immediately. No later body close is required.
 
-A FALLBACK_MAJOR_IDM wick sweep does not lock the extreme.
+A MAJOR_IDM wick sweep does not lock the extreme.
 
 This module does not redefine the full CONFIRMED_STRUCTURAL_SWING / Protected Structural Extreme lifecycle; that ownership remains in `03_structural_semantic_authority.md` Section 3.3.
 
@@ -317,14 +266,14 @@ The following do not independently roll the range:
 - wick penetration;
 - Minor IDM sweep;
 - Major IDM sweep;
-- FALLBACK_MAJOR_IDM sweep;
+- MAJOR_IDM sweep;
 - insufficient-retracement impulse extension.
 
 Post-BOS retracement and liquidity collection belong to the new range lifecycle.
 
 ### 3.4.10 — Post-BOS Fallback Initialization
 
-After `VALID_BOS`, the new structural lifecycle enters the early-range phase in which a FALLBACK_MAJOR_IDM may be active until a real post-BOS Major IDM is independently formed.
+After `VALID_BOS`, the new structural lifecycle enters the early-range phase in which a MAJOR_IDM may be active until a new post-BOS Major IDM is independently formed.
 
 ```text
 VALID_BOS
@@ -341,7 +290,7 @@ Layer 3 IDM Classification
     ↓
 REAL_MAJOR_IDM
     ↓
-FALLBACK_MAJOR_IDM superseded
+MAJOR_IDM superseded
 ```
 
 `NEW_SVP` does not itself equal `REAL_MAJOR_IDM`.
@@ -411,7 +360,7 @@ OPPOSING EXTERNAL BREAK
 CHoCH PIPELINE (CHoCH_CONFIRMED)
 ```
 
-A FALLBACK_MAJOR_IDM event can produce `MAJOR_IDM_SWEEP`; it cannot be simultaneously classified as `VALID_BOS` or `CHoCH_CONFIRMED`.
+A MAJOR_IDM event can produce `MAJOR_IDM_SWEEP`; it cannot be simultaneously classified as `VALID_BOS` or `CHoCH_CONFIRMED`.
 
 ### 3.4.15 — Canonical Authority Hierarchy (MC-01)
 
@@ -432,11 +381,11 @@ Therefore:
 5. Layer 3 owns the canonical retracement qualification thresholds: 50% standard equilibrium and the conditional 38.2%–<50% HTF-represented path.
 6. Reduced-candle displacement and higher-timeframe qualification are evaluated by Layer 3 and are not redefined here.
 7. Wick-BOS is immediate and equality at the broken level is valid.
-8. Fallback Major IDM is a proxy, not Real Major IDM.
-9. FALLBACK_MAJOR_IDM wick breach is `MAJOR_IDM_SWEEP`, not VALID_BOS or CHoCH_CONFIRMED.
+8. Major IDM is a proxy, not Major IDM.
+9. MAJOR_IDM wick breach is `MAJOR_IDM_SWEEP`, not VALID_BOS or CHoCH_CONFIRMED.
 10. `MAJOR_IDM_SWEEP` unlocks the Swing Confirmation Gate but does not automatically create a CONFIRMED_STRUCTURAL_SWING.
-11. `NEW_SVP` does not automatically create Real Major IDM.
-12. Real Major IDM supersedes the FALLBACK_MAJOR_IDM only through the validated post-break SVP → Verified Extreme → Layer 3 IDM Classification → Real IDM lifecycle.
+11. `NEW_SVP` does not automatically create Major IDM.
+12. Major IDM supersedes the MAJOR_IDM only through the validated post-break SVP → Verified Extreme → Layer 3 IDM Classification → Real IDM lifecycle.
 13. Only `VALID_BOS` rolls the Trading Range and locks the Protected Structural Extreme.
 14. BOS event classification is anti-retroactive.
 15. BOS mechanics are subordinate to `03_structural_semantic_authority.md` and must not create a competing Layer 3 authority.
