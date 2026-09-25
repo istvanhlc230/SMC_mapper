@@ -209,7 +209,7 @@ The sequence continues until the opposing candle-level condition that starts a p
 
 **Methodology semantics do not imply historical observability.**
 
-Layer 1 records the canonical OLHC/OHLC methodology model. Implementation observability states belong to 08_implementation.md and the executable data model.
+Layer 1 owns the canonical OLHC/OHLC formation model. The implementation-level observability state and evidence contract are owned by `08_implementation.md`; Layer 1 must not define implementation data-state values.
 
 ~~~
 CANONICAL METHODOLOGY
@@ -217,23 +217,8 @@ CANONICAL METHODOLOGY
 HISTORICALLY OBSERVED INTRABAR PATH
 ~~~
 
-The implementation-level evidence states are:
+When aggregate OHLC does not expose the intrabar path, downstream implementation must preserve that observability limitation and must not manufacture historical sequence evidence.
 
-- OBSERVED — verified by lower-timeframe, tick, or replay evidence;
-- METHODOLOGY_ASSUMED — the True SMC theoretical OLHC/OHLC formation model;
-- UNAVAILABLE — aggregate OHLC does not expose the sequence.
-
-~~~
-METHODOLOGY_ASSUMED
-MUST NOT
-be represented as OBSERVED
-~~~
-
-~~~
-UNAVAILABLE
-MUST NOT
-be silently promoted to OBSERVED
-~~~
 
 ## 12. Downstream ownership
 
