@@ -69,7 +69,7 @@ The target-resolution architecture was re-audited and implemented in the canonic
 - `.agents/skills/smc/reconciliation/full_methodology_gap_audit.md`: target-plan architecture and controlled remaining source gaps recorded.
 
 ### Current monitor contract
-The monitor may emit `TARGET_REACHED` / target notification when price reaches an active configured target. It must not claim position closure, partial closure, stop movement, or broker fill. Actual trade management remains future scope.
+The monitor may emit a `TARGET_REACHED` / target notification when price reaches an active configured target. It must not claim position closure, partial closure, stop movement, or broker fill. Actual trade management remains future scope.
 
 ### Audit disposition
 - No `knowledgebase/` files were modified by this implementation.
@@ -77,3 +77,18 @@ The monitor may emit `TARGET_REACHED` / target notification when price reaches a
 - No universal target-priority, fixed-R, or break-even methodology rule was invented.
 - Three-leg / multi-leg allocation is configurable policy, not a methodology constant.
 - `BREAK_EVEN` is treated as future stop-management behavior, not a fallback target.
+
+### AUDIT PART 1 DISPOSITION — CLOSED
+The first audit part is considered resolved and does not require further canonical SMC-methodology changes.
+
+The following are implementation-plan / architecture concerns, not missing methodology rules:
+- Target Discovery component and valid-target-candidate collection.
+- Configurable Target Plan and multi-leg target allocation.
+- Target-to-leg assignment and target provenance propagation.
+- Notification-only `TARGET_REACHED` monitor behavior.
+- Separation of `TARGET_REACHED` from `POSITION_CLOSED`, `LEG_CLOSED`, `STOP_MOVED`, and `BROKER_FILL`.
+- Future BE/profit-lock/trailing behavior as separate trade-management policy, not as canonical target semantics.
+
+Canonical methodology remains responsible only for defining which structural/liquidity destinations constitute valid target candidates. No universal target-priority, universal countertrend coordinate, or universal RR-derived target is to be invented.
+
+**Next audit work must therefore continue from the remaining implementation/specification gaps rather than reopening this closed target-architecture point.**
