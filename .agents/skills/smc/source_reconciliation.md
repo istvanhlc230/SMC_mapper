@@ -161,17 +161,17 @@ Required outcome:
 
 ### C11 — Target resolution and configurable Target Plan (RECONCILED — CONTROLLED POLICY CHOICES REMAIN)
 
-The source material does not define one universal priority rule that selects a single target when multiple legitimate destination candidates are simultaneously available. This is therefore not converted into an invented methodology priority.
+Chart analysis identifies structural/liquidity destination levels that can be consumed downstream as target inputs. The source material does not define a universal target-selection priority because target use is an implementation/trading-policy concern.
 
 Required outcome:
 - [SOURCE_DIRECT] direct same-timeframe pro-trend uses the current confirmed external extreme / external liquidity as a canonical target candidate;
 - [SOURCE_DIRECT] LTF execution may use the source-supported higher-timeframe external target or lower-timeframe structural/BOS destination, but the source does not define one universal priority between them;
 - [SOURCE_COMPOSED] countertrend target candidates are setup-specific and may resolve to inducement, Engineering Liquidity, external liquidity, or the next canonical POI/destination according to the active scenario;
 - [SOURCE_GAP / CONTROLLED POLICY] a universal countertrend single-coordinate resolver is not source-defined; this remains a setup-specific implementation/policy choice and must not be invented as methodology;
-- [PROJECT_CANONICAL] Target Discovery produces valid target candidates with preserved structural/liquidity provenance rather than forcing one universal winner;
-- [IMPLEMENTATION_POLICY] a configurable Target Plan may assign multiple valid target candidates to separate trade legs (for example T1/T2/T3). Leg count and allocation are configurable and are not methodology constants;
-- [IMPLEMENTATION_POLICY] fixed-R, where permitted by the applicable trading policy, is a non-structural policy target and must not be mislabeled as canonical structural/liquidity provenance;
-- [PROJECT_CANONICAL] RR is evaluated against an already resolved target and must not create the target;
+- [IMPLEMENTATION] downstream Target Discovery may collect structural/liquidity chart levels as target inputs while preserving provenance;
+- [IMPLEMENTATION_POLICY] a configurable Target Plan may assign collected target inputs to separate trade legs (for example T1/T2/T3). Leg count and allocation are configurable and are not methodology constants;
+- [IMPLEMENTATION_POLICY] fixed-R, where permitted by the applicable trading policy, is a non-structural policy mechanism and must not be mislabeled as canonical SMC provenance;
+- [IMPLEMENTATION_POLICY] RR is evaluated against an already selected implementation target and must not create a canonical SMC target;
 - [IMPLEMENTATION_POLICY] absence of a resolvable target for a configured leg blocks automatic TP submission for that leg;
 - [IMPLEMENTATION_POLICY] current monitor behavior is notification-only: target reach emits an alert/notification and does not claim position closure, partial closure, stop movement, or broker fill.
 
