@@ -208,7 +208,8 @@ Canonicalize the later source update that supersedes the earlier "first valid OB
 Required outcome:
 - [SOURCE_DIRECT] Decisional OB = valid Order Block that actually causes the canonical BOS;
 - [SOURCE_DIRECT] selection is tied to causal BOS provenance, not merely timing after inducement;
-- [SOURCE_DIRECT] Extreme OB remains the furthest valid origin-side Order Block;
+- [SOURCE_DIRECT] Extreme OF is resolved first; Extreme OB is the furthest unmitigated valid Order Block within the active Extreme OF lineage; a global search across all origin-side OBs is not canonical;
+- [SOURCE_DIRECT] if a candidate OB candle lacks the required FVG association, selection shifts to the next eligible candle in the relevant source-defined sequence and FVG association is evaluated again; the selected candle must independently satisfy all OB validation pillars;
 - [SOURCE_DIRECT] Order Block validity is based on its own validation pillars and is not automatically invalidated by an unmitigated/failed Order Flow;
 - [SOURCE_DIRECT] a valid Decisional OB may be used while the associated OF remains unmitigated, provided Rule-of-Two and execution gates remain satisfied;
 - [PROJECT_CANONICAL] historical Decisional OB identity is immutable once tied to the causal BOS event.
