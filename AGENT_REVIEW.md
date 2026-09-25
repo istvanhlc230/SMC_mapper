@@ -92,3 +92,24 @@ The following are implementation-plan / architecture concerns, not missing metho
 Canonical methodology remains responsible only for defining which structural/liquidity destinations constitute valid target candidates. No universal target-priority, universal countertrend coordinate, or universal RR-derived target is to be invented.
 
 **Next audit work must therefore continue from the remaining implementation/specification gaps rather than reopening this closed target-architecture point.**
+
+## AUDIT PART 2 — REMAINING GAPS DISPOSITION — 2026-09-25
+
+The remaining implementation/specification gaps were re-audited after the target-architecture closure.
+
+### Findings
+- **No unresolved canonical SMC-methodology contradiction was found.** No new methodology rule should be added from this pass.
+- **POI Failure provenance:** closed/canonicalized. `POI_FAILURE` consumes canonical CHoCH/control-shift state rather than a raw zone breach.
+- **Rejection Block / Engineering Liquidity:** closed/canonicalized. Engineering Liquidity is derived only from the valid pullback immediately preceding active Extreme OF/Extreme OB; RB remains a separate PD-array concept.
+- **Reversal predicates:** closed at the current boundary. Exact OHLC predicates are explicitly project-derived deterministic formalizations; qualitative morphology remains non-binary.
+- **Premium/discount gate:** semantically canonicalized. Any residual issue is source-traceability/provenance, not a missing semantic gate.
+- **LTF target-selection hierarchy:** intentionally remains a configurable implementation/trading-policy choice because the sources contain multiple legitimate conventions and no universal priority.
+- **Universal countertrend target coordinate:** intentionally remains setup/policy-specific; no universal numeric resolver is to be invented.
+- **Target Plan / multi-leg management:** implementation architecture is canonicalized; leg count/allocation is configurable and not methodology.
+
+### Runtime / platform gaps
+- `smc_analyzer.py` remains materially incomplete versus the canonical structural engine and still contains legacy `SWING_CANDIDATE` representation that must eventually be synchronized with the canonical lifecycle.
+- Platform-specific broker/exchange integration, venue constraints, order-type behavior, pending-order lifecycle, fills/slippage, reconciliation, and executable backtest simulation remain implementation work under `platform_execution.md`.
+
+### Audit disposition
+**AUDIT PART 2 = COMPLETE.** The canonical SMC methodology should not be reopened for the remaining target-choice or platform/runtime items. Next implementation work should concentrate on the analyzer/runtime synchronization and platform contracts, while preserving the existing semantic ownership boundaries.
