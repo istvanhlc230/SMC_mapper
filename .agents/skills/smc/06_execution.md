@@ -33,9 +33,11 @@ These concepts may exist as structural observations, validators, liquidity, or h
 
 ### Rule of Two POIs (Execution Constraint)
 
-An active dealing range may contain **zero, one, or two** actively tradable POIs at any given time. The canonical maximum is two:
+When an applicable Rule-of-Two dealing-range execution context exists, the active canonical tradable POI set has cardinality **1 to 2**:
 1. **Decisional POI** (must reside in Discount for Buys, Premium for Sells)
 2. **Extreme POI** (Extreme OF / Extreme OB)
+
+If no valid canonical POI exists, the execution path fails closed with no executable POI / NO_EVIDENCE; no synthetic POI is created to satisfy the minimum.
 
 ```text
 DECISIONAL POI
@@ -43,7 +45,7 @@ DECISIONAL POI
  EXTREME POI
 ```
 
-No synthetic POI may be created merely to satisfy the Rule of Two. When no valid Decisional or Extreme POI exists, the active tradable-POI set is empty. Any candidate outside the active one-or-two-POI structure is non-tradable/SMT unless a canonical rule explicitly promotes it. Multiple arbitrary POIs must not be created merely because multiple zones are visually present. Any logic that permits three simultaneously active POIs in the scanner is strictly forbidden.
+No synthetic POI may be created merely to satisfy the Rule of Two. Origin OB remains a latent reserve rather than a third active slot, and Rejection Block remains separately typed rather than an automatic Rule-of-Two slot. Multiple arbitrary POIs must not be created merely because multiple zones are visually present. Any logic that permits three simultaneously active canonical POIs is strictly forbidden.
 
 ### Latent Origin Reserve and Rejection Block
 
@@ -289,7 +291,7 @@ PILLAR 2
 Candle sweeps previous candle's extreme
         +
 PILLAR 3
-Active, fully unmitigated FVG/imbalance adjacent to the candle
+Required associated FVG / imbalance exists, and the FVG has not been completely filled/consumed
         ↓
 VALID ORDER BLOCK
         ↓
@@ -344,7 +346,7 @@ Once canonicalized, the Decisional OB identity remains tied to the causal BOS ev
 
 #### Extreme Order Block
 
-An `EXTREME_OB` is selected from the furthest canonical Order Block at the origin-side extreme of the active dealing-range impulse, subject to its own OB validity and mitigation state.
+An `EXTREME_OB` is selected from the furthest unmitigated valid Order Block within the active `EXTREME_OF` lineage. It is not selected by a global search across all origin-side Order Blocks.
 
 #### Independent OB validity
 
@@ -358,6 +360,24 @@ OF_FAILURE ↛ OB_INVALID
 ```
 
 The source update explicitly permits use of a valid Decisional OB even while the associated Order Flow remains unmitigated. This does not remove the Rule-of-Two constraint or create additional active POIs.
+
+#### OB candidate → FVG selection shift
+
+When the source-defined OB selection process identifies a candidate candle that does not satisfy the required FVG association, do not attach a later FVG retrospectively to that candle. Shift selection to the next eligible candle in the relevant source-defined sequence and evaluate the FVG association again. The final selected candle must independently satisfy all applicable OB validation pillars.
+
+```text
+CANDIDATE OB CANDLE
+        ↓
+REQUIRED FVG ASSOCIATION?
+   ├─ YES → ELIGIBLE SELECTED OB
+   └─ NO
+        ↓
+NEXT ELIGIBLE CANDLE IN SOURCE-DEFINED SEQUENCE
+        ↓
+RE-EVALUATE FVG ASSOCIATION
+        ↓
+APPLY ALL OB VALIDATION PILLARS
+```
 
 #### OF / OB selection priority
 
