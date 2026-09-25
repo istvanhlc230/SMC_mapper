@@ -56,3 +56,24 @@ PRIOR COMMITS:
 
 # NOTE
 The canonical source policy remains unchanged: `.agents/skills/smc/` is the methodology authority; `knowledgebase/` is source evidence and was not modified.
+
+
+## DIRECT VALIDATOR IMPLEMENTATION — 2026-09-25
+
+The target-resolution architecture was re-audited and implemented in the canonical skill.
+
+### Implemented
+- `.agents/skills/smc/07_risk.md`: configurable Target Plan / multi-leg management, separation of target achievement from profit protection, and current notification-only target contract.
+- `.agents/skills/smc/08_implementation.md`: Target Discovery → valid target candidates → configurable Target Plan → leg assignment → notification-only monitor mapping; target provenance and non-structural fixed-R policy separation; no implicit universal target winner.
+- `.agents/skills/smc/source_reconciliation.md`: C11 reconciled so the source gap is no longer treated as a missing universal target-priority algorithm; remaining universal countertrend single-coordinate resolver is explicitly source-under-specified.
+- `.agents/skills/smc/reconciliation/full_methodology_gap_audit.md`: target-plan architecture and controlled remaining source gaps recorded.
+
+### Current monitor contract
+The monitor may emit `TARGET_REACHED` / target notification when price reaches an active configured target. It must not claim position closure, partial closure, stop movement, or broker fill. Actual trade management remains future scope.
+
+### Audit disposition
+- No `knowledgebase/` files were modified by this implementation.
+- No runtime Python or analyzed JSON files were modified.
+- No universal target-priority, fixed-R, or break-even methodology rule was invented.
+- Three-leg / multi-leg allocation is configurable policy, not a methodology constant.
+- `BREAK_EVEN` is treated as future stop-management behavior, not a fallback target.
