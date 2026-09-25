@@ -20,7 +20,6 @@ VERIFIED PULLBACK EXTREME
 PULLBACK-DERIVED LIQUIDITY REFERENCE
 ACTIVE LIQUIDITY POINTER
 ACTIVE/MINOR IDM
-REAL MAJOR IDM
 MAJOR IDM
 IDM SWEEP
 CONFIRMED_STRUCTURAL_SWING
@@ -41,7 +40,7 @@ Functions equivalent to `detect_bos()` must require:
 2. `MAJOR_RETRACEMENT_QUALIFIED == TRUE`, supplied by Layer 3;
 3. physical external break (`STRUCTURAL_SWING_BREAK` via wick or body);
 4. `IDM_TAKEN == True`;
-5. exclusion of the MAJOR_IDM exception.
+5. continuation-BOS reference is not an IDM reference.
 
 A Major IDM wick penetration must terminate as `MAJOR_IDM_SWEEP`, not BOS.
 
@@ -652,7 +651,7 @@ Regression tests must cover:
 - structural retracement qualification is a later continuation-BOS gate after `CONFIRMED_STRUCTURAL_SWING`, not an initial IDM prerequisite;
 - newest valid pullback replaces old active IDM;
 - only one active minor IDM;
-- real versus Major IDM;
+- Major IDM provenance: post-BOS pullback-derived or prior-protected-boundary-derived;
 - correct Major IDM lifecycle after BOS;
 - CHoCH does not automatically apply the BOS Major IDM lifecycle;
 - historical IDM is not an active competing target;
@@ -1065,7 +1064,6 @@ MINOR_IDM_EVENT
 EXT_CONT_BREAK
 EXT_OPP_BREAK
 MAJOR_IDM_EVENT
-MAJOR_IDM_EVENT
 NEW_SVP_QUALIFIED
 ```
 
@@ -1087,7 +1085,7 @@ The following are mandatory:
 
 ```text
 EVENT DETECTION
-→ exactly ONE of 7 event classes
+→ exactly ONE of 6 event classes
 
 EVENT CLASSIFICATION
 → exactly ONE structural outcome for the detected event
