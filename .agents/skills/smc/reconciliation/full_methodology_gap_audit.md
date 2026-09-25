@@ -154,18 +154,22 @@ Canonical result:
 - missing buffer blocks automatic broker submission.
 
 Classification: **CANONICALIZED — SOURCE-DIRECT + CONFIGURATION BOUNDARY**.
-### 3.7 Status update — Target Price Derivation PARTIALLY OPEN
+### 3.7 Status update — Target Plan / Multi-Leg Management CANONICALIZED WITH CONTROLLED SOURCE GAPS
 
-Target resolution is now canonicalized in `07_risk.md` and mapped in `08_implementation.md` for pro-trend execution, but remains partially open for exact LTF and countertrend resolvers.
+Target handling is now reconciled as a two-stage model: source-backed target discovery followed by configurable downstream target planning.
 
 Canonical result:
-- direct same-timeframe pro-trend -> current confirmed external extreme/external liquidity;
-- LTF target selection hierarchy remains an open specification gap;
-- universal countertrend target resolver remains an open specification gap;
-- RR consumes a resolved target and does not create one;
-- no canonical target blocks automatic TP submission.
+- direct same-timeframe pro-trend -> current confirmed external extreme/external liquidity is a valid target candidate;
+- LTF execution supports source-backed HTF external and LTF structural/BOS target candidates, but the source does not define one universal priority between them;
+- countertrend target candidates are setup-specific; a universal single-coordinate resolver remains source-under-specified and is not invented;
+- the analyzer must preserve target provenance and may emit multiple valid candidates rather than manufacturing one universal winner;
+- a configurable Target Plan may assign different valid targets to multiple trade legs; leg count and allocation are configuration, not methodology constants;
+- fixed-R, where permitted by policy, remains a non-structural policy target;
+- RR consumes an already resolved target and never creates one;
+- the current monitor phase is notification-only: `TARGET_REACHED` produces an alert/notification and does not imply position closure, partial closure, stop movement, or broker fill;
+- `BREAK_EVEN` is a future stop-management action, not a fallback target.
 
-Classification: **PARTIALLY OPEN — PRO-TREND CANONICALIZED; EXACT LTF/COUNTERTREND RESOLVERS PENDING**.
+Classification: **CANONICALIZED ARCHITECTURE + CONTROLLED SOURCE GAPS — no universal target-priority or universal countertrend coordinate is invented.**
 
 
 ### 3.8 Status update — Position sizing and risk-budget controls canonicalized
