@@ -142,29 +142,37 @@ GOVERNING LTF CHoCH REFERENCE
 
 The reference is the most recently formed **valid** LTF pullback. An arbitrary local pivot, invalid pullback, SMT, or visually convenient high/low cannot replace it.
 
-The reference may represent a Minor IDM or another valid LTF pullback-derived IDM role. The source's determining property is recency and validity, not the label "major" versus "minor".
+The reference is the most recently formed valid LTF pullback/inducement required by the Structural Glitch context. Its break mechanism is resolved from the IDM classification of the active LTF dealing range; recency determines the reference, while IDM provenance determines whether wick or body-close confirmation applies.
 
-#### LTF break qualification
+#### LTF Structural Glitch — reference substitution and IDM-dependent break mode
 
-The True SMC source defines the LTF CHoCH confirmation gate as a **completed LTF candle body close beyond the governing LTF Inducement reference**. A wick-only penetration is a liquidity sweep/physical interaction, not LTF CHoCH confirmation:
+The 2026 True SMC source explicitly describes a **small glitch in the structure cycle** after price has mitigated a higher-timeframe valid reversal zone / POI. In that context, the LTF CHoCH is not delayed until the ordinary LTF external boundary is broken. Instead, the **most recently formed valid LTF pullback / its inducement** becomes the operative CHoCH reference.
+
+Source evidence: `truesmc2026.txt`, Part 5 / lower-timeframe execution example, approximately 00:08:47–00:10:36 and again 00:13:13–00:13:31.
+
+The glitch changes the **reference location**, not the underlying CHoCH concept. The break mode remains determined by the IDM state of the active LTF dealing range:
+
+1. **Major IDM is present:** the applicable protected LTF structural boundary can be violated by wick/shadow and enter the normal CHoCH qualification path. A later body close is not required merely because the event occurs on the LTF.
+2. **Only Minor IDM is present:** the external protected swing functions as the Major IDM. A wick penetration of that Major IDM is a `MAJOR_IDM_SWEEP`, not CHoCH. In this case, CHoCH requires a completed body close beyond the applicable LTF CHoCH reference.
+3. **Inside the Structural Glitch context:** the normal external-boundary reference is temporarily replaced by the most recently formed valid LTF pullback/IDM reference. The same IDM-dependent wick/body rule is applied to that active LTF reference; a Minor-Inducement reference therefore remains body-close-gated, while a Major-Inducement reference can qualify through a wick break.
+
+This is the reconciled canonical rule: the **Structural Glitch is source-direct for reference substitution**, while the **wick/body mode is derived from the canonical Major/Minor IDM CHoCH semantics**. The rule must not be simplified to “all LTF CHoCH requires body close.”
 
 Bullish HTF context / bearish LTF reversal:
 
 ```text
-Close_LTF < LTF_Inducement_Reference_Low
+HTF POI / CORE-LIQUIDITY INTERACTION
         ↓
-LTF_CHoCH_ELIGIBLE
+LTF STRUCTURAL GLITCH
+        ↓
+MOST RECENT VALID LTF PULLBACK / IDM
+        ↓
+IDM-TYPE VALIDATION
+   ├─ MAJOR IDM → wick breach may satisfy CHoCH eligibility
+   └─ MINOR IDM ONLY → body close beyond active LTF reference required
 ```
 
-Bearish HTF context / bullish LTF reversal:
-
-```text
-Close_LTF > LTF_Inducement_Reference_High
-        ↓
-LTF_CHoCH_ELIGIBLE
-```
-
-A wick-only penetration of the LTF inducement reference does not confirm this special route. It remains an unconfirmed physical interaction unless another canonical CHoCH route independently applies.
+Bearish HTF context / bullish LTF reversal is the mirrored rule.
 
 #### Confirmation and scope
 
@@ -193,6 +201,8 @@ LTF VALID PULLBACK ≠ CHoCH
 LTF INDUCEMENT SWEEP ≠ CHoCH
 LTF CHoCH CONTEXT ≠ NEW LIFECYCLE STATE
 LTF CHoCH REFERENCE ≠ MAJOR_IDM
+LTF STRUCTURAL GLITCH ≠ UNIVERSAL BODY-CLOSE RULE
+LTF CHoCH CONFIRMATION MODE = IDM-TYPE DEPENDENT
 ```
 ### 3.5.4 — Major IDM / CHoCH interaction
 
