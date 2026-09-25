@@ -167,7 +167,11 @@ STRUCTURALLY VALID PULLBACK remains a Layer-3 structural qualification outcome w
 
 ## 6. Active Pullback Pointer
 
-The active pullback state tracks the most recent canonical pullback relevant to the active impulsive leg for the purpose defined by its downstream consumer. A newer valid pullback may replace the active pullback-derived liquidity reference according to the Layer-3 IDM lifecycle.
+The active pullback state tracks the most recent canonical pullback relevant to the **active impulsive leg**. Structural mapping and downstream IDM/POI identification consume this active impulsive-leg lineage; internal complexity belonging only to the corrective leg is not independently promoted into structural candidates.
+
+A newer valid pullback **immediately supersedes the prior active pullback-derived reference** for the active lifecycle, even when the prior reference has not yet been taken. Historical pullbacks remain immutable history, but the active reference pointer moves forward to the newest valid pullback.
+
+This pointer movement is consumed by Layer 3, which owns the IDM classification and lifecycle.
 
 ~~~
 NEWER CANDLE-LEVEL VALID PULLBACK
