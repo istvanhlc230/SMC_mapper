@@ -297,4 +297,6 @@ Runtime/data files were not modified:
 
 The obsolete `FALLBACK_MAJOR_IDM` and `REAL_MAJOR_IDM` lifecycle model has been removed from the canonical implementation contract. Remaining occurrences, if any, are only explicit historical/audit wording documenting the correction; they are not active canonical rules or event classes.
 
-**AUDIT STATUS: OPEN — Major IDM continuity correction applied; full cross-skill stale-reference verification remains required before closing this audit.**
+**MAJOR IDM CORRECTION STATUS: CLOSED / VERIFIED.** Cross-skill stale-reference verification found no active `FALLBACK_MAJOR_IDM`, `REAL_MAJOR_IDM`, `FALLBACK_EVENT`, or `REAL_MAJOR_IDM_EVENT` implementation rule. Remaining token occurrences are historical audit statements explicitly documenting the removed model.
+
+**OVERALL FULL-SKILL AUDIT STATUS: OPEN.** This closure applies only to the Major IDM continuity issue; it does not constitute a claim that the entire skill has no further source-backed discrepancies.
