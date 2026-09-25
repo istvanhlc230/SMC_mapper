@@ -471,7 +471,7 @@ LTF_ACTIVE_INDUCEMENT_REFERENCE
 LTF CHoCH REFERENCE
 ```
 
-The source-aligned execution representation uses a completed LTF candle close beyond that reference:
+The canonical LTF execution representation requires a completed LTF candle body close beyond that reference:
 
 ```text
 BULLISH HTF CONTEXT
