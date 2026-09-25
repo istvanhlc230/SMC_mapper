@@ -711,7 +711,7 @@ Regression tests must cover:
 - continuation swing break follows BOS path, not CHoCH;
 - physical opposing-boundary violation only opens CHoCH eligibility;
 - body close beyond boundary is not sufficient without full CHoCH prerequisites;
-- fallback boundary body close is `CHoCH_ELIGIBLE`, not automatic CHoCH confirmation;
+- Major IDM boundary body close is `CHoCH_ELIGIBLE`, not automatic CHoCH confirmation;
 - CHoCH creates new trend lifecycle;
 - CHoCH-causing leg becomes initial active impulse;
 - CHoCH does not create a Protected Structural Extreme automatically;
