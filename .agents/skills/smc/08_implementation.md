@@ -787,24 +787,99 @@ POI_MITIGATION → ENTRY_AUTHORIZED (without confirmation)
 
 ### Target Resolution implementation mapping
 
-Target resolution must produce a canonical target object before broker TP submission.
+Target resolution must produce canonical target candidates before any downstream TP handling.
 
 ```text
 EXECUTION CONTEXT
    ↓
-TARGET POLICY
+TARGET DISCOVERY
    ↓
-TARGET_REFERENCE
+VALID TARGET CANDIDATES
    ↓
-EXACT TP COORDINATE
+CONFIGURABLE TARGET PLAN
+   ↓
+TARGET LEG ASSIGNMENT
+   ↓
+NOTIFICATION-ONLY MONITOR (CURRENT PHASE)
 ```
 
 Required mappings:
 - direct same-timeframe pro-trend -> current confirmed external extreme / external liquidity;
 - LTF execution -> explicit policy selecting `HTF_EXTERNAL_TARGET` or `LTF_STRUCTURAL_TARGET`; no implicit default;
 - countertrend -> setup-specific next canonical destination, such as the next valid POI, IDM, Engineering Liquidity, or external liquidity, according to the active setup contract;
-- RR calculation consumes the target; RR calculation must not create the target;
+- the source does not define one universal priority among all simultaneously valid target candidates;
+- therefore the analyzer must not manufacture a single universal winner target merely to satisfy an RR calculation;
+- a downstream configurable Target Plan may assign multiple valid target candidates to separate trade legs;
+- target-leg allocation is configurable execution/trading policy and is not a new SMC structural rule;
+- fixed-R targets, where permitted by the applicable policy, remain non-structural policy targets and must not be mislabeled as canonical liquidity/structure targets;
+- RR calculation consumes an already resolved target; it must never create a target;
 - absent canonical target -> no automatic TP submission.
+
+#### Target Plan representation
+
+The implementation should preserve target provenance and leg assignment separately:
+
+```text
+TARGET_CANDIDATE
+    ├─ target_id
+    ├─ target_type
+    ├─ price
+    └─ provenance
+          ↓
+TARGET_PLAN
+    ├─ leg_id
+    ├─ target_id
+    └─ allocation
+```
+
+A three-leg configuration is supported as a configurable example:
+
+```text
+LEG_1 → T1
+LEG_2 → T2
+LEG_3 → T3
+```
+
+The number of legs and their allocation are configuration, not methodology constants. The implementation must not assume 3 legs, equal allocation, or any fixed percentage.
+
+A leg is executable/observable only when its assigned target resolves to a valid target candidate or to an explicitly permitted non-structural policy target.
+
+#### Target lifecycle and notification mapping
+
+The current platform phase is notification-only:
+
+```text
+TARGET_ACTIVE
+    ↓
+PRICE_REACHES_TARGET
+    ↓
+TARGET_REACHED
+    ↓
+TARGET_NOTIFICATION_SENT
+```
+
+`TARGET_REACHED` must not imply:
+
+```text
+TARGET_REACHED ≠ POSITION_CLOSED
+TARGET_REACHED ≠ STOP_MOVED
+TARGET_REACHED ≠ LEG_CLOSED
+TARGET_REACHED ≠ BROKER_FILL
+```
+
+A future position-management component may consume `TARGET_REACHED` and apply a configured action such as partial close, break-even, previous-target profit lock, or trailing protection. Those actions are downstream execution/trading-policy behavior and are not currently implemented by the monitor.
+
+`BREAK_EVEN` is a stop-management action, not a fallback target.
+
+Notification payload should preserve at minimum:
+- symbol/instrument;
+- direction;
+- target identifier;
+- target type/provenance;
+- target price;
+- event timestamp.
+
+The monitor must not emit `POSITION_CLOSED` unless an independent execution/account component verifies that outcome.
 
 ### Decisional / Extreme Order Block selection implementation mapping
 
