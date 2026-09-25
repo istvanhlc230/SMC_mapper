@@ -314,7 +314,7 @@ Layer 3 is the sole semantic owner of structural qualification. A retracement wa
 - **Condition:** `RetracementDepth >= STANDARD_EQUILIBRIUM_THRESHOLD` of the active dealing range, where `STANDARD_EQUILIBRIUM_THRESHOLD` is owned by `methodology_parameters.md`.
 - **Structural Validation:**
   - **Normal Case:** Requires `>= NORMAL_RETRACEMENT_CANDLE_COUNT` opposing closing candles within the retracement leg.
-  - **Reduced-Candle Displacement Exception:** If exactly `MIN_RETRACEMENT_CANDLE_COUNT` opposing candles form the retracement, qualification may occur only under the rare source-described displacement case: the reduced-candle retracement contains unusually large candle(s) that collectively take the bodies/extremes of `>= MIN_OUTLIER_EXTREMES_TAKEN` preceding candles and produce the required retracement depth. The knowledgebase explicitly discusses a 2-candle case as potentially reasonable when these size/extreme-taking conditions are met. This exception does not make a short candle sequence automatically valid.
+  - **Reduced-Candle Displacement Exception:** A reduced-candle retracement may qualify through the rare source-described displacement case. The documented exception includes the explicit one-candle displacement outlier: one candle may qualify when it takes `>= MIN_OUTLIER_EXTREMES_TAKEN` preceding bodies/extremes and reaches the required retracement depth. A two-candle reduced retracement may qualify under the same source-supported displacement/extreme-taking conditions. This exception does not make a short candle sequence automatically valid.
 - **Output:** `MAJOR_RETRACEMENT_QUALIFIED = TRUE`.
 
 #### Gate 2: HTF-Represented Retracement (Conditional Path)
