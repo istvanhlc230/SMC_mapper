@@ -79,17 +79,22 @@ Current skill:
 - `08_implementation.md` contains the deterministic execution representation.
 
 Classification:
-**CLOSED / VERIFIED — SOURCE-DIRECT CANONICAL LTF CHoCH GATE**.
+**CLOSED / VERIFIED — SOURCE-DIRECT LTF STRUCTURAL GLITCH + IDM-DEPENDENT CHoCH GATE**.
 
 Resolved canonicalization:
 - HTF POI/core-liquidity interaction activates the LTF-CHoCH context;
-- the most recently formed valid LTF pullback / verified extreme supplies the governing LTF Inducement reference;
-- the LTF CHoCH confirmation gate requires a completed LTF candle body close beyond that reference;
-- wick-only penetration is treated as liquidity sweep/physical interaction and does not satisfy the LTF CHoCH gate;
+- the 2026 source explicitly describes the post-HTF-interaction “small glitch in the structure cycle” in which the most recently formed valid LTF pullback/inducement is the operative CHoCH reference rather than the ordinary LTF external boundary;
+- arbitrary local pivots and invalid pullbacks cannot replace that reference;
+- the break mode is IDM-dependent: a Major-Inducement LTF path may use the canonical wick-break CHoCH route; when only Minor IDM exists, the external protected boundary functions as Major IDM, a wick is `MAJOR_IDM_SWEEP`, and CHoCH requires a completed body close beyond the applicable LTF reference;
+- the body-close condition is therefore not universal across all LTF CHoCH events;
 - the route remains the same CHoCH concept represented in an HTF→LTF execution context, not a new lifecycle state;
 - the LTF reference is not reclassified as Major IDM merely because it is used by the LTF-CHoCH route.
 
-Do not silently infer this route from generic CHoCH rules.
+Source reconciliation basis:
+- `knowledgebase/sources/truesmc2026.txt`, Part 5 lower-timeframe example, approximately 00:08:47–00:10:36 and 00:13:13–00:13:31, for the Structural Glitch reference substitution;
+- `knowledgebase/sources/truesmc2026.txt` CHoCH example around 00:12:18–00:12:33, for the Major-Inducement wick/body distinction.
+
+Do not silently infer the Structural Glitch route from generic CHoCH rules, and do not generalize the Minor-Inducement body-close condition to every LTF CHoCH.
 
 ### 3.2 Status update — Order Flow / SMT
 
