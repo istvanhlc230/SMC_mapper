@@ -17,13 +17,21 @@ CANDLE-LEVEL VALID PULLBACK
         ↓
 VERIFIED PULLBACK EXTREME
         ↓
-LAYER 3 STRUCTURAL QUALIFICATION
-        ↓
-STRUCTURALLY VALID PULLBACK
-        ↓
-ACTIVE PULLBACK / LIQUIDITY REFERENCE
+PULLBACK-DERIVED LIQUIDITY REFERENCE
         ↓
 LAYER 3 IDM CLASSIFICATION
+        ↓
+ACTIVE IDM
+        ↓
+IDM_TAKEN
+        ↓
+CONFIRMED_STRUCTURAL_SWING
+        ↓
+LAYER 3 STRUCTURAL RETRACEMENT QUALIFICATION
+        ↓
+STRUCTURAL_SWING_BREAK
+        ↓
+VALID_BOS
 ~~~
 
 Each downstream state is produced only from the validated prerequisite state supplied by the preceding stage.
@@ -141,41 +149,39 @@ EXTREME VERIFICATION
 VERIFIED PULLBACK EXTREME
 ~~~
 
-## 5. Structurally Valid Pullback handoff
+## 5. Layer-2 pullback handoff and Layer-3 IDM input
 
-A Candle-Level Valid Pullback is supplied to Layer 3 for structural qualification.
-
-Layer 3 evaluates the major structural retracement requirements and returns the structural qualification result. When accepted, the pullback becomes a Structurally Valid Pullback for the structural lifecycle.
+A completed Candle-Level Valid Pullback is sufficient for Layer 2 to verify its directional extreme and expose the corresponding pullback-derived liquidity reference. Layer 3 consumes that reference for IDM classification. The later major structural retracement qualification is NOT an initial IDM prerequisite; it belongs to the continuation-BOS gate after CONFIRMED_STRUCTURAL_SWING.
 
 ~~~
 CANDLE-LEVEL VALID PULLBACK
         ↓
-LAYER 3 QUALIFICATION
+VERIFIED PULLBACK EXTREME
         ↓
-STRUCTURALLY VALID PULLBACK
+PULLBACK-DERIVED LIQUIDITY REFERENCE
+        ↓
+LAYER 3 IDM CLASSIFICATION
 ~~~
 
-The detailed major retracement criteria, including depth, opposing-candle qualification, displacement-outlier handling, and higher-timeframe structural qualification are defined only by 03_structural_semantic_authority.md.
+STRUCTURALLY VALID PULLBACK remains a Layer-3 structural qualification outcome where applicable, but it must not be inserted between the Layer-2 verified extreme and the initial IDM reference. The detailed major retracement criteria remain exclusively owned by 03_structural_semantic_authority.md.
 
 ## 6. Active Pullback Pointer
 
-The active pullback state tracks the **most recent structurally accepted pullback** relevant to the active impulsive leg.
-
-When a newer Structurally Valid Pullback is established before the current active liquidity target is consumed, the active pointer transfers to the newer pullback.
+The active pullback state tracks the most recent canonical pullback relevant to the active impulsive leg for the purpose defined by its downstream consumer. A newer valid pullback may replace the active pullback-derived liquidity reference according to the Layer-3 IDM lifecycle.
 
 ~~~
-NEWER STRUCTURALLY VALID PULLBACK
+NEWER CANDLE-LEVEL VALID PULLBACK
         ↓
-ACTIVE PULLBACK POINTER TRANSFER
+VERIFIED PULLBACK EXTREME
         ↓
-CURRENT LIQUIDITY REFERENCE
+PULLBACK-DERIVED LIQUIDITY REFERENCE SHIFT
 ~~~
 
-Historical pullbacks remain part of the structural history.
+Historical pullbacks remain part of structural history.
 
 ## 7. Pullback-derived liquidity reference
 
-For the active impulsive leg, Layer 2 exposes the liquidity reference implied by the verified extreme of the most recent structurally accepted pullback:
+For the active impulsive leg, Layer 2 exposes the liquidity reference implied by the verified extreme of the relevant valid pullback:
 
 ~~~
 Bullish active leg
@@ -193,13 +199,11 @@ This is a Layer 2 input object, not an IDM definition. Layer 2 does not classify
 
 ## 8. Layer 2 → Layer 3 handoff
 
-Layer 2 delivers the following validated objects to Layer 3:
+Layer 2 delivers:
 
 ~~~
 CANDLE-LEVEL VALID PULLBACK
 VERIFIED PULLBACK EXTREME
-STRUCTURALLY VALID PULLBACK STATUS
-ACTIVE PULLBACK POINTER
 PULLBACK-DERIVED LIQUIDITY REFERENCE
 ~~~
 
@@ -211,16 +215,15 @@ MINOR_IDM / MAJOR_IDM CLASSIFICATION
 ACTIVE IDM LIFECYCLE
 IDM REFERENCE SHIFT
 IDM LIQUIDITY TAKEOUT
-SWING CONFIRMATION
 CONFIRMED_STRUCTURAL_SWING
-MAJOR STRUCTURAL RETRACEMENT QUALIFICATION
+MAJOR STRUCTURAL RETRACEMENT QUALIFICATION FOR CONTINUATION BOS
 VALID_BOS
 IMPULSE_EXTENSION
 TRADING RANGE ROLLOVER
 CHoCH
 ~~~
 
-The Layer 3 definitions are consumed through their canonical owner document; Layer 2 does not redefine them.
+The Layer 3 definitions are consumed through their canonical owner document; Layer 2 does not redefine them. A STRUCTURALLY VALID PULLBACK result may be consumed where the Layer-3 owner requires it for later structural qualification, but it is not an initial IDM prerequisite.
 
 ## 9. Layer 2 validation contract
 
