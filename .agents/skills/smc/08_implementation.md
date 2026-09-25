@@ -633,7 +633,7 @@ A later candle may advance the lifecycle but may not retroactively rewrite the e
 37. Confirmed Swing is treated as automatic `VALID_BOS` without `MAJOR_RETRACEMENT_QUALIFIED`.
 38. A continuation break is classified as `VALID_BOS` without the complete Layer 3 qualification result (must remain non-BOS / `IMPULSE_EXTENSION` as applicable).
 39. Any heuristic/safe mode is used to substitute for the canonical Layer 3 qualification result.
-40. A retracement with **>= `MIN_RETRACEMENT_CANDLE_COUNT` opposing candles** may enter qualification evaluation. The **`MIN_RETRACEMENT_CANDLE_COUNT`-candle case** may qualify only through the documented rare displacement/extreme-taking exception; **`NORMAL_RETRACEMENT_CANDLE_COUNT` or more** remains the normal-case count, and candle count alone never establishes qualification.
+40. A normal retracement with **>= 2 opposing candles** may enter qualification evaluation. The documented one-candle displacement outlier is an explicit exception to that normal count gate and may enter qualification only when it takes **>= `MIN_OUTLIER_EXTREMES_TAKEN`** preceding bodies/extremes and satisfies all other canonical qualification conditions; candle count alone never establishes qualification.
 
 ## 48. Testing requirements
 
@@ -650,8 +650,8 @@ Regression tests must cover:
 
 ### Structural qualification
 - standard `NORMAL_RETRACEMENT_CANDLE_COUNT`-opposing-closing-candle qualification on the `STANDARD_EQUILIBRIUM_THRESHOLD` path;
-- a `MIN_RETRACEMENT_CANDLE_COUNT` retracement is permitted only through the documented rare reduced-candle displacement case: unusually large retracement candle(s) collectively taking >= `MIN_OUTLIER_EXTREMES_TAKEN` preceding bodies/extremes and reaching the required retracement depth;
-- reduced-candle qualification is an **exactly 2-candle** exception only; a 1-candle retracement is not a positive reduced-candle qualification path;
+- a normal >=2-candle retracement enters qualification evaluation; the one-candle displacement outlier bypasses the normal count gate only through the documented rare displacement/extreme-taking exception and all other canonical gates;
+- reduced-candle qualification is not limited to two candles: the source-defined one-candle displacement outlier is also permitted when it takes >= `MIN_OUTLIER_EXTREMES_TAKEN` preceding bodies/extremes and all other canonical gates pass;
 - `HTF_CONDITIONAL_THRESHOLD`–<`STANDARD_EQUILIBRIUM_THRESHOLD` qualifies only through a valid single pullback event on the applicable immediate Higher Timeframe;
 - HTF inside-bar or invalid-pullback representation does not qualify;
 - below `HTF_CONDITIONAL_THRESHOLD` does not qualify;
@@ -683,7 +683,7 @@ Regression tests must cover:
 - retracement qualification is evaluated separately as the prerequisite for a subsequent continuation BOS;
 - dynamic absolute retracement extreme tracking;
 - `STANDARD_EQUILIBRIUM_THRESHOLD` standard qualification with the normal `NORMAL_RETRACEMENT_CANDLE_COUNT`-candle rule;
-- reduced-candle qualification only through the documented rare displacement case taking >= `MIN_OUTLIER_EXTREMES_TAKEN` preceding bodies/extremes; the reduced-candle branch is explicitly the **`MIN_RETRACEMENT_CANDLE_COUNT`-candle case**, while **`NORMAL_RETRACEMENT_CANDLE_COUNT` or more** remains the normal-case count; candle count alone never establishes qualification;
+- reduced-candle qualification may use the documented rare displacement case, including the explicit one-candle outlier; the normal case remains >=2 opposing candles and the one-candle branch bypasses that normal count gate only when the >= `MIN_OUTLIER_EXTREMES_TAKEN` extreme-taking condition and all other canonical gates pass;
 - 38.2%–<50% qualification only through the applicable immediate-HTF valid-pullback path;
 - below 38.2% does not qualify;
 - shallow qualification failure revokes the candidate and shifts the active pullback/IDM reference;
@@ -697,7 +697,7 @@ Regression tests must cover:
 - external Body-Close BOS;
 - external Wick-Break BOS;
 - wick-BOS does not require a later body close;
-- close exactly at the broken level remains valid Wick-BOS;
+- close exactly at the broken level does **not** constitute a physical break; actual penetration beyond the reference is required;
 - MAJOR_IDM wick is `MAJOR_IDM_SWEEP`;
 - MAJOR_IDM wick is not BOS;
 - MAJOR_IDM wick is not CHoCH;
@@ -709,8 +709,8 @@ Regression tests must cover:
 - `VALID_BOS` closes the previous Trading Range;
 - `VALID_BOS` locks `E_retrace` as Protected Structural Extreme when sufficiency is satisfied;
 - `VALID_BOS` emits `TRADING_RANGE_ROLLED_OVER`;
-- previous-range POIs transition to `EXPIRED_HISTORICAL` through the POI lifecycle subsystem;
-- expired historical POIs are non-tradable;
+- previous-range POIs transition to `EXPIRED_HISTORICAL` through the **Layer-6 POI lifecycle subsystem** when a new Dealing Range is established by VALID_BOS;
+- expired historical POIs are non-tradable and may remain only as historical/reaction-zone records; Layer 8 consumes the Layer-6 state and does not independently create expiration decisions;
 - new range retains the prior protected external boundary as Major IDM until a new Major IDM is independently qualified;
 - first post-break SVP does not directly equal Major IDM; the full eligibility chain is required.
 
