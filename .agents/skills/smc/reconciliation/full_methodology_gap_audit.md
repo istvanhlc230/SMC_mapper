@@ -85,7 +85,7 @@ Required reconciliation:
 - exact precondition for switching from HTF to LTF confirmation;
 - exact identity of the LTF reference;
 - whether the LTF break is wick/body/close;
-- interaction with the existing Real/Fallback Major IDM lineage;
+- interaction with the existing Major IDM lineage;
 - whether this is a CHoCH variant or a lower-timeframe representation of the same CHoCH.
 
 Do not silently infer this route from generic CHoCH rules.
@@ -228,14 +228,14 @@ The latest full knowledgebase re-audit identified and corrected the following ca
 
 1. **Rejection Block ontology:** RB is now represented as a separately typed PD-array/execution-location concept. The source's ordinary use of “POI” for a Rejection Block is preserved as broad execution-location language, while the canonical typed model does not make RB an OF/OB-equivalent POI class or an automatic Rule-of-Two slot.
 2. **Engineering Liquidity:** ENG_LQD is now explicitly derived from the valid pullback immediately preceding the active Extreme OF or Extreme OB. The earlier project-composed extension to a Rejection Block Extreme role has been removed.
-3. **Wick-path CHoCH:** a Real Major IDM is no longer a positive prerequisite. The source-backed rule is an external wick break that is CHoCH-eligible unless the tested external level has Major IDM provenance; a Major IDM wick takeout is excluded from CHoCH.
+3. **Wick-path CHoCH:** Major IDM is not a positive prerequisite. The source-backed rule is an external wick break that is CHoCH-eligible unless the tested external level has Major IDM provenance; a Major IDM wick takeout is excluded from CHoCH.
 4. **POI failure:** the execution failure transition now consumes CHoCH/control-shift confirmation rather than treating a generic BOS-or-CHoCH classification as sufficient.
 5. **Position sizing basis:** the risk formula now uses Account Balance, matching the explicit source position-sizing example. The risk percentage and risk-budget values remain configurable trading-policy values rather than universal SMC constants.
 6. **Reversal predicates:** exact OHLC inequalities are now explicitly documented as deterministic formalizations of source-described reversal patterns; qualitative morphology remains a non-binary filter and no unsupported numeric threshold is introduced.
 
 Post-fix validation:
 - no remaining obsolete provisional-swing terminology in the canonical methodology documents;
-- no remaining canonical REAL_MAJOR_IDM + OPPOSING WICK BREAK positive gate;
+- no remaining canonical Major-IDM + OPPOSING WICK BREAK positive gate;
 - no remaining Rejection Block → Engineering Liquidity dependency;
 - no remaining Rejection Block-as-OF/OB-equivalent POI statement in the implementation mapping;
 - POI failure is CHoCH/control-shift based;
@@ -427,3 +427,21 @@ The knowledgebase remains evidence only; .agents/skills/smc/ remains canonical a
 ### Remaining genuine source gaps
 
 No remaining contradiction from the eight-item validator set is left open. Any exact source-sequence boundary not explicitly deterministic in the underlying source remains an implementation/documentation boundary rather than an invented numeric rule.
+
+
+## 3.14 Major IDM continuity after BOS — corrected
+
+A direct source re-audit identified a semantic error in the previous canonical representation of post-BOS Major IDM lifecycle. The skill previously modeled the prior protected external boundary as a `FALLBACK_MAJOR_IDM` proxy and treated a later post-BOS pullback as a separate `REAL_MAJOR_IDM` object.
+
+The source-backed rule is simpler: Major IDM remains one semantic class. If post-BOS price action creates only Minor IDM and no new Major IDM, the prior Protected Low in a bullish range or Protected High in a bearish range remains the Major IDM reference. When a new valid post-BOS pullback independently qualifies as Major IDM, it supersedes that prior reference from that point forward.
+
+Evidence was rechecked in:
+- `knowledgebase/sources/truesmc2026.txt`
+- `knowledgebase/sources/market_structure_mapping_update.txt`
+- `knowledgebase/sources/major_minor_inducement.txt`
+- `knowledgebase/sources/true_smc123.txt`
+
+The previous `FALLBACK_MAJOR_IDM` / `REAL_MAJOR_IDM` distinction was therefore removed from the canonical semantic and implementation contracts. The distinction was a project-composed lifecycle representation that had crossed the boundary into an unnecessary ontology distinction.
+
+Validation requirement: no remaining canonical rule may treat `FALLBACK_MAJOR_IDM` as an event class, score category, CHoCH exception, or independent IDM type.
+
