@@ -313,7 +313,7 @@ OF_ELIGIBLE
         ↓
 OF_CONFIRMED
 
-OF_CONFIRMED requires the canonical OF eligibility conditions defined above; no additional undefined `ENGULF_CHECK_PASSED` state is introduced here.
+OF_CONFIRMED requires the canonical OF eligibility conditions defined above; no additional undefined implementation gate is introduced here.
 ```
 
 Valid OF (`OF_CONFIRMED`) is a canonical POI class distinct from OB. OF and OB must not be conflated into a single generic zone type merely for implementation convenience.
