@@ -123,9 +123,13 @@ EXECUTION_STOPPED_OUT
 
 This remains an execution/risk event and is not POI failure, structural invalidation, BOS, CHoCH, or IDM creation.
 
-## 5.2 Target Policy
+## 5.2 Target Source / Implementation Boundary
 
-### Primary pro-trend target candidate
+Canonical SMC methodology does not prescribe target selection or trade-management behavior. It provides structural/liquidity chart facts that downstream implementation may use as target inputs.
+
+LTF target selection priority, countertrend target-coordinate selection, fixed-R target generation, multi-leg allocation, and break-even/profit-lock/trailing actions are implementation/trading-policy concerns, not canonical SMC rules.
+
+### Primary pro-trend chart-analysis target input
 
 The primary pro-trend target candidate is the current Trading Range confirmed external extreme where the applicable execution module requires it:
 
@@ -134,7 +138,7 @@ bullish → Confirmed_Swing_High
 bearish → Confirmed_Swing_Low
 ```
 
-The target is an execution/risk object. It does not validate BOS.
+A downstream target may be an execution/risk object derived from chart-analysis inputs. It does not validate BOS.
 
 ```
 TARGET_HIT ≠ VALID_BOS
@@ -144,9 +148,9 @@ When VALID_BOS occurs, the previous range-dependent external target candidate ex
 
 When CHoCH_CONFIRMED occurs, targets belonging exclusively to the invalidated structural regime become invalid as an execution/risk lifecycle consequence. This does not manufacture a structural event.
 
-### 5.2.1 Canonical Target Resolution by Execution Context
+### 5.2.1 Source-Backed Target Inputs by Execution Context
 
-The target is resolved from structural/liquidity provenance. A target may not be invented merely to satisfy an RR calculation.
+Downstream implementation may resolve a target from structural/liquidity chart provenance. The methodology does not prescribe a universal target-selection algorithm. A target must not be invented merely to satisfy an RR calculation.
 
 #### Direct same-timeframe pro-trend execution
 
@@ -188,7 +192,7 @@ RR_CALCULATION ≠ TARGET_CREATION
 NO_CANONICAL_TARGET → NO_AUTOMATIC_TP_SUBMISSION
 ```
 
-### 5.2.2 Target Plan / Multi-Leg Management
+### 5.2.2 Downstream Target Plan / Multi-Leg Management
 
 The target system does **not** require the analyzer to predict one universally correct final price. The analyzer first identifies currently valid, source-backed structural/liquidity destination candidates. A downstream configurable Target Plan may associate multiple trade legs with different valid targets.
 
@@ -215,14 +219,11 @@ Leg 3 → T3
 
 The plan must preserve target provenance. It must never turn an arbitrary price, a fixed-R calculation, or a risk threshold into a canonical structural target.
 
-Each configured leg must resolve to one of:
-
-- a currently valid canonical target candidate;
-- an explicitly configured non-structural policy target, where the applicable trading policy permits it.
+Each configured leg must resolve to a target input produced by chart analysis or to an explicitly configured non-structural policy target, where the applicable trading policy permits it.
 
 If no valid target can be resolved for a leg, that leg is not automatically submitted.
 
-### 5.2.3 Target-Reached and Profit-Protection Separation
+### 5.2.3 Downstream Target-Reached and Profit-Protection Separation
 
 Target achievement and position protection are separate lifecycle concepts.
 
@@ -260,7 +261,7 @@ TRAILING_PROTECTION
 
 No one of these is currently a universal methodology rule. In particular, `BREAK_EVEN` must not be treated as a canonical fallback target. It is a stop-management action.
 
-### 5.2.4 Target Notification Contract — Current Phase
+### 5.2.4 Downstream Target Notification Contract — Current Phase
 
 The monitor may emit a notification when the market price reaches a configured active target:
 
