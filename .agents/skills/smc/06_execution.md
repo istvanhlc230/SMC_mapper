@@ -31,7 +31,7 @@ The following are not canonical POI entities:
 
 These concepts may exist as structural observations, validators, liquidity, or historical annotations where separately defined, but they must not silently become tradable POIs.
 
-### Rule of Two POIs (Structural Constraint)
+### Rule of Two POIs (Execution Constraint)
 
 An active dealing range may contain **zero, one, or two** actively tradable POIs at any given time. The canonical maximum is two:
 1. **Decisional POI** (must reside in Discount for Buys, Premium for Sells)
