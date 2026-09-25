@@ -338,7 +338,7 @@ PROTECTED_STRUCTURAL_EXTREME_LOCK + TRADING_RANGE_ROLLOVER
 NEW RANGE ACTIVE
 ```
 
-Post-BOS retracement, internal liquidity collection, fallback handling, and subsequent displacement belong to the new lifecycle. A later event must not be interpreted as delayed acceptance of the preceding BOS.
+Post-BOS retracement, internal liquidity collection, Major IDM updates, and subsequent displacement belong to the new lifecycle. A later event must not be interpreted as delayed acceptance of the preceding BOS.
 
 POI expiration is handled through the separate POI lifecycle; the structural engine must not silently delete POI history.
 
