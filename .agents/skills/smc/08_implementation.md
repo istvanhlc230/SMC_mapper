@@ -33,7 +33,7 @@ TRADING RANGE
 
 Functions equivalent to `finish_pullback()` must not promote a candle-level pullback directly to IDM.
 
-Functions equivalent to `detect_idm_sweep()` must operate on the active qualified IDM and must not themselves declare VALID_BOS, CHoCH_CONFIRMED, or CONFIRMED_STRUCTURAL_SWING without the remaining canonical prerequisites.
+Functions equivalent to `detect_idm_sweep()` must operate on the active qualified IDM and emit the canonical `IDM_TAKEN` result when the IDM reference is physically taken. The structural lifecycle then consumes `IDM_TAKEN` to establish `CONFIRMED_STRUCTURAL_SWING`. The sweep detector must not itself declare `VALID_BOS` or `CHoCH_CONFIRMED`; those classifications remain subject to their complete downstream gates.
 
 Functions equivalent to `detect_bos()` must require:
 
@@ -1038,29 +1038,27 @@ GEOMETRIC CLASSIFICATION
         │      ↓
         │  CHoCH_ELIGIBLE
         │      ↓
-        │  ALL CHoCH PREREQUISITES
+        │  ALL APPLICABLE CHoCH PREREQUISITES
         │      ├─ PASS → CHoCH_CONFIRMED
         │      └─ FAIL → REJECTION / REMAIN
         │
         └─ WICK BREACH
                ↓
         LEVEL PROVENANCE
-          ├─ FALLBACK
+          ├─ FALLBACK / MAJOR IDM PROVENANCE
           │    ↓
-          │  MAJOR_IDM_SWEEP
+          │  MAJOR_IDM_SWEEP / NOT CHoCH
           │
-          └─ REAL
-               ↓
-        REAL_MAJOR_IDM?
-          ├─ NO → NO_CHoCH_BREAK / REMAIN
-          └─ YES
+          └─ ELIGIBLE OPPOSING EXTERNAL BOUNDARY
                ↓
         CHoCH_ELIGIBLE
                ↓
-        ALL CHoCH PREREQUISITES
+        ALL APPLICABLE CHoCH PREREQUISITES
           ├─ PASS → CHoCH_CONFIRMED
           └─ FAIL → REJECTION / REMAIN
 ```
+
+A Real Major IDM is not a positive prerequisite for the opposing-wick CHoCH path. The exclusion is provenance-based: if the tested external level itself carries Major IDM provenance, the wick is not CHoCH; otherwise an eligible opposing external-boundary wick may enter the CHoCH prerequisite gate.
 
 A body close beyond the opposing boundary is never `CHoCH_CONFIRMED` by geometry alone. It first creates CHoCH eligibility and must pass the complete canonical prerequisite gate.
 
