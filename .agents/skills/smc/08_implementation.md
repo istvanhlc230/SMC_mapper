@@ -60,7 +60,7 @@ Functions equivalent to `detect_bos()` must require:
 4. `IDM_TAKEN == True`;
 5. continuation-BOS reference is not an IDM reference.
 
-A Major IDM wick penetration must terminate as `MAJOR_IDM_SWEEP`, not BOS.
+A Major IDM wick penetration must terminate as `MAJOR_IDM_SWEEP`; that sweep is consumed as the IDM takeout (`IDM_TAKEN`) and therefore confirms the associated structural swing, but it is not BOS.
 
 Functions equivalent to `detect_choch()` must use the governing opposing Protected Structural Extreme / Trading Range boundary and must enforce the complete CHoCH prerequisites. A body close beyond the boundary is not, by itself, sufficient to declare `CHoCH_CONFIRMED`.
 
@@ -1127,8 +1127,9 @@ Additional invariants:
 
 ```text
 NO_NEW_MAJOR_IDM → PRIOR_PROTECTED_BOUNDARY_REMAINS_MAJOR_IDM
-MINOR_IDM_SWEEP ≠ AUTOMATIC CONFIRMED_SWING
-MAJOR_IDM_SWEEP ≠ AUTOMATIC CONFIRMED_SWING
+MINOR_IDM_SWEEP ≠ VALID_BOS
+MAJOR_IDM_SWEEP ≠ VALID_BOS
+IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING
 NEW_SVP ≠ AUTOMATIC MAJOR_IDM
 EXT_CONT_BREAK ≠ AUTOMATIC VALID_BOS
 EXT_OPP_BREAK ≠ AUTOMATIC CHoCH_CONFIRMED
