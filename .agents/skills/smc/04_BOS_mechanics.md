@@ -73,7 +73,7 @@ Mandatory prerequisites remain:
 1. Layer 3 has produced a qualified major-retracement result;
 2. `IDM_TAKEN == True` (the Layer 3 IDM-takeout prerequisite is established);
 3. the reference has correct external structural identity;
-5. the final break classification satisfies 3.4.3.
+4. the final break classification satisfies 3.4.3.
 
 If an external continuation break occurs before the Layer 3 qualification result is satisfied or before `IDM_TAKEN == True`:
 
@@ -210,8 +210,9 @@ The sweep:
 - is not `VALID_BOS`;
 - does not roll the Trading Range;
 - does not lock the Protected Structural Extreme;
-- may satisfy the applicable IDM-takeout requirement and unlock the relevant swing-confirmation gate;
-- does not itself create `CONFIRMED_STRUCTURAL_SWING` unless all remaining prerequisites are satisfied.
+- **does satisfy `IDM_TAKEN` when the active Major IDM reference is physically penetrated**;
+- **the resulting `IDM_TAKEN` immediately confirms the associated `CONFIRMED_STRUCTURAL_SWING` at Layer 3**;
+- does not require retracement qualification before the swing is confirmed. Retracement qualification is a later prerequisite for a continuation `VALID_BOS`.
 
 Major IDM remains a single canonical IDM class. It may be pullback-derived or the prior protected external boundary when only Minor IDM exists.
 ### 3.4.8 — Protected Structural Extreme Lock
@@ -376,7 +377,7 @@ Therefore:
 7. Wick-BOS is immediate once price physically penetrates beyond the reference; equality at the level alone is not a break.
 8. Major IDM is the single canonical Major IDM semantic class; provenance does not create a separate Major IDM ontology.
 9. MAJOR_IDM wick breach is `MAJOR_IDM_SWEEP`, not VALID_BOS or CHoCH_CONFIRMED.
-10. `MAJOR_IDM_SWEEP` unlocks the Swing Confirmation Gate but does not automatically create a CONFIRMED_STRUCTURAL_SWING.
+10. `MAJOR_IDM_SWEEP` satisfies `IDM_TAKEN`; the Layer 3 owner therefore immediately establishes the associated `CONFIRMED_STRUCTURAL_SWING`. It does not by itself create `VALID_BOS`, roll the Trading Range, or lock the Protected Structural Extreme.
 11. `NEW_SVP` does not automatically create Major IDM.
 12. A new Major IDM supersedes the active Major IDM only when it independently qualifies through the validated post-BOS SVP → Verified Extreme → Layer 3 IDM Classification lifecycle.
 13. Only `VALID_BOS` rolls the Trading Range and locks the Protected Structural Extreme.
