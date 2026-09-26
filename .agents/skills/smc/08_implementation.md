@@ -645,8 +645,8 @@ Regression tests must cover:
 - equal-high reference transfer;
 - equal-low reference transfer;
 - strict inside-bar exclusion;
-- explicit Layer-2 PENDING_UNAVAILABLE_SEQUENCE handling for unresolved Outside Bar ordering;
-- later independently observable completion resolving a pending pullback without synthetic sequence evidence;
+- explicit Layer-2 terminal invalidation for Outside Bar ordering that is unavailable;
+- later independently observable candles cannot retroactively resolve an invalidated pullback candidate;
 - outside-bar LOW→HIGH sequencing;
 - outside-bar HIGH→LOW sequencing.
 
