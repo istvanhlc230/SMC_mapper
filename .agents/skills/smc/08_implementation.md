@@ -1191,7 +1191,7 @@ For the canonical True SMC implementation, the implementation-level structural s
 
 Therefore:
 * earlier body-close-only BOS pedagogy is NOT a universal implementation rule;
-* implementation-level Wick-BOS defines the valid STRUCTURAL_SWING_BREAK mechanism, while the complete VALID_BOS event still requires all canonical macro-BOS gates;
+* implementation-level Wick-BOS defines the valid STRUCTURAL_SWING_BREAK mechanism, while the complete VALID_BOS event still requires all canonical Major / External BOS gates;
 * continuation external wick-BOS is canonical for establishing the break;
 * wick interpretation is structural-context dependent.
 
