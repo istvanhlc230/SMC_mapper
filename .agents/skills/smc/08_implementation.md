@@ -1176,6 +1176,35 @@ Therefore:
 * continuation external wick-BOS is canonical for establishing the break;
 * wick interpretation is structural-context dependent.
 
+### Layer 3 IDM implementation guard
+
+The Layer 3 runtime MUST NOT promote a post-BOS Layer-2 pullback to `MAJOR_IDM` merely because it is the newest or because it occurs after `VALID_BOS`.
+
+```text
+VALID_BOS
+  ↓
+POST-BOS PULLBACK
+  ├─ explicit Major-IDM qualification evidence
+  │      ↓
+  │   MAJOR_IDM
+  │
+  └─ no Major-IDM qualification
+         ↓
+     MINOR_IDM ONLY
+         ↓
+PRIOR PROTECTED EXTERNAL BOUNDARY
+         ↓
+ACTIVE MAJOR_IDM
+```
+
+A pullback-selection identifier supplied by a caller is not itself qualification evidence. If Major-IDM qualification is absent or contradictory, the implementation fails closed and preserves the prior protected external boundary as Major IDM.
+
+### Layer 3 retracement implementation guard
+
+The standard equilibrium path is evaluated first and requires the normal opposing-candle count. The reduced displacement exception is evaluated only when the standard path does not qualify and its explicit extreme-taking evidence is present.
+
+The reduced exception may use the documented one- or two-candle displacement case. The implementation must not collapse the exception into the normal candle-count rule and must not treat candle count alone as qualification.
+
 ## Implementation boundary
 
 The following must remain separate state objects or semantically equivalent state representations:
