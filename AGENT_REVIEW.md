@@ -799,3 +799,30 @@ The validator environment cannot execute the repository checkout/test suite beca
 
 ### Current status
 **LAYER 2 = AUDIT-CORRECTED / READY FOR RUNTIME TEST EXECUTION AND FINAL APPROVAL.**
+
+
+## TEST EXECUTION POLICY — 2026-09-26
+
+The repository now has a persistent GitHub Actions test gate:
+
+- Workflow: `.github/workflows/tests.yml`
+- Trigger: every push to `main`
+- Manual trigger: `workflow_dispatch`
+- Python: 3.11
+- Test command: `python -m pytest -q`
+- Scope: full repository test suite, not only the active layer.
+
+This test policy remains active until explicitly revoked by the user.
+
+Current independently implemented layer coverage:
+- Layer 1: `tests/test_microstructure_engine.py` — 12 test functions.
+- Layer 2: `tests/test_minor_structure_engine.py` — 18 test functions.
+- Current known total: 30 test functions.
+
+Approval rule:
+- A layer is not formally APPROVED merely because tests are present.
+- The relevant GitHub Actions runtime result must be successful, together with the semantic audit.
+- If the workflow fails, the failing implementation/tests must be corrected and the suite rerun before approval.
+- Mapper/analyzer/monitor integration remains blocked until the applicable layer is explicitly approved.
+
+No feature branch is used; layer implementations continue directly on `main` as requested.
