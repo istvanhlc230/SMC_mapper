@@ -48,12 +48,11 @@ def test_major_idm_requires_explicit_post_bos_structural_qualification():
     assert major[0].idm_class is structural.IDMClass.MAJOR_IDM
 
 
-def test_qualified_retracement_at_50_percent_requires_three_opposing_closes():
+def test_qualified_retracement_at_50_percent_requires_two_opposing_closes():
     candles = (
         c("s", "5", "10", "5", "9"),
         c("a", "9", "9.5", "8", "8.5"),
         c("b", "8.5", "9", "7", "7.5"),
-        c("c", "7.5", "8", "5", "6"),
     )
     swing = structural.ConfirmedStructuralSwing(
         minor.PullbackDirection.BULLISH, Decimal("10"), "s", "idm", "s"
