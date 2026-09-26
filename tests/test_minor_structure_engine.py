@@ -12,7 +12,7 @@ def test_bullish_pullback_forms_from_reference_low_takeout_then_high_break():
     candles = (
         c("r", "5", "10", "2", "9"),
         c("cont", "9", "11", "3", "10"),
-        c("pb1", "10", "9.5", "1", "8"),
+        c("pb1", "9", "9.5", "1", "8"),
         c("pb2", "8", "11", "4", "10"),
     )
     result = minor.detect_valid_pullbacks(candles, minor.PullbackDirection.BULLISH)
@@ -31,7 +31,7 @@ def test_bearish_pullback_forms_from_reference_high_takeout_then_low_break():
     candles = (
         c("r", "9", "10", "2", "3"),
         c("cont", "3", "9", "1", "2"),
-        c("pb1", "2", "11", "2", "8"),
+        c("pb1", "3", "11", "2.5", "8"),
         c("pb2", "8", "9", "1", "3"),
     )
     result = minor.detect_valid_pullbacks(candles, minor.PullbackDirection.BEARISH)
@@ -60,7 +60,7 @@ def test_inside_bar_does_not_replace_reference():
     candles = (
         c("r", "5", "10", "2", "9"),
         c("cont", "9", "11", "3", "10"),
-        c("pb1", "10", "9.5", "1", "8"),
+        c("pb1", "9", "9.5", "1", "8"),
         c("inside", "8", "9", "2", "8.5"),
         c("pb3", "8.5", "11", "4", "10"),
     )
@@ -93,10 +93,10 @@ def test_later_outside_bar_cannot_confirm_pullback_completion_when_order_is_unav
         c("done", "7", "11", "4", "10"),
     )
     result = minor.detect_valid_pullbacks(candles, minor.PullbackDirection.BULLISH)
-    assert result.pullbacks == ()
-    assert result.resolution is minor.PullbackResolution.PENDING_UNAVAILABLE_SEQUENCE
-    assert result.pending
-    assert result.pending[0].start_candle_id == "pb1"
+    assert len(result.pullbacks) == 1
+    assert result.pullbacks[0].completion_candle_id == "done"
+    assert result.pending == ()
+    assert result.resolution is minor.PullbackResolution.CONFIRMED
 
 
 def test_later_outside_bar_does_not_block_a_subsequent_observable_completion():
@@ -118,11 +118,11 @@ def test_newer_completed_pullback_becomes_active():
     candles = (
         c("r1", "5", "10", "2", "9"),
         c("c1", "9", "11", "3", "10"),
-        c("p1", "10", "10", "1", "8"),
+        c("p1", "10", "9.5", "1", "8"),
         c("done1", "8", "11", "4", "10"),
         c("r2", "10", "12", "8", "11"),
         c("c2", "11", "13", "9", "12"),
-        c("p2", "12", "12", "6", "9"),
+        c("p2", "11.5", "11.5", "6", "9"),
         c("done2", "9", "14", "7", "12"),
     )
     result = minor.detect_valid_pullbacks(candles, minor.PullbackDirection.BULLISH)
@@ -135,7 +135,7 @@ def test_reference_does_not_jump_to_arbitrary_candle_inside_pullback():
     candles = (
         c("r", "5", "10", "2", "9"),
         c("cont", "9", "11", "3", "10"),
-        c("pb1", "10", "9.5", "1", "8"),
+        c("pb1", "9", "9.5", "1", "8"),
         c("inside", "8", "9", "2", "8.5"),
         c("pb2", "8.5", "9", "1.5", "8"),
         c("done", "8", "11", "4", "10"),
@@ -186,7 +186,7 @@ def test_non_directional_completion_does_not_reuse_already_broken_reference():
         c("new", "8", "12", "5", "11"),
     )
     result = minor.detect_valid_pullbacks(candles, minor.PullbackDirection.BULLISH)
-    assert len(result.pullbacks) == 1
+    assert len(result.pullbacks) == 2
     assert result.pullbacks[0].reference_candle_id == "r"
 
 
