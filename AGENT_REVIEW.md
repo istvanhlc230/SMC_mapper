@@ -1017,3 +1017,35 @@ The GitHub connector reports no visible workflow run and no status check for the
 ### Final disposition
 **LAYER 2 = AUDIT-CORRECTED / RUNTIME TEST RESULT PENDING / NOT APPROVED.**
 Mapper integration remains blocked until the persistent GitHub Actions test gate reports success and the Layer-2 semantic audit is formally closed.
+
+
+## LAYER 3 AUDIT CORRECTION — 2026-09-26
+
+### Findings
+1. **Post-BOS Major IDM promotion was too broad.**
+   The previous implementation promoted the newest Layer-2 pullback whenever `after_valid_bos=True`, without proving that the pullback itself formed after the explicit VALID_BOS event.
+2. **Standard vs reduced/outlier retracement paths were unnecessarily conflated.**
+   The reduced branch could be reached for a two-candle case already covered by the normal gate, weakening the intended gate separation.
+3. **VALID_BOS provenance required stronger runtime validation.**
+   A post-BOS lifecycle must reference a concrete Layer-1 candle present in the ordered input sequence.
+
+### Corrections
+- Added explicit `valid_bos_candle_id` to the Layer-3 lifecycle context.
+- Post-BOS Major IDM selection now requires both the pullback start and completion to occur after the VALID_BOS candle.
+- If no genuinely post-BOS valid pullback exists, the prior protected external boundary remains the sole active Major IDM.
+- Missing VALID_BOS candle provenance or absence from the Layer-1 sequence is fail-closed.
+- Standard equilibrium qualification is evaluated first with the normal opposing-candle gate.
+- The reduced/outlier path is now a true exception and only bypasses the normal count for the explicit one-candle displacement-outlier case.
+- Added regression coverage for pre-BOS pullback non-promotion, genuine post-BOS promotion, missing BOS provenance, and one-candle outlier gating.
+
+### Scope
+- `structural_engine.py` only for Layer-3 implementation changes.
+- `tests/test_structural_engine.py` updated with regression coverage.
+- `microstructure_engine.py`, `minor_structure_engine.py`, `smc_analyzer.py`, `smc_htf_ltf_monitor.py`, `zones.json`, and `knowledgebase/` were not modified by this correction.
+- No branch created; all changes were committed directly to `main`.
+
+### Runtime validation
+The persistent GitHub Actions test gate remains configured to run `python -m pytest -q` on every push to `main`. The GitHub connector currently reports no status checks for the latest correction commit, so runtime PASS is not claimed.
+
+### Current disposition
+**LAYER 3 = AUDIT-CORRECTED / RUNTIME TEST RESULT PENDING / NOT APPROVED.**
