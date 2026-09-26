@@ -276,10 +276,19 @@ def detect_valid_pullbacks(
             # active reference extreme. This is required for the canonical
             # equal-extreme scenario where the second candle becomes the
             # active reference.
+            reference_transferred = False
             if direction is PullbackDirection.BULLISH and equal_high(reference, candle) is not None:
                 reference = candle
+                reference_transferred = True
             elif direction is PullbackDirection.BEARISH and equal_low(reference, candle) is not None:
                 reference = candle
+                reference_transferred = True
+
+            # The transfer candle establishes the new reference; it cannot
+            # simultaneously take the extreme of that newly established
+            # reference. Start pullback evaluation on the next candle.
+            if reference_transferred:
+                continue
 
             took_reference_extreme = (
                 candle.low < reference.low
