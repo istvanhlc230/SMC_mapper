@@ -15,14 +15,12 @@ from decimal import Decimal
 from enum import Enum
 
 from microstructure_engine import (
-    BreachMode,
     Candle,
     Direction,
     ExtremeReference,
     QuarantineError,
-    SequenceStatus,
-    is_inside_bar,
     is_outside_bar,
+    classify_breach,
 )
 
 
@@ -143,18 +141,15 @@ def _reference_is_bearish_continuation(reference: Candle, next_candle: Candle) -
     )
 
 
-def _bullish_breach(candle: Candle, reference: Candle):
-    return (
-        candle.low < reference.low,
-        candle.high > reference.high,
+def _reference_breach(candle: Candle, reference: Candle, direction: Direction) -> bool:
+    level = reference.low if direction is Direction.DOWN else reference.high
+    role = "REFERENCE_LOW" if direction is Direction.DOWN else "REFERENCE_HIGH"
+    observation = classify_breach(
+        candle,
+        ExtremeReference(level, reference.candle_id, role),
+        direction,
     )
-
-
-def _bearish_breach(candle: Candle, reference: Candle):
-    return (
-        candle.high > reference.high,
-        candle.low < reference.low,
-    )
+    return observation.is_break
 
 
 def _build_pullback(
@@ -216,7 +211,7 @@ def detect_valid_pullbacks(
                 continue
             start_index = None
             for i in range(ref_index + 1, len(sequence)):
-                low_taken, high_broken = _bullish_breach(sequence[i], reference)
+                low_taken = _reference_breach(sequence[i], reference, Direction.DOWN)\n                high_broken = _reference_breach(sequence[i], reference, Direction.UP)
                 if start_index is None:
                     if low_taken:
                         # A single aggregate Outside Bar cannot prove low-before-high.
@@ -233,7 +228,7 @@ def detect_valid_pullbacks(
                 continue
             start_index = None
             for i in range(ref_index + 1, len(sequence)):
-                high_taken, low_broken = _bearish_breach(sequence[i], reference)
+                high_taken = _reference_breach(sequence[i], reference, Direction.UP)\n                low_broken = _reference_breach(sequence[i], reference, Direction.DOWN)
                 if start_index is None:
                     if high_taken:
                         if low_broken and is_outside_bar(sequence[i], reference):
