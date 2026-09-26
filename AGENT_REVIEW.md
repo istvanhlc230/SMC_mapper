@@ -1170,3 +1170,65 @@ No runtime mapper/analyzer/monitor code, zones.json, or knowledgebase content wa
 
 ### Disposition
 GLOBAL TERMINOLOGY AUDIT = CORRECTED / READY FOR FINAL CROSS-SKILL CONSISTENCY CHECK.
+
+
+## DIRECT VALIDATOR RE-AUDIT — GLOBAL STRUCTURAL TERMINOLOGY / IDM OWNERSHIP — 2026-09-26
+
+The 01–08 canonical skill was re-audited against the current main branch and the primary knowledgebase evidence.
+
+### Finding and correction
+
+A real semantic ownership inconsistency was found:
+- `skill.md` and the global terminology map placed Minor IDM under Layer 2.
+- `02_minor_structure.md` still stated that Layer 3 owned Minor IDM classification.
+- `03_structural_semantic_authority.md` consequently described Layer 3 as the single owner of all IDM classification.
+
+The knowledgebase evidence supports the corrected hierarchy:
+- a valid pullback produces the pullback-derived liquidity identified as Minor Inducement;
+- after BOS, a newly qualified post-BOS pullback can establish Major Inducement;
+- when only Minor Inducement exists, the governing external liquidity/boundary serves as Major IDM.
+
+Canonical ownership is now:
+```
+Layer 1
+  OHLC / candle geometry / breach observations
+        ↓
+Layer 2
+  Candle-Level Valid Pullback
+  → Verified Pullback Extreme
+  → Pullback-Derived Liquidity Reference
+  → MINOR_IDM
+        ↓
+Layer 3
+  IDM_TAKEN lifecycle consequence
+  → MAJOR_IDM governance
+  → CONFIRMED_STRUCTURAL_SWING
+  → structural retracement qualification
+        ↓
+Layer 4
+  STRUCTURAL_SWING_BREAK
+  → VALID_BOS
+```
+
+### Files corrected
+- `.agents/skills/smc/02_minor_structure.md`
+- `.agents/skills/smc/03_structural_semantic_authority.md`
+- `.agents/skills/smc/08_implementation.md`
+
+Remaining legacy IDM terminology is retained only where explicitly needed as historical audit evidence, not as canonical ontology.
+
+### GitHub test status
+
+GitHub Actions workflow `.github/workflows/tests.yml` is active on pushes to `main`.
+
+The latest runs for the terminology/ownership commits failed in the existing Python test suite:
+- 36 passed, 25 failed.
+- The dominant failure is `TypeError: MinorStructureAnalysis.__init__() takes from 3 to 5 positional arguments but 6 were given` in `minor_structure_engine.py`.
+- Additional structural tests fail with `QuarantineError` due to missing Layer-1 sequence evidence in post-BOS tests.
+
+These failures are runtime implementation/test-suite synchronization issues, not documentation-only terminology failures. The canonical skill audit does not mark the methodology APPROVED for runtime implementation until those implementation tests are separately corrected and rerun.
+
+### Audit disposition
+
+**CANONICAL SKILL: TERMINOLOGY/OWNERSHIP CORRECTION APPLIED.**
+**RUNTIME TEST SUITE: RED — CORRECTION REQUIRED.**
