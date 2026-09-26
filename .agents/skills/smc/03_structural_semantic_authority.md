@@ -6,6 +6,18 @@
 
 ## Structural semantic authority invariant
 
+This document is the owner of Major / External Structure. Its structural namespace is distinct from Layer-1 Microstructure and Layer-2 Minor Structure.
+
+Canonical Layer-3 objects include:
+- CONFIRMED_STRUCTURAL_SWING;
+- Protected External Boundary / Protected Structural Extreme;
+- MAJOR_IDM;
+- structural retracement qualification.
+
+A Minor Structural Swing, candle-level Extreme, or generic local Swing is not automatically a Layer-3 structural object. Layer 3 promotes only through its explicit canonical lifecycle and qualification gates.
+
+
+
 This document is the shared Layer 3 semantic authority consumed by the dedicated BOS and CHoCH mechanics modules. It owns Major Structure ontology, structural qualification, swing/protection lifecycle, and shared invariants; it does not duplicate event-specific BOS or CHoCH mechanics.
 
 Higher-level structural events may consume lower-level validated state, but no stage may be skipped or manufactured by configuration, scoring, visualization, or implementation convenience.
