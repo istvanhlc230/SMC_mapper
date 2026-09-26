@@ -80,6 +80,31 @@ def test_same_candle_outside_bar_cannot_confirm_intrabar_pullback_order():
     assert result.pullbacks == ()
 
 
+def test_later_outside_bar_cannot_confirm_pullback_completion_when_order_is_unavailable():
+    candles = (
+        c("r", "5", "10", "2", "9"),
+        c("cont", "9", "11", "3", "10"),
+        c("pb1", "10", "9", "1", "8"),
+        c("outside_completion", "8", "12", "1", "7"),
+        c("done", "7", "11", "4", "10"),
+    )
+    result = minor.detect_valid_pullbacks(candles, minor.PullbackDirection.BULLISH)
+    assert result.pullbacks == ()
+
+
+def test_later_outside_bar_does_not_block_a_subsequent_observable_completion():
+    candles = (
+        c("r", "5", "10", "2", "9"),
+        c("cont", "9", "11", "3", "10"),
+        c("pb1", "10", "9", "1", "8"),
+        c("outside_wait", "8", "12", "1", "7"),
+        c("done", "7", "10", "4", "9.5"),
+    )
+    result = minor.detect_valid_pullbacks(candles, minor.PullbackDirection.BULLISH)
+    assert len(result.pullbacks) == 1
+    assert result.pullbacks[0].completion_candle_id == "done"
+
+
 def test_newer_completed_pullback_becomes_active():
     candles = (
         c("r1", "5", "10", "2", "9"),
