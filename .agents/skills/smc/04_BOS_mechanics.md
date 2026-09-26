@@ -18,7 +18,7 @@ The word “break” may appear in descriptive mechanics, but normative predicat
 
 
 
-BOS is a macro structural continuation event. It is not a local candle pattern, arbitrary liquidity takeout, IDM sweep, or internal structural break.
+BOS is a Major / External structural continuation event. It is not a local candle pattern, arbitrary liquidity takeout, IDM sweep, or internal structural break.
 
 ### Canonical BOS Lifecycle
 
