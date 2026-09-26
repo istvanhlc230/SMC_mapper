@@ -847,3 +847,30 @@ Scope:
 
 Current review state: **LAYER 3 IMPLEMENTED / RUNTIME TEST GATE PENDING / NOT APPROVED**.
 The persistent GitHub Actions policy in `.github/workflows/tests.yml` remains the required runtime approval gate.
+
+
+## LAYER 3 VALIDATOR AUDIT — 2026-09-26
+
+### Verification
+- Current main includes Layer 3 implementation and the latest Layer-2 fixture corrections through commit 74bf30b1edb743324ba6cdf8a7ec69e1176f38c2.
+- No feature branch was used.
+- Canonical authority checked: .agents/skills/smc/03_structural_semantic_authority.md and .agents/skills/smc/04_BOS_mechanics.md.
+- Knowledgebase evidence checked: knowledgebase/sources/truesmc2026.txt, knowledgebase/sources/market_structure_mapping_update.txt, knowledgebase/sources/major_minor_inducement.txt, and knowledgebase/reference/03_pullback_retracement.md.
+
+### Finding — BLOCKER
+The current Layer-3 API exposes `post_bos_pullback_ids` as a caller-supplied authority for MAJOR_IDM classification. This violates the semantic-owner rule: Layer 3 owns IDM classification/lifecycle and must not accept an arbitrary external set that directly decides which pullback is Major IDM.
+
+The canonical lifecycle requires:
+- after VALID_BOS, a qualifying post-BOS valid pullback can establish the active MAJOR_IDM;
+- if only Minor IDM exists and no new Major IDM qualifies, the prior protected external boundary remains the active MAJOR_IDM;
+- a newer qualifying Major IDM supersedes the prior one;
+- no fallback/real/proxy IDM ontology is introduced.
+
+The current implementation does not model that lifecycle autonomously and therefore cannot yet be approved as the complete Layer-3 IDM owner. The issue must be corrected in the Layer-3 contract/engine before Layer-3 approval.
+
+### Test status
+The persistent GitHub Actions gate remains configured in .github/workflows/tests.yml and runs `python -m pytest -q` on pushes to main. The validator environment cannot directly execute a repository checkout, and the GitHub connector currently exposes no push-triggered run listing for this repository, so no runtime PASS claim is made here.
+
+### Disposition
+**LAYER 3 = NOT APPROVED / CORRECTION REQUIRED.**
+Layer 2 remains audit-corrected and pending runtime PASS plus final approval. Mapper/analyzer integration remains blocked.
