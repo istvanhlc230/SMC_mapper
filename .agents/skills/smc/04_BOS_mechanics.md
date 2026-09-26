@@ -166,8 +166,7 @@ IDM takeout (`IDM_TAKEN = TRUE`) confirms the relevant `CONFIRMED_STRUCTURAL_SWI
 If IDM is taken out but Layer 3 has not yet produced `MAJOR_RETRACEMENT_QUALIFIED`:
 - The `CONFIRMED_STRUCTURAL_SWING` may already exist from the IDM takeout.
 - A later external break is not `VALID_BOS` until the stored retracement qualification is satisfied.
-- If an attempted break occurs on an insufficient retracement, the break is rejected as `IMPULSE_EXTENSION` and the newer retracement extreme becomes the active pullback/IDM reference for the next structural attempt.
-- The dealing range remains unexpanded.
+- If an attempted break occurs on an insufficient retracement, the break is classified as `IMPULSE_EXTENSION` and the dealing range remains unexpanded. Layer 4 does not mutate or manufacture the upstream pullback/IDM reference; the Layer-2/Layer-3 lifecycle handles any subsequent reference shift according to its canonical ownership rules.
 
 Therefore:
 
