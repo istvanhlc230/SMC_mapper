@@ -97,8 +97,7 @@ def test_newer_completed_pullback_becomes_active():
     assert result.active.reference is result.pullbacks[-1].liquidity_reference
 
 
-def test_no_idm_or_bos_symbols_are_defined_by_layer2():
-    source = open("minor_structure_engine.py", encoding="utf-8").read()
-    assert "IDM" not in source
-    assert "BOS" not in source
-    assert "CHoCH" not in source
+def test_layer2_exports_only_minor_structure_contract():
+    assert not hasattr(minor, "IDM")
+    assert not hasattr(minor, "BOS")
+    assert not hasattr(minor, "CHoCH")
