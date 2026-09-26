@@ -144,7 +144,7 @@ CANDLE-LEVEL PULLBACK FORMATION
 
 When aggregate OHLC does not expose the intrabar order needed by the sequence, Layer 2 uses the observability state provided by Layer 1 instead of manufacturing historical path evidence.
 
-For an Outside Bar ordering that is unavailable at the point required to establish or complete the pullback sequence, Layer 2 terminally invalidates that specific candidate. The candidate is terminally invalidated and cannot be completed by any later candle. `PENDING_UNAVAILABLE_SEQUENCE` is not a valid Layer-2 state. A later candle can only participate in a newly formed candidate with a new observable start; it cannot retroactively supply the missing historical intrabar order.
+For an Outside Bar ordering that is unavailable at the point required to establish or complete the pullback sequence, Layer 2 terminally invalidates that specific candidate. The candidate is terminally invalidated and cannot be completed by any later candle. No pending state is created for this failure mode. A later candle can only participate in a newly formed candidate with a new observable start; it cannot retroactively supply the missing historical intrabar order.
 
 ## 4. Pullback Extreme Verification
 
