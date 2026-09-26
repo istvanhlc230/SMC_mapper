@@ -294,7 +294,7 @@ def classify_idm(
 
     post_bos_pullbacks = [
         pb for pb in minor.pullbacks
-        if pb.completion_candle_id != lifecycle.valid_bos_candle_id
+        if _comes_after(pb.start_candle_id, lifecycle.valid_bos_candle_id, candles)
         and _comes_after(pb.completion_candle_id, lifecycle.valid_bos_candle_id, candles)
     ]
     if post_bos_pullbacks:
