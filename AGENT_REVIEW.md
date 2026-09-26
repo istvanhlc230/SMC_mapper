@@ -509,3 +509,50 @@ Layer 1 is implemented as an independently reviewable component. Mapper integrat
 **LAYER 1 IMPLEMENTATION STATUS: READY FOR REVIEW**
 
 The implementation intentionally does not implement pullbacks or any Layer 2+ semantic object. No branch was created; the changes are committed directly to `main`.
+
+
+## LAYER IMPLEMENTATION TRACK — 2026-09-26
+
+### Layer 1 audit disposition
+
+Layer 1 `microstructure_engine.py` was re-audited against `.agents/skills/smc/01_micro_structure.md` and the previously frozen technical contract.
+
+A concrete Contract issue was found and corrected: aggregate-OHLC Outside Bar construction can no longer accept injected/observed intrabar ordering. `outside_bar()` now deterministically emits `SequenceStatus.UNAVAILABLE`, and `OutsideBarObservation` rejects any non-UNAVAILABLE sequence. A regression test was added.
+
+Layer 1 remains hermetically isolated and continues to own only OHLC primitives. No Mapper/analyzer/monitor integration was performed.
+
+### Layer 2 implementation
+
+Implemented on `main` as `minor_structure_engine.py` with `tests/test_minor_structure_engine.py`.
+
+Layer 2 owns only:
+- Candle-Level Valid Pullback formation;
+- Verified Pullback Extreme;
+- Pullback-Derived Liquidity Reference;
+- Active Pullback Pointer.
+
+Layer 2 consumes Layer 1 breach and candle-trend semantics and does not implement IDM, BOS, CHoCH, POI, or structural retracement.
+
+Aggregate-OHLC Outside Bars with unavailable intrabar order cannot independently confirm a same-candle takeout/completion sequence; the engine therefore fails closed and waits for a later observable completion.
+
+### Integration boundary
+
+`smc_analyzer.py`, `smc_htf_ltf_monitor.py`, and `zones.json` remain untouched. Layer implementations are being built and reviewed independently first. Mapper integration is deferred until the relevant layer is explicitly approved.
+
+### Current status
+
+Layer 1: **AUDIT CORRECTED — READY FOR FINAL REVIEW**.
+
+Layer 2: **IMPLEMENTED — READY FOR REVIEW**. Runtime test execution must be confirmed before formal approval.
+
+### Commits
+
+- 20ea91c — Layer 1 Outside Bar observability contract correction
+- 5066e0a — Layer 1 Outside Bar regression test
+- 4b6a56b — Layer 2 minor-structure engine initial implementation
+- 94cc456 — Layer 2 pullback tests
+- 077a0e5 — Layer 2 consumes Layer 1 breach semantics
+- 2ac7d5b — Layer 2 boundary test correction
+- 474dca1 — Layer 2 syntax/state cleanup
+- dbabcde — Layer 2 generated-newline correction
+- 34c5467 — Layer 2 consumes Layer 1 candle-trend semantics
