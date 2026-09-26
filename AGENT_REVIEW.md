@@ -1078,3 +1078,22 @@ The initial Layer 3 runtime implementation contained two material semantic defec
 **LAYER 3: CORRECTION IMPLEMENTED — TEST EXECUTION PENDING EXTERNAL VALIDATION.**
 
 The semantic audit must be repeated after the test suite reports green. Layer 4/BOS integration remains blocked until Layer 3 is approved.
+
+
+## LAYER 3 FOLLOW-UP VALIDATION NOTE — 2026-09-26
+
+A second code audit found and corrected a regression-test fixture issue: the reduced-candle tests were not constraining the retracement window to the intended one- or two-candle exception. The fixtures now place the required >=5 preceding candles before the confirmed swing and explicitly bound the evaluation with `attempt_end_candle_id`.
+
+Current implementation commits:
+- `ed29213c6e9dcfeeea3547b1828a7ce39a7ca1a1` — Major IDM / reduced-retracement correction.
+- `a8006206bd29fb4496d8f758abbf09d367483fa9` — Major IDM regression-test synchronization.
+- `85dacd17b55f17e1fe717f9444ad94e1925f5b91` — qualification semantics clarification.
+- `8b6e66682bec8de4b52a2d27c885b03ce1e3aa0c` — two-candle regression test.
+- `ad105798c0e9d2593a240b2dd1af9b1490741d94` — implementation-contract guard.
+- `c7bcb6f340751dcd1cedf39058e21d70fe242fa0` — corrected reduced-retracement fixtures.
+
+GitHub Actions workflow is present and configured to run the full `pytest` suite on every push to `main`. The GitHub connector currently reports no workflow-run record for the latest commit, so test execution is not yet independently evidenced here.
+
+**LAYER 3 STATUS: IMPLEMENTED / AUDIT-PASSING STATICALLY / AWAITING GREEN TEST RUN.**
+
+Layer 4/BOS remains blocked until this Layer 3 test gate is green and the semantic audit is formally approved.
