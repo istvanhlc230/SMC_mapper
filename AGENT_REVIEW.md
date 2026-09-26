@@ -906,3 +906,25 @@ Added coverage for:
 **LAYER 3 = CORRECTED / READY FOR RUNTIME TEST EXECUTION AND FINAL SEMANTIC AUDIT.**
 
 Runtime PASS is still pending the GitHub Actions test gate. Mapper/analyzer/monitor integration remains blocked until Layer 3 is explicitly approved.
+
+
+## LAYER 3 POST-BOS IDM FALLBACK PRECISION — 2026-09-26
+
+### Final semantic correction
+A follow-up audit found that preserving an arbitrary previous Major IDM object after BOS would still be broader than the canonical rule. The canonical fallback is specifically the **prior protected external boundary** (Protected Low in bullish context / Protected High in bearish context) when no new post-BOS Major IDM qualifies.
+
+### Correction
+- Removed previous-Major-IDM fallback from `IDMLifecycleContext`.
+- Post-BOS lifecycle now requires explicit protected external boundary provenance.
+- New qualifying post-BOS Layer-2 pullback supersedes the boundary as active Major IDM.
+- Without a new post-BOS pullback, the protected external boundary is the active Major IDM.
+- Missing protected-boundary evidence is fail-closed.
+
+### Commits
+- 435876a — Align post-BOS Major IDM fallback with protected boundary
+- 84f28a6 — Tighten Layer-3 post-BOS Major IDM regression coverage
+
+### Validation
+Static semantic review completed. GitHub Actions is configured to run the full pytest suite on every push to main, but the current GitHub connector exposes no push-triggered run listing for this repository; therefore runtime PASS is not claimed yet.
+
+**Layer 3 remains CORRECTED / READY FOR RUNTIME TEST EXECUTION AND FINAL AUDIT.**
