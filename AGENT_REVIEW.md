@@ -732,3 +732,32 @@ Additional commits:
 - 34644bf — same-candle self-takeout prevention in Layer 2
 - d67d5ac — EQH/EQL same-candle regression tests
 - 88e60d5 — canonical Layer-2 documentation synchronization
+
+
+## LAYER 2 SEMANTIC-OWNER CORRECTION — 2026-09-26
+
+### Audit finding
+A final Layer-2 implementation audit found one architecture-level inconsistency: the engine claimed to consume Layer-1 breach/candle-trend semantics, but its continuation, takeout, and completion predicates still duplicated raw OHLC comparisons locally.
+
+### Correction
+`minor_structure_engine.py` now delegates:
+- directional continuation detection to Layer-1 `candle_trend()`;
+- reference-high/reference-low breach detection to Layer-1 `classify_breach()`;
+- equality/break semantics therefore remain owned exclusively by `microstructure_engine.py`.
+
+Layer 2 still owns the sequential state machine, pullback window, verified extreme, liquidity-reference derivation, and unavailable-sequence pending state. It does not redefine Layer-1 geometry.
+
+### Validation boundary
+- `microstructure_engine.py` unchanged.
+- `minor_structure_engine.py` corrected on `main`.
+- `smc_analyzer.py`, `smc_htf_ltf_monitor.py`, `zones.json`, and `knowledgebase/` remain untouched.
+- No Mapper integration performed.
+- Runtime execution remains unavailable in this validator environment because repository checkout/network access is unavailable.
+
+### Commit
+- `017296f` — Layer-2 consume Layer-1 breach and trend semantics
+
+### Status
+**LAYER 2 = SEMANTICALLY CORRECTED / READY FOR RUNTIME TEST EXECUTION AND FINAL APPROVAL.**
+
+Formal Layer-2 approval remains blocked until the repository test suite is actually executed successfully.
