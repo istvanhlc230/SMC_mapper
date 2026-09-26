@@ -1,9 +1,9 @@
 """Layer 3 structural lifecycle engine.
 
-Consumes Layer 1 candle primitives and Layer 2 minor-structure outputs. Owns
-IDM classification/lifecycle, IDM takeout, confirmed structural swings and
-structural retracement qualification. It deliberately does not implement BOS,
-CHoCH, POI, RR, or mapper integration.
+Consumes Layer 1 candle primitives and Layer 2 minor-structure outputs.
+Owns IDM classification/lifecycle, IDM takeout, confirmed structural
+swings, and structural retracement qualification. It does not implement
+BOS, CHoCH, POI, RR, or Mapper integration.
 """
 from __future__ import annotations
 
@@ -11,8 +11,18 @@ from dataclasses import dataclass
 from decimal import Decimal
 from enum import Enum
 
-from microstructure_engine import Candle, Direction, ExtremeReference, QuarantineError, classify_breach
-from minor_structure_engine import CandleLevelValidPullback, MinorStructureAnalysis, PullbackDirection
+from microstructure_engine import (
+    Candle,
+    Direction,
+    ExtremeReference,
+    QuarantineError,
+    classify_breach,
+)
+from minor_structure_engine import (
+    CandleLevelValidPullback,
+    MinorStructureAnalysis,
+    PullbackDirection,
+)
 
 STANDARD_EQUILIBRIUM_THRESHOLD = Decimal("0.50")
 HTF_CONDITIONAL_THRESHOLD = Decimal("0.382")
@@ -26,6 +36,11 @@ class IDMClass(str, Enum):
     MAJOR_IDM = "MAJOR_IDM"
 
 
+class IDMOrigin(str, Enum):
+    PULLBACK_DERIVED = "PULLBACK_DERIVED"
+    PROTECTED_EXTERNAL_BOUNDARY = "PROTECTED_EXTERNAL_BOUNDARY"
+
+
 class StructuralResolution(str, Enum):
     NO_EVIDENCE = "NO_EVIDENCE"
     IDM_ACTIVE = "IDM_ACTIVE"
@@ -35,30 +50,82 @@ class StructuralResolution(str, Enum):
 
 
 @dataclass(frozen=True, slots=True)
+class ProtectedExternalBoundary:
+    direction: PullbackDirection
+    price: Decimal
+    source_candle_id: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.direction, PullbackDirection):
+            raise QuarantineError("invalid protected-boundary direction")
+        if not isinstance(self.price, Decimal) or not self.price.is_finite():
+            raise QuarantineError("protected-boundary price requires finite Decimal")
+        if not isinstance(self.source_candle_id, str) or not self.source_candle_id:
+            raise QuarantineError("protected boundary requires source candle ID")
+
+
+@dataclass(frozen=True, slots=True)
+class IDMLifecycleContext:
+    """Layer-3-owned lifecycle input describing a completed BOS rollover.
+
+    The caller may advance the lifecycle only with an explicit VALID_BOS
+    transition. It cannot select an arbitrary pullback as Major IDM.
+    """
+
+    after_valid_bos: bool = False
+    previous_major_idm: "IDMEvent | None" = None
+    protected_external_boundary: ProtectedExternalBoundary | None = None
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.after_valid_bos, bool):
+            raise QuarantineError("after_valid_bos must be boolean")
+        if not self.after_valid_bos:
+            if self.protected_external_boundary is not None:
+                raise QuarantineError("protected boundary requires VALID_BOS lifecycle")
+            return
+        if (
+            self.previous_major_idm is None
+            and self.protected_external_boundary is None
+        ):
+            raise QuarantineError(
+                "post-BOS IDM lifecycle requires prior Major IDM or protected boundary"
+            )
+
+
+@dataclass(frozen=True, slots=True)
 class IDMEvent:
     idm_class: IDMClass
+    origin: IDMOrigin
     direction: PullbackDirection
     reference_price: Decimal
     source_candle_id: str
-    pullback_reference_candle_id: str
-    pullback_completion_candle_id: str
+    pullback_reference_candle_id: str | None = None
+    pullback_completion_candle_id: str | None = None
     takeout_candle_id: str | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.idm_class, IDMClass):
             raise QuarantineError("invalid IDM class")
+        if not isinstance(self.origin, IDMOrigin):
+            raise QuarantineError("invalid IDM origin")
         if not isinstance(self.direction, PullbackDirection):
             raise QuarantineError("invalid IDM direction")
         if not isinstance(self.reference_price, Decimal) or not self.reference_price.is_finite():
             raise QuarantineError("IDM price requires finite Decimal")
-        for value, name in (
-            (self.source_candle_id, "source_candle_id"),
-            (self.pullback_reference_candle_id, "pullback_reference_candle_id"),
-            (self.pullback_completion_candle_id, "pullback_completion_candle_id"),
+        if not isinstance(self.source_candle_id, str) or not self.source_candle_id:
+            raise QuarantineError("IDM requires source candle ID")
+        if self.origin is IDMOrigin.PULLBACK_DERIVED:
+            for value, name in (
+                (self.pullback_reference_candle_id, "pullback_reference_candle_id"),
+                (self.pullback_completion_candle_id, "pullback_completion_candle_id"),
+            ):
+                if not isinstance(value, str) or not value:
+                    raise QuarantineError(f"pullback-derived IDM requires {name}")
+        elif self.pullback_reference_candle_id is not None or self.pullback_completion_candle_id is not None:
+            raise QuarantineError("protected-boundary IDM cannot carry pullback provenance")
+        if self.takeout_candle_id is not None and (
+            not isinstance(self.takeout_candle_id, str) or not self.takeout_candle_id
         ):
-            if not isinstance(value, str) or not value:
-                raise QuarantineError(f"IDM requires {name}")
-        if self.takeout_candle_id is not None and (not isinstance(self.takeout_candle_id, str) or not self.takeout_candle_id):
             raise QuarantineError("invalid IDM takeout candle ID")
 
 
@@ -94,6 +161,8 @@ class RetracementQualification:
     reason: str
 
     def __post_init__(self) -> None:
+        if not isinstance(self.qualified, bool):
+            raise QuarantineError("qualification flag must be boolean")
         if not isinstance(self.depth, Decimal) or not self.depth.is_finite():
             raise QuarantineError("retracement depth requires finite Decimal")
         if self.opposing_candle_count < 0:
@@ -131,7 +200,12 @@ def _validate_inputs(candles: tuple[Candle, ...], minor: MinorStructureAnalysis)
         raise QuarantineError("duplicate candle IDs are not allowed")
     candle_ids = set(ids)
     for pb in minor.pullbacks:
-        if not {pb.reference_candle_id, pb.start_candle_id, pb.completion_candle_id, pb.extreme.source_candle_id} <= candle_ids:
+        if not {
+            pb.reference_candle_id,
+            pb.start_candle_id,
+            pb.completion_candle_id,
+            pb.extreme.source_candle_id,
+        } <= candle_ids:
             raise QuarantineError("Layer 2 provenance references unknown candle")
 
 
@@ -142,6 +216,7 @@ def _index(candles: tuple[Candle, ...]) -> dict[str, int]:
 def _pullback_idm(pb: CandleLevelValidPullback, idm_class: IDMClass) -> IDMEvent:
     return IDMEvent(
         idm_class=idm_class,
+        origin=IDMOrigin.PULLBACK_DERIVED,
         direction=pb.direction,
         reference_price=pb.extreme.price,
         source_candle_id=pb.extreme.source_candle_id,
@@ -150,7 +225,21 @@ def _pullback_idm(pb: CandleLevelValidPullback, idm_class: IDMClass) -> IDMEvent
     )
 
 
-def _takeout_after(candles: tuple[Candle, ...], start: int, pb: CandleLevelValidPullback) -> str | None:
+def _boundary_idm(boundary: ProtectedExternalBoundary) -> IDMEvent:
+    return IDMEvent(
+        idm_class=IDMClass.MAJOR_IDM,
+        origin=IDMOrigin.PROTECTED_EXTERNAL_BOUNDARY,
+        direction=boundary.direction,
+        reference_price=boundary.price,
+        source_candle_id=boundary.source_candle_id,
+    )
+
+
+def _takeout_after(
+    candles: tuple[Candle, ...],
+    start: int,
+    pb: CandleLevelValidPullback,
+) -> str | None:
     level = ExtremeReference(pb.extreme.price, pb.extreme.source_candle_id, "PULLBACK_EXTREME")
     direction = Direction.DOWN if pb.direction is PullbackDirection.BULLISH else Direction.UP
     for candle in candles[start + 1 :]:
@@ -162,23 +251,40 @@ def _takeout_after(candles: tuple[Candle, ...], start: int, pb: CandleLevelValid
 def classify_idm(
     minor: MinorStructureAnalysis,
     *,
-    post_bos_pullback_ids: frozenset[str] = frozenset(),
+    lifecycle: IDMLifecycleContext | None = None,
 ) -> tuple[IDMEvent, ...]:
-    """Classify Layer-2 pullback liquidity references as Minor or Major IDM.
+    """Classify Layer-2 references and advance the Layer-3 IDM lifecycle.
 
-    A pullback is Major IDM after BOS only when the caller explicitly supplies
-    source-backed post-BOS structural qualification for that pullback. Otherwise
-    pullback-derived IDM is Minor IDM. No fallback/proxy IDM ontology is made.
+    Before VALID_BOS every pullback-derived IDM is Minor. After VALID_BOS,
+    the newest qualifying post-BOS Layer-2 pullback becomes Major IDM.
+    If no new pullback exists, the previous Major IDM remains active; if none
+    exists, the protected external boundary becomes Major IDM. No caller-
+    supplied pullback ID can select the Major IDM.
     """
-    if not isinstance(post_bos_pullback_ids, frozenset):
-        post_bos_pullback_ids = frozenset(post_bos_pullback_ids)
-    return tuple(
-        _pullback_idm(
-            pb,
-            IDMClass.MAJOR_IDM if pb.completion_candle_id in post_bos_pullback_ids else IDMClass.MINOR_IDM,
-        )
+    if not isinstance(minor, MinorStructureAnalysis):
+        raise QuarantineError("Layer 3 requires Layer 2 MinorStructureAnalysis")
+    if lifecycle is not None and not isinstance(lifecycle, IDMLifecycleContext):
+        raise QuarantineError("invalid IDM lifecycle context")
+
+    pullback_events = [
+        _pullback_idm(pb, IDMClass.MINOR_IDM)
         for pb in minor.pullbacks
-    )
+    ]
+    if lifecycle is None or not lifecycle.after_valid_bos:
+        return tuple(pullback_events)
+
+    if pullback_events:
+        pullback_events[-1] = _pullback_idm(
+            minor.pullbacks[-1], IDMClass.MAJOR_IDM
+        )
+        return tuple(pullback_events)
+
+    if lifecycle.previous_major_idm is not None:
+        if lifecycle.previous_major_idm.idm_class is not IDMClass.MAJOR_IDM:
+            raise QuarantineError("previous active IDM must be Major IDM")
+        return (lifecycle.previous_major_idm,)
+
+    return (_boundary_idm(lifecycle.protected_external_boundary),)
 
 
 def qualify_retracement(
@@ -190,14 +296,14 @@ def qualify_retracement(
     htf_valid_pullback: bool = False,
     attempt_end_candle_id: str | None = None,
 ) -> RetracementQualification:
-    """Evaluate Layer-3 retracement gates without implementing BOS.
-
-    The dealing-range boundaries and HTF evidence are explicit inputs. Missing
-    evidence is therefore not repaired or inferred.
-    """
+    """Evaluate Layer-3 retracement gates without implementing BOS."""
     if not isinstance(range_high, Decimal) or not isinstance(range_low, Decimal):
         raise QuarantineError("range boundaries require Decimal")
-    if not range_high.is_finite() or not range_low.is_finite() or range_high <= range_low:
+    if (
+        not range_high.is_finite()
+        or not range_low.is_finite()
+        or range_high <= range_low
+    ):
         raise QuarantineError("invalid dealing-range boundaries")
     if not isinstance(htf_valid_pullback, bool):
         raise QuarantineError("HTF valid-pullback evidence must be explicit boolean")
@@ -207,8 +313,13 @@ def qualify_retracement(
         raise QuarantineError("swing confirmation candle is absent")
     start = idx[swing.confirmation_candle_id]
     end = idx[attempt_end_candle_id] if attempt_end_candle_id is not None else len(candles) - 1
+    if attempt_end_candle_id is not None and attempt_end_candle_id not in idx:
+        raise QuarantineError("retracement attempt-end candle is absent")
     if end <= start:
-        return RetracementQualification(False, Decimal("0"), 0, htf_valid_pullback, False, "NO_POST_CONFIRMATION_RETRACEMENT")
+        return RetracementQualification(
+            False, Decimal("0"), 0, htf_valid_pullback, False,
+            "NO_POST_CONFIRMATION_RETRACEMENT",
+        )
 
     window = candles[start + 1 : end + 1]
     if swing.direction is PullbackDirection.BULLISH:
@@ -222,19 +333,41 @@ def qualify_retracement(
 
     if depth >= STANDARD_EQUILIBRIUM_THRESHOLD:
         if opposing >= NORMAL_RETRACEMENT_CANDLE_COUNT:
-            return RetracementQualification(True, depth, opposing, htf_valid_pullback, False, "STANDARD_EQUILIBRIUM")
-        if opposing >= MIN_RETRACEMENT_CANDLE_COUNT and _outlier_condition(window, swing.direction, candles):
-            return RetracementQualification(True, depth, opposing, htf_valid_pullback, True, "REDUCED_CANDLE_DISPLACEMENT")
+            return RetracementQualification(
+                True, depth, opposing, htf_valid_pullback, False,
+                "STANDARD_EQUILIBRIUM",
+            )
+        if opposing >= MIN_RETRACEMENT_CANDLE_COUNT and _outlier_condition(
+            window, swing.direction, candles
+        ):
+            return RetracementQualification(
+                True, depth, opposing, htf_valid_pullback, True,
+                "REDUCED_CANDLE_DISPLACEMENT",
+            )
         if len(window) == 1 and _outlier_condition(window, swing.direction, candles):
-            return RetracementQualification(True, depth, opposing, htf_valid_pullback, True, "ONE_CANDLE_DISPLACEMENT_OUTLIER")
-        return RetracementQualification(False, depth, opposing, htf_valid_pullback, False, "INSUFFICIENT_CANDLE_STRUCTURE")
+            return RetracementQualification(
+                True, depth, opposing, htf_valid_pullback, True,
+                "ONE_CANDLE_DISPLACEMENT_OUTLIER",
+            )
+        return RetracementQualification(
+            False, depth, opposing, htf_valid_pullback, False,
+            "INSUFFICIENT_CANDLE_STRUCTURE",
+        )
 
     if HTF_CONDITIONAL_THRESHOLD <= depth < STANDARD_EQUILIBRIUM_THRESHOLD:
         if htf_valid_pullback:
-            return RetracementQualification(True, depth, opposing, True, False, "HTF_VALID_PULLBACK")
-        return RetracementQualification(False, depth, opposing, False, False, "HTF_PULLBACK_EVIDENCE_REQUIRED")
+            return RetracementQualification(
+                True, depth, opposing, True, False, "HTF_VALID_PULLBACK"
+            )
+        return RetracementQualification(
+            False, depth, opposing, False, False,
+            "HTF_PULLBACK_EVIDENCE_REQUIRED",
+        )
 
-    return RetracementQualification(False, depth, opposing, htf_valid_pullback, False, "BELOW_CONDITIONAL_THRESHOLD")
+    return RetracementQualification(
+        False, depth, opposing, htf_valid_pullback, False,
+        "BELOW_CONDITIONAL_THRESHOLD",
+    )
 
 
 def _outlier_condition(
@@ -244,16 +377,24 @@ def _outlier_condition(
 ) -> bool:
     if not window:
         return False
-    exceptional = max(window, key=lambda c: (c.high - c.low))
-    exceptional_index = next(i for i, c in enumerate(all_candles) if c.candle_id == exceptional.candle_id)
+    exceptional = max(window, key=lambda c: c.high - c.low)
+    exceptional_index = next(
+        i for i, c in enumerate(all_candles) if c.candle_id == exceptional.candle_id
+    )
     preceding = list(all_candles[:exceptional_index])
     if len(preceding) < MIN_OUTLIER_EXTREMES_TAKEN:
         return False
     if direction is PullbackDirection.BULLISH:
         extreme = exceptional.low
-        return sum(extreme < c.low or extreme < min(c.open, c.close) for c in preceding) >= MIN_OUTLIER_EXTREMES_TAKEN
+        return sum(
+            extreme < c.low or extreme < min(c.open, c.close)
+            for c in preceding
+        ) >= MIN_OUTLIER_EXTREMES_TAKEN
     extreme = exceptional.high
-    return sum(extreme > c.high or extreme > max(c.open, c.close) for c in preceding) >= MIN_OUTLIER_EXTREMES_TAKEN
+    return sum(
+        extreme > c.high or extreme > max(c.open, c.close)
+        for c in preceding
+    ) >= MIN_OUTLIER_EXTREMES_TAKEN
 
 
 def analyze_layer3(
@@ -263,23 +404,33 @@ def analyze_layer3(
     range_high: Decimal | None = None,
     range_low: Decimal | None = None,
     htf_valid_pullback: bool = False,
-    post_bos_pullback_ids: frozenset[str] = frozenset(),
+    lifecycle: IDMLifecycleContext | None = None,
     attempt_end_candle_id: str | None = None,
 ) -> StructuralAnalysis:
     sequence = tuple(candles)
     _validate_inputs(sequence, minor)
-    idms = classify_idm(minor, post_bos_pullback_ids=post_bos_pullback_ids)
+    idms = classify_idm(minor, lifecycle=lifecycle)
     if not idms:
         return StructuralAnalysis((), (), None, None, StructuralResolution.NO_EVIDENCE)
 
     positions = _index(sequence)
     taken_events: list[IDMEvent] = []
     confirmed: list[ConfirmedStructuralSwing] = []
+
     for idm in idms:
-        pb = next(pb for pb in minor.pullbacks if pb.completion_candle_id == idm.pullback_completion_candle_id)
-        takeout = _takeout_after(sequence, positions[pb.completion_candle_id], pb)
+        if idm.origin is not IDMOrigin.PULLBACK_DERIVED:
+            taken_events.append(idm)
+            continue
+        pb = next(
+            pb for pb in minor.pullbacks
+            if pb.completion_candle_id == idm.pullback_completion_candle_id
+        )
+        takeout = _takeout_after(
+            sequence, positions[pb.completion_candle_id], pb
+        )
         updated = IDMEvent(
             idm.idm_class,
+            idm.origin,
             idm.direction,
             idm.reference_price,
             idm.source_candle_id,
@@ -290,7 +441,11 @@ def analyze_layer3(
         taken_events.append(updated)
         if takeout is not None:
             ref_candle = sequence[positions[idm.pullback_reference_candle_id]]
-            swing_price = ref_candle.high if idm.direction is PullbackDirection.BULLISH else ref_candle.low
+            swing_price = (
+                ref_candle.high
+                if idm.direction is PullbackDirection.BULLISH
+                else ref_candle.low
+            )
             confirmed.append(
                 ConfirmedStructuralSwing(
                     idm.direction,
@@ -302,14 +457,28 @@ def analyze_layer3(
             )
 
     active = taken_events[-1]
+    if active.origin is not IDMOrigin.PULLBACK_DERIVED:
+        return StructuralAnalysis(
+            tuple(taken_events), tuple(confirmed), None, active,
+            StructuralResolution.IDM_ACTIVE,
+        )
     if active.takeout_candle_id is None:
-        return StructuralAnalysis(tuple(taken_events), tuple(confirmed), None, active, StructuralResolution.IDM_ACTIVE)
+        return StructuralAnalysis(
+            tuple(taken_events), tuple(confirmed), None, active,
+            StructuralResolution.IDM_ACTIVE,
+        )
 
-    swing = next((s for s in reversed(confirmed) if s.confirmation_candle_id == active.takeout_candle_id), None)
+    swing = next(
+        (s for s in reversed(confirmed) if s.confirmation_candle_id == active.takeout_candle_id),
+        None,
+    )
     if swing is None:
         raise QuarantineError("IDM takeout has no confirmed structural swing")
     if range_high is None or range_low is None:
-        return StructuralAnalysis(tuple(taken_events), tuple(confirmed), None, active, StructuralResolution.IDM_TAKEN)
+        return StructuralAnalysis(
+            tuple(taken_events), tuple(confirmed), None, active,
+            StructuralResolution.IDM_TAKEN,
+        )
 
     qualification = qualify_retracement(
         sequence,
@@ -319,13 +488,32 @@ def analyze_layer3(
         htf_valid_pullback=htf_valid_pullback,
         attempt_end_candle_id=attempt_end_candle_id,
     )
-    resolution = StructuralResolution.RETRACEMENT_QUALIFIED if qualification.qualified else StructuralResolution.RETRACEMENT_INSUFFICIENT
-    return StructuralAnalysis(tuple(taken_events), tuple(confirmed), qualification, active, resolution)
+    resolution = (
+        StructuralResolution.RETRACEMENT_QUALIFIED
+        if qualification.qualified
+        else StructuralResolution.RETRACEMENT_INSUFFICIENT
+    )
+    return StructuralAnalysis(
+        tuple(taken_events), tuple(confirmed), qualification, active, resolution
+    )
 
 
 __all__ = [
-    "ConfirmedStructuralSwing", "HTF_CONDITIONAL_THRESHOLD", "IDMClass", "IDMEvent",
-    "MIN_OUTLIER_EXTREMES_TAKEN", "MIN_RETRACEMENT_CANDLE_COUNT",
-    "NORMAL_RETRACEMENT_CANDLE_COUNT", "RetracementQualification", "STANDARD_EQUILIBRIUM_THRESHOLD",
-    "StructuralAnalysis", "StructuralResolution", "analyze_layer3", "classify_idm", "qualify_retracement",
+    "ConfirmedStructuralSwing",
+    "HTF_CONDITIONAL_THRESHOLD",
+    "IDMClass",
+    "IDMEvent",
+    "IDMLifecycleContext",
+    "IDMOrigin",
+    "MIN_OUTLIER_EXTREMES_TAKEN",
+    "MIN_RETRACEMENT_CANDLE_COUNT",
+    "NORMAL_RETRACEMENT_CANDLE_COUNT",
+    "ProtectedExternalBoundary",
+    "RetracementQualification",
+    "STANDARD_EQUILIBRIUM_THRESHOLD",
+    "StructuralAnalysis",
+    "StructuralResolution",
+    "analyze_layer3",
+    "classify_idm",
+    "qualify_retracement",
 ]
