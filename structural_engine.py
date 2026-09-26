@@ -301,10 +301,9 @@ def classify_idm(
     """Classify Layer-2 references and advance the Layer-3 IDM lifecycle.
 
     Before VALID_BOS every pullback-derived IDM is Minor. After VALID_BOS,
-    the newest qualifying post-BOS Layer-2 pullback becomes Major IDM.
-    If no new pullback exists, the prior protected external boundary remains
-    Major IDM. No caller-
-    supplied pullback ID can select the Major IDM.
+    a post-BOS pullback remains Minor unless explicit Major-IDM qualification
+    evidence exists. If no new Major IDM is qualified, the prior protected
+    external boundary remains Major IDM.
     """
     if not isinstance(minor, MinorStructureAnalysis):
         raise QuarantineError("Layer 3 requires Layer 2 MinorStructureAnalysis")
@@ -419,7 +418,7 @@ def qualify_retracement(
         if len(window) in (1, 2) and _outlier_condition(window, swing.direction, candles):
             return RetracementQualification(
                 True, depth, opposing, htf_valid_pullback, True,
-                "ONE_CANDLE_DISPLACEMENT_OUTLIER",
+                "REDUCED_DISPLACEMENT_EXCEPTION",
             )
         return RetracementQualification(
             False, depth, opposing, htf_valid_pullback, False,
