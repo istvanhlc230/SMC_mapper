@@ -1323,3 +1323,48 @@ Audit scope: all canonical skill layers 01–08 and cross-layer semantic ownersh
 **FULL 01–08 CANONICAL SKILL AUDIT: PASS after correction.**
 
 The corrected Layer-5 wording is committed directly to `main`; no separate feature branch is required.
+
+
+## FULL 01–08 SKILL AUDIT — TERMINOLOGY / SEMANTIC CONSISTENCY PASS — 2026-09-26
+
+### Scope
+- Audited the complete canonical .agents/skills/smc/ 01–08 layer set plus skill.md against the current canonical semantic-owner architecture.
+- Canonical authority remains .agents/skills/smc/; knowledgebase remains source evidence and was not modified.
+- Runtime files and analyzed data remain outside this phase.
+
+### Audit result
+- Layer 1 remains pure Microstructure/OHLC geometry and observation ownership; no Pullback/IDM/BOS/CHoCH ownership leakage found.
+- Layer 2 remains the exclusive owner of Candle-Level Valid Pullback, Verified Pullback Extreme, active pullback state, Pullback-Derived Liquidity Reference, and Minor IDM formation. Outside-Bar UNAVAILABLE ordering is terminal for the affected candidate and cannot be retroactively completed.
+- Layer 3 remains the exclusive Major / External Structure authority. IDM_TAKEN confirms CONFIRMED_STRUCTURAL_SWING; retracement qualification is a later continuation-BOS gate. Major IDM remains one semantic class; a post-BOS Minor IDM never replaces the prior protected external boundary unless a new Major IDM independently qualifies.
+- Layer 3 retracement gates remain hierarchical: standard equilibrium path first; below-equilibrium HTF path only with the complete immediate-HTF valid-pullback condition; one-candle displacement is an explicit source-defined exception and not a general one-candle rule.
+- Layer 4 consumes Layer-3 qualification and canonical CONFIRMED_STRUCTURAL_SWING; it does not recalculate retracement depth, candle count, displacement thresholds, or HTF validity.
+- Layer 5 CHoCH remains context/fractal-based. LTF Structural Glitch substitutes the operative reference only within its context; IDM provenance controls wick/body mode. It does not promote Minor Structure into Major Structure.
+- Layer 6 execution remains downstream-only. POI, OF/OB, Engineering Liquidity, Rejection Block, and entry modules do not manufacture structure. Decisional OB remains causally tied to VALID_BOS; Extreme OB remains lineage-scoped.
+- Layer 7 contains no universal target winner, fixed-R, BE, profit-lock, or trailing methodology rule. Target Plan and trade management remain downstream policy/implementation concerns.
+- Layer 8 remains implementation mapping only and preserves layer-specific semantic types; it does not redefine canonical methodology.
+
+### Corrections applied
+1. Replaced residual macro-state terminology in Layer 3 with canonical Major / External structural state.
+2. Replaced residual macro structural continuation event in Layer 4 with Major / External structural continuation event.
+3. Clarified Layer-4 generic-type wording so Swing/Break remain prohibited as unqualified semantic types while canonical names remain authoritative.
+4. Removed obsolete fallback Major IDM terminology from the active Layer-8 contract; the model now describes one MajorIDM semantic class with traceable provenance and prior-protected-boundary continuity.
+5. Replaced residual macro-BOS gates terminology with Major / External BOS gates.
+
+### Post-edit stale-term audit
+- No active FALLBACK_MAJOR_IDM, REAL_MAJOR_IDM, Real Major IDM, or fallback Major IDM terminology remains in 01–08/skill index.
+- No residual macro namespace remains in the audited 01–08/skill index.
+- No unqualified generic Swing/Break implementation type remains in the audited canonical contract wording.
+- The one-candle displacement exception remains explicitly scoped to the canonical Layer-3 retracement exception and is not generalized.
+- Outside-Bar UNAVAILABLE handling remains explicitly represented in Layer 1/2/8.
+
+### Validation disposition
+01–08 CANONICAL SKILL AUDIT = PASS after corrections.
+No unresolved cross-layer semantic contradiction was identified in this pass.
+
+### Repository state
+- All changes were written directly to main; no feature branch was created.
+- Existing legacy branch feature/upstream-structural-evidence-contract-v1 is still visible on GitHub, but the available GitHub connector exposes branch search/create only and no branch-delete operation. It therefore could not be deleted through the currently available interface.
+- No runtime Mapper integration was performed.
+
+### Next phase gate
+The canonical skill is ready for the next isolated implementation phase. Continue with the next layer only after its implementation/tests pass and receive explicit approval. Mapper integration remains deferred until the layer stack is approved.
