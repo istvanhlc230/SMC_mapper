@@ -117,7 +117,7 @@ def test_later_clean_candle_cannot_revive_outside_bar_start_candidate():
     assert result.resolution is minor.PullbackResolution.INVALIDATED_UNAVAILABLE_SEQUENCE
 
 
-def test_later_outside_bar_does_not_block_a_subsequent_observable_completion():
+def test_later_observable_completion_cannot_resolve_invalidated_outside_completion():
     candles = (
         c("r", "5", "10", "2", "9"),
         c("cont", "9", "11", "3", "10"),
@@ -126,10 +126,12 @@ def test_later_outside_bar_does_not_block_a_subsequent_observable_completion():
         c("done", "7", "11", "4", "9.5"),
     )
     result = minor.detect_valid_pullbacks(candles, minor.PullbackDirection.BULLISH)
-    assert len(result.pullbacks) == 1
-    assert result.pullbacks[0].completion_candle_id == "done"
+    assert result.pullbacks == ()
     assert result.pending == ()
-    assert result.resolution is minor.PullbackResolution.CONFIRMED
+    assert len(result.invalidated) == 1
+    assert result.invalidated[0].start_candle_id == "pb1"
+    assert result.invalidated[0].reference_candle_id == "r"
+    assert result.resolution is minor.PullbackResolution.INVALIDATED_UNAVAILABLE_SEQUENCE
 
 
 def test_newer_completed_pullback_becomes_active():
@@ -268,19 +270,21 @@ def test_reference_touch_is_not_a_pullback_takeout():
 
 
 
-def test_pending_latest_state_overrides_historical_confirmation():
+def test_invalidated_latest_state_overrides_historical_confirmation():
     candles = (
         c("r", "5", "10", "2", "9"),
         c("cont", "9", "11", "3", "10"),
         c("pb1", "9", "9.5", "1", "8"),
         c("done", "8", "11", "4", "10"),
-        c("outside_pending", "10", "12", "1", "7"),
+        c("outside_invalidated", "10", "12", "1", "7"),
     )
     result = minor.detect_valid_pullbacks(candles, minor.PullbackDirection.BULLISH)
     assert len(result.pullbacks) == 1
     assert result.active.pullback is result.pullbacks[0]
-    assert len(result.pending) == 1
-    assert result.resolution is minor.PullbackResolution.PENDING_UNAVAILABLE_SEQUENCE
+    assert result.pending == ()
+    assert len(result.invalidated) == 1
+    assert result.invalidated[0].start_candle_id == "outside_invalidated"
+    assert result.resolution is minor.PullbackResolution.INVALIDATED_UNAVAILABLE_SEQUENCE
 
 
 def test_layer2_exports_only_minor_structure_contract():
