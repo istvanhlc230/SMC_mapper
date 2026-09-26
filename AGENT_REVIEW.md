@@ -719,3 +719,16 @@ Commits:
 - 5498edd — Layer-2 regression tests
 - 016acbf — Layer-2 EQH/EQL fixture correction
 - 6909e89 — Layer-2 canonical documentation synchronization
+
+
+### Final edge-case correction — 2026-09-26
+A final Layer-2 audit pass identified one same-candle boundary condition in EQH/EQL transfer:
+- the candle that receives the new Layer-1 high/low reference cannot simultaneously be treated as taking its own newly established reference extreme;
+- pullback takeout evaluation therefore begins on the following candle.
+
+Implemented and regression-tested for both bullish EQH and bearish EQL paths.
+
+Additional commits:
+- 34644bf — same-candle self-takeout prevention in Layer 2
+- d67d5ac — EQH/EQL same-candle regression tests
+- 88e60d5 — canonical Layer-2 documentation synchronization
