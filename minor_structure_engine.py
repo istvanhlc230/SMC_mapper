@@ -1,10 +1,11 @@
 """Layer 2 sequential/minor-structure engine.
 
-Consumes only Layer 1 candle observations and owns:
+Layer 2 consumes only Layer 1 candle observations and owns:
 - Candle-Level Valid Pullback formation
 - Verified Pullback Extreme
 - pullback-derived liquidity reference
 - active pullback pointer
+- explicit unresolved/pending state when Layer 1 sequence evidence is unavailable
 
 It does not define or implement IDM, BOS, CHoCH, POI, or structural retracement.
 """
@@ -16,14 +17,9 @@ from enum import Enum
 
 from microstructure_engine import (
     Candle,
-    Direction,
-    ExtremeReference,
     QuarantineError,
     SequenceStatus,
     outside_bar,
-    classify_breach,
-    candle_trend,
-    TrendDirection,
 )
 
 
@@ -35,6 +31,12 @@ class PullbackDirection(str, Enum):
 class LiquiditySide(str, Enum):
     SELL_SIDE = "SELL_SIDE"
     BUY_SIDE = "BUY_SIDE"
+
+
+class PullbackResolution(str, Enum):
+    NONE = "NONE"
+    CONFIRMED = "CONFIRMED"
+    PENDING_UNAVAILABLE_SEQUENCE = "PENDING_UNAVAILABLE_SEQUENCE"
 
 
 @dataclass(frozen=True, slots=True)
@@ -100,6 +102,26 @@ class CandleLevelValidPullback:
 
 
 @dataclass(frozen=True, slots=True)
+class PendingPullback:
+    direction: PullbackDirection
+    reference_candle_id: str
+    start_candle_id: str
+    reason: PullbackResolution
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.direction, PullbackDirection):
+            raise QuarantineError("invalid pending pullback direction")
+        for value, name in (
+            (self.reference_candle_id, "reference_candle_id"),
+            (self.start_candle_id, "start_candle_id"),
+        ):
+            if not isinstance(value, str) or not value:
+                raise QuarantineError(f"pending pullback requires {name}")
+        if self.reason is not PullbackResolution.PENDING_UNAVAILABLE_SEQUENCE:
+            raise QuarantineError("pending pullback requires unavailable-sequence reason")
+
+
+@dataclass(frozen=True, slots=True)
 class ActivePullbackState:
     pullback: CandleLevelValidPullback | None
 
@@ -112,12 +134,24 @@ class ActivePullbackState:
 class MinorStructureAnalysis:
     pullbacks: tuple[CandleLevelValidPullback, ...]
     active: ActivePullbackState
+    pending: tuple[PendingPullback, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "pullbacks", tuple(self.pullbacks))
+        object.__setattr__(self, "pending", tuple(self.pending))
         if self.pullbacks:
             if self.active.pullback is not self.pullbacks[-1]:
                 raise QuarantineError("active pullback must be the newest completed pullback")
+        if any(not isinstance(p, PendingPullback) for p in self.pending):
+            raise QuarantineError("pending state must contain only PendingPullback objects")
+
+    @property
+    def resolution(self) -> PullbackResolution:
+        if self.pullbacks:
+            return PullbackResolution.CONFIRMED
+        if self.pending:
+            return PullbackResolution.PENDING_UNAVAILABLE_SEQUENCE
+        return PullbackResolution.NONE
 
 
 def _validate_candles(candles: tuple[Candle, ...]) -> None:
@@ -128,31 +162,35 @@ def _validate_candles(candles: tuple[Candle, ...]) -> None:
         raise QuarantineError("duplicate candle IDs are not allowed")
 
 
-def _reference_is_bullish_continuation(reference: Candle, next_candle: Candle) -> bool:
-    return reference.close > reference.open and candle_trend(reference, next_candle).direction is TrendDirection.BULLISH
+def _is_bullish(candle: Candle) -> bool:
+    return candle.close > candle.open
 
 
-def _reference_is_bearish_continuation(reference: Candle, next_candle: Candle) -> bool:
-    return reference.close < reference.open and candle_trend(reference, next_candle).direction is TrendDirection.BEARISH
+def _is_bearish(candle: Candle) -> bool:
+    return candle.close < candle.open
 
 
-def _reference_breach(candle: Candle, reference: Candle, direction: Direction) -> bool:
-    level = reference.low if direction is Direction.DOWN else reference.high
-    role = "REFERENCE_LOW" if direction is Direction.DOWN else "REFERENCE_HIGH"
-    observation = classify_breach(
-        candle,
-        ExtremeReference(level, reference.candle_id, role),
-        direction,
-    )
-    return observation.is_break
-
-
-def _ambiguous_outside_bar(candle: Candle, reference: Candle) -> bool:
-    """Return True when Layer 1 reports Outside Bar sequence as unavailable."""
+def _outside_sequence_unavailable(candle: Candle, reference: Candle) -> bool:
     observation = outside_bar(candle, reference)
     return (
         observation is not None
         and observation.sequence_evidence.status is SequenceStatus.UNAVAILABLE
+    )
+
+
+def _bullish_continuation(candle: Candle, reference: Candle) -> bool:
+    return (
+        _is_bullish(candle)
+        and candle.high > reference.high
+        and candle.low >= reference.low
+    )
+
+
+def _bearish_continuation(candle: Candle, reference: Candle) -> bool:
+    return (
+        _is_bearish(candle)
+        and candle.low < reference.low
+        and candle.high <= reference.high
     )
 
 
@@ -189,12 +227,20 @@ def detect_valid_pullbacks(
     candles: list[Candle] | tuple[Candle, ...],
     direction: PullbackDirection,
 ) -> MinorStructureAnalysis:
-    """Detect completed candle-level pullbacks from an ordered OHLC sequence.
+    """Detect completed Layer-2 candle-level valid pullbacks.
 
-    A same-candle takeout-and-completion requires historical intrabar ordering.
-    Aggregate OHLC Outside Bars expose that ordering as UNAVAILABLE in Layer 1,
-    so such a candle cannot by itself confirm either side of the ordered event;
-    the candidate remains open for a later, independently observable completion.
+    The engine is stateful over the ordered OHLC sequence:
+    1. establish the applicable previous bullish/bearish reference candle from
+       a confirmed candle-level continuation;
+    2. require the reference extreme to be taken first;
+    3. keep the same reference while the pullback is open;
+    4. require the same reference's opposing extreme to be broken after the
+       pullback starts;
+    5. when aggregate OHLC cannot prove the required intrabar order for an
+       Outside Bar, keep the candidate explicitly pending rather than
+       manufacturing an order.
+
+    Layer-2 does not reinterpret UNAVAILABLE as OBSERVED or ASSUMED.
     """
     sequence = tuple(candles)
     _validate_candles(sequence)
@@ -204,56 +250,114 @@ def detect_valid_pullbacks(
         return MinorStructureAnalysis((), ActivePullbackState(None))
 
     completed: list[CandleLevelValidPullback] = []
+    pending: list[PendingPullback] = []
+    reference: Candle | None = None
+    start_index: int | None = None
+    start_pending = False
 
-    for ref_index in range(len(sequence) - 1):
-        reference = sequence[ref_index]
-        continuation = sequence[ref_index + 1]
+    for i, candle in enumerate(sequence[1:], start=1):
+        previous = sequence[i - 1]
 
-        if direction is PullbackDirection.BULLISH:
-            if not _reference_is_bullish_continuation(reference, continuation):
+        if reference is None:
+            if (
+                direction is PullbackDirection.BULLISH
+                and _bullish_continuation(candle, previous)
+            ) or (
+                direction is PullbackDirection.BEARISH
+                and _bearish_continuation(candle, previous)
+            ):
+                reference = previous
+            continue
+
+        if start_index is None:
+            took_reference_extreme = (
+                candle.low < reference.low
+                if direction is PullbackDirection.BULLISH
+                else candle.high > reference.high
+            )
+
+            if took_reference_extreme:
+                start_index = i
+                start_pending = _outside_sequence_unavailable(candle, reference)
+                if start_pending:
+                    pending.append(
+                        PendingPullback(
+                            direction,
+                            reference.candle_id,
+                            candle.candle_id,
+                            PullbackResolution.PENDING_UNAVAILABLE_SEQUENCE,
+                        )
+                    )
                 continue
-            start_index = None
-            for i in range(ref_index + 1, len(sequence)):
-                low_taken = _reference_breach(sequence[i], reference, Direction.DOWN)
-                high_broken = _reference_breach(sequence[i], reference, Direction.UP)
-                if start_index is None:
-                    if low_taken:
-                        # Aggregate Outside Bar cannot prove low-before-high.
-                        if high_broken and _ambiguous_outside_bar(sequence[i], reference):
-                            continue
-                        start_index = i
-                    continue
-                if high_broken:
-                    # A completion candle that is also an Outside Bar can
-                    # breach both reference extremes, but OHLC cannot prove
-                    # that the low was reached before the high. Do not infer
-                    # the required pullback->reversal order.
-                    if _ambiguous_outside_bar(sequence[i], reference):
-                        continue
-                    completed.append(_build_pullback(direction, reference, start_index, i, sequence))
-                    break
+
+            if (
+                direction is PullbackDirection.BULLISH
+                and _bullish_continuation(candle, reference)
+            ) or (
+                direction is PullbackDirection.BEARISH
+                and _bearish_continuation(candle, reference)
+            ):
+                reference = candle
+            continue
+
+        completion_breach = (
+            candle.high > reference.high
+            if direction is PullbackDirection.BULLISH
+            else candle.low < reference.low
+        )
+
+        if not completion_breach:
+            continue
+
+        completion_ambiguous = _outside_sequence_unavailable(candle, reference)
+        if completion_ambiguous:
+            start_pending = True
+            pending.append(
+                PendingPullback(
+                    direction,
+                    reference.candle_id,
+                    sequence[start_index].candle_id,
+                    PullbackResolution.PENDING_UNAVAILABLE_SEQUENCE,
+                )
+            )
+            continue
+
+        completed.append(
+            _build_pullback(direction, reference, start_index, i, sequence)
+        )
+        start_index = None
+        start_pending = False
+
+        # The completion candle becomes the next reference only when it is a
+        # bullish/bearish candle in the prevailing direction. Otherwise the
+        # next qualifying directional continuation establishes the next
+        # reference. This mirrors the source definition's "previous bullish /
+        # previous bearish candle" wording without inventing a pivot.
+        if (
+            direction is PullbackDirection.BULLISH
+            and _is_bullish(candle)
+        ) or (
+            direction is PullbackDirection.BEARISH
+            and _is_bearish(candle)
+        ):
+            reference = candle
         else:
-            if not _reference_is_bearish_continuation(reference, continuation):
-                continue
-            start_index = None
-            for i in range(ref_index + 1, len(sequence)):
-                high_taken = _reference_breach(sequence[i], reference, Direction.UP)
-                low_broken = _reference_breach(sequence[i], reference, Direction.DOWN)
-                if start_index is None:
-                    if high_taken:
-                        if low_broken and _ambiguous_outside_bar(sequence[i], reference):
-                            continue
-                        start_index = i
-                    continue
-                if low_broken:
-                    if _ambiguous_outside_bar(sequence[i], reference):
-                        continue
-                    completed.append(_build_pullback(direction, reference, start_index, i, sequence))
-                    break
+            reference = None
 
-    completed.sort(key=lambda p: sequence.index(next(c for c in sequence if c.candle_id == p.completion_candle_id)))
+    # A pending candidate is meaningful only if it is still unresolved.
+    # Remove stale pending records once a later observable completion confirms
+    # the same candidate.
+    unresolved: list[PendingPullback] = []
+    completed_keys = {
+        (p.reference_candle_id, p.start_candle_id)
+        for p in completed
+    }
+    for p in pending:
+        if (p.reference_candle_id, p.start_candle_id) not in completed_keys:
+            unresolved.append(p)
+
     active = ActivePullbackState(completed[-1] if completed else None)
-    return MinorStructureAnalysis(tuple(completed), active)
+    return MinorStructureAnalysis(tuple(completed), active, tuple(unresolved))
 
 
 __all__ = [
@@ -261,8 +365,10 @@ __all__ = [
     "CandleLevelValidPullback",
     "LiquiditySide",
     "MinorStructureAnalysis",
+    "PendingPullback",
     "PullbackDerivedLiquidityReference",
     "PullbackDirection",
+    "PullbackResolution",
     "VerifiedPullbackExtreme",
     "detect_valid_pullbacks",
 ]
