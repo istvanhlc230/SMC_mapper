@@ -154,10 +154,13 @@ class MinorStructureAnalysis:
 
     @property
     def resolution(self) -> PullbackResolution:
-        if self.pullbacks:
-            return PullbackResolution.CONFIRMED
+        # Resolution describes the latest unresolved/confirmed state, not
+        # whether historical pullbacks exist. A newer pending candidate must
+        # therefore take precedence over older completed pullbacks.
         if self.pending:
             return PullbackResolution.PENDING_UNAVAILABLE_SEQUENCE
+        if self.pullbacks:
+            return PullbackResolution.CONFIRMED
         return PullbackResolution.NONE
 
 
