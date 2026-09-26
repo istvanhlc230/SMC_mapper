@@ -180,7 +180,7 @@ def _outside_sequence_unavailable(candle: Candle, reference: Candle) -> bool:
 
 def _bullish_continuation(candle: Candle, reference: Candle) -> bool:
     return (
-        _is_bullish(candle)
+        _is_bullish(reference)
         and candle.high > reference.high
         and candle.low >= reference.low
     )
@@ -188,7 +188,7 @@ def _bullish_continuation(candle: Candle, reference: Candle) -> bool:
 
 def _bearish_continuation(candle: Candle, reference: Candle) -> bool:
     return (
-        _is_bearish(candle)
+        _is_bearish(reference)
         and candle.low < reference.low
         and candle.high <= reference.high
     )
@@ -253,7 +253,6 @@ def detect_valid_pullbacks(
     pending: list[PendingPullback] = []
     reference: Candle | None = None
     start_index: int | None = None
-    start_pending = False
 
     for i, candle in enumerate(sequence[1:], start=1):
         previous = sequence[i - 1]
@@ -278,8 +277,7 @@ def detect_valid_pullbacks(
 
             if took_reference_extreme:
                 start_index = i
-                start_pending = _outside_sequence_unavailable(candle, reference)
-                if start_pending:
+                if _outside_sequence_unavailable(candle, reference):
                     pending.append(
                         PendingPullback(
                             direction,
@@ -311,7 +309,6 @@ def detect_valid_pullbacks(
 
         completion_ambiguous = _outside_sequence_unavailable(candle, reference)
         if completion_ambiguous:
-            start_pending = True
             pending.append(
                 PendingPullback(
                     direction,
@@ -342,7 +339,11 @@ def detect_valid_pullbacks(
         ):
             reference = candle
         else:
-            reference = None
+            # The same previous directional candle remains the applicable
+            # reference until a new directional continuation establishes a
+            # newer reference. Completion by a non-directional candle does
+            # not invent a new reference candle.
+            pass
 
     # A pending candidate is meaningful only if it is still unresolved.
     # Remove stale pending records once a later observable completion confirms
@@ -352,9 +353,12 @@ def detect_valid_pullbacks(
         (p.reference_candle_id, p.start_candle_id)
         for p in completed
     }
+    seen_pending: set[tuple[str, str]] = set()
     for p in pending:
-        if (p.reference_candle_id, p.start_candle_id) not in completed_keys:
+        key = (p.reference_candle_id, p.start_candle_id)
+        if key not in completed_keys and key not in seen_pending:
             unresolved.append(p)
+            seen_pending.add(key)
 
     active = ActivePullbackState(completed[-1] if completed else None)
     return MinorStructureAnalysis(tuple(completed), active, tuple(unresolved))
