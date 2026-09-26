@@ -8,6 +8,18 @@ Major structural qualification is owned by 03_structural_semantic_authority.md.
 
 ## 1. Methodology boundary
 
+Layer 2 is the exclusive owner of Minor Structure produced from validated Layer-1 candle sequences.
+
+For terminology purposes:
+- Layer-1 candle geometry remains Microstructure.
+- A completed Candle-Level Valid Pullback may produce a Minor Structural Swing / verified pullback extreme.
+- Layer 2 may expose the pullback-derived liquidity reference, but it does not classify that reference as MINOR_IDM or MAJOR_IDM; IDM ownership begins in Layer 3.
+- A Minor Structural Swing is not a Major/External Structural Swing and cannot by itself become CONFIRMED_STRUCTURAL_SWING or VALID_BOS.
+
+This namespace boundary is semantic ownership, not an additional qualification rule.
+
+## 1.1 Methodology boundary
+
 Layer 2 consumes the canonical Layer 1 candle observations and assembles them into sequential/minor-structure events.
 
 ~~~
