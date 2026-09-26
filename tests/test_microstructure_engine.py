@@ -61,6 +61,22 @@ def test_outside_bar_geometry_and_unavailable_sequence():
     assert ob.low_breach.candle_id == "o"
 
 
+def test_outside_bar_rejects_injected_intrabar_sequence():
+    reference = c("r", "5", "10", "2", "6")
+    candle = c("o", "6", "12", "1", "7")
+    try:
+        m.OutsideBarObservation(
+            candle_id="o", reference_candle_id="r",
+            high_breach=m.classify_breach(candle, m.ExtremeReference(Decimal("10"), "r", "H"), m.Direction.UP),
+            low_breach=m.classify_breach(candle, m.ExtremeReference(Decimal("2"), "r", "L"), m.Direction.DOWN),
+            sequence_evidence=m.SequenceEvidence(m.SequenceStatus.OBSERVED, ("LOW", "HIGH")),
+        )
+    except m.QuarantineError:
+        pass
+    else:
+        raise AssertionError("Outside Bar accepted fabricated intrabar order")
+
+
 def test_outside_bar_does_not_accept_fabricated_unavailable_sequence():
     try:
         m.SequenceEvidence(m.SequenceStatus.UNAVAILABLE, ("LOW", "HIGH"))
