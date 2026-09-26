@@ -78,6 +78,10 @@ def test_same_candle_outside_bar_cannot_confirm_intrabar_pullback_order():
     )
     result = minor.detect_valid_pullbacks(candles, minor.PullbackDirection.BULLISH)
     assert result.pullbacks == ()
+    assert result.resolution is minor.PullbackResolution.PENDING_UNAVAILABLE_SEQUENCE
+    assert len(result.pending) == 1
+    assert result.pending[0].reference_candle_id == "r"
+    assert result.pending[0].start_candle_id == "outside"
 
 
 def test_later_outside_bar_cannot_confirm_pullback_completion_when_order_is_unavailable():
@@ -90,6 +94,9 @@ def test_later_outside_bar_cannot_confirm_pullback_completion_when_order_is_unav
     )
     result = minor.detect_valid_pullbacks(candles, minor.PullbackDirection.BULLISH)
     assert result.pullbacks == ()
+    assert result.resolution is minor.PullbackResolution.PENDING_UNAVAILABLE_SEQUENCE
+    assert result.pending
+    assert result.pending[0].start_candle_id == "pb1"
 
 
 def test_later_outside_bar_does_not_block_a_subsequent_observable_completion():
@@ -103,6 +110,8 @@ def test_later_outside_bar_does_not_block_a_subsequent_observable_completion():
     result = minor.detect_valid_pullbacks(candles, minor.PullbackDirection.BULLISH)
     assert len(result.pullbacks) == 1
     assert result.pullbacks[0].completion_candle_id == "done"
+    assert result.pending == ()
+    assert result.resolution is minor.PullbackResolution.CONFIRMED
 
 
 def test_newer_completed_pullback_becomes_active():
