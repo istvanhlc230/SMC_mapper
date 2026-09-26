@@ -200,7 +200,6 @@ def detect_valid_pullbacks(
         return MinorStructureAnalysis((), ActivePullbackState(None))
 
     completed: list[CandleLevelValidPullback] = []
-    consumed_reference_ids: set[str] = set()
 
     for ref_index in range(len(sequence) - 1):
         reference = sequence[ref_index]
@@ -221,7 +220,6 @@ def detect_valid_pullbacks(
                     continue
                 if high_broken:
                     completed.append(_build_pullback(direction, reference, start_index, i, sequence))
-                    consumed_reference_ids.add(reference.candle_id)
                     break
         else:
             if not _reference_is_bearish_continuation(reference, continuation):
@@ -237,7 +235,6 @@ def detect_valid_pullbacks(
                     continue
                 if low_broken:
                     completed.append(_build_pullback(direction, reference, start_index, i, sequence))
-                    consumed_reference_ids.add(reference.candle_id)
                     break
 
     completed.sort(key=lambda p: sequence.index(next(c for c in sequence if c.candle_id == p.completion_candle_id)))
