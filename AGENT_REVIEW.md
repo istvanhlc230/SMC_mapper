@@ -1097,3 +1097,41 @@ GitHub Actions workflow is present and configured to run the full `pytest` suite
 **LAYER 3 STATUS: IMPLEMENTED / AUDIT-PASSING STATICALLY / AWAITING GREEN TEST RUN.**
 
 Layer 4/BOS remains blocked until this Layer 3 test gate is green and the semantic audit is formally approved.
+
+
+## LAYER 4 BOS AUDIT — 2026-09-26
+
+### Audit finding
+A Layer 3 / Layer 4 semantic-boundary contradiction was identified in `.agents/skills/smc/04_BOS_mechanics.md`:
+
+- Layer 3 canonically defines `IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING` as the sufficient Layer 3 swing-confirmation transition.
+- Layer 4 incorrectly stated that `MAJOR_IDM_SWEEP` only "unlocks" the swing-confirmation gate and does not automatically create `CONFIRMED_STRUCTURAL_SWING`.
+
+### Correction applied
+`.agents/skills/smc/04_BOS_mechanics.md` was corrected so that:
+
+```
+MAJOR_IDM + physical wick penetration
+        ↓
+MAJOR_IDM_SWEEP
+        ↓
+IDM_TAKEN
+        ↓
+CONFIRMED_STRUCTURAL_SWING
+```
+
+Retracement qualification remains a later Layer 3 prerequisite for `VALID_BOS`. The correction does not make `MAJOR_IDM_SWEEP` a BOS, does not roll the Trading Range, and does not lock the Protected Structural Extreme.
+
+### Post-fix audit
+- stale "does not automatically create CONFIRMED_STRUCTURAL_SWING" wording: absent
+- stale "unless all remaining prerequisites" wording: absent
+- Layer 4 remains downstream consumer of Layer 3 retracement qualification
+- Layer 4 does not redefine Fibonacci depth, candle-count, displacement, or HTF qualification
+- `VALID_BOS` still requires `IDM_TAKEN + MAJOR_RETRACEMENT_QUALIFIED + STRUCTURAL_SWING_BREAK`
+- `MAJOR_IDM_SWEEP ≠ VALID_BOS`
+- only `VALID_BOS` rolls the Trading Range and locks the Protected Structural Extreme
+
+### Status
+**LAYER 4 DOCUMENTATION AUDIT: CORRECTED / READY FOR CONTRACT SPECIFICATION**
+
+COMMIT: 0542c75bbe97a846fa7bdf213644ccd41e3f4aa7
