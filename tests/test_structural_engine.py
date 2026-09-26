@@ -94,6 +94,7 @@ def test_post_bos_requires_protected_boundary_when_no_new_pullback():
 def test_post_bos_boundary_provenance_is_preserved():
     lifecycle = structural.IDMLifecycleContext(
         after_valid_bos=True,
+        valid_bos_candle_id="protected-bos",
         protected_external_boundary=structural.ProtectedExternalBoundary(
             minor.PullbackDirection.BULLISH, Decimal("12"), "protected"
         ),
