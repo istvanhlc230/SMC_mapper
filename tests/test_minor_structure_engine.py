@@ -146,6 +146,50 @@ def test_reference_does_not_jump_to_arbitrary_candle_inside_pullback():
     assert result.pullbacks[0].completion_candle_id == "done"
 
 
+def test_equal_high_transfers_active_reference_before_pullback_takeout():
+    candles = (
+        c("r", "5", "10", "2", "9"),
+        c("cont", "9", "11", "3", "10"),
+        c("eqh", "10", "11", "4", "8"),
+        c("take", "8", "10.5", "1", "7"),
+        c("done", "7", "12", "5", "11"),
+    )
+    result = minor.detect_valid_pullbacks(candles, minor.PullbackDirection.BULLISH)
+    assert len(result.pullbacks) == 1
+    pb = result.pullbacks[0]
+    assert pb.reference_candle_id == "eqh"
+    assert pb.start_candle_id == "take"
+
+
+def test_equal_low_transfers_active_reference_before_pullback_takeout():
+    candles = (
+        c("r", "5", "10", "2", "3"),
+        c("cont", "3", "9", "1", "2"),
+        c("eql", "2", "8", "1", "7"),
+        c("take", "7", "11", "1.5", "9"),
+        c("done", "9", "7", "0.5", "2"),
+    )
+    result = minor.detect_valid_pullbacks(candles, minor.PullbackDirection.BEARISH)
+    assert len(result.pullbacks) == 1
+    pb = result.pullbacks[0]
+    assert pb.reference_candle_id == "eql"
+    assert pb.start_candle_id == "take"
+
+
+def test_non_directional_completion_does_not_reuse_already_broken_reference():
+    candles = (
+        c("r", "5", "10", "2", "9"),
+        c("cont", "9", "11", "3", "10"),
+        c("pb1", "10", "9", "1", "8"),
+        c("done", "8", "11", "4", "9"),
+        c("later", "9", "10.5", "1", "8"),
+        c("new", "8", "12", "5", "11"),
+    )
+    result = minor.detect_valid_pullbacks(candles, minor.PullbackDirection.BULLISH)
+    assert len(result.pullbacks) == 1
+    assert result.pullbacks[0].reference_candle_id == "r"
+
+
 def test_layer2_resolution_is_explicit_when_no_event_exists():
     candles = (
         c("r", "5", "10", "2", "9"),
