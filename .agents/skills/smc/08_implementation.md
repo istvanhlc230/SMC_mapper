@@ -688,7 +688,7 @@ Regression tests must cover:
 - historical IDM is not an active competing target;
 - IDM wick takeout;
 - IDM body takeout;
-- Major IDM provenance remains traceable; there is no separate fallback Major IDM ontology or provenance class.
+- Major IDM provenance remains traceable; there is no separate Major IDM subtype or proxy ontology; when no new Major IDM qualifies, the prior protected external boundary remains the active Major IDM reference.
 
 ### Entity lifecycle ontology
 - liquidity entity can transition `ACTIVE → SWEPT`;
