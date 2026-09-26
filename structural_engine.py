@@ -279,8 +279,11 @@ def classify_idm(
         raise QuarantineError("Layer 3 requires Layer 2 MinorStructureAnalysis")
     if lifecycle is not None and not isinstance(lifecycle, IDMLifecycleContext):
         raise QuarantineError("invalid IDM lifecycle context")
-    if lifecycle is not None and lifecycle.after_valid_bos and candles is None:
-        raise QuarantineError("post-BOS IDM classification requires ordered Layer-1 candles")
+    if lifecycle is not None and lifecycle.after_valid_bos:
+        if candles is None:
+            raise QuarantineError("post-BOS IDM classification requires ordered Layer-1 candles")
+        if lifecycle.valid_bos_candle_id not in _index(candles):
+            raise QuarantineError("VALID_BOS candle is absent from Layer-1 sequence")
 
     pullback_events = [
         _pullback_idm(pb, IDMClass.MINOR_IDM)
