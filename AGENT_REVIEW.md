@@ -1049,3 +1049,32 @@ The persistent GitHub Actions test gate remains configured to run `python -m pyt
 
 ### Current disposition
 **LAYER 3 = AUDIT-CORRECTED / RUNTIME TEST RESULT PENDING / NOT APPROVED.**
+
+
+## LAYER 3 IMPLEMENTATION CORRECTION — 2026-09-26
+
+### Audit finding
+The initial Layer 3 runtime implementation contained two material semantic defects:
+1. After VALID_BOS it automatically promoted the newest post-BOS Layer-2 pullback to MAJOR_IDM. This violated the canonical distinction between **NEW MAJOR IDM QUALIFIED** and **MINOR IDM ONLY**.
+2. The retracement reduced-candle exception accepted only a one-candle path, while the canonical implementation contract also permits the documented two-candle reduced-displacement exception when its >=5 preceding-body/extreme condition and all other gates are satisfied.
+
+### Correction
+- `structural_engine.py` now keeps post-BOS pullbacks as MINOR_IDM unless explicit `MajorIDMQualificationEvidence` positively identifies a qualifying post-BOS pullback.
+- Without positive qualification evidence, the prior protected external boundary remains the active MAJOR_IDM.
+- Invalid qualification provenance is fail-closed.
+- The reduced-candle displacement exception now accepts 1- or 2-candle windows; normal >=2 opposing-candle evidence remains the primary path and is evaluated first.
+- No Layer 1 or Layer 2 runtime semantics were modified.
+- Mapper integration remains deferred.
+
+### Regression tests
+- `tests/test_structural_engine.py` was synchronized with the corrected Major IDM lifecycle.
+- Existing GitHub Actions workflow `.github/workflows/tests.yml` runs `python -m pytest -q` on every push to `main` and via manual dispatch.
+
+### Commits
+- `ed29213c6e9dcfeeea3547b1828a7ce39a7ca1a1` — Layer 3 implementation correction.
+- `a8006206bd29fb4496d8f758abbf09d367483fa9` — Layer 3 regression-test synchronization.
+
+### Current status
+**LAYER 3: CORRECTION IMPLEMENTED — TEST EXECUTION PENDING EXTERNAL VALIDATION.**
+
+The semantic audit must be repeated after the test suite reports green. Layer 4/BOS integration remains blocked until Layer 3 is approved.
