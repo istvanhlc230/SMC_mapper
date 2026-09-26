@@ -123,7 +123,7 @@ def test_newer_completed_pullback_becomes_active():
         c("r2", "10", "12", "8", "11"),
         c("c2", "11", "13", "9", "12"),
         c("p2", "11.5", "11.5", "6", "9"),
-        c("done2", "9", "14", "7", "12"),
+        c("done2", "10", "14", "10", "12"),
     )
     result = minor.detect_valid_pullbacks(candles, minor.PullbackDirection.BULLISH)
     assert len(result.pullbacks) >= 2
