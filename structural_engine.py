@@ -65,6 +65,28 @@ class ProtectedExternalBoundary:
 
 
 @dataclass(frozen=True, slots=True)
+class MajorIDMQualificationEvidence:
+    """Explicit Layer-3 evidence that a post-BOS pullback qualifies as Major IDM.
+
+    A Layer-2 pullback is never sufficient by itself. Until the canonical
+    Major-IDM qualification is positively established, the prior protected
+    external boundary remains the active Major IDM.
+    """
+
+    pullback_completion_candle_id: str
+    qualified: bool
+    reason: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.pullback_completion_candle_id, str) or not self.pullback_completion_candle_id:
+            raise QuarantineError("Major IDM evidence requires pullback completion candle ID")
+        if not isinstance(self.qualified, bool):
+            raise QuarantineError("Major IDM qualification flag must be boolean")
+        if not isinstance(self.reason, str) or not self.reason:
+            raise QuarantineError("Major IDM qualification requires a reason")
+
+
+@dataclass(frozen=True, slots=True)
 class IDMLifecycleContext:
     """Layer-3-owned lifecycle input describing a completed BOS rollover.
 
@@ -75,6 +97,7 @@ class IDMLifecycleContext:
     after_valid_bos: bool = False
     valid_bos_candle_id: str | None = None
     protected_external_boundary: ProtectedExternalBoundary | None = None
+    major_idm_qualification: MajorIDMQualificationEvidence | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.after_valid_bos, bool):
@@ -84,13 +107,21 @@ class IDMLifecycleContext:
         ):
             raise QuarantineError("valid_bos_candle_id must be a non-empty string")
         if not self.after_valid_bos:
-            if self.valid_bos_candle_id is not None or self.protected_external_boundary is not None:
+            if (
+                self.valid_bos_candle_id is not None
+                or self.protected_external_boundary is not None
+                or self.major_idm_qualification is not None
+            ):
                 raise QuarantineError("post-BOS lifecycle fields require VALID_BOS")
             return
         if self.valid_bos_candle_id is None:
             raise QuarantineError("post-BOS IDM lifecycle requires VALID_BOS candle provenance")
         if self.protected_external_boundary is None:
             raise QuarantineError("post-BOS IDM lifecycle requires protected external boundary")
+        if self.major_idm_qualification is not None and not isinstance(
+            self.major_idm_qualification, MajorIDMQualificationEvidence
+        ):
+            raise QuarantineError("invalid Major IDM qualification evidence")
 
 
 @dataclass(frozen=True, slots=True)
@@ -300,8 +331,25 @@ def classify_idm(
         if _comes_after(pb.start_candle_id, lifecycle.valid_bos_candle_id, candles)
         and _comes_after(pb.completion_candle_id, lifecycle.valid_bos_candle_id, candles)
     ]
-    if post_bos_pullbacks:
-        selected = post_bos_pullbacks[-1]
+
+    # A post-BOS pullback is not automatically Major IDM. The canonical
+    # lifecycle explicitly distinguishes "NEW MAJOR IDM QUALIFIED" from
+    # "MINOR IDM ONLY". Without positive qualification evidence, preserve
+    # the pullback as Minor IDM and keep the prior protected boundary as
+    # the active Major IDM.
+    evidence = lifecycle.major_idm_qualification
+    if evidence is not None and evidence.qualified:
+        selected = next(
+            (
+                pb for pb in post_bos_pullbacks
+                if pb.completion_candle_id == evidence.pullback_completion_candle_id
+            ),
+            None,
+        )
+        if selected is None:
+            raise QuarantineError(
+                "Major IDM qualification references no post-BOS Layer-2 pullback"
+            )
         events = [
             event for event in pullback_events
             if event.pullback_completion_candle_id != selected.completion_candle_id
@@ -309,7 +357,9 @@ def classify_idm(
         events.append(_pullback_idm(selected, IDMClass.MAJOR_IDM))
         return tuple(events)
 
-    return (_boundary_idm(lifecycle.protected_external_boundary),)
+    events = list(pullback_events)
+    events.append(_boundary_idm(lifecycle.protected_external_boundary))
+    return tuple(events)
 
 
 def qualify_retracement(
@@ -366,7 +416,7 @@ def qualify_retracement(
 
         # The reduced/outlier path is an explicit exception to the normal
         # candle-count gate. It is never used to relabel a standard path.
-        if len(window) == 1 and _outlier_condition(window, swing.direction, candles):
+        if len(window) in (1, 2) and _outlier_condition(window, swing.direction, candles):
             return RetracementQualification(
                 True, depth, opposing, htf_valid_pullback, True,
                 "ONE_CANDLE_DISPLACEMENT_OUTLIER",
@@ -526,6 +576,7 @@ __all__ = [
     "IDMClass",
     "IDMEvent",
     "IDMLifecycleContext",
+    "MajorIDMQualificationEvidence",
     "_comes_after",
     "IDMOrigin",
     "MIN_OUTLIER_EXTREMES_TAKEN",
