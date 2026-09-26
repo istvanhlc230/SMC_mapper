@@ -874,3 +874,35 @@ The persistent GitHub Actions gate remains configured in .github/workflows/tests
 ### Disposition
 **LAYER 3 = NOT APPROVED / CORRECTION REQUIRED.**
 Layer 2 remains audit-corrected and pending runtime PASS plus final approval. Mapper/analyzer integration remains blocked.
+
+
+## LAYER 3 IDM LIFECYCLE CORRECTION — 2026-09-26
+
+### Audit finding
+The validator identified a blocker in the initial Layer-3 implementation: `classify_idm()` accepted caller-supplied `post_bos_pullback_ids`, allowing an arbitrary external set to directly select which pullback became Major IDM. This violated Layer-3 semantic ownership.
+
+### Correction implemented directly on main
+- Removed `post_bos_pullback_ids` from the Layer-3 API.
+- Added Layer-3-owned `IDMLifecycleContext` and explicit `ProtectedExternalBoundary` representation.
+- Added explicit IDM origin typing: pullback-derived vs protected-external-boundary.
+- Before VALID_BOS, pullback-derived IDM remains Minor IDM.
+- After an explicit VALID_BOS lifecycle transition, the newest qualifying Layer-2 pullback becomes Major IDM without caller-selected IDs.
+- If no new post-BOS pullback exists, the previous Major IDM remains active; if none exists, the protected external boundary becomes Major IDM.
+- No fallback/real/proxy IDM ontology was introduced.
+- IDM takeout continues to consume Layer-1 breach semantics; Layer 3 still does not implement BOS/CHoCH/POI/RR.
+
+### Regression tests
+Added coverage for:
+- rejection of the removed caller-selected Major-IDM mechanism;
+- post-BOS newest-pullback Major IDM selection;
+- persistence of the previous Major IDM when no new post-BOS pullback exists;
+- protected-boundary Major IDM creation when no prior Major IDM exists.
+
+### Commits
+- 1431ff1 — Fix Layer-3 IDM semantic ownership and lifecycle
+- 075ae61 — Add Layer-3 IDM lifecycle ownership regression tests
+
+### Current status
+**LAYER 3 = CORRECTED / READY FOR RUNTIME TEST EXECUTION AND FINAL SEMANTIC AUDIT.**
+
+Runtime PASS is still pending the GitHub Actions test gate. Mapper/analyzer/monitor integration remains blocked until Layer 3 is explicitly approved.
