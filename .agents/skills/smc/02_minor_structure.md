@@ -130,7 +130,7 @@ CANDLE-LEVEL PULLBACK FORMATION
 
 When aggregate OHLC does not expose the intrabar order needed by the sequence, Layer 2 uses the observability state provided by Layer 1 instead of manufacturing historical path evidence.
 
-For an unresolved Outside Bar ordering, Layer 2 records the pullback candidate as PENDING_UNAVAILABLE_SEQUENCE rather than confirming or rejecting the pullback solely from the unavailable intrabar path. The pending state is not an inferred sequence and cannot be promoted to observed evidence without stronger source evidence. A later independently observable completion may resolve the pending candidate.
+For an Outside Bar ordering that is unavailable at the point required to establish or complete the pullback sequence, Layer 2 terminally invalidates that specific candidate. The candidate is not promoted to PENDING_UNAVAILABLE_SEQUENCE and cannot be completed by any later candle. A later candle can only participate in a newly formed candidate with a new observable start; it cannot retroactively supply the missing historical intrabar order.
 
 ## 4. Pullback Extreme Verification
 
@@ -247,7 +247,7 @@ A compliant implementation preserves:
 - Pullback completion over one or multiple candles.
 - Inside Bar handling through the Layer 1 mother-candle reference.
 - Equal High / Equal Low reference identity transfer through the Layer 1 owner; Layer 2 consumes the transferred reference and does not redefine equality semantics.
-- Outside Bar as an input to pullback formation, with its applicable branch resolved from the active sequence context.
+- Outside Bar as an input to pullback formation, with unavailable intrabar order causing terminal candidate invalidation rather than retroactive confirmation.
 - Pullback Extreme Verification across the complete pullback window.
 - Structural qualification through the Layer 3 owner.
 - Active Pullback Pointer following the most recent structurally accepted pullback.
