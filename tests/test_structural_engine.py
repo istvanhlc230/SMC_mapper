@@ -55,11 +55,12 @@ def test_post_bos_newest_pullback_becomes_major_without_pullback_id_selection():
     minor_result = minor.detect_valid_pullbacks(candles, minor.PullbackDirection.BULLISH)
     lifecycle = structural.IDMLifecycleContext(
         after_valid_bos=True,
+        valid_bos_candle_id="pb",
         protected_external_boundary=structural.ProtectedExternalBoundary(
             minor.PullbackDirection.BULLISH, Decimal("12"), "protected"
         ),
     )
-    events = structural.classify_idm(minor_result, lifecycle=lifecycle)
+    events = structural.classify_idm(minor_result, candles=candles, lifecycle=lifecycle)
     assert events[-1].idm_class is structural.IDMClass.MAJOR_IDM
     assert events[-1].origin is structural.IDMOrigin.PULLBACK_DERIVED
     assert events[-1].pullback_completion_candle_id == "done"
@@ -74,6 +75,7 @@ def test_post_bos_without_new_pullback_uses_protected_boundary_as_major():
     )
     events = structural.classify_idm(
         minor.MinorStructureAnalysis((), minor.ActivePullbackState(None)),
+        candles=(),
         lifecycle=lifecycle,
     )
     assert len(events) == 1
@@ -102,6 +104,22 @@ def test_post_bos_boundary_provenance_is_preserved():
     assert events[0].idm_class is structural.IDMClass.MAJOR_IDM
     assert events[0].origin is structural.IDMOrigin.PROTECTED_EXTERNAL_BOUNDARY
     assert events[0].source_candle_id == "protected"
+
+
+def test_pre_bos_pullback_does_not_become_major_idm_after_bos():
+    candles = bullish_fixture((c("sweep", "10", "10.5", "0.5", "9"),))
+    minor_result = minor.detect_valid_pullbacks(candles, minor.PullbackDirection.BULLISH)
+    lifecycle = structural.IDMLifecycleContext(
+        after_valid_bos=True,
+        valid_bos_candle_id="sweep",
+        protected_external_boundary=structural.ProtectedExternalBoundary(
+            minor.PullbackDirection.BULLISH, Decimal("12"), "protected"
+        ),
+    )
+    events = structural.classify_idm(minor_result, candles=candles, lifecycle=lifecycle)
+    assert len(events) == 1
+    assert events[0].idm_class is structural.IDMClass.MAJOR_IDM
+    assert events[0].origin is structural.IDMOrigin.PROTECTED_EXTERNAL_BOUNDARY
 
 
 def test_qualified_retracement_at_50_percent_requires_two_opposing_closes():
