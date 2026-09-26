@@ -252,22 +252,19 @@ def _takeout_after(
 def _comes_after(
     completion_candle_id: str,
     bos_candle_id: str,
-    minor: MinorStructureAnalysis,
+    candles: tuple[Candle, ...],
 ) -> bool:
-    """Return True only when the Layer-2 pullback completion is after VALID_BOS."""
-    ordered_ids = [
-        pb.completion_candle_id for pb in minor.pullbacks
-    ]
-    if completion_candle_id not in ordered_ids or bos_candle_id not in ordered_ids:
-        # The caller must provide an explicit lifecycle boundary, but Layer 3
-        # cannot infer ordering from unrelated IDs.
-        return False
-    return ordered_ids.index(completion_candle_id) > ordered_ids.index(bos_candle_id)
+    """Return True only when pullback completion occurs after VALID_BOS."""
+    positions = _index(candles)
+    if completion_candle_id not in positions or bos_candle_id not in positions:
+        raise QuarantineError("IDM lifecycle references unknown candle")
+    return positions[completion_candle_id] > positions[bos_candle_id]
 
 
 def classify_idm(
     minor: MinorStructureAnalysis,
     *,
+    candles: tuple[Candle, ...] | None = None,
     lifecycle: IDMLifecycleContext | None = None,
 ) -> tuple[IDMEvent, ...]:
     """Classify Layer-2 references and advance the Layer-3 IDM lifecycle.
@@ -282,6 +279,8 @@ def classify_idm(
         raise QuarantineError("Layer 3 requires Layer 2 MinorStructureAnalysis")
     if lifecycle is not None and not isinstance(lifecycle, IDMLifecycleContext):
         raise QuarantineError("invalid IDM lifecycle context")
+    if lifecycle is not None and lifecycle.after_valid_bos and candles is None:
+        raise QuarantineError("post-BOS IDM classification requires ordered Layer-1 candles")
 
     pullback_events = [
         _pullback_idm(pb, IDMClass.MINOR_IDM)
@@ -296,7 +295,7 @@ def classify_idm(
     post_bos_pullbacks = [
         pb for pb in minor.pullbacks
         if pb.completion_candle_id != lifecycle.valid_bos_candle_id
-        and _comes_after(pb.completion_candle_id, lifecycle.valid_bos_candle_id, minor)
+        and _comes_after(pb.completion_candle_id, lifecycle.valid_bos_candle_id, candles)
     ]
     if post_bos_pullbacks:
         selected = post_bos_pullbacks[-1]
@@ -429,7 +428,7 @@ def analyze_layer3(
 ) -> StructuralAnalysis:
     sequence = tuple(candles)
     _validate_inputs(sequence, minor)
-    idms = classify_idm(minor, lifecycle=lifecycle)
+    idms = classify_idm(minor, candles=sequence, lifecycle=lifecycle)
     if not idms:
         return StructuralAnalysis((), (), None, None, StructuralResolution.NO_EVIDENCE)
 
