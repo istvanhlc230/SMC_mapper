@@ -8,6 +8,14 @@
 
 ## 3.5 — Change of Character (CHoCH) Mechanics
 
+### Structural namespace boundary
+
+CHoCH is a structural lifecycle transition, not a synonym for every break. Its governing reference may be a Major/External protected boundary or, under the canonical LTF Structural Glitch context, the latest valid LTF pullback/IDM reference.
+
+The LTF route does not rename or promote that Minor reference into Major Structure. Break mode is determined by the active IDM provenance and the applicable CHoCH gate.
+
+
+
 CHoCH is a governing trend-reversal transition. It is not an arbitrary internal break, liquidity event, IDM sweep, or candle pattern.
 
 ### Canonical CHoCH Lifecycle
