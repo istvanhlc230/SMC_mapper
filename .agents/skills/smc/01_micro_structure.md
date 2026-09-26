@@ -22,7 +22,24 @@ STRUCTURAL QUALIFICATION
 STRUCTURAL LIFECYCLE
 ~~~
 
-## 1.5 Impulsive-leg scope
+## 1.5 Layer boundary: Microstructure ≠ Minor Structure
+
+Layer 1 owns candle-level geometry and observations. A candle-level observation is not itself a Minor Structural Swing, IDM, or Major Structural object.
+
+A Layer-1 document may mention downstream concepts only to describe consumption scope or ownership, never to define those concepts. In particular:
+- a pullback-related reference in Layer 1 is a downstream sequence/consumer reference, not a Layer-1 Pullback object;
+- a candle breach is not a structural break;
+- an Extreme is a candle-level geometric extreme unless a downstream owner explicitly promotes it;
+- Layer 1 does not create MINOR_IDM, MAJOR_IDM, CONFIRMED_STRUCTURAL_SWING, or VALID_BOS.
+
+The canonical boundary is:
+OHLC / CANDLE GEOMETRY
+        ↓
+MICROSTRUCTURE OBSERVATION
+        ↓
+LAYER 2 SEQUENTIAL / MINOR STRUCTURE
+
+## 1.6 Impulsive-leg scope
 
 When Layer 1 observations are consumed for structural mapping, IDM identification, or POI identification, the applicable structural analysis is anchored to the **active impulsive leg**. Internal complexity that belongs only to the corrective leg is not independently promoted into structural mapping, IDM, or POI candidates.
 
