@@ -246,7 +246,29 @@ def test_one_candle_displacement_outlier_is_explicit_exception():
     )
     assert q.qualified
     assert q.used_outlier_exception
-    assert q.reason == "ONE_CANDLE_DISPLACEMENT_OUTLIER"
+    assert q.reason == "REDUCED_DISPLACEMENT_EXCEPTION"
+
+
+def test_two_candle_displacement_exception_is_allowed_when_standard_count_is_not_met():
+    candles = (
+        c("s", "5", "10", "5", "9"),
+        c("p1", "8", "9", "4", "8"),
+        c("p2", "8", "9", "3.5", "8"),
+        c("p3", "8", "9", "3", "8"),
+        c("p4", "8", "9", "2.5", "8"),
+        c("p5", "8", "9", "2", "8"),
+        c("outlier1", "8", "9", "1", "7"),
+        c("outlier2", "7", "8", "0", "7.5"),
+    )
+    swing = structural.ConfirmedStructuralSwing(
+        minor.PullbackDirection.BULLISH, Decimal("10"), "s", "idm", "s"
+    )
+    q = structural.qualify_retracement(
+        candles, swing, range_high=Decimal("10"), range_low=Decimal("0")
+    )
+    assert q.qualified
+    assert q.used_outlier_exception
+    assert q.reason == "REDUCED_DISPLACEMENT_EXCEPTION"
 
 
 def test_38_2_to_50_requires_explicit_htf_valid_pullback():
