@@ -661,3 +661,61 @@ The final Layer-2 source was re-read after the corrections; the state machine, e
 **LAYER 2 = CORRECTED / READY FOR FINAL TEST EXECUTION AND VALIDATOR REVIEW.**
 
 Integration into SMC Mapper remains blocked until Layer 2 receives explicit approval.
+
+
+## LAYER 2 AUDIT — 2026-09-26
+
+### Audit result
+Layer 2 was re-audited against:
+- .agents/skills/smc/01_micro_structure.md
+- .agents/skills/smc/02_minor_structure.md
+- .agents/skills/smc/08_implementation.md
+- knowledgebase/reference/03_pullback_retracement.md
+- knowledgebase/03_SOURCE_EVIDENCE.md
+- primary valid-pullback / market-structure source evidence
+
+### Findings and corrections
+1. **EQH/EQL reference transfer gap — CORRECTED**
+   - The implementation previously failed to consume Layer-1 Equal Extreme Reference Transfer when a later candle shared the active high/low.
+   - Layer 2 now consumes Layer-1 equality observations before evaluating pullback takeout, so the later equal-extreme candle becomes the applicable reference.
+   - This preserves the canonical source rule that the second candle becomes the active reference in the equal-high/equal-low case.
+2. **Stale broken reference reuse — CORRECTED**
+   - After a pullback completes, a non-directional completion candle cannot leave the already-broken reference active.
+   - Layer 2 now clears that reference and waits for a new Layer-1 directional continuation/equal-extreme reference.
+3. **Outside Bar / UNAVAILABLE — VERIFIED**
+   - Aggregate-OHLC Outside Bars remain UNAVAILABLE.
+   - Layer 2 does not reinterpret UNAVAILABLE as observed ordering.
+   - An unresolved candidate remains explicitly pending and may only resolve on later independently observable evidence.
+
+### Canonical boundary
+Layer 2 remains limited to:
+- Candle-Level Valid Pullback
+- Verified Pullback Extreme
+- Pullback-Derived Liquidity Reference
+- Active Pullback Pointer
+- explicit pending-unavailable state
+
+Layer 2 does not implement IDM, BOS, CHoCH, POI, structural retracement, RR, or trade management.
+
+### Tests / validation
+- Regression coverage added for EQH reference transfer, EQL reference transfer, and stale-reference reuse.
+- Runtime execution could not be independently performed from the validator environment because repository checkout/network execution is unavailable.
+- Therefore no runtime PASS claim is made.
+
+### Integration
+Untouched:
+- smc_analyzer.py
+- smc_htf_ltf_monitor.py
+- zones.json
+- knowledgebase/
+
+No branch was created. All corrections were committed directly to main.
+
+### Current status
+**LAYER 2 = AUDIT-CORRECTED / READY FOR RUNTIME TEST EXECUTION AND FINAL APPROVAL.**
+
+Commits:
+- 5dc4b12 — Layer-2 equal-extreme reference transfer and stale-reference lifecycle correction
+- 5498edd — Layer-2 regression tests
+- 016acbf — Layer-2 EQH/EQL fixture correction
+- 6909e89 — Layer-2 canonical documentation synchronization
