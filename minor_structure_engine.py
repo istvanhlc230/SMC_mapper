@@ -323,7 +323,6 @@ def detect_valid_pullbacks(
             _build_pullback(direction, reference, start_index, i, sequence)
         )
         start_index = None
-        start_pending = False
 
         # The completion candle becomes the next reference only when it is a
         # bullish/bearish candle in the prevailing direction. Otherwise the
