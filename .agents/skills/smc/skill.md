@@ -84,6 +84,35 @@ Read the referenced documents in this order when the full methodology is require
 - Human approval gate, contract ledger, change set, and independent validation
 - Process authority only; it does not define SMC methodology
 
+## 5. Global structural terminology and namespace boundary
+
+The canonical structural hierarchy is:
+
+OHLC / CANDLE PRIMITIVES
+        ↓
+MICROSTRUCTURE
+        ↓
+MINOR STRUCTURE
+  (Candle-Level Valid Pullback / Minor Structural Swing / Minor IDM)
+        ↓
+MAJOR / EXTERNAL STRUCTURE
+  (Confirmed Structural Swing / Protected External Boundary / Major IDM)
+        ↓
+EXTERNAL STRUCTURAL BREAK
+  (Structural Swing Break / VALID_BOS)
+
+Terminology rules:
+- Microstructure owns candle-level geometry and observations.
+- Minor Structure owns validated sequential structure produced from Layer-1 observations.
+- Major / External Structure owns CONFIRMED_STRUCTURAL_SWING, Protected External Boundary / Protected Structural Extreme, Major IDM, and the structural lifecycle.
+- BOS is an external/major structural break, not a generic candle break or Minor Structural Swing break.
+- CHoCH is a structural lifecycle transition whose governing reference is context-dependent; the LTF Structural Glitch does not promote a Minor object into Major Structure.
+- Unqualified implementation-domain types such as Swing, Break, or Structure must not be used where a canonical layer-specific semantic type is required.
+- Existing canonical names (CONFIRMED_STRUCTURAL_SWING, STRUCTURAL_SWING_BREAK, VALID_BOS, MINOR_IDM, MAJOR_IDM) remain authoritative and must not be replaced by parallel synonyms.
+- Generic words such as “structure”, “swing”, or “break” may appear in descriptive prose only when the semantic owner is unambiguous. Normative rules and implementation contracts must use the specific canonical object/event name.
+
+This is a terminology boundary, not a new SMC rule. It prevents Microstructure, Minor Structure, and Major/External Structure from being conflated while preserving the semantic-owner model.
+
 ## 5. Documentation authority
 
 Semantic ownership is:
