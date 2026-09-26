@@ -1232,3 +1232,26 @@ These failures are runtime implementation/test-suite synchronization issues, not
 
 **CANONICAL SKILL: TERMINOLOGY/OWNERSHIP CORRECTION APPLIED.**
 **RUNTIME TEST SUITE: RED — CORRECTION REQUIRED.**
+
+
+## FULL 01–08 SKILL CROSS-LAYER AUDIT — 2026-09-26
+
+A full semantic-owner / downstream-consumer audit was performed against the current canonical SMC skill.
+
+### Corrections applied
+- Removed obsolete Layer-2 pending-state terminology for unavailable Outside-Bar sequence failure.
+- Removed duplicated IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING transitions from the Layer-2 lifecycle diagram.
+- Clarified Layer-3 IDM wording so Layer-2 owns the Minor IDM pointer while Layer 3 owns Major IDM governance; a newer valid pullback does not automatically replace Major IDM.
+- Clarified the Layer-3 IDM_TAKEN definition to consume the active IDM reference rather than equating IDM with the most recent valid pullback.
+- Corrected the Layer-8 determinism invariants so MAJOR_IDM_SWEEP / MINOR_IDM_SWEEP are explicitly distinct from VALID_BOS, while IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING remains the canonical structural confirmation chain.
+
+### Cross-layer result
+01 Microstructure → 02 Minor Structure → 03 Structural Semantic Authority → 04 BOS → 05 CHoCH → 06 Execution → 07 Risk → 08 Implementation is now semantically consistent on the audited IDM, pullback, swing-confirmation, BOS, and observability boundaries.
+
+No runtime mapper/analyzer/monitor integration was performed.
+
+### Current runtime note
+The previously recorded GitHub test-suite failures remain implementation/test synchronization issues and were not silently treated as resolved by this documentation audit.
+
+### Repository state
+Direct commits were made on main only. No new branch was created.
