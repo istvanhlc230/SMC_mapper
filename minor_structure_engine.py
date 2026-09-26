@@ -95,7 +95,7 @@ class CandleLevelValidPullback:
         if self.liquidity_reference.price != self.extreme.price:
             raise QuarantineError("liquidity reference must derive from verified extreme")
         if self.liquidity_reference.source_candle_id != self.extreme.source_candle_id:
-            raise QuarantineError("liquidity reference provenance must match verified extreme")
+            raise QuarantineError("pullback liquidity provenance must match verified extreme")
 
 
 @dataclass(frozen=True, slots=True)
@@ -146,6 +146,11 @@ def _reference_breach(candle: Candle, reference: Candle, direction: Direction) -
     return observation.is_break
 
 
+def _ambiguous_outside_bar(candle: Candle, reference: Candle) -> bool:
+    """Return True when aggregate OHLC cannot prove Outside Bar intrabar order."""
+    return is_outside_bar(candle, reference)
+
+
 def _build_pullback(
     direction: PullbackDirection,
     reference: Candle,
@@ -183,8 +188,8 @@ def detect_valid_pullbacks(
 
     A same-candle takeout-and-completion requires historical intrabar ordering.
     Aggregate OHLC Outside Bars expose that ordering as UNAVAILABLE in Layer 1,
-    so such a candle cannot by itself confirm completion; the candidate remains
-    open for a later, independently observable completed-candle break.
+    so such a candle cannot by itself confirm either side of the ordered event;
+    the candidate remains open for a later, independently observable completion.
     """
     sequence = tuple(candles)
     _validate_candles(sequence)
@@ -208,12 +213,18 @@ def detect_valid_pullbacks(
                 high_broken = _reference_breach(sequence[i], reference, Direction.UP)
                 if start_index is None:
                     if low_taken:
-                        # A single aggregate Outside Bar cannot prove low-before-high.
-                        if high_broken and is_outside_bar(sequence[i], reference):
+                        # Aggregate Outside Bar cannot prove low-before-high.
+                        if high_broken and _ambiguous_outside_bar(sequence[i], reference):
                             continue
                         start_index = i
                     continue
                 if high_broken:
+                    # A completion candle that is also an Outside Bar can
+                    # breach both reference extremes, but OHLC cannot prove
+                    # that the low was reached before the high. Do not infer
+                    # the required pullback->reversal order.
+                    if _ambiguous_outside_bar(sequence[i], reference):
+                        continue
                     completed.append(_build_pullback(direction, reference, start_index, i, sequence))
                     break
         else:
@@ -225,11 +236,13 @@ def detect_valid_pullbacks(
                 low_broken = _reference_breach(sequence[i], reference, Direction.DOWN)
                 if start_index is None:
                     if high_taken:
-                        if low_broken and is_outside_bar(sequence[i], reference):
+                        if low_broken and _ambiguous_outside_bar(sequence[i], reference):
                             continue
                         start_index = i
                     continue
                 if low_broken:
+                    if _ambiguous_outside_bar(sequence[i], reference):
+                        continue
                     completed.append(_build_pullback(direction, reference, start_index, i, sequence))
                     break
 
