@@ -826,3 +826,24 @@ Approval rule:
 - Mapper/analyzer/monitor integration remains blocked until the applicable layer is explicitly approved.
 
 No feature branch is used; layer implementations continue directly on `main` as requested.
+
+
+## LAYER 3 IMPLEMENTATION — 2026-09-26
+
+Implemented directly on `main` (no feature branch, per user decision):
+- `structural_engine.py`
+- `tests/test_structural_engine.py`
+
+Scope:
+- Layer 2 `MinorStructureAnalysis` is the only minor-structure input contract.
+- IDM is owned/classified in Layer 3.
+- IDM takeout consumes Layer 1 physical breach semantics; equality/touch is not takeout.
+- IDM takeout confirms `CONFIRMED_STRUCTURAL_SWING`; it does not create BOS.
+- Structural retracement qualification is separate and precedes any downstream BOS consumer.
+- 50% standard gate, 38.2%-<50% explicit HTF evidence gate, and below-38.2% rejection are implemented.
+- Normal >=3 opposing-candle path and source-defined reduced/outlier exception are separated.
+- Layer 3 does not implement BOS, CHoCH, POI, RR, mapper integration, or target management.
+- Missing dealing-range boundaries prevent retracement qualification rather than being inferred.
+
+Current review state: **LAYER 3 IMPLEMENTED / RUNTIME TEST GATE PENDING / NOT APPROVED**.
+The persistent GitHub Actions policy in `.github/workflows/tests.yml` remains the required runtime approval gate.
