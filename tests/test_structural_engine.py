@@ -39,13 +39,67 @@ def test_idm_touch_is_not_takeout():
     assert result.resolution is structural.StructuralResolution.IDM_ACTIVE
 
 
-def test_major_idm_requires_explicit_post_bos_structural_qualification():
+def test_major_idm_is_not_selected_by_caller_supplied_pullback_id():
     candles = bullish_fixture((c("sweep", "10", "10.5", "0.5", "9"),))
     minor_result = minor.detect_valid_pullbacks(candles, minor.PullbackDirection.BULLISH)
-    ordinary = structural.classify_idm(minor_result)
-    major = structural.classify_idm(minor_result, post_bos_pullback_ids=frozenset({"done"}))
-    assert ordinary[0].idm_class is structural.IDMClass.MINOR_IDM
-    assert major[0].idm_class is structural.IDMClass.MAJOR_IDM
+    events = structural.classify_idm(minor_result)
+    assert events[0].idm_class is structural.IDMClass.MINOR_IDM
+    assert all(
+        parameter.name != "post_bos_pullback_ids"
+        for parameter in __import__("inspect").signature(structural.classify_idm).parameters.values()
+    )
+
+
+def test_post_bos_newest_pullback_becomes_major_without_pullback_id_selection():
+    candles = bullish_fixture((c("sweep", "10", "10.5", "0.5", "9"),))
+    minor_result = minor.detect_valid_pullbacks(candles, minor.PullbackDirection.BULLISH)
+    lifecycle = structural.IDMLifecycleContext(
+        after_valid_bos=True,
+        previous_major_idm=None,
+        protected_external_boundary=structural.ProtectedExternalBoundary(
+            minor.PullbackDirection.BULLISH, Decimal("12"), "protected"
+        ),
+    )
+    events = structural.classify_idm(minor_result, lifecycle=lifecycle)
+    assert events[-1].idm_class is structural.IDMClass.MAJOR_IDM
+    assert events[-1].origin is structural.IDMOrigin.PULLBACK_DERIVED
+    assert events[-1].pullback_completion_candle_id == "done"
+
+
+def test_post_bos_without_new_major_keeps_previous_major_idm():
+    previous = structural.IDMEvent(
+        structural.IDMClass.MAJOR_IDM,
+        structural.IDMOrigin.PROTECTED_EXTERNAL_BOUNDARY,
+        minor.PullbackDirection.BULLISH,
+        Decimal("12"),
+        "protected",
+    )
+    lifecycle = structural.IDMLifecycleContext(
+        after_valid_bos=True,
+        previous_major_idm=previous,
+    )
+    events = structural.classify_idm(
+        minor.MinorStructureAnalysis((), minor.ActivePullbackState(None)),
+        lifecycle=lifecycle,
+    )
+    assert len(events) == 1
+    assert events[0] is previous
+
+
+def test_post_bos_without_previous_major_uses_protected_boundary():
+    lifecycle = structural.IDMLifecycleContext(
+        after_valid_bos=True,
+        protected_external_boundary=structural.ProtectedExternalBoundary(
+            minor.PullbackDirection.BULLISH, Decimal("12"), "protected"
+        ),
+    )
+    events = structural.classify_idm(
+        minor.MinorStructureAnalysis((), minor.ActivePullbackState(None)),
+        lifecycle=lifecycle,
+    )
+    assert events[0].idm_class is structural.IDMClass.MAJOR_IDM
+    assert events[0].origin is structural.IDMOrigin.PROTECTED_EXTERNAL_BOUNDARY
+    assert events[0].source_candle_id == "protected"
 
 
 def test_qualified_retracement_at_50_percent_requires_two_opposing_closes():
@@ -73,10 +127,12 @@ def test_38_2_to_50_requires_explicit_htf_valid_pullback():
         minor.PullbackDirection.BULLISH, Decimal("10"), "s", "idm", "s"
     )
     no_htf = structural.qualify_retracement(
-        candles, swing, range_high=Decimal("10"), range_low=Decimal("0"), htf_valid_pullback=False
+        candles, swing, range_high=Decimal("10"), range_low=Decimal("0"),
+        htf_valid_pullback=False
     )
     yes_htf = structural.qualify_retracement(
-        candles, swing, range_high=Decimal("10"), range_low=Decimal("0"), htf_valid_pullback=True
+        candles, swing, range_high=Decimal("10"), range_low=Decimal("0"),
+        htf_valid_pullback=True
     )
     assert not no_htf.qualified
     assert yes_htf.qualified
