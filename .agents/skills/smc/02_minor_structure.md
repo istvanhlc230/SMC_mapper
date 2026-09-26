@@ -46,7 +46,7 @@ The pullback is defined by the ordered use of the applicable reference candle fr
 
 In a bullish Candlestick-Based Trend:
 
-1. The applicable reference candle is a bullish candle whose high was used to continue the candle-level uptrend.
+1. The applicable reference is the active bullish-side high reference established by the Layer 1 candle sequence. A bullish continuation establishes the reference candle; Layer 1 Equal Extreme Reference Transfer may move that high reference to the later candle when EQH is confirmed.
 2. The pullback begins when price takes out that reference candle's low through a canonical Layer 1 Candle Extreme Breach.
 3. The breach may occur through a wick or candle body. The Layer 1 breach classification is consumed rather than redefined here.
 4. The candle that performs the breach may be bullish or bearish.
@@ -75,7 +75,7 @@ Pullback Low = lowest point reached
 
 In a bearish Candlestick-Based Trend:
 
-1. The applicable reference candle is a bearish candle whose low was used to continue the candle-level downtrend.
+1. The applicable reference is the active bearish-side low reference established by the Layer 1 candle sequence. A bearish continuation establishes the reference candle; Layer 1 Equal Extreme Reference Transfer may move that low reference to the later candle when EQL is confirmed.
 2. The pullback begins when price takes out that reference candle's high through a canonical Layer 1 Candle Extreme Breach.
 3. The breach may occur through a wick or candle body.
 4. The candle that performs the breach may be bullish or bearish.
@@ -173,6 +173,8 @@ The active pullback state tracks the most recent canonical pullback relevant to 
 
 A newer valid pullback **immediately supersedes the prior active pullback-derived reference** for the active lifecycle, even when the prior reference has not yet been taken. Historical pullbacks remain immutable history, but the active reference pointer moves forward to the newest valid pullback.
 
+After a pullback completes, the reference candle that was broken is no longer reusable as a fresh pullback reference merely because no new directional candle has appeared. A new active candle-level reference must be established by the Layer 1 directional sequence (or its canonical equal-extreme reference transfer).
+
 This pointer movement is consumed by Layer 3, which owns the IDM classification and lifecycle.
 
 ~~~
@@ -242,6 +244,7 @@ A compliant implementation preserves:
 - Candle color of the breach candle as non-discriminating for Candle-Level Valid Pullback validity.
 - Pullback completion over one or multiple candles.
 - Inside Bar handling through the Layer 1 mother-candle reference.
+- Equal High / Equal Low reference identity transfer through the Layer 1 owner; Layer 2 consumes the transferred reference and does not redefine equality semantics.
 - Outside Bar as an input to pullback formation, with its applicable branch resolved from the active sequence context.
 - Pullback Extreme Verification across the complete pullback window.
 - Structural qualification through the Layer 3 owner.
