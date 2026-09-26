@@ -1135,3 +1135,38 @@ Retracement qualification remains a later Layer 3 prerequisite for `VALID_BOS`. 
 **LAYER 4 DOCUMENTATION AUDIT: CORRECTED / READY FOR CONTRACT SPECIFICATION**
 
 COMMIT: 0542c75bbe97a846fa7bdf213644ccd41e3f4aa7
+
+
+## GLOBAL STRUCTURAL TERMINOLOGY AUDIT — 2026-09-26
+
+### Finding
+The canonical skill did not contain a sufficiently explicit namespace contract separating Microstructure, Minor Structure, and Major/External Structure. The existing semantic owners were correct, but generic terms such as structure, swing, and break could be interpreted without an explicit layer qualifier.
+
+### Correction implemented directly on main
+The canonical documentation now explicitly defines:
+- Microstructure → OHLC/candle geometry and observations.
+- Minor Structure → Candle-Level Valid Pullback, Minor Structural Swing, and Minor IDM context.
+- Major/External Structure → CONFIRMED_STRUCTURAL_SWING, Protected External Boundary / Protected Structural Extreme, and Major IDM.
+- External structural break → STRUCTURAL_SWING_BREAK / VALID_BOS.
+- CHoCH remains a structural lifecycle transition and does not promote an LTF Minor reference into Major Structure.
+- Generic implementation types Swing / Break / Structure are prohibited where a canonical layer-specific semantic type is required.
+- Existing canonical event/object names remain authoritative; no parallel ontology was introduced.
+
+### Files synchronized
+- .agents/skills/smc/skill.md
+- .agents/skills/smc/01_micro_structure.md
+- .agents/skills/smc/02_minor_structure.md
+- .agents/skills/smc/03_structural_semantic_authority.md
+- .agents/skills/smc/04_BOS_mechanics.md
+- .agents/skills/smc/05_CHOCH_mechanics.md
+- .agents/skills/smc/06_execution.md
+- .agents/skills/smc/08_implementation.md
+
+### Scope protection
+No runtime mapper/analyzer/monitor code, zones.json, or knowledgebase content was modified. No new methodology rule was invented; this is a terminology/semantic-boundary clarification.
+
+### Current HEAD
+2e5b8edbf09a5621e63c5f8d93bd995915722665
+
+### Disposition
+GLOBAL TERMINOLOGY AUDIT = CORRECTED / READY FOR FINAL CROSS-SKILL CONSISTENCY CHECK.
