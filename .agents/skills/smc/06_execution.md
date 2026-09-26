@@ -4,6 +4,18 @@
 
 **Boundary:** Execution consumes structure; execution must never manufacture structural truth.
 
+### Structural terminology boundary
+
+Execution consumes layer-specific canonical objects rather than creating a generic structure namespace:
+- Microstructure observations remain Layer 1.
+- Minor Structural Swing / Minor IDM remain Minor/structural inputs.
+- Confirmed Structural Swing / Protected External Boundary / Major IDM are Layer-3 structural objects.
+- STRUCTURAL_SWING_BREAK / VALID_BOS are Layer-4 external-break objects.
+
+POI, Order Flow, Order Block, Rejection Block, Engineering Liquidity, and entry triggers must not be inferred from an unqualified “structure” or “break”.
+
+
+
 ## 36. POI ontology — canonical tradable POIs
 
 The project's canonical tradable POI ontology is the source-backed OF/OB execution-location model: **Valid Order Flow (OF_CONFIRMED)** and **Valid Order Block (Valid OB)**. A **Rejection Block is a separately identified PD-array/execution-location concept** that becomes relevant as the next PD array after the applicable Extreme Order Block fails. Source examples may refer to that execution location as a POI in ordinary usage; the canonical typed representation keeps its Rejection Block identity distinct from the OF/OB POI classes and from the Rule-of-Two POI slots. Any project representation must preserve that provenance rather than silently redefining RB as an OF/OB-equivalent POI class.
