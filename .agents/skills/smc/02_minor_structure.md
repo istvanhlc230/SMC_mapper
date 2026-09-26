@@ -128,6 +128,8 @@ CANDLE-LEVEL PULLBACK FORMATION
 
 When aggregate OHLC does not expose the intrabar order needed by the sequence, Layer 2 uses the observability state provided by Layer 1 instead of manufacturing historical path evidence.
 
+For an unresolved Outside Bar ordering, Layer 2 records the pullback candidate as PENDING_UNAVAILABLE_SEQUENCE rather than confirming or rejecting the pullback solely from the unavailable intrabar path. The pending state is not an inferred sequence and cannot be promoted to observed evidence without stronger source evidence. A later independently observable completion may resolve the pending candidate.
+
 ## 4. Pullback Extreme Verification
 
 After a Candle-Level Valid Pullback completes, Layer 2 records its directional extreme:
