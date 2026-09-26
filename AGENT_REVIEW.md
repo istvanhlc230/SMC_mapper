@@ -928,3 +928,49 @@ A follow-up audit found that preserving an arbitrary previous Major IDM object a
 Static semantic review completed. GitHub Actions is configured to run the full pytest suite on every push to main, but the current GitHub connector exposes no push-triggered run listing for this repository; therefore runtime PASS is not claimed yet.
 
 **Layer 3 remains CORRECTED / READY FOR RUNTIME TEST EXECUTION AND FINAL AUDIT.**
+
+
+## LAYER 2 OUTSIDE BAR TEMPORAL INVALIDATION CORRECTION — 2026-09-26
+
+### Final audit finding
+The previous Layer-2 contract still allowed an Outside Bar with SequenceStatus.UNAVAILABLE to remain a live pending candidate. A later observable candle could therefore complete that historical candidate, which would retroactively infer the missing intrabar order.
+
+This violates:
+- Layer-1 observability preservation;
+- zero-fabrication;
+- fail-closed sequencing;
+- temporal causality of historical evidence.
+
+### Correction implemented directly on main
+- An unavailable Outside Bar that is required to establish a pullback start is now terminally invalidated.
+- An unavailable Outside Bar that is required to complete an open pullback is now terminally invalidated.
+- The invalidated candidate is never placed into PENDING_UNAVAILABLE_SEQUENCE.
+- start_index is cleared immediately, so no later candle can complete the invalidated candidate.
+- A later candle may only begin a new pullback candidate with a new observable start; it cannot supply missing historical intrabar evidence for the old candidate.
+- Added InvalidatedPullback and INVALIDATED_UNAVAILABLE_SEQUENCE for explicit provenance and deterministic reporting.
+
+### Regression coverage
+Updated tests/test_minor_structure_engine.py to verify:
+- same-candle Outside Bar remains invalidated;
+- a later Outside Bar cannot complete an already-open candidate;
+- a later clean candle cannot revive an Outside Bar candidate whose start sequence was unavailable.
+
+### Scope protection
+- microstructure_engine.py unchanged.
+- smc_analyzer.py unchanged.
+- smc_htf_ltf_monitor.py unchanged.
+- zones.json unchanged.
+- knowledgebase/ unchanged.
+- No Mapper integration.
+- No branch created; changes committed directly to main.
+
+### Commits
+- 75378ec — Layer-2 Outside Bar temporal invalidation implementation
+- 4ae4c95 — Layer-2 regression tests
+- 4454067 — Layer-2 canonical documentation synchronization
+
+### Runtime validation
+The repository persistent .github/workflows/tests.yml gate is configured to run python -m pytest -q on every push to main. The GitHub connector available to the validator exposes only PR-triggered workflow-run lookup, not push-triggered run listing/dispatch for this repository. Therefore runtime PASS is not claimed until the GitHub Actions result is independently visible.
+
+### Status
+**LAYER 2 = CORRECTED / AWAITING RUNTIME TEST RESULT / NOT YET APPROVED.**
