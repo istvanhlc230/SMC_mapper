@@ -73,7 +73,6 @@ class IDMLifecycleContext:
     """
 
     after_valid_bos: bool = False
-    previous_major_idm: "IDMEvent | None" = None
     protected_external_boundary: ProtectedExternalBoundary | None = None
 
     def __post_init__(self) -> None:
@@ -83,13 +82,8 @@ class IDMLifecycleContext:
             if self.protected_external_boundary is not None:
                 raise QuarantineError("protected boundary requires VALID_BOS lifecycle")
             return
-        if (
-            self.previous_major_idm is None
-            and self.protected_external_boundary is None
-        ):
-            raise QuarantineError(
-                "post-BOS IDM lifecycle requires prior Major IDM or protected boundary"
-            )
+        if self.protected_external_boundary is None:
+            raise QuarantineError("post-BOS IDM lifecycle requires protected external boundary")
 
 
 @dataclass(frozen=True, slots=True)
@@ -257,8 +251,8 @@ def classify_idm(
 
     Before VALID_BOS every pullback-derived IDM is Minor. After VALID_BOS,
     the newest qualifying post-BOS Layer-2 pullback becomes Major IDM.
-    If no new pullback exists, the previous Major IDM remains active; if none
-    exists, the protected external boundary becomes Major IDM. No caller-
+    If no new pullback exists, the prior protected external boundary remains
+    Major IDM. No caller-
     supplied pullback ID can select the Major IDM.
     """
     if not isinstance(minor, MinorStructureAnalysis):
@@ -278,11 +272,6 @@ def classify_idm(
             minor.pullbacks[-1], IDMClass.MAJOR_IDM
         )
         return tuple(pullback_events)
-
-    if lifecycle.previous_major_idm is not None:
-        if lifecycle.previous_major_idm.idm_class is not IDMClass.MAJOR_IDM:
-            raise QuarantineError("previous active IDM must be Major IDM")
-        return (lifecycle.previous_major_idm,)
 
     return (_boundary_idm(lifecycle.protected_external_boundary),)
 
