@@ -112,6 +112,17 @@ def test_post_bos_requires_protected_boundary_when_no_new_pullback():
         structural.IDMLifecycleContext(after_valid_bos=True)
 
 
+def test_post_bos_requires_bos_candle_provenance():
+    import pytest
+    with pytest.raises(micro.QuarantineError):
+        structural.IDMLifecycleContext(
+            after_valid_bos=True,
+            protected_external_boundary=structural.ProtectedExternalBoundary(
+                minor.PullbackDirection.BULLISH, Decimal("12"), "protected"
+            ),
+        )
+
+
 def test_post_bos_boundary_provenance_is_preserved():
     lifecycle = structural.IDMLifecycleContext(
         after_valid_bos=True,
