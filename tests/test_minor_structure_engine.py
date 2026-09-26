@@ -105,7 +105,7 @@ def test_later_outside_bar_does_not_block_a_subsequent_observable_completion():
         c("cont", "9", "11", "3", "10"),
         c("pb1", "10", "9", "1", "8"),
         c("outside_wait", "8", "12", "1", "7"),
-        c("done", "7", "10", "4", "9.5"),
+        c("done", "7", "11", "4", "9.5"),
     )
     result = minor.detect_valid_pullbacks(candles, minor.PullbackDirection.BULLISH)
     assert len(result.pullbacks) == 1
@@ -123,7 +123,7 @@ def test_newer_completed_pullback_becomes_active():
         c("r2", "10", "12", "8", "11"),
         c("c2", "11", "13", "9", "12"),
         c("p2", "12", "12", "6", "9"),
-        c("done2", "9", "13", "7", "12"),
+        c("done2", "9", "14", "7", "12"),
     )
     result = minor.detect_valid_pullbacks(candles, minor.PullbackDirection.BULLISH)
     assert len(result.pullbacks) >= 2
