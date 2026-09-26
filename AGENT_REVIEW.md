@@ -598,3 +598,60 @@ No GitHub Actions workflow is configured for the correction commits, and this en
 Layer 2 remains IMPLEMENTED — READY FOR REVIEW, but NOT APPROVED until runtime tests are executed successfully and the remaining Layer 2 semantic audit is closed.
 
 Mapper/analyzer/monitor integration remains forbidden at this stage.
+
+
+## LAYER 2 DIRECT AUDIT + CORRECTION — 2026-09-26
+
+### Audit finding
+The initial Layer 2 implementation was semantically too permissive in three areas:
+1. it selected pullback references by scanning arbitrary candle/reference pairs instead of maintaining the canonical previous bullish/bearish reference sequence;
+2. it could silently discard an unresolved Outside Bar intrabar-order dependency;
+3. it did not expose the distinction between no pullback and a pullback candidate whose required sequence evidence is unavailable.
+
+### Corrections implemented on main
+- `minor_structure_engine.py` now uses a stateful Layer-2 reference/pullback sequence.
+- Pullback formation requires:
+  - an applicable previous bullish/bearish reference candle;
+  - reference-extreme takeout;
+  - the same reference extreme to be broken after pullback initiation;
+  - equality/touch is never treated as break.
+- Inside Bars remain governed by the mother-candle reference and do not become independent pullback references.
+- Aggregate-OHLC Outside Bar ordering remains `UNAVAILABLE`; no LOW_FIRST/HIGH_FIRST path is fabricated.
+- New explicit implementation state:
+  - `NONE`
+  - `CONFIRMED`
+  - `PENDING_UNAVAILABLE_SEQUENCE`
+- `PendingPullback` preserves the reference/start provenance when sequence ordering cannot be established.
+- A later independently observable completion may resolve the pending candidate.
+- Verified pullback extreme provenance remains tied to the exact candle creating the extreme.
+- Layer 2 remains hermetically downstream of Layer 1 and does not define IDM/BOS/CHoCH/POI.
+
+### Canonical documentation synchronized
+- `.agents/skills/smc/02_minor_structure.md`
+- `.agents/skills/smc/08_implementation.md`
+
+The stale implementation rule treating inside-bar breaks as independent pullbacks was replaced with mother-candle reference semantics.
+
+### Tests
+- `tests/test_minor_structure_engine.py` expanded with explicit unavailable-sequence, pending-resolution, state-reference, and no-event coverage.
+- Current Layer-2 test file contains 11 test functions.
+- Runtime test execution could not be run from the validator environment because external GitHub network access is unavailable. The repository code and fixtures were therefore statically reconciled; no claim of executed PASS is made here.
+
+### Scope
+- `smc_analyzer.py`, `smc_htf_ltf_monitor.py`, `zones.json`, and `knowledgebase/` remain untouched.
+- No mapper integration was performed.
+- No branch was created; all Layer-2 corrections were committed directly to `main`.
+
+### Commits
+- `ac4e5f4` — Layer-2 pullback state machine and unavailable-sequence handling
+- `525121f` — Layer-2 regression tests
+- `7287a63` — Layer-2 canonical documentation pending contract
+- `cc89340` — implementation-contract synchronization
+- `a256022` — continuation-reference semantic tightening
+- `205f551` — unavailable-sequence test assertions
+- `2ec6ff8` — strict-reference test fixture corrections
+
+### Status
+**LAYER 2 = CORRECTED / READY FOR FINAL TEST EXECUTION AND VALIDATOR REVIEW.**
+
+Integration into SMC Mapper remains blocked until Layer 2 receives explicit approval.
