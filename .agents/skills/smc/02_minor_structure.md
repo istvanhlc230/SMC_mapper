@@ -112,6 +112,8 @@ When a Layer 1 INSIDE_BAR occurs during pullback formation, the mother candle re
 
 The inner candle does not replace the applicable reference. Pullback evaluation continues against the mother-candle context.
 
+When Equal High / Equal Low reference identity is transferred to a later candle, that transfer candle establishes the new reference; its own newly established reference extreme is not simultaneously treated as taken. Pullback takeout evaluation begins on the following candle.
+
 ## 3. Outside Bar consumption
 
 Layer 2 may consume a Layer 1 OUTSIDE_BAR observation as part of Candle-Level Valid Pullback formation.
