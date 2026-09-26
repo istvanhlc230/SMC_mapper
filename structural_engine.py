@@ -73,15 +73,22 @@ class IDMLifecycleContext:
     """
 
     after_valid_bos: bool = False
+    valid_bos_candle_id: str | None = None
     protected_external_boundary: ProtectedExternalBoundary | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.after_valid_bos, bool):
             raise QuarantineError("after_valid_bos must be boolean")
+        if self.valid_bos_candle_id is not None and (
+            not isinstance(self.valid_bos_candle_id, str) or not self.valid_bos_candle_id
+        ):
+            raise QuarantineError("valid_bos_candle_id must be a non-empty string")
         if not self.after_valid_bos:
-            if self.protected_external_boundary is not None:
-                raise QuarantineError("protected boundary requires VALID_BOS lifecycle")
+            if self.valid_bos_candle_id is not None or self.protected_external_boundary is not None:
+                raise QuarantineError("post-BOS lifecycle fields require VALID_BOS")
             return
+        if self.valid_bos_candle_id is None:
+            raise QuarantineError("post-BOS IDM lifecycle requires VALID_BOS candle provenance")
         if self.protected_external_boundary is None:
             raise QuarantineError("post-BOS IDM lifecycle requires protected external boundary")
 
@@ -242,6 +249,22 @@ def _takeout_after(
     return None
 
 
+def _comes_after(
+    completion_candle_id: str,
+    bos_candle_id: str,
+    minor: MinorStructureAnalysis,
+) -> bool:
+    """Return True only when the Layer-2 pullback completion is after VALID_BOS."""
+    ordered_ids = [
+        pb.completion_candle_id for pb in minor.pullbacks
+    ]
+    if completion_candle_id not in ordered_ids or bos_candle_id not in ordered_ids:
+        # The caller must provide an explicit lifecycle boundary, but Layer 3
+        # cannot infer ordering from unrelated IDs.
+        return False
+    return ordered_ids.index(completion_candle_id) > ordered_ids.index(bos_candle_id)
+
+
 def classify_idm(
     minor: MinorStructureAnalysis,
     *,
@@ -267,11 +290,22 @@ def classify_idm(
     if lifecycle is None or not lifecycle.after_valid_bos:
         return tuple(pullback_events)
 
-    if pullback_events:
-        pullback_events[-1] = _pullback_idm(
-            minor.pullbacks[-1], IDMClass.MAJOR_IDM
-        )
-        return tuple(pullback_events)
+    if lifecycle.valid_bos_candle_id is None:
+        raise QuarantineError("post-BOS IDM lifecycle requires VALID_BOS candle provenance")
+
+    post_bos_pullbacks = [
+        pb for pb in minor.pullbacks
+        if pb.completion_candle_id != lifecycle.valid_bos_candle_id
+        and _comes_after(pb.completion_candle_id, lifecycle.valid_bos_candle_id, minor)
+    ]
+    if post_bos_pullbacks:
+        selected = post_bos_pullbacks[-1]
+        events = [
+            event for event in pullback_events
+            if event.pullback_completion_candle_id != selected.completion_candle_id
+        ]
+        events.append(_pullback_idm(selected, IDMClass.MAJOR_IDM))
+        return tuple(events)
 
     return (_boundary_idm(lifecycle.protected_external_boundary),)
 
@@ -321,18 +355,15 @@ def qualify_retracement(
         opposing = sum(c.close > c.open for c in window)
 
     if depth >= STANDARD_EQUILIBRIUM_THRESHOLD:
+        # Standard evidence is evaluated first and owns the ordinary path.
         if opposing >= NORMAL_RETRACEMENT_CANDLE_COUNT:
             return RetracementQualification(
                 True, depth, opposing, htf_valid_pullback, False,
                 "STANDARD_EQUILIBRIUM",
             )
-        if opposing >= MIN_RETRACEMENT_CANDLE_COUNT and _outlier_condition(
-            window, swing.direction, candles
-        ):
-            return RetracementQualification(
-                True, depth, opposing, htf_valid_pullback, True,
-                "REDUCED_CANDLE_DISPLACEMENT",
-            )
+
+        # The reduced/outlier path is an explicit exception to the normal
+        # candle-count gate. It is never used to relabel a standard path.
         if len(window) == 1 and _outlier_condition(window, swing.direction, candles):
             return RetracementQualification(
                 True, depth, opposing, htf_valid_pullback, True,
@@ -493,6 +524,7 @@ __all__ = [
     "IDMClass",
     "IDMEvent",
     "IDMLifecycleContext",
+    "_comes_after",
     "IDMOrigin",
     "MIN_OUTLIER_EXTREMES_TAKEN",
     "MIN_RETRACEMENT_CANDLE_COUNT",
