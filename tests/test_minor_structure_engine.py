@@ -250,6 +250,21 @@ def test_reference_touch_is_not_a_pullback_takeout():
 
 
 
+def test_pending_latest_state_overrides_historical_confirmation():
+    candles = (
+        c("r", "5", "10", "2", "9"),
+        c("cont", "9", "11", "3", "10"),
+        c("pb1", "10", "9", "1", "8"),
+        c("done", "8", "11", "4", "10"),
+        c("outside_pending", "10", "12", "1", "7"),
+    )
+    result = minor.detect_valid_pullbacks(candles, minor.PullbackDirection.BULLISH)
+    assert len(result.pullbacks) == 1
+    assert result.active.pullback is result.pullbacks[0]
+    assert len(result.pending) == 1
+    assert result.resolution is minor.PullbackResolution.PENDING_UNAVAILABLE_SEQUENCE
+
+
 def test_layer2_exports_only_minor_structure_contract():
     assert not hasattr(minor, "IDM")
     assert not hasattr(minor, "BOS")
