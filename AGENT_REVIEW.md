@@ -1368,3 +1368,37 @@ No unresolved cross-layer semantic contradiction was identified in this pass.
 
 ### Next phase gate
 The canonical skill is ready for the next isolated implementation phase. Continue with the next layer only after its implementation/tests pass and receive explicit approval. Mapper integration remains deferred until the layer stack is approved.
+
+
+## FULL 01–08 SKILL AUDIT — FINAL CROSS-LAYER RECONCILIATION — 2026-09-26
+
+A fresh audit was performed after the terminology/ownership corrections, using .agents/skills/smc/ as the canonical authority and enforcing the semantic-owner rule: Define once at semantic owner → downstream reference → downstream consumption.
+
+### Findings and corrections
+- Layer 1 remains Microstructure-only: OHLC geometry, breach/equality/reference observations, and observability boundary. No Layer-2+ semantic ownership leakage found.
+- Layer 2 remains the sole owner of Candle-Level Valid Pullback, Verified Pullback Extreme, Pullback-Derived Liquidity Reference, and Minor IDM formation/active pointer.
+- Corrected 02_minor_structure.md: removed a duplicated IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING chain from the Layer-2 lifecycle diagram; Layer 2 now hands off to Layer 3 once MINOR_IDM is established.
+- Corrected 02_minor_structure.md: Layer-3 handoff now names MAJOR_IDM governance rather than MAJOR_IDM definition, preventing ownership ambiguity.
+- Corrected 03_structural_semantic_authority.md: the lifecycle now says IDM GOVERNANCE / ACTIVE IDM HANDOFF, not IDM DEFINITION / CLASSIFICATION; Layer 3 explicitly consumes rather than recreates the Layer-2 Minor IDM definition.
+- Layer 3 Major IDM continuity is consistent: one MAJOR_IDM semantic class; post-BOS Minor IDM alone never replaces the prior protected external boundary; a new Major IDM requires independent qualification.
+- Layer 3 retracement qualification remains the later continuation-BOS gate; Layer 4 consumes it and does not recompute it.
+- Layer 4 BOS remains IDM_TAKEN + MAJOR_RETRACEMENT_QUALIFIED + STRUCTURAL_SWING_BREAK; MAJOR_IDM_SWEEP is distinct from BOS.
+- Layer 5 CHoCH remains context/fractal-based; LTF Structural Glitch changes the operative reference, not the ontology, and wick/body mode remains IDM-provenance dependent.
+- Layer 6 execution does not manufacture structure; POI/OF/OB/RB/Engineering Liquidity boundaries remain downstream and typed.
+- Layer 7 keeps target selection, fixed-R, BE, profit-lock, and trailing outside canonical structural methodology.
+- Layer 8 preserves layer-specific implementation types and the canonical lifecycle; no fallback/real-Major-IDM ontology remains.
+
+### Stale-term / consistency checks
+- FALLBACK_MAJOR_IDM / REAL_MAJOR_IDM: none in active 01–08 canonical rules.
+- residual macro namespace: none in active 01–08 skill documents.
+- duplicate IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING chain in Layer 2: removed.
+- UNAVAILABLE ↔ PENDING Outside-Bar candidate model: none in active canonical rules.
+- no generic Swing / Break implementation class/object is defined.
+
+### Commits
+- 1dd29f3417d9fec92c83bd0206adf264a1ee0fe1 — Layer-2 lifecycle / ownership correction.
+- 0d859a9a396d9ce1d884294dbd0862873dbfc9fa — Layer-3 IDM ownership wording correction.
+
+### Validation disposition
+FULL 01–08 CANONICAL SKILL AUDIT = PASS / CORRECTIONS APPLIED.
+No unresolved cross-layer semantic contradiction was identified in this pass. Runtime mapper/analyzer/monitor integration remains intentionally deferred until the isolated layer stack is approved.
