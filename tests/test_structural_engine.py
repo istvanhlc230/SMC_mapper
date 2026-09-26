@@ -161,6 +161,42 @@ def test_qualified_retracement_at_50_percent_requires_two_opposing_closes():
     assert q.reason == "STANDARD_EQUILIBRIUM"
 
 
+def test_one_candle_non_outlier_is_rejected_at_equilibrium():
+    candles = (
+        c("s", "5", "10", "5", "9"),
+        c("a", "9", "9.5", "0", "8"),
+    )
+    swing = structural.ConfirmedStructuralSwing(
+        minor.PullbackDirection.BULLISH, Decimal("10"), "s", "idm", "s"
+    )
+    q = structural.qualify_retracement(
+        candles, swing, range_high=Decimal("10"), range_low=Decimal("0")
+    )
+    assert not q.qualified
+    assert q.reason == "INSUFFICIENT_CANDLE_STRUCTURE"
+
+
+def test_one_candle_displacement_outlier_is_explicit_exception():
+    candles = (
+        c("s", "5", "10", "5", "9"),
+        c("p1", "8", "9", "4", "8"),
+        c("p2", "8", "9", "3.5", "8"),
+        c("p3", "8", "9", "3", "8"),
+        c("p4", "8", "9", "2.5", "8"),
+        c("p5", "8", "9", "2", "8"),
+        c("outlier", "8", "9", "0", "7"),
+    )
+    swing = structural.ConfirmedStructuralSwing(
+        minor.PullbackDirection.BULLISH, Decimal("10"), "s", "idm", "s"
+    )
+    q = structural.qualify_retracement(
+        candles, swing, range_high=Decimal("10"), range_low=Decimal("0")
+    )
+    assert q.qualified
+    assert q.used_outlier_exception
+    assert q.reason == "ONE_CANDLE_DISPLACEMENT_OUTLIER"
+
+
 def test_38_2_to_50_requires_explicit_htf_valid_pullback():
     candles = (
         c("s", "5", "10", "5", "9"),
