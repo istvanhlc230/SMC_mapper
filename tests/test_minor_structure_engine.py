@@ -78,10 +78,11 @@ def test_same_candle_outside_bar_cannot_confirm_intrabar_pullback_order():
     )
     result = minor.detect_valid_pullbacks(candles, minor.PullbackDirection.BULLISH)
     assert result.pullbacks == ()
-    assert result.resolution is minor.PullbackResolution.PENDING_UNAVAILABLE_SEQUENCE
-    assert len(result.pending) == 1
-    assert result.pending[0].reference_candle_id == "r"
-    assert result.pending[0].start_candle_id == "outside"
+    assert result.resolution is minor.PullbackResolution.INVALIDATED_UNAVAILABLE_SEQUENCE
+    assert result.pending == ()
+    assert len(result.invalidated) == 1
+    assert result.invalidated[0].reference_candle_id == "r"
+    assert result.invalidated[0].start_candle_id == "outside"
 
 
 def test_later_outside_bar_cannot_confirm_pullback_completion_when_order_is_unavailable():
@@ -93,10 +94,27 @@ def test_later_outside_bar_cannot_confirm_pullback_completion_when_order_is_unav
         c("done", "7", "11", "4", "10"),
     )
     result = minor.detect_valid_pullbacks(candles, minor.PullbackDirection.BULLISH)
-    assert len(result.pullbacks) == 1
-    assert result.pullbacks[0].completion_candle_id == "done"
+    assert result.pullbacks == ()
     assert result.pending == ()
-    assert result.resolution is minor.PullbackResolution.CONFIRMED
+    assert len(result.invalidated) == 1
+    assert result.invalidated[0].start_candle_id == "pb1"
+    assert result.invalidated[0].reference_candle_id == "r"
+    assert result.resolution is minor.PullbackResolution.INVALIDATED_UNAVAILABLE_SEQUENCE
+
+
+def test_later_clean_candle_cannot_revive_outside_bar_start_candidate():
+    candles = (
+        c("r", "5", "10", "2", "9"),
+        c("cont", "9", "11", "3", "10"),
+        c("outside_start", "8", "12", "1", "7"),
+        c("done", "7", "11", "4", "10"),
+    )
+    result = minor.detect_valid_pullbacks(candles, minor.PullbackDirection.BULLISH)
+    assert result.pullbacks == ()
+    assert result.pending == ()
+    assert len(result.invalidated) == 1
+    assert result.invalidated[0].start_candle_id == "outside_start"
+    assert result.resolution is minor.PullbackResolution.INVALIDATED_UNAVAILABLE_SEQUENCE
 
 
 def test_later_outside_bar_does_not_block_a_subsequent_observable_completion():
