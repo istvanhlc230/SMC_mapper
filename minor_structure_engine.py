@@ -282,8 +282,8 @@ def detect_valid_pullbacks(
     4. require the same reference's opposing extreme to be broken after the
        pullback starts;
     5. when aggregate OHLC cannot prove the required intrabar order for an
-       Outside Bar, keep the candidate explicitly pending rather than
-       manufacturing an order.
+       Outside Bar, terminally invalidate that candidate rather than
+       manufacturing or later backfilling an order.
 
     Layer-2 does not reinterpret UNAVAILABLE as OBSERVED or ASSUMED.
     """
