@@ -230,6 +230,26 @@ def test_layer2_resolution_is_explicit_when_no_event_exists():
     assert result.resolution is minor.PullbackResolution.NONE
 
 
+def test_reference_touch_is_not_a_pullback_takeout():
+    bullish = (
+        c("r", "5", "10", "2", "9"),
+        c("cont", "9", "11", "3", "10"),
+        c("touch", "9", "9.5", "2", "8"),
+    )
+    bearish = (
+        c("r", "9", "10", "2", "3"),
+        c("cont", "3", "9", "1", "2"),
+        c("touch", "2", "10", "3", "8"),
+    )
+    assert minor.detect_valid_pullbacks(
+        bullish, minor.PullbackDirection.BULLISH
+    ).resolution is minor.PullbackResolution.NONE
+    assert minor.detect_valid_pullbacks(
+        bearish, minor.PullbackDirection.BEARISH
+    ).resolution is minor.PullbackResolution.NONE
+
+
+
 def test_layer2_exports_only_minor_structure_contract():
     assert not hasattr(minor, "IDM")
     assert not hasattr(minor, "BOS")
