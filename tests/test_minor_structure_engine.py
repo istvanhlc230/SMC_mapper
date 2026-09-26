@@ -150,7 +150,7 @@ def test_equal_high_transfers_active_reference_before_pullback_takeout():
     candles = (
         c("r", "5", "10", "2", "9"),
         c("cont", "9", "11", "3", "10"),
-        c("eqh", "10", "11", "4", "8"),
+        c("eqh", "9", "10", "4", "8"),
         c("take", "8", "10.5", "1", "7"),
         c("done", "7", "12", "5", "11"),
     )
@@ -165,9 +165,9 @@ def test_equal_low_transfers_active_reference_before_pullback_takeout():
     candles = (
         c("r", "5", "10", "2", "3"),
         c("cont", "3", "9", "1", "2"),
-        c("eql", "2", "8", "1", "7"),
-        c("take", "7", "11", "1.5", "9"),
-        c("done", "9", "7", "0.5", "2"),
+        c("eql", "2", "8", "2", "7"),
+        c("take", "7", "9", "3", "8"),
+        c("done", "8", "1", "0.5", "1"),
     )
     result = minor.detect_valid_pullbacks(candles, minor.PullbackDirection.BEARISH)
     assert len(result.pullbacks) == 1
