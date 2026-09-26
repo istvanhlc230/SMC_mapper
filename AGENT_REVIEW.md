@@ -429,3 +429,83 @@ Canonical chapters rechecked: 01, 02, 03, 04, 05, 06, 07, 08, methodology_parame
 Runtime Python, analyzed JSON and knowledgebase source files remain untouched.
 
 **LATEST SOURCE-PRECEDENCE CORRECTION: IMPLEMENTED; FINAL VALIDATION PASSED.**
+
+
+## LAYER 1 IMPLEMENTATION — 2026-09-26
+
+### Audit disposition
+
+The canonical Layer 1 boundary was re-audited before implementation.
+
+**Layer 1 owns only:**
+- validated OHLC candle primitives;
+- deterministic physical/wick/body/close breach relations;
+- exact equality relations;
+- strict Inside Bar geometry and mother-candle identity;
+- Outside Bar geometry;
+- independent high/low reference identity transfer;
+- candle-internal sequence observability;
+- candle-level directional observation;
+- immutable, content-addressed evidence and fail-closed validation.
+
+**Layer 1 explicitly does not own:**
+- Pullback formation;
+- IDM classification/lifecycle;
+- structural swing qualification;
+- BOS;
+- CHoCH;
+- POI/OB/FVG;
+- risk/target/trade management;
+- Trading Range or higher-layer lifecycle semantics.
+
+This matches the canonical ownership chain in `.agents/skills/smc/01_micro_structure.md` and `02_minor_structure.md`: Layer 1 emits candle observations; Layer 2 assembles them into sequential/minor structure.
+
+### Implementation
+
+Implemented on `main` without a feature branch:
+
+- `microstructure_engine.py`
+- `tests/test_microstructure_engine.py`
+
+The implementation provides:
+- strict finite `Decimal` normalization; native float inputs are rejected;
+- equality as a non-break condition;
+- deterministic breach classification without inferring intrabar traversal;
+- strict Inside Bar and Outside Bar geometry;
+- Outside Bar sequence evidence defaulting to `UNAVAILABLE` when aggregate OHLC cannot expose the path;
+- exact EQH/EQL comparison;
+- independent high/low reference transfer;
+- source-candle provenance on breach/reference evidence;
+- deeply immutable dataclass/tuple evidence objects;
+- deterministic SHA-256 content identity;
+- fail-closed quarantine via `QuarantineError`;
+- positive AST import allowlist plus downstream-vocabulary isolation test.
+
+### Validation
+
+Local validation completed successfully:
+
+```
+12 passed in 0.05s
+```
+
+The test suite covers numeric integrity, equality semantics, breach taxonomy, Inside/Outside Bar behavior, unavailable sequence evidence, provenance, independent reference transfer, exact EQH/EQL, immutability, deterministic evidence IDs, quarantine behavior, candle-level trend, and AST isolation.
+
+### Integration boundary
+
+No existing runtime integration was performed.
+
+Untouched:
+- `smc_analyzer.py`
+- `smc_htf_ltf_monitor.py`
+- `zones.json`
+- `knowledgebase/`
+- canonical skill documents
+
+Layer 1 is implemented as an independently reviewable component. Mapper integration remains a later phase after approval.
+
+### Audit conclusion
+
+**LAYER 1 IMPLEMENTATION STATUS: READY FOR REVIEW**
+
+The implementation intentionally does not implement pullbacks or any Layer 2+ semantic object. No branch was created; the changes are committed directly to `main`.
