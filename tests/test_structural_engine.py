@@ -55,7 +55,6 @@ def test_post_bos_newest_pullback_becomes_major_without_pullback_id_selection():
     minor_result = minor.detect_valid_pullbacks(candles, minor.PullbackDirection.BULLISH)
     lifecycle = structural.IDMLifecycleContext(
         after_valid_bos=True,
-        previous_major_idm=None,
         protected_external_boundary=structural.ProtectedExternalBoundary(
             minor.PullbackDirection.BULLISH, Decimal("12"), "protected"
         ),
@@ -66,27 +65,30 @@ def test_post_bos_newest_pullback_becomes_major_without_pullback_id_selection():
     assert events[-1].pullback_completion_candle_id == "done"
 
 
-def test_post_bos_without_new_major_keeps_previous_major_idm():
-    previous = structural.IDMEvent(
-        structural.IDMClass.MAJOR_IDM,
-        structural.IDMOrigin.PROTECTED_EXTERNAL_BOUNDARY,
-        minor.PullbackDirection.BULLISH,
-        Decimal("12"),
-        "protected",
-    )
+def test_post_bos_without_new_pullback_uses_protected_boundary_as_major():
     lifecycle = structural.IDMLifecycleContext(
         after_valid_bos=True,
-        previous_major_idm=previous,
+        protected_external_boundary=structural.ProtectedExternalBoundary(
+            minor.PullbackDirection.BULLISH, Decimal("12"), "protected"
+        ),
     )
     events = structural.classify_idm(
         minor.MinorStructureAnalysis((), minor.ActivePullbackState(None)),
         lifecycle=lifecycle,
     )
     assert len(events) == 1
-    assert events[0] is previous
+    assert events[0].idm_class is structural.IDMClass.MAJOR_IDM
+    assert events[0].origin is structural.IDMOrigin.PROTECTED_EXTERNAL_BOUNDARY
+    assert events[0].source_candle_id == "protected"
 
 
-def test_post_bos_without_previous_major_uses_protected_boundary():
+def test_post_bos_requires_protected_boundary_when_no_new_pullback():
+    import pytest
+    with pytest.raises(micro.QuarantineError):
+        structural.IDMLifecycleContext(after_valid_bos=True)
+
+
+def test_post_bos_boundary_provenance_is_preserved():
     lifecycle = structural.IDMLifecycleContext(
         after_valid_bos=True,
         protected_external_boundary=structural.ProtectedExternalBoundary(
