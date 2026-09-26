@@ -19,7 +19,8 @@ from microstructure_engine import (
     Direction,
     ExtremeReference,
     QuarantineError,
-    is_outside_bar,
+    SequenceStatus,
+    outside_bar,
     classify_breach,
     candle_trend,
     TrendDirection,
@@ -147,8 +148,12 @@ def _reference_breach(candle: Candle, reference: Candle, direction: Direction) -
 
 
 def _ambiguous_outside_bar(candle: Candle, reference: Candle) -> bool:
-    """Return True when aggregate OHLC cannot prove Outside Bar intrabar order."""
-    return is_outside_bar(candle, reference)
+    """Return True when Layer 1 reports Outside Bar sequence as unavailable."""
+    observation = outside_bar(candle, reference)
+    return (
+        observation is not None
+        and observation.sequence_evidence.status is SequenceStatus.UNAVAILABLE
+    )
 
 
 def _build_pullback(
