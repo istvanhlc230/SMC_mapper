@@ -761,3 +761,41 @@ Layer 2 still owns the sequential state machine, pullback window, verified extre
 **LAYER 2 = SEMANTICALLY CORRECTED / READY FOR RUNTIME TEST EXECUTION AND FINAL APPROVAL.**
 
 Formal Layer-2 approval remains blocked until the repository test suite is actually executed successfully.
+
+## LAYER 2 FINAL AUDIT CORRECTION — 2026-09-26
+
+### Finding
+A final semantic audit identified a state-reporting defect in MinorStructureAnalysis.resolution: when historical completed pullbacks existed alongside a newer unresolved PENDING_UNAVAILABLE_SEQUENCE candidate, the property returned CONFIRMED because historical completion was checked first.
+
+### Correction
+resolution now gives precedence to the latest unresolved pending state:
+- PENDING_UNAVAILABLE_SEQUENCE when an unresolved pending candidate exists;
+- otherwise CONFIRMED when completed pullbacks exist;
+- otherwise NONE.
+
+This does not alter historical pullback records or the active completed-pullback pointer. It only makes the aggregate resolution state reflect the unresolved current condition.
+
+### Regression
+Added test_pending_latest_state_overrides_historical_confirmation() covering:
+- one previously confirmed pullback;
+- a later Outside Bar with unavailable intrabar sequence;
+- preserved historical active pullback;
+- explicit pending resolution taking precedence.
+
+### Scope
+- minor_structure_engine.py corrected.
+- tests/test_minor_structure_engine.py updated.
+- microstructure_engine.py unchanged.
+- smc_analyzer.py, smc_htf_ltf_monitor.py, zones.json, and knowledgebase/ untouched.
+- No Mapper integration performed.
+- No branch created; changes committed directly to main.
+
+### Validation boundary
+The validator environment cannot execute the repository checkout/test suite because repository runtime/network execution is unavailable. Therefore this correction is statically audited and regression-covered, but no runtime PASS claim is made until the repository test suite is executed in an environment with the checkout available.
+
+### Commits
+- 28d35a6 — Fix Layer-2 pending resolution precedence
+- 09293b6 — Add Layer-2 pending-resolution regression
+
+### Current status
+**LAYER 2 = AUDIT-CORRECTED / READY FOR RUNTIME TEST EXECUTION AND FINAL APPROVAL.**
