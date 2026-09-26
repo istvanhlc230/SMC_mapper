@@ -240,7 +240,7 @@ POST-BOS PRICE ACTION
 1. **Minor IDM ownership:** Layer 2 owns formation and active-pointer lifecycle of the Minor IDM derived from the active valid pullback.
 2. **Layer 3 IDM lifecycle:** Layer 3 consumes Minor IDM evidence for IDM_TAKEN and owns Major IDM governance and external structural consequences.
 3. **Major IDM:** governing major-liquidity reference. It may be established from a qualifying post-BOS pullback or, when only Minor IDM exists, from the prior protected external boundary/liquidity.
-4. A newer valid pullback supersedes the active IDM only when it independently satisfies the applicable Major/Minor classification.
+4. A newer valid pullback may shift the Layer-2 Minor IDM pointer under Layer-2 ownership; the active Layer-3 Major IDM reference changes only when the new pullback independently satisfies the canonical Major-IDM qualification.
 5. There is no separate legacy/proxy Major IDM ontology class; Major IDM remains one semantic class with traceable provenance.
 6. Historical IDM objects remain immutable; active-pointer changes are forward-only and event-time provenance is preserved.
 
@@ -272,7 +272,7 @@ This section owns the IDM semantic object and lifecycle. BOS and CHoCH modules c
 
 The confirmation of a structural swing point and the qualification of the later continuation BOS are separate sequential decisions. The 2026 market-structure source treats IDM takeout as the event that confirms the swing point; retracement depth and candle structure then determine whether a later break of that swing can qualify as a valid BOS.
 
-1. **IDM_TAKEN:** Price sweeps or closes beyond the active Inducement (most recent valid pullback).
+1. **IDM_TAKEN:** Price physically takes the active IDM reference supplied by the applicable upstream IDM lifecycle. The reference may be the Layer-2 pullback-derived Minor IDM or the Layer-3 governed Major IDM.
 
 2. **CONFIRMED_STRUCTURAL_SWING:** The external extreme associated with the taken IDM is confirmed as the structural swing point for the active lifecycle.
 
@@ -401,7 +401,7 @@ POI expiration is handled through the separate POI lifecycle; the structural eng
 10. Physical external break does not automatically equal VALID_BOS or CHoCH_CONFIRMED.
 11. `MAJOR_IDM_SWEEP` is not VALID_BOS and not CHoCH_CONFIRMED.
 12. Major IDM may be pullback-derived or the prior protected external boundary when only Minor IDM exists; it is never arbitrary internal liquidity.
-13. A Major IDM takeout may confirm the corresponding swing reference, but it does not by itself create VALID_BOS, Trading Range rollover, or Protected Structural Extreme lock.
+13. A A Major IDM takeout may confirm the corresponding swing reference, but it does not by itself create VALID_BOS, Trading Range rollover, or Protected Structural Extreme lock.
 14. `NEW_SVP` does not automatically create Major IDM.
 15. Only `VALID_BOS` rolls the Trading Range and locks the Protected Structural Extreme.
 16. `CHoCH_CONFIRMED` initializes a new regime but does not itself create a new CONFIRMED_STRUCTURAL_SWING or VALID_BOS.
