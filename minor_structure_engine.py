@@ -210,7 +210,8 @@ def detect_valid_pullbacks(
                 continue
             start_index = None
             for i in range(ref_index + 1, len(sequence)):
-                low_taken = _reference_breach(sequence[i], reference, Direction.DOWN)\n                high_broken = _reference_breach(sequence[i], reference, Direction.UP)
+                low_taken = _reference_breach(sequence[i], reference, Direction.DOWN)
+                high_broken = _reference_breach(sequence[i], reference, Direction.UP)
                 if start_index is None:
                     if low_taken:
                         # A single aggregate Outside Bar cannot prove low-before-high.
@@ -226,7 +227,8 @@ def detect_valid_pullbacks(
                 continue
             start_index = None
             for i in range(ref_index + 1, len(sequence)):
-                high_taken = _reference_breach(sequence[i], reference, Direction.UP)\n                low_broken = _reference_breach(sequence[i], reference, Direction.DOWN)
+                high_taken = _reference_breach(sequence[i], reference, Direction.UP)
+                low_broken = _reference_breach(sequence[i], reference, Direction.DOWN)
                 if start_index is None:
                     if high_taken:
                         if low_broken and is_outside_bar(sequence[i], reference):
