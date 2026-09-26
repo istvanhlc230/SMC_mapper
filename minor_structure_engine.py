@@ -19,6 +19,8 @@ from microstructure_engine import (
     Candle,
     QuarantineError,
     SequenceStatus,
+    equal_high,
+    equal_low,
     outside_bar,
 )
 
@@ -269,6 +271,16 @@ def detect_valid_pullbacks(
             continue
 
         if start_index is None:
+            # Layer 1 owns EQH/EQL reference identity transfer. Apply that
+            # transfer before testing whether the current candle takes the
+            # active reference extreme. This is required for the canonical
+            # equal-extreme scenario where the second candle becomes the
+            # active reference.
+            if direction is PullbackDirection.BULLISH and equal_high(reference, candle) is not None:
+                reference = candle
+            elif direction is PullbackDirection.BEARISH and equal_low(reference, candle) is not None:
+                reference = candle
+
             took_reference_extreme = (
                 candle.low < reference.low
                 if direction is PullbackDirection.BULLISH
@@ -338,11 +350,11 @@ def detect_valid_pullbacks(
         ):
             reference = candle
         else:
-            # The same previous directional candle remains the applicable
-            # reference until a new directional continuation establishes a
-            # newer reference. Completion by a non-directional candle does
-            # not invent a new reference candle.
-            pass
+            # The completed pullback has already broken the old reference.
+            # A non-directional completion candle therefore cannot leave that
+            # broken reference active. Wait for a new directional continuation
+            # to establish the next applicable reference.
+            reference = None
 
     # A pending candidate is meaningful only if it is still unresolved.
     # Remove stale pending records once a later observable completion confirms
