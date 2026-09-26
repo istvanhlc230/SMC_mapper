@@ -12,7 +12,7 @@ def test_bullish_pullback_forms_from_reference_low_takeout_then_high_break():
     candles = (
         c("r", "5", "10", "2", "9"),
         c("cont", "9", "11", "3", "10"),
-        c("pb1", "10", "10", "1", "8"),
+        c("pb1", "10", "9.5", "1", "8"),
         c("pb2", "8", "11", "4", "10"),
     )
     result = minor.detect_valid_pullbacks(candles, minor.PullbackDirection.BULLISH)
@@ -32,7 +32,7 @@ def test_bearish_pullback_forms_from_reference_high_takeout_then_low_break():
         c("r", "9", "10", "2", "3"),
         c("cont", "3", "9", "1", "2"),
         c("pb1", "2", "11", "2", "8"),
-        c("pb2", "8", "7", "1", "3"),
+        c("pb2", "8", "9", "1", "3"),
     )
     result = minor.detect_valid_pullbacks(candles, minor.PullbackDirection.BEARISH)
     assert len(result.pullbacks) == 1
@@ -60,7 +60,7 @@ def test_inside_bar_does_not_replace_reference():
     candles = (
         c("r", "5", "10", "2", "9"),
         c("cont", "9", "11", "3", "10"),
-        c("pb1", "10", "10", "1", "8"),
+        c("pb1", "10", "9.5", "1", "8"),
         c("inside", "8", "9", "2", "8.5"),
         c("pb3", "8.5", "11", "4", "10"),
     )
@@ -88,7 +88,7 @@ def test_later_outside_bar_cannot_confirm_pullback_completion_when_order_is_unav
     candles = (
         c("r", "5", "10", "2", "9"),
         c("cont", "9", "11", "3", "10"),
-        c("pb1", "10", "9", "1", "8"),
+        c("pb1", "9", "9.5", "1", "8"),
         c("outside_completion", "8", "12", "1", "7"),
         c("done", "7", "11", "4", "10"),
     )
@@ -103,7 +103,7 @@ def test_later_outside_bar_does_not_block_a_subsequent_observable_completion():
     candles = (
         c("r", "5", "10", "2", "9"),
         c("cont", "9", "11", "3", "10"),
-        c("pb1", "10", "9", "1", "8"),
+        c("pb1", "9", "9.5", "1", "8"),
         c("outside_wait", "8", "12", "1", "7"),
         c("done", "7", "11", "4", "9.5"),
     )
@@ -135,7 +135,7 @@ def test_reference_does_not_jump_to_arbitrary_candle_inside_pullback():
     candles = (
         c("r", "5", "10", "2", "9"),
         c("cont", "9", "11", "3", "10"),
-        c("pb1", "10", "10", "1", "8"),
+        c("pb1", "10", "9.5", "1", "8"),
         c("inside", "8", "9", "2", "8.5"),
         c("pb2", "8.5", "9", "1.5", "8"),
         c("done", "8", "11", "4", "10"),
@@ -167,7 +167,7 @@ def test_equal_low_transfers_active_reference_before_pullback_takeout():
         c("cont", "3", "9", "1", "2"),
         c("eql", "2", "8", "2", "7"),
         c("take", "7", "9", "3", "8"),
-        c("done", "8", "1", "0.5", "1"),
+        c("done", "3", "3.5", "0.5", "1"),
     )
     result = minor.detect_valid_pullbacks(candles, minor.PullbackDirection.BEARISH)
     assert len(result.pullbacks) == 1
@@ -180,7 +180,7 @@ def test_non_directional_completion_does_not_reuse_already_broken_reference():
     candles = (
         c("r", "5", "10", "2", "9"),
         c("cont", "9", "11", "3", "10"),
-        c("pb1", "10", "9", "1", "8"),
+        c("pb1", "9", "9.5", "1", "8"),
         c("done", "8", "11", "4", "9"),
         c("later", "9", "10.5", "1", "8"),
         c("new", "8", "12", "5", "11"),
@@ -210,7 +210,7 @@ def test_equal_low_transfer_candle_cannot_take_its_own_new_reference_high():
         c("cont", "3", "9", "1", "2"),
         c("eql", "2", "8", "2", "7"),
         c("take", "7", "9", "3", "8"),
-        c("done", "8", "1", "0.5", "1"),
+        c("done", "3", "3.5", "0.5", "1"),
     )
     result = minor.detect_valid_pullbacks(candles, minor.PullbackDirection.BEARISH)
     assert len(result.pullbacks) == 1
@@ -239,7 +239,7 @@ def test_reference_touch_is_not_a_pullback_takeout():
     bearish = (
         c("r", "9", "10", "2", "3"),
         c("cont", "3", "9", "1", "2"),
-        c("touch", "2", "10", "3", "8"),
+        c("touch", "2", "10", "1", "8"),
     )
     assert minor.detect_valid_pullbacks(
         bullish, minor.PullbackDirection.BULLISH
@@ -254,7 +254,7 @@ def test_pending_latest_state_overrides_historical_confirmation():
     candles = (
         c("r", "5", "10", "2", "9"),
         c("cont", "9", "11", "3", "10"),
-        c("pb1", "10", "9", "1", "8"),
+        c("pb1", "9", "9.5", "1", "8"),
         c("done", "8", "11", "4", "10"),
         c("outside_pending", "10", "12", "1", "7"),
     )
