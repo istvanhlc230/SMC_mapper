@@ -69,6 +69,7 @@ def test_post_bos_newest_pullback_becomes_major_without_pullback_id_selection():
 def test_post_bos_without_new_pullback_uses_protected_boundary_as_major():
     lifecycle = structural.IDMLifecycleContext(
         after_valid_bos=True,
+        valid_bos_candle_id="sweep",
         protected_external_boundary=structural.ProtectedExternalBoundary(
             minor.PullbackDirection.BULLISH, Decimal("12"), "protected"
         ),
