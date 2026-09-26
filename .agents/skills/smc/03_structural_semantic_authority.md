@@ -35,9 +35,7 @@ VERIFIED PULLBACK EXTREME
   ↓
 PULLBACK-DERIVED LIQUIDITY REFERENCE
   ↓
-IDM DEFINITION / CLASSIFICATION
-  ↓
-ACTIVE IDM
+IDM GOVERNANCE / ACTIVE IDM HANDOFF
   ↓
 IDM LIQUIDITY TAKEOUT
   ↓
@@ -150,7 +148,7 @@ PROTECTED_STRUCTURAL_EXTREME_LOCK + TRADING_RANGE_ROLLOVER
 
 ## 3.2.3 — Inducement Semantic Authority
 
-Layer 3 is the semantic owner of Major IDM and the cross-layer IDM takeout / external structural lifecycle. Layer 2 is the semantic owner of Minor IDM formation from the active valid pullback. Layer 3 consumes the Layer-2 Minor IDM and determines the governing Major IDM role and downstream structural consequences.
+Layer 3 is the semantic owner of Major IDM governance and the cross-layer IDM takeout / external structural lifecycle. Layer 2 is the semantic owner of Minor IDM formation from the active valid pullback. Layer 3 consumes the Layer-2 Minor IDM and determines the governing Major IDM role and downstream structural consequences. Layer 3 does not redefine or recreate the Layer-2 Minor IDM definition.
 
 For a bullish active impulsive leg, inducement is the liquidity resting below the low of the most recently formed valid pullback relevant to that leg. For a bearish active impulsive leg, inducement is the liquidity resting above the high of the most recently formed valid pullback.
 
