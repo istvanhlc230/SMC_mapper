@@ -150,7 +150,7 @@ PROTECTED_STRUCTURAL_EXTREME_LOCK + TRADING_RANGE_ROLLOVER
 
 ## 3.2.3 — Inducement Semantic Authority
 
-Layer 3 is the single semantic owner of Inducement (IDM). Layer 2 supplies the validated pullback and pullback-derived liquidity reference; Layer 3 determines whether that reference constitutes IDM and which IDM class is active.
+Layer 3 is the semantic owner of Major IDM and the cross-layer IDM takeout / external structural lifecycle. Layer 2 is the semantic owner of Minor IDM formation from the active valid pullback. Layer 3 consumes the Layer-2 Minor IDM and determines the governing Major IDM role and downstream structural consequences.
 
 For a bullish active impulsive leg, inducement is the liquidity resting below the low of the most recently formed valid pullback relevant to that leg. For a bearish active impulsive leg, inducement is the liquidity resting above the high of the most recently formed valid pullback.
 
@@ -180,8 +180,10 @@ VERIFIED PULLBACK EXTREME
         ↓
 PULLBACK-DERIVED LIQUIDITY REFERENCE
         ↓
+MINOR_IDM
+        ↓
 LAYER 3
-IDM CLASSIFICATION
+IDM_TAKEN / MAJOR_IDM GOVERNANCE
 ~~~
 
 ### Minor vs Major IDM
@@ -235,8 +237,8 @@ POST-BOS PRICE ACTION
 
 ### Canonical Inducement Ontology
 
-1. **Single semantic owner:** Layer 3 owns IDM classification and active-reference lifecycle.
-2. **Minor IDM:** internal inducement role associated with a valid internal/pre-BOS pullback.
+1. **Minor IDM ownership:** Layer 2 owns formation and active-pointer lifecycle of the Minor IDM derived from the active valid pullback.
+2. **Layer 3 IDM lifecycle:** Layer 3 consumes Minor IDM evidence for IDM_TAKEN and owns Major IDM governance and external structural consequences.
 3. **Major IDM:** governing major-liquidity reference. It may be established from a qualifying post-BOS pullback or, when only Minor IDM exists, from the prior protected external boundary/liquidity.
 4. A newer valid pullback supersedes the active IDM only when it independently satisfies the applicable Major/Minor classification.
 5. There is no separate `REAL_MAJOR_IDM` or `FALLBACK_MAJOR_IDM` ontology class.
