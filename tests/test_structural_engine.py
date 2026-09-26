@@ -50,7 +50,7 @@ def test_major_idm_is_not_selected_by_caller_supplied_pullback_id():
     )
 
 
-def test_post_bos_newest_pullback_becomes_major_without_pullback_id_selection():
+def test_post_bos_pullback_remains_minor_without_major_qualification():
     candles = (
         c("bos", "9", "12", "8", "11"),
         c("post_start", "11", "11.5", "7", "8"),
@@ -82,9 +82,50 @@ def test_post_bos_newest_pullback_becomes_major_without_pullback_id_selection():
         ),
     )
     events = structural.classify_idm(minor_result, candles=candles, lifecycle=lifecycle)
+    assert events[0].idm_class is structural.IDMClass.MINOR_IDM
     assert events[-1].idm_class is structural.IDMClass.MAJOR_IDM
-    assert events[-1].origin is structural.IDMOrigin.PULLBACK_DERIVED
-    assert events[-1].pullback_completion_candle_id == "post_done"
+    assert events[-1].origin is structural.IDMOrigin.PROTECTED_EXTERNAL_BOUNDARY
+
+
+def test_explicit_major_idm_qualification_promotes_only_that_pullback():
+    candles = (
+        c("bos", "9", "12", "8", "11"),
+        c("post_start", "11", "11.5", "7", "8"),
+        c("post_done", "8", "12", "8", "11"),
+    )
+    extreme = minor.VerifiedPullbackExtreme(
+        minor.PullbackDirection.BULLISH, Decimal("7"), "post_start"
+    )
+    liquidity = minor.PullbackDerivedLiquidityReference(
+        minor.LiquiditySide.SELL_SIDE, Decimal("7"), "post_start"
+    )
+    post_pullback = minor.CandleLevelValidPullback(
+        minor.PullbackDirection.BULLISH,
+        "bos",
+        "post_start",
+        "post_done",
+        extreme,
+        liquidity,
+    )
+    minor_result = minor.MinorStructureAnalysis(
+        (post_pullback,),
+        minor.ActivePullbackState(post_pullback),
+    )
+    lifecycle = structural.IDMLifecycleContext(
+        after_valid_bos=True,
+        valid_bos_candle_id="bos",
+        protected_external_boundary=structural.ProtectedExternalBoundary(
+            minor.PullbackDirection.BULLISH, Decimal("12"), "protected"
+        ),
+        major_idm_qualification=structural.MajorIDMQualificationEvidence(
+            "post_done", True, "explicit-canonical-qualification"
+        ),
+    )
+    events = structural.classify_idm(minor_result, candles=candles, lifecycle=lifecycle)
+    assert len(events) == 1
+    assert events[0].idm_class is structural.IDMClass.MAJOR_IDM
+    assert events[0].origin is structural.IDMOrigin.PULLBACK_DERIVED
+    assert events[0].pullback_completion_candle_id == "post_done"
 
 
 def test_post_bos_without_new_pullback_uses_protected_boundary_as_major():
