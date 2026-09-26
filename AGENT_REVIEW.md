@@ -1295,3 +1295,31 @@ The canonical skill contains no active `FALLBACK_MAJOR_IDM` / `REAL_MAJOR_IDM` o
 Post-edit GitHub re-read confirms both modified files are present on `main`, and the cross-layer invariant checks pass. No runtime Python, `zones.json`, or `knowledgebase/` files were modified.
 
 STATUS: **01–08 CANONICAL SKILL AUDIT = APPROVED / CORRECTIONS APPLIED**
+
+
+## DIRECT VALIDATOR — FULL 01–08 SKILL RE-AUDIT — 2026-09-26
+
+Audit scope: all canonical skill layers 01–08 and cross-layer semantic ownership, using `.agents/skills/smc/` as the canonical authority.
+
+### Findings
+- Layer 1 Microstructure boundary: consistent. No Layer-2+ semantic ownership leakage found in normative implementation rules.
+- Layer 2 Minor Structure: consistent. Candle-Level Valid Pullback, Verified Pullback Extreme, active pullback pointer and Minor IDM ownership are separated from Layer 3 Major IDM governance. Outside-Bar unavailable sequence handling is terminal for the affected candidate and cannot be resolved retroactively.
+- Layer 3 Structural Semantic Authority: consistent. IDM_TAKEN confirms the relevant CONFIRMED_STRUCTURAL_SWING; retracement qualification remains a later continuation-BOS gate. Major IDM continuity preserves the prior protected external boundary when only Minor IDM exists. No fallback/real Major IDM ontology remains.
+- Layer 4 BOS: consistent. Layer 4 consumes stored Layer-3 qualification and does not recalculate retracement/HTF logic. VALID_BOS requires IDM_TAKEN + MAJOR_RETRACEMENT_QUALIFIED + STRUCTURAL_SWING_BREAK.
+- Layer 5 CHoCH: one cross-layer contradiction found and corrected. The Major-IDM wick-sweep paragraph incorrectly said the sweep did not automatically create CONFIRMED_STRUCTURAL_SWING. It now explicitly consumes IDM_TAKEN and immediately confirms the associated CONFIRMED_STRUCTURAL_SWING, while remaining non-BOS/non-CHoCH and not rolling the range.
+- Layer 6 Execution: consistent. POI/OB/FVG/Engineering Liquidity/Rejection Block remain execution-owned and do not manufacture structure.
+- Layer 7 Risk/Targets: consistent. Target selection, fixed-R, BE, profit-lock and trailing remain policy/implementation scope; TARGET_REACHED remains distinct from closure/stop movement/broker fill.
+- Layer 8 Implementation: consistent with Layers 1–7. Generic Swing/Break/Structure objects remain prohibited where canonical semantic types are required; canonical lifecycle and CHoCH/BOS gates are consumed downstream.
+
+### Documentation cleanup
+- Fixed duplicate section numbering in `.agents/skills/smc/skill.md` (Documentation authority is now Section 6).
+
+### Validation
+- Re-audit found no additional canonical contradiction requiring a methodology change.
+- Runtime files and `knowledgebase/` were not modified.
+- The legacy feature branch `feature/upstream-structural-evidence-contract-v1` is an ancestor of current `main` (0 commits ahead, 118 behind), so it contains no unique work relative to main. The available GitHub connector has no branch-delete operation, therefore branch deletion could not be performed from this session.
+
+### Status
+**FULL 01–08 CANONICAL SKILL AUDIT: PASS after correction.**
+
+The corrected Layer-5 wording is committed directly to `main`; no separate feature branch is required.
