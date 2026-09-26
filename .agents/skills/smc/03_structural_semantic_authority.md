@@ -122,7 +122,7 @@ Bootstrap must remain distinguishable from organically confirmed structure.
 
 An impulse origin is the physical price/time anchor where an expansion began. It does not automatically constitute a Protected Structural Extreme.
 
-A Protected Structural Extreme is a later macro-state created and locked through valid BOS.
+A Protected Structural Extreme is a later Major / External structural state created and locked through valid BOS.
 
 ```text
 QUALIFIED IDM
