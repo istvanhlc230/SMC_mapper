@@ -13,7 +13,7 @@ def bullish_fixture(extra=()):
     return (
         c("r", "5", "10", "2", "9"),
         c("cont", "9", "11", "3", "10"),
-        c("pb", "10", "10", "1", "8"),
+        c("pb", "10", "9.5", "1", "8"),
         c("done", "8", "11", "4", "10"),
         *extra,
     )
@@ -52,7 +52,7 @@ def test_qualified_retracement_at_50_percent_requires_two_opposing_closes():
     candles = (
         c("s", "5", "10", "5", "9"),
         c("a", "9", "9.5", "8", "8.5"),
-        c("b", "8.5", "9", "7", "7.5"),
+        c("b", "8.5", "9", "5", "7.5"),
     )
     swing = structural.ConfirmedStructuralSwing(
         minor.PullbackDirection.BULLISH, Decimal("10"), "s", "idm", "s"
