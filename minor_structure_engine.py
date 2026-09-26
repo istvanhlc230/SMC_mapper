@@ -182,10 +182,14 @@ class MinorStructureAnalysis:
         # Resolution describes the latest unresolved/confirmed state, not
         # whether historical pullbacks exist. A newer pending candidate must
         # therefore take precedence over older completed pullbacks.
+        if self.latest_resolution is not None:
+            return self.latest_resolution
         if self.pending:
             return PullbackResolution.PENDING_UNAVAILABLE_SEQUENCE
         if self.pullbacks:
             return PullbackResolution.CONFIRMED
+        if self.invalidated:
+            return PullbackResolution.INVALIDATED_UNAVAILABLE_SEQUENCE
         return PullbackResolution.NONE
 
 
@@ -293,6 +297,7 @@ def detect_valid_pullbacks(
     completed: list[CandleLevelValidPullback] = []
     pending: list[PendingPullback] = []
     invalidated: list[InvalidatedPullback] = []
+    latest_resolution = PullbackResolution.NONE
     reference: Candle | None = None
     start_index: int | None = None
 
@@ -348,6 +353,7 @@ def detect_valid_pullbacks(
                         )
                     )
                     start_index = None
+                    latest_resolution = PullbackResolution.INVALIDATED_UNAVAILABLE_SEQUENCE
                 continue
 
             if (
@@ -380,11 +386,13 @@ def detect_valid_pullbacks(
                 )
             )
             start_index = None
+            latest_resolution = PullbackResolution.INVALIDATED_UNAVAILABLE_SEQUENCE
             continue
 
         completed.append(
             _build_pullback(direction, reference, start_index, i, sequence)
         )
+        latest_resolution = PullbackResolution.CONFIRMED
         start_index = None
 
         # The completion candle becomes the next reference only when it is a
@@ -428,6 +436,7 @@ def detect_valid_pullbacks(
         active,
         tuple(unresolved),
         tuple(invalidated),
+        latest_resolution,
     )
 
 
