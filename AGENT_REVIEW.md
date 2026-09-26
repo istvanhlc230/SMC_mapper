@@ -556,3 +556,45 @@ Layer 2: **IMPLEMENTED — READY FOR REVIEW**. Runtime test execution must be co
 - 474dca1 — Layer 2 syntax/state cleanup
 - dbabcde — Layer 2 generated-newline correction
 - 34c5467 — Layer 2 consumes Layer 1 candle-trend semantics
+
+
+## LAYER 2 DIRECT AUDIT CORRECTION — 2026-09-26
+
+### Finding
+
+Layer 2 was audited against .agents/skills/smc/01_micro_structure.md and .agents/skills/smc/02_minor_structure.md.
+
+A concrete observability defect was found: the initial implementation blocked an aggregate-OHLC Outside Bar only when it attempted to start the pullback, but could still accept a later Outside Bar as the completion candle. That would infer the required takeout → reversal → completion order from unavailable intrabar evidence.
+
+### Correction
+
+minor_structure_engine.py now consumes the Layer 1 outside_bar() observation and explicitly checks SequenceStatus.UNAVAILABLE.
+
+For both bullish and bearish pullbacks:
+- an ambiguous Outside Bar cannot independently start a same-candle takeout/completion sequence;
+- an ambiguous Outside Bar cannot independently complete an already-open pullback;
+- the candidate remains open and the engine waits for a later candle whose required completion relation is observable from the available OHLC evidence;
+- no synthetic intrabar order is created.
+
+### Regression coverage
+
+tests/test_minor_structure_engine.py now includes:
+- same-candle Outside Bar rejection;
+- later Outside Bar completion rejection;
+- successful completion after an ambiguous Outside Bar when a subsequent observable candle provides the completion.
+
+### Current commits
+
+- 04c7316b — Layer 2 fail-closed Outside Bar completion correction
+- 2969f803 — Layer 2 regression tests for unavailable completion
+- 9ca87ffe — Layer 2 consumes explicit Layer 1 SequenceStatus.UNAVAILABLE
+
+### Validation limitation
+
+No GitHub Actions workflow is configured for the correction commits, and this environment cannot execute the repository checkout remotely. Therefore the new test suite has been statically reviewed but runtime PASS has not yet been independently confirmed.
+
+### Status
+
+Layer 2 remains IMPLEMENTED — READY FOR REVIEW, but NOT APPROVED until runtime tests are executed successfully and the remaining Layer 2 semantic audit is closed.
+
+Mapper/analyzer/monitor integration remains forbidden at this stage.
