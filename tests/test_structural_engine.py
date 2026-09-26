@@ -97,7 +97,7 @@ def test_post_bos_without_new_pullback_uses_protected_boundary_as_major():
     )
     events = structural.classify_idm(
         minor.MinorStructureAnalysis((), minor.ActivePullbackState(None)),
-        candles=(),
+        candles=(c("protected-bos", "10", "11", "9", "10.5"),),
         lifecycle=lifecycle,
     )
     assert len(events) == 1
