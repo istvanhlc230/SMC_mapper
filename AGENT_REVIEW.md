@@ -974,3 +974,46 @@ The repository persistent .github/workflows/tests.yml gate is configured to run 
 
 ### Status
 **LAYER 2 = CORRECTED / AWAITING RUNTIME TEST RESULT / NOT YET APPROVED.**
+
+
+## LAYER 2 FINAL OUTSIDE BAR AUDIT — 2026-09-26
+
+### Final correction
+The terminal-invalidating Outside Bar model was re-audited after implementation. One reporting inconsistency was found and corrected: InvalidatedPullback existed, but MinorStructureAnalysis.resolution did not reliably propagate the latest invalidated state when historical confirmed pullbacks were also present.
+
+### Final implementation state
+- INVALIDATED_UNAVAILABLE_SEQUENCE is now a terminal Layer-2 resolution.
+- latest_resolution records the most recent state transition deterministically.
+- An unavailable Outside Bar at pullback start invalidates that candidate immediately.
+- An unavailable Outside Bar at pullback completion invalidates that candidate immediately.
+- start_index is cleared on invalidation.
+- Later candles cannot complete or revive that candidate.
+- A later observable candle can only form a new candidate from a new observable pullback start.
+- PENDING_UNAVAILABLE_SEQUENCE is no longer used for this Outside Bar failure mode.
+- Layer-2 documentation and implementation mapping are synchronized.
+
+### Regression coverage
+Layer-2 test file now contains 19 test functions, including:
+- same-candle Outside Bar invalidation;
+- unavailable completion invalidation;
+- later-candle non-revival;
+- invalidation overriding historical confirmation in aggregate resolution;
+- existing EQH/EQL, Inside Bar, equality, provenance, and lifecycle regressions.
+
+### GitHub verification
+Latest main HEAD: 0171e3430abfac068903ca431903856e690184b3.
+
+Compared with 84f28a6, the final correction set touches only:
+- minor_structure_engine.py
+- tests/test_minor_structure_engine.py
+- .agents/skills/smc/02_minor_structure.md
+- .agents/skills/smc/08_implementation.md
+- AGENT_REVIEW.md
+
+No microstructure_engine.py, smc_analyzer.py, smc_htf_ltf_monitor.py, zones.json, or knowledgebase file was changed.
+
+The GitHub connector reports no visible workflow run and no status check for the latest push. Therefore runtime pytest PASS is not claimed.
+
+### Final disposition
+**LAYER 2 = AUDIT-CORRECTED / RUNTIME TEST RESULT PENDING / NOT APPROVED.**
+Mapper integration remains blocked until the persistent GitHub Actions test gate reports success and the Layer-2 semantic audit is formally closed.
