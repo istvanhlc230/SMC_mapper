@@ -17,8 +17,13 @@ from enum import Enum
 
 from microstructure_engine import (
     Candle,
+    Direction,
+    ExtremeReference,
     QuarantineError,
     SequenceStatus,
+    TrendDirection,
+    candle_trend,
+    classify_breach,
     equal_high,
     equal_low,
     outside_bar,
@@ -183,17 +188,23 @@ def _outside_sequence_unavailable(candle: Candle, reference: Candle) -> bool:
 def _bullish_continuation(candle: Candle, reference: Candle) -> bool:
     return (
         _is_bullish(reference)
-        and candle.high > reference.high
-        and candle.low >= reference.low
+        and candle_trend(reference, candle).direction is TrendDirection.BULLISH
     )
 
 
 def _bearish_continuation(candle: Candle, reference: Candle) -> bool:
     return (
         _is_bearish(reference)
-        and candle.low < reference.low
-        and candle.high <= reference.high
+        and candle_trend(reference, candle).direction is TrendDirection.BEARISH
     )
+
+
+def _reference_breach(candle: Candle, reference: Candle, direction: Direction) -> bool:
+    if direction is Direction.UP:
+        extreme = ExtremeReference(reference.high, reference.candle_id, "REFERENCE_HIGH")
+    else:
+        extreme = ExtremeReference(reference.low, reference.candle_id, "REFERENCE_LOW")
+    return classify_breach(candle, extreme, direction).is_break
 
 
 def _build_pullback(
@@ -291,9 +302,9 @@ def detect_valid_pullbacks(
                 continue
 
             took_reference_extreme = (
-                candle.low < reference.low
+                _reference_breach(candle, reference, Direction.DOWN)
                 if direction is PullbackDirection.BULLISH
-                else candle.high > reference.high
+                else _reference_breach(candle, reference, Direction.UP)
             )
 
             if took_reference_extreme:
@@ -320,9 +331,9 @@ def detect_valid_pullbacks(
             continue
 
         completion_breach = (
-            candle.high > reference.high
+            _reference_breach(candle, reference, Direction.UP)
             if direction is PullbackDirection.BULLISH
-            else candle.low < reference.low
+            else _reference_breach(candle, reference, Direction.DOWN)
         )
 
         if not completion_breach:
