@@ -217,7 +217,7 @@ Bearish active leg
 Buy-Side Liquidity reference
 ~~~
 
-This is a Layer 2 input object, not an IDM definition. Layer 2 does not classify the reference as Minor IDM or Major IDM and does not own IDM lifecycle state.
+This is the Layer 2 input used to establish the Minor IDM. Layer 2 owns the Minor IDM's formation and active-pointer lifecycle for the active minor leg. Layer 3 owns Major IDM governance, IDM_TAKEN as a structural lifecycle event, and all downstream Major/External Structure consequences.
 
 ## 8. Layer 2 → Layer 3 handoff
 
@@ -227,16 +227,16 @@ Layer 2 delivers:
 CANDLE-LEVEL VALID PULLBACK
 VERIFIED PULLBACK EXTREME
 PULLBACK-DERIVED LIQUIDITY REFERENCE
+MINOR_IDM
 ~~~
 
 Layer 3 then owns:
 
 ~~~
-IDM DEFINITION
-MINOR_IDM / MAJOR_IDM CLASSIFICATION
-ACTIVE IDM LIFECYCLE
-IDM REFERENCE SHIFT
-IDM LIQUIDITY TAKEOUT
+MAJOR_IDM DEFINITION / GOVERNANCE
+IDM_TAKEN STRUCTURAL EVENT
+MAJOR IDM REFERENCE SHIFT
+IDM LIQUIDITY TAKEOUT CONSEQUENCES
 CONFIRMED_STRUCTURAL_SWING
 MAJOR STRUCTURAL RETRACEMENT QUALIFICATION FOR CONTINUATION BOS
 VALID_BOS
