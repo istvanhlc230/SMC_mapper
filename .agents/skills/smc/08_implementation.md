@@ -616,7 +616,7 @@ A later candle may advance the lifecycle but may not retroactively rewrite the e
 2. Random local high becomes bearish IDM.
 3. Inside bar becomes IDM.
 4. Three candles automatically become IDM.
-5. 38.2% automatically becomes IDM.
+5. A 38.2% retracement qualification is not itself an IDM.
 6. Candle-level pullback becomes IDM without structural qualification.
 7. Old active IDM remains after a newer valid pullback forms.
 8. Multiple active minor IDM targets remain simultaneously.
