@@ -68,7 +68,7 @@ def test_qualified_retracement_at_50_percent_requires_three_opposing_closes():
 def test_38_2_to_50_requires_explicit_htf_valid_pullback():
     candles = (
         c("s", "5", "10", "5", "9"),
-        c("a", "9", "9.5", "6.2", "7"),
+        c("a", "9", "9.5", "6", "7"),
     )
     swing = structural.ConfirmedStructuralSwing(
         minor.PullbackDirection.BULLISH, Decimal("10"), "s", "idm", "s"
