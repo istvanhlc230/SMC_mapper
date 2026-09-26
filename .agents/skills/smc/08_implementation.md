@@ -678,9 +678,9 @@ Regression tests must cover:
 - a continuation break without stored `MAJOR_RETRACEMENT_QUALIFIED` remains non-BOS / `IMPULSE_EXTENSION` as applicable.
 
 ### IDM
-- the verified extreme and pullback-derived liquidity reference from a Candle-Level Valid Pullback are consumed by Layer 3 for IDM classification;
+- Layer 2 establishes the Minor IDM from the verified extreme and pullback-derived liquidity reference of a Candle-Level Valid Pullback; Layer 3 consumes that Minor IDM for IDM_TAKEN and Major IDM governance;
 - structural retracement qualification is a later continuation-BOS gate after `CONFIRMED_STRUCTURAL_SWING`, not an initial IDM prerequisite;
-- newest valid pullback replaces old active IDM;
+- newest valid pullback replaces the old active Minor IDM; Layer 3 consumes the resulting active Minor IDM for IDM_TAKEN and downstream Major IDM governance;
 - only one active minor IDM;
 - Major IDM provenance: post-BOS pullback-derived or prior-protected-boundary-derived;
 - correct Major IDM lifecycle after BOS;
