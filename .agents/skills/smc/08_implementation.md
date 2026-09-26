@@ -623,7 +623,7 @@ A later candle may advance the lifecycle but may not retroactively rewrite the e
 27. Scoring creates structural validity.
 28. Historical liquidity remains active merely because it exists in history.
 29. One outside bar activates both directional branches.
-30. Inside-bar breaks are treated as independent pullbacks.
+30. Inside bars remain governed by their mother-candle reference and are not treated as independent pullback references.
 31. Structural engine directly deletes or mutates POI registry state on range rollover.
 32. POIs from a closed Trading Range remain tradable after `TRADING_RANGE_ROLLED_OVER`.
 33. `BROKEN` is applied to a liquidity entity.
@@ -645,6 +645,8 @@ Regression tests must cover:
 - equal-high reference transfer;
 - equal-low reference transfer;
 - strict inside-bar exclusion;
+- explicit Layer-2 PENDING_UNAVAILABLE_SEQUENCE handling for unresolved Outside Bar ordering;
+- later independently observable completion resolving a pending pullback without synthetic sequence evidence;
 - outside-bar LOW→HIGH sequencing;
 - outside-bar HIGH→LOW sequencing.
 
