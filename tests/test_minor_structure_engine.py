@@ -122,6 +122,33 @@ def test_newer_completed_pullback_becomes_active():
     assert result.active.reference is result.pullbacks[-1].liquidity_reference
 
 
+def test_reference_does_not_jump_to_arbitrary_candle_inside_pullback():
+    candles = (
+        c("r", "5", "10", "2", "9"),
+        c("cont", "9", "11", "3", "10"),
+        c("pb1", "10", "10", "1", "8"),
+        c("inside", "8", "9", "2", "8.5"),
+        c("pb2", "8.5", "9", "1.5", "8"),
+        c("done", "8", "11", "4", "10"),
+    )
+    result = minor.detect_valid_pullbacks(candles, minor.PullbackDirection.BULLISH)
+    assert len(result.pullbacks) == 1
+    assert result.pullbacks[0].reference_candle_id == "r"
+    assert result.pullbacks[0].completion_candle_id == "done"
+
+
+def test_layer2_resolution_is_explicit_when_no_event_exists():
+    candles = (
+        c("r", "5", "10", "2", "9"),
+        c("cont", "9", "11", "3", "10"),
+        c("next", "10", "10.5", "3", "10.2"),
+    )
+    result = minor.detect_valid_pullbacks(candles, minor.PullbackDirection.BULLISH)
+    assert result.pullbacks == ()
+    assert result.pending == ()
+    assert result.resolution is minor.PullbackResolution.NONE
+
+
 def test_layer2_exports_only_minor_structure_contract():
     assert not hasattr(minor, "IDM")
     assert not hasattr(minor, "BOS")
