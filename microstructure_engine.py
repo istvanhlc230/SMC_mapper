@@ -1,6 +1,6 @@
 """Hermetic Layer 1 microstructure primitives for SMC_Mapper.
 
-This module owns only candle/OHLC-level geometry and observability.  It does not
+This module owns only candle/OHLC-level geometry and observability. It does not
 import or name any Layer 2+ SMC concept.
 """
 from __future__ import annotations
@@ -43,7 +43,6 @@ class TrendDirection(str, Enum):
 
 
 def _decimal(value: Decimal | int | str) -> Decimal:
-    """Return a finite Decimal; native floats are deliberately rejected."""
     if isinstance(value, bool) or isinstance(value, float):
         raise QuarantineError("Layer 1 requires Decimal/int/string numeric values; float is forbidden")
     if not isinstance(value, (Decimal, int, str)):
@@ -179,6 +178,10 @@ class OutsideBarObservation:
             raise QuarantineError("Outside Bar requires physical expansion beyond both extremes")
         if self.high_breach.candle_id != self.candle_id or self.low_breach.candle_id != self.candle_id:
             raise QuarantineError("Outside Bar breach provenance must point to the creating candle")
+        if self.sequence_evidence.status is not SequenceStatus.UNAVAILABLE:
+            raise QuarantineError("aggregate OHLC Outside Bar sequence must be UNAVAILABLE")
+        if self.sequence_evidence.sequence:
+            raise QuarantineError("aggregate OHLC Outside Bar cannot contain sequence data")
 
 
 @dataclass(frozen=True, slots=True)
@@ -194,8 +197,6 @@ class TrendObservation:
 
 @dataclass(frozen=True, slots=True)
 class EvidenceEnvelope:
-    """Immutable, content-addressed Layer 1 evidence envelope."""
-
     kind: str
     source_candle_ids: tuple[str, ...]
     payload: tuple[tuple[str, str], ...]
@@ -229,12 +230,11 @@ class EvidenceEnvelope:
         ).encode("utf-8")
         digest = hashlib.sha256(canonical).hexdigest()
         object.__setattr__(self, "evidence_id", digest)
-        if self.evidence_id != hashlib.sha256(canonical).hexdigest():
+        if self.evidence_id != digest:
             raise QuarantineError("evidence ID validation failed")
 
 
 def classify_breach(candle: Candle, reference: ExtremeReference, direction: Direction) -> BreachObservation:
-    """Classify a completed-candle relation without inferring an intrabar path."""
     ref = reference.price
     if direction is Direction.UP:
         extreme = candle.high
@@ -287,12 +287,12 @@ def is_outside_bar(candle: Candle, reference: Candle) -> bool:
     return candle.high > reference.high and candle.low < reference.low
 
 
-def outside_bar(candle: Candle, reference: Candle, sequence: SequenceEvidence | None = None) -> OutsideBarObservation | None:
+def outside_bar(candle: Candle, reference: Candle) -> OutsideBarObservation | None:
     if not is_outside_bar(candle, reference):
         return None
     high_ref = ExtremeReference(reference.high, reference.candle_id, "REFERENCE_HIGH")
     low_ref = ExtremeReference(reference.low, reference.candle_id, "REFERENCE_LOW")
-    evidence = sequence if sequence is not None else SequenceEvidence(SequenceStatus.UNAVAILABLE)
+    evidence = SequenceEvidence(SequenceStatus.UNAVAILABLE)
     return OutsideBarObservation(
         candle_id=candle.candle_id,
         reference_candle_id=reference.candle_id,
@@ -327,16 +327,22 @@ def transfer_low_reference(active: ExtremeReference, candle: Candle) -> ExtremeR
 
 
 def candle_trend(previous: Candle, current: Candle) -> TrendObservation:
-    """Return the candle-level directional observation from OHLC only."""
     if current.high > previous.high and current.low >= previous.low:
-        return TrendObservation(TrendDirection.BULLISH, None, ExtremeReference(previous.low, previous.candle_id, "PROTECTED_LOW"))
+        return TrendObservation(
+            TrendDirection.BULLISH,
+            None,
+            ExtremeReference(previous.low, previous.candle_id, "PROTECTED_LOW"),
+        )
     if current.low < previous.low and current.high <= previous.high:
-        return TrendObservation(TrendDirection.BEARISH, ExtremeReference(previous.high, previous.candle_id, "PROTECTED_HIGH"), None)
+        return TrendObservation(
+            TrendDirection.BEARISH,
+            ExtremeReference(previous.high, previous.candle_id, "PROTECTED_HIGH"),
+            None,
+        )
     return TrendObservation(TrendDirection.UNDEFINED, None, None)
 
 
 def validate_hermetic_layer1(source: str) -> tuple[str, ...]:
-    """Positive AST import boundary plus downstream-vocabulary guard for tests."""
     tree = ast.parse(source)
     allowed_modules = {
         "__future__", "ast", "dataclasses", "decimal", "enum", "hashlib", "json"
