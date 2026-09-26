@@ -113,7 +113,7 @@ Terminology rules:
 
 This is a terminology boundary, not a new SMC rule. It prevents Microstructure, Minor Structure, and Major/External Structure from being conflated while preserving the semantic-owner model.
 
-## 5. Documentation authority
+## 6. Documentation authority
 
 Semantic ownership is:
 
