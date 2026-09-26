@@ -21,6 +21,8 @@ from microstructure_engine import (
     QuarantineError,
     is_outside_bar,
     classify_breach,
+    candle_trend,
+    TrendDirection,
 )
 
 
@@ -126,19 +128,11 @@ def _validate_candles(candles: tuple[Candle, ...]) -> None:
 
 
 def _reference_is_bullish_continuation(reference: Candle, next_candle: Candle) -> bool:
-    return (
-        reference.close > reference.open
-        and next_candle.high > reference.high
-        and next_candle.low >= reference.low
-    )
+    return reference.close > reference.open and candle_trend(reference, next_candle).direction is TrendDirection.BULLISH
 
 
 def _reference_is_bearish_continuation(reference: Candle, next_candle: Candle) -> bool:
-    return (
-        reference.close < reference.open
-        and next_candle.low < reference.low
-        and next_candle.high <= reference.high
-    )
+    return reference.close < reference.open and candle_trend(reference, next_candle).direction is TrendDirection.BEARISH
 
 
 def _reference_breach(candle: Candle, reference: Candle, direction: Direction) -> bool:
