@@ -12,7 +12,7 @@ Layer 4 consumes Major/External structural qualification from Layer 3. Therefore
 - STRUCTURAL_SWING_BREAK is a break of the Layer-3-confirmed structural swing/reference; it is not a generic candle break.
 - VALID_BOS is the fully qualified external/major structural break.
 - A Minor Structural Swing break, Candle Extreme Breach, liquidity sweep, or IDM takeout is not automatically BOS.
-- Layer 4 must consume the canonical CONFIRMED_STRUCTURAL_SWING and Layer-3 retracement qualification rather than inventing a generic Swing or Break object.
+- Layer 4 must consume the canonical CONFIRMED_STRUCTURAL_SWING and Layer-3 retracement qualification rather than introducing a generic `Swing` or `Break` type.
 
 The word “break” may appear in descriptive mechanics, but normative predicates use the specific canonical break object/event.
 
