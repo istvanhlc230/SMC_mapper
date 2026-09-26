@@ -13,7 +13,7 @@ Layer 2 is the exclusive owner of Minor Structure produced from validated Layer-
 For terminology purposes:
 - Layer-1 candle geometry remains Microstructure.
 - A completed Candle-Level Valid Pullback may produce a Minor Structural Swing / verified pullback extreme.
-- Layer 2 may expose the pullback-derived liquidity reference, but it does not classify that reference as MINOR_IDM or MAJOR_IDM; IDM ownership begins in Layer 3.
+- Layer 2 owns the Minor IDM formed from the active valid pullback and its pullback-derived liquidity reference. Layer 3 consumes Minor IDM evidence for IDM_TAKEN, Major IDM governance, and the external structural lifecycle. Layer 2 does not define or create MAJOR_IDM.
 - A Minor Structural Swing is not a Major/External Structural Swing and cannot by itself become CONFIRMED_STRUCTURAL_SWING or VALID_BOS.
 
 This namespace boundary is semantic ownership, not an additional qualification rule.
@@ -31,9 +31,11 @@ VERIFIED PULLBACK EXTREME
         ↓
 PULLBACK-DERIVED LIQUIDITY REFERENCE
         ↓
-LAYER 3 IDM CLASSIFICATION
+MINOR_IDM
         ↓
-ACTIVE IDM
+LAYER 3 IDM_TAKEN / MAJOR_IDM GOVERNANCE
+        ↓
+CONFIRMED_STRUCTURAL_SWING
         ↓
 IDM_TAKEN
         ↓
@@ -167,7 +169,7 @@ VERIFIED PULLBACK EXTREME
 
 ## 5. Layer-2 pullback handoff and Layer-3 IDM input
 
-A completed Candle-Level Valid Pullback is sufficient for Layer 2 to verify its directional extreme and expose the corresponding pullback-derived liquidity reference. Layer 3 consumes that reference for IDM classification. The later major structural retracement qualification is NOT an initial IDM prerequisite; it belongs to the continuation-BOS gate after CONFIRMED_STRUCTURAL_SWING.
+A completed Candle-Level Valid Pullback is sufficient for Layer 2 to verify its directional extreme and establish the corresponding Minor IDM from its pullback-derived liquidity reference. Layer 3 consumes the Minor IDM for IDM_TAKEN, Major IDM governance, and the external structural lifecycle. The later major structural retracement qualification is NOT an initial IDM prerequisite; it belongs to the continuation-BOS gate after CONFIRMED_STRUCTURAL_SWING.
 
 ~~~
 CANDLE-LEVEL VALID PULLBACK
@@ -176,7 +178,9 @@ VERIFIED PULLBACK EXTREME
         ↓
 PULLBACK-DERIVED LIQUIDITY REFERENCE
         ↓
-LAYER 3 IDM CLASSIFICATION
+MINOR_IDM
+        ↓
+LAYER 3 IDM_TAKEN / MAJOR_IDM GOVERNANCE
 ~~~
 
 STRUCTURALLY VALID PULLBACK remains a Layer-3 structural qualification outcome where applicable, but it must not be inserted between the Layer-2 verified extreme and the initial IDM reference. The detailed major retracement criteria remain exclusively owned by 03_structural_semantic_authority.md.
@@ -189,7 +193,7 @@ A newer valid pullback **immediately supersedes the prior active pullback-derive
 
 After a pullback completes, the reference candle that was broken is no longer reusable as a fresh pullback reference merely because no new directional candle has appeared. A new active candle-level reference must be established by the Layer 1 directional sequence (or its canonical equal-extreme reference transfer).
 
-This pointer movement is consumed by Layer 3, which owns the IDM classification and lifecycle.
+This pointer movement is consumed by Layer 3 for IDM_TAKEN and Major IDM governance. Layer 2 remains the owner of the active Minor IDM pointer.
 
 ~~~
 NEWER CANDLE-LEVEL VALID PULLBACK
