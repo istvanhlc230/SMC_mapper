@@ -651,6 +651,12 @@ The stale implementation rule treating inside-bar breaks as independent pullback
 - `205f551` — unavailable-sequence test assertions
 - `2ec6ff8` — strict-reference test fixture corrections
 
+### Final code inspection
+The final Layer-2 source was re-read after the corrections; the state machine, explicit pending resolution, strict reference break semantics, and downstream boundary are internally consistent. The obsolete pending-flag assignment was removed in the final cleanup commit.
+
+
+- `adc1dfafb58f86104b21281bfba24d5b0b58d01c` — removed obsolete internal Layer-2 pending-flag assignment after final code inspection.
+
 ### Status
 **LAYER 2 = CORRECTED / READY FOR FINAL TEST EXECUTION AND VALIDATOR REVIEW.**
 
