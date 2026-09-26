@@ -241,7 +241,7 @@ POST-BOS PRICE ACTION
 2. **Layer 3 IDM lifecycle:** Layer 3 consumes Minor IDM evidence for IDM_TAKEN and owns Major IDM governance and external structural consequences.
 3. **Major IDM:** governing major-liquidity reference. It may be established from a qualifying post-BOS pullback or, when only Minor IDM exists, from the prior protected external boundary/liquidity.
 4. A newer valid pullback supersedes the active IDM only when it independently satisfies the applicable Major/Minor classification.
-5. There is no separate `REAL_MAJOR_IDM` or `FALLBACK_MAJOR_IDM` ontology class.
+5. There is no separate legacy/proxy Major IDM ontology class; Major IDM remains one semantic class with traceable provenance.
 6. Historical IDM objects remain immutable; active-pointer changes are forward-only and event-time provenance is preserved.
 
 ### IDM takeout
