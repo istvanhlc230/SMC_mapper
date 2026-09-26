@@ -4,6 +4,24 @@
 
 **Authority boundary:** Implementation follows methodology. Implementation convenience must never redefine methodology.
 
+## Canonical structural type boundary
+
+The implementation domain must preserve the semantic layers explicitly. Generic objects such as Swing, Break, or Structure are insufficient when a value participates in a canonical structural rule.
+
+Use layer-specific representations equivalent to:
+- MicroBreach / CandleExtremeBreach
+- MinorStructuralSwing
+- MinorIDM
+- ConfirmedStructuralSwing
+- ProtectedExternalBoundary / ProtectedStructuralExtreme
+- MajorIDM
+- StructuralSwingBreak
+- ExternalBOS / VALID_BOS
+
+These are representations of existing canonical semantics, not new ontology classes. Existing canonical event names remain authoritative.
+
+The implementation must never infer a higher-layer object merely because a lower-layer geometric relation exists.
+
 ## Canonical lifecycle source
 
 The validated structural lifecycle rules are defined in `03_structural_semantic_authority.md`, with detailed BOS mechanics in `04_BOS_mechanics.md` and detailed CHoCH mechanics in `05_CHOCH_mechanics.md`.
