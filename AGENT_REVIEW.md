@@ -1255,3 +1255,43 @@ The previously recorded GitHub test-suite failures remain implementation/test sy
 
 ### Repository state
 Direct commits were made on main only. No new branch was created.
+
+
+## FULL 01–08 CANONICAL SKILL AUDIT — 2026-09-26
+
+A fresh full-layer audit was performed against the current `.agents/skills/smc/` authority, with the canonical ownership rule enforced as:
+`Define once at semantic owner → downstream reference → downstream consumption`.
+
+### Corrections applied directly to main
+
+1. `03_structural_semantic_authority.md`
+   - Tightened post-BOS Major IDM creation: a post-BOS pullback establishes Major IDM only when it independently satisfies the canonical Major-IDM qualification.
+   - Separated Layer-2 active Minor IDM / pullback-derived pointer movement from Layer-3 active Major IDM governance.
+   - Clarified that a newer valid pullback immediately supersedes the Layer-2 Minor IDM reference, while Layer-3 Major IDM changes only after independent Major-IDM qualification.
+   - Removed ambiguous `Structurally Valid Pullback` wording from the Major-IDM creation rule in favor of the explicit post-BOS Major-IDM qualification.
+   - Removed the typo `A A Major IDM`.
+
+2. `04_BOS_mechanics.md`
+   - Layer 4 no longer describes itself as mutating the upstream pullback/IDM reference after an insufficient continuation break.
+   - Layer 4 now classifies the failed continuation as `IMPULSE_EXTENSION` and explicitly delegates any later reference shift to Layer-2/Layer-3 ownership.
+
+### Cross-layer audit result
+
+- Layer 1: Microstructure-only OHLC/geometry/observability ownership preserved.
+- Layer 2: Candle-Level Valid Pullback, Verified Pullback Extreme, active Minor IDM/pullback-derived reference ownership preserved.
+- Layer 3: Major/External Structure, Major IDM governance, Confirmed Structural Swing, retracement qualification ownership preserved.
+- Layer 4: BOS is a downstream consumer of Layer-3 qualification; no raw retracement/Fibonacci recomputation or upstream mutation.
+- Layer 5: CHoCH remains fractal/context-dependent; LTF Structural Glitch changes reference location, not ontology.
+- Layer 6: execution/POI modules consume structural outputs and do not redefine BOS/CHoCH/IDM.
+- Layer 7: target/trade-management policy remains separate from canonical structural truth; BE remains stop management, not target semantics.
+- Layer 8: implementation contract reflects the layer boundaries and fail-closed/zero-fabrication requirements.
+
+### Terminology audit
+
+The canonical skill contains no active `FALLBACK_MAJOR_IDM` / `REAL_MAJOR_IDM` ontology. Remaining occurrences are explicitly historical reconciliation documentation describing the removed model. No generic canonical `Swing` or `Break` domain object/type is defined.
+
+### Validation
+
+Post-edit GitHub re-read confirms both modified files are present on `main`, and the cross-layer invariant checks pass. No runtime Python, `zones.json`, or `knowledgebase/` files were modified.
+
+STATUS: **01–08 CANONICAL SKILL AUDIT = APPROVED / CORRECTIONS APPLIED**
