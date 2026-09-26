@@ -5,7 +5,7 @@ Layer 2 consumes only Layer 1 candle observations and owns:
 - Verified Pullback Extreme
 - pullback-derived liquidity reference
 - active pullback pointer
-- explicit unresolved/pending state when Layer 1 sequence evidence is unavailable
+- explicit terminal invalidation when Layer 1 sequence evidence is unavailable
 
 It does not define or implement IDM, BOS, CHoCH, POI, or structural retracement.
 """
@@ -44,6 +44,7 @@ class PullbackResolution(str, Enum):
     NONE = "NONE"
     CONFIRMED = "CONFIRMED"
     PENDING_UNAVAILABLE_SEQUENCE = "PENDING_UNAVAILABLE_SEQUENCE"
+    INVALIDATED_UNAVAILABLE_SEQUENCE = "INVALIDATED_UNAVAILABLE_SEQUENCE"
 
 
 @dataclass(frozen=True, slots=True)
@@ -129,6 +130,26 @@ class PendingPullback:
 
 
 @dataclass(frozen=True, slots=True)
+class InvalidatedPullback:
+    direction: PullbackDirection
+    reference_candle_id: str
+    start_candle_id: str
+    reason: PullbackResolution
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.direction, PullbackDirection):
+            raise QuarantineError("invalid invalidated pullback direction")
+        for value, name in (
+            (self.reference_candle_id, "reference_candle_id"),
+            (self.start_candle_id, "start_candle_id"),
+        ):
+            if not isinstance(value, str) or not value:
+                raise QuarantineError(f"invalidated pullback requires {name}")
+        if self.reason is not PullbackResolution.INVALIDATED_UNAVAILABLE_SEQUENCE:
+            raise QuarantineError("invalidated pullback requires unavailable-sequence reason")
+
+
+@dataclass(frozen=True, slots=True)
 class ActivePullbackState:
     pullback: CandleLevelValidPullback | None
 
@@ -142,15 +163,19 @@ class MinorStructureAnalysis:
     pullbacks: tuple[CandleLevelValidPullback, ...]
     active: ActivePullbackState
     pending: tuple[PendingPullback, ...] = ()
+    invalidated: tuple[InvalidatedPullback, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "pullbacks", tuple(self.pullbacks))
         object.__setattr__(self, "pending", tuple(self.pending))
+        object.__setattr__(self, "invalidated", tuple(self.invalidated))
         if self.pullbacks:
             if self.active.pullback is not self.pullbacks[-1]:
                 raise QuarantineError("active pullback must be the newest completed pullback")
         if any(not isinstance(p, PendingPullback) for p in self.pending):
             raise QuarantineError("pending state must contain only PendingPullback objects")
+        if any(not isinstance(p, InvalidatedPullback) for p in self.invalidated):
+            raise QuarantineError("invalidated state must contain only InvalidatedPullback objects")
 
     @property
     def resolution(self) -> PullbackResolution:
@@ -267,6 +292,7 @@ def detect_valid_pullbacks(
 
     completed: list[CandleLevelValidPullback] = []
     pending: list[PendingPullback] = []
+    invalidated: list[InvalidatedPullback] = []
     reference: Candle | None = None
     start_index: int | None = None
 
@@ -313,14 +339,15 @@ def detect_valid_pullbacks(
             if took_reference_extreme:
                 start_index = i
                 if _outside_sequence_unavailable(candle, reference):
-                    pending.append(
-                        PendingPullback(
+                    invalidated.append(
+                        InvalidatedPullback(
                             direction,
                             reference.candle_id,
                             candle.candle_id,
-                            PullbackResolution.PENDING_UNAVAILABLE_SEQUENCE,
+                            PullbackResolution.INVALIDATED_UNAVAILABLE_SEQUENCE,
                         )
                     )
+                    start_index = None
                 continue
 
             if (
@@ -344,14 +371,15 @@ def detect_valid_pullbacks(
 
         completion_ambiguous = _outside_sequence_unavailable(candle, reference)
         if completion_ambiguous:
-            pending.append(
-                PendingPullback(
+            invalidated.append(
+                InvalidatedPullback(
                     direction,
                     reference.candle_id,
                     sequence[start_index].candle_id,
-                    PullbackResolution.PENDING_UNAVAILABLE_SEQUENCE,
+                    PullbackResolution.INVALIDATED_UNAVAILABLE_SEQUENCE,
                 )
             )
+            start_index = None
             continue
 
         completed.append(
@@ -395,12 +423,18 @@ def detect_valid_pullbacks(
             seen_pending.add(key)
 
     active = ActivePullbackState(completed[-1] if completed else None)
-    return MinorStructureAnalysis(tuple(completed), active, tuple(unresolved))
+    return MinorStructureAnalysis(
+        tuple(completed),
+        active,
+        tuple(unresolved),
+        tuple(invalidated),
+    )
 
 
 __all__ = [
     "ActivePullbackState",
     "CandleLevelValidPullback",
+    "InvalidatedPullback",
     "LiquiditySide",
     "MinorStructureAnalysis",
     "PendingPullback",
