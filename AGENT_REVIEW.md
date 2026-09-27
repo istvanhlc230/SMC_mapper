@@ -1,47 +1,29 @@
 # CURRENT TASK
-Phase 6: Layer 5 Independent Semantic Re-Audit (Post-Corrections)
+Phase 6: Layer 5 Minor-IDM Wick Defect Correction
 
 # DEVELOPER REPORT
 **Current Repository State:**
 * **Branch:** main
-* **HEAD:** acaef6d
-* **Working-tree status:** clean (Audit report added)
+* **HEAD:** d4e3e8d
+* **Working-tree status:** clean (after committing fixes)
 
-**Implementation decisions:** 
-- NO IMPLEMENTATION OR SKILL CHANGES WERE MADE DURING THIS RE-AUDIT.
+**Implementation decisions:**
+- **Minor IDM Wick Defect (Implementation Defect):** The canonical skill states that an LTF Minor IDM reference remains body-close-gated for CHoCH. However, a wick penetration is still a genuine physical boundary break (a sweep). The implementation previously suppressed this by returning `NO_BOUNDARY_BREAK`.
+- **Correction:** Introduced `CHoCHResolution.MINOR_IDM_SWEEP`. When `LTF_ACTIVE_IDM` with `MINOR_IDM` is wick-breached, the engine now correctly acknowledges the physical break and returns `MINOR_IDM_SWEEP` instead of blocking it as `NO_BOUNDARY_BREAK`. This preserves the distinction between physical breaks and CHoCH eligibility.
+- **Regression Tests:** Replaced the invalid test and added three targeted Minor IDM tests to strictly differentiate: no physical break (`NO_BOUNDARY_BREAK`), wick break (`MINOR_IDM_SWEEP`), and body close (`CHOCH_ELIGIBLE`).
+- **NO_EVIDENCE:** Retained unchanged pending semantic clarification.
 
 # VALIDATION REPORT
-The Layer 5 CHoCH engine fully implements the canonical rules, with all previous defects correctly resolved. The test suite successfully passes and regression paths are fully verified.
+The Layer 5 CHoCH engine fully implements the canonical rules, with all previous defects correctly resolved.
 
-### 1. Fix A (ltf_context_cleared == True)
-**PASS:** The engine unconditionally sets `ltf_context_cleared = True` in the `PostCHoCHRegime`, safely ensuring that any confirmed CHoCH completely wipes prior LTF contexts upon regime shift, regardless of whether they were the active trigger.
+### Physical Break Semantics & Sweep Distinctions
+**PASS:** The implementation accurately delineates physical breaks. Wicks on ordinary Major boundaries correctly yield `MAJOR_IDM_SWEEP`. Wicks on Minor LTF references correctly yield `MINOR_IDM_SWEEP`. Wicks on Major LTF references correctly enter the CHoCH gate. Body closes correctly enter the CHoCH gate.
 
-### 2. Fix B (Major IDM Wick Handling)
-**PASS:** `_eligible_for_break()` correctly branches execution based on reference provenance. A `PROTECTED_OPPOSING_BOUNDARY` with Major IDM correctly yields a `MAJOR_IDM_SWEEP` on a wick break. An `LTF_ACTIVE_IDM` with Major IDM correctly returns `None`, progressing into the normal CHoCH eligibility/confirmation path as dictated by Canonical Rule 3.5.3A.
+### Provenance, Post-CHoCH Lifecycle, & Orchestration
+**PASS:** Temporal abstraction safely defers to orchestration. Provenance validation hermetically seals external boundaries from LTF contexts. `ltf_context_cleared` strictly wipes stale state on confirmation.
 
-### 3. LTF Reference Provenance
-**PASS:** `reference_from_ltf_idm()` strictly restricts creation to `IDMOrigin.PULLBACK_DERIVED`, enforcing the required canonical Layer 3 IDMEvent provenance. It does not accept overly broad configurations.
-
-### 4. Ordinary Boundary Provenance
-**PASS:** `reference_from_boundary()` correctly hardcodes `CHoCHReferenceKind.PROTECTED_OPPOSING_BOUNDARY`. It does not allow an LTF IDM context to be disguised as a normal boundary, preserving strict semantic ownership.
-
-### 5. Confirmation Gate
-**PASS:** `detect_choch()` accurately demands external `confirmation_gate_open` prerequisite validation. Geometry alone cannot invent `CHOCH_CONFIRMED`.
-
-### 6. Post-CHoCH Lifecycle
-**PASS:** The engine outputs a `PostCHoCHRegime` object that properly initializes the new directional bias, stores the initial active impulse provenance, sets confirmation locks, and clears prior LTF state.
-
-### 7. Temporal/Orchestration Contracts
-**PASS:** Layer 5 intentionally expects the upstream orchestration (Layer 3 / Mapper) to supply chronological sequence subsets. Layer 5 is a stateless pattern-matcher by design, which is an intentional Layer 8 orchestration responsibility, rather than an unsafe abstraction leak.
-
-### 8. Semantic Abstraction Boundaries
-**PASS:** Layer 5 strictly consumes upstream states (Breach mechanics from Layer 1, IDM states from Layer 3). It does not redefine or duplicate canonical rules. 
-
-### 9. Knowledgebase Reconciliation
-**PASS:** The implementation exactly matches the consolidated `.agents/skills/smc/` canonical documents, which independently encapsulate the source evidence anchor points seamlessly.
-
-### 10. NO_EVIDENCE Audit
-**OPEN (Canonical specification gap):** The enum value `CHoCHResolution.NO_EVIDENCE` is defined in the state machine but never utilized. The canonical specification does not define a reachable state for `NO_EVIDENCE` (e.g., for empty candle sequences, missing data, or lack of active references). This requires a semantic discussion before removal.
+### NO_EVIDENCE Audit
+**OPEN (Canonical specification gap):** `CHoCHResolution.NO_EVIDENCE` is defined in the state machine but never utilized. The canonical specification does not define a reachable state for `NO_EVIDENCE`.
 
 # REQUIRED CORRECTIONS
 [None active]
@@ -51,10 +33,10 @@ The Layer 5 CHoCH engine fully implements the canonical rules, with all previous
 - `CHoCHResolution.NO_EVIDENCE` requires a semantic decision on whether to integrate or remove.
 
 # IMPLEMENTATION STATUS
-Phase 6 (Layer 5 Re-Audit) is completed with a PASS result.
+Phase 6 Layer 5 Minor-IDM wick defect is successfully corrected.
 
 # COMMITS
-COMMIT: 2d132e3
-FILES: AGENT_REVIEW.md
-PURPOSE: Submit Phase 6 comprehensive re-audit pass report.
-TESTS: N/A — Audit only. All tests run and passed (85/85).
+COMMIT: d4e3e8d
+FILES: choch_engine.py, tests/test_choch_engine.py, AGENT_REVIEW.md
+PURPOSE: Correct Minor-IDM wick defect and introduce MINOR_IDM_SWEEP.
+TESTS: Passed 87/87 tests.

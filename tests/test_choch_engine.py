@@ -117,7 +117,28 @@ def test_major_idm_body_close_enters_choch_gate():
     assert result.resolution is choch_engine.CHoCHResolution.CHOCH_ELIGIBLE
 
 
-def test_ltf_minor_idm_wick_requires_body_close():
+def test_ltf_minor_idm_no_physical_break():
+    idm = structural.IDMEvent(
+        structural.IDMClass.MINOR_IDM,
+        structural.IDMOrigin.PULLBACK_DERIVED,
+        PullbackDirection.BULLISH,
+        Decimal("10"),
+        "idm-source",
+        "pb-ref",
+        "pb-done",
+    )
+    ref = choch_engine.reference_from_ltf_idm(idm)
+    result = choch_engine.detect_choch(
+        (c("inside", "10.2", "10.5", "10.1", "10.4"),),
+        ref,
+        confirmation_gate_open=True,
+        ltf_context_active=True,
+    )
+    assert result.resolution is choch_engine.CHoCHResolution.NO_BOUNDARY_BREAK
+    assert result.structural_break is None
+
+
+def test_ltf_minor_idm_wick_is_minor_idm_sweep():
     idm = structural.IDMEvent(
         structural.IDMClass.MINOR_IDM,
         structural.IDMOrigin.PULLBACK_DERIVED,
@@ -134,7 +155,30 @@ def test_ltf_minor_idm_wick_requires_body_close():
         confirmation_gate_open=True,
         ltf_context_active=True,
     )
-    assert result.resolution is choch_engine.CHoCHResolution.NO_BOUNDARY_BREAK
+    assert result.resolution is choch_engine.CHoCHResolution.MINOR_IDM_SWEEP
+    assert not result.confirmed
+
+
+def test_ltf_minor_idm_body_close_is_choch_eligible():
+    idm = structural.IDMEvent(
+        structural.IDMClass.MINOR_IDM,
+        structural.IDMOrigin.PULLBACK_DERIVED,
+        PullbackDirection.BULLISH,
+        Decimal("10"),
+        "idm-source",
+        "pb-ref",
+        "pb-done",
+    )
+    ref = choch_engine.reference_from_ltf_idm(idm)
+    result = choch_engine.detect_choch(
+        (c("body", "10.2", "10.3", "9.7", "9.8"),),
+        ref,
+        confirmation_gate_open=False,
+        ltf_context_active=True,
+    )
+    assert result.resolution is choch_engine.CHoCHResolution.CHOCH_ELIGIBLE
+    assert result.structural_break is not None
+    assert result.structural_break.mode is BreachMode.CLOSE
 
 
 def test_equality_is_not_choch():
