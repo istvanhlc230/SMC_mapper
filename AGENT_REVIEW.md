@@ -1,27 +1,33 @@
 # CURRENT TASK
-Phase 9: Final Corrective Action — Layer 8 Orchestration & Monitor Boundary Audit
+Phase 9: Final Corrective Action — Target State Persistence & Provenance Hardening
 
 # DEVELOPER REPORT
 **Current Repository State:**
 * **Branch:** main
-* **Previous audited remote HEAD:** f2154ccceb0ed339ff0a4e5d00a8e936c2f3e85a
-* **Audited repository HEAD:** f2154ccceb0ed339ff0a4e5d00a8e936c2f3e85a
+* **Previous audited remote HEAD:** b1997279de564f204ded774c0cba93940cceeb3e
+* **Audited repository HEAD:** b1997279de564f204ded774c0cba93940cceeb3e
 * **Working-tree status before report commit:** clean
 
 # CANONICAL SPECIFICATION STATUS
-The canonical `.agents/skills/smc/08_implementation.md` provides an exhaustive, deterministic framework for state transitions and orchestrations, separating core structure from executing policy and notifications.
+The canonical `.agents/skills/smc/08_implementation.md` provides an exhaustive, deterministic framework for state transitions and orchestrations. Target configuration, validation, and lifecycle are separated cleanly from structural mechanics.
 
 # ACTUAL IMPLEMENTATION DEFECTS CORRECTED
-1. **Monitor Configuration Integration Fixed:**
-   The `smc_htf_ltf_monitor.py` script was previously disconnected from the project's real configuration (`zones.json`). It now correctly consumes `zones.json` to extract `target` as the target price without reintroducing old entry/RR/SL derivation logic. Target provenance (mapped from the zone configuration name) is correctly relayed.
+1. **Target Persistence Integrity Hardened:**
+   The `save_config()` mechanism in `smc_htf_ltf_monitor.py` was rewritten to load and preserve the entire original `zones.json` document. Unrelated top-level fields and unrelated setup fields are now fully preserved. Only the specific `state` field of the active setup is mutated.
 
-2. **Persistent `TARGET_REACHED` Lifecycle Fixed:**
-   The monitor previously updated its state to `TARGET_REACHED` only in memory, causing repeated false notifications whenever the loop reloaded the configuration. The monitor now persistently writes the `state: "TARGET_REACHED"` field back to `zones.json`, ensuring the exact notification contract (`TARGET_ACTIVE` → `PRICE_REACHES_TARGET` → `TARGET_REACHED` → `TARGET_NOTIFICATION_SENT`) is non-repeating. No trailing-stop, break-even, or automated position-closure semantics were introduced.
+2. **Provenance Terminology Corrected:**
+   The monitor now explicitly classifies the `zones.json` `"name"` field as *Configuration Setup ID* (configuration provenance) rather than manufacturing false structural provenance. A target's structural provenance remains properly delegated to a canonical field if one is ever supplied by upstream components.
+
+3. **Lifecycle State Validation (Fail Closed):**
+   The monitor now strictly validates lifecycle string inputs. If an unknown or invalid state is found in the JSON document, the monitor fails closed by defaulting to an untriggerable `INVALID_STATE`, preventing spurious `TARGET_REACHED` notifications.
+
+4. **Target Detection Semantics Maintained:**
+   The `TARGET_ACTIVE` → `TARGET_REACHED` transition logic strictly respects mechanical conditions (e.g. `BUY → candle.high >= target_price`). The monitor does not infer canonical methodology (e.g. `BOS`, `CHoCH`, `POI mitigation`, entry triggers) or position closure.
 
 # EXISTING IMPLEMENTATION STATUS
 
 ### 1. Implemented Upstream Engines (Layers 1–5)
-The repository contains concrete, executable Python engines for early-stage structural methodology layers.
+The repository contains executable Python engines for structural layers:
 * `microstructure_engine.py` (Layer 1)
 * `minor_structure_engine.py` (Layer 2)
 * `structural_engine.py` (Layer 3)
@@ -34,26 +40,18 @@ There is no executable Python logic for Layer 6 (Execution Modules, Order Flow /
 
 ### 3. Layer 8 Orchestration
 **Status:** **OPEN — UNIMPLEMENTED (Placeholders Only)**
-The overarching Layer 1 → Layer 7 orchestrator is missing. While `smc_analyzer.py` contains structurally conformant interface stubs/enums (`LifecycleState`, `DetectionEvent`, etc.), it lacks the integrated execution pipeline required to pass data chronologically between the engines and synthesize state.
+The overarching Layer 1 → Layer 7 orchestrator is missing. `smc_analyzer.py` contains structurally conformant interface stubs/enums but lacks the integrated execution pipeline required to pass data chronologically between the engines.
 
 ### 4. Data Normalization
-The implemented `MarketDataNormalizer` (in `smc_analyzer.py`) performs the following specific operations:
-* enforces timezone-aware timestamps;
-* normalizes to UTC;
-* enforces strictly increasing timestamps;
-* rejects duplicate timestamps;
-* conducts numeric conversions and `high >= low` validation;
-* checks for the required boolean `is_completed` flag;
-* skips uncompleted candles.
-These rules enforce `OHLC ≠ INTRABAR_SEQUENCE` by refusing to guess internal microsequences.
+The `MarketDataNormalizer` (in `smc_analyzer.py`) explicitly validates timezone-aware strict chronological ordering, fails closed on duplicate timestamps, checks `high >= low`, enforces numeric conversion, and filters out uncompleted candles using `is_completed`. It reflects `OHLC ≠ INTRABAR_SEQUENCE` by refusing to guess internal microsequences.
 
 # SPECIFICATION GAPS (OPEN ITEMS)
-- **`CHoCHResolution.NO_EVIDENCE`:** Remains an open canonical specification gap for unformed structural arrays.
+- **`CHoCHResolution.NO_EVIDENCE`:** Remains an open canonical specification gap.
 - **Target Price Derivation:** Countertrend and specific LTF target selection hierarchies remain unresolved in canonical logic.
 
 # FULL TEST RERUN RESULT
-The complete repository test suite was executed by the developer locally (Command: `python -m pytest`). 
-**Result:** 87 passed, 0 skipped/xfail, 0 regressions. 
+The complete repository test suite was manually executed locally (`python -m pytest`), explicitly including the new `test_target_reached_persistence_and_no_repeat_notification` regression test which verifies the complete monitor notification persistence cycle without network calls.
+**Result:** 89 passed, 0 skipped/xfail, 0 regressions. 
 *(Note: This represents developer-local execution; independent GitHub Actions/CI verification must be evaluated separately).*
 
 # REPORT COMMIT SHA

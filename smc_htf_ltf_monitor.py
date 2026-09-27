@@ -29,7 +29,7 @@ class TargetSetup:
     provenance: str
     target_price: float
     state: str = "TARGET_ACTIVE" # TARGET_ACTIVE -> TARGET_REACHED
-    raw_data: dict = None # Store the original JSON dict to write back cleanly
+    original_index: int = -1 # to map back to the setup array
 
 class Monitor:
     """
@@ -40,43 +40,68 @@ class Monitor:
     def __init__(self, config_path: str = "zones.json"):
         self.config_path = config_path
         self.targets: List[TargetSetup] = []
+        self.full_config_data: dict = {}
 
     def load_config(self):
         if os.path.exists(self.config_path):
             with open(self.config_path, "r", encoding="utf-8") as f:
                 try:
                     data = json.load(f)
+                    if not isinstance(data, dict):
+                        data = {}
+                    self.full_config_data = data
+                    
                     new_targets = []
-                    # Map from the existing zones.json "setups" structure
-                    for item in data.get("setups", []):
+                    setups = data.get("setups", [])
+                    if not isinstance(setups, list):
+                        setups = []
+                        
+                    for i, item in enumerate(setups):
+                        if not isinstance(item, dict):
+                            continue
+                            
+                        raw_state = item.get("state", "TARGET_ACTIVE")
+                        if raw_state not in ["TARGET_ACTIVE", "TARGET_REACHED"]:
+                            # Fail closed on unknown/invalid state by defaulting to an un-triggerable dead state
+                            raw_state = "INVALID_STATE"
+                            
+                        # Use exact config/setup terminology for provenance unless explicitly supplied
+                        supplied_provenance = item.get("provenance")
+                        provenance_val = supplied_provenance if supplied_provenance else f"Configuration Setup ID: {item.get('name', 'UNKNOWN')}"
+                        
+                        target_type_val = item.get("target_type", "configured target")
+                        
                         new_targets.append(TargetSetup(
                             ticker=item.get("ticker", "UNKNOWN"),
                             direction=item.get("direction", "BUY"),
-                            target_id=item.get("name", "T1"), # Map name to target_id
-                            target_type=item.get("target_type", "CONFIGURED_ZONE"),
-                            provenance=item.get("name", "UNKNOWN"),
+                            target_id=item.get("name", "T1"),
+                            target_type=target_type_val,
+                            provenance=provenance_val,
                             target_price=float(item.get("target", 0.0)),
-                            state=item.get("state", "TARGET_ACTIVE"),
-                            raw_data=item
+                            state=raw_state,
+                            original_index=i
                         ))
                     self.targets = new_targets
                 except Exception as e:
                     print(f"Error loading config: {e}")
+                    self.targets = []
+                    self.full_config_data = {}
 
     def save_config(self):
         if not os.path.exists(self.config_path):
             return
             
         try:
-            # We preserve the original structure and just update the state field
-            output_setups = []
-            for t in self.targets:
-                raw = dict(t.raw_data) if t.raw_data else {}
-                raw["state"] = t.state
-                output_setups.append(raw)
-                
+            # We preserve the original top-level document entirely
+            if "setups" in self.full_config_data and isinstance(self.full_config_data["setups"], list):
+                for t in self.targets:
+                    if 0 <= t.original_index < len(self.full_config_data["setups"]):
+                        setup_node = self.full_config_data["setups"][t.original_index]
+                        if isinstance(setup_node, dict):
+                            setup_node["state"] = t.state
+                            
             with open(self.config_path, "w", encoding="utf-8") as f:
-                json.dump({"setups": output_setups}, f, indent=2)
+                json.dump(self.full_config_data, f, indent=2)
         except Exception as e:
             print(f"Error saving config: {e}")
 
@@ -105,7 +130,7 @@ class Monitor:
     def evaluate(self, candles: Dict[str, Candle]):
         state_changed = False
         for t in self.targets:
-            if t.state == "TARGET_REACHED":
+            if t.state != "TARGET_ACTIVE":
                 continue
                 
             c = candles.get(t.ticker)
@@ -134,7 +159,7 @@ class Monitor:
         while True:
             try:
                 self.load_config()
-                active = {t.ticker for t in self.targets if t.state != "TARGET_REACHED"}
+                active = {t.ticker for t in self.targets if t.state == "TARGET_ACTIVE"}
                 if not active:
                     time.sleep(60)
                     continue
