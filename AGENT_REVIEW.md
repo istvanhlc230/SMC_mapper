@@ -169,3 +169,58 @@ Section 3.4.4.1 and surrounding sections were re-audited. The text is internally
 Command: `python -m pytest`
 Result: `91 passed, 0 failed, 0 skipped/xfail`
 *Developer-local test execution; no independent GitHub Actions/CI verification.*
+
+---
+
+# PHASE 15 — CANONICAL SPECIFICATION CORRECTIONS & GAP RECONCILIATION
+
+## 1. Exact Issues Found
+1. **Overly Broad CHoCH Body-Close Invariant (`05_CHOCH_mechanics.md` §3.6):**
+   - The invariant previously stated: `BODY CLOSE → CHoCH_ELIGIBLE → CHoCH_CONFIRMED only if all prerequisites pass`.
+   - This was logically too broad because not every body close is CHoCH-eligible. It lacked positive scoping to an eligible opposing structural boundary.
+2. **Contradictory L8 CHoCH Flow Representation (`08_implementation.md` §CHoCH path):**
+   - The summary CHoCH path diagram represented the boundary violation as `OPPOSING STRUCTURAL BOUNDARY VIOLATION (Body Close)`.
+   - This contradicted canonical Layer 5 (`05_CHOCH_mechanics.md`), which explicitly establishes that both wick breach (when the tested level does not carry Major IDM provenance) and body close can produce `CHoCH_ELIGIBLE`.
+3. **Genesis / Post-CHoCH First BOS Lifecycle & Retracement Baseline Gap (`03_structural_semantic_authority.md` & `08_implementation.md`):**
+   - The canonical skill requires that:
+     * `BOOTSTRAP` has no fabricated governing Trading Range;
+     * `IDM_TAKEN` confirms `CONFIRMED_STRUCTURAL_SWING`;
+     * structural retracement qualification is evaluated against the active dealing range;
+     * `VALID_BOS` requires that retracement qualification.
+   - However, prior to the first `VALID_BOS`, no confirmed Dealing Range exists. In addition, the `CONFIRMATION_LOCKED + EXT_CONT_BREAK` transition cell in L8 unconditionally disqualified BOS without distinguishing between the locked Confirmation Gate and the unlocked Confirmation Gate (`CONFIRMATION GATE UNLOCKED` via `IDM_TAKEN`).
+
+## 2. Exact Specification Changes Made
+1. **`05_CHOCH_mechanics.md` (§3.6):**
+   - Scoped the body-close invariant from `BODY CLOSE` to `ELIGIBLE OPPOSING STRUCTURAL BOUNDARY + BODY CLOSE BEYOND THAT BOUNDARY → CHoCH_ELIGIBLE → CHoCH_CONFIRMED only if all prerequisites pass`.
+   - Preserved `MAJOR_IDM + BODY CLOSE` and all existing prerequisites.
+2. **`08_implementation.md` (§CHoCH path):**
+   - Replaced `OPPOSING STRUCTURAL BOUNDARY VIOLATION (Body Close)` with `OPPOSING STRUCTURAL BOUNDARY VIOLATION (Wick OR Body)` followed by `CHoCH CLASSIFICATION GATE`.
+   - Added explicit classification rules matching L5: body close → `CHoCH_ELIGIBLE`; wick breach (not Major IDM) → `CHoCH_ELIGIBLE`; Major IDM wick breach → `MAJOR_IDM_SWEEP` (trend unchanged); Major IDM body close → `CHoCH_ELIGIBLE`.
+3. **`08_implementation.md` (§49.4 Matrix & §49.4.1):**
+   - Reconciled `CONFIRMATION_LOCKED + EXT_CONT_BREAK` and `POST_CHOCH + EXT_CONT_BREAK` to distinguish locked vs. unlocked gate conditions:
+     * While Gate is LOCKED: `DISQUALIFIED; BOS prohibited`.
+     * When Gate is UNLOCKED (via `IDM_TAKEN`): if `MAJOR_RETRACEMENT_QUALIFIED`: `FIRST BOS / VALID_BOS → POST_BOS` (locks Protected Extreme at impulse origin, establishes confirmed Dealing Range); otherwise: `IMPULSE_EXTENSION → REMAIN`.
+   - Added Section `49.4.1` detailing the lifecycle and explicitly documenting the bounded ambiguity.
+4. **`03_structural_semantic_authority.md` (§3.2.1A):**
+   - Added Section `3.2.1A` establishing the canonical First BOS sequence and explicitly bounding the Retracement Baseline Gap.
+
+## 3. Status of Genesis / First-BOS Gap: Explicitly Bounded Specification Ambiguity
+- **Lifecycle Transition:** Fully reconciled. The state-machine transition sequence (`BOOTSTRAP → IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING (Confirmation Gate UNLOCKED) → RETRACEMENT EVALUATION → FIRST BOS / VALID_BOS → POST_BOS → CONFIRMED_RANGE`) is now executable without contradictory table cells.
+- **Retracement Baseline Calculation:** **REMAINS AN EXPLICITLY BOUNDED SPECIFICATION AMBIGUITY**. Because True SMC strictly forbids fabricating an artificial Dealing Range or premature Protected Extreme prior to the first `VALID_BOS`, the canonical specification leaves the exact reference anchor for evaluating `RetracementDepth` prior to the first dealing range (e.g. measuring against the provisional impulse origin vs. an explicit cold-start policy) unspecified in the source corpus. Implementations must treat this boundary as an explicit specification ambiguity and must not fabricate synthetic structural boundaries to bypass it.
+
+## 4. Re-Audit Results (Chain: 03 → 04 → 05 → 08)
+- Every CHoCH eligibility statement is properly scoped to an eligible opposing structural boundary.
+- L5 and L8 are logically consistent regarding wick and body-close paths.
+- Major IDM wick and body behaviors remain strictly provenance-sensitive.
+- No state can reach `VALID_BOS` without the canonical prerequisites (`IDM_TAKEN`, `MAJOR_RETRACEMENT_QUALIFIED`, `STRUCTURAL_SWING_BREAK`).
+- No state transition depends on a fabricated Trading Range.
+- Anti-retroactive classification invariants are preserved.
+- Semantic ownership remains strictly intact.
+
+## 5. Final Phase 15 Status
+**PASS — SPECIFICATION CORRECTIONS APPLIED & GAP EXPLICITLY BOUNDED**
+
+## 6. Test Result
+Command: `python -m pytest`
+Result: `91 passed, 0 failed, 0 skipped/xfail`
+*Developer-local test execution; no independent GitHub Actions/CI verification.*

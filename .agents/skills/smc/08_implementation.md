@@ -451,16 +451,23 @@ CURRENT RANGE
  ↓
 GOVERNING OPPOSING PROTECTED EXTREME
  ↓
-OPPOSING STRUCTURAL BOUNDARY VIOLATION (Body Close)
+OPPOSING STRUCTURAL BOUNDARY VIOLATION (Wick OR Body)
+        ↓
+CHoCH CLASSIFICATION GATE
         ↓
 CHoCH_ELIGIBLE
         ↓
-CHoCH_CONFIRMED
+CHoCH_CONFIRMED (only if all prerequisites pass)
         ↓
 OLD TREND TERMINATED + INITIAL ACTIVE IMPULSE INITIALIZED
 ```
 
 The engine must not skip prerequisites because a later price movement appears visually obvious.
+
+#### Classification Gate Rules:
+- **Body Close:** A candle close beyond the eligible opposing protected boundary enters the CHoCH gate and produces `CHoCH_ELIGIBLE`.
+- **Wick Breach:** A wick penetration of the eligible opposing protected boundary produces `CHoCH_ELIGIBLE`, PROVIDED the tested level does not carry Major IDM provenance.
+- **Major IDM Provenance Exception:** If the breached level carries Major IDM provenance, a wick breach produces `MAJOR_IDM_SWEEP` (trend unchanged, not CHoCH); only a body close beyond the Major IDM boundary is `CHoCH_ELIGIBLE`, pending all canonical CHoCH prerequisites.
 
 ### LTF-CHoCH Context Route
 
@@ -1101,12 +1108,23 @@ The transition matrix is exhaustive and deterministic:
 | Current State | NO_EVENT / INTERNAL_PB | MINOR_IDM_EVENT | EXT_CONT_BREAK | EXT_OPP_BREAK | MAJOR_IDM_EVENT | NEW_SVP_QUALIFIED |
 |---|---|---|---|---|---|---|
 | **BOOTSTRAP** | REMAIN; update provisional extremes/internal sequence | If the event physically takes the active IDM reference and thereby satisfies the L3 `IDM_TAKEN` condition: **IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING → CONFIRMATION_LOCKED**. Otherwise (minor IDM activity that does not constitute physical takeout of the active reference): REMAIN; no confirmed range | DISQUALIFIED; no confirmed swing, therefore no BOS | DISQUALIFIED; no protected boundary, therefore no CHoCH | NOT_APPLICABLE; no active Major IDM | SVP → Verified Extreme → Minor IDM; remain BOOTSTRAP until IDM_TAKEN |
-| **CONFIRMATION_LOCKED** | REMAIN; track active expansion/retrace state | **IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING**; remain `CONFIRMATION_LOCKED` while retracement/BOS prerequisites continue | DISQUALIFIED; BOS prohibited while confirmation is locked | CHoCH pipeline; qualifying break + all prerequisites → **POST_CHOCH**, otherwise REMAIN | REMAIN; Major IDM wick → `MAJOR_IDM_SWEEP`, Gate UNLOCKED, no automatic swing | FIRST_POST_CHOCH_SVP → Verified Extreme → FIRST_POST_CHOCH_MINOR_IDM; remain confirmation-locked until applicable sweep/gate prerequisites complete |
+| **CONFIRMATION_LOCKED** | REMAIN; track active expansion/retrace state | **IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING**; remain `CONFIRMATION_LOCKED` while retracement/BOS prerequisites continue | While Gate is LOCKED: DISQUALIFIED; BOS prohibited. When Gate is UNLOCKED (via IDM_TAKEN): if MAJOR_RETRACEMENT_QUALIFIED: **FIRST BOS / VALID_BOS → POST_BOS**; otherwise: **IMPULSE_EXTENSION → REMAIN** | CHoCH pipeline; qualifying break + all prerequisites → **POST_CHOCH**, otherwise REMAIN | REMAIN; Major IDM wick → `MAJOR_IDM_SWEEP`, Gate UNLOCKED, no automatic swing | FIRST_POST_CHOCH_SVP → Verified Extreme → FIRST_POST_CHOCH_MINOR_IDM; remain confirmation-locked until applicable sweep/gate prerequisites complete |
 | **CONFIRMED_RANGE** | REMAIN; dynamic `E_retrace` tracking | REMAIN; a later Minor IDM sweep updates the active IDM lifecycle; it does not retroactively alter an already confirmed swing | `IMPULSE_EXTENSION` → REMAIN; `VALID_BOS` → **POST_BOS** | `CHoCH_CONFIRMED` → **POST_CHOCH**; `MAJOR_IDM_SWEEP` → REMAIN; `NO_CHoCH_BREAK` → REMAIN | REMAIN; Major IDM wick → `MAJOR_IDM_SWEEP`, no CHoCH | REMAIN; new SVP supersedes the active pullback reference only when canonical IDM lifecycle requires it |
 | **POST_BOS** | REMAIN; new expansion tracked, closed-range POIs expire through POI lifecycle | REMAIN; a Minor IDM does not replace the prior Major IDM | DISQUALIFIED; another BOS is not interpreted until the new swing lifecycle is established | CHoCH classification pipeline; qualifying opposing break + all prerequisites → **POST_CHOCH**, otherwise REMAIN | REMAIN; Major IDM wick → `MAJOR_IDM_SWEEP`, Gate UNLOCKED | SVP → Verified Extreme → IDM qualification; if Major IDM qualifies, it supersedes the prior Major IDM → **CONFIRMED_RANGE** |
-| **POST_CHOCH** | remain in `CONFIRMATION_LOCKED` | first post-CHoCH Minor IDM pipeline; no automatic state promotion | BOS prohibited while confirmation remains locked | body close → `CHoCH_ELIGIBLE` pending prerequisites; Major IDM wick → `MAJOR_IDM_SWEEP`; Major IDM body close enters CHoCH pipeline | Major IDM wick → `MAJOR_IDM_SWEEP`, Gate UNLOCKED, trend unchanged | FIRST_POST_CHOCH_SVP → Verified Extreme → FIRST_POST_CHOCH_MINOR_IDM; remain `CONFIRMATION_LOCKED` until applicable sweep/gate prerequisites complete |
+| **POST_CHOCH** | remain in `CONFIRMATION_LOCKED` | first post-CHoCH Minor IDM pipeline; no automatic state promotion | While Gate is LOCKED: BOS prohibited. When Gate is UNLOCKED (via IDM_TAKEN): if MAJOR_RETRACEMENT_QUALIFIED: **FIRST BOS / VALID_BOS → POST_BOS**; otherwise: **IMPULSE_EXTENSION → REMAIN** | body close → `CHoCH_ELIGIBLE` pending prerequisites; Major IDM wick → `MAJOR_IDM_SWEEP`; Major IDM body close enters CHoCH pipeline | Major IDM wick → `MAJOR_IDM_SWEEP`, Gate UNLOCKED, trend unchanged | FIRST_POST_CHOCH_SVP → Verified Extreme → FIRST_POST_CHOCH_MINOR_IDM; remain `CONFIRMATION_LOCKED` until applicable sweep/gate prerequisites complete |
 
 The `POST_CHOCH` row is intentionally not a blanket `CONFIRMATION_LOCKED` transition for every event. The state remains `CONFIRMATION_LOCKED`, while the event-specific lineage and gate logic determine the next process step.
+
+### 49.4.1 Genesis & Post-CHoCH First BOS Specification Boundary
+
+The transition from an unconfirmed initial expansion (`BOOTSTRAP` or post-`CHoCH_CONFIRMED` initial active impulse) to the first `VALID_BOS` operates as follows:
+- Physical takeout of the active Minor IDM establishes `IDM_TAKEN = TRUE`, confirms `CONFIRMED_STRUCTURAL_SWING`, and unlocks the Confirmation Gate (`CONFIRMATION GATE UNLOCKED` is a process condition within `CONFIRMATION_LOCKED`).
+- While the Confirmation Gate is unlocked, an `EXT_CONT_BREAK` is evaluated: if `MAJOR_RETRACEMENT_QUALIFIED == TRUE`, it produces `FIRST BOS / VALID_BOS → POST_BOS` (which locks the Protected Structural Extreme at the impulse origin and establishes the first confirmed Dealing Range); otherwise it produces `IMPULSE_EXTENSION → REMAIN`.
+
+**Specification Ambiguity / Retracement Baseline Gap:**
+Canonical True SMC strictly prohibits fabricating a governing Dealing Range or manufacturing a Protected Structural Extreme prior to `VALID_BOS`. Because `RetracementDepth` in established structure is evaluated against the active governing Dealing Range, and no confirmed Dealing Range exists prior to the first `VALID_BOS`:
+- The canonical source corpus does not explicitly specify whether `RetracementDepth` for the first BOS is evaluated across the provisional expansion span (from the physical impulse origin to the confirmed structural swing), or whether the initial regime requires an explicit initialization policy.
+- Implementations must treat this boundary as an explicitly documented specification ambiguity and must not fabricate synthetic structural boundaries or premature protected extremes to bypass it.
 
 ### 49.5 Determinism invariants
 

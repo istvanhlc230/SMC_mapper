@@ -266,7 +266,7 @@ Historical IDM provenance is immutable; later candles do not retroactively rewri
 PHYSICAL OPPOSING BREAK
 ≠ AUTOMATIC CHoCH
 
-BODY CLOSE
+ELIGIBLE OPPOSING STRUCTURAL BOUNDARY + BODY CLOSE BEYOND THAT BOUNDARY
 → CHoCH_ELIGIBLE
 → CHoCH_CONFIRMED only if all prerequisites pass
 

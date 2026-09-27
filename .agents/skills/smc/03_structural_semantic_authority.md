@@ -116,6 +116,23 @@ In bootstrap:
 
 Bootstrap must remain distinguishable from organically confirmed structure.
 
+### 3.2.1A — Genesis and Post-CHoCH First BOS Lifecycle Boundary (Specification Ambiguity)
+
+The progression from an unconfirmed initial expansion (`BOOTSTRAP_EXPANSION` or the initial active impulse following `CHoCH_CONFIRMED`) to the first `VALID_BOS` follows this sequence:
+
+1. **Impulse Expansion:** Price expands from a physical impulse origin without a governing Trading Range.
+2. **Pullback & Minor IDM Formation:** A completed Candle-Level Valid Pullback establishes the initial active Minor IDM reference.
+3. **IDM Takeout:** Physical takeout of the Minor IDM reference (`IDM_TAKEN = TRUE`) confirms the expansion extreme as `CONFIRMED_STRUCTURAL_SWING` and unlocks confirmation.
+4. **Retracement & Structural Break Attempt:** Price retraces and attempts a continuation break (`STRUCTURAL_SWING_BREAK`). If retracement qualification succeeds, `FIRST BOS` / `VALID_BOS` occurs; if insufficient, the event is classified as `IMPULSE_EXTENSION`.
+5. **Regime Establishment:** The first `VALID_BOS` locks the Protected Structural Extreme at the impulse origin and establishes the first confirmed Dealing Range (`CONFIRMED_RANGE`).
+
+**Explicit Specification Ambiguity / Retracement Baseline Gap:**
+Canonical True SMC strictly prohibits fabricating a governing Dealing Range or manufacturing a Protected Structural Extreme prior to `VALID_BOS`. Consequently:
+- In established structure, `RetracementDepth` is evaluated against the active governing Dealing Range (`[Protected_Structural_Extreme, Confirmed_Structural_Swing]`).
+- Prior to the first `VALID_BOS`, the market possesses an impulse origin and a confirmed structural swing, but no governing Dealing Range.
+- The canonical source corpus does not explicitly define whether `RetracementDepth` for the first BOS is evaluated across the provisional expansion span (from the physical impulse origin to the confirmed structural swing), or whether the initial regime requires an explicit initialization policy.
+- An implementation must not invent an artificial dealing range or fabricate a protected structural extreme to bypass this gap. Downstream orchestration must treat the reference baseline for initial retracement qualification as an explicitly bounded specification ambiguity until canonically resolved.
+
 ### 3.2.2 — Impulse Origin vs Protected Structural Extreme
 
 An impulse origin is the physical price/time anchor where an expansion began. It does not automatically constitute a Protected Structural Extreme.
