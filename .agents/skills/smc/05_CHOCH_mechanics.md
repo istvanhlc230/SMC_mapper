@@ -254,7 +254,7 @@ POST-BOS PRICE ACTION
 
 Historical IDM provenance is immutable; later candles do not retroactively rewrite earlier event classification.
 
-## 3.5 Canonical invariants
+## 3.6 Canonical invariants
 
 ```text
 PHYSICAL OPPOSING BREAK
