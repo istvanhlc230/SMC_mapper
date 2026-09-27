@@ -79,7 +79,6 @@ def test_same_candle_outside_bar_cannot_confirm_intrabar_pullback_order():
     result = minor.detect_valid_pullbacks(candles, minor.PullbackDirection.BULLISH)
     assert result.pullbacks == ()
     assert result.resolution is minor.PullbackResolution.INVALIDATED_UNAVAILABLE_SEQUENCE
-    assert result.pending == ()
     assert len(result.invalidated) == 1
     assert result.invalidated[0].reference_candle_id == "r"
     assert result.invalidated[0].start_candle_id == "outside"
@@ -288,6 +287,8 @@ def test_invalidated_latest_state_overrides_historical_confirmation():
 
 
 def test_layer2_exports_only_minor_structure_contract():
+    assert not hasattr(minor, "PendingPullback")
+    assert not hasattr(minor.PullbackResolution, "PENDING_UNAVAILABLE_SEQUENCE")
     assert not hasattr(minor, "IDM")
     assert not hasattr(minor, "BOS")
     assert not hasattr(minor, "CHoCH")
