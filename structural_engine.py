@@ -92,8 +92,6 @@ class IDMLifecycleContext:
             return
         if self.valid_bos_candle_id is None:
             raise QuarantineError("post-BOS IDM lifecycle requires VALID_BOS candle provenance")
-        if self.protected_external_boundary is None:
-            raise QuarantineError("post-BOS IDM lifecycle requires protected external boundary")
 
 
 @dataclass(frozen=True, slots=True)
@@ -304,25 +302,27 @@ def classify_idm(
     ]
 
     # The Layer-2 valid-pullback / verified-extreme state is already the
-    # canonical qualification. Layer 3 must not introduce a second caller-
-    # supplied threshold, score, candle count, or heuristic.
+    # canonical qualification. Every completed post-BOS valid pullback is
+    # therefore a Major IDM event in the new lifecycle; the newest one is
+    # the active Major IDM. Earlier post-BOS Major IDM events remain immutable.
     if post_bos_pullbacks:
-        positions = _index(candles)
-        selected = max(
-            post_bos_pullbacks,
-            key=lambda pb: positions[pb.completion_candle_id],
-        )
-        events = [
+        post_bos_ids = {
+            pb.completion_candle_id for pb in post_bos_pullbacks
+        }
+        return tuple(
             _pullback_idm(
                 pb,
                 IDMClass.MAJOR_IDM
-                if pb is selected
+                if pb.completion_candle_id in post_bos_ids
                 else IDMClass.MINOR_IDM,
             )
             for pb in minor.pullbacks
-        ]
-        return tuple(events)
+        )
 
+    if lifecycle.protected_external_boundary is None:
+        raise QuarantineError(
+            "no post-BOS valid pullback requires protected external boundary fallback"
+        )
     events = list(pullback_events)
     events.append(_boundary_idm(lifecycle.protected_external_boundary))
     return tuple(events)
