@@ -67,7 +67,7 @@ def test_major_idm_wick_is_major_idm_sweep_not_choch():
         ref,
         confirmation_gate_open=True,
     )
-    assert result.resolution is choch_engine.CHoCHResolution.NO_BOUNDARY_BREAK
+    assert result.resolution is choch_engine.CHoCHResolution.MAJOR_IDM_SWEEP
     assert not result.confirmed
 
 
@@ -106,7 +106,7 @@ def test_ltf_minor_idm_wick_requires_body_close():
         ref,
         confirmation_gate_open=True,
     )
-    assert result.resolution is choch_engine.CHoCHResolution.MAJOR_IDM_SWEEP
+    assert result.resolution is choch_engine.CHoCHResolution.NO_BOUNDARY_BREAK
 
 
 def test_equality_is_not_choch():
