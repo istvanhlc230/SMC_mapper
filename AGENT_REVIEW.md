@@ -1,47 +1,64 @@
 # CURRENT TASK
-Phase 7: Layer 6 Execution Semantics Audit
+Phase 7: Corrective Layer 6 Execution Audit
 
 # DEVELOPER REPORT
 **Current Repository State:**
 * **Branch:** main
-* **Previous HEAD:** 72a586cbb3d50df123a8d0f6396d1e6b889d4efd
-* **HEAD Before Review:** [Matches Previous HEAD]
-* **Final HEAD:** 984e5bb
+* **Previous HEAD:** 76c06e7098c2e52d2e4d6623ca89f3b25bc8030b
+* **Final HEAD:** a12caee
 * **Working-tree status:** clean (after committing review report)
 
-**Implementation decisions:**
-- **Implementation Status:** The Layer 6 execution engine is currently **Not Implemented** in Python logic. The only existing Layer 6 implementation components are the interface dataclasses (e.g., `StructuralPOICandidate` in `smc_analyzer.py`).
-- **Semantic Consistency:** The existing `StructuralPOICandidate` strictly enforces the canonical ontology by explicitly typing `poi_class` as `"OF_CONFIRMED" | "VALID_OB"`. It correctly resists promoting Rejection Blocks into the POI ontology.
-- No code modifications were made because there are no implementation defects in the existing placeholders, and writing the entire Layer 6 engine from scratch falls outside the scope of a targeted audit task.
+# CANONICAL SPECIFICATION STATUS
+The canonical `.agents/skills/smc/06_execution.md` file correctly centralizes execution logic while strictly respecting upstream structural layers.
 
-# VALIDATION REPORT
-The canonical `06_execution.md` file was rigorously audited against the knowledgebase (specifically the source transcript `How to Identify Rejection Blocks.txt`). 
+### 1. Corrected IDM ↔ POI Findings
+The previous report overgeneralized `IDM_TAKEN` as a universal execution prerequisite. Canonical review reveals distinct module requirements:
+- **Module 1 (IDM Sweep):** Explicitly requires active IDM and `IDM_TAKEN = TRUE`.
+- **Module 2 (Decisional POI Mitigation):** Explicitly requires the active IDM to be taken out prior to the POI mitigation.
+- **Module 3 (Engineering Liquidity Sweep):** Divorced from IDM takeout; governed exclusively by `ENG_LQD_SWEEP`.
+- **Module 4 (Extreme POI Mitigation):** Governed by its own independent structural validities (`EXTREME_OF` / `EXTREME_OB`) and Engineering Liquidity conditions, without universally borrowing the Decisional module's IDM prerequisite.
 
-### POI / OF / OB / RB Audit
-**PASS (Canonical text):** The canonical skill is perfectly internally consistent and perfectly reflects the source transcript.
-- **Rule of Two:** Strictly maintained (Decisional + Extreme POI).
-- **OF / OB:** The only canonical tradable POIs. OB correctly requires 3 pillars (including FVG).
-- **Rejection Block (RB):** Accurately defined as a separate PD array derived from a liquidity-sweeping wick. It becomes the relevant execution location **only after** the Extreme OB fails. It is **not** promoted to a POI, and it is **not** used to determine Engineering Liquidity. 
+### 2. POI Lifecycle & Rule-of-Two
+- **Cardinality:** Restricted strictly to Decisional POI and Extreme POI.
+- **Origin OB:** Correctly classified as a *latent reserve*. It activates as the Extreme POI only upon Extreme OB failure without a CHoCH.
+- **Expiration:** A new `VALID_BOS` (Dealing Range rollover) immediately expires all unmitigated previous-range POIs, turning them into non-tradable, non-revivable historical records. 
+- **Semantics:** Touch ≠ Mitigation. Mitigation ≠ Failure. POI Failure ≠ Structural Failure.
 
-### IDM ↔ POI Relationship
-**PASS (Canonical text):** `06_execution.md` correctly prevents POI logic from interfering with IDM logic. IDM takeout remains a strict Layer 3 prerequisite for execution, but POIs maintain independent validation pillars.
+### 3. Order Flow (OF) & Order Block (OB) Validation
+- **OF Lifecycle:** Maintains independent validity. Mitigation/Failure of an OF does not implicitly invalidate an internally valid OB.
+- **OB Validation:** Strictly enforces 3 pillars (including FVG presence). The Decisional OB is the specific origin of the causal displacement that produced `VALID_BOS`. The Extreme OB must belong to the active `EXTREME_OF` lineage. Refinements (Wick/Inside-Bar) act as geometric overlays, not new POI states.
 
-### Entry Semantics
-**PASS (Canonical text):** Candlestick reversal patterns (Morning Star, Engulfing, etc.) are strictly defined as execution *triggers* that must occur within an independently validated POI/liquidity context. Entries are evaluated explicitly on the *close* of the pattern candle, firmly preventing live-wick false entries.
+### 4. Rejection Block (RB) Lifecycle
+- Strictly defined as a separate PD array derived from a liquidity sweep.
+- It is **not** a POI, **not** an Extreme POI, and **not** a Rule-of-Two slot.
+- Becomes relevant solely after the applicable Extreme OB fails. 
+- Cannot act as an Extreme POI dependency for Engineering Liquidity. 
+- It maintains distinct provenance.
 
-# REQUIRED CORRECTIONS
-[None active]
+### 5. Engineering Liquidity
+- Bound to the valid pullback *before* the active Extreme POI (`EXTREME_OF` or `EXTREME_OB`).
+- Recomputed on Extreme POI identity change. Historical references are immutable.
 
-# OPEN SPECIFICATION GAPS
-- `TARGET PRICE DERIVATION` remains PARTIALLY OPEN for the unresolved exact LTF target selection hierarchy and universal countertrend target resolver.
-- `CHoCHResolution.NO_EVIDENCE` requires a semantic decision on whether to integrate or remove.
-- **Layer 6 Implementation is completely OPEN**: The Python business logic engine for parsing Order Flow, validating Order Blocks, deriving Rejection Blocks, and evaluating Entry Triggers has not yet been implemented.
+### 6. Entry Modules & Reversal Triggers
+- **Trigger Restrictions:** Candlestick reversal patterns (Pinbar, Outside-Bar, Morning Star, etc.) do NOT create structure or POIs. They serve only as execution *authorization* upon a valid underlying POI or Liquidity context.
+- **Close-only Execution:** Execution authorization relies explicitly on the completed candlestick **close**. Live unclosed wicks are categorically rejected as triggers.
+- **Infrastructure Detachment:** `ENTRY_AUTHORIZED` ≠ `ORDER_SUBMITTED` ≠ `POSITION_OPEN`.
 
-# IMPLEMENTATION STATUS
-Phase 7 Layer 6 Audit is completed with a full PASS result for canonical consistency. The implementation of the engine is pending.
+# EXISTING IMPLEMENTATION STATUS
+- **Layer 6 Completeness:** The Layer 6 business logic engine is **UNIMPLEMENTED**. 
+- **Implementation Placeholders:** The repository currently only contains structural interface stubs in `smc_analyzer.py` (e.g., `StructuralPOICandidate`).
+- **Placeholder Conformity:** The existing `StructuralPOICandidate` interface is fully conformant with the canonical ontology. It enforces `poi_class: "OF_CONFIRMED" | "VALID_OB"` and `execution_role: "DECISIONAL" | "EXTREME"`, ensuring no synthetic third POIs, standalone FVGs, or Rejection Blocks are falsely promoted into the POI execution slots.
+
+# ACTUAL IMPLEMENTATION DEFECTS
+- **None.** There are no contradictions with canonical rules in the codebase because the implementation is currently limited to fully compliant data interfaces.
+
+# SPECIFICATION GAPS (OPEN ITEMS)
+- **Target Price Derivation:** Partially open regarding exact LTF target selection hierarchy.
+- **`CHoCHResolution.NO_EVIDENCE`:** Pending a semantic decision for unformed arrays.
+- **Layer 6 Implementation Phase:** Pending construction of the entire execution engine. Do not implement unresolved rules.
 
 # COMMITS
-COMMIT: 984e5bb
+COMMIT: a12caee
 FILES: AGENT_REVIEW.md
-PURPOSE: Submit Phase 7 Layer 6 Execution Audit pass report.
+PURPOSE: Submit Corrective Layer 6 Execution Audit pass report.
 TESTS: Passed 87/87 tests (0 regressions).
