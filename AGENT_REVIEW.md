@@ -1824,3 +1824,32 @@ Downstream Layer 4, Layer 5, and Layer 8 references were synchronized to consume
 - 2f2c6ef46e92e45fd55e88b8e6ef39382eadd52e — reconciliation audit record.
 
 Runtime Python/analyzer/monitor and analyzed JSON were not modified.
+
+
+## LAYER 1 PYTHON IMPLEMENTATION CORRECTION — 2026-09-27
+
+### Audit
+Audited `microstructure_engine.py` directly against canonical `.agents/skills/smc/01_micro_structure.md`.
+
+### Finding
+`candle_trend()` classified bullish/bearish direction from candle geometry alone. The canonical Candlestick-Based Trend requires the applicable previous **bullish** candle for the bullish path and the applicable previous **bearish** candle for the bearish path.
+
+This allowed geometry matching against a non-directional/opposite-direction reference to manufacture a candle-level trend observation.
+
+### Correction
+- `candle_trend()` now explicitly requires:
+  - previous bullish candle + previous high breach + relevant low protected → BULLISH;
+  - previous bearish candle + previous low breach + relevant high protected → BEARISH;
+  - otherwise → UNDEFINED.
+- Added regression coverage for bullish, bearish, doji, and opposite-direction reference cases.
+- No Layer 2+ logic was added to Layer 1.
+
+### Ownership note
+The existing observability/evidence classes (`SequenceStatus`, `SequenceEvidence`, `EvidenceEnvelope`) remain under review because the canonical Layer 1 document states that implementation-level observability state/evidence contracts are owned by Layer 8. They were not moved in this correction because Layer 2 currently consumes the Layer-1 sequence evidence and moving them without a neutral shared contract would introduce a reverse dependency.
+
+### Commits
+- `e9dd9a7bb49d42692e380d84d91c66c7e65ea450` — Layer 1 trend implementation correction.
+- `ce172a8a5dab4f91c5387064e8cdc16d8c0242b9` — Layer 1 regression test coverage.
+
+### Status
+**Layer 1 concrete semantic defect corrected. Layer 1 remains subject to final regression/ownership audit before Layer 2 implementation work continues.**
