@@ -87,7 +87,7 @@ Mandatory prerequisites remain:
 3. the reference has correct external structural identity;
 4. the final break classification satisfies 3.4.3.
 
-If an external continuation break occurs before the Layer 3 qualification result is satisfied or before `IDM_TAKEN == True`:
+For an eligible continuation external level that is not functioning as Major IDM, if the break occurs before the Layer 3 qualification result is satisfied or before `IDM_TAKEN == True`:
 
 ```text
 EXT_CONT_BREAK
