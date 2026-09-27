@@ -174,3 +174,18 @@ def test_ltf_reference_requires_active_structural_glitch_context():
         pass
     else:
         raise AssertionError("LTF CHoCH reference must require active Structural Glitch context")
+
+def test_ltf_reference_rejects_protected_boundary_provenance():
+    idm = structural.IDMEvent(
+        structural.IDMClass.MAJOR_IDM,
+        structural.IDMOrigin.PROTECTED_EXTERNAL_BOUNDARY,
+        PullbackDirection.BULLISH,
+        Decimal("10"),
+        "protected",
+    )
+    try:
+        choch_engine.reference_from_ltf_idm(idm)
+    except structural.QuarantineError:
+        pass
+    else:
+        raise AssertionError("LTF reference must not promote protected-boundary IDM provenance")
