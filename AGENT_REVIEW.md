@@ -1634,3 +1634,38 @@ A fresh audit was performed after the previous FULL 01–08 PASS, covering the c
 **FULL 01–08 + SUPPORTING SKILL AUDIT = PASS / 1 DOCUMENTATION CORRECTION APPLIED.**
 
 No further canonical methodology correction was identified in this pass. Runtime Mapper/analyzer/monitor integration remains intentionally deferred until isolated layer implementations are independently approved.
+
+
+## LAYER 1–4 AUDIT — 2026-09-27
+
+Targeted canonical audit completed for .agents/skills/smc/01_micro_structure.md through 04_BOS_mechanics.md, using the current SMC skill as the implementation authority.
+
+### Findings corrected
+
+1. **Layer 2 Minor IDM ownership wording — CLOSED**
+   - Layer 2 explicitly owns formation of the Minor IDM from the pullback-derived liquidity reference.
+   - Layer 3 owns IDM_TAKEN, Major IDM governance, and downstream external structural consequences.
+   - Ambiguous wording that could imply Layer 3 owns Minor IDM classification was removed.
+
+2. **Layer 3 normal retracement candle-count contradiction — CLOSED**
+   - The canonical normal path requires >= NORMAL_RETRACEMENT_CANDLE_COUNT opposing closing candles.
+   - methodology_parameters.md defines NORMAL_RETRACEMENT_CANDLE_COUNT = 3.
+   - Layer 3 previously stated “at least 2” for the normal positive path; this was corrected to at least 3 opposing closing candles.
+   - The 2-candle path remains only the documented reduced-candle displacement exception.
+   - The 1-candle path remains only the explicit displacement-outlier exception with the >= 5 preceding bodies/extremes condition.
+
+### Cross-layer verification
+
+- Layer 1 remains restricted to candle-level OHLC primitives and observations.
+- Layer 2 owns Candle-Level Valid Pullback, Verified Pullback Extreme, pullback-derived liquidity reference, and Minor IDM formation/active pointer.
+- Layer 3 owns Major IDM governance, IDM_TAKEN, CONFIRMED_STRUCTURAL_SWING, and structural retracement qualification.
+- Layer 4 consumes Layer 3 qualification and owns detailed BOS mechanics; it does not recalculate Layer 3 retracement rules.
+- No active FALLBACK_MAJOR_IDM or REAL_MAJOR_IDM terminology remains in Layers 1–4.
+- No generic Swing / Break ownership model was found in Layers 1–4.
+- No Layer-3 raw retracement threshold logic was found in Layer 4.
+
+### Status
+
+**LAYER 1–4 TARGETED AUDIT: PASS AFTER CORRECTION**
+
+Runtime integration remains intentionally untouched.
