@@ -1940,3 +1940,48 @@ The repository has a push-triggered pytest workflow, but the available workflow/
 LAYER 1 PYTHON SEMANTIC ALIGNMENT: PASS AFTER CORRECTIONS.
 
 One ownership refactor remains deliberately deferred: implementation-level sequence/evidence state must ultimately have a neutral/shared owner rather than being duplicated or imported backward from Layer 8.
+
+
+## LAYER 2 PYTHON AUDIT — 2026-09-27
+
+Direct Layer-2 Python audit completed against the current `.agents/skills/smc/02_minor_structure.md`, Layer-1 implementation contract, and corroborating knowledgebase sources.
+
+### Scope
+- `minor_structure_engine.py`
+- `tests/test_minor_structure_engine.py`
+- Layer-2 semantic ownership and Layer-1 consumption boundaries
+- `knowledgebase/sources/truesmc2026.txt`
+- `knowledgebase/sources/true_smc123.txt`
+- `knowledgebase/sources/true_smc_21dayBootCamp.txt`
+- `knowledgebase/sources/market_structure_mapping_update.txt`
+- `knowledgebase/sources/major_minor_inducement.txt`
+- `knowledgebase/reference/02_market_structure.md`
+- `knowledgebase/reference/03_pullback_retracement.md`
+
+### Findings
+1. **Candle-Level Valid Pullback formation = aligned.** The implementation establishes the applicable directional reference from Layer-1 candle-trend semantics, requires the reference-side opposing extreme takeout first, preserves the same reference while the pullback is open, and completes only on the later break of the same reference extreme.
+2. **Breach candle color = aligned.** The implementation does not filter pullback validity by the color of the candle performing the takeout/completion breach, matching the 2026 source statement that wick/body and candle color do not invalidate the pullback.
+3. **Equal High / Equal Low reference transfer = aligned.** Layer 2 consumes Layer-1 equality ownership and prevents the transfer candle from simultaneously taking its newly transferred reference extreme.
+4. **Inside Bar reference handling = aligned.** The mother/reference context is preserved; the inner candle does not become a competing reference.
+5. **Outside Bar observability = aligned.** A Layer-1 `SequenceStatus.UNAVAILABLE` ordering is terminal for that candidate. The implementation does not reinterpret it as observed or backfill it from later candles.
+6. **Pullback Extreme Verification = aligned.** The complete start-to-completion window is used to derive the bullish low / bearish high and preserve source-candle provenance.
+7. **Active Pullback Pointer = aligned.** The newest completed canonical Candle-Level Valid Pullback becomes active; the Layer-2 implementation does not require Layer-3 structural acceptance before advancing the pointer.
+8. **Layer boundary = aligned.** Layer 2 does not manufacture Major IDM, BOS, CHoCH, POI, or structural retracement qualification. Minor IDM formation remains the Layer-2 handoff; Layer 3 owns IDM_TAKEN and Major IDM governance.
+
+### Regression issue found and corrected
+The Layer-2 equal-high regression fixture used a pullback-start candle that was simultaneously below the transferred reference low and above the transferred reference high. Under the canonical Outside-Bar rule, aggregate OHLC cannot prove whether the low was taken before the high, so that candidate must be terminally invalidated. The fixture therefore contradicted the canonical rule rather than exposing an engine defect.
+
+The fixture was corrected so the pullback-start candle takes only the transferred reference low; the later completion candle performs the reference-high break.
+
+### Correction
+- Commit: `4898b065dc1748166f4b76c7a9446eb90b0ae079`
+- File: `tests/test_minor_structure_engine.py`
+- Purpose: synchronize the equal-high regression fixture with canonical Outside-Bar observability semantics.
+
+### Runtime status
+The latest full GitHub Actions run before this correction was independently inspected: 60 tests passed and 5 failed. The Layer-2-specific failure was the stale equal-high fixture corrected above. The other four failures are in Layer 1 / Layer 3 tests and are outside this Layer-2 correction scope.
+
+A fresh full-suite PASS is therefore not claimed yet.
+
+### Disposition
+**LAYER 2 PYTHON SEMANTIC AUDIT = PASS AFTER TEST-FIX / FULL-SUITE VERIFICATION PENDING.**
