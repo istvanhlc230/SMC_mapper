@@ -157,7 +157,7 @@ COUNTERTREND SCENARIOS
 
 A rule must have one primary semantic owner. Other documents may reference that rule, but must not create a competing definition.
 
-## 6. Precedence rule
+## 7. Precedence rule
 
 When documents conflict:
 
@@ -171,7 +171,7 @@ OLDER / SUPERSEDED WORDING
 
 Do not use generic SMC knowledge to override the project's canonical semantic-owner documents.
 
-## 7. Canonical document set
+## 8. Canonical document set
 
 ```text
 .agents/skills/smc/
