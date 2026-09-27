@@ -252,3 +252,80 @@ Result: `91 passed, 0 failed, 0 skipped/xfail`
 Command: `python -m pytest`
 Result: `91 passed, 0 failed, 0 skipped/xfail`
 *Developer-local test execution; no independent GitHub Actions/CI verification.*
+
+---
+
+# PHASE 16 — L6 EXECUTION RECONCILIATION AUDIT
+
+## 1. Audit Scope & Sources
+- Primary Target: `.agents/skills/smc/06_execution.md` (Layer 6 Execution)
+- Upstream Canonical Layers Audited:
+  - `01_micro_structure.md` (Microstructure / Candle Geometry)
+  - `02_minor_structure.md` (Minor Structure / Pullbacks / Minor IDM)
+  - `03_structural_semantic_authority.md` (Major Structure / IDM Governance / Retracement Qualification)
+  - `04_BOS_mechanics.md` (BOS Mechanics)
+  - `05_CHOCH_mechanics.md` (CHoCH Mechanics)
+- Downstream Boundaries Audited:
+  - `07_risk.md` (Risk / SL Anchors / Target Inputs)
+  - `08_implementation.md` (Implementation Pipeline & Determinism)
+
+## 2. Target-by-Target Audit Findings & Classifications
+
+### 1. POI Semantic Ownership
+- **Finding:** L6 cleanly owns execution-level POI concepts (`OF_CONFIRMED`, `VALID_OB`, POI lifecycle states: `POI_TOUCH`, `POI_INTERACTION`, `POI_MITIGATION`, `POI_FAILURE`, `POI_INVALIDATION`). It explicitly states: "Execution consumes structure; execution must never manufacture structural truth." Invariants enforce `POI ≠ ENTRY EXECUTION`, `POI → NOT_STRUCTURE`, `POI → NOT_BOS`, `POI → NOT_CHoCH`.
+- **Classification:** **NO ISSUE** (SOURCE-BACKED — ALREADY CANONICAL)
+
+### 2. Canonical Tradable POIs
+- **Finding:** The canonical tradable POI set is strictly limited to `OF_CONFIRMED` and `VALID_OB`. All non-tradable entities (standalone FVG, Breaker Block, Mitigation Block, Liquidity Void, arbitrary liquidity pool, IDM, generic displacement zone) are explicitly excluded from tradable POI status.
+- **Classification:** **NO ISSUE**
+
+### 3. Rule of Two
+- **Finding:** Active tradable POI set cardinality is strictly 1 to 2 (Decisional POI in Discount/Premium + Extreme POI). Origin OB is treated strictly as a latent reserve POI rather than an automatic third active slot. Logic permitting three active POIs is explicitly forbidden.
+- **Classification:** **NO ISSUE**
+
+### 4. Rejection Block
+- **Finding:** Maintained as a separate execution / PD-array concept at the extreme/origin area, relevant only after the applicable Extreme OB fails. It is not an OF/OB-equivalent POI class or an automatic Rule-of-Two slot (`REJECTION_BLOCK → NOT_POI`). Its validation requires a wick/body sweep of the prior candle extreme and uses the rejection wick; it does not inherit or require an FVG.
+- **Classification:** **NO ISSUE**
+
+### 5. Order Block
+- **Finding:** `VALID_OB` requires all three validation pillars: (1) origin of impulsive displacement causing structural `VALID_BOS`, (2) previous candle extreme sweep, (3) associated unconsumed FVG. Candle geometry is consumed from Layer 1. Refinements (Wick-Only Pinbar, Inside Bar) are execution-coordinate refinements only and do not alter structural validity.
+- **Classification:** **NO ISSUE**
+
+### 6. Entry Modules
+- **Finding:** All four canonical entry modules are clearly specified:
+  1. IDM Sweep (`IDM_TAKEN = TRUE` + directional confirmation)
+  2. Decisional POI Mitigation (Decisional POI in Premium/Discount + mitigation + directional confirmation)
+  3. Engineering Liquidity Sweep (`ENG_LQD_CONFIRMED` + sweep + directional confirmation)
+  4. Extreme POI Mitigation (Fallback Extreme POI + mitigation + directional confirmation)
+  Triggers are governed by deterministic candlestick reversal patterns on completed candle close. Momentum and Shrinking candles are correctly designated as qualitative/approach filters only. Modules produce `ENTRY_AUTHORIZED`, not structural state.
+- **Classification:** **NO ISSUE**
+
+### 7. IDM / L6 Interface
+- **Finding:** Clean interface. Layer 2 Minor IDM and Layer 3 Major IDM / `IDM_TAKEN` are consumed by L6. L6 cannot manufacture IDM. IDM Sweep entry requires `IDM_TAKEN = TRUE` but does not imply BOS or CHoCH.
+- **Classification:** **NO ISSUE**
+
+### 8. POI Lifecycle & Trading Range Rollover
+- **Finding:** Owned cleanly by L6 (§38.4). When a new `VALID_BOS` establishes a new Dealing Range, all unmitigated tradable POIs from the previous Dealing Range immediately expire to `EXPIRED_HISTORICAL / REACTION_ZONE` (not tradable). Historical records remain for auditability but cannot be selected as active POIs.
+- **Classification:** **NO ISSUE**
+
+### 9. Cross-Layer Semantic Ownership
+- **Finding:** The full chain `01 → 02 → 03 → 04 → 05 → 06 → 07 → 08` preserves strict unidirectional dependency and the "define once at semantic owner" principle. No circular dependencies, duplicated definitions, or structural redefinitions exist in L6.
+- **Classification:** **NO ISSUE**
+
+### 10. Target / Trade-Management Boundary
+- **Finding:** L6 respects the boundary that canonical SMC methodology does not prescribe universal target selection or trade management. Pro-trend external swing is the primary chart-analysis target input. Trade management (BE, trailing, multi-leg, fixed-R, minimum RR gating) is correctly documented as downstream execution/trading policy.
+- **Classification:** **NO ISSUE**
+
+## 3. Canonical Corrections
+- **None required.** Layer 6 (`.agents/skills/smc/06_execution.md`) is completely consistent, sound, and properly integrated across all upstream and downstream canonical layers.
+
+## 4. Status of Open Canonical Gaps
+- The Genesis / First-BOS retracement baseline ambiguity from Phase 15 remains an **OPEN, UNRESOLVED, and EXPLICITLY BOUNDED** specification gap in L3 and L8. L6 introduces no new gaps and does not attempt to resolve this boundary.
+
+## 5. Final Phase 16 Status
+**PASS**
+
+## 6. Test Result
+Command: `python -m pytest`
+Result: `91 passed, 0 failed, 0 skipped/xfail`
+*Developer-local test execution; no independent GitHub Actions/CI verification.*
