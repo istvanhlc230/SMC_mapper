@@ -90,11 +90,30 @@ class CHoCHBreak:
 
 
 @dataclass(frozen=True, slots=True)
+class PostCHoCHRegime:
+    new_direction: PullbackDirection
+    initial_active_impulse_candle_id: str
+    confirmation_locked: bool
+    ltf_context_cleared: bool
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.new_direction, PullbackDirection):
+            raise QuarantineError("invalid post-CHoCH direction")
+        if not isinstance(self.initial_active_impulse_candle_id, str) or not self.initial_active_impulse_candle_id:
+            raise QuarantineError("post-CHoCH regime requires initial impulse provenance")
+        if not isinstance(self.confirmation_locked, bool) or not isinstance(self.ltf_context_cleared, bool):
+            raise QuarantineError("post-CHoCH regime flags must be boolean")
+        if not self.confirmation_locked:
+            raise QuarantineError("post-CHoCH regime must begin confirmation-locked")
+
+
+@dataclass(frozen=True, slots=True)
 class CHoCHAnalysis:
     resolution: CHoCHResolution
     structural_break: CHoCHBreak | None
     confirmed: bool
     confirmation_gate_open: bool
+    post_choch_regime: PostCHoCHRegime | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.resolution, CHoCHResolution):
@@ -108,6 +127,10 @@ class CHoCHAnalysis:
             CHoCHResolution.CHOCH_CONFIRMED,
         } and self.structural_break is None:
             raise QuarantineError("classified CHoCH outcome requires structural break")
+        if self.confirmed and self.post_choch_regime is None:
+            raise QuarantineError("confirmed CHoCH requires post-CHoCH regime initialization")
+        if not self.confirmed and self.post_choch_regime is not None:
+            raise QuarantineError("unconfirmed CHoCH cannot initialize post-CHoCH regime")
 
 
 def reference_from_boundary(
@@ -172,6 +195,7 @@ def detect_choch(
     *,
     confirmation_gate_open: bool,
     break_candle_id: str | None = None,
+    ltf_context_active: bool = False,
 ) -> CHoCHAnalysis:
     """Classify the first physical opposing-boundary break.
 
@@ -190,6 +214,8 @@ def detect_choch(
         raise QuarantineError("Layer 5 requires an explicit CHoCH reference")
     if not isinstance(confirmation_gate_open, bool):
         raise QuarantineError("confirmation_gate_open must be boolean")
+    if not isinstance(ltf_context_active, bool):
+        raise QuarantineError("ltf_context_active must be boolean")
 
     candidates = sequence
     if break_candle_id is not None:
@@ -222,11 +248,23 @@ def detect_choch(
                 False,
                 False,
             )
+        new_direction = (
+            PullbackDirection.BEARISH
+            if reference.direction is PullbackDirection.BULLISH
+            else PullbackDirection.BULLISH
+        )
+        regime = PostCHoCHRegime(
+            new_direction=new_direction,
+            initial_active_impulse_candle_id=candle.candle_id,
+            confirmation_locked=True,
+            ltf_context_cleared=ltf_context_active,
+        )
         return CHoCHAnalysis(
             CHoCHResolution.CHOCH_CONFIRMED,
             structural_break,
             True,
             True,
+            regime,
         )
 
     return CHoCHAnalysis(
@@ -242,6 +280,7 @@ __all__ = [
     "CHoCHBreak",
     "CHoCHReference",
     "CHoCHReferenceKind",
+    "PostCHoCHRegime",
     "CHoCHResolution",
     "detect_choch",
     "reference_from_boundary",
