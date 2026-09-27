@@ -115,10 +115,16 @@ def reference_from_boundary(
     *,
     price: Decimal,
     source_candle_id: str,
+    idm_class: IDMClass | None = None,
+    idm_origin: IDMOrigin | None = None,
 ) -> CHoCHReference:
     return CHoCHReference(
-        direction, price, source_candle_id,
+        direction,
+        price,
+        source_candle_id,
         CHoCHReferenceKind.PROTECTED_OPPOSING_BOUNDARY,
+        idm_class,
+        idm_origin,
     )
 
 
@@ -156,7 +162,7 @@ def _eligible_for_break(reference: CHoCHReference, body_close: bool) -> CHoCHRes
     if reference.idm_class is IDMClass.MAJOR_IDM and not body_close:
         return CHoCHResolution.MAJOR_IDM_SWEEP
     if reference.kind is CHoCHReferenceKind.LTF_ACTIVE_IDM and reference.idm_class is IDMClass.MINOR_IDM and not body_close:
-        return CHoCHResolution.MAJOR_IDM_SWEEP
+        return CHoCHResolution.NO_BOUNDARY_BREAK
     return None
 
 
@@ -198,7 +204,7 @@ def detect_choch(
             continue
         mode, body_close = event
         gated = _eligible_for_break(reference, body_close)
-        if gated is CHoCHResolution.MAJOR_IDM_SWEEP:
+        if gated is not None:
             return CHoCHAnalysis(gated, None, False, confirmation_gate_open)
 
         structural_break = CHoCHBreak(
