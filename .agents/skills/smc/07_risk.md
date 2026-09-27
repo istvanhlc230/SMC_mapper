@@ -1,4 +1,4 @@
-# 05 — RISK
+# 07 — RISK
 
 **Role:** Risk, scoring, position sizing, trade management, and execution-lifecycle policy.
 
