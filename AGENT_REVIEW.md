@@ -329,3 +329,84 @@ Result: `91 passed, 0 failed, 0 skipped/xfail`
 Command: `python -m pytest`
 Result: `91 passed, 0 failed, 0 skipped/xfail`
 *Developer-local test execution; no independent GitHub Actions/CI verification.*
+
+---
+
+# PHASE 17 — L7 RISK / TARGET / TRADE-MANAGEMENT RECONCILIATION AUDIT
+
+## 1. Audit Scope & Sources
+- Primary Target: `.agents/skills/smc/07_risk.md` (Layer 7 Risk, Target, & Trade Management)
+- Canonical Context & Cross-Layer References Audited:
+  - `03_structural_semantic_authority.md` (Major Structure / Dealing Range / Invariants)
+  - `04_BOS_mechanics.md` (BOS Mechanics)
+  - `05_CHOCH_mechanics.md` (CHoCH Mechanics)
+  - `06_execution.md` (Execution / POIs / Entry Modules)
+  - `08_implementation.md` (State-Machine Pipeline / Risk Scoring Boundary)
+  - `methodology_parameters.md` (Methodology Parameters)
+  - `trading_policy.md` (Trading Policy)
+  - `platform_execution.md` (Platform Execution Contract)
+  - `countertrend_scenarios.md` (Countertrend Scenarios)
+
+## 2. Target-by-Target Audit Findings & Classifications
+
+### 1. Risk Ownership
+- **Finding:** L7 owns only downstream risk constraints, stop-loss boundaries, target-management inputs, RR calculations, and trade-management policy boundaries. It cannot manufacture or validate IDM, Confirmed Swing, Protected Structural Extreme, Trading Range, BOS, CHoCH, POI, or Entry authorization (`RISK CONSUMES STRUCTURE; RISK DOES NOT CREATE STRUCTURE`).
+- **Classification:** **NO ISSUE**
+
+### 2. Stop-Loss Semantics
+- **Finding:** Tier 1 (zone boundary) and Tier 2 (refined pattern extreme: `SL = min/max ± P`) strictly consume upstream structural and execution anchors (sweep extreme, pattern extreme). Buffers (`P`) are explicit downstream platform parameters. Stopped-out state is mechanical (`EXECUTION_STOPPED_OUT ≠ POI_FAILED ≠ ORDER_BLOCK_FAILED ≠ VALID_BOS ≠ CHoCH_CONFIRMED`).
+- **Classification:** **NO ISSUE**
+
+### 3. Target Boundary
+- **Finding:** L7 preserves the fundamental distinction: `STRUCTURAL / LIQUIDITY TARGET INPUT → TARGET POLICY → TRADE TARGET`. It does not introduce a universal canonical target-selection algorithm. The primary pro-trend target input is the confirmed external range extreme (`Confirmed_Swing_High` / `Confirmed_Swing_Low`), but target assignment is policy-controlled (`TARGET ≠ STRUCTURAL_VALIDATION`, `TARGET_HIT ≠ VALID_BOS`, `NO_CANONICAL_TARGET → NO_AUTOMATIC_TP_SUBMISSION`).
+- **Classification:** **NO ISSUE**
+
+### 4. Universal Countertrend Target Coordinate
+- **Finding:** No universal countertrend target coordinate has been introduced. Countertrend scenarios target the next canonical destination (next valid POI, inducement, Engineering Liquidity, or external liquidity), but single-coordinate resolution remains setup-specific target policy, corroborated by `countertrend_scenarios.md` §7.
+- **Classification:** **NO ISSUE**
+
+### 5. RR and Minimum-RR Gating
+- **Finding:** RR calculation does not create a target (`RR_CALCULATION ≠ TARGET_CREATION`), does not validate structure, and does not manufacture an entry. Minimum-RR gating (`Projected_RR >= Configured_Minimum_RR`) is strictly a configurable trading policy, not an SMC structural prerequisite.
+- **Classification:** **NO ISSUE**
+
+### 6. Break-Even / Profit-Lock / Trailing
+- **Finding:** BE, profit-lock, and trailing are explicitly classified as stop-management actions, not canonical targets or mandatory True SMC methodology. `TARGET_REACHED ≠ POSITION_CLOSED`, `TARGET_REACHED ≠ STOP_MOVED`, and `BREAK_EVEN` is never a canonical fallback target.
+- **Classification:** **NO ISSUE**
+
+### 7. Multi-Leg Trade Plan
+- **Finding:** The multi-leg target architecture (`T1 → Leg 1, T2 → Leg 2, T3 → Leg 3`) is explicitly documented as a configurable project execution architecture, not a universal True SMC requirement. Legs without valid target inputs fail closed and are not automatically submitted.
+- **Classification:** **NO ISSUE**
+
+### 8. Target Reached / Notification Boundary
+- **Finding:** The monitor phase is strictly notification-only: `PRICE REACHES TARGET → TARGET_REACHED → TARGET_NOTIFICATION_SENT`. It does not perform auto-close, partial close, or stop movements without independent external platform verification.
+- **Classification:** **NO ISSUE**
+
+### 9. Entry vs. Risk Separation
+- **Finding:** Clean separation is maintained: `ENTRY_AUTHORIZED ≠ ORDER_SUBMITTED ≠ ORDER_FILLED ≠ POSITION_OPEN`. Risk evaluation is downstream of canonical entry context and does not manufacture entry authorization.
+- **Classification:** **NO ISSUE**
+
+### 10. CHoCH / BOS Interaction
+- **Finding:** Risk logic reacts to structural events without creating them: `VALID_BOS` rolls the external target candidate and expires old-range orders; `CHoCH_CONFIRMED` invalidates targets and cancels pending orders belonging to the invalidated regime.
+- **Classification:** **NO ISSUE**
+
+### 11. Cross-Layer Semantic Ownership
+- **Finding:** Complete chain `03 → 04 → 05 → 06 → 07 → 08` strictly adheres to unidirectional flow: `STRUCTURE → EXECUTION → RISK → IMPLEMENTATION`. No circularity, duplicate definitions, or methodology leakage found.
+- **Classification:** **NO ISSUE**
+
+### 12. L7 ↔ L8 Implementation Boundary
+- **Finding:** Scoring weights, quality tiers, and penalty arithmetic are implementation behavior owned by `08_implementation.md` (§5.5). L7 does not invent competing scoring formulas.
+- **Classification:** **NO ISSUE**
+
+## 3. Canonical Corrections
+- **None required.** Layer 7 (`.agents/skills/smc/07_risk.md`) is completely consistent, sound, strictly downstream, and cleanly integrated.
+
+## 4. Status of Open Canonical Gaps
+- The Genesis / First-BOS retracement baseline ambiguity from Phase 15 remains an **OPEN, UNRESOLVED, and EXPLICITLY BOUNDED** specification gap in L3 and L8. L7 introduces no new gaps.
+
+## 5. Final Phase 17 Status
+**PASS**
+
+## 6. Test Result
+Command: `python -m pytest`
+Result: `91 passed, 0 failed, 0 skipped/xfail`
+*Developer-local test execution; no independent GitHub Actions/CI verification.*
