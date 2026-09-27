@@ -34,15 +34,21 @@ OLD TREND TERMINATED + INITIAL ACTIVE IMPULSE INITIALIZED
 
 ### 3.5.1 — Unit of Origin
 
-The eligible CHoCH reference object is the active Dealing Range's **Protected Opposing Structural Extreme / Governing Opposing Range Boundary**.
+The ordinary CHoCH reference object is the active Dealing Range's **Protected Opposing Structural Extreme / Governing Opposing Range Boundary**.
 
 - Bullish lifecycle → Protected Swing Low.
 - Bearish lifecycle → Protected Swing High.
 
-Minor Structure, arbitrary local highs/lows, IDM levels, liquidity nodes, and continuation CONFIRMED_STRUCTURAL_SWING cannot independently create CHoCH.
+Minor Structure, arbitrary local highs/lows, IDM levels, liquidity nodes, and continuation CONFIRMED_STRUCTURAL_SWING cannot independently create CHoCH **on the ordinary external-boundary route**. The canonical LTF Structural Glitch is the explicit exception: while that context is active, the most recently formed valid LTF pullback / active LTF IDM reference temporarily becomes the governing CHoCH reference under §3.5.3A. This is reference substitution, not promotion of the Minor object into Major Structure.
 
 ```text
+ORDINARY ROUTE
 Protected Opposing Structural Extreme
+        ↓
+CHoCH Physical-Break Gate
+
+LTF STRUCTURAL GLITCH
+Most Recent Valid LTF Pullback / Active LTF IDM
         ↓
 CHoCH Physical-Break Gate
 ```
