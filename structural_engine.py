@@ -385,10 +385,10 @@ def qualify_retracement(
     idx = _index(candles)
     if swing.confirmation_candle_id not in idx:
         raise QuarantineError("swing confirmation candle is absent")
-    start = idx[swing.confirmation_candle_id]
-    end = idx[attempt_end_candle_id] if attempt_end_candle_id is not None else len(candles) - 1
     if attempt_end_candle_id is not None and attempt_end_candle_id not in idx:
         raise QuarantineError("retracement attempt-end candle is absent")
+    start = idx[swing.confirmation_candle_id]
+    end = idx[attempt_end_candle_id] if attempt_end_candle_id is not None else len(candles) - 1
     if end <= start:
         return RetracementQualification(
             False, Decimal("0"), 0, htf_valid_pullback, False,
