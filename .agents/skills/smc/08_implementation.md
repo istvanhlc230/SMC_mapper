@@ -805,33 +805,37 @@ POI_MITIGATION → ENTRY_AUTHORIZED (without confirmation)
 
 ### Target Resolution implementation mapping
 
-Target resolution must produce canonical target candidates before any downstream TP handling.
+Target resolution must produce canonical target candidates before any downstream TP handling. Canonical True SMC does NOT define a universal target-selection algorithm or a universal "Primary Target".
 
 ```text
-EXECUTION CONTEXT
-   ↓
-TARGET DISCOVERY
-   ↓
-VALID TARGET CANDIDATES
-   ↓
-CONFIGURABLE TARGET PLAN
-   ↓
-TARGET LEG ASSIGNMENT
-   ↓
-NOTIFICATION-ONLY MONITOR (CURRENT PHASE)
+CANONICAL STRUCTURAL / LIQUIDITY TARGET CANDIDATES
+        ↓
+CONFIGURED TARGET POLICY
+        ↓
+RESOLVED TARGET
+        ↓
+RR EVALUATION
 ```
 
 Required mappings:
-- direct same-timeframe pro-trend -> current confirmed external extreme / external liquidity;
+- direct same-timeframe pro-trend -> current confirmed external extreme / external liquidity candidate;
 - LTF execution -> explicit policy selecting `HTF_EXTERNAL_TARGET` or `LTF_STRUCTURAL_TARGET`; no implicit default;
-- countertrend -> setup-specific next canonical destination, such as the next valid POI, IDM, Engineering Liquidity, or external liquidity, according to the active setup contract;
+- countertrend -> setup-specific next canonical destination candidate, such as the next valid POI, IDM, Engineering Liquidity, or external liquidity, according to the active setup contract;
 - the source does not define one universal priority among all simultaneously valid target candidates;
-- therefore the analyzer must not manufacture a single universal winner target merely to satisfy an RR calculation;
+- therefore the analyzer must not imply that Canonical SMC yields a universal Primary Target, and must not manufacture a single universal winner target merely to satisfy an RR calculation;
+- the RR gate may consume a resolved target ONLY after the configured target policy has resolved one (`RESOLVED TARGET` / policy-designated Primary Target);
+- if no valid target is resolved:
+  ```text
+  NO_RESOLVED_TARGET
+      ↓
+  NO_AUTOMATIC_TP_SUBMISSION
+  ```
+- under no circumstances may an implementation manufacture a target merely to satisfy the RR gate;
 - a downstream configurable Target Plan may assign multiple valid target candidates to separate trade legs;
 - target-leg allocation is configurable execution/trading policy and is not a new SMC structural rule;
 - fixed-R targets, where permitted by the applicable policy, remain non-structural policy targets and must not be mislabeled as canonical liquidity/structure targets;
 - RR calculation consumes an already resolved target; it must never create a target;
-- absent canonical target -> no automatic TP submission.
+- absent resolved target -> no automatic TP submission.
 
 #### Target Plan representation
 
@@ -952,7 +956,7 @@ Required invariants:
 - IDM never becomes POI;
 - OF failure does not automatically promote Extreme POI;
 - all four entry modules remain execution-layer mechanisms;
-- executable setups are gated by `Projected_RR_to_Primary_Target >= Configured_Minimum_RR` when the configured trading policy requires an RR gate;
+- executable setups are gated by `Projected_RR_to_Resolved_Target >= Configured_Minimum_RR` when the configured trading policy requires an RR gate; here `Resolved Target` (or policy-designated Primary Target) is strictly a downstream resolved target-policy object, NOT a universal canonical SMC target; if no target is resolved (`NO_RESOLVED_TARGET`), no automatic TP submission occurs and no synthetic target may be manufactured to satisfy the RR gate;
 - closed-range POIs become non-tradable after lifecycle expiration.
 
 ### Genesis
@@ -1046,37 +1050,54 @@ CONSUME STORED LAYER 3 QUALIFICATION
 
 #### `EXT_OPP_BREAK`
 
+The classification of an opposing break consumes the context defined in `05_CHOCH_mechanics.md` and explicitly distinguishes between the **Ordinary CHoCH Route** and the **LTF Structural Glitch Route**:
+
 ```text
 EXT_OPP_BREAK DETECTED
         ↓
-GEOMETRIC CLASSIFICATION
-        ├─ BODY CLOSE
+OPERATIVE ROUTE CONTEXT
+        ├─ ORDINARY CHoCH ROUTE
         │      ↓
-        │  CHoCH_ELIGIBLE
-        │      ↓
-        │  ALL APPLICABLE CHoCH PREREQUISITES
-        │      ├─ PASS → CHoCH_CONFIRMED
-        │      └─ FAIL → REJECTION / REMAIN
+        │  Governing Opposing Protected Structural Boundary
+        │      ├─ BODY CLOSE
+        │      │      ↓
+        │      │  CHoCH_ELIGIBLE → ALL APPLICABLE PREREQUISITES → CHoCH_CONFIRMED / REMAIN
+        │      │
+        │      └─ WICK BREACH
+        │             ↓
+        │         LEVEL PROVENANCE
+        │           ├─ MAJOR IDM PROVENANCE
+        │           │    ↓
+        │           │  MAJOR_IDM_SWEEP / NOT CHoCH (Trend unchanged)
+        │           │
+        │           └─ ELIGIBLE OPPOSING EXTERNAL BOUNDARY
+        │                ↓
+        │              CHoCH_ELIGIBLE → ALL APPLICABLE PREREQUISITES → CHoCH_CONFIRMED / REMAIN
         │
-        └─ WICK BREACH
+        └─ LTF STRUCTURAL GLITCH ROUTE (Context active per 05 §3.5.3A after HTF POI / Core Liquidity)
                ↓
-        LEVEL PROVENANCE
-          ├─ MAJOR IDM PROVENANCE
-          │    ↓
-          │  MAJOR_IDM_SWEEP / NOT CHoCH
-          │
-          └─ ELIGIBLE OPPOSING EXTERNAL BOUNDARY
+           ACTIVE LTF CHoCH REFERENCE
+           (Most recent valid LTF pullback / active LTF IDM reference; substituted, not promoted to Major Structure)
                ↓
-        CHoCH_ELIGIBLE
-               ↓
-        ALL APPLICABLE CHoCH PREREQUISITES
-          ├─ PASS → CHoCH_CONFIRMED
-          └─ FAIL → REJECTION / REMAIN
+           IDM PROVENANCE OF ACTIVE LTF RANGE
+              ├─ MAJOR IDM PRESENT
+              │    ↓
+              │  Wick breach of active LTF reference may enter CHoCH qualification
+              │  (CHoCH_ELIGIBLE → ALL APPLICABLE PREREQUISITES → CHoCH_CONFIRMED / REMAIN)
+              │
+              └─ MINOR IDM ONLY
+                   ↓
+                 Body close beyond active LTF reference required for CHoCH qualification
+                 (CHoCH_ELIGIBLE → ALL APPLICABLE PREREQUISITES → CHoCH_CONFIRMED / REMAIN;
+                  wick breach of external Major IDM remains MAJOR_IDM_SWEEP / NOT CHoCH)
 ```
 
-A Major IDM is not a positive prerequisite for the opposing-wick CHoCH path. The exclusion is provenance-based: if the tested external level itself carries Major IDM provenance, the wick is not CHoCH; otherwise an eligible opposing external-boundary wick may enter the CHoCH prerequisite gate.
-
-A body close beyond the opposing boundary is never `CHoCH_CONFIRMED` by geometry alone. It first creates CHoCH eligibility and must pass the complete canonical prerequisite gate.
+**Context Rules:**
+- **Ordinary CHoCH Route:** The governing reference is the active opposing Protected Structural Boundary / Trading Range boundary. A wick breach of a level carrying Major IDM provenance produces `MAJOR_IDM_SWEEP` (not CHoCH). A wick breach of an eligible opposing external boundary without Major IDM provenance enters the CHoCH prerequisite gate. A body close beyond the boundary enters the CHoCH gate (`CHoCH_ELIGIBLE`) and becomes `CHoCH_CONFIRMED` only when all canonical prerequisites pass.
+- **LTF Structural Glitch Route:** Activated strictly after HTF POI interaction or HTF core-liquidity takeout per `05_CHOCH_mechanics.md` §3.5.3A. The reference is substituted by the most recent valid LTF pullback / active LTF IDM reference, but is **never promoted into Major Structure** and creates **no new lifecycle state**. The break mode is IDM-provenance dependent:
+  - If Major IDM is present in the active LTF range, a wick breach of the active LTF reference may enter the CHoCH qualification path.
+  - If only Minor IDM is present, the external protected swing functions as the Major IDM: a wick penetration of that external Major IDM remains `MAJOR_IDM_SWEEP` (not CHoCH), and CHoCH eligibility requires a completed body close beyond the active LTF CHoCH reference.
+- `05_CHOCH_mechanics.md` remains the authoritative semantic owner of all CHoCH validation logic. Implementation-level classification represents and consumes these rules without redefining them.
 
 ### 49.4 State-transition coverage
 
@@ -1151,7 +1172,7 @@ IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING
 NEW_SVP ≠ AUTOMATIC MAJOR_IDM
 EXT_CONT_BREAK ≠ AUTOMATIC VALID_BOS
 EXT_OPP_BREAK ≠ AUTOMATIC CHoCH_CONFIRMED
-MAJOR_IDM + WICK ≠ CHoCH
+GOVERNING_MAJOR_IDM_WICK_SWEEP ≠ CHoCH (Ordinary route; LTF Structural Glitch with Major IDM allows wick qualification per 05 §3.5.3A)
 MAJOR_IDM + BODY CLOSE ≠ AUTOMATIC CHoCH_CONFIRMED
 CONFIRMATION GATE UNLOCKED ≠ NEW STATE ENUM
 BROKEN ≠ SWEPT
@@ -1185,21 +1206,32 @@ IF breached level == CONTINUATION_EXTERNAL_BOUNDARY
 
   (Do NOT require body close to establish STRUCTURAL_SWING_BREAK in this continuation case)
 
-IF breached level == OPPOSING_PROTECTED_BOUNDARY
-  AND the tested external level does NOT carry Major IDM provenance
-THEN:
-  wick breach → CHoCH_ELIGIBLE
+ORDINARY OPPOSING CHoCH ROUTE:
+  IF breached level == OPPOSING_PROTECTED_BOUNDARY
+    AND the tested external level does NOT carry Major IDM provenance
+  THEN:
+    wick breach → CHoCH_ELIGIBLE
 
-IF breached level == MAJOR_IDM
-  OR the tested external level otherwise carries Major IDM provenance
-THEN:
-  wick breach → MAJOR_IDM_SWEEP / NOT CHoCH
-  trend remains unchanged
+  IF breached level == MAJOR_IDM
+    OR the tested external level otherwise carries Major IDM provenance
+  THEN:
+    wick breach → MAJOR_IDM_SWEEP / NOT CHoCH
+    trend remains unchanged
 
-IF opposing protected boundary receives the required body close
-THEN:
-  CHoCH_ELIGIBLE
-  (Only confirms CHoCH after all prerequisites pass)
+  IF opposing protected boundary receives the required body close
+  THEN:
+    CHoCH_ELIGIBLE
+    (Only confirms CHoCH after all prerequisites pass)
+
+LTF STRUCTURAL GLITCH ROUTE (Active per 05 §3.5.3A after HTF POI / Core-Liquidity Interaction):
+  Breached level is substituted by the Most Recent Valid LTF Pullback / Active LTF IDM Reference
+  (Reference is NOT promoted into Major Structure; no new lifecycle state is created)
+
+  IF Major IDM is present in active LTF range:
+    wick breach of active LTF reference may enter CHoCH qualification (CHoCH_ELIGIBLE pending prerequisites)
+  ELSE IF Minor IDM only is present:
+    external protected swing functions as Major IDM; wick breach of external Major IDM → MAJOR_IDM_SWEEP / NOT CHoCH
+    body close beyond active LTF reference required → CHoCH_ELIGIBLE (pending prerequisites)
 ```
 
 ### 49.7 Canonical Authority Hierarchy

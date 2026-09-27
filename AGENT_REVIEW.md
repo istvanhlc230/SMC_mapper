@@ -532,3 +532,58 @@ Command: `python -m pytest`
 Result: `91 passed, 0 failed, 0 skipped/xfail in 0.62s`
 *Developer-local test execution; no independent GitHub Actions/CI verification.*
 
+---
+
+# TARGETED CORRECTION — POST-PHASE 18 AUDIT ALIGNMENT
+
+## 1. Finding 1 — LTF Structural Glitch Implementation Alignment
+- **Issue:** `08_implementation.md` §49.3 and §49.6 previously expressed the opposing-break classification logic as if the ordinary external-boundary rule were globally applicable, omitting the canonical LTF Structural Glitch context defined in `05_CHOCH_mechanics.md` §3.5.3A and carrying a blanket negative invariant `MAJOR_IDM + WICK ≠ CHoCH` in §49.5 that contradicted the LTF Structural Glitch route.
+- **Correction Applied:**
+  1. Updated `08_implementation.md` §49.3 (`EXT_OPP_BREAK`) to explicitly distinguish:
+     - **Ordinary CHoCH Route:** Evaluates the governing opposing protected structural boundary / trading range boundary; wick breach of level with Major IDM provenance produces `MAJOR_IDM_SWEEP` / NOT CHoCH (trend unchanged); body close beyond boundary enters CHoCH gate (`CHoCH_ELIGIBLE`); wick breach of eligible opposing external boundary without Major IDM provenance enters CHoCH prerequisite gate.
+     - **LTF Structural Glitch Route:** Activated strictly after HTF POI interaction or HTF core-liquidity takeout per `05_CHOCH_mechanics.md` §3.5.3A; temporary reference substitution to the most recent valid LTF pullback / active LTF IDM reference without promoting the reference into Major Structure and without creating a new lifecycle state. Applies canonical IDM-dependent break mode: if Major IDM is present in the active LTF range, a wick breach of the active LTF reference may enter CHoCH qualification; if only Minor IDM is present, the external protected swing functions as Major IDM (wick breach produces `MAJOR_IDM_SWEEP` / NOT CHoCH) and a completed body close beyond the active LTF reference is required for CHoCH qualification.
+  2. Scoped the §49.5 invariant from blanket `MAJOR_IDM + WICK ≠ CHoCH` to `GOVERNING_MAJOR_IDM_WICK_SWEEP ≠ CHoCH (Ordinary route; LTF Structural Glitch with Major IDM allows wick qualification per 05 §3.5.3A)`.
+  3. Updated §49.6 Context-Dependent Wick Disambiguation to represent both the Ordinary Opposing CHoCH Route and the LTF Structural Glitch Route.
+
+## 2. Finding 2 — First-BOS Retracement Baseline Ambiguity
+- **Status:** **INTENTIONALLY UNCHANGED / UNRESOLVED SPECIFICATION GAP**
+- **Record:** The first-BOS retracement baseline ambiguity (§49.4.1 in `08_implementation.md` and §3.2.1A in `03_structural_semantic_authority.md`) was intentionally preserved untouched. No synthetic Dealing Range, synthetic Protected Structural Extreme, provisional canonical retracement baseline, or new initialization heuristic was fabricated. It remains an explicitly documented, bounded specification gap.
+
+## 3. Finding 3 — Target-Policy & RR Evaluation Interface Clarification
+- **Issue:** The phrase `Projected_RR_to_Primary_Target >= Configured_Minimum_RR` in `08_implementation.md` §48 risked implying that Canonical True SMC defines a universal "Primary Target".
+- **Clarification Applied:**
+  1. Updated §45 Target Resolution implementation mapping to explicitly define the pipeline:
+     ```text
+     CANONICAL STRUCTURAL / LIQUIDITY TARGET CANDIDATES
+             ↓
+     CONFIGURED TARGET POLICY
+             ↓
+     RESOLVED TARGET
+             ↓
+     RR EVALUATION
+     ```
+  2. Clarified that canonical True SMC does NOT define a universal target-selection algorithm or a universal Primary Target; the RR gate consumes a resolved target object (`RESOLVED TARGET` / policy-designated Primary Target) only after the configured target policy has resolved one.
+  3. Enforced fail-closed behavior:
+     ```text
+     NO_RESOLVED_TARGET
+         ↓
+     NO_AUTOMATIC_TP_SUBMISSION
+     ```
+     Under no circumstances may an implementation manufacture a synthetic target merely to satisfy an RR gate.
+  4. Updated §48 invariant list to reference `Projected_RR_to_Resolved_Target >= Configured_Minimum_RR` with explicit documentation that `Resolved Target` is strictly a downstream target-policy object.
+
+## 4. Files Modified
+- `.agents/skills/smc/08_implementation.md`
+- `AGENT_REVIEW.md`
+
+## 5. Cross-Layer Validation Performed
+- **CHoCH Pipeline (`03 → 05 → 08`):** Verified ordinary CHoCH route, LTF Structural Glitch route, dual Major IDM provenance, Minor IDM-only body-close requirement, Major IDM wick sweep semantics, prohibition on promoting LTF references into Major Structure, and absence of contradictory global wick/body rules.
+- **Target Interface (`06 → 07 → 08`):** Verified absence of universal target priority, absence of universal countertrend coordinate, preservation of fixed-R as downstream policy, separation of `TARGET_REACHED` from position closure, and enforcement that RR evaluation consumes rather than manufactures a resolved target.
+- **Regression Suite:** Executed `python -m pytest` across all engine test modules.
+
+## 6. Validation Result
+**PASS**
+- Unit & regression test suite: 91 passed in 0.62s.
+- Clean git diff: modifications strictly confined to `08_implementation.md` and `AGENT_REVIEW.md`.
+
+
