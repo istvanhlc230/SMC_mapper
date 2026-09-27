@@ -161,6 +161,7 @@ class RetracementQualification:
     htf_valid_pullback: bool
     used_outlier_exception: bool
     reason: str
+    qualification_end_candle_id: str
 
     def __post_init__(self) -> None:
         if not isinstance(self.qualified, bool):
@@ -175,6 +176,8 @@ class RetracementQualification:
             raise QuarantineError("outlier flag must be boolean")
         if not isinstance(self.reason, str) or not self.reason:
             raise QuarantineError("qualification reason is required")
+        if not isinstance(self.qualification_end_candle_id, str) or not self.qualification_end_candle_id:
+            raise QuarantineError("qualification end candle provenance is required")
 
 
 @dataclass(frozen=True, slots=True)
@@ -355,6 +358,7 @@ def qualify_retracement(
         raise QuarantineError("retracement attempt-end candle is absent")
     start = idx[swing.confirmation_candle_id]
     end = idx[attempt_end_candle_id] if attempt_end_candle_id is not None else len(candles) - 1
+    qualification_end_candle_id = candles[end].candle_id
     if end <= start:
         return RetracementQualification(
             False, Decimal("0"), 0, htf_valid_pullback, False,
@@ -376,7 +380,7 @@ def qualify_retracement(
         if opposing >= NORMAL_RETRACEMENT_CANDLE_COUNT:
             return RetracementQualification(
                 True, depth, opposing, htf_valid_pullback, False,
-                "STANDARD_EQUILIBRIUM",
+                "STANDARD_EQUILIBRIUM", qualification_end_candle_id,
             )
 
         # The reduced/outlier path is an explicit exception to the normal
@@ -384,26 +388,26 @@ def qualify_retracement(
         if len(window) in (1, 2) and _outlier_condition(window, swing.direction, candles):
             return RetracementQualification(
                 True, depth, opposing, htf_valid_pullback, True,
-                "REDUCED_DISPLACEMENT_EXCEPTION",
+                "REDUCED_DISPLACEMENT_EXCEPTION", qualification_end_candle_id,
             )
         return RetracementQualification(
             False, depth, opposing, htf_valid_pullback, False,
-            "INSUFFICIENT_CANDLE_STRUCTURE",
+            "INSUFFICIENT_CANDLE_STRUCTURE", qualification_end_candle_id,
         )
 
     if HTF_CONDITIONAL_THRESHOLD <= depth < STANDARD_EQUILIBRIUM_THRESHOLD:
         if htf_valid_pullback:
             return RetracementQualification(
-                True, depth, opposing, True, False, "HTF_VALID_PULLBACK"
+                True, depth, opposing, True, False, "HTF_VALID_PULLBACK", qualification_end_candle_id
             )
         return RetracementQualification(
             False, depth, opposing, False, False,
-            "HTF_PULLBACK_EVIDENCE_REQUIRED",
+            "HTF_PULLBACK_EVIDENCE_REQUIRED", qualification_end_candle_id,
         )
 
     return RetracementQualification(
         False, depth, opposing, htf_valid_pullback, False,
-        "BELOW_CONDITIONAL_THRESHOLD",
+        "BELOW_CONDITIONAL_THRESHOLD", qualification_end_candle_id,
     )
 
 
