@@ -1,149 +1,106 @@
-# PHASE 12 — COLD-START / INITIAL REGIME RECONCILIATION AUDIT
+# PHASE 12 — COLD-START / INITIAL REGIME RECONCILIATION AUDIT (CORRECTED)
 
 ## 1. Question
-Does the canonical specification already define the deterministic transition from `BOOTSTRAP_EXPANSION` to the first organically established macro structural regime? If so, which layer owns it and which downstream layers must reference it?
+Does the canonical implementation-contract state machine in `08_implementation.md` already define the deterministic transition from `BOOTSTRAP` to `CONFIRMATION_LOCKED`? If not, what is the exact nature of the ambiguity, and what is the correct classification?
 
-## 2. Existing Canonical Bootstrap Rules (L3)
+## 2. Existing L3 Bootstrap Semantics (Already Defined)
 The following are already canonically defined in `03_structural_semantic_authority.md` (Section 3.2.1):
 - Prior to the first confirmed IDM sweep, the market resides in `BOOTSTRAP_EXPANSION`.
-- In bootstrap: candle-level minor structures may form; candidate IDM structures may form; no governing dealing range is fabricated; no `CONFIRMED_STRUCTURAL_SWING` is manufactured without the required confirmation lifecycle.
+- In bootstrap: candle-level minor structures may form; candidate IDM structures may form; no governing dealing range is fabricated; no `CONFIRMED_STRUCTURAL_SWING` is manufactured.
 - Bootstrap must remain distinguishable from organically confirmed structure.
 - **BOOTSTRAP + NO GOVERNING PROTECTED OPPOSING BOUNDARY → NO CHoCH.**
+- IDM_TAKEN = TRUE when price physically takes the active IDM reference (wick or body penetration is sufficient; a candle close is not required).
+- IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING → STRUCTURAL_RETRACEMENT_EVALUATION (separate from initial IDM prerequisite).
 
-## 3. Full Skill Audit
+## 3. Exact L2/L3 IDM Ownership Relevant to Bootstrap
+- **L2** (`02_minor_structure.md`) owns: Minor IDM formation from the active valid pullback; active-pointer lifecycle of the Minor IDM. Layer 2 does not own `IDM_TAKEN` as a structural lifecycle event.
+- **L3** (`03_structural_semantic_authority.md`) owns: IDM_TAKEN as a structural lifecycle event; Major IDM governance; the consequence `CONFIRMED_STRUCTURAL_SWING`.
+- The qualifying condition for `IDM_TAKEN` is: price physically takes the active IDM reference (wick or body penetration). This is an L3 semantic definition.
+- `MINOR_IDM_EVENT` in the state-machine matrix represents a sweep of the active Minor IDM. Whether it fires `IDM_TAKEN` is state-dependent (the CONFIRMATION_LOCKED row produces it; the BOOTSTRAP row does not).
 
-### 03_structural_semantic_authority.md
-- Defines `BOOTSTRAP_EXPANSION` as the initial state.
-- Defines the first IDM takeout lifecycle (IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING → retracement qualification → BOS).
-- Does NOT explicitly state the state-transition label "remain BOOTSTRAP until IDM_TAKEN."
+## 4. Exact Current L8 Matrix Behavior
+The `08_implementation.md` transition matrix (which claims to be "exhaustive and deterministic") contains exactly this for BOOTSTRAP:
 
-### 04_BOS_mechanics.md
-- Does NOT contain BOOTSTRAP-specific rules.
-- Consumes L3 prerequisites (IDM_TAKEN, MAJOR_RETRACEMENT_QUALIFIED) without re-specifying them.
-
-### 05_CHOCH_mechanics.md
-- Explicitly states CHoCH requires a governing Protected Opposing Structural Extreme.
-- Does NOT contain BOOTSTRAP-specific rules.
-
-### 08_implementation.md — **CRITICAL FINDING**
-The L8 Implementation Contract contains an explicit state-machine table (the lifecycle state-transition matrix) that defines BOOTSTRAP behavior deterministically:
-
-```
-| BOOTSTRAP | NO_EVENT/INTERNAL_PB → REMAIN (update provisional extremes)
-|           | MINOR_IDM_EVENT → REMAIN (no confirmed range)
-|           | EXT_CONT_BREAK → DISQUALIFIED (no confirmed swing, therefore no BOS)
-|           | EXT_OPP_BREAK → DISQUALIFIED (no protected boundary, therefore no CHoCH)
-|           | MAJOR_IDM_EVENT → NOT_APPLICABLE (no active Major IDM)
-|           | NEW_SVP_QUALIFIED → SVP → Verified Extreme → Minor IDM;
-|                                 remain BOOTSTRAP until IDM_TAKEN
-```
-
-And in the CONFIRMATION_LOCKED row:
-```
-| CONFIRMATION_LOCKED | MINOR_IDM_EVENT → IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING
-```
-
-Additionally, item 25 in the forbidden-shortcuts list explicitly states:
-> **"25. Genesis manufactures IDM or protected structure."** (FORBIDDEN)
-
-This is an explicit prohibition on fabricating IDM or protected structure during genesis — confirming the bootstrap-to-confirmation-locked transition must be organic.
-
-### source_reconciliation.md
-No bootstrap-specific cold-start initialization rule found.
-
-## 4. Full Knowledgebase / Source Audit
-
-All 20 `knowledgebase/sources/` files were checked for cold-start initialization terminology:
-
-| Source | Cold-Start Rule |
+| BOOTSTRAP column | Action |
 |---|---|
-| `true_smc123.txt` | General structural examples with established trends. No cold-start rule. |
-| `true_smc_21dayBootCamp.txt` | General CHoCH and trend-reversal descriptions assuming established context. No cold-start rule. |
-| `truesmc2026.txt` | General structure examples with established dealing ranges. No cold-start rule. |
-| `Become-a-TRUE-Forex-Trader...` | Explains market structure components on established examples. No cold-start rule. |
-| `advanced_market_structure_mapping.txt` | Only already-established trend examples. No cold-start rule. |
-| `market_structure_mapping_update.txt` | Only already-established trend examples. No cold-start rule. |
-| `market_structure_mapping_made_simple.txt` | Only already-established trend examples. No cold-start rule. |
-| `major_minor_inducement.txt` | Major/Minor IDM within established structure. No cold-start rule. |
-| `is_wick_a_bos.txt` | Physical break mechanics for existing structure. No cold-start rule. |
-| `one timeframe is all you need.txt` | Conceptual overview; established trend examples. No cold-start rule. |
-| `Best_Way_to_Enter_Trades_Within_the_Same_Timeframe_True_SMC.md` | Entry mechanics within established context. No cold-start rule. |
-| `everything_behind_the_trading_system.txt` | Overview material; no cold-start lifecycle rule. |
-| `How to Identify Rejection Blocks.txt` | Rejection Block identification on established structure. No cold-start rule. |
-| `How to Know When a POI Has Failed.txt` | POI failure semantics on established structure. No cold-start rule. |
-| `How_To_Trade_AGAINST_The_Trend.md` | Countertrend setup material; established context assumed. No cold-start rule. |
-| `Learn My A+ Countertrend Setup.txt` | Countertrend entry setup; established context assumed. No cold-start rule. |
-| `smc_trader_another_missing_piece.txt` | 38.2% retracement condition source. No cold-start rule. |
-| `smc_trader_missing_piece.txt` | Structural mechanics source. No cold-start rule. |
-| `use_of_orderblock.txt` | OB mechanics; established context assumed. No cold-start rule. |
-| `use_of_orderblock_and_ordeflow.txt` | OB/OF mechanics; established context assumed. No cold-start rule. |
+| NO_EVENT / INTERNAL_PB | REMAIN; update provisional extremes/internal sequence |
+| MINOR_IDM_EVENT | **REMAIN; no confirmed range** |
+| EXT_CONT_BREAK | DISQUALIFIED; no confirmed swing, therefore no BOS |
+| EXT_OPP_BREAK | DISQUALIFIED; no protected boundary, therefore no CHoCH |
+| MAJOR_IDM_EVENT | NOT_APPLICABLE; no active Major IDM |
+| NEW_SVP_QUALIFIED | SVP → Verified Extreme → Minor IDM; **remain BOOTSTRAP until IDM_TAKEN** |
 
-No source in the entire corpus defines a deterministic cold-start initialization lifecycle from raw historical data.
+And in CONFIRMATION_LOCKED:
 
-## 5. Cross-Source Reconciliation
-No source-level conflict exists. None of the 20 source files provide cold-start initialization rules, so no inter-source contradiction is introduced. The reviewed primary and supplementary sources do not define deterministic cold-start initialization from raw historical data.
+| CONFIRMATION_LOCKED column | Action |
+|---|---|
+| MINOR_IDM_EVENT | **IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING**; remain CONFIRMATION_LOCKED |
 
-## 6. Semantic Ownership
+## 5. The Contradiction / Ambiguity
+The matrix claims to be "exhaustive and deterministic" with exactly ONE next state per (Current State + Event) pair. However:
 
-**REVISED CONCLUSION**
+1. **BOOTSTRAP + MINOR_IDM_EVENT → REMAIN** (no transition out of BOOTSTRAP).
+2. **BOOTSTRAP + NEW_SVP_QUALIFIED** → note reads "remain BOOTSTRAP until IDM_TAKEN" (implies IDM_TAKEN eventually triggers an exit, but no cell captures this exit).
+3. **No BOOTSTRAP cell produces `→ CONFIRMATION_LOCKED`.**
 
-The `08_implementation.md` state-machine table (lifecycle state-transition matrix) already specifies the BOOTSTRAP exit condition deterministically:
+The `IDM_TAKEN` condition is stated textually as the bootstrap exit trigger ("remain BOOTSTRAP until IDM_TAKEN") but is not mapped to an explicit cell transition in the matrix. The matrix as written means BOOTSTRAP + MINOR_IDM_EVENT → REMAIN, yet that contradicts the textual exit condition "until IDM_TAKEN" — because `MINOR_IDM_EVENT` represents a physical IDM sweep, which by L3 semantics should produce `IDM_TAKEN = TRUE`.
 
-```
-BOOTSTRAP → NEW_SVP_QUALIFIED → SVP → Verified Extreme → Minor IDM → remain BOOTSTRAP until IDM_TAKEN
-BOOTSTRAP/MINOR_IDM_EVENT → IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING → (CONFIRMATION_LOCKED)
-```
+This is a **genuine state-machine representation ambiguity** in `08_implementation.md`: the exit condition from BOOTSTRAP is described in text but not mapped as an explicit cell transition.
 
-This is not a missing canonical rule. It is an **already-defined canonical implementation contract rule owned by L8**, which in turn reflects the L3 lifecycle semantics (IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING).
+## 6. Precise Qualifying Condition for IDM_TAKEN
+Per L3 (`03_structural_semantic_authority.md`):
+- `IDM_TAKEN = TRUE` when price physically takes the **active IDM reference** by wick or body penetration.
+- The active IDM reference at bootstrap entry is established from a `NEW_SVP_QUALIFIED` event (SVP → Verified Extreme → Minor IDM).
+- Therefore: BOOTSTRAP + physical sweep of the active Minor IDM → `IDM_TAKEN = TRUE` → `CONFIRMED_STRUCTURAL_SWING`.
+- This should transition state to `CONFIRMATION_LOCKED` by L3 semantics, but the matrix does not show this cell.
 
-The Phase 11 classification of "CANONICAL SPECIFICATION GAP — COLD-START INITIALIZATION / ORCHESTRATION" was **overstated**. The state-machine transition out of BOOTSTRAP was already defined in `08_implementation.md`.
+## 7. Correct Semantic Transition from Bootstrap
+Based on L2/L3 semantics, once the bootstrap has a qualified Minor IDM (from NEW_SVP_QUALIFIED), the canonical lifecycle step is:
+1. Candle physically sweeps the active Minor IDM → L3 fires `IDM_TAKEN = TRUE`.
+2. `IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING`.
+3. State transitions to `CONFIRMATION_LOCKED` (where retracement qualification and BOS prerequisites continue).
 
-The genuine remaining issue is more narrow:
+This is NOT the same as requiring the full `IDM → swing → retracement → BOS → VALID_BOS` lifecycle before leaving BOOTSTRAP. Leaving BOOTSTRAP requires only `IDM_TAKEN`. The subsequent `CONFIRMATION_LOCKED` state handles retracement and BOS prerequisites separately.
 
-> The state-machine table uses `IDM_TAKEN` as the bootstrap exit trigger, but does not explicitly define which qualifying event causes the transition from BOOTSTRAP to CONFIRMATION_LOCKED (i.e., the exact row/event that fires `IDM_TAKEN` while in BOOTSTRAP state is implicit: the NEW_SVP_QUALIFIED event causes the system to remain BOOTSTRAP, and then the MINOR_IDM_EVENT while in BOOTSTRAP causes `IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING` leading to CONFIRMATION_LOCKED).
+## 8. Distinction: Canonical Semantics vs L8 Representation
+- **Canonical semantics (L3):** IDM_TAKEN exits the bootstrap condition by establishing CONFIRMED_STRUCTURAL_SWING. This is already specified.
+- **L8 state-machine matrix:** The BOOTSTRAP + MINOR_IDM_EVENT cell says REMAIN, which is inconsistent with the L3 rule and with the "remain BOOTSTRAP until IDM_TAKEN" note in the NEW_SVP_QUALIFIED cell. The missing explicit `BOOTSTRAP → CONFIRMATION_LOCKED` transition is a representation ambiguity in the matrix, not a missing canonical trading methodology rule.
 
-Reading the table carefully:
-- **BOOTSTRAP + MINOR_IDM_EVENT** → `REMAIN; no confirmed range`  
-- **CONFIRMATION_LOCKED + MINOR_IDM_EVENT** → `IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING`
+## 9. No New Canonical Trading Rule Is Being Invented
+The canonical rule already exists in L3: `IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING`. The bootstrap is exited when this L3 rule fires for the first time. No new canonical SMC rule is being invented or needed. The only issue is that the L8 matrix representation does not make this transition explicit as a cell.
 
-This creates a precise ambiguity: the BOOTSTRAP row for MINOR_IDM_EVENT says REMAIN but does not say IDM_TAKEN fires. The CONFIRMATION_LOCKED row says IDM_TAKEN fires on MINOR_IDM_EVENT. The **transition from BOOTSTRAP to CONFIRMATION_LOCKED is implicit but not explicitly stated as a cell in the table**.
+## 10. Full BOS Lifecycle Is NOT Required to Exit BOOTSTRAP
+The Phase 11 proposal to wait for the complete `IDM → swing → retracement → BOS → VALID_BOS` lifecycle before exiting BOOTSTRAP is explicitly NOT mandated by the canonical rules. The canonical exit condition from BOOTSTRAP is `IDM_TAKEN`, which produces `CONFIRMED_STRUCTURAL_SWING` and transitions to `CONFIRMATION_LOCKED`. The subsequent BOS lifecycle occurs after that transition, inside `CONFIRMATION_LOCKED` and `CONFIRMED_RANGE`. The Phase 11 "wait for full BOS" proposal remains an implementation/orchestration policy option, not a canonical rule.
 
-This is an **implementation representation gap** (the exact bootstrap→confirmation-locked transition trigger is implicit, not explicitly represented as a cell transition in the matrix).
+## 11. Final Classification
+**IMPLEMENTATION STATE-MACHINE REPRESENTATION / SPECIFICATION AMBIGUITY**
 
-## 7. Final Classification
+The `08_implementation.md` state-machine matrix claims exhaustiveness but does not contain an explicit `BOOTSTRAP + MINOR_IDM_EVENT → CONFIRMATION_LOCKED` cell. The textual note "remain BOOTSTRAP until IDM_TAKEN" describes the exit condition, but the cell for `BOOTSTRAP + MINOR_IDM_EVENT` says REMAIN instead of transitioning to CONFIRMATION_LOCKED. The underlying canonical L3 rule is clear; the matrix representation is ambiguous.
 
-**REVISED: IMPLEMENTATION REPRESENTATION GAP**
+This is:
+- NOT a missing canonical SMC trading methodology rule.
+- NOT a raw-history canonical gap.
+- An implementation-contract representation gap in the L8 state-machine matrix.
 
-The Phase 11 conclusion of "CANONICAL SPECIFICATION GAP" is corrected.
+## 12. Knowledgebase Source Audit (All 20 Files)
+All 20 `knowledgebase/sources/` files were checked. No source defines a deterministic cold-start initialization lifecycle from raw historical data. All sources present canonical structural examples within an already-established context. This finding is consistent with Phase 11 and Phase 12 previous results.
 
-The canonical state-machine lifecycle (L8) already defines:
-- What happens during BOOTSTRAP for each event type.
-- That the system remains BOOTSTRAP `until IDM_TAKEN`.
-- That IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING (defined in CONFIRMATION_LOCKED row and L3).
-
-The **remaining unspecified detail** is that the bootstrap-to-confirmation-locked state transition cell itself is implicit in the matrix — the BOOTSTRAP + MINOR_IDM_EVENT row says REMAIN, but the table does not contain an explicit `→ CONFIRMATION_LOCKED` cell for the first IDM_TAKEN event while in BOOTSTRAP.
-
-This is an implementation-representation precision gap in the state-machine matrix, not a missing canonical trading-methodology rule.
-
-## 8. Exact Consequence for L8 / Analyzer Orchestration
-- The L8 orchestrator can implement the bootstrap exit using the already-defined rule: remain BOOTSTRAP until first IDM_TAKEN event; IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING → proceed to CONFIRMATION_LOCKED.
-- No additional canonical rule is needed.
+## 13. Consequence for L8 / Analyzer Orchestration
+- The L8 orchestrator must implement the BOOTSTRAP exit condition using the L3 rule: when the first `IDM_TAKEN` event fires (physical sweep of the active bootstrap Minor IDM), state transitions to `CONFIRMATION_LOCKED` with `CONFIRMED_STRUCTURAL_SWING` established.
+- This transition is not explicitly tabulated in the current `08_implementation.md` matrix cell `BOOTSTRAP + MINOR_IDM_EVENT`.
 - No fabrication of IDM or protected structure is permitted during BOOTSTRAP (explicitly prohibited by item 25 of the L8 forbidden list).
-- The analyst/orchestrator should use the state-machine matrix as-is, interpreting "remain BOOTSTRAP until IDM_TAKEN" as the bootstrap exit condition.
+- The L8 matrix should be interpreted such that the `MINOR_IDM_EVENT` while in BOOTSTRAP, when it physically satisfies `IDM_TAKEN` per L3, transitions to `CONFIRMATION_LOCKED` — not REMAIN.
 
-## 9. Whether Any Canonical Skill Modification Is Actually Required
-**No canonical skill modification is required.** The existing `08_implementation.md` state-machine table already contains the BOOTSTRAP exit condition. The Phase 11 "canonical specification gap" was based on incomplete skill reading.
+## 14. Whether Any Canonical Skill Modification Is Actually Required
+**PROPOSED — USER APPROVAL REQUIRED**
+A clarifying amendment to the `08_implementation.md` state-machine matrix could resolve the ambiguity by explicitly stating the BOOTSTRAP → CONFIRMATION_LOCKED cell transition when `IDM_TAKEN` fires. This would be a representation clarification to the implementation contract, not a new canonical trading methodology rule. No modification to L1–L7 canonical skill files is needed.
 
-The only imprecision is the implicit (not tabularly explicit) nature of the BOOTSTRAP → CONFIRMATION_LOCKED state transition cell. This is an implementation-representation clarification, not a missing canonical rule.
+## 15. Recommended Next Step
+- **Recommended:** Amend the `08_implementation.md` BOOTSTRAP row's MINOR_IDM_EVENT cell to explicitly show `IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING → CONFIRMATION_LOCKED` when the physical IDM takeout condition is met, alongside the existing REMAIN condition for non-takeout minor IDM activity.
+- Distinguish: minor IDM activity that does NOT constitute physical takeout remains REMAIN; minor IDM activity that satisfies L3's `IDM_TAKEN` criterion transitions to CONFIRMATION_LOCKED.
+- This requires USER APPROVAL before the skill file is modified.
 
-## 10. Recommended Next Step
-- **No canonical SMC skill changes required.**
-- The L8 orchestrator implementation may proceed using the already-defined state-machine table from `08_implementation.md`.
-- The BOOTSTRAP exit rule is: remain BOOTSTRAP until the first `IDM_TAKEN` event, at which point the system transitions to CONFIRMATION_LOCKED with `CONFIRMED_STRUCTURAL_SWING` established.
-- This remains a canonical implementation-contract rule (L8 owns the state-machine matrix); it is not a new canonical trading methodology rule.
-- The proposed `IDM → swing → retracement → BOS → VALID_BOS` wait-until-complete approach from Phase 11 is CONSISTENT with the existing state-machine but should be labeled as the L8 implementation interpretation of the canonical matrix, not a new canonical rule.
-
-## 11. Test Result
+## 16. Test Result
 Command: `python -m pytest`
 Result: `91 passed, 0 failed, 0 skipped/xfail`
 *Developer-local test execution; no independent GitHub Actions/CI verification.*
