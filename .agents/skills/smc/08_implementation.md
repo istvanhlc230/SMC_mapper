@@ -132,11 +132,11 @@ ENG_LQD_CONFIRMED
         ↓
 ENG_LQD_SWEEP (optional)
 ```
-### 45.1 Entity lifecycle schemas
+### 45.1 — Entity lifecycle schemas
 
 Liquidity levels and protected structural boundaries are different ontology classes. Their lifecycle semantics must not be collapsed into one undifferentiated state enum.
 
-#### LiquidityState
+#### 45.1.1 — LiquidityState
 
 Applies to liquidity entities such as Minor IDM, Major IDM, and Engineering Liquidity:
 
@@ -145,7 +145,7 @@ Applies to liquidity entities such as Minor IDM, Major IDM, and Engineering Liqu
 - `SUPERSEDED` — a newer valid pullback or later structural lifecycle has replaced the level's active role.
 - `HISTORICAL` — archived liquidity belonging to a closed structural regime or Dealing Range.
 
-#### StructuralBoundaryState
+#### 45.1.2 — StructuralBoundaryState
 
 Applies to structural boundaries such as Protected Structural Extremes and Governing Range Boundaries:
 
@@ -172,7 +172,7 @@ StructuralBoundary
 
 If an implementation uses a technically shared field, the semantic restriction remains mandatory: `BROKEN` is valid only for `StructuralBoundary` entities. A liquidity entity must never be classified as `BROKEN`, and a structural boundary break must not be reduced to the liquidity-only state `SWEPT`.
 
-## 45.1 Risk and scoring implementation mapping
+## 45.2 — Risk and scoring implementation mapping
 
 The mapper's concrete risk calculation is implementation-owned. The risk methodology document defines the semantic risk boundaries; this section records how the current engine represents those boundaries so documentation does not compete with executable behavior.
 
@@ -265,7 +265,7 @@ the mapper implementation
 
 Therefore, a future change to the executable risk formula must first be classified as an implementation change and must not silently become a new methodology rule.
 
-## 45.2. Intrabar Sequence Evidence
+## 45.3 — Intrabar Sequence Evidence
 
 INTRABAR_SEQUENCE_EVIDENCE is an implementation/data-model state. It does not redefine the Layer 1 methodology model.
 
@@ -339,7 +339,7 @@ LAYER 3 RETRACEMENT QUALIFICATION
    TRADING_RANGE_ROLLOVER
 ```
 
-## 6.X — Canonical BOS Execution Model
+## 46.1 — Canonical BOS Execution Model
 
 The BOS execution model strictly consumes a previously established qualification state.
 Execution never recalculates BOS eligibility and never bypasses the qualification gate.
@@ -409,7 +409,7 @@ No rollover occurs, and no Protected Structural Extreme is locked.
 
 ---
 
-## 6.X — Major IDM Interaction (Opposing Boundary)
+## 46.2 — Major IDM Interaction (Opposing Boundary)
 
 Major IDM is never part of continuation BOS provenance.
 
@@ -430,7 +430,7 @@ MAJOR_IDM + body close
 
 When a new post-BOS Major IDM is independently qualified, it supersedes the previous active Major IDM from that point forward. Historical IDM provenance is immutable.
 
-## 6.X — Deterministic Invariants
+## 46.3 — Deterministic Invariants
 
 The following invariants must be preserved:
 
