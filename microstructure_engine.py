@@ -108,6 +108,8 @@ class BreachObservation:
         _require_id(self.candle_id, "candle_id")
         if not isinstance(self.direction, Direction) or not isinstance(self.mode, BreachMode):
             raise QuarantineError("breach direction and mode must use canonical enums")
+        if not isinstance(self.reference, ExtremeReference):
+            raise QuarantineError("breach reference must be an ExtremeReference")
         if self.mode == BreachMode.EQUAL and self.physical:
             raise QuarantineError("equality cannot be a physical breach")
         if self.mode == BreachMode.NONE and any((self.physical, self.body, self.close)):
@@ -144,6 +146,12 @@ class InsideBarObservation:
     candle_id: str
     mother_candle_id: str
     strict: bool
+
+    def __post_init__(self) -> None:
+        _require_id(self.candle_id, "candle_id")
+        _require_id(self.mother_candle_id, "mother_candle_id")
+        if not isinstance(self.strict, bool) or not self.strict:
+            raise QuarantineError("Inside Bar observation must represent strict containment")
 
 
 @dataclass(frozen=True, slots=True)
@@ -193,6 +201,18 @@ class TrendObservation:
     def __post_init__(self) -> None:
         if not isinstance(self.direction, TrendDirection):
             raise QuarantineError("trend direction must use the canonical enum")
+        if self.protected_high is not None and not isinstance(self.protected_high, ExtremeReference):
+            raise QuarantineError("protected_high must be an ExtremeReference")
+        if self.protected_low is not None and not isinstance(self.protected_low, ExtremeReference):
+            raise QuarantineError("protected_low must be an ExtremeReference")
+        if self.direction is TrendDirection.BULLISH:
+            if self.protected_high is not None or self.protected_low is None:
+                raise QuarantineError("bullish trend requires protected low only")
+        elif self.direction is TrendDirection.BEARISH:
+            if self.protected_low is not None or self.protected_high is None:
+                raise QuarantineError("bearish trend requires protected high only")
+        elif self.protected_high is not None or self.protected_low is not None:
+            raise QuarantineError("undefined trend cannot carry protection state")
 
 
 @dataclass(frozen=True, slots=True)
@@ -235,6 +255,12 @@ class EvidenceEnvelope:
 
 
 def classify_breach(candle: Candle, reference: ExtremeReference, direction: Direction) -> BreachObservation:
+    if not isinstance(candle, Candle):
+        raise QuarantineError("breach classification requires a Layer 1 Candle")
+    if not isinstance(reference, ExtremeReference):
+        raise QuarantineError("breach classification requires an ExtremeReference")
+    if not isinstance(direction, Direction):
+        raise QuarantineError("breach direction must use the canonical enum")
     ref = reference.price
     if direction is Direction.UP:
         extreme = candle.high
