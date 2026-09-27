@@ -1440,3 +1440,35 @@ GitHub re-read after both corrections found no duplicate numbered top-level sect
 **FULL 01–08 CANONICAL SKILL AUDIT = PASS / 2 DOCUMENTATION CORRECTIONS APPLIED.**
 
 Runtime Mapper/analyzer/monitor integration remains intentionally deferred.
+
+
+## DIRECT VALIDATOR — LAYER 1–4 RE-AUDIT AND CORRECTION — 2026-09-27
+
+Scope: .agents/skills/smc/01_micro_structure.md through 04_BOS_mechanics.md, using .agents/skills/smc/ as canonical authority and enforcing: Define once at semantic owner → downstream reference → downstream consumption.
+
+### Audit findings
+
+- Layer 1 — PASS, no correction required. Microstructure remains limited to OHLC/candle geometry, breach/equality/reference observations, Inside/Outside Bar, candle-internal sequence and observability semantics. It does not own Pullback, IDM, BOS or CHoCH.
+- Layer 2 — CORRECTED. The validation contract previously described the Active Pullback Pointer as following the “most recent structurally accepted pullback”. That wording imported a Layer-3 structural-acceptance concept into Layer-2 ownership. It now explicitly follows the most recent completed CANDLE-LEVEL VALID PULLBACK for the active impulsive leg; Layer 2 does not require Layer-3 acceptance to advance its pointer.
+- Layer 3 — PASS, no correction required. Major/External Structure, Major IDM governance, IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING, and the later retracement qualification gate remain internally consistent. No fallback/real-Major-IDM ontology is present.
+- Layer 4 — CORRECTED. The pre-qualification IMPULSE_EXTENSION branch was narrowed to eligible continuation external levels that are not functioning as Major IDM. A Major-IDM level remains on the separate MAJOR_IDM_SWEEP path and cannot be reclassified as IMPULSE_EXTENSION merely because BOS qualification is absent.
+
+### Cross-layer verification
+
+- VALID_BOS = IDM_TAKEN + MAJOR_RETRACEMENT_QUALIFIED + STRUCTURAL_SWING_BREAK remains intact.
+- Layer 4 does not recompute Layer-3 retracement/Fibonacci/HTF logic.
+- Major IDM sweep remains distinct from BOS and from impulse-extension classification.
+- Outside-Bar unavailable ordering remains terminal for the affected Layer-2 candidate; no active PENDING state exists.
+- No active FALLBACK_MAJOR_IDM, REAL_MAJOR_IDM, generic Swing/Break semantic type, or residual macro namespace was found in Layers 1–4.
+- Knowledgebase and runtime Mapper/analyzer/monitor files remain untouched.
+
+### Commits
+
+- b73297ab6843038a81f70a8fdad249847bf2fcdf — Layer-2 active pullback ownership wording correction.
+- b990a8868427b758c7f7fb7a62111e018c4347c4 — Layer-4 continuation-break / Major-IDM sweep boundary correction.
+
+### Final status
+
+LAYER 1–4 SKILL AUDIT = PASS / 2 TARGETED CORRECTIONS APPLIED.
+
+Implementation/runtime tests were not changed by this pass. Mapper integration remains deferred until the isolated layer implementations are independently approved.
