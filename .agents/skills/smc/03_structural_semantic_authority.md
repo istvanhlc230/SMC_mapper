@@ -327,7 +327,7 @@ Layer 3 is the sole semantic owner of structural qualification. A retracement wa
 
 - **Condition:** `RetracementDepth >= STANDARD_EQUILIBRIUM_THRESHOLD` of the active dealing range, where `STANDARD_EQUILIBRIUM_THRESHOLD` is owned by `methodology_parameters.md`.
 - **Structural Validation:**
-  - **Normal Case:** Requires `>= NORMAL_RETRACEMENT_CANDLE_COUNT` opposing closing candles within the retracement leg.
+  - **Normal Case:** Requires `>= NORMAL_RETRACEMENT_CANDLE_COUNT` opposing closing candles within the retracement leg. With the canonical parameter value `NORMAL_RETRACEMENT_CANDLE_COUNT = 3`, the normal path therefore requires at least **3 opposing closing candles**.
   - **Reduced-Candle Displacement Exception:** A reduced-candle retracement may qualify through the rare source-described displacement case. The documented exception includes the explicit one-candle displacement outlier: one candle may qualify when it takes `>= MIN_OUTLIER_EXTREMES_TAKEN` preceding bodies/extremes and reaches the required retracement depth. A two-candle reduced retracement may qualify under the same source-supported displacement/extreme-taking conditions. This exception does not make a short candle sequence automatically valid.
 - **Output:** `MAJOR_RETRACEMENT_QUALIFIED = TRUE`.
 
@@ -395,7 +395,7 @@ POI expiration is handled through the separate POI lifecycle; the structural eng
 4. CONFIRMED_STRUCTURAL_SWING and Protected Structural Extreme are distinct lifecycle states.
 5. Protected Structural Extreme is created by valid BOS, not by impulse origin or arbitrary swing confirmation.
 6. Retracement sufficiency is mandatory before continuation BOS.
-7. A normal retracement must contain **at least 2 opposing candles** to enter the standard positive qualification path; the one-candle displacement-outlier exception bypasses this normal count gate only when its source-defined extreme-taking condition and all other canonical gates pass. A **2-candle retracement** may qualify through the documented reduced-candle displacement exception, and a **1-candle displacement outlier is an explicit additional exception** when it takes `>= MIN_OUTLIER_EXTREMES_TAKEN` preceding bodies/extremes and all other canonical conditions pass.
+7. A normal retracement must contain **at least 3 opposing closing candles** to enter the standard positive qualification path. A **2-candle retracement** is eligible only through the documented reduced-candle displacement exception, and a **1-candle displacement outlier is an explicit additional exception** when it takes `>= MIN_OUTLIER_EXTREMES_TAKEN` preceding bodies/extremes and all other canonical conditions pass.
 8. The standard equilibrium retracement threshold is 50%; the 38.2% threshold is conditional and may qualify only through the applicable immediate Higher Timeframe valid-pullback path.
 9. IDM takeout confirms the relevant `CONFIRMED_STRUCTURAL_SWING`. Retracement qualification determines whether a subsequent external break can be classified as `VALID_BOS`; it does not retrospectively create the swing point.
 10. Physical external break does not automatically equal VALID_BOS or CHoCH_CONFIRMED.
