@@ -14,9 +14,8 @@ Conservative stop placement is beyond the furthest relevant boundary of the pare
 
 A stop placement or stop touch does not itself create structural truth:
 
-```
-EXECUTION_STOPPED_OUT ≠ ORDER_FLOW_FAILED
-EXECUTION_STOPPED_OUT ≠ ORDER_BLOCK_FAILED
+EXECUTION_STOPPED_OUT ≠ POI_PREMISE_INVALIDATED
+EXECUTION_STOPPED_OUT ≠ ZONE_FAILURE
 EXECUTION_STOPPED_OUT ≠ VALID_BOS
 EXECUTION_STOPPED_OUT ≠ CHoCH_CONFIRMED
 ```
@@ -130,7 +129,9 @@ Canonical SMC methodology does not prescribe a universal target-selection priori
 The risk and trade-management layer operates under the strict unidirectional pipeline:
 
 ```text
-CANONICAL STRUCTURAL / LIQUIDITY TARGET CANDIDATES
+CANONICAL TARGET CANDIDATES
+        OR
+EXPLICIT NON-STRUCTURAL POLICY TARGET
         ↓
 CONFIGURED TARGET POLICY
         ↓
@@ -205,9 +206,10 @@ TARGET ≠ STRUCTURAL_VALIDATION
 TARGET_HIT ≠ VALID_BOS
 TARGET_HIT ≠ CHoCH
 RR_CALCULATION ≠ TARGET_CREATION
-NO_RESOLVED_TARGET → NO_SYNTHETIC_TARGET → NO_AUTOMATIC_TP
-NO_CANONICAL_TARGET → NO_AUTOMATIC_TP_SUBMISSION
+NO_RESOLVED_TARGET → NO_SYNTHETIC_TARGET → NO_AUTOMATIC_TP_SUBMISSION
 ```
+
+A setup with no canonical structural/liquidity target candidate may still resolve a valid trade target if an explicitly configured non-structural policy target (such as fixed-R, where permitted by trading policy) is defined. However, if no target can be resolved (`NO_RESOLVED_TARGET`), no synthetic target may be manufactured merely to satisfy an RR gate, and no automatic TP submission may occur.
 
 ### 5.2.2 Downstream Target Plan / Multi-Leg Management
 
@@ -327,15 +329,17 @@ No fixed partial-TP percentage, break-even trigger, or trailing algorithm is can
 
 ### 5.3.1 Pending Order Invalidation
 
-```
-ORDER_FLOW_FAILED / ORDER_BLOCK_FAILED
+```text
+CANONICAL EXECUTION / POI PREMISE INVALIDATION
         ↓
-associated pending order
+ASSOCIATED PENDING ORDER
         ↓
 PENDING_ORDER_CANCELLED
 ```
 
-```
+Pending-order premise invalidation occurs when the underlying execution setup condition or POI premise is invalidated. This is an execution/order-lifecycle consequence, not a new structural event.
+
+```text
 VALID_BOS
         ↓
 previous Trading Range dependent orders
@@ -343,7 +347,7 @@ previous Trading Range dependent orders
 EXPIRED_CANCELLED
 ```
 
-```
+```text
 CHoCH_CONFIRMED
         ↓
 pending orders dependent on invalidated regime
@@ -351,31 +355,41 @@ pending orders dependent on invalidated regime
 PENDING_ORDER_CANCELLED
 ```
 
-CHoCH_ELIGIBLE alone does not automatically cancel pending orders.
+CHoCH_ELIGIBLE alone does not automatically cancel pending orders. `CHoCH_CONFIRMED` produces cancellation only for pending orders dependent on the invalidated regime.
 
 A historical Origin OB (latent POI) may remain as a historical object after a parent OF lifecycle transition when its own validity remains canonical.
 
 ### 5.3.2 Zone Failure
 
-Bullish zone failure:
+Zone failure is strictly an execution/risk zone-failure rule, clearly separate from canonical POI failure, CHoCH, or structural break mechanics:
 
+```text
+ZONE_FAILURE
+≠ POI_FAILURE
+≠ STRUCTURAL_FAILURE
+≠ BOS
+≠ CHoCH
 ```
+
+Bullish zone failure (execution/risk rule):
+
+```text
 Close < lower_zone_boundary
 ```
 
-Bearish zone failure:
+Bearish zone failure (execution/risk rule):
 
-```
+```text
 Close > upper_zone_boundary
 ```
 
-Wick penetration alone is not zone failure unless a canonical execution rule explicitly says otherwise.
+Wick penetration alone is not zone failure unless a canonical execution rule explicitly says otherwise. The exact candle-close boundary threshold is an execution/risk parameter and is not claimed as a separate canonical True SMC structural rule.
 
 ### 5.3.3 Open Position Exit Separation
 
 Broker-side stop and target events remain mechanical execution events:
 
-```
+```text
 OPEN POSITION
    ├── TARGET_HIT
    └── STOP_LOSS_TOUCH
@@ -383,11 +397,10 @@ OPEN POSITION
 
 Do not synthesize a market close merely because a POI failed, a zone failed, BOS occurred, or CHoCH occurred.
 
-```
+```text
 EXECUTION_STOPPED_OUT
-≠ POI_FAILED
-≠ ORDER_FLOW_FAILED
-≠ ORDER_BLOCK_FAILED
+≠ POI_PREMISE_INVALIDATED
+≠ ZONE_FAILURE
 ≠ VALID_BOS
 ≠ CHoCH_CONFIRMED
 ```
@@ -396,10 +409,10 @@ EXECUTION_STOPPED_OUT
 
 “Kill-Switch” is project execution-control terminology, not an independent structural entity.
 
-```
+```text
 CHoCH_CONFIRMED ↛ mandatory MARKET_CLOSE_ON_CHOCH
-ORDER_FLOW_FAILED ↛ mandatory MARKET_CLOSE
-ORDER_BLOCK_FAILED ↛ mandatory MARKET_CLOSE
+POI_PREMISE_INVALIDATED ↛ mandatory MARKET_CLOSE
+ZONE_FAILURE ↛ mandatory MARKET_CLOSE
 ```
 
 No authoritative forced market-close behavior is canonicalized solely from these events.
@@ -408,7 +421,7 @@ No authoritative forced market-close behavior is canonicalized solely from these
 
 Pending-order premise invalidation terminates the pending order. An already-open position continues its own execution lifecycle until a mechanical target/stop event or a separately authorized exit occurs.
 
-```
+```text
 PENDING ORDER INVALIDATION → CANCEL
 OPEN POSITION → CONTINUE LIFECYCLE
 ```
@@ -417,13 +430,13 @@ OPEN POSITION → CONTINUE LIFECYCLE
 
 Absolute invariant:
 
-```
+```text
 OHLC ≠ INTRABAR_SEQUENCE
 ```
 
 Intrabar execution events may include:
 
-```
+```text
 ORDER_TRIGGERED
 STOP_TOUCH
 TARGET_TOUCH
@@ -431,9 +444,9 @@ TARGET_TOUCH
 
 Candle-close structural/execution events include:
 
-```
-ORDER_FLOW_FAILED
-ORDER_BLOCK_FAILED
+```text
+POI_PREMISE_INVALIDATION
+ZONE_FAILURE
 VALID_BOS
 CHoCH_CONFIRMED
 ```

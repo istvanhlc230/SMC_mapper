@@ -688,6 +688,71 @@ Result: `91 passed, 0 failed, 0 skipped/xfail in 1.04s`
 - Result: `91 passed, 0 failed, 0 skipped/xfail in 0.75s`
 *Developer-local test execution; no independent GitHub Actions/CI verification.*
 
+---
+
+# SURGICAL CORRECTION — L7 RISK CONTRACT ALIGNMENT
+
+## 1. Finding 1 — Over-broad `NO_CANONICAL_TARGET` Invariant
+- **Issue:** `NO_CANONICAL_TARGET → NO_AUTOMATIC_TP_SUBMISSION` in §5.2.1 was overly broad because a setup with no canonical structural/liquidity target candidate may still resolve a valid trade target if an explicitly configured non-structural policy target (such as fixed-R, where permitted by trading policy) is defined.
+- **Correction Applied:**
+  - Removed `NO_CANONICAL_TARGET → NO_AUTOMATIC_TP_SUBMISSION`.
+  - Maintained `NO_RESOLVED_TARGET → NO_SYNTHETIC_TARGET → NO_AUTOMATIC_TP_SUBMISSION`.
+  - Updated the §5.2 pipeline diagram to:
+    ```text
+    CANONICAL TARGET CANDIDATES
+            OR
+    EXPLICIT NON-STRUCTURAL POLICY TARGET
+            ↓
+    CONFIGURED TARGET POLICY
+            ↓
+    RESOLVED TARGET
+            ↓
+    RR EVALUATION
+    ```
+  - Added explicit language: if no target is resolved (`NO_RESOLVED_TARGET`), no synthetic target may be manufactured merely to satisfy an RR gate, and no automatic TP submission may occur.
+
+## 2. Finding 2 — Undefined `ORDER_FLOW_FAILED` / `ORDER_BLOCK_FAILED` Ontology
+- **Issue:** §5.3.1 contained `ORDER_FLOW_FAILED / ORDER_BLOCK_FAILED → associated pending order → PENDING_ORDER_CANCELLED`. These state names are not defined or owned by the canonical structural layer chain.
+- **Correction Applied:**
+  - Replaced with semantically neutral execution-policy rule:
+    ```text
+    CANONICAL EXECUTION / POI PREMISE INVALIDATION
+            ↓
+    ASSOCIATED PENDING ORDER
+            ↓
+    PENDING_ORDER_CANCELLED
+    ```
+  - Explicitly specified that pending-order premise invalidation is an execution/order-lifecycle consequence, not a new structural event.
+  - Aligned §5.1, §5.3.3, §5.3.4, and §5.3.6 to consume `POI_PREMISE_INVALIDATED` / `ZONE_FAILURE` without creating rogue ontology.
+  - Preserved `CHoCH_ELIGIBLE ≠ AUTOMATIC ORDER CANCELLATION` and `CHoCH_CONFIRMED → cancellation only for orders dependent on the invalidated regime`.
+  - Preserved pending vs open position separation (`PENDING ORDER INVALIDATION → CANCEL`, `OPEN POSITION → CONTINUE LIFECYCLE`).
+
+## 3. Finding 3 — Zone Failure Treatment
+- **Issue:** §5.3.2 defines bullish/bearish zone failure via candle close beyond zone boundaries, which needed explicit demarcation from canonical structural failure.
+- **Correction Applied:**
+  - Preserved the rule as an execution/risk zone-failure concept without inventing new structural rules.
+  - Explicitly added the required separation invariant:
+    ```text
+    ZONE_FAILURE
+    ≠ POI_FAILURE
+    ≠ STRUCTURAL_FAILURE
+    ≠ BOS
+    ≠ CHoCH
+    ```
+  - Explicitly noted that the candle-close boundary threshold is an execution/risk parameter, not a canonical True SMC structural rule.
+
+## 4. L6 → L7 → L8 Cross-Layer Validation
+- **Candidate Discovery (L6):** Produces canonical structural/liquidity target candidates.
+- **Policy Resolution (L7):** Evaluates canonical candidates OR explicit non-structural policy targets (fixed-R) against configured target policy to produce a resolved trade target; manages stop boundaries and order premise invalidations.
+- **RR Implementation (L8):** Consumes resolved target for RR evaluation (`Projected_RR_to_Resolved_Target >= Configured_Minimum_RR`); strictly enforces `NO_RESOLVED_TARGET → NO_SYNTHETIC_TARGET → NO_AUTOMATIC_TP_SUBMISSION`.
+- **Methodology Integrity:** L7 strictly consumes upstream state and redefines zero concepts owned by L1–L6.
+
+## 5. Test Result
+- Command: `python -m pytest`
+- Result: `91 passed, 0 failed, 0 skipped/xfail in 0.74s`
+*Developer-local test execution; no independent GitHub Actions/CI verification.*
+
+
 
 
 
