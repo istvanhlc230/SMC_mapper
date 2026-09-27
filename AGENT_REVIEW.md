@@ -1549,3 +1549,32 @@ structural_engine.py validated attempt_end_candle_id after indexing it. A missin
 
 ### Status
 Layer-3 fail-closed input boundary corrected; formal approval remains subject to executable test results and the broader implementation audit.
+
+
+## FULL 01–08 SKILL AUDIT — 2026-09-27
+
+Direct audit of the current main branch against the canonical `.agents/skills/smc/` ownership model completed.
+
+### Corrections applied
+- `05_CHOCH_mechanics.md`: clarified that the ordinary CHoCH route uses the Protected Opposing Structural Extreme / Governing Opposing Range Boundary; the LTF Structural Glitch is the explicit reference-substitution exception and does not promote the Minor reference into Major Structure.
+- `08_implementation.md`: corrected the lifecycle state-transition table so bootstrap/confirmation transitions explicitly follow `SVP → Verified Extreme → Minor IDM → IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING → CONFIRMED_RANGE`; retracement qualification and BOS remain later gates.
+
+### Audit result
+- 01 Microstructure: ownership and OHLC primitive boundary consistent.
+- 02 Minor Structure: Candle-Level Valid Pullback → Verified Pullback Extreme → Pullback-Derived Liquidity Reference → Minor IDM ownership consistent.
+- 03 Structural Semantic Authority: IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING → later retracement qualification → BOS lifecycle consistent.
+- 04 BOS: downstream consumer of stored Layer-3 qualification; no raw retracement redefinition.
+- 05 CHoCH: ordinary external route and LTF Structural Glitch route now explicitly reconciled.
+- 06 Execution: POI/OF/OB/RB/ENG_LQD ownership remains downstream and structurally separated.
+- 07 Risk: target/trade-management policy remains separated from canonical structural semantics.
+- 08 Implementation: lifecycle table synchronized with canonical ownership and prerequisite order.
+
+### Regression scan
+Active skill files contain no stale `FALLBACK_MAJOR_IDM`, `REAL_MAJOR_IDM`, `SWING_CANDIDATE`, fully-unmitigated-FVG, or one-candle-positive-retracement canonical rules.
+
+### GitHub Actions
+Commit `572e963a53aa02797061ebb9a74430519b7c50eb` test run: 58 passed / 4 failed. Failures are Layer-2/3 runtime-test contract mismatches (Outside-Bar invalidation expectation and post-BOS IDM fixture assumptions), not documentation-only skill failures.
+Commit `d6f2f5a9947e52e7bcf290accb5763bf49a46e8c` test run also completed with failure; runtime tests remain to be reconciled separately before implementation approval.
+
+### Branch state
+`feature/upstream-structural-evidence-contract-v1` still exists on GitHub. The available GitHub mutation interface in this session does not expose branch deletion, so it was not falsely claimed deleted.
