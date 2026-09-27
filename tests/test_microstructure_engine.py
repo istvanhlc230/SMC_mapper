@@ -169,3 +169,36 @@ def test_candle_trend_requires_directional_reference_candle():
 def test_hermetic_ast_has_no_layer2_plus_symbols():
     violations = m.validate_hermetic_layer1(inspect.getsource(m))
     assert violations == ()
+
+
+def test_layer1_observation_invariants_are_fail_closed():
+    ref = m.ExtremeReference(Decimal("10"), "r", "H")
+    candle = c("c", "9", "11", "8", "9.5")
+
+    try:
+        m.classify_breach(candle, ref, "UP")
+    except m.QuarantineError:
+        pass
+    else:
+        raise AssertionError("invalid breach direction accepted")
+
+    try:
+        m.InsideBarObservation("c", "m", False)
+    except m.QuarantineError:
+        pass
+    else:
+        raise AssertionError("non-strict Inside Bar observation accepted")
+
+    try:
+        m.TrendObservation(m.TrendDirection.BULLISH, None, None)
+    except m.QuarantineError:
+        pass
+    else:
+        raise AssertionError("bullish trend without protected low accepted")
+
+    try:
+        m.TrendObservation(m.TrendDirection.UNDEFINED, None, ref)
+    except m.QuarantineError:
+        pass
+    else:
+        raise AssertionError("undefined trend with protection state accepted")
