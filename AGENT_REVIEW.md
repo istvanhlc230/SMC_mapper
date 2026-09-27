@@ -1472,3 +1472,32 @@ Scope: .agents/skills/smc/01_micro_structure.md through 04_BOS_mechanics.md, usi
 LAYER 1–4 SKILL AUDIT = PASS / 2 TARGETED CORRECTIONS APPLIED.
 
 Implementation/runtime tests were not changed by this pass. Mapper integration remains deferred until the isolated layer implementations are independently approved.
+
+
+## DIRECT VALIDATOR — LAYER 1–4 FRESH AUDIT — 2026-09-27
+
+Scope: current main, Layers 01–04 of the canonical SMC skill.
+
+### Audit result
+
+- Layer 1: PASS. Microstructure remains limited to OHLC/candle geometry, breach/equality/reference observations, Inside/Outside Bar, and observability. No downstream structural ownership leakage found.
+- Layer 2: PASS. Candle-Level Valid Pullback, Verified Pullback Extreme, Pullback-Derived Liquidity Reference, and Minor IDM remain Layer-2-owned. Outside-Bar unavailable sequence is terminal for the affected candidate and cannot be completed retroactively.
+- Layer 3: CORRECTED. The insufficient-retracement lifecycle diagram incorrectly connected the failed attempted-break/reference-shift branch to Protected Structural Extreme Lock + Trading Range Rollover. That rollover is valid only after VALID_BOS. The branch now explicitly continues the current lifecycle with no protected-extreme lock and no range rollover.
+- Layer 4: PASS. BOS consumes Layer-3 stored qualification; it does not recompute retracement, HTF, or candle-count rules. MAJOR_IDM_SWEEP remains distinct from VALID_BOS, and insufficient continuation remains IMPULSE_EXTENSION without range rollover.
+
+### Cross-layer invariants
+
+- IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING → STRUCTURAL_RETRACEMENT_QUALIFICATION → STRUCTURAL_SWING_BREAK → VALID_BOS remains coherent.
+- VALID_BOS is the sole trigger for Protected Structural Extreme Lock and Trading Range Rollover.
+- Failed/insufficient continuation does not lock the protected extreme or roll the range.
+- No active FALLBACK_MAJOR_IDM, REAL_MAJOR_IDM, SWING_CANDIDATE, or generic canonical Swing/Break object was reintroduced.
+
+### Correction
+
+- Commit: 31ce89db898da8479849a2321cb697f083cf98a6
+- File: .agents/skills/smc/03_structural_semantic_authority.md
+- Purpose: correct the insufficient-retracement lifecycle diagram.
+
+### Status
+
+**LAYER 1–4 FRESH AUDIT = PASS / 1 TARGETED CORRECTION APPLIED.**
