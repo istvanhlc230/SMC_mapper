@@ -35,6 +35,11 @@ def test_body_close_can_confirm_only_when_complete_gate_is_supplied():
     )
     assert result.resolution is choch_engine.CHoCHResolution.CHOCH_CONFIRMED
     assert result.confirmed
+    assert result.post_choch_regime is not None
+    assert result.post_choch_regime.new_direction is PullbackDirection.BULLISH
+    assert result.post_choch_regime.initial_active_impulse_candle_id == "break"
+    assert result.post_choch_regime.confirmation_locked
+    assert not result.post_choch_regime.ltf_context_cleared
 
 
 def test_non_major_external_wick_can_enter_choch_gate():
@@ -45,8 +50,11 @@ def test_non_major_external_wick_can_enter_choch_gate():
         (c("wick", "10.2", "10.4", "9.8", "10.1"),),
         ref,
         confirmation_gate_open=True,
+        ltf_context_active=True,
     )
     assert result.resolution is choch_engine.CHoCHResolution.CHOCH_CONFIRMED
+    assert result.post_choch_regime is not None
+    assert result.post_choch_regime.ltf_context_cleared
     assert result.structural_break is not None
     assert result.structural_break.mode is BreachMode.WICK_ONLY
 
