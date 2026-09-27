@@ -1669,3 +1669,54 @@ Targeted canonical audit completed for .agents/skills/smc/01_micro_structure.md 
 **LAYER 1–4 TARGETED AUDIT: PASS AFTER CORRECTION**
 
 Runtime integration remains intentionally untouched.
+
+## FULL 01–08 CANONICAL SKILL RE-AUDIT — 2026-09-27
+
+### Targeted corrections applied
+
+1. **Layer 3 — normal retracement diagram**
+   - Corrected the normal qualification path from `>= 2 opposing candles` to `>= 3 opposing closing candles`.
+   - Added an explicit 2-candle reduced-candle exception branch.
+   - Preserved the separate 1-candle displacement-outlier exception requiring the documented extreme-taking condition.
+   - No methodology threshold was changed; the diagram was synchronized with the existing canonical prose and `methodology_parameters.md`.
+
+2. **Layer 7 — Risk heading**
+   - Corrected the file heading from `# 05 — RISK` to `# 07 — RISK`.
+   - No risk, target, RR, or trade-management semantics were changed.
+
+3. **Layer 8 — implementation heading hierarchy**
+   - Corrected the duplicated/stale numbering:
+     - `45.1` entity lifecycle hierarchy is now `45.1`, `45.1.1`, `45.1.2`.
+     - Risk/scoring mapping is now `45.2`.
+     - Intrabar evidence is now `45.3`.
+     - BOS execution model is `46.1`.
+     - Major IDM interaction is `46.2`.
+     - Deterministic invariants are `46.3`.
+
+### Full re-audit result
+
+- **Layer 1:** PASS — microstructure remains the OHLC/candle-level semantic owner.
+- **Layer 2:** PASS — Candle-Level Valid Pullback → Verified Pullback Extreme → Pullback-Derived Liquidity Reference → Minor IDM ownership remains intact.
+- **Layer 3:** PASS — IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING → retracement qualification remains the canonical sequence; normal path is 3+ opposing closing candles, with explicit reduced-candle/outlier exceptions.
+- **Layer 4:** PASS — consumes stored Layer-3 qualification; `VALID_BOS` remains `IDM_TAKEN AND MAJOR_RETRACEMENT_QUALIFIED AND STRUCTURAL_SWING_BREAK`.
+- **Layer 5:** PASS — CHoCH provenance/context boundaries remain intact; no Major-IDM-to-CHoCH conflation introduced.
+- **Layer 6:** PASS — POI/OF/OB/RB/Engineering Liquidity and entry authorization remain downstream execution semantics.
+- **Layer 7:** PASS — target selection, fixed-R, BE/profit-lock/trailing remain policy/implementation concerns; `TARGET_REACHED` remains distinct from position closure.
+- **Layer 8:** PASS — implementation consumes canonical upstream state and does not manufacture structural evidence.
+
+### Regression scans
+
+- No stale `>= 2 opposing candles` normal-path wording.
+- No `6.X` implementation headings.
+- No duplicated numeric headings in Layers 01–08.
+- No active `FALLBACK_MAJOR_IDM`, `REAL_MAJOR_IDM`, `SWING_CANDIDATE`, or `PENDING_UNAVAILABLE_SEQUENCE` terminology in the canonical layer set.
+- No premature `IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING → CONFIRMED_RANGE` lifecycle transition.
+- 38.2%–<50% remains conditional on immediate-HTF valid-pullback evidence.
+- Major IDM remains one semantic class with provenance, not a fallback ontology.
+- Runtime Mapper/analyzer/monitor files were not modified by this canonical-skill correction pass.
+
+### Status
+
+**FULL 01–08 CANONICAL SKILL RE-AUDIT = PASS / 3 DOCUMENTATION CORRECTIONS APPLIED.**
+
+The three corrected files were committed directly to `main`; this review records the completed post-fix audit.
