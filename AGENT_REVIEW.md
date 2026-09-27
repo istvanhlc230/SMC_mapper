@@ -1578,3 +1578,31 @@ Commit `d6f2f5a9947e52e7bcf290accb5763bf49a46e8c` test run also completed with f
 
 ### Branch state
 `feature/upstream-structural-evidence-contract-v1` still exists on GitHub. The available GitHub mutation interface in this session does not expose branch deletion, so it was not falsely claimed deleted.
+
+
+## DIRECT VALIDATOR FULL-LAYER AUDIT — 2026-09-27
+
+Full 01–08 canonical skill audit completed against the current `main` state and the established canonical ownership/lifecycle rules.
+
+### Finding and correction
+- Found one concrete Layer-8 state-machine contradiction: `IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING` was incorrectly shown transitioning directly to `CONFIRMED_RANGE` in the state-transition table.
+- Canonical Layer-3 lifecycle requires `IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING → STRUCTURAL RETRACEMENT QUALIFICATION → STRUCTURAL_SWING_BREAK → VALID_BOS`; only `VALID_BOS` establishes/rolls the confirmed Trading Range and locks the Protected Structural Extreme.
+- Corrected `.agents/skills/smc/08_implementation.md`: after IDM takeout the lifecycle remains `CONFIRMATION_LOCKED` until the downstream BOS gates are satisfied; no premature range confirmation occurs.
+- Corrected one Layer-8 guard statement so only an **unvalidated** candle-level pullback is prohibited from becoming IDM; a canonical Layer-2 Candle-Level Valid Pullback does establish the Minor IDM input.
+
+### Cross-layer post-fix checks
+- 01–08: no remaining `FALLBACK_MAJOR_IDM`, `REAL_MAJOR_IDM`, or `SWING_CANDIDATE` terminology.
+- 01–08: no remaining targeted contradiction where IDM takeout directly creates `CONFIRMED_RANGE`.
+- Major IDM remains one semantic class.
+- Layer-2 Minor IDM ownership remains separate from Layer-3 Major IDM governance.
+- Layer-3 retracement qualification remains downstream of `CONFIRMED_STRUCTURAL_SWING` and upstream of continuation BOS.
+- Layer-4 consumes stored qualification and does not recalculate raw retracement rules.
+- Layer-5 CHoCH remains context/provenance dependent; Major-IDM wick is not CHoCH.
+- Layer-6 execution remains downstream of structural authorization; RB remains separately typed and Engineering Liquidity remains Extreme-OF/Extreme-OB lineage based.
+- Layer-7 target/risk/trade-management policy remains separate from canonical structural truth.
+- Layer-8 remains implementation-only and must not manufacture upstream evidence.
+
+### Status
+**FULL 01–08 AUDIT: PASS after correction.**
+
+Correction commit: `b44ddfc56fc394ea74bb5eb27c455f43b45b852e`.
