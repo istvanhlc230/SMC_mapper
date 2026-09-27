@@ -1530,3 +1530,22 @@ minor_structure_engine.py contained an invalid active-state model:
 
 ### Status
 Layer-2 implementation correction applied; formal approval remains subject to test execution and the next implementation audit.
+
+
+## IMPLEMENTATION CORRECTION — LAYER 3 — 2026-09-27
+
+The canonical skill was not modified.
+
+### Finding
+structural_engine.py validated attempt_end_candle_id after indexing it. A missing ID therefore raised a raw KeyError instead of the canonical fail-closed QuarantineError.
+
+### Correction
+- Validate attempt_end_candle_id membership before dictionary indexing.
+- Added a regression test requiring QuarantineError for an unknown attempt-end candle.
+
+### Commits
+- c5cf9370c4fd53453acbc783f5db089e3df23cff — Layer-3 input-validation correction.
+- bf7502384ad54ded23fe7452ee180122dd3b1f1b — Layer-3 regression test.
+
+### Status
+Layer-3 fail-closed input boundary corrected; formal approval remains subject to executable test results and the broader implementation audit.
