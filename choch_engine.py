@@ -154,6 +154,8 @@ def reference_from_boundary(
 def reference_from_ltf_idm(idm: IDMEvent) -> CHoCHReference:
     if not isinstance(idm, IDMEvent):
         raise QuarantineError("LTF CHoCH reference requires Layer-3 IDMEvent")
+    if idm.origin is not IDMOrigin.PULLBACK_DERIVED:
+        raise QuarantineError("LTF CHoCH reference requires pullback-derived IDM provenance")
     return CHoCHReference(
         idm.direction,
         idm.reference_price,
