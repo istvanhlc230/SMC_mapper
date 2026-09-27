@@ -1,61 +1,44 @@
 # CURRENT TASK
-Phase 7: Corrective Layer 6 Execution Audit
+Phase 8: Layer 7 Risk / Target / Trade Management Audit
 
 # DEVELOPER REPORT
 **Current Repository State:**
 * **Branch:** main
-* **Previous audited remote HEAD:** 76c06e7098c2e52d2e4d6623ca89f3b25bc8030b
-* **Audited repository HEAD:** 82898559c014d0f9dbb6ea102327c682d170ce73
+* **Previous audited remote HEAD:** c9b39b86f141b1f1508866d11fdcb975f3dbb14f
+* **Audited repository HEAD:** c9b39b86f141b1f1508866d11fdcb975f3dbb14f
 * **Working-tree status before report commit:** clean
 
 # CANONICAL SPECIFICATION STATUS
-The canonical `.agents/skills/smc/06_execution.md` file correctly centralizes execution logic while strictly respecting upstream structural layers.
+The canonical `.agents/skills/smc/07_risk.md` successfully isolates risk, targets, and trade-management from the structural and execution layers.
 
-### 1. Corrected IDM ↔ POI Findings
-The previous report overgeneralized `IDM_TAKEN` as a universal execution prerequisite. Canonical review reveals distinct module requirements:
-- **Module 1 (IDM Sweep):** Explicitly requires active IDM and `IDM_TAKEN = TRUE`.
-- **Module 2 (Decisional POI Mitigation):** Explicitly requires the active IDM to be taken out prior to the POI mitigation.
-- **Module 3 (Engineering Liquidity Sweep):** Divorced from IDM takeout; governed exclusively by `ENG_LQD_SWEEP`.
-- **Module 4 (Extreme POI Mitigation):** Governed by its own independent structural validities (`EXTREME_OF` / `EXTREME_OB`) and Engineering Liquidity conditions, without universally borrowing the Decisional module's IDM prerequisite.
+### 1. Target Ontology & Countertrend Targets
+- **Separation of Concerns:** The skill strictly defines the separation between `TARGET_CANDIDATE`, `TARGET_SELECTION`, `TARGET_PRICE`, `RR_CALCULATION`, and `POSITION_EXIT`. 
+- **RR vs Targets:** RR is exclusively a configurable entry filter, *not* a target-creation mechanism.
+- **Countertrend / LTF Targets:** The methodology deliberately does **not** provide a universal countertrend target coordinate. Target Selection for countertrend trades remains structurally uncanonicalized and is correctly held as a Specification Gap rather than being artificially resolved.
+- **Trade Management:** `BREAK_EVEN`, `PROFIT_LOCK`, and `TRAILING_STOP` are appropriately classified as external trade-management policies rather than canonical methodology rules.
 
-### 2. POI Lifecycle & Rule-of-Two
-- **Cardinality:** Restricted strictly to Decisional POI and Extreme POI.
-- **Origin OB:** Correctly classified as a *latent reserve*. It activates as the Extreme POI only upon Extreme OB failure without a CHoCH.
-- **Expiration:** A new `VALID_BOS` (Dealing Range rollover) immediately expires all unmitigated previous-range POIs, turning them into non-tradable, non-revivable historical records. 
-- **Semantics:** Touch ≠ Mitigation. Mitigation ≠ Failure. POI Failure ≠ Structural Failure.
+### 2. Multi-Leg Target Architecture
+- The canonical rule correctly states that multiple target legs (e.g., T1, T2, T3) and their allocation percentages are pure configurable implementation policies, not SMC constants.
 
-### 3. Order Flow (OF) & Order Block (OB) Validation
-- **OF Lifecycle:** Maintains independent validity. Mitigation/Failure of an OF does not implicitly invalidate an internally valid OB.
-- **OB Validation:** Strictly enforces 3 pillars (including FVG presence). The Decisional OB is the specific origin of the causal displacement that produced `VALID_BOS`. The Extreme OB must belong to the active `EXTREME_OF` lineage. Refinements (Wick/Inside-Bar) act as geometric overlays, not new POI states.
+### 3. Risk & Invalidation Model
+- **Stop Loss:** Execution invalidation (e.g., POI failure) is cleanly separated from structural invalidation (e.g., CHoCH or BOS).
+- **Position Sizing:** Fixed risk (e.g., 1%), leverage, and exposure limits are rightfully excluded from methodology and left to platform policy.
 
-### 4. Rejection Block (RB) Lifecycle
-- Strictly defined as a separate PD array derived from a liquidity sweep.
-- It is **not** a POI, **not** an Extreme POI, and **not** a Rule-of-Two slot.
-- Becomes relevant solely after the applicable Extreme OB fails. 
-- Cannot act as an Extreme POI dependency for Engineering Liquidity. 
-- It maintains distinct provenance.
-
-### 5. Engineering Liquidity
-- Bound to the valid pullback *before* the active Extreme POI (`EXTREME_OF` or `EXTREME_OB`).
-- Recomputed on Extreme POI identity change. Historical references are immutable.
-
-### 6. Entry Modules & Reversal Triggers
-- **Trigger Restrictions:** Candlestick reversal patterns (Pinbar, Outside-Bar, Morning Star, etc.) do NOT create structure or POIs. They serve only as execution *authorization* upon a valid underlying POI or Liquidity context.
-- **Close-only Execution:** Execution authorization relies explicitly on the completed candlestick **close**. Live unclosed wicks are categorically rejected as triggers.
-- **Infrastructure Detachment:** `ENTRY_AUTHORIZED` ≠ `ORDER_SUBMITTED` ≠ `POSITION_OPEN`.
+### 4. Position Lifecycle
+- The lifecycle boundaries (`ENTRY_AUTHORIZED` ≠ `ORDER_SUBMITTED` ≠ `POSITION_OPEN` ≠ `POSITION_CLOSED`) are impeccably preserved.
 
 # EXISTING IMPLEMENTATION STATUS
-- **Layer 6 Completeness:** The Layer 6 business logic engine is **UNIMPLEMENTED**. 
-- **Implementation Placeholders:** The repository currently only contains structural interface stubs in `smc_analyzer.py` (e.g., `StructuralPOICandidate`).
-- **Placeholder Conformity:** The existing `StructuralPOICandidate` interface is fully conformant with the canonical ontology. It enforces `poi_class: "OF_CONFIRMED" | "VALID_OB"` and `execution_role: "DECISIONAL" | "EXTREME"`, ensuring no synthetic third POIs, standalone FVGs, or Rejection Blocks are falsely promoted into the POI execution slots.
+- **Layer 7 Completeness:** The business logic engine for Layer 7 is **UNIMPLEMENTED**.
+- **Implementation Placeholders:** The codebase contains configuration stubs in `smc_analyzer.py` (`TargetCandidate`, `TargetLeg`, `TargetPlan`). 
+- **Placeholder Conformity:** These stubs explicitly align with canonical boundaries (e.g., defining allocation percentages and multileg setups as configurable plans rather than absolute structures). The implementation does not violate canonical constraints because it correctly delegates these concepts to configuration without executing unauthorized target generation.
 
 # ACTUAL IMPLEMENTATION DEFECTS
-- **None.** There are no contradictions with canonical rules in the codebase because the implementation is currently limited to fully compliant data interfaces.
+- **None.** The Layer 7 engine is unwritten. No existing placeholder violates canonical boundaries.
 
 # SPECIFICATION GAPS (OPEN ITEMS)
-- **Target Price Derivation:** Partially open regarding exact LTF target selection hierarchy.
-- **`CHoCHResolution.NO_EVIDENCE`:** Pending a semantic decision for unformed arrays.
-- **Layer 6 Implementation Phase:** Pending construction of the entire execution engine. Do not implement unresolved rules.
+- **Target Price Derivation:** Retained as `OPEN — canonical specification gap`. No universal target hierarchy or derivation strategy exists for countertrend setups.
+- **`CHoCHResolution.NO_EVIDENCE`:** Retained as `OPEN — canonical specification gap` from prior phases.
+- **Layer 7 Implementation Phase:** The actual risk computation, RR filtering, and target validation engine remains fully unwritten.
 
 # REPORT COMMIT SHA
 Not stored in AGENT_REVIEW.md.
