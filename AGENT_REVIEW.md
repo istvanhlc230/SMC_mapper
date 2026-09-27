@@ -38,7 +38,7 @@ The reviewed primary sources and the supplementary sources listed above explain 
 Layer 3 (`03_structural_semantic_authority.md`) is the semantic owner of `BOOTSTRAP_EXPANSION` and the first IDM takeout lifecycle. The lack of a deterministic cold-start initialization rule is a **canonical specification gap concerning cold-start initialization/orchestration**.
 
 ## 8. Final Classification
-**TRUE CANONICAL GAP**
+**CANONICAL SPECIFICATION GAP — COLD-START INITIALIZATION / ORCHESTRATION**
 The reviewed primary sources and the supplementary sources listed above do not define deterministic first-regime initialization. 
 **COLD START → FIRST MACRO REGIME INITIALIZATION → CURRENTLY NOT FULLY DEFINED.**
 
