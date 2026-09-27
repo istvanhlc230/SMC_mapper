@@ -26,7 +26,7 @@ from minor_structure_engine import (
 
 STANDARD_EQUILIBRIUM_THRESHOLD = Decimal("0.50")
 HTF_CONDITIONAL_THRESHOLD = Decimal("0.382")
-NORMAL_RETRACEMENT_CANDLE_COUNT = 2
+NORMAL_RETRACEMENT_CANDLE_COUNT = 3
 MIN_RETRACEMENT_CANDLE_COUNT = 2
 MIN_OUTLIER_EXTREMES_TAKEN = 5
 
@@ -65,28 +65,6 @@ class ProtectedExternalBoundary:
 
 
 @dataclass(frozen=True, slots=True)
-class MajorIDMQualificationEvidence:
-    """Explicit Layer-3 evidence that a post-BOS pullback qualifies as Major IDM.
-
-    A Layer-2 pullback is never sufficient by itself. Until the canonical
-    Major-IDM qualification is positively established, the prior protected
-    external boundary remains the active Major IDM.
-    """
-
-    pullback_completion_candle_id: str
-    qualified: bool
-    reason: str
-
-    def __post_init__(self) -> None:
-        if not isinstance(self.pullback_completion_candle_id, str) or not self.pullback_completion_candle_id:
-            raise QuarantineError("Major IDM evidence requires pullback completion candle ID")
-        if not isinstance(self.qualified, bool):
-            raise QuarantineError("Major IDM qualification flag must be boolean")
-        if not isinstance(self.reason, str) or not self.reason:
-            raise QuarantineError("Major IDM qualification requires a reason")
-
-
-@dataclass(frozen=True, slots=True)
 class IDMLifecycleContext:
     """Layer-3-owned lifecycle input describing a completed BOS rollover.
 
@@ -97,7 +75,6 @@ class IDMLifecycleContext:
     after_valid_bos: bool = False
     valid_bos_candle_id: str | None = None
     protected_external_boundary: ProtectedExternalBoundary | None = None
-    major_idm_qualification: MajorIDMQualificationEvidence | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.after_valid_bos, bool):
@@ -110,7 +87,6 @@ class IDMLifecycleContext:
             if (
                 self.valid_bos_candle_id is not None
                 or self.protected_external_boundary is not None
-                or self.major_idm_qualification is not None
             ):
                 raise QuarantineError("post-BOS lifecycle fields require VALID_BOS")
             return
@@ -118,10 +94,6 @@ class IDMLifecycleContext:
             raise QuarantineError("post-BOS IDM lifecycle requires VALID_BOS candle provenance")
         if self.protected_external_boundary is None:
             raise QuarantineError("post-BOS IDM lifecycle requires protected external boundary")
-        if self.major_idm_qualification is not None and not isinstance(
-            self.major_idm_qualification, MajorIDMQualificationEvidence
-        ):
-            raise QuarantineError("invalid Major IDM qualification evidence")
 
 
 @dataclass(frozen=True, slots=True)
@@ -301,9 +273,9 @@ def classify_idm(
     """Classify Layer-2 references and advance the Layer-3 IDM lifecycle.
 
     Before VALID_BOS every pullback-derived IDM is Minor. After VALID_BOS,
-    a post-BOS pullback remains Minor unless explicit Major-IDM qualification
-    evidence exists. If no new Major IDM is qualified, the prior protected
-    external boundary remains Major IDM.
+    the newest completed post-BOS Layer-2 valid pullback / verified extreme
+    becomes the Major IDM. If no new post-BOS valid pullback exists, the prior
+    protected external boundary remains the active Major IDM.
     """
     if not isinstance(minor, MinorStructureAnalysis):
         raise QuarantineError("Layer 3 requires Layer 2 MinorStructureAnalysis")
@@ -331,35 +303,29 @@ def classify_idm(
         and _comes_after(pb.completion_candle_id, lifecycle.valid_bos_candle_id, candles)
     ]
 
-    # A post-BOS pullback is not automatically Major IDM. The canonical
-    # lifecycle explicitly distinguishes "NEW MAJOR IDM QUALIFIED" from
-    # "MINOR IDM ONLY". Without positive qualification evidence, preserve
-    # the pullback as Minor IDM and keep the prior protected boundary as
-    # the active Major IDM.
-    evidence = lifecycle.major_idm_qualification
-    if evidence is not None and evidence.qualified:
-        selected = next(
-            (
-                pb for pb in post_bos_pullbacks
-                if pb.completion_candle_id == evidence.pullback_completion_candle_id
-            ),
-            None,
+    # The Layer-2 valid-pullback / verified-extreme state is already the
+    # canonical qualification. Layer 3 must not introduce a second caller-
+    # supplied threshold, score, candle count, or heuristic.
+    if post_bos_pullbacks:
+        positions = _index(candles)
+        selected = max(
+            post_bos_pullbacks,
+            key=lambda pb: positions[pb.completion_candle_id],
         )
-        if selected is None:
-            raise QuarantineError(
-                "Major IDM qualification references no post-BOS Layer-2 pullback"
-            )
         events = [
-            event for event in pullback_events
-            if event.pullback_completion_candle_id != selected.completion_candle_id
+            _pullback_idm(
+                pb,
+                IDMClass.MAJOR_IDM
+                if pb is selected
+                else IDMClass.MINOR_IDM,
+            )
+            for pb in minor.pullbacks
         ]
-        events.append(_pullback_idm(selected, IDMClass.MAJOR_IDM))
         return tuple(events)
 
     events = list(pullback_events)
     events.append(_boundary_idm(lifecycle.protected_external_boundary))
     return tuple(events)
-
 
 def qualify_retracement(
     candles: tuple[Candle, ...],
@@ -452,7 +418,11 @@ def _outlier_condition(
     exceptional_index = next(
         i for i, c in enumerate(all_candles) if c.candle_id == exceptional.candle_id
     )
-    preceding = list(all_candles[:exceptional_index])
+    preceding = list(
+        all_candles[
+            max(0, exceptional_index - MIN_OUTLIER_EXTREMES_TAKEN):exceptional_index
+        ]
+    )
     if len(preceding) < MIN_OUTLIER_EXTREMES_TAKEN:
         return False
     if direction is PullbackDirection.BULLISH:
@@ -575,7 +545,6 @@ __all__ = [
     "IDMClass",
     "IDMEvent",
     "IDMLifecycleContext",
-    "MajorIDMQualificationEvidence",
     "_comes_after",
     "IDMOrigin",
     "MIN_OUTLIER_EXTREMES_TAKEN",
