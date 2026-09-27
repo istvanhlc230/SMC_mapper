@@ -185,7 +185,8 @@ def _physical_break(candle: Candle, reference: CHoCHReference) -> tuple[BreachMo
 
 def _eligible_for_break(reference: CHoCHReference, body_close: bool) -> CHoCHResolution | None:
     if reference.idm_class is IDMClass.MAJOR_IDM and not body_close:
-        return CHoCHResolution.MAJOR_IDM_SWEEP
+        if reference.kind is CHoCHReferenceKind.PROTECTED_OPPOSING_BOUNDARY:
+            return CHoCHResolution.MAJOR_IDM_SWEEP
     if reference.kind is CHoCHReferenceKind.LTF_ACTIVE_IDM and reference.idm_class is IDMClass.MINOR_IDM and not body_close:
         return CHoCHResolution.NO_BOUNDARY_BREAK
     return None
@@ -261,7 +262,7 @@ def detect_choch(
             new_direction=new_direction,
             initial_active_impulse_candle_id=candle.candle_id,
             confirmation_locked=True,
-            ltf_context_cleared=ltf_context_active,
+            ltf_context_cleared=True,
         )
         return CHoCHAnalysis(
             CHoCHResolution.CHOCH_CONFIRMED,

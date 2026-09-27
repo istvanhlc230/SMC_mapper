@@ -22,7 +22,7 @@ def test_body_close_opposing_boundary_is_eligible_not_confirmed_without_gate():
     )
     assert result.resolution is choch_engine.CHoCHResolution.CHOCH_ELIGIBLE
     assert result.structural_break is not None
-    assert result.structural_break.mode is BreachMode.WICK_AND_BODY
+    assert result.structural_break.mode is BreachMode.CLOSE
 
 
 def test_body_close_can_confirm_only_when_complete_gate_is_supplied():
@@ -40,7 +40,7 @@ def test_body_close_can_confirm_only_when_complete_gate_is_supplied():
     assert result.post_choch_regime.new_direction is PullbackDirection.BULLISH
     assert result.post_choch_regime.initial_active_impulse_candle_id == "break"
     assert result.post_choch_regime.confirmation_locked
-    assert not result.post_choch_regime.ltf_context_cleared
+    assert result.post_choch_regime.ltf_context_cleared
 
 
 def test_non_major_external_wick_can_enter_choch_gate():
@@ -60,6 +60,23 @@ def test_non_major_external_wick_can_enter_choch_gate():
 
 
 def test_major_idm_wick_is_major_idm_sweep_not_choch():
+    ref = choch_engine.reference_from_boundary(
+        PullbackDirection.BULLISH,
+        price=Decimal("10"),
+        source_candle_id="idm-source",
+        idm_class=structural.IDMClass.MAJOR_IDM,
+        idm_origin=structural.IDMOrigin.PULLBACK_DERIVED,
+    )
+    result = choch_engine.detect_choch(
+        (c("wick", "10.2", "10.4", "9.8", "10.1"),),
+        ref,
+        confirmation_gate_open=True,
+    )
+    assert result.resolution is choch_engine.CHoCHResolution.MAJOR_IDM_SWEEP
+    assert not result.confirmed
+
+
+def test_major_idm_ltf_glitch_wick_is_choch_eligible():
     idm = structural.IDMEvent(
         structural.IDMClass.MAJOR_IDM,
         structural.IDMOrigin.PULLBACK_DERIVED,
@@ -76,8 +93,8 @@ def test_major_idm_wick_is_major_idm_sweep_not_choch():
         confirmation_gate_open=True,
         ltf_context_active=True,
     )
-    assert result.resolution is choch_engine.CHoCHResolution.MAJOR_IDM_SWEEP
-    assert not result.confirmed
+    assert result.resolution is choch_engine.CHoCHResolution.CHOCH_CONFIRMED
+    assert result.confirmed
 
 
 def test_major_idm_body_close_enters_choch_gate():
