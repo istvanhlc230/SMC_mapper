@@ -216,6 +216,8 @@ def detect_choch(
         raise QuarantineError("confirmation_gate_open must be boolean")
     if not isinstance(ltf_context_active, bool):
         raise QuarantineError("ltf_context_active must be boolean")
+    if reference.kind is CHoCHReferenceKind.LTF_ACTIVE_IDM and not ltf_context_active:
+        raise QuarantineError("LTF CHoCH reference requires active Structural Glitch context")
 
     candidates = sequence
     if break_candle_id is not None:
