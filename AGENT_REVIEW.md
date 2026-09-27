@@ -1757,3 +1757,70 @@ The repository's `source_reconciliation.md` provides the current traceability/co
 **INDEPENDENT 01–08 RE-AUDIT: PASS AFTER 4 LAYER-8 CORRECTIONS, WITH 1 OPEN SOURCE-DEFINITION GAP (POST-BOS MAJOR-IDM QUALIFICATION).**
 
 Runtime Mapper/analyzer/monitor files remain outside this canonical-skill correction pass.
+
+
+## COMPLETE KNOWLEDGEBASE RE-READ + POST-BOS MAJOR IDM AUDIT — 2026-09-27
+
+The previous audit was paused because it had not directly re-read the complete categorized knowledgebase. That prerequisite is now satisfied.
+
+### Knowledge read scope
+
+The repository knowledgebase was fully enumerated and read through the GitHub repository interface:
+- 5 top-level knowledgebase control/reference files;
+- 20 files under knowledgebase/sources/;
+- 10 files under knowledgebase/reference/;
+- canonical .agents/skills/smc/01–08 plus methodology parameters, policy/execution documents, source reconciliation, and the reconciliation audit.
+
+The primary source families explicitly required by the topic matrix were included: TrueSMC123, 21-Day Boot Camp, TrueSMC 2026, and Become a TRUE Forex Trader, together with the supplementary market-structure, IDM, BOS/CHoCH, POI, RB, execution, countertrend, and risk sources.
+
+### Correction of the previous audit conclusion
+
+The previously reported "open post-BOS Major-IDM qualification source gap" was **false**. It resulted from the earlier audit not directly re-reading the complete source corpus.
+
+The source material does define the needed semantic chain:
+- a valid pullback provides the inducement liquidity reference;
+- IDM timing distinguishes the pre-BOS Minor role from the post-BOS Major role;
+- after BOS, the recent/new valid pullback becomes the Major Inducement;
+- the corresponding Layer-2 Verified Pullback Extreme supplies the structural reference.
+
+The strongest direct evidence was re-read in:
+- market_structure_mapping_update.txt — post-BOS valid pullback explicitly becomes Major Inducement;
+- advanced_market_structure_mapping.txt — after structural break, the new valid pullback becomes the new inducement;
+- true_smc123.txt — inducement is liquidity at the recently formed valid pullback and shifts to the new valid pullback when the continuation attempt does not satisfy the canonical retracement/BOS conditions;
+- true_smc_21dayBootCamp.txt — normal three-candle retracement and the documented reduced-candle displacement exception;
+- knowledgebase/03_SOURCE_EVIDENCE.md — major/minor IDM timing is explicitly tied to whether the valid pullback occurs before or after BOS.
+
+### Canonical correction applied
+
+The Major IDM semantic owner (Layer 3) now explicitly defines:
+
+VALID_BOS
+→ post-BOS lifecycle
+→ Layer-2 Candle-Level Valid Pullback
+→ Verified Pullback Extreme
+→ Major IDM active.
+
+No additional hidden Major-IDM threshold, candle-count rule, retracement-depth rule, or heuristic was introduced.
+
+Downstream Layer 4, Layer 5, and Layer 8 references were synchronized to consume this owner-defined chain.
+
+### Current audit status
+
+- Previous false gap: **CLOSED**.
+- 01–08 semantic ownership: **PASS** after synchronization.
+- IDM lifecycle: **PASS**.
+- Major IDM remains one semantic class; no FALLBACK/REAL ontology restored.
+- IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING → retracement qualification → VALID_BOS remains intact.
+- 3+ opposing closing candles remain the normal retracement path; reduced exceptions remain explicit.
+- CHoCH, POI/OF/OB/RB/Engineering Liquidity, risk/target policy, and implementation boundaries remain unchanged by this correction.
+
+### Commits
+
+- f99d4b98efbbb81ed6582560950cbf993cd612c9 — Layer 3 Major IDM semantic owner clarification.
+- 560cc12e1cf3771e5311181869147cf65a9c67ce — Layer 4 downstream reference synchronization.
+- d46e94bfb4a89d5769d35d15726aa49ff591a7f8 — Layer 5 downstream reference synchronization.
+- ef099b71185eda4e63435569a706acdf8c0daa1b — Layer 8 lifecycle reference synchronization.
+- ba05f7131698e00ef15abe70776f2d441f232655 — Layer 8 implementation guard synchronization.
+- 2f2c6ef46e92e45fd55e88b8e6ef39382eadd52e — reconciliation audit record.
+
+Runtime Python/analyzer/monitor and analyzed JSON were not modified.
