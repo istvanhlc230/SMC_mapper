@@ -1,36 +1,33 @@
 # CURRENT TASK
-Phase 6: Final Targeted Layer 5 Review
+Phase 7: Layer 6 Execution Semantics Audit
 
 # DEVELOPER REPORT
 **Current Repository State:**
 * **Branch:** main
-* **Previous HEAD:** 48951e4f680b92f9959dd7fdfab6d40c8464bd0e
-* **HEAD Before Review:** b67c1e3d37e7155b4666eace1ca1c66817303a7c
-* **Final HEAD:** 5a4b984
+* **Previous HEAD:** 72a586cbb3d50df123a8d0f6396d1e6b889d4efd
+* **HEAD Before Review:** [Matches Previous HEAD]
+* **Final HEAD:** 984e5bb
 * **Working-tree status:** clean (after committing review report)
 
 **Implementation decisions:**
-- **`MINOR_IDM_SWEEP` Classification:** 
-  The new enum value `CHoCHResolution.MINOR_IDM_SWEEP` has been strictly audited. It functions exclusively as an **implementation-level classification result** for the specific structural anomaly where an `LTF_ACTIVE_IDM` with `MINOR_IDM` provenance receives a physical wick breach. 
-  It is accurately isolated and does **not** create a new canonical lifecycle state, CHoCH lifecycle stage, Major Structure state, implicit confirmation, or novel downstream structural representation. This safely maintains the `05_CHOCH_mechanics.md` constraint that the LTF Structural Glitch is a reference substitution, not a distinct lifecycle state.
+- **Implementation Status:** The Layer 6 execution engine is currently **Not Implemented** in Python logic. The only existing Layer 6 implementation components are the interface dataclasses (e.g., `StructuralPOICandidate` in `smc_analyzer.py`).
+- **Semantic Consistency:** The existing `StructuralPOICandidate` strictly enforces the canonical ontology by explicitly typing `poi_class` as `"OF_CONFIRMED" | "VALID_OB"`. It correctly resists promoting Rejection Blocks into the POI ontology.
+- No code modifications were made because there are no implementation defects in the existing placeholders, and writing the entire Layer 6 engine from scratch falls outside the scope of a targeted audit task.
 
 # VALIDATION REPORT
-The Layer 5 CHoCH engine fully implements the canonical rules, with all targeted edge-cases precisely mapping to canonical intent without abstracting into false structural regimes.
+The canonical `06_execution.md` file was rigorously audited against the knowledgebase (specifically the source transcript `How to Identify Rejection Blocks.txt`). 
 
-### Corrected Minor-IDM Semantics
-**PASS:** The implementation accurately delineates physical breaks on Minor IDMs within the LTF Glitch context:
-- `MINOR_IDM` + no penetration -> `NO_BOUNDARY_BREAK`.
-- `MINOR_IDM` + wick -> `MINOR_IDM_SWEEP` (classified as physical break, correctly denied CHoCH_CONFIRMED status).
-- `MINOR_IDM` + body close -> `CHOCH_ELIGIBLE` -> `CHOCH_CONFIRMED` upon passing external gating.
+### POI / OF / OB / RB Audit
+**PASS (Canonical text):** The canonical skill is perfectly internally consistent and perfectly reflects the source transcript.
+- **Rule of Two:** Strictly maintained (Decisional + Extreme POI).
+- **OF / OB:** The only canonical tradable POIs. OB correctly requires 3 pillars (including FVG).
+- **Rejection Block (RB):** Accurately defined as a separate PD array derived from a liquidity-sweeping wick. It becomes the relevant execution location **only after** the Extreme OB fails. It is **not** promoted to a POI, and it is **not** used to determine Engineering Liquidity. 
 
-### Previously Fixed Case Regressions
-**PASS:** 
-- `PROTECTED_OPPOSING_BOUNDARY` + `MAJOR_IDM` + wick -> `MAJOR_IDM_SWEEP`.
-- `LTF_ACTIVE_IDM` + `MAJOR_IDM` + wick -> `CHOCH_CONFIRMED` (passes normally through eligibility).
-- Confirmed CHoCH outputs a regime shift with `ltf_context_cleared = True`.
+### IDM ↔ POI Relationship
+**PASS (Canonical text):** `06_execution.md` correctly prevents POI logic from interfering with IDM logic. IDM takeout remains a strict Layer 3 prerequisite for execution, but POIs maintain independent validation pillars.
 
-### NO_EVIDENCE Audit
-**OPEN (Canonical specification gap):** `CHoCHResolution.NO_EVIDENCE` is defined in the state machine but never utilized. The canonical specification does not explicitly define a reachable state for `NO_EVIDENCE` (e.g., for missing data or empty arrays). This remains an isolated enum awaiting a formal semantic ruling. No arbitrary implementations were introduced.
+### Entry Semantics
+**PASS (Canonical text):** Candlestick reversal patterns (Morning Star, Engulfing, etc.) are strictly defined as execution *triggers* that must occur within an independently validated POI/liquidity context. Entries are evaluated explicitly on the *close* of the pattern candle, firmly preventing live-wick false entries.
 
 # REQUIRED CORRECTIONS
 [None active]
@@ -38,12 +35,13 @@ The Layer 5 CHoCH engine fully implements the canonical rules, with all targeted
 # OPEN SPECIFICATION GAPS
 - `TARGET PRICE DERIVATION` remains PARTIALLY OPEN for the unresolved exact LTF target selection hierarchy and universal countertrend target resolver.
 - `CHoCHResolution.NO_EVIDENCE` requires a semantic decision on whether to integrate or remove.
+- **Layer 6 Implementation is completely OPEN**: The Python business logic engine for parsing Order Flow, validating Order Blocks, deriving Rejection Blocks, and evaluating Entry Triggers has not yet been implemented.
 
 # IMPLEMENTATION STATUS
-Phase 6 Targeted Layer 5 Review is completed with a full PASS result. 
+Phase 7 Layer 6 Audit is completed with a full PASS result for canonical consistency. The implementation of the engine is pending.
 
 # COMMITS
-COMMIT: 5a4b984
+COMMIT: 984e5bb
 FILES: AGENT_REVIEW.md
-PURPOSE: Submit Phase 6 final targeted Layer 5 review pass report.
+PURPOSE: Submit Phase 7 Layer 6 Execution Audit pass report.
 TESTS: Passed 87/87 tests (0 regressions).
