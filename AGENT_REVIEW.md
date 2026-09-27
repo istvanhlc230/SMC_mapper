@@ -2219,3 +2219,43 @@ The first runtime run for commit `2b811206692bf497485dc885ef4b27ee2b90043e` fail
 
 ### Verification status
 The corrected files have been pushed. A fresh GitHub Actions run is expected from the latest push; PASS is not claimed until that run completes.
+
+
+## LAYER 5 PYTHON IMPLEMENTATION + CANONICAL/KNOWLEDGEBASE AUDIT — 2026-09-27
+
+### Scope
+- `choch_engine.py`
+- `tests/test_choch_engine.py`
+- `.agents/skills/smc/05_CHOCH_mechanics.md`
+- `.agents/skills/smc/03_structural_semantic_authority.md`
+- `.agents/skills/smc/08_implementation.md`
+- `knowledgebase/03_SOURCE_EVIDENCE.md`
+- `knowledgebase/reference/02_market_structure.md`
+- `knowledgebase/reference/03_pullback_retracement.md`
+- convergent source material including `truesmc2026.txt`, `market_structure_mapping_update.txt`, `major_minor_inducement.txt`, and `is_wick_a_bos.txt`.
+
+### Findings and corrections
+1. Implemented explicit Layer-5 CHoCH boundary classification using the canonical Layer-1 physical-breach primitive. Wick/body penetration is recognized; equality/touch is not.
+2. Implemented ordinary protected-opposing-boundary routing and provenance-sensitive Major-IDM handling.
+3. Implemented LTF Structural Glitch reference substitution only through an explicitly active LTF context and a pullback-derived Layer-3 IDM. The LTF reference is not promoted to Major Structure.
+4. Corrected an initial defect where a Minor-IDM LTF wick was incorrectly returned as `MAJOR_IDM_SWEEP`. It is now rejected as a CHoCH break and remains body-close gated; Major-IDM wick remains `MAJOR_IDM_SWEEP`.
+5. Added explicit Protected-External-Boundary Major-IDM provenance support so a wick of that tested Major IDM is correctly classified as `MAJOR_IDM_SWEEP`.
+6. Added canonical post-CHoCH regime initialization: opposite new direction, CHoCH-causing candle as initial active impulse provenance, `CONFIRMATION_LOCKED`, and explicit LTF-context clearing.
+7. Confirmation is not manufactured from geometry: `confirmation_gate_open` is an explicit upstream complete-prerequisite result. A body close or eligible wick alone produces at most `CHoCH_ELIGIBLE`.
+8. Added regression coverage for ordinary wick/body paths, equality, Major-IDM sweep, Minor-IDM LTF body-close gating, active LTF context, provenance rejection, post-CHoCH regime initialization, and downstream semantic isolation.
+
+### Layer-1 → Layer-5 re-audit
+The comparison from the last verified Layer-4 commit `d624b538ad79cf72d033d683a69d2107bb5b9711` to the current Layer-5 head contains only:
+- `choch_engine.py`
+- `tests/test_choch_engine.py`
+
+Therefore Layers 1–4 have no code changes in this chain and retain their previously approved canonical contracts. The Layer-5 implementation consumes their established outputs without redefining Layer-1 breach semantics, Layer-2 pullback semantics, Layer-3 IDM/retracement semantics, or Layer-4 BOS semantics.
+
+### Final static disposition
+**LAYER 5 CANONICAL + KNOWLEDGEBASE ALIGNMENT = PASS.**
+**LAYER 1–5 STATIC RE-AUDIT = PASS.**
+
+No remaining semantic fault was found in the current implementation chain. No further correction is justified without inventing methodology not present in the canonical skill/source evidence.
+
+### Runtime verification
+Each implementation/test change was committed directly to `main`, satisfying the commit-push requirement. The repository's push-triggered workflow is configured for automatic pytest execution. The available GitHub workflow/status interface currently returns no workflow run/status for the latest direct-push head `30add45e0fa5e6dcbfc5061bee0f0a6d6ba313a8`, so a runtime PASS is **not claimed**. This is a verification-interface limitation, not a semantic PASS claim.
