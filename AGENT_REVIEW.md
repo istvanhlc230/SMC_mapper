@@ -1898,3 +1898,45 @@ Regression tests were extended so a bullish reference can be breached by a beari
 **Layer 1 canonical ambiguity CLOSED.**
 
 No canonical rule was changed. The skill now explicitly reflects the multi-source rule: **wick/physical breach is independent of the breach candle's color; Candlestick-Based Trend still identifies its directional reference from the applicable previous bullish/bearish candle.**
+
+
+## LAYER 1 PYTHON AUDIT + CANONICAL ALIGNMENT — 2026-09-27
+
+A second implementation-focused Layer 1 audit was completed against .agents/skills/smc/01_micro_structure.md and cross-checked against multiple knowledgebase references, prioritizing repeated/convergent evidence.
+
+### Findings corrected
+
+1. Candle Extreme Breach is aligned: physical breach is strict penetration; equality is not a break; wick/body/close remain nested; breach candle color is irrelevant.
+2. Candlestick-Based Trend is aligned: direction is anchored to the applicable previous/reference candle, while the breach candle may be bullish, bearish, or non-directional.
+3. Outside Bar is aligned: both physical breaches remain valid and aggregate OHLC does not fabricate LOW→HIGH or HIGH→LOW order.
+4. Canonical Candle Internal Sequence implementation gap was corrected with candle_internal_sequence_model(): bullish → OPEN,LOW,HIGH,CLOSE; bearish → OPEN,HIGH,LOW,CLOSE; doji → None. This is a methodology model, not historical evidence.
+5. Fail-closed invariants were hardened for breach input types, ExtremeReference, strict Inside Bar observations, and coherent TrendObservation protection state.
+6. SequenceStatus.ASSUMED was renamed to SequenceStatus.METHODOLOGY_ASSUMED to match 08_implementation.md.
+
+### Knowledgebase corroboration
+
+truesmc2026.txt and true_smc123.txt explicitly support candle-color independence for the candle performing the opposing-side takeout and wick-based breaks. market_structure_mapping_update.txt and the Layer-2 skill preserve the distinction between physical wick breach and downstream structural qualification. The Outside-Bar observability rule is corroborated by the current Layer-1/Layer-2 and implementation-contract definitions.
+
+### Remaining ownership issue
+
+SequenceStatus, SequenceEvidence, and EvidenceEnvelope remain physically declared in microstructure_engine.py although 08_implementation.md assigns implementation-level intrabar evidence state/contract ownership to Layer 8. This is an architecture issue, not a candle-semantic defect. It should be resolved through a neutral shared implementation contract rather than by making Layer 1 import backward from Layer 8 or duplicating the definitions. It is therefore deliberately deferred until the implementation-contract layer is finalized.
+
+### Validation
+
+Regression coverage was added for breach-candle color independence, invalid breach direction, strict Inside Bar state, TrendObservation protection invariants, the canonical OLHC/OHLC model, and METHODOLOGY_ASSUMED terminology.
+
+The repository has a push-triggered pytest workflow, but the available workflow/status interface exposes no run for the latest direct commits, so CI PASS is not claimed.
+
+### Commits
+
+- 556b3484676be5ee45d1fcaeb9fa81c944c0df09 — harden Layer 1 observation invariants.
+- 97143420ea02ed975beb7f57d55eb4434bb79881 — align sequence status terminology.
+- df4ba4e3a76440576c477783ee70065521d04b9a — implement canonical candle sequence model.
+- 96e5fe0e9bc98fb2d2afae3233369a6bd55309ee — add observation invariant regressions.
+- a9dde27d18eb93bc1c0fdabded3ea200b62bbe7f — add canonical sequence model regressions.
+
+### Disposition
+
+LAYER 1 PYTHON SEMANTIC ALIGNMENT: PASS AFTER CORRECTIONS.
+
+One ownership refactor remains deliberately deferred: implementation-level sequence/evidence state must ultimately have a neutral/shared owner rather than being duplicated or imported backward from Layer 8.
