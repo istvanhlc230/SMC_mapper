@@ -321,8 +321,8 @@ def test_two_candle_displacement_exception_counts_collective_taken_extremes():
         c("p4", "8", "9", "2", "8"),
         c("p5", "8", "9", "1", "8"),
         c("s", "5", "10", "5", "9"),
-        c("outlier1", "8", "9", "0.5", "7"),
-        c("outlier2", "7", "9", "0", "7.5"),
+        c("outlier1", "8", "9", "2.5", "7"),
+        c("outlier2", "7", "9", "0.5", "7.5"),
     )
     swing = structural.ConfirmedStructuralSwing(
         minor.PullbackDirection.BULLISH, Decimal("10"), "s", "idm", "s"
