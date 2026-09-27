@@ -32,10 +32,10 @@ Ordinary CHoCH requires a governing Protected Opposing Structural Extreme. In th
 | `one timeframe is all you need.txt` | Conceptual overview; only established trend examples. No relevant rule. |
 
 ## 6. Cross-Source Reconciliation
-Every single primary and supplementary source explains canonical structural components using an already-established context (where a dealing range, trend, or swing is clearly identifiable). There is no conflict among sources because none explicitly define the complete deterministic initialization lifecycle from raw cold-start historical data before any governing protected boundary exists.
+The audited primary and identified relevant supplementary sources explain canonical structural components using an already-established context (where a dealing range, trend, or swing is clearly identifiable). There is no conflict among these audited sources because none explicitly define the complete deterministic initialization lifecycle from raw cold-start historical data before any governing protected boundary exists.
 
 ## 7. Semantic Ownership
-Layer 3 (`03_structural_semantic_authority.md`) is the semantic owner of `BOOTSTRAP_EXPANSION` and the first IDM takeout lifecycle. The lack of a deterministic cold-start initialization rule is an L3 methodological gap. 
+Layer 3 (`03_structural_semantic_authority.md`) is the semantic owner of `BOOTSTRAP_EXPANSION` and the first IDM takeout lifecycle. The lack of a deterministic cold-start initialization rule is a canonical specification gap concerning cold-start initialization/orchestration.
 
 ## 8. Final Classification
 **TRUE CANONICAL GAP**
@@ -50,7 +50,7 @@ No source defines deterministic first-regime initialization.
 
 ## 10. Required Next Action
 **PROPOSED — USER APPROVAL REQUIRED**
-A deterministic initialization rule must be explicitly chosen and approved to allow the L8 orchestrator to safely transition out of the cold-start window without fabricating unauthorized structural objects. (e.g. wait for the complete IDM → swing → retracement → BOS lifecycle to organically establish the first regime).
+A deterministic initialization rule must be explicitly chosen and approved to allow the L8 orchestrator to safely transition out of the cold-start window without fabricating unauthorized structural objects. A proposed implementation/policy approach (which is NOT a canonical SMC rule) is to wait for the complete IDM → swing → retracement → BOS lifecycle to organically establish the first regime.
 
 ## 11. Test Result
 Command: `python -m pytest`
