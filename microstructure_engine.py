@@ -352,6 +352,23 @@ def transfer_low_reference(active: ExtremeReference, candle: Candle) -> ExtremeR
     return ExtremeReference(candle.low, candle.candle_id, "ACTIVE_LOW")
 
 
+
+def candle_internal_sequence_model(candle: Candle) -> tuple[str, ...] | None:
+    """Return the canonical candle-formation model, not historical path evidence.
+
+    Bullish candles use OLHC; bearish candles use OHLC. A doji has no canonical
+    directional formation model in Layer 1 and therefore returns None rather
+    than manufacturing a sequence.
+    """
+    if not isinstance(candle, Candle):
+        raise QuarantineError("sequence model requires a Layer 1 Candle")
+    if candle.close > candle.open:
+        return ("OPEN", "LOW", "HIGH", "CLOSE")
+    if candle.close < candle.open:
+        return ("OPEN", "HIGH", "LOW", "CLOSE")
+    return None
+
+
 def candle_trend(previous: Candle, current: Candle) -> TrendObservation:
     """Classify the canonical candle-level directional relationship.
 
@@ -420,7 +437,7 @@ __all__ = [
     "BreachMode", "BreachObservation", "Candle", "Direction", "EqualityObservation",
     "EvidenceEnvelope", "ExtremeReference", "InsideBarObservation", "QuarantineError",
     "SequenceEvidence", "SequenceStatus", "TrendDirection", "TrendObservation",
-    "OutsideBarObservation", "candle_trend", "classify_breach", "equal_high", "equal_low",
+    "OutsideBarObservation", "candle_internal_sequence_model", "candle_trend", "classify_breach", "equal_high", "equal_low",
     "inside_bar", "is_inside_bar", "is_outside_bar", "outside_bar", "transfer_high_reference",
     "transfer_low_reference", "validate_hermetic_layer1",
 ]
