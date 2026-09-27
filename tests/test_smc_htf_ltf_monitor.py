@@ -71,6 +71,44 @@ def test_selective_mutation_and_untouched_state(mock_zones_config):
     finally:
         os.remove(config_path)
 
+def test_persistent_target_reached_no_repeat_notification(mock_zones_config):
+    """
+    TARGET_ACTIVE -> price reaches target -> TARGET_REACHED -> state persisted to zones.json 
+    -> monitor reloads configuration -> target remains TARGET_REACHED 
+    -> same target is evaluated again -> NO second TARGET_REACHED notification
+    """
+    with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.json') as tmp:
+        json.dump(mock_zones_config, tmp)
+        config_path = tmp.name
+
+    try:
+        with patch.object(Notifier, 'alert') as mock_alert:
+            monitor = Monitor(config_path=config_path)
+            monitor.load_config()
+
+            mock_candle_a = Candle(timestamp=datetime.now(), high=105.0, low=95.0)
+            candles = {"TEST_TICKER_A": mock_candle_a}
+            
+            monitor.evaluate(candles)
+            
+            assert monitor.targets[0].state == "TARGET_REACHED"
+            mock_alert.assert_called_once()
+            mock_alert.reset_mock()
+            
+            # monitor reloads configuration
+            monitor2 = Monitor(config_path=config_path)
+            monitor2.load_config()
+            
+            assert monitor2.targets[0].state == "TARGET_REACHED"
+            
+            # same target is evaluated again
+            monitor2.evaluate(candles)
+            
+            # NO second TARGET_REACHED notification
+            mock_alert.assert_not_called()
+    finally:
+        os.remove(config_path)
+
 def test_malformed_targets():
     malformed_config = {
         "setups": [
@@ -94,25 +132,11 @@ def test_malformed_targets():
             monitor.load_config()
 
             # All malformed targets should fail closed to INVALID_STATE and have target_price None
-            assert monitor.targets[0].state == "INVALID_STATE"
-            assert monitor.targets[0].target_price is None
+            for i in range(6):
+                assert monitor.targets[i].state == "INVALID_STATE"
+                assert monitor.targets[i].target_price is None
             
-            assert monitor.targets[1].state == "INVALID_STATE"
-            assert monitor.targets[1].target_price is None
-            
-            assert monitor.targets[2].state == "INVALID_STATE"
-            assert monitor.targets[2].target_price is None
-            
-            assert monitor.targets[3].state == "INVALID_STATE"
-            assert monitor.targets[3].target_price is None
-            
-            assert monitor.targets[4].state == "INVALID_STATE"
-            assert monitor.targets[4].target_price is None
-            
-            assert monitor.targets[5].state == "INVALID_STATE"
-            assert monitor.targets[5].target_price is None
-            
-            # Valid neighbor is active and has valid target_price
+            # Valid neighbor is active
             assert monitor.targets[6].state == "TARGET_ACTIVE"
             assert monitor.targets[6].target_price == 100.0
 
@@ -139,9 +163,8 @@ def test_malformed_targets():
                 persisted = json.load(f)
             
             # Malformed ones remain untouched in JSON (no state field added)
-            assert "state" not in persisted["setups"][0]
-            assert "state" not in persisted["setups"][1]
-            assert "state" not in persisted["setups"][2]
+            for i in range(6):
+                assert "state" not in persisted["setups"][i]
             
             # Valid one got its state updated
             assert persisted["setups"][6]["state"] == "TARGET_REACHED"
