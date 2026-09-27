@@ -1853,3 +1853,48 @@ The existing observability/evidence classes (`SequenceStatus`, `SequenceEvidence
 
 ### Status
 **Layer 1 concrete semantic defect corrected. Layer 1 remains subject to final regression/ownership audit before Layer 2 implementation work continues.**
+
+
+## LAYER 1 CANONICAL + KNOWLEDGEBASE AUDIT — 2026-09-27
+
+Re-audited Layer 1 after the clarification that a wick is a physical candle-level breach regardless of the breach candle's type.
+
+### Source cross-check
+
+The audit explicitly cross-checked multiple independent knowledgebase references, with higher significance given to repeated/convergent statements:
+- `knowledgebase/sources/truesmc2026.txt`: candlestick-based uptrend uses the previous bullish candle high with low protection; the candle taking the previous bullish candle's low may be bullish or bearish; the same principle applies in the bearish scenario.
+- `knowledgebase/sources/true_smc123.txt`: explicitly states that a valid pullback's break may be by wick or candle close, and that the candle making the break may be bullish or bearish; candle color does not determine breach validity.
+- `knowledgebase/sources/true_smc_21dayBootCamp.txt`: repeated candle-level uptrend/downtrend and pullback examples support wick-based takeout and distinguish the prevailing/reference candle from the candle performing the takeout.
+- `knowledgebase/sources/market_structure_mapping_update.txt`: repeated examples distinguish wick breaks from later structural validation; a wick is a physical break at the relevant candle/reference level, while structural qualification is a downstream concept.
+- `knowledgebase/sources/major_minor_inducement.txt`: corroborates the downstream distinction between pullback/takeout events and BOS/IDM structural consequences.
+
+### Finding
+
+The prior Python correction was directionally correct only when interpreted precisely:
+- the **reference candle** must be the applicable bullish/bearish candle for Candlestick-Based Trend;
+- the **breach candle's color is irrelevant**;
+- a wick penetration is already a physical Candle Extreme Breach;
+- an Outside Bar breaches both reference extremes geometrically; aggregate OHLC may leave only the intrabar order unavailable.
+
+The ambiguity was in Layer 1 wording, not in the canonical requirement that the reference candle be directional.
+
+### Correction
+
+`.agents/skills/smc/01_micro_structure.md` was clarified to explicitly separate:
+1. reference-candle direction;
+2. breach-candle color;
+3. physical wick breach;
+4. Outside-Bar dual breach versus unavailable intrabar order.
+
+Regression tests were extended so a bullish reference can be breached by a bearish candle and a bearish reference can be breached by a bullish candle, while retaining the requirement that the reference candle itself has the canonical direction.
+
+### Commits
+
+- `5b4bc3bf23a80af1f0739229a9f8a0dcd7d165fe` — clarify Layer 1 breach color independence.
+- `532b1786798762fe2e5f812f7f633ea0933add2d` — add breach candle color regression coverage.
+
+### Disposition
+
+**Layer 1 canonical ambiguity CLOSED.**
+
+No canonical rule was changed. The skill now explicitly reflects the multi-source rule: **wick/physical breach is independent of the breach candle's color; Candlestick-Based Trend still identifies its directional reference from the applicable previous bullish/bearish candle.**
