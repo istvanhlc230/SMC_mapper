@@ -28,7 +28,7 @@ class TargetSetup:
     target_id: str
     target_type: str
     provenance: str
-    target_price: float
+    target_price: Optional[float]
     state: str = "TARGET_ACTIVE" # TARGET_ACTIVE -> TARGET_REACHED
     original_index: int = -1 # to map back to the setup array
     is_dirty: bool = False # track if we need to mutate the JSON
@@ -75,7 +75,7 @@ class Monitor:
                             computed_state = "INVALID_STATE"
                             
                         target_val = item.get("target")
-                        target_price = 0.0
+                        target_price = None
                         if target_val is None:
                             computed_state = "INVALID_STATE"
                         else:
@@ -83,8 +83,10 @@ class Monitor:
                                 target_price = float(target_val)
                                 if math.isnan(target_price) or math.isinf(target_price):
                                     computed_state = "INVALID_STATE"
+                                    target_price = None
                             except (ValueError, TypeError):
                                 computed_state = "INVALID_STATE"
+                                target_price = None
                             
                         supplied_provenance = item.get("provenance")
                         provenance_val = supplied_provenance if supplied_provenance else f"Configuration Setup ID: {item.get('name', 'UNKNOWN')}"
@@ -151,7 +153,7 @@ class Monitor:
     def evaluate(self, candles: Dict[str, Candle]):
         state_changed = False
         for t in self.targets:
-            if t.state != "TARGET_ACTIVE":
+            if t.state != "TARGET_ACTIVE" or t.target_price is None:
                 continue
                 
             c = candles.get(t.ticker)

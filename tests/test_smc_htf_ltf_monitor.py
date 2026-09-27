@@ -93,16 +93,28 @@ def test_malformed_targets():
             monitor = Monitor(config_path=config_path)
             monitor.load_config()
 
-            # All malformed targets should fail closed to INVALID_STATE
+            # All malformed targets should fail closed to INVALID_STATE and have target_price None
             assert monitor.targets[0].state == "INVALID_STATE"
-            assert monitor.targets[1].state == "INVALID_STATE"
-            assert monitor.targets[2].state == "INVALID_STATE"
-            assert monitor.targets[3].state == "INVALID_STATE"
-            assert monitor.targets[4].state == "INVALID_STATE"
-            assert monitor.targets[5].state == "INVALID_STATE"
+            assert monitor.targets[0].target_price is None
             
-            # Valid neighbor is active
+            assert monitor.targets[1].state == "INVALID_STATE"
+            assert monitor.targets[1].target_price is None
+            
+            assert monitor.targets[2].state == "INVALID_STATE"
+            assert monitor.targets[2].target_price is None
+            
+            assert monitor.targets[3].state == "INVALID_STATE"
+            assert monitor.targets[3].target_price is None
+            
+            assert monitor.targets[4].state == "INVALID_STATE"
+            assert monitor.targets[4].target_price is None
+            
+            assert monitor.targets[5].state == "INVALID_STATE"
+            assert monitor.targets[5].target_price is None
+            
+            # Valid neighbor is active and has valid target_price
             assert monitor.targets[6].state == "TARGET_ACTIVE"
+            assert monitor.targets[6].target_price == 100.0
 
             mock_candle = Candle(timestamp=datetime.now(), high=105.0, low=95.0)
             # Evaluate all
