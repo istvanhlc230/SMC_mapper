@@ -412,29 +412,47 @@ def _outlier_condition(
     direction: PullbackDirection,
     all_candles: tuple[Candle, ...],
 ) -> bool:
+    """Validate the explicit 1/2-candle displacement exception.
+
+    The exceptional candle(s) collectively must take at least five immediately
+    preceding candle bodies/extremes. The count is over unique preceding
+    candles, so two displacement candles cannot double-count the same reference.
+    """
     if not window:
         return False
-    exceptional = max(window, key=lambda c: c.high - c.low)
-    exceptional_index = next(
-        i for i, c in enumerate(all_candles) if c.candle_id == exceptional.candle_id
-    )
+
+    positions = _index(all_candles)
+    exceptional = sorted(
+        window,
+        key=lambda c: c.high - c.low,
+        reverse=True,
+    )[:2]
+    earliest = min(positions[c.candle_id] for c in exceptional)
     preceding = list(
         all_candles[
-            max(0, exceptional_index - MIN_OUTLIER_EXTREMES_TAKEN):exceptional_index
+            max(0, earliest - MIN_OUTLIER_EXTREMES_TAKEN):earliest
         ]
     )
     if len(preceding) < MIN_OUTLIER_EXTREMES_TAKEN:
         return False
+
     if direction is PullbackDirection.BULLISH:
-        extreme = exceptional.low
         return sum(
-            extreme < c.low or extreme < min(c.open, c.close)
-            for c in preceding
+            any(
+                candidate.low < ref.low
+                or candidate.low < min(ref.open, ref.close)
+                for candidate in exceptional
+            )
+            for ref in preceding
         ) >= MIN_OUTLIER_EXTREMES_TAKEN
-    extreme = exceptional.high
+
     return sum(
-        extreme > c.high or extreme > max(c.open, c.close)
-        for c in preceding
+        any(
+            candidate.high > ref.high
+            or candidate.high > max(ref.open, ref.close)
+            for candidate in exceptional
+        )
+        for ref in preceding
     ) >= MIN_OUTLIER_EXTREMES_TAKEN
 
 
