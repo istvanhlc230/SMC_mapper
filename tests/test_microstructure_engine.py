@@ -143,6 +143,22 @@ def test_trend_is_only_candle_level():
     assert m.candle_trend(p, d).direction is m.TrendDirection.BEARISH
 
 
+def test_candle_trend_requires_directional_reference_candle():
+    bullish_reference = c("b", "5", "10", "2", "9")
+    bullish_current = c("u", "9", "11", "2", "10")
+    assert m.candle_trend(bullish_reference, bullish_current).direction is m.TrendDirection.BULLISH
+
+    bearish_reference = c("d", "9", "10", "1", "8")
+    bearish_current = c("x", "8", "9", "0", "7")
+    assert m.candle_trend(bearish_reference, bearish_current).direction is m.TrendDirection.BEARISH
+
+    # Matching geometry alone must not manufacture a directional trend from
+    # a doji or from a reference candle of the opposite direction.
+    doji = c("z", "5", "10", "2", "5")
+    assert m.candle_trend(doji, bullish_current).direction is m.TrendDirection.UNDEFINED
+    assert m.candle_trend(bearish_reference, bullish_current).direction is m.TrendDirection.UNDEFINED
+
+
 def test_hermetic_ast_has_no_layer2_plus_symbols():
     violations = m.validate_hermetic_layer1(inspect.getsource(m))
     assert violations == ()
