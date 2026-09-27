@@ -43,7 +43,6 @@ class LiquiditySide(str, Enum):
 class PullbackResolution(str, Enum):
     NONE = "NONE"
     CONFIRMED = "CONFIRMED"
-    PENDING_UNAVAILABLE_SEQUENCE = "PENDING_UNAVAILABLE_SEQUENCE"
     INVALIDATED_UNAVAILABLE_SEQUENCE = "INVALIDATED_UNAVAILABLE_SEQUENCE"
 
 
@@ -110,26 +109,6 @@ class CandleLevelValidPullback:
 
 
 @dataclass(frozen=True, slots=True)
-class PendingPullback:
-    direction: PullbackDirection
-    reference_candle_id: str
-    start_candle_id: str
-    reason: PullbackResolution
-
-    def __post_init__(self) -> None:
-        if not isinstance(self.direction, PullbackDirection):
-            raise QuarantineError("invalid pending pullback direction")
-        for value, name in (
-            (self.reference_candle_id, "reference_candle_id"),
-            (self.start_candle_id, "start_candle_id"),
-        ):
-            if not isinstance(value, str) or not value:
-                raise QuarantineError(f"pending pullback requires {name}")
-        if self.reason is not PullbackResolution.PENDING_UNAVAILABLE_SEQUENCE:
-            raise QuarantineError("pending pullback requires unavailable-sequence reason")
-
-
-@dataclass(frozen=True, slots=True)
 class InvalidatedPullback:
     direction: PullbackDirection
     reference_candle_id: str
@@ -162,35 +141,18 @@ class ActivePullbackState:
 class MinorStructureAnalysis:
     pullbacks: tuple[CandleLevelValidPullback, ...]
     active: ActivePullbackState
-    pending: tuple[PendingPullback, ...] = ()
     invalidated: tuple[InvalidatedPullback, ...] = ()
+    resolution: PullbackResolution = PullbackResolution.NONE
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "pullbacks", tuple(self.pullbacks))
-        object.__setattr__(self, "pending", tuple(self.pending))
         object.__setattr__(self, "invalidated", tuple(self.invalidated))
-        if self.pullbacks:
-            if self.active.pullback is not self.pullbacks[-1]:
-                raise QuarantineError("active pullback must be the newest completed pullback")
-        if any(not isinstance(p, PendingPullback) for p in self.pending):
-            raise QuarantineError("pending state must contain only PendingPullback objects")
+        if not isinstance(self.resolution, PullbackResolution):
+            raise QuarantineError("invalid Layer-2 resolution")
+        if self.pullbacks and self.active.pullback is not self.pullbacks[-1]:
+            raise QuarantineError("active pullback must be the newest completed pullback")
         if any(not isinstance(p, InvalidatedPullback) for p in self.invalidated):
             raise QuarantineError("invalidated state must contain only InvalidatedPullback objects")
-
-    @property
-    def resolution(self) -> PullbackResolution:
-        # Resolution describes the latest unresolved/confirmed state, not
-        # whether historical pullbacks exist. A newer pending candidate must
-        # therefore take precedence over older completed pullbacks.
-        if self.latest_resolution is not None:
-            return self.latest_resolution
-        if self.pending:
-            return PullbackResolution.PENDING_UNAVAILABLE_SEQUENCE
-        if self.pullbacks:
-            return PullbackResolution.CONFIRMED
-        if self.invalidated:
-            return PullbackResolution.INVALIDATED_UNAVAILABLE_SEQUENCE
-        return PullbackResolution.NONE
 
 
 def _validate_candles(candles: tuple[Candle, ...]) -> None:
@@ -295,7 +257,6 @@ def detect_valid_pullbacks(
         return MinorStructureAnalysis((), ActivePullbackState(None))
 
     completed: list[CandleLevelValidPullback] = []
-    pending: list[PendingPullback] = []
     invalidated: list[InvalidatedPullback] = []
     latest_resolution = PullbackResolution.NONE
     reference: Candle | None = None
@@ -415,26 +376,10 @@ def detect_valid_pullbacks(
             # to establish the next applicable reference.
             reference = None
 
-    # A pending candidate is meaningful only if it is still unresolved.
-    # Remove stale pending records once a later observable completion confirms
-    # the same candidate.
-    unresolved: list[PendingPullback] = []
-    completed_keys = {
-        (p.reference_candle_id, p.start_candle_id)
-        for p in completed
-    }
-    seen_pending: set[tuple[str, str]] = set()
-    for p in pending:
-        key = (p.reference_candle_id, p.start_candle_id)
-        if key not in completed_keys and key not in seen_pending:
-            unresolved.append(p)
-            seen_pending.add(key)
-
     active = ActivePullbackState(completed[-1] if completed else None)
     return MinorStructureAnalysis(
         tuple(completed),
         active,
-        tuple(unresolved),
         tuple(invalidated),
         latest_resolution,
     )
@@ -446,7 +391,6 @@ __all__ = [
     "InvalidatedPullback",
     "LiquiditySide",
     "MinorStructureAnalysis",
-    "PendingPullback",
     "PullbackDerivedLiquidityReference",
     "PullbackDirection",
     "PullbackResolution",
