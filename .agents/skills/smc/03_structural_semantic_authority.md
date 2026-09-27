@@ -197,15 +197,17 @@ MINOR_IDM
 
 VALID_BOS
         ↓
-        ├─ NEW MAJOR IDM QUALIFIED
-        │      ↓
-        │   MAJOR_IDM becomes active
-        │
-        └─ MINOR IDM ONLY / NO NEW MAJOR IDM
-               ↓
-        PRIOR PROTECTED EXTERNAL BOUNDARY
-               ↓
-           REMAINS MAJOR IDM
+POST-BOS LAYER-2 VALID PULLBACK
+        ↓
+VERIFIED PULLBACK EXTREME
+        ↓
+MAJOR_IDM becomes active
+
+If no new post-BOS valid pullback / verified extreme exists:
+        ↓
+PRIOR PROTECTED EXTERNAL BOUNDARY
+        ↓
+REMAINS MAJOR IDM
 ```
 
 In a bullish range, the protected external boundary is the prior protected low; in a bearish range it is the prior protected high. The associated external liquidity serves as the governing Major IDM reference while no newer Major IDM has been established.
