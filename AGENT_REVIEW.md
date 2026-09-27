@@ -2093,3 +2093,74 @@ GitHub Actions full test suite for final audit commit ef4341a8a7f4beab5d1401dd6e
 **LAYER 3 CANONICAL + KNOWLEDGEBASE RE-AUDIT = PASS / APPROVED.**
 
 Layer 3 is now aligned with the canonical semantic owner, source evidence, downstream BOS contract, and executable regression coverage. Proceeding to Layer 4 is permitted.
+
+
+## LAYER 4 PYTHON + CANONICAL + KNOWLEDGEBASE AUDIT — 2026-09-27
+
+### Scope
+Audited the current Layer-4 canonical contract against:
+- `.agents/skills/smc/04_BOS_mechanics.md`
+- `.agents/skills/smc/03_structural_semantic_authority.md`
+- `.agents/skills/smc/05_CHOCH_mechanics.md`
+- `.agents/skills/smc/08_implementation.md`
+- `.agents/skills/smc/methodology_parameters.md`
+- current Layer-3 Python implementation and tests
+- `knowledgebase/03_SOURCE_EVIDENCE.md`
+- `knowledgebase/reference/02_market_structure.md`
+- `knowledgebase/reference/03_pullback_retracement.md`
+- convergent source material including `market_structure_mapping_update.txt`, `major_minor_inducement.txt`, `is_wick_a_bos.txt`, and `smc_trader_another_missing_piece.txt`.
+
+### Canonical findings
+
+1. **BOS semantic ownership = aligned.**
+   Layer 4 is subordinate to Layer 3. Layer 3 owns Confirmed Structural Swing and retracement qualification; Layer 4 owns detailed continuation-break mechanics.
+
+2. **Physical external break = aligned.**
+   A wick or body penetration beyond the eligible Confirmed Structural Swing is a physical Structural Swing Break. Equality/touch is not a break.
+
+3. **VALID_BOS gate = aligned.**
+   The canonical gate remains:
+   `IDM_TAKEN AND MAJOR_RETRACEMENT_QUALIFIED AND STRUCTURAL_SWING_BREAK`.
+   Layer 4 must consume the stored Layer-3 qualification and must not recompute 50%, 38.2%, opposing-candle count, displacement-outlier, or HTF-pullback rules.
+
+4. **Major IDM exclusion = aligned.**
+   A physical wick breach of a tested level carrying Major-IDM provenance is `MAJOR_IDM_SWEEP`, not `VALID_BOS`. The knowledgebase repeatedly supports the external-wick exception for Major IDM provenance.
+
+5. **Impulse-extension path = aligned.**
+   A continuation external break without the stored Layer-3 qualification is not VALID_BOS and must not roll the range.
+
+6. **BOS / CHoCH boundary = aligned.**
+   Layer 4 must not classify opposing-boundary CHoCH semantics; those remain Layer-5-owned.
+
+7. **Post-BOS Major IDM contract = reconciled.**
+   The earlier contradictory post-BOS Major-IDM branch is already corrected. Layer 4 consumes the current Layer-3 post-BOS pullback/verified-extreme lifecycle.
+
+### Blocking implementation findings
+
+1. **No canonical Layer-4 Python implementation currently exists.**
+   The repository has `structural_engine.py` and Layer-3 tests, but no retained `bos_engine.py` and no Layer-4 BOS regression suite. Therefore executable Layer-4 semantic alignment cannot be declared PASS.
+
+2. **Layer-3 boundary-Major-IDM execution state is incomplete for Layer-4 consumption.**
+   When no new post-BOS valid pullback exists, Layer 3 correctly creates a Protected External Boundary-derived Major IDM fallback. However, the current `analyze_layer3()` path does not evaluate physical takeout of that boundary-derived IDM, populate `IDM_TAKEN` provenance, or establish the corresponding structural event needed by a downstream BOS/CHoCH consumer. This is a cross-layer implementation gap exposed by the Layer-4 audit and must be resolved before Layer 4 can be considered runtime-complete.
+
+3. **Execution-phase provenance needs an explicit contract.**
+   The canonical BOS document distinguishes Qualification Phase from later Execution Phase. The current Layer-3 `RetracementQualification` does not persist a qualification-end candle identifier, so a future Layer-4 engine must receive an explicit, validated execution-phase boundary rather than infer it from raw OHLC or recompute Layer-3 qualification.
+
+### Correction disposition
+
+- An initial Layer-4 scaffold was created only to test the boundary assumptions, but it was intentionally reverted because it could not safely consume the unresolved Protected-External-Boundary IDM lifecycle without inventing semantics.
+- No incomplete Layer-4 implementation remains in the repository.
+- No canonical rule was changed.
+- The identified Layer-3 boundary-IDM lifecycle gap is now explicitly recorded for correction before the Layer-4 implementation is finalized.
+
+### Runtime verification
+
+The repository's `.github/workflows/tests.yml` runs the full pytest suite on pushes to `main`. The available workflow-run interface exposes no run for the direct push commits used during this audit, so a fresh CI PASS is **not claimed** for this audit.
+
+### Disposition
+
+**LAYER 4 CANONICAL AUDIT = PASS.**
+
+**LAYER 4 PYTHON IMPLEMENTATION AUDIT = BLOCKED / NOT APPROVED.**
+
+The canonical Layer-4 specification is internally aligned and knowledgebase-convergent, but implementation work must first resolve the Protected External Boundary → IDM_TAKEN / structural-event handoff and establish explicit execution-phase provenance. Only then should the retained `bos_engine.py` implementation and Layer-4 regression suite be introduced and runtime-verified.
