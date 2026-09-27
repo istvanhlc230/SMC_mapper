@@ -150,3 +150,25 @@ def test_protected_boundary_with_major_idm_provenance_wick_is_major_idm_sweep():
         confirmation_gate_open=True,
     )
     assert result.resolution is choch_engine.CHoCHResolution.MAJOR_IDM_SWEEP
+
+def test_ltf_reference_requires_active_structural_glitch_context():
+    idm = structural.IDMEvent(
+        structural.IDMClass.MINOR_IDM,
+        structural.IDMOrigin.PULLBACK_DERIVED,
+        PullbackDirection.BULLISH,
+        Decimal("10"),
+        "idm-source",
+        "pb-ref",
+        "pb-done",
+    )
+    ref = choch_engine.reference_from_ltf_idm(idm)
+    try:
+        choch_engine.detect_choch(
+            (c("wick", "10.2", "10.4", "9.8", "10.1"),),
+            ref,
+            confirmation_gate_open=True,
+        )
+    except structural.QuarantineError:
+        pass
+    else:
+        raise AssertionError("LTF CHoCH reference must require active Structural Glitch context")
