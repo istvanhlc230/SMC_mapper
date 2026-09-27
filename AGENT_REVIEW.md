@@ -2040,3 +2040,56 @@ GitHub Actions full test suite for commit abdfb0169445095c113bdf8e89e4d33c48b5b6
 **LAYER 3 PYTHON CORRECTIONS = IMPLEMENTED AND RUNTIME-VERIFIED.**
 
 A fresh canonical Layer-3 semantic re-audit is still required before declaring Layer 3 fully approved and proceeding to Layer 4.
+
+
+## LAYER 3 FULL CANONICAL + KNOWLEDGEBASE RE-AUDIT — 2026-09-27
+
+Fresh Layer-3 audit completed against the current canonical skill, methodology parameters, subordinate BOS/CHoCH contracts, and the organized knowledgebase/source-evidence layer.
+
+### Findings and corrections
+
+1. **Post-BOS Major IDM historical immutability**
+   - Found a semantic implementation defect: only the newest post-BOS pullback was classified as Major IDM, which would retroactively downgrade earlier post-BOS Major IDM events to Minor IDM.
+   - Corrected: every completed post-BOS Layer-2 Valid Pullback → Verified Pullback Extreme is recorded as a Major IDM event; the newest is active. Historical IDM classifications remain immutable.
+   - This now matches the Layer-3 authority and source-backed major/minor timing.
+
+2. **Protected-boundary fallback was over-required**
+   - Found an implementation restriction: the IDM lifecycle context required a Protected External Boundary even when a new post-BOS valid pullback already existed.
+   - Corrected: a post-BOS Major IDM can be established directly from validated Layer-2 state. The protected boundary is required only when no new post-BOS valid pullback exists and fallback is actually needed.
+   - VALID_BOS provenance remains mandatory.
+
+3. **Two-candle displacement exception**
+   - Found a remaining implementation gap: the outlier logic selected only the single largest candle, while the canonical methodology explicitly permits the 2-candle reduced case when the unusually large candle(s) collectively take at least five preceding bodies/extremes.
+   - Corrected to evaluate up to two exceptional candles collectively against five unique immediately preceding candle bodies/extremes.
+   - Added a regression test proving the collective case.
+
+4. **BOS subordinate-document contradiction**
+   - The BOS mechanics document still contained the older NEW MAJOR IDM QUALIFIED / MINOR IDM ONLY post-BOS branch, which contradicted the current Layer-3 owner.
+   - Corrected the subordinate contract to consume the validated Layer-2 post-BOS pullback / verified-extreme state directly, with Protected External Boundary only as fallback when no new post-BOS valid pullback exists.
+
+### Canonical checks
+
+- Major/External Structure remains Layer-3-owned.
+- Layer 2 remains the owner of Candle-Level Valid Pullback and Verified Pullback Extreme.
+- IDM takeout remains physical wick/body penetration; equality/touch is not takeout.
+- IDM takeout confirms the structural swing but does not itself create VALID_BOS.
+- Normal retracement remains >=3 opposing closing candles.
+- 2-candle retracement remains exception-only.
+- 1-candle displacement remains explicit exception-only.
+- 50% remains standard equilibrium.
+- 38.2%–<50% remains conditional on the applicable immediate HTF valid-pullback path.
+- BOS remains downstream consumption of Layer-3 qualification; no BOS mechanics were moved into Layer 3.
+- CHoCH/POI/RR/target semantics remain outside Layer-3 implementation ownership.
+- No source gap remains for the audited Layer-3 lifecycle rules; the knowledgebase evidence converges on recent valid-pullback IDM, post-BOS Major IDM timing, IDM takeout → confirmed swing, and subsequent BOS.
+
+### Runtime verification
+
+GitHub Actions full test suite for final audit commit ef4341a8a7f4beab5d1401dd6e3c7f4cd4d0657c completed successfully.
+
+**Result: 67 passed, 0 failed.**
+
+### Final disposition
+
+**LAYER 3 CANONICAL + KNOWLEDGEBASE RE-AUDIT = PASS / APPROVED.**
+
+Layer 3 is now aligned with the canonical semantic owner, source evidence, downstream BOS contract, and executable regression coverage. Proceeding to Layer 4 is permitted.
