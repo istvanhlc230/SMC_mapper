@@ -1997,3 +1997,46 @@ The post-correction GitHub Actions run for commit `4898b065dc1748166f4b76c7a9446
 
 **LAYER 2 PYTHON AUDIT = PASS / APPROVED.**
 Runtime Mapper/analyzer integration remains deferred until the isolated Layer-3+ implementation sequence is independently approved.
+
+
+## LAYER 3 PYTHON FAULT CORRECTION — 2026-09-27
+
+The Layer-3 implementation faults identified during the Python audit were corrected and regression-verified against the canonical Layer-3 skill and methodology parameters.
+
+### Corrections
+
+1. **Normal retracement gate**
+   - Corrected NORMAL_RETRACEMENT_CANDLE_COUNT from 2 to the canonical 3.
+   - The 2-candle path remains only the explicit reduced-candle displacement exception.
+   - The 1-candle displacement outlier exception remains explicit.
+
+2. **Post-BOS Major IDM lifecycle**
+   - Removed the caller-supplied MajorIDMQualificationEvidence gate.
+   - A completed post-VALID_BOS Layer-2 Candle-Level Valid Pullback → Verified Pullback Extreme now directly establishes the Layer-3 Major IDM.
+   - The newest completed post-BOS valid pullback is selected as the active Major IDM.
+   - If no new post-BOS valid pullback exists, the prior Protected External Boundary remains the Major IDM.
+   - No second candle-count, depth, score, or heuristic was introduced.
+
+3. **Outlier exception scope**
+   - Restricted the >=5 preceding-body/extreme check to the five immediately preceding candles rather than allowing unrelated historical candles to satisfy the exception.
+
+4. **Canonical skill contradiction**
+   - Corrected the conflicting Major-IDM lifecycle diagram in 03_structural_semantic_authority.md so it matches the prose/source-backed rule.
+
+5. **Regression tests**
+   - Corrected the 50% equilibrium test to use three opposing closing candles.
+   - Added automatic post-BOS Major IDM coverage and newest-post-BOS selection coverage.
+   - Corrected historical pre-BOS IDM expectations: historical Minor IDM is preserved while the protected boundary becomes the active Major IDM when no post-BOS pullback exists.
+   - Corrected stale Layer-1 directional-reference regression so bullish and bearish trend tests use the appropriate reference candle direction.
+
+### Runtime verification
+
+GitHub Actions full test suite for commit abdfb0169445095c113bdf8e89e4d33c48b5b645 completed successfully.
+
+**Result: 65 passed, 0 failed.**
+
+### Disposition
+
+**LAYER 3 PYTHON CORRECTIONS = IMPLEMENTED AND RUNTIME-VERIFIED.**
+
+A fresh canonical Layer-3 semantic re-audit is still required before declaring Layer 3 fully approved and proceeding to Layer 4.
