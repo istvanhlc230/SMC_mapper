@@ -140,8 +140,10 @@ STRUCTURAL RETRACEMENT QUALIFICATION FOR BOS
            ↓
     REFERENCE SHIFT / SWING REPLACEMENT
     (Range remains unexpanded)
-            ↓
-PROTECTED_STRUCTURAL_EXTREME_LOCK + TRADING_RANGE_ROLLOVER
+           ↓
+    CONTINUE CURRENT LIFECYCLE
+    (No Protected Structural Extreme Lock,
+     No Trading Range Rollover)
 ```
 
 ---
