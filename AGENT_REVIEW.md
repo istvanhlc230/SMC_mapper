@@ -1501,3 +1501,32 @@ Scope: current main, Layers 01–04 of the canonical SMC skill.
 ### Status
 
 **LAYER 1–4 FRESH AUDIT = PASS / 1 TARGETED CORRECTION APPLIED.**
+
+
+## IMPLEMENTATION CORRECTION — LAYER 2 — 2026-09-27
+
+The canonical skill was not modified.
+
+### Finding
+minor_structure_engine.py contained an invalid active-state model:
+- MinorStructureAnalysis.resolution referenced an undeclared latest_resolution attribute.
+- The implementation still exposed PENDING_UNAVAILABLE_SEQUENCE / PendingPullback despite the canonical Layer-2 rule that an Outside-Bar UNAVAILABLE sequence is terminal for the affected candidate and cannot remain pending or be resolved retroactively.
+
+### Correction
+- Removed the active PendingPullback representation.
+- Removed PENDING_UNAVAILABLE_SEQUENCE.
+- Made the latest Layer-2 resolution an explicit immutable resolution field.
+- Preserved terminal INVALIDATED_UNAVAILABLE_SEQUENCE behavior.
+- Updated Layer-2 tests to assert the absence of the obsolete pending state.
+
+### Validation
+- GitHub write completed directly on main.
+- Canonical .agents/skills/smc/ files were not modified.
+- GitHub Actions workflow exists at .github/workflows/tests.yml and runs python -m pytest -q on pushes to main, but the available connector returned no workflow run for the correction commit, so remote test execution could not be independently verified in this session.
+
+### Commits
+- 587691f658cf2359963647de0dc9654fdf515e66 — Layer-2 implementation correction.
+- 3adf784330af3370ab9db1eff561813d7cf6827c — Layer-2 regression-test alignment.
+
+### Status
+Layer-2 implementation correction applied; formal approval remains subject to test execution and the next implementation audit.
