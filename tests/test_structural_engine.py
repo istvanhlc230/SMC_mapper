@@ -294,6 +294,25 @@ def test_38_2_to_50_requires_explicit_htf_valid_pullback():
     assert yes_htf.reason == "HTF_VALID_PULLBACK"
 
 
+def test_missing_retracement_attempt_end_is_quarantined():
+    import pytest
+    candles = (
+        c("s", "5", "10", "5", "9"),
+        c("a", "9", "9.5", "6", "7"),
+    )
+    swing = structural.ConfirmedStructuralSwing(
+        minor.PullbackDirection.BULLISH, Decimal("10"), "s", "idm", "s"
+    )
+    with pytest.raises(micro.QuarantineError):
+        structural.qualify_retracement(
+            candles,
+            swing,
+            range_high=Decimal("10"),
+            range_low=Decimal("0"),
+            attempt_end_candle_id="missing",
+        )
+
+
 def test_below_38_2_is_rejected():
     candles = (
         c("s", "5", "10", "5", "9"),
