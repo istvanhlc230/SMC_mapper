@@ -1119,7 +1119,7 @@ The `POST_CHOCH` row is intentionally not a blanket `CONFIRMATION_LOCKED` transi
 
 The transition from an unconfirmed initial expansion (`BOOTSTRAP` or post-`CHoCH_CONFIRMED` initial active impulse) to the first `VALID_BOS` operates as follows:
 - Physical takeout of the active Minor IDM establishes `IDM_TAKEN = TRUE`, confirms `CONFIRMED_STRUCTURAL_SWING`, and unlocks the Confirmation Gate (`CONFIRMATION GATE UNLOCKED` is a process condition within `CONFIRMATION_LOCKED`).
-- While the Confirmation Gate is unlocked, an `EXT_CONT_BREAK` is evaluated: if `MAJOR_RETRACEMENT_QUALIFIED == TRUE`, it produces `FIRST BOS / VALID_BOS → POST_BOS` (which locks the Protected Structural Extreme at the impulse origin and establishes the first confirmed Dealing Range); otherwise it produces `IMPULSE_EXTENSION → REMAIN`.
+- While the Confirmation Gate is unlocked, an `EXT_CONT_BREAK` is evaluated: if `MAJOR_RETRACEMENT_QUALIFIED == TRUE`, it produces `FIRST BOS / VALID_BOS → POST_BOS` (which produces E_retrace LOCKED → PROTECTED_STRUCTURAL_EXTREME, establishing the first confirmed Dealing Range); otherwise it produces `IMPULSE_EXTENSION → REMAIN`.
 
 **Specification Ambiguity / Retracement Baseline Gap:**
 Canonical True SMC strictly prohibits fabricating a governing Dealing Range or manufacturing a Protected Structural Extreme prior to `VALID_BOS`. Because `RetracementDepth` in established structure is evaluated against the active governing Dealing Range, and no confirmed Dealing Range exists prior to the first `VALID_BOS`:
@@ -1155,7 +1155,6 @@ MAJOR_IDM + WICK ≠ CHoCH
 MAJOR_IDM + BODY CLOSE ≠ AUTOMATIC CHoCH_CONFIRMED
 CONFIRMATION GATE UNLOCKED ≠ NEW STATE ENUM
 BROKEN ≠ SWEPT
-IMPULSE_EXTENSION ≠ EVENT CLASS
 PHYSICAL_EXTERNAL_BREAK ≠ STRUCTURAL_SWING_BREAK ≠ VALID_BOS
 MAJOR_IDM_SWEEP ≠ VALID_BOS ≠ CHoCH_CONFIRMED
 ```

@@ -224,3 +224,31 @@ Result: `91 passed, 0 failed, 0 skipped/xfail`
 Command: `python -m pytest`
 Result: `91 passed, 0 failed, 0 skipped/xfail`
 *Developer-local test execution; no independent GitHub Actions/CI verification.*
+
+---
+
+## 7. Phase 15 Canonical Specification Cleanup (Final Refinement)
+
+### Applied Corrections:
+1. **Removed Redundant `IMPULSE_EXTENSION` Invariant (`08_implementation.md` §49.5):**
+   - Deleted `IMPULSE_EXTENSION ≠ EVENT CLASS` from §49.5 invariants.
+   - §49.1 and §49.3 already define `IMPULSE_EXTENSION` positively as a classification outcome of `EXT_CONT_BREAK`. Removing the redundant negative invariant eliminates semantic noise while preserving the positive classification model.
+2. **Corrected First-BOS Protected Extreme Wording (`03_structural_semantic_authority.md` §3.2.1A & `08_implementation.md` §49.4.1):**
+   - Corrected step 5 in §3.2.1A to state: `FIRST BOS / VALID_BOS → E_retrace LOCKED → PROTECTED_STRUCTURAL_EXTREME, establishing the first confirmed Dealing Range (CONFIRMED_RANGE)`.
+   - Removed any phrasing implying that the Protected Structural Extreme is the impulse origin itself, strictly preserving §3.3.3 where the Protected Structural Extreme is the dynamically tracked `E_retrace` locked by `VALID_BOS`.
+
+### Confirmation of Genesis Baseline Ambiguity:
+- The Genesis / First-BOS retracement baseline ambiguity remains **OPEN, UNRESOLVED, and EXPLICITLY BOUNDED**.
+- No synthetic Dealing Range, artificial retracement baseline, or initialization heuristic was added.
+- The specification strictly preserves that prior to `VALID_BOS`, no governing Dealing Range exists, and determining the initial retracement baseline remains an implementation/policy matter until canonically specified.
+
+### Final Re-Audit Result (Chain: 03 §3.2.1A → 03 §3.3.3 → 08 §49.1/49.3/49.5):
+- `VALID_BOS` locks `E_retrace`; Protected Structural Extreme is not defined as impulse origin.
+- `IMPULSE_EXTENSION` is represented solely as a classification outcome.
+- Genesis first-BOS retracement baseline remains an explicitly documented canonical gap.
+- Clean, non-contradictory specification across all layers.
+
+### Test Result:
+Command: `python -m pytest`
+Result: `91 passed, 0 failed, 0 skipped/xfail`
+*Developer-local test execution; no independent GitHub Actions/CI verification.*

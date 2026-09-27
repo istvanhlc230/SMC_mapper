@@ -124,7 +124,7 @@ The progression from an unconfirmed initial expansion (`BOOTSTRAP_EXPANSION` or 
 2. **Pullback & Minor IDM Formation:** A completed Candle-Level Valid Pullback establishes the initial active Minor IDM reference.
 3. **IDM Takeout:** Physical takeout of the Minor IDM reference (`IDM_TAKEN = TRUE`) confirms the expansion extreme as `CONFIRMED_STRUCTURAL_SWING` and unlocks confirmation.
 4. **Retracement & Structural Break Attempt:** Price retraces and attempts a continuation break (`STRUCTURAL_SWING_BREAK`). If retracement qualification succeeds, `FIRST BOS` / `VALID_BOS` occurs; if insufficient, the event is classified as `IMPULSE_EXTENSION`.
-5. **Regime Establishment:** The first `VALID_BOS` locks the Protected Structural Extreme at the impulse origin and establishes the first confirmed Dealing Range (`CONFIRMED_RANGE`).
+5. **Regime Establishment:** FIRST BOS / VALID_BOS → E_retrace LOCKED → PROTECTED_STRUCTURAL_EXTREME, establishing the first confirmed Dealing Range (`CONFIRMED_RANGE`).
 
 **Explicit Specification Ambiguity / Retracement Baseline Gap:**
 Canonical True SMC strictly prohibits fabricating a governing Dealing Range or manufacturing a Protected Structural Extreme prior to `VALID_BOS`. Consequently:
