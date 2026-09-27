@@ -362,7 +362,7 @@ def qualify_retracement(
     if end <= start:
         return RetracementQualification(
             False, Decimal("0"), 0, htf_valid_pullback, False,
-            "NO_POST_CONFIRMATION_RETRACEMENT",
+            "NO_POST_CONFIRMATION_RETRACEMENT", qualification_end_candle_id,
         )
 
     window = candles[start + 1 : end + 1]
