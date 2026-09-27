@@ -1402,3 +1402,41 @@ A fresh audit was performed after the terminology/ownership corrections, using .
 ### Validation disposition
 FULL 01–08 CANONICAL SKILL AUDIT = PASS / CORRECTIONS APPLIED.
 No unresolved cross-layer semantic contradiction was identified in this pass. Runtime mapper/analyzer/monitor integration remains intentionally deferred until the isolated layer stack is approved.
+
+
+## FULL 01–08 CANONICAL SKILL AUDIT — 2026-09-27
+
+A fresh cross-layer audit was performed against the current `.agents/skills/smc/` authority, enforcing:
+`Define once at semantic owner → downstream reference → downstream consumption`.
+
+### Findings
+- Layer 1 Microstructure: OHLC/candle geometry, breach/equality/reference observations and observability boundary remain isolated; no downstream structural ownership leakage requiring correction was found.
+- Layer 2 Minor Structure: Candle-Level Valid Pullback → Verified Pullback Extreme → Pullback-Derived Liquidity Reference → MINOR_IDM ownership is consistent. Outside-Bar `UNAVAILABLE` handling is terminal for the affected candidate and cannot be retroactively resolved.
+- Layer 3 Major / External Structure: IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING → retracement qualification is consistent. Major IDM remains one semantic class; Minor IDM does not silently replace the active Major IDM reference.
+- Layer 4 BOS: consumes stored Layer-3 qualification and does not recompute retracement/HTF rules. VALID_BOS requires IDM_TAKEN + MAJOR_RETRACEMENT_QUALIFIED + STRUCTURAL_SWING_BREAK.
+- Layer 5 CHoCH: context/fractal routing, Major-IDM provenance and LTF Structural Glitch remain consistent. Minor LTF references are not promoted into Major Structure.
+- Layer 6 Execution: POI/OF/OB/RB/Engineering Liquidity and entry modules remain downstream consumers and do not manufacture structural state.
+- Layer 7 Risk/Targets: target selection, fixed-R, BE, profit-lock and trailing remain policy/implementation scope; TARGET_REACHED remains distinct from closure/fill/stop movement.
+- Layer 8 Implementation: layer-specific semantic types, fail-closed behavior, canonical lifecycle consumption and target/notification separation remain consistent.
+
+### Documentation defects corrected
+1. `.agents/skills/smc/skill.md`: duplicate `## 6` section numbering corrected to `## 7` for Precedence and `## 8` for Canonical document set.
+2. `.agents/skills/smc/05_CHOCH_mechanics.md`: duplicate `3.5` section numbering corrected; Canonical invariants is now `3.6`.
+
+These were documentation-consistency defects only; no SMC methodology rule was changed.
+
+### Cross-layer semantic checks
+- No active FALLBACK_MAJOR_IDM / REAL_MAJOR_IDM ontology found in the canonical layer documents.
+- No active macro namespace found in the canonical layer documents.
+- Outside-Bar candidate `PENDING` is not an active canonical state; the Layer-2 rule explicitly rejects the affected candidate when required sequence evidence is unavailable.
+- Generic Swing/Break are not defined as canonical implementation-domain objects.
+- 38.2%–<50% remains conditional on the applicable immediate HTF valid-pullback evidence; it is not a standalone threshold.
+- The one-candle displacement case remains an explicit exception and is not generalized to normal pullback qualification.
+
+### Validation
+GitHub re-read after both corrections found no duplicate numbered top-level section headings in the canonical index; the CHoCH duplicate numbering is also resolved. The semantic cross-layer audit found no remaining canonical contradiction requiring a methodology change.
+
+### Status
+**FULL 01–08 CANONICAL SKILL AUDIT = PASS / 2 DOCUMENTATION CORRECTIONS APPLIED.**
+
+Runtime Mapper/analyzer/monitor integration remains intentionally deferred.
