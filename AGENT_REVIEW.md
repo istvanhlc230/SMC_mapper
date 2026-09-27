@@ -1606,3 +1606,31 @@ Full 01–08 canonical skill audit completed against the current `main` state an
 **FULL 01–08 AUDIT: PASS after correction.**
 
 Correction commit: `b44ddfc56fc394ea74bb5eb27c455f43b45b852e`.
+
+
+## DIRECT VALIDATOR — FULL SKILL RE-AUDIT — 2026-09-27
+
+A fresh audit was performed after the previous FULL 01–08 PASS, covering the complete canonical skill set and enforcing semantic ownership: Define once at semantic owner → downstream reference → downstream consumption.
+
+### Findings
+- Layers 01–04 remain semantically consistent: Micro → Minor → Major/External → BOS ownership is intact; Layer 4 consumes Layer-3 qualification and does not recompute it.
+- Layer 5 contained one documentation invariant typo: `MAJOR_IDM ≠ MAJOR_IDM`. This was not a methodology contradiction but was logically invalid and could obscure the intended provenance boundary.
+- The typo was corrected to an explicit invariant distinguishing Major-IDM provenance from CHoCH confirmation.
+- Layers 06–08 remain consistent with structural ownership, POI/RB/Engineering-Liquidity separation, target-policy separation, and fail-closed implementation boundaries.
+- Supporting canonical documents (`methodology_parameters.md`, `trading_policy.md`, `platform_execution.md`, `countertrend_scenarios.md`, `source_reconciliation.md`, and `reconciliation/full_methodology_gap_audit.md`) were cross-checked for competing structural definitions; no additional active contradiction was found.
+
+### Regression / stale-term checks
+- No active `FALLBACK_MAJOR_IDM`, `REAL_MAJOR_IDM`, `SWING_CANDIDATE`, or `PENDING_UNAVAILABLE_SEQUENCE` terminology remains in the canonical layer files.
+- No duplicate top-level/subsection headings were found in Layers 01–08.
+- No active `IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING → CONFIRMED_RANGE` premature-range transition was found.
+- Outside-Bar `UNAVAILABLE` remains terminal for the affected Layer-2 candidate; later candles cannot retroactively complete it.
+- 38.2%–<50% remains conditional on immediate-HTF valid-pullback evidence; the one-candle displacement case remains an explicit exception, not a general rule.
+- Major IDM remains one semantic class; Minor IDM does not silently replace the active Major IDM reference.
+
+### Correction
+- `c9f7dd16965fa81852cf2b76f94a654cd9be53d1` — corrected the Layer-5 CHoCH invariant typo.
+
+### Final disposition
+**FULL 01–08 + SUPPORTING SKILL AUDIT = PASS / 1 DOCUMENTATION CORRECTION APPLIED.**
+
+No further canonical methodology correction was identified in this pass. Runtime Mapper/analyzer/monitor integration remains intentionally deferred until isolated layer implementations are independently approved.
