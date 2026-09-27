@@ -586,4 +586,47 @@ Result: `91 passed, 0 failed, 0 skipped/xfail in 0.62s`
 - Unit & regression test suite: 91 passed in 0.62s.
 - Clean git diff: modifications strictly confined to `08_implementation.md` and `AGENT_REVIEW.md`.
 
+---
+
+# TARGETED CORRECTION — L6 TARGET-INTERFACE RECONCILIATION
+
+## 1. Audit Finding
+- **Issue:** `.agents/skills/smc/06_execution.md` previously contained the statement:
+  `The primary target is the confirmed external range extreme where the applicable entry module requires it.`
+  This incorrectly defined or implied a universal "Primary Target" in Layer 6, conflicting with the downstream target resolution architecture in Layer 7 (`07_risk.md`) and Layer 8 (`08_implementation.md`).
+
+## 2. Exact Correction Applied
+- Rewrote the target/risk interface section in `.agents/skills/smc/06_execution.md` (renamed to `### Risk, Targets, and RR`) to explicitly consume and conform to the canonical downstream pipeline:
+  ```text
+  CANONICAL STRUCTURAL / LIQUIDITY TARGET CANDIDATES
+          ↓
+  CONFIGURED TARGET POLICY
+          ↓
+  RESOLVED TARGET
+          ↓
+  RR EVALUATION
+  ```
+- Explicitly specified:
+  - L6 does NOT define a universal target-selection priority or a universal "Primary Target".
+  - The confirmed external range extreme is a **canonical target candidate / structural input**, but is not automatically a universal primary target.
+  - For LTF execution, multiple source-backed conventions exist (e.g., HTF external liquidity vs. LTF structural/BOS destination); downstream target policy selects the applicable convention.
+  - For countertrend execution, no universal TP coordinate or implicit fallback target exists; destination selection is setup-specific target policy.
+  - Break-even (`BE`), profit-lock, and trailing stop rules are stop-management concepts, not structural targets.
+  - Target candidate, resolved target, and RR evaluation remain separate semantic objects.
+  - RR evaluation consumes a resolved target only after the configured target policy resolves one.
+  - If no valid target is resolved (`NO_RESOLVED_TARGET`), no target may be manufactured merely to satisfy an RR gate, and no automatic TP submission may occur.
+  - All other L6 POI / OF / OB / RB / IDM / Engineering Liquidity / entry-module rules remained unmodified.
+
+## 3. L6 → L7 → L8 Cross-Layer Validation Result
+- **L6 (Execution):** Produces canonical structural and liquidity target candidates; defines no universal winner; separates candidate discovery from trade targets.
+- **L7 (Risk):** Applies configured target policy to candidates to produce trade targets (`STRUCTURAL/LIQUIDITY TARGET INPUT → TARGET POLICY → TRADE TARGET`); manages stop boundaries and multi-leg allocations; preserves notification-only monitor boundary.
+- **L8 (Implementation):** Consumes resolved target objects for RR gating (`Projected_RR_to_Resolved_Target >= Configured_Minimum_RR`); enforces fail-closed `NO_RESOLVED_TARGET → NO_AUTOMATIC_TP_SUBMISSION`.
+- **Verdict:** Clean unidirectional ownership (`CANDIDATE DISCOVERY (L6) → TARGET POLICY RESOLUTION (L7) → RR EVALUATION & MONITOR EMISSION (L8)`). Zero conflicting priorities or semantic leaks remain.
+
+## 4. Test Result
+Command: `python -m pytest`
+Result: `91 passed, 0 failed, 0 skipped/xfail in 1.04s`
+*Developer-local test execution; no independent GitHub Actions/CI verification.*
+
+
 

@@ -945,6 +945,29 @@ A failed execution condition must not be converted into a structural event. Like
 
 Do not fail over from OF_CONFIRMED to Extreme OB solely because price wicked into or through the OF. The exact failure condition must be independently satisfied by the canonical execution module. A wick touch alone is insufficient to invent an execution-state transition.
 
-### Risk and RR
+### Risk, Targets, and RR
 
-Risk management and Reward-to-Risk (RR) gating are downstream execution/trading-policy constraints. The primary target is the confirmed external range extreme where the applicable entry module requires it. Risk management must consume structural state; it must not redefine structure. Minimum RR thresholds (e.g., 1:2) are configurable project policy, not universal canonical methodology.
+Risk management, target resolution, and Reward-to-Risk (RR) gating are downstream execution/trading-policy constraints. Canonical True SMC does NOT define a universal target-selection priority or a universal "Primary Target".
+
+The execution layer operates under the strict unidirectional pipeline:
+
+```text
+CANONICAL STRUCTURAL / LIQUIDITY TARGET CANDIDATES
+        ↓
+CONFIGURED TARGET POLICY
+        ↓
+RESOLVED TARGET
+        ↓
+RR EVALUATION
+```
+
+Required interface semantics:
+- The confirmed external range extreme is a **canonical target candidate / structural input**, but is not automatically a universal primary target.
+- For LTF execution, multiple source-backed target conventions exist (e.g., HTF external liquidity vs. LTF structural/BOS destination); the downstream target policy selects the applicable convention.
+- For countertrend execution, no universal TP coordinate or implicit fallback target exists; destination selection is setup-specific target policy.
+- Break-even (`BE`), profit-lock, and trailing stop rules are stop-management concepts, not structural targets.
+- Target candidate, resolved target, and RR evaluation remain separate semantic objects.
+- RR evaluation consumes a resolved target only after the configured target policy resolves one.
+- If no valid target is resolved (`NO_RESOLVED_TARGET`), no target may be manufactured merely to satisfy an RR gate, and no automatic TP submission may occur.
+- Minimum RR thresholds (e.g., 1:2) and RR gating are configurable project policy, not universal canonical methodology. Risk management must consume structural state; it must not redefine structure.
+
