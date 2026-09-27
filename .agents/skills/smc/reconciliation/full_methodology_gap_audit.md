@@ -452,3 +452,45 @@ The previous `FALLBACK_MAJOR_IDM` / `REAL_MAJOR_IDM` distinction was therefore r
 
 Validation requirement: no remaining canonical rule may treat `FALLBACK_MAJOR_IDM` as an event class, score category, CHoCH exception, or independent IDM type.
 
+
+## POST-BOS MAJOR IDM RE-AUDIT — 2026-09-27
+
+The previously recorded "open source-definition gap" for post-BOS Major IDM qualification was re-audited against the complete categorized knowledgebase and the current canonical layers.
+
+### Finding
+
+The gap was **false / caused by incomplete source retrieval in the prior audit**.
+
+The knowledgebase explicitly provides the missing qualification semantics:
+- market_structure_mapping_update.txt: after BOS, the recent **valid pullback** becomes the Major Inducement; the source explicitly ties the Major-Inducement designation to the fact that it occurs after the break of structure.
+- advanced_market_structure_mapping.txt: after a structural break, a new valid pullback becomes the new inducement; the source also distinguishes the post-break major role from other timeframe contexts.
+- true_smc123.txt: the inducement is the liquidity resting below/above the **recently formed valid pullback**; the source repeatedly shows that when the current continuation does not satisfy the three-opposing-candle BOS requirement, the Major Inducement shifts to the newly formed valid pullback.
+- true_smc_21dayBootCamp.txt: the normal retracement requires at least three retracing candles, while the explicitly demonstrated reduced-candle displacement case can qualify when the move is exceptionally large and takes at least five prior candle extremes.
+- knowledgebase/03_SOURCE_EVIDENCE.md: major/minor IDM timing is explicitly tied to whether the valid pullback occurs before or after BOS.
+
+### Canonical interpretation
+
+The deterministic post-BOS Major IDM qualification is not a second hidden threshold or heuristic.
+
+VALID_BOS
+→ post-BOS lifecycle
+→ **Layer-2 Candle-Level Valid Pullback**
+→ **Verified Pullback Extreme**
+→ Major IDM becomes active from that verified pullback extreme.
+
+A mere SVP, newest-candidate pointer, or caller-selected pullback is not sufficient. Layer 3 consumes the already-defined Layer-2 states; it does not invent an additional Major-IDM candle-count or retracement-depth rule.
+
+When no new post-BOS valid pullback / verified pullback extreme has established the next Major IDM, the prior protected external boundary remains the active Major IDM reference.
+
+### Corrections applied
+
+- Layer 3 now defines the qualification chain explicitly at the semantic owner.
+- Layer 4, Layer 5, and Layer 8 now reference that owner-defined chain instead of implying an undefined hidden predicate.
+- No new methodology threshold or heuristic was invented.
+- The earlier "open gap" status is closed.
+
+### Status
+
+**POST-BOS MAJOR IDM SOURCE GAP = CLOSED.**
+
+The prior audit statement claiming that the authoritative source material did not define the qualification predicate is superseded by this re-audit.
