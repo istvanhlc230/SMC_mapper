@@ -10,7 +10,7 @@ The canonical skill (`.agents/skills/smc/`) strictly enforces semantic ownership
 - **Layer 3 (Structural Semantic Authority):** PASS. Rightfully owns the 50% equilibrium requirement, the 38.2%-<50% immediate-HTF qualification, and the displacement outlier (1-candle taking >=5 extremes).
 - **Layer 4 (BOS Mechanics):** PASS. Correctly delegates retracement qualification to L3 (`MAJOR_RETRACEMENT_QUALIFIED`) and evaluates `VALID_BOS` purely via geometry without re-qualifying upstream truths. External breaks without L3 qualification cleanly result in impulse extensions.
 - **Layer 5 (CHoCH Mechanics):** PASS. Uses the correct Protected Opposing Structural Extreme or explicit LTF Structural Glitch substitution (most recent valid LTF pullback) without erroneously promoting minor structure to major structure.
-- **Layer 6 (Execution / POI):** PASS. Correctly defines exactly four entry modules: IDM Sweep, Decisional POI Mitigation, Engineering Liquidity Sweep, and Extreme POI Mitigation. Rejection Block is explicitly classified as a separate PD-array concept and is NOT an entry module or a Rule-of-Two slot.
+- **Layer 6 (Execution / POI):** PASS. Correctly defines exactly four entry modules: 1. IDM Sweep, 2. Decisional POI Mitigation, 3. Engineering Liquidity Sweep, 4. Extreme POI Mitigation. Rejection Block is explicitly classified as a separate PD-array concept and is NOT an entry module or a Rule-of-Two slot.
 - **Layer 7 (Risk):** PASS. Separates RR calculation (an entry policy gate) from target generation. Stop anchors are explicitly dictated by L6 entry modules.
 - **Layer 8 (Implementation Contract):** PASS. Translates English semantic gates into rigid state-machine implementations without modifying canonical rules.
 
@@ -43,15 +43,16 @@ The canonical skill (`.agents/skills/smc/`) strictly enforces semantic ownership
 
 ## 5. CHoCH / NO_EVIDENCE Classification
 A strict distinction is maintained between two `NO_EVIDENCE` contexts:
-- **A. `CHoCHResolution.NO_EVIDENCE`:** CANONICAL GAP. This is a genuine canonical lifecycle gap representing unformed structural arrays at chart genesis (when no Protected Opposing Structural Extreme has been established). No source rule explicitly covers this initialization state.
-- **B. POI/Execution `NO_EVIDENCE`:** IMPLEMENTATION STATE. The canonical Rule-of-Two restricts tradable POIs to at most two. If no valid Decisional or Extreme POI exists in the dealing range, the execution fails closed with `NO_EVIDENCE`. This is a fully resolved, intended canonical rule, not a gap.
+- **A. CHoCH Genesis Resolution:** CANONICAL GAP. The canonical methodology does not fully define the initial structural-resolution behavior before a governing Protected Opposing Structural Extreme exists. The code term `CHoCHResolution.NO_EVIDENCE` is merely an implementation representation of this gap, not a canonical semantic definition itself.
+- **B. POI/Execution `NO_EVIDENCE`:** INTENDED BEHAVIOR. The canonical Rule-of-Two restricts tradable POIs to at most two. If no valid Decisional or Extreme POI exists in the dealing range, the execution intentionally fails closed. This is a fully resolved canonical rule, not a gap.
 
 ## 6. Target / Risk / Trade-Management Classification
-- **Same-timeframe pro-trend target:** CANONICAL. Derived from unmitigated opposing structural objectives.
-- **LTF target source:** IMPLEMENTATION POLICY QUESTION. The source uses both external liquidity and LTF structural targets.
-- **Countertrend target:** IMPLEMENTATION POLICY QUESTION. No universal hard TP coordinate is canonically defined.
-- **Multi-leg Target Plan:** IMPLEMENTATION POLICY.
-- **RR:** IMPLEMENTATION POLICY (Gating threshold).
+- **Same-timeframe pro-trend target input/candidate:** CANONICAL. Derived from unmitigated opposing structural objectives (e.g. current Trading Range confirmed external extreme / external liquidity).
+- **Actual target selection:** IMPLEMENTATION POLICY. The methodology yields target candidates, but does not prescribe one universal executable target coordinate.
+- **LTF target selection:** IMPLEMENTATION POLICY QUESTION. The source uses both external liquidity and LTF structural targets, delegating the choice to implementation policy.
+- **Countertrend target selection:** IMPLEMENTATION POLICY. Setup-specific downstream decision. No universal hard TP coordinate is canonically defined.
+- **Target Plan:** IMPLEMENTATION / TRADING POLICY.
+- **RR:** IMPLEMENTATION POLICY (Gating threshold). RR does not create a target.
 - **Fixed-R target:** IMPLEMENTATION POLICY.
 - **BE / Profit-lock / Trailing:** IMPLEMENTATION POLICY (Position management).
 
@@ -66,7 +67,7 @@ A strict distinction is maintained between two `NO_EVIDENCE` contexts:
 - **Automatic Position Management:** Not currently implemented. BE/profit-lock/trailing remain designated exclusively as downstream trade-management policies.
 
 ## 8. Canonical Gaps
-1. **`CHoCHResolution.NO_EVIDENCE` (Chart Genesis):** Requires user decision or heuristic parameterization to handle initial structure mapping before the first governing extreme is established.
+1. **CHoCH Genesis Resolution:** The canonical rule for structural-resolution behavior before a governing Protected Opposing Structural Extreme exists is not fully defined, requiring user decision or heuristic parameterization.
 
 ## 9. Implementation Gaps
 1. **L6 Execution/Entry Python Engine:** Unimplemented.
@@ -76,4 +77,9 @@ A strict distinction is maintained between two `NO_EVIDENCE` contexts:
 ## 10. Required Next Actions
 - **Canonical Changes:** None required. The specification cleanly separates methodology from policy.
 - **Implementation Tasks:** Build `execution_engine.py` (L6), `risk_engine.py` (L7), and the full `smc_analyzer.py` (L8 orchestrator) pipeline.
-- **Source Research:** Clarify the specific parameters for chart genesis/initialization (`CHoCHResolution.NO_EVIDENCE`).
+- **Source Research:** Clarify the specific parameters for chart genesis/initialization (handling the `CHoCHResolution.NO_EVIDENCE` representation).
+
+## 11. Final Test Result
+Command: `python -m pytest`
+Result: `91 passed, 0 failed, 0 skipped/xfail`
+*Developer-local test execution; no independent GitHub Actions/CI verification.*
