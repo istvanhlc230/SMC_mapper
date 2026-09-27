@@ -390,7 +390,7 @@ Therefore:
 9. MAJOR_IDM wick breach is `MAJOR_IDM_SWEEP`, not VALID_BOS or CHoCH_CONFIRMED.
 10. `MAJOR_IDM_SWEEP` satisfies `IDM_TAKEN`; the Layer 3 owner therefore immediately establishes the associated `CONFIRMED_STRUCTURAL_SWING`. It does not by itself create `VALID_BOS`, roll the Trading Range, or lock the Protected Structural Extreme.
 11. `NEW_SVP` does not automatically create Major IDM.
-12. A new Major IDM supersedes the active Major IDM only when it independently qualifies through the validated post-BOS SVP → Verified Extreme → Layer 3 IDM Classification lifecycle.
+12. A new Major IDM supersedes the active Major IDM when the post-BOS Layer-2 **Candle-Level Valid Pullback → Verified Pullback Extreme** state is reached and consumed by Layer 3 as the Major IDM qualification event.
 13. Only `VALID_BOS` rolls the Trading Range and locks the Protected Structural Extreme.
 14. BOS event classification is anti-retroactive.
 15. BOS mechanics are subordinate to `03_structural_semantic_authority.md` and must not create a competing Layer 3 authority.
