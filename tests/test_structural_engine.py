@@ -198,12 +198,13 @@ def test_pre_bos_pullback_does_not_become_major_idm_after_bos():
         ),
     )
     events = structural.classify_idm(minor_result, candles=candles, lifecycle=lifecycle)
-    assert len(events) == 1
-    assert events[0].idm_class is structural.IDMClass.MAJOR_IDM
-    assert events[0].origin is structural.IDMOrigin.PROTECTED_EXTERNAL_BOUNDARY
+    assert len(events) == 2
+    assert events[0].idm_class is structural.IDMClass.MINOR_IDM
+    assert events[1].idm_class is structural.IDMClass.MAJOR_IDM
+    assert events[1].origin is structural.IDMOrigin.PROTECTED_EXTERNAL_BOUNDARY
 
 
-def test_qualified_retracement_at_50_percent_requires_two_opposing_closes():
+def test_qualified_retracement_at_50_percent_requires_three_opposing_closes():
     candles = (
         c("s", "5", "10", "5", "9"),
         c("a", "9", "9.5", "8", "8.5"),
