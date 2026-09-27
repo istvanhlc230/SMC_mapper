@@ -3,8 +3,8 @@ import time
 import json
 import urllib.request
 from datetime import datetime
-from dataclasses import dataclass
-from typing import List, Dict, Optional
+from dataclasses import dataclass, asdict
+from typing import List, Dict, Optional, Any
 
 class Notifier:
     @classmethod
@@ -28,7 +28,8 @@ class TargetSetup:
     target_type: str
     provenance: str
     target_price: float
-    state: str = "WAITING" # WAITING -> TARGET_REACHED
+    state: str = "TARGET_ACTIVE" # TARGET_ACTIVE -> TARGET_REACHED
+    raw_data: dict = None # Store the original JSON dict to write back cleanly
 
 class Monitor:
     """
@@ -36,7 +37,7 @@ class Monitor:
     Implements only the notification behavior required by the project phase.
     Does NOT manufacture entry semantics, does not move stops, does not close positions.
     """
-    def __init__(self, config_path: str = "targets.json"):
+    def __init__(self, config_path: str = "zones.json"):
         self.config_path = config_path
         self.targets: List[TargetSetup] = []
 
@@ -46,19 +47,38 @@ class Monitor:
                 try:
                     data = json.load(f)
                     new_targets = []
-                    for item in data.get("targets", []):
+                    # Map from the existing zones.json "setups" structure
+                    for item in data.get("setups", []):
                         new_targets.append(TargetSetup(
                             ticker=item.get("ticker", "UNKNOWN"),
                             direction=item.get("direction", "BUY"),
-                            target_id=item.get("target_id", "T1"),
-                            target_type=item.get("target_type", "UNKNOWN"),
-                            provenance=item.get("provenance", "UNKNOWN"),
-                            target_price=float(item.get("target_price", 0.0)),
-                            state=item.get("state", "WAITING")
+                            target_id=item.get("name", "T1"), # Map name to target_id
+                            target_type=item.get("target_type", "CONFIGURED_ZONE"),
+                            provenance=item.get("name", "UNKNOWN"),
+                            target_price=float(item.get("target", 0.0)),
+                            state=item.get("state", "TARGET_ACTIVE"),
+                            raw_data=item
                         ))
                     self.targets = new_targets
                 except Exception as e:
                     print(f"Error loading config: {e}")
+
+    def save_config(self):
+        if not os.path.exists(self.config_path):
+            return
+            
+        try:
+            # We preserve the original structure and just update the state field
+            output_setups = []
+            for t in self.targets:
+                raw = dict(t.raw_data) if t.raw_data else {}
+                raw["state"] = t.state
+                output_setups.append(raw)
+                
+            with open(self.config_path, "w", encoding="utf-8") as f:
+                json.dump({"setups": output_setups}, f, indent=2)
+        except Exception as e:
+            print(f"Error saving config: {e}")
 
     def fetch_candle(self, ticker: str, tf: str = "1m") -> Optional[Candle]:
         url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}?interval={tf}&range=1d"
@@ -83,6 +103,7 @@ class Monitor:
             return None
 
     def evaluate(self, candles: Dict[str, Candle]):
+        state_changed = False
         for t in self.targets:
             if t.state == "TARGET_REACHED":
                 continue
@@ -99,10 +120,14 @@ class Monitor:
                 
             if reached:
                 t.state = "TARGET_REACHED"
+                state_changed = True
                 Notifier.alert(
                     title=f"TARGET REACHED: {t.ticker}",
                     text=f"Direction: {t.direction} | Target ID: {t.target_id} | Type: {t.target_type} | Provenance: {t.provenance} | Price: {t.target_price} | Timestamp: {c.timestamp.isoformat()}"
                 )
+                
+        if state_changed:
+            self.save_config()
 
     def run(self):
         print("\033[96m>>> Downstream Target Monitor Started <<<\033[0m")
