@@ -1,6 +1,7 @@
 import os
 import time
 import json
+import math
 import urllib.request
 from datetime import datetime
 from dataclasses import dataclass, asdict
@@ -30,6 +31,7 @@ class TargetSetup:
     target_price: float
     state: str = "TARGET_ACTIVE" # TARGET_ACTIVE -> TARGET_REACHED
     original_index: int = -1 # to map back to the setup array
+    is_dirty: bool = False # track if we need to mutate the JSON
 
 class Monitor:
     """
@@ -60,12 +62,30 @@ class Monitor:
                         if not isinstance(item, dict):
                             continue
                             
-                        raw_state = item.get("state", "TARGET_ACTIVE")
-                        if raw_state not in ["TARGET_ACTIVE", "TARGET_REACHED"]:
-                            # Fail closed on unknown/invalid state by defaulting to an un-triggerable dead state
-                            raw_state = "INVALID_STATE"
+                        raw_state = item.get("state")
+                        if raw_state is None:
+                            computed_state = "TARGET_ACTIVE"
+                        elif raw_state in ["TARGET_ACTIVE", "TARGET_REACHED"]:
+                            computed_state = raw_state
+                        else:
+                            computed_state = "INVALID_STATE"
                             
-                        # Use exact config/setup terminology for provenance unless explicitly supplied
+                        direction = item.get("direction")
+                        if direction not in ["BUY", "SELL"]:
+                            computed_state = "INVALID_STATE"
+                            
+                        target_val = item.get("target")
+                        target_price = 0.0
+                        if target_val is None:
+                            computed_state = "INVALID_STATE"
+                        else:
+                            try:
+                                target_price = float(target_val)
+                                if math.isnan(target_price) or math.isinf(target_price):
+                                    computed_state = "INVALID_STATE"
+                            except (ValueError, TypeError):
+                                computed_state = "INVALID_STATE"
+                            
                         supplied_provenance = item.get("provenance")
                         provenance_val = supplied_provenance if supplied_provenance else f"Configuration Setup ID: {item.get('name', 'UNKNOWN')}"
                         
@@ -73,13 +93,14 @@ class Monitor:
                         
                         new_targets.append(TargetSetup(
                             ticker=item.get("ticker", "UNKNOWN"),
-                            direction=item.get("direction", "BUY"),
+                            direction=direction if direction in ["BUY", "SELL"] else "BUY",
                             target_id=item.get("name", "T1"),
                             target_type=target_type_val,
                             provenance=provenance_val,
-                            target_price=float(item.get("target", 0.0)),
-                            state=raw_state,
-                            original_index=i
+                            target_price=target_price,
+                            state=computed_state,
+                            original_index=i,
+                            is_dirty=False
                         ))
                     self.targets = new_targets
                 except Exception as e:
@@ -92,13 +113,13 @@ class Monitor:
             return
             
         try:
-            # We preserve the original top-level document entirely
             if "setups" in self.full_config_data and isinstance(self.full_config_data["setups"], list):
                 for t in self.targets:
-                    if 0 <= t.original_index < len(self.full_config_data["setups"]):
+                    if t.is_dirty and 0 <= t.original_index < len(self.full_config_data["setups"]):
                         setup_node = self.full_config_data["setups"][t.original_index]
                         if isinstance(setup_node, dict):
                             setup_node["state"] = t.state
+                            t.is_dirty = False
                             
             with open(self.config_path, "w", encoding="utf-8") as f:
                 json.dump(self.full_config_data, f, indent=2)
@@ -145,6 +166,7 @@ class Monitor:
                 
             if reached:
                 t.state = "TARGET_REACHED"
+                t.is_dirty = True
                 state_changed = True
                 Notifier.alert(
                     title=f"TARGET REACHED: {t.ticker}",
