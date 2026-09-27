@@ -1211,7 +1211,7 @@ VERIFIED PULLBACK EXTREME
   └─ not reached → prior protected external boundary remains MAJOR_IDM
 ```
 
-A pullback-selection identifier supplied by a caller is not itself qualification evidence. If Major-IDM qualification is absent or contradictory, the implementation fails closed and preserves the prior protected external boundary as Major IDM.
+A pullback-selection identifier supplied by a caller is not itself qualification evidence. The runtime must consume the canonical Layer-2 Valid Pullback → Verified Pullback Extreme state; caller selection alone cannot manufacture it. Until that state exists after `VALID_BOS`, the prior protected external boundary remains the active Major IDM.
 
 ### Layer 3 retracement implementation guard
 
