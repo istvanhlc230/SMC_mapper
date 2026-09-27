@@ -248,7 +248,7 @@ A body close beyond a Major IDM boundary enters the CHoCH qualification gate. It
 
 #### C. Major IDM lifecycle
 
-After BOS, if only a Minor IDM is formed and no new Major IDM is qualified, the previous protected external boundary remains the active Major IDM reference. When a new post-BOS Major IDM is independently qualified, it supersedes the previous active Major IDM from that point forward.
+After BOS, if no new Layer-2 **Candle-Level Valid Pullback → Verified Pullback Extreme** has established the next Major IDM, the previous protected external boundary remains the active Major IDM reference. When that post-BOS validated pullback state is reached, it establishes and supersedes the previous active Major IDM from that point forward.
 
 ```text
 VALID_BOS
