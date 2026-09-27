@@ -284,21 +284,25 @@ Post-BOS retracement and liquidity collection belong to the new range lifecycle.
 
 ### 3.4.10 — Post-BOS Major IDM continuity
 
-After `VALID_BOS`, the new structural lifecycle does not manufacture a separate fallback IDM object.
+After `VALID_BOS`, the new structural lifecycle consumes Layer-2 valid-pullback state directly.
 
 ```text
 VALID_BOS
     ↓
 NEW STRUCTURAL LIFECYCLE
     ↓
-POST-BOS PRICE ACTION
-    ├─ NEW MAJOR IDM QUALIFIED → NEW MAJOR IDM ACTIVE
-    └─ MINOR IDM ONLY → PRIOR PROTECTED EXTERNAL BOUNDARY REMAINS MAJOR IDM
+POST-BOS LAYER-2 VALID PULLBACK
+    ↓
+VERIFIED PULLBACK EXTREME
+    ↓
+MAJOR IDM ACTIVE
 ```
 
-The prior protected low in a bullish range, or prior protected high in a bearish range, remains the Major IDM reference when post-BOS price action creates only Minor IDM and no new Major IDM.
+Every completed post-BOS Layer-2 Candle-Level Valid Pullback → Verified Pullback Extreme establishes a Major IDM event. The newest such event is the active Major IDM; earlier Major IDM events remain historical and immutable.
 
-`NEW_SVP` does not itself equal `MAJOR_IDM`; the full canonical IDM qualification chain remains required.
+If no post-BOS valid pullback / verified pullback extreme exists, the prior protected low in a bullish range, or prior protected high in a bearish range, remains the Major IDM reference.
+
+`NEW_SVP` does not itself equal `MAJOR_IDM`; the Layer-2 valid-pullback / verified-extreme state is the qualification chain.
 
 ### 3.4.11 — POI Lifecycle Boundary
 
