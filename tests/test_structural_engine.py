@@ -127,7 +127,7 @@ def test_newest_post_bos_pullback_is_the_active_major_idm():
     )
     events = structural.classify_idm(minor_result, candles=candles, lifecycle=lifecycle)
     assert [e.idm_class for e in events] == [
-        structural.IDMClass.MINOR_IDM,
+        structural.IDMClass.MAJOR_IDM,
         structural.IDMClass.MAJOR_IDM,
     ]
     assert events[-1].pullback_completion_candle_id == "p2_done"
@@ -152,10 +152,42 @@ def test_post_bos_without_new_pullback_uses_protected_boundary_as_major():
     assert events[0].source_candle_id == "protected"
 
 
+def test_post_bos_allows_new_major_without_preloaded_boundary():
+    candles = (
+        c("bos", "9", "12", "8", "11"),
+        c("post_start", "11", "11.5", "7", "8"),
+        c("post_done", "8", "12", "8", "11"),
+    )
+    extreme = minor.VerifiedPullbackExtreme(
+        minor.PullbackDirection.BULLISH, Decimal("7"), "post_start"
+    )
+    liquidity = minor.PullbackDerivedLiquidityReference(
+        minor.LiquiditySide.SELL_SIDE, Decimal("7"), "post_start"
+    )
+    pb = minor.CandleLevelValidPullback(
+        minor.PullbackDirection.BULLISH, "bos", "post_start", "post_done",
+        extreme, liquidity,
+    )
+    result = minor.MinorStructureAnalysis((pb,), minor.ActivePullbackState(pb))
+    lifecycle = structural.IDMLifecycleContext(
+        after_valid_bos=True,
+        valid_bos_candle_id="bos",
+    )
+    events = structural.classify_idm(result, candles=candles, lifecycle=lifecycle)
+    assert events[0].idm_class is structural.IDMClass.MAJOR_IDM
+
 def test_post_bos_requires_protected_boundary_when_no_new_pullback():
     import pytest
+    lifecycle = structural.IDMLifecycleContext(
+        after_valid_bos=True,
+        valid_bos_candle_id="bos",
+    )
     with pytest.raises(micro.QuarantineError):
-        structural.IDMLifecycleContext(after_valid_bos=True)
+        structural.classify_idm(
+            minor.MinorStructureAnalysis((), minor.ActivePullbackState(None)),
+            candles=(c("bos", "9", "12", "8", "11"),),
+            lifecycle=lifecycle,
+        )
 
 
 def test_post_bos_requires_bos_candle_provenance():
