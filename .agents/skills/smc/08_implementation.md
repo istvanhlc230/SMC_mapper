@@ -647,11 +647,11 @@ A later candle may advance the lifecycle but may not retroactively rewrite the e
 33. `BROKEN` is applied to a liquidity entity.
 34. A liquidity `SWEPT` event is misclassified as a structural `BROKEN` event.
 35. `CONFIRMATION GATE UNLOCKED` is introduced as a new lifecycle state enum.
-36. `MAJOR_IDM + BODY CLOSE` is treated as automatic `CHoCH_CONFIRMED`.
+36. `MAJOR_IDM + BODY CLOSE` is treated as `CHoCH_ELIGIBLE` only; `CHoCH_CONFIRMED` requires all applicable CHoCH prerequisites.
 37. Confirmed Swing is treated as automatic `VALID_BOS` without `MAJOR_RETRACEMENT_QUALIFIED`.
 38. A continuation break is classified as `VALID_BOS` without the complete Layer 3 qualification result (must remain non-BOS / `IMPULSE_EXTENSION` as applicable).
 39. Any heuristic/safe mode is used to substitute for the canonical Layer 3 qualification result.
-40. A normal retracement with **>= 2 opposing candles** may enter qualification evaluation. The documented one-candle displacement outlier is an explicit exception to that normal count gate and may enter qualification only when it takes **>= `MIN_OUTLIER_EXTREMES_TAKEN`** preceding bodies/extremes and satisfies all other canonical qualification conditions; candle count alone never establishes qualification.
+40. A normal retracement with **>= 3 opposing closing candles** may enter the standard qualification path. A 2-candle retracement is permitted only through the documented reduced-candle displacement exception, while the one-candle displacement outlier is an explicit separate exception requiring **>= `MIN_OUTLIER_EXTREMES_TAKEN`** preceding bodies/extremes and all other canonical qualification conditions; candle count alone never establishes qualification.
 
 ## 48. Testing requirements
 
@@ -670,7 +670,7 @@ Regression tests must cover:
 
 ### Structural qualification
 - standard `NORMAL_RETRACEMENT_CANDLE_COUNT`-opposing-closing-candle qualification on the `STANDARD_EQUILIBRIUM_THRESHOLD` path;
-- a normal >=2-candle retracement enters qualification evaluation; the one-candle displacement outlier bypasses the normal count gate only through the documented rare displacement/extreme-taking exception and all other canonical gates;
+- a normal retracement requires >=3 opposing closing candles for the standard qualification path; a 2-candle retracement is eligible only through the documented reduced-candle displacement exception, and the one-candle displacement outlier bypasses the normal count gate only through its explicit rare displacement/extreme-taking exception and all other canonical gates;
 - reduced-candle qualification is not limited to two candles: the source-defined one-candle displacement outlier is also permitted when it takes >= `MIN_OUTLIER_EXTREMES_TAKEN` preceding bodies/extremes and all other canonical gates pass;
 - `HTF_CONDITIONAL_THRESHOLD`–<`STANDARD_EQUILIBRIUM_THRESHOLD` qualifies only through a valid single pullback event on the applicable immediate Higher Timeframe;
 - HTF inside-bar or invalid-pullback representation does not qualify;
@@ -703,7 +703,7 @@ Regression tests must cover:
 - retracement qualification is evaluated separately as the prerequisite for a subsequent continuation BOS;
 - dynamic absolute retracement extreme tracking;
 - `STANDARD_EQUILIBRIUM_THRESHOLD` standard qualification with the normal `NORMAL_RETRACEMENT_CANDLE_COUNT`-candle rule;
-- reduced-candle qualification may use the documented rare displacement case, including the explicit one-candle outlier; the normal case remains >=2 opposing candles and the one-candle branch bypasses that normal count gate only when the >= `MIN_OUTLIER_EXTREMES_TAKEN` extreme-taking condition and all other canonical gates pass;
+- reduced-candle qualification may use the documented rare displacement case, including the explicit one-candle outlier; the normal case remains >=3 opposing closing candles, while the 2-candle and one-candle branches are explicit reduced-candle exceptions requiring their applicable displacement/extreme-taking conditions and all other canonical gates;
 - 38.2%–<50% qualification only through the applicable immediate-HTF valid-pullback path;
 - below 38.2% does not qualify;
 - shallow qualification failure revokes the candidate and shifts the active pullback/IDM reference;
