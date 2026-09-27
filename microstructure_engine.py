@@ -327,18 +327,39 @@ def transfer_low_reference(active: ExtremeReference, candle: Candle) -> ExtremeR
 
 
 def candle_trend(previous: Candle, current: Candle) -> TrendObservation:
-    if current.high > previous.high and current.low >= previous.low:
+    """Classify the canonical candle-level directional relationship.
+
+    A bullish trend observation requires an applicable previous bullish candle,
+    followed by a breach of that candle's high while its relevant low remains
+    protected. The bearish case is the exact inverse. Candle geometry alone is
+    insufficient because the canonical rule explicitly scopes the reference to
+    the applicable previous directional candle.
+    """
+    previous_bullish = previous.close > previous.open
+    previous_bearish = previous.close < previous.open
+
+    if (
+        previous_bullish
+        and current.high > previous.high
+        and current.low >= previous.low
+    ):
         return TrendObservation(
             TrendDirection.BULLISH,
             None,
             ExtremeReference(previous.low, previous.candle_id, "PROTECTED_LOW"),
         )
-    if current.low < previous.low and current.high <= previous.high:
+
+    if (
+        previous_bearish
+        and current.low < previous.low
+        and current.high <= previous.high
+    ):
         return TrendObservation(
             TrendDirection.BEARISH,
             ExtremeReference(previous.high, previous.candle_id, "PROTECTED_HIGH"),
             None,
         )
+
     return TrendObservation(TrendDirection.UNDEFINED, None, None)
 
 
