@@ -1202,18 +1202,13 @@ The Layer 3 runtime MUST NOT promote a post-BOS Layer-2 pullback to `MAJOR_IDM` 
 ```text
 VALID_BOS
   ↓
-POST-BOS PULLBACK
-  ├─ explicit Major-IDM qualification evidence
-  │      ↓
-  │   MAJOR_IDM
-  │
-  └─ no Major-IDM qualification
-         ↓
-     MINOR_IDM ONLY
-         ↓
-PRIOR PROTECTED EXTERNAL BOUNDARY
-         ↓
-ACTIVE MAJOR_IDM
+POST-BOS PRICE ACTION
+  ↓
+LAYER-2 CANDLE-LEVEL VALID PULLBACK
+  ↓
+VERIFIED PULLBACK EXTREME
+  ├─ reached → MAJOR_IDM becomes active
+  └─ not reached → prior protected external boundary remains MAJOR_IDM
 ```
 
 A pullback-selection identifier supplied by a caller is not itself qualification evidence. If Major-IDM qualification is absent or contradictory, the implementation fails closed and preserves the prior protected external boundary as Major IDM.
