@@ -44,11 +44,13 @@ No source defines deterministic first-regime initialization.
 
 ## 9. Exact L5 / L8 Consequence
 - The Python implementation for L5 (`choch_engine.py`) strictly expects an explicit `CHoCHReference` and will raise an error if not provided; if an invalid break is checked, it returns `CHoCHResolution.NO_BOUNDARY_BREAK`. It does NOT fall back to `NO_EVIDENCE` for cold-start boundaries.
-- Because L3 currently lacks a deterministic cold-start regime initialization, the L8 Orchestrator has no authorized rule to exit bootstrap and provide the initial governing references required for L4 (BOS) and L5 (CHoCH) to begin operating normally.
+- L5 cannot classify an ordinary CHoCH before an applicable governing opposing protected boundary exists.
+- L4 can participate in the canonical initial structural lifecycle once Layer-3 IDM/swing/retracement prerequisites are available (i.e. L4 is NOT blocked by a missing protected opposing boundary).
+- L8 lacks a fully specified canonical bootstrap/orchestration rule for handling the transition from arbitrary raw historical data to the first organically established macro structural regime.
 
 ## 10. Required Next Action
 **PROPOSED — USER APPROVAL REQUIRED**
-A deterministic initialization rule must be explicitly chosen and approved (e.g., waiting for the first organically confirmed `VALID_BOS` to establish the initial dealing range) to allow the L8 orchestrator to safely transition out of the cold-start window without fabricating unauthorized structural objects.
+A deterministic initialization rule must be explicitly chosen and approved to allow the L8 orchestrator to safely transition out of the cold-start window without fabricating unauthorized structural objects. (e.g. wait for the complete IDM → swing → retracement → BOS lifecycle to organically establish the first regime).
 
 ## 11. Test Result
 Command: `python -m pytest`
