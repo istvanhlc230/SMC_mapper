@@ -167,7 +167,7 @@ def test_equal_high_transfers_active_reference_before_pullback_takeout():
         c("r", "5", "10", "2", "9"),
         c("cont", "9", "11", "3", "10"),
         c("eqh", "9", "10", "4", "8"),
-        c("take", "8", "10.5", "1", "7"),
+        c("take", "8", "9.5", "1", "7"),
         c("done", "7", "12", "5", "11"),
     )
     result = minor.detect_valid_pullbacks(candles, minor.PullbackDirection.BULLISH)
