@@ -163,7 +163,7 @@ The IDM lifecycle architecture distinguishes source-backed methodology from the 
 - A newer valid pullback supersedes the previous active IDM reference.
 - Minor IDM is the internal inducement role.
 - Major IDM is the governing major-liquidity reference.
-- After BOS, a newly formed valid post-BOS pullback can establish the new Major IDM only when that pullback independently satisfies the canonical Major-IDM qualification.
+- After BOS, a newly formed **Layer-2 Candle-Level Valid Pullback** establishes the new Major IDM from its verified pullback extreme. The qualification is the combination of the post-BOS lifecycle context and the already-defined Layer-2 valid-pullback / verified-extreme states; Layer 3 does not invent a second candle-count, depth, or heuristic test for Major IDM.
 - If a range contains only a Minor IDM and no newly formed Major IDM, the governing external boundary/liquidity — the prior protected low in a bullish range or prior protected high in a bearish range — serves as the Major IDM.
 
 **Project-canonical / Composed representation:**
@@ -188,7 +188,7 @@ IDM_TAKEN / MAJOR_IDM GOVERNANCE
 
 ### Minor vs Major IDM
 
-Major/Minor classification is determined by structural role, not by a blanket rule that every pullback after BOS is automatically Major IDM.
+Major/Minor classification is determined by structural role: a pre-BOS active valid pullback supplies the Layer-2 Minor IDM, while a validated **post-`VALID_BOS` Layer-2 Candle-Level Valid Pullback → Verified Pullback Extreme** establishes the new Layer-3 Major IDM.
 
 ```text
 INTERNAL / PRE-BOS VALID PULLBACK
@@ -210,13 +210,13 @@ VALID_BOS
 
 In a bullish range, the protected external boundary is the prior protected low; in a bearish range it is the prior protected high. The associated external liquidity serves as the governing Major IDM reference while no newer Major IDM has been established.
 
-A newly formed valid pullback immediately supersedes the Layer-2 active Minor IDM / pullback-derived reference under Layer-2 ownership. The Layer-3 active Major IDM reference changes only when that new pullback independently satisfies the canonical Major-IDM qualification. Historical IDM objects remain immutable.
+A newly formed valid pullback immediately supersedes the Layer-2 active Minor IDM / pullback-derived reference under Layer-2 ownership. **After `VALID_BOS`, that validated post-BOS pullback is the Major IDM qualification event** and its verified pullback extreme becomes the active Layer-3 Major IDM reference. Historical IDM objects remain immutable.
 
 ### Major IDM lifecycle
 
-After a valid BOS, a qualifying post-BOS pullback that independently satisfies the canonical Major-IDM qualification can establish the new Major IDM from its Layer-2 verified pullback extreme.
+After a valid BOS, a **Layer-2 Candle-Level Valid Pullback → Verified Pullback Extreme** in the new lifecycle establishes the new Major IDM from that verified pullback extreme. No additional Major-IDM threshold is applied at Layer 3.
 
-If the post-BOS price action produces only a Minor IDM and no independently qualified new Major IDM, the previous protected external boundary remains the active Major IDM reference. No separate fallback IDM object or ontology is created.
+If the post-BOS price action has not yet produced a new Layer-2 valid pullback / verified pullback extreme, the previous protected external boundary remains the active Major IDM reference. No separate fallback IDM object or ontology is created.
 
 ```text
 VALID_BOS
@@ -239,8 +239,8 @@ POST-BOS PRICE ACTION
 
 1. **Minor IDM ownership:** Layer 2 owns formation and active-pointer lifecycle of the Minor IDM derived from the active valid pullback.
 2. **Layer 3 IDM lifecycle:** Layer 3 consumes Minor IDM evidence for IDM_TAKEN and owns Major IDM governance and external structural consequences.
-3. **Major IDM:** governing major-liquidity reference. It may be established from a qualifying post-BOS pullback or, when only Minor IDM exists, from the prior protected external boundary/liquidity.
-4. A newer valid pullback may shift the Layer-2 Minor IDM pointer under Layer-2 ownership; the active Layer-3 Major IDM reference changes only when the new pullback independently satisfies the canonical Major-IDM qualification.
+3. **Major IDM:** governing major-liquidity reference. It is established from a validated post-`VALID_BOS` Layer-2 Candle-Level Valid Pullback → Verified Pullback Extreme, or, when no new post-BOS valid pullback has yet established one, from the prior protected external boundary/liquidity.
+4. A newer valid pullback may shift the Layer-2 Minor IDM pointer under Layer-2 ownership; after `VALID_BOS`, the active Layer-3 Major IDM reference changes when the new pullback reaches the already-defined Layer-2 Valid Pullback → Verified Pullback Extreme state.
 5. There is no separate legacy/proxy Major IDM ontology class; Major IDM remains one semantic class with traceable provenance.
 6. Historical IDM objects remain immutable; active-pointer changes are forward-only and event-time provenance is preserved.
 
