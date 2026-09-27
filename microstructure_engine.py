@@ -24,7 +24,7 @@ class Direction(str, Enum):
 
 class SequenceStatus(str, Enum):
     OBSERVED = "OBSERVED"
-    ASSUMED = "ASSUMED"
+    METHODOLOGY_ASSUMED = "METHODOLOGY_ASSUMED"
     UNAVAILABLE = "UNAVAILABLE"
 
 
