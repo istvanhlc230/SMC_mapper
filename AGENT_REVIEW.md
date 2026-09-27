@@ -410,3 +410,125 @@ Result: `91 passed, 0 failed, 0 skipped/xfail`
 Command: `python -m pytest`
 Result: `91 passed, 0 failed, 0 skipped/xfail`
 *Developer-local test execution; no independent GitHub Actions/CI verification.*
+
+---
+
+# PHASE 18 — L8 IMPLEMENTATION CONTRACT AUDIT
+
+## 1. Audit Scope & Sources
+- Primary Target: `.agents/skills/smc/08_implementation.md` (Layer 8 Implementation Contract)
+- Complete Canonical Chain & Supporting Contracts Audited:
+  - `01_micro_structure.md` (Layer 1 Micro-Structure Authority)
+  - `02_minor_structure.md` (Layer 2 Minor Structure Authority)
+  - `03_structural_semantic_authority.md` (Layer 3 Structural Semantic Authority)
+  - `04_BOS_mechanics.md` (Layer 4 BOS Mechanics)
+  - `05_CHOCH_mechanics.md` (Layer 5 CHoCH Mechanics)
+  - `06_execution.md` (Layer 6 Execution Authority)
+  - `07_risk.md` (Layer 7 Risk, Target, & Trade Management)
+  - `methodology_parameters.md` (Methodology Parameters)
+  - `trading_policy.md` (Trading Policy)
+  - `platform_execution.md` (Platform Execution Contract)
+  - `countertrend_scenarios.md` (Countertrend Scenarios)
+
+## 2. Target-by-Target Audit Findings & Classifications
+
+### 1. Three-Layer Pipeline Architecture
+- **Finding:** §49.1 preserves the strict three-layer progression:
+  1. `EVENT DETECTION`: Identifies physical boundary violations from finalized candle geometry (6 explicit classes).
+  2. `EVENT CLASSIFICATION`: Evaluates structural prerequisites (IDM taken, retracement qualification, boundary provenance).
+  3. `STATE TRANSITION`: Transitions market lifecycle state (`BOOTSTRAP`, `CONFIRMATION_LOCKED`, `CONFIRMED_RANGE`, `POST_BOS`, `POST_CHOCH`).
+  Event detection produces raw events, not states; classification produces outcomes, not events.
+- **Classification:** **NO ISSUE**
+
+### 2. Event Precedence Architecture
+- **Finding:** §49.2 defines strict deterministic evaluation precedence:
+  `EXT_OPP_BREAK > EXT_CONT_BREAK > MAJOR_IDM_EVENT > MINOR_IDM_EVENT > NEW_SVP_QUALIFIED > NO_EVENT / INTERNAL_PB`.
+  This precedence is purely an implementation tie-breaking and processing order; it does not alter, weaken, or override canonical structural rules.
+- **Classification:** **NO ISSUE**
+
+### 3. State Enumeration
+- **Finding:** §49.3 explicitly restricts structural lifecycle state to exactly 5 canonical states: `BOOTSTRAP`, `CONFIRMATION_LOCKED`, `CONFIRMED_RANGE`, `POST_BOS`, and `POST_CHOCH`. `CONFIRMATION GATE UNLOCKED` is correctly documented as a transient internal process condition within `CONFIRMATION_LOCKED`, never a 6th market state.
+- **Classification:** **NO ISSUE**
+
+### 4. Bootstrap / Genesis Handling
+- **Finding:** §49.4 enforces fail-closed cold-start rules: no dealing range, no confirmed structural swing, no protected structural extreme, and no IDM reference is fabricated from thin air. The transition matrix explicitly requires an event physically taking the active IDM reference (`IDM_TAKEN = TRUE`) to exit `BOOTSTRAP`. The first-BOS retracement baseline ambiguity remains explicitly open and bounded in §49.4.1 without ungrounded assumptions.
+- **Classification:** **NO ISSUE**
+
+### 5. L3 → L4 Retracement Interface
+- **Finding:** §49.1, §49.3, and §49.4 consume stored retracement qualification flags (`MAJOR_RETRACEMENT_QUALIFIED` / `is_bos_qualified`) produced by Layer 3. L8 does not recompute retracement gates (50% depth, candle counts, displacement exceptions, or 38.2% HTF conditions).
+- **Classification:** **NO ISSUE**
+
+### 6. BOS Representation
+- **Finding:** §49.1 and §49.3 enforce the canonical conjunct: `VALID_BOS` requires `IDM_TAKEN == TRUE` + `MAJOR_RETRACEMENT_QUALIFIED == TRUE` + `STRUCTURAL_SWING_BREAK == TRUE`. Only `VALID_BOS` rolls the governing Trading Range and locks the Protected Structural Extreme.
+- **Classification:** **NO ISSUE**
+
+### 7. IMPULSE_EXTENSION Representation
+- **Finding:** §49.1, §49.3, and §49.4 document `IMPULSE_EXTENSION` strictly as a classification outcome of `EXT_CONT_BREAK` when retracement qualification fails. It is not an event class and not a state. It advances the swing extreme reference without rolling the Trading Range or locking a protected extreme. The redundant negative invariant in §49.5 was removed in Phase 15.
+- **Classification:** **NO ISSUE**
+
+### 8. Major IDM Representation
+- **Finding:** §49.1 and §49.3 preserve Major IDM dual provenance (post-BOS pullback vs. prior protected boundary). Wick breach is mapped to `MAJOR_IDM_SWEEP` (takes IDM for swing confirmation, never BOS or CHoCH). Body close beyond Major IDM enters the CHoCH prerequisite evaluation gate.
+- **Classification:** **NO ISSUE**
+
+### 9. CHoCH Representation
+- **Finding:** §49.1 and §49.3 define the physical break neutrally as `OPPOSING STRUCTURAL BOUNDARY VIOLATION (Wick OR Body)`. Full CHoCH prerequisite gating is enforced: body close beyond an eligible opposing structural boundary yields `CHoCH_ELIGIBLE`; wick violation of an eligible opposing boundary (non-Major-IDM provenance) also qualifies. Major-IDM wick breach is prevented from triggering CHoCH.
+- **Classification:** **NO ISSUE**
+
+### 10. Post-CHoCH Lifecycle
+- **Finding:** §49.3 and the state transition matrix correctly map `CHoCH_CONFIRMED` to enter `CONFIRMATION_LOCKED`. The first post-CHoCH swing pivot is distinguished from Minor IDM. The first subsequent valid BOS transitions to `CONFIRMED_RANGE`, establishing the confirmed dealing range.
+- **Classification:** **NO ISSUE**
+
+### 11. Protected Structural Extreme Representation
+- **Finding:** §49.1, §49.3, and §49.4 preserve the canonical invariant: `dynamic E_retrace → VALID_BOS → E_retrace LOCKED → PROTECTED_STRUCTURAL_EXTREME`. The protected extreme is never conflated with or defaulted to the impulse origin.
+- **Classification:** **NO ISSUE**
+
+### 12. Transition Matrix Determinism & Exhaustiveness
+- **Finding:** The transition matrix in §49.3 exhaustively and deterministically specifies outcomes and target states for all combinations of (State, Event Class). It explicitly handles locked vs. unlocked confirmation gates for `EXT_CONT_BREAK` and preserves fail-closed behavior across all rows.
+- **Classification:** **NO ISSUE**
+
+### 13. POI / Execution Interface
+- **Finding:** §49.1 and §49.3 adhere to Layer 6 constraints: only `OF_CONFIRMED` (Order Flow) and `VALID_OB` (Order Block) are tradable POIs. The Rule of Two (maximum 1–2 POIs per leg: extreme + optional decision) is respected. Rejection Blocks are separate refinement tools. POI qualification does not equal entry authorization. POI expiration upon range rollover is cleanly maintained.
+- **Classification:** **NO ISSUE**
+
+### 14. Risk / Target Interface
+- **Finding:** §49.1 and §49.3 adhere to Layer 7 boundaries: `STRUCTURAL/LIQUIDITY TARGET INPUT → TARGET POLICY → TRADE TARGET`. No universal target priority, no universal countertrend coordinate, and no fixed-R as canonical truth have been introduced. Target selection and trade management remain downstream policies.
+- **Classification:** **NO ISSUE**
+
+### 15. Monitor Boundary
+- **Finding:** §49.1, §49.4, and the monitor specifications preserve the strict notification-only contract. The monitor detects and emits state/target events; it does not execute automated trade closing, partial closes, or stop-loss modifications.
+- **Classification:** **NO ISSUE**
+
+### 16. Semantic Duplication Scan
+- **Finding:** All structural definitions in L8 are references to, or consumers of, upstream canonical owners (L1–L7). L8 contains zero redefinitions or methodology overrides.
+- **Classification:** **NO ISSUE**
+
+### 17. Negative-Constraint Hygiene
+- **Finding:** All invariants in §49.5 are clean, non-conflicting, and consistent with the positive classification model. Redundant negative rules (such as the deleted `IMPULSE_EXTENSION ≠ EVENT CLASS`) are absent.
+- **Classification:** **NO ISSUE**
+
+### 18. Determinism and Fail-Closed Behavior
+- **Finding:** Incomplete, malformed, or ambiguous events fail closed (remain in current state or emit `NO_EVENT`). Zero speculative or heuristic fallback transitions exist.
+- **Classification:** **NO ISSUE**
+
+### 19. Implementation Contract vs. Application Code
+- **Finding:** As required by the audit scope, no application code (`smc_analyzer.py`, `smc_htf_ltf_monitor.py`, tests) was modified. L8 serves strictly as the validated implementation contract for future implementation alignment.
+- **Classification:** **NO ISSUE**
+
+## 3. Canonical Corrections
+- **None required.** Layer 8 (`.agents/skills/smc/08_implementation.md`) is completely consistent, sound, fully reconciled with Layers 1–7, and introduces no rogue methodology.
+
+## 4. Status of Open Canonical Gaps
+- The Genesis / First-BOS retracement baseline ambiguity from Phase 15 remains an **OPEN, UNRESOLVED, and EXPLICITLY BOUNDED** specification gap in L3 and L8 (§49.4.1). L8 does not resolve or paper over this boundary.
+
+## 5. Confirmation of Non-Introduction of Universal Policies
+- Confirmed: No universal target priority was introduced.
+- Confirmed: No universal countertrend target coordinate was introduced.
+
+## 6. Final Phase 18 Status
+**PASS**
+
+## 7. Test Result
+Command: `python -m pytest`
+Result: `91 passed, 0 failed, 0 skipped/xfail in 0.62s`
+*Developer-local test execution; no independent GitHub Actions/CI verification.*
+
