@@ -18,6 +18,7 @@ def test_body_close_opposing_boundary_is_eligible_not_confirmed_without_gate():
         (c("break", "10.2", "10.5", "9.5", "9.8"),),
         ref,
         confirmation_gate_open=False,
+        ltf_context_active=True,
     )
     assert result.resolution is choch_engine.CHoCHResolution.CHOCH_ELIGIBLE
     assert result.structural_break is not None
@@ -50,7 +51,6 @@ def test_non_major_external_wick_can_enter_choch_gate():
         (c("wick", "10.2", "10.4", "9.8", "10.1"),),
         ref,
         confirmation_gate_open=True,
-        ltf_context_active=True,
     )
     assert result.resolution is choch_engine.CHoCHResolution.CHOCH_CONFIRMED
     assert result.post_choch_regime is not None
@@ -74,6 +74,7 @@ def test_major_idm_wick_is_major_idm_sweep_not_choch():
         (c("wick", "10.2", "10.4", "9.8", "10.1"),),
         ref,
         confirmation_gate_open=True,
+        ltf_context_active=True,
     )
     assert result.resolution is choch_engine.CHoCHResolution.MAJOR_IDM_SWEEP
     assert not result.confirmed
@@ -113,6 +114,7 @@ def test_ltf_minor_idm_wick_requires_body_close():
         (c("wick", "10.2", "10.4", "9.8", "10.1"),),
         ref,
         confirmation_gate_open=True,
+        ltf_context_active=True,
     )
     assert result.resolution is choch_engine.CHoCHResolution.NO_BOUNDARY_BREAK
 
