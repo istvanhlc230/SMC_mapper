@@ -107,7 +107,7 @@ A Body Breach is a static body-endpoint/range relation. Historical intrabar cros
 
 For a bullish candle-level directional sequence, the relevant low is protected while the applicable high is breached. For a bearish candle-level directional sequence, the relevant high is protected while the applicable low is breached.
 
-The applicable reference and trend context are supplied by the candle-level sequence. Downstream structural layers use their own structural protection definitions.
+The applicable reference and trend context are supplied by the candle-level sequence. The **reference candle's** bullish/bearish direction is part of the trend definition; the **candle that breaches the reference extreme may be bullish, bearish, or otherwise non-directional**. Breach validity is determined by the OHLC extreme relation, not by the breach candle's color. A wick penetration is therefore a Candle Extreme Breach regardless of the breach candle's type. Downstream structural layers use their own structural protection definitions.
 
 ## 5. Inside Bar
 
@@ -141,7 +141,7 @@ The applicable reference candle is established by the governing candle-level con
 
 Outside Bar is a canonical candle-geometry observation that can be consumed by downstream sequence and execution owners. Layer 2 may use the observation as an input to Candle-Level Pullback formation, while Layer 6 may use it as an input to its own reversal predicate.
 
-The order in which the two breached extremes were reached is represented separately by Candle Internal Sequence when evidence is available.
+The order in which the two breached extremes were reached is represented separately by Candle Internal Sequence when evidence is available. The fact that an Outside Bar breaches both sides does not make either breach invalid: each physical extreme breach remains a valid candle-level breach. Only the historical order of those breaches may be unavailable from aggregate OHLC.
 
 ## 7. Equal High (EQH) / Equal Low (EQL)
 
@@ -225,6 +225,8 @@ Bullish candle-level trend:
 applicable previous bullish-candle high is breached
 WHILE
 the relevant low remains protected
+
+The **previous/reference candle** is the bullish candle in this definition. The candle performing the breach may be bullish or bearish; its color does not invalidate the breach.
 ~~~
 
 Bearish candle-level trend:
@@ -233,6 +235,8 @@ Bearish candle-level trend:
 applicable previous bearish-candle low is breached
 WHILE
 the relevant high remains protected
+
+The **previous/reference candle** is the bearish candle in this definition. The candle performing the breach may be bullish or bearish; its color does not invalidate the breach.
 ~~~
 
 The sequence continues until the opposing candle-level condition that starts a pullback is observed. The Sequential / Minor layer interprets that transition as part of Pullback Formation.
