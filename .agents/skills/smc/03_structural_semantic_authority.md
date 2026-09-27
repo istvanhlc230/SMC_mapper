@@ -303,7 +303,14 @@ This is an explicit exception to the normal candle-count gate, not a general one
 
 ```text
 NORMAL PATH
->= 2 opposing candles
+>= 3 opposing closing candles
+        ↓
+qualification gates
+
+REDUCED-CANDLE EXCEPTION
+2 opposing candles
+        ↓
+documented displacement / extreme-taking conditions
         ↓
 qualification gates
 
