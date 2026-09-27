@@ -136,11 +136,12 @@ def test_invalid_candle_is_quarantined():
 
 
 def test_trend_is_only_candle_level():
-    p = c("p", "5", "10", "2", "9")
-    u = c("u", "9", "11", "2", "10")
-    d = c("d", "9", "10", "1", "8")
-    assert m.candle_trend(p, u).direction is m.TrendDirection.BULLISH
-    assert m.candle_trend(p, d).direction is m.TrendDirection.BEARISH
+    bullish_reference = c("p", "5", "10", "2", "9")
+    bullish_breach = c("u", "9", "11", "2", "10")
+    bearish_reference = c("d", "9", "10", "1", "8")
+    bearish_breach = c("x", "8", "10", "0", "7")
+    assert m.candle_trend(bullish_reference, bullish_breach).direction is m.TrendDirection.BULLISH
+    assert m.candle_trend(bearish_reference, bearish_breach).direction is m.TrendDirection.BEARISH
 
 
 def test_candle_trend_requires_directional_reference_candle():
