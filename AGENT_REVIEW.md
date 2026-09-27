@@ -1720,3 +1720,40 @@ Runtime integration remains intentionally untouched.
 **FULL 01–08 CANONICAL SKILL RE-AUDIT = PASS / 3 DOCUMENTATION CORRECTIONS APPLIED.**
 
 The three corrected files were committed directly to `main`; this review records the completed post-fix audit.
+
+## SECOND INDEPENDENT FULL 01–08 RE-AUDIT — 2026-09-27
+
+This audit was performed independently of the previous PASS result and specifically searched for internal contradictions, stale regression wording, ownership leakage, and lifecycle inconsistencies.
+
+### Newly discovered and corrected Layer-8 contradictions
+
+1. `MAJOR_IDM + BODY CLOSE` was still listed as automatic `CHoCH_CONFIRMED` in the implementation error-condition list. Corrected to `CHoCH_ELIGIBLE`; full CHoCH prerequisites are still required.
+2. The Layer-8 error-condition list still described `>= 2 opposing candles` as the normal retracement gate. Corrected to the canonical `>= 3 opposing closing candles` normal path.
+3. Structural-qualification regression tests still described a normal `>=2` candle retracement. Corrected to `>=3` normal, with explicit 2-candle and 1-candle exception branches.
+4. Swing/protected-extreme regression tests still described the normal case as `>=2`. Corrected to `>=3` opposing closing candles.
+
+### Independent cross-layer result after correction
+
+- Layers 1–2: PASS — microstructure and Minor Structure ownership remain separated; Layer 2 owns Minor IDM formation.
+- Layer 3: PASS — Major IDM governance, IDM_TAKEN, Confirmed Structural Swing, retracement qualification, and Protected Structural Extreme lifecycle remain coherent.
+- Layer 4: PASS — consumes Layer-3 qualification; no local retracement redefinition; Major IDM wick remains `MAJOR_IDM_SWEEP`.
+- Layer 5: PASS — Major IDM body close is only `CHoCH_ELIGIBLE`; wick behavior is provenance-dependent; LTF Structural Glitch is context/reference substitution, not a new lifecycle state.
+- Layer 6: PASS — POI/OF/OB/RB/Engineering Liquidity/entry semantics remain downstream and do not manufacture structural truth.
+- Layer 7: PASS — target selection and trade management remain implementation/trading-policy boundaries; target reach remains distinct from position closure.
+- Layer 8: PASS after the four corrections — state machine, event classes, BOS gate, CHoCH gate, target-plan boundary, lifecycle ontology, and notification-only target handling are internally aligned.
+
+### Remaining canonical source gap — NOT INVENTED
+
+Layer 3 repeatedly requires a post-BOS pullback to satisfy an independent `canonical Major-IDM qualification` before it may replace the prior protected external boundary as Major IDM. However, the current canonical skill does not define the deterministic qualification criteria for that Major-IDM classification. Layer 8 only references `SVP → Verified Extreme → IDM qualification`; it does not provide the missing qualification predicate.
+
+This is a genuine specification gap, not an implementation contradiction. It must remain explicitly unresolved until the authoritative source material supplies the missing rule. No threshold, candle-count rule, or heuristic was invented during this audit.
+
+### Source-audit boundary
+
+The repository's `source_reconciliation.md` provides the current traceability/contracts and explicitly records the known target-related source gaps. The available GitHub repository tool did not expose the `knowledgebase/` source-file directory for direct enumeration in this audit, so source fidelity beyond the existing reconciliation records was not claimed as independently verified. This limitation is recorded rather than hidden.
+
+### Final status
+
+**INDEPENDENT 01–08 RE-AUDIT: PASS AFTER 4 LAYER-8 CORRECTIONS, WITH 1 OPEN SOURCE-DEFINITION GAP (POST-BOS MAJOR-IDM QUALIFICATION).**
+
+Runtime Mapper/analyzer/monitor files remain outside this canonical-skill correction pass.
