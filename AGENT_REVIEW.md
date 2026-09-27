@@ -628,5 +628,66 @@ Command: `python -m pytest`
 Result: `91 passed, 0 failed, 0 skipped/xfail in 1.04s`
 *Developer-local test execution; no independent GitHub Actions/CI verification.*
 
+---
+
+# PHASE 19 — `07_RISK.MD` RR / TARGET / TRADE-MANAGEMENT RECONCILIATION AUDIT
+
+## 1. Audit Scope & Sources Checked
+- **Primary File:** `.agents/skills/smc/07_risk.md` (Layer 7 Risk, Target, & Trade Management)
+- **Cross-Layer References Audited:**
+  - `01_micro_structure.md` (Layer 1 Micro-Structure)
+  - `02_minor_structure.md` (Layer 2 Minor Structure)
+  - `03_structural_semantic_authority.md` (Layer 3 Structural Semantic Authority)
+  - `04_BOS_mechanics.md` (Layer 4 BOS Mechanics)
+  - `05_CHOCH_mechanics.md` (Layer 5 CHoCH Mechanics)
+  - `06_execution.md` (Layer 6 Execution Authority)
+  - `08_implementation.md` (Layer 8 Implementation Contract)
+  - `methodology_parameters.md` (Methodology Parameters)
+  - `trading_policy.md` (Trading Policy)
+  - `platform_execution.md` (Platform Execution Contract)
+  - `countertrend_scenarios.md` (Countertrend Scenarios)
+  - `AGENT_REVIEW.md` (Audit History)
+
+## 2. Objective-by-Objective Findings & Classifications
+
+| # | Audit Objective | Classification | Finding Summary |
+|---|---|---|---|
+| 1 | Target ownership | **REPRESENTATION GAP** *(Corrected)* | L7 correctly affirms downstream target resolution, but §5.2 originally lacked the explicit 4-stage pipeline `CANONICAL CANDIDATES → CONFIGURED POLICY → RESOLVED TARGET → RR EVALUATION`. Added explicit pipeline to §5.2. |
+| 2 | Universal target leakage | **REPRESENTATION GAP** *(Corrected)* | §5.2 header and §5.2.1 diagram previously mapped confirmed external extreme directly to `PRIMARY TARGET`. Corrected to identify it as `PRO-TREND TARGET CANDIDATE → TARGET POLICY RESOLUTION → RESOLVED TRADE TARGET`. |
+| 3 | LTF targets | **NO ISSUE** | Multiple source-backed conventions preserved (`HTF_EXTERNAL_TARGET` vs `LTF_STRUCTURAL_TARGET`); explicit target policy required; no automatic default. |
+| 4 | Countertrend targets | **NO ISSUE** | Destination selection remains setup-specific (next valid POI, inducement, Engineering Liquidity, or external liquidity); no universal hard coordinate canonicalized. |
+| 5 | Fixed-R | **NO ISSUE** | Preserved as non-structural trading-policy option; prohibited from being labeled as canonical structure/liquidity target. |
+| 6 | Multi-leg Target Plan | **NO ISSUE** | Maintained as project execution architecture (`T1, T2, T3`), not universal True SMC methodology. |
+| 7 | BE / profit-lock / trailing | **NO ISSUE** | Strictly classified as stop-management concepts; never canonical targets or fallback targets. |
+| 8 | RR calculation & gating | **REPRESENTATION GAP** *(Corrected)* | §5.2.1 maintained `RR_CALCULATION ≠ TARGET_CREATION`. Invariant list updated to include `NO_RESOLVED_TARGET → NO_SYNTHETIC_TARGET → NO_AUTOMATIC_TP`, and §5.2 RR gate updated to `Projected_RR_to_Resolved_Target >= Configured_Minimum_RR`. |
+| 9 | Target reached separation | **NO ISSUE** | `TARGET_REACHED ≠ POSITION_CLOSED ≠ STOP_MOVED`; current monitor remains notification-only. |
+| 10 | Stop-loss semantics | **NO ISSUE** | Tier 1 & Tier 2 stop placement, touches, and stop-outs create no structural truth (`EXECUTION_STOPPED_OUT ≠ POI_FAILED ≠ BOS ≠ CHoCH`). |
+| 11 | Execution lifecycle | **NO ISSUE** | Clean separation preserved: `PENDING ORDER INVALIDATION → CANCEL`, `OPEN POSITION → CONTINUE LIFECYCLE`. |
+| 12 | Structural events vs risk | **NO ISSUE** | Unidirectional ownership preserved: `RISK CONSUMES STRUCTURE; RISK DOES NOT CREATE STRUCTURE`. |
+| 13 | Emergency close / kill switch | **NO ISSUE** | No mandatory market-close on CHoCH or POI failure (`CHoCH_CONFIRMED ↛ mandatory MARKET_CLOSE_ON_CHOCH`). |
+| 14 | OHLC / intrabar observability | **NO ISSUE** | `OHLC ≠ INTRABAR_SEQUENCE` preserved; no inferred microsequence between simultaneous stop and target touches. |
+| 15 | Scoring boundary | **NO ISSUE** | Numeric scoring arithmetic owned by L8 / implementation; L7 preserves conceptual boundary only. |
+
+## 3. Semantic Ownership Audit
+- Concepts verified: IDM, Major IDM, Confirmed Structural Swing, Protected Structural Extreme, BOS, CHoCH, POI, OF, OB, RB, Engineering Liquidity.
+- Finding: **NO ISSUE**. Zero redefinitions in L7; all concepts are strictly consumed from L1–L6.
+
+## 4. Exact Corrections Applied to `.agents/skills/smc/07_risk.md`
+1. **§5.2 Intro:** Added explicit 4-stage pipeline `CANONICAL STRUCTURAL / LIQUIDITY TARGET CANDIDATES → CONFIGURED TARGET POLICY → RESOLVED TARGET → RR EVALUATION` and clarified that True SMC does not define a universal target-selection priority or universal "Primary Target".
+2. **§5.2 Pro-trend Candidate Subsection:** Renamed heading to `Pro-trend chart-analysis target candidates` and reworded to specify confirmed external range extreme as canonical candidate/input rather than universal primary target.
+3. **§5.2.1 Diagram:** Replaced `CONFIRMED EXTERNAL EXTREME / EXTERNAL LIQUIDITY → PRIMARY TARGET` with `... → PRO-TREND TARGET CANDIDATE → TARGET POLICY RESOLUTION → RESOLVED TRADE TARGET`.
+4. **§5.2.1 Invariants:** Added `NO_RESOLVED_TARGET → NO_SYNTHETIC_TARGET → NO_AUTOMATIC_TP`.
+5. **§5.2 RR Gating:** Updated formula to `Projected_RR_to_Resolved_Target >= Configured_Minimum_RR` with explicit clarification that `Resolved Target` is a downstream resolved target-policy object.
+
+## 5. Cross-Layer Validation Result
+- **L6 → L7 → L8 Target Architecture:** Perfectly unified across all three layers. L6 produces candidates, L7 resolves trade targets through configured policy, and L8 executes RR gating and monitor notifications against the resolved target object.
+- **Fail-Closed Guarantee:** Enforced identically across L6, L7, and L8: `NO_RESOLVED_TARGET → NO_SYNTHETIC_TARGET → NO_AUTOMATIC_TP_SUBMISSION`.
+
+## 6. Test Result
+- Command: `python -m pytest`
+- Result: `91 passed, 0 failed, 0 skipped/xfail in 0.75s`
+*Developer-local test execution; no independent GitHub Actions/CI verification.*
+
+
 
 

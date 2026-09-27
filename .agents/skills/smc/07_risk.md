@@ -125,13 +125,25 @@ This remains an execution/risk event and is not POI failure, structural invalida
 
 ## 5.2 Target Source / Implementation Boundary
 
-Canonical SMC methodology does not prescribe target selection or trade-management behavior. It provides structural/liquidity chart facts that downstream implementation may use as target inputs.
+Canonical SMC methodology does not prescribe a universal target-selection priority or a universal "Primary Target". It provides structural/liquidity chart facts that downstream implementation may use as target inputs.
+
+The risk and trade-management layer operates under the strict unidirectional pipeline:
+
+```text
+CANONICAL STRUCTURAL / LIQUIDITY TARGET CANDIDATES
+        ↓
+CONFIGURED TARGET POLICY
+        ↓
+RESOLVED TARGET
+        ↓
+RR EVALUATION
+```
 
 LTF target selection priority, countertrend target-coordinate selection, fixed-R target generation, multi-leg allocation, and break-even/profit-lock/trailing actions are implementation/trading-policy concerns, not canonical SMC rules.
 
-### Primary pro-trend chart-analysis target input
+### Pro-trend chart-analysis target candidates
 
-The primary pro-trend target candidate is the current Trading Range confirmed external extreme where the applicable execution module requires it:
+The confirmed external range extreme is the canonical pro-trend target candidate / structural input where the applicable execution module requires it:
 
 ```
 bullish → Confirmed_Swing_High
@@ -159,10 +171,14 @@ ACTIVE TRADING RANGE
         ↓
 CONFIRMED EXTERNAL EXTREME / EXTERNAL LIQUIDITY
         ↓
-PRIMARY TARGET
+PRO-TREND TARGET CANDIDATE
+        ↓
+TARGET POLICY RESOLUTION
+        ↓
+RESOLVED TRADE TARGET
 ```
 
-The source repeatedly uses the external liquidity / external range extreme as the final pro-trend target for direct execution.
+The source repeatedly uses the external liquidity / external range extreme as the final pro-trend target candidate for direct execution, resolved to a trade target by downstream policy.
 
 #### LTF execution
 
@@ -189,6 +205,7 @@ TARGET ≠ STRUCTURAL_VALIDATION
 TARGET_HIT ≠ VALID_BOS
 TARGET_HIT ≠ CHoCH
 RR_CALCULATION ≠ TARGET_CREATION
+NO_RESOLVED_TARGET → NO_SYNTHETIC_TARGET → NO_AUTOMATIC_TP
 NO_CANONICAL_TARGET → NO_AUTOMATIC_TP_SUBMISSION
 ```
 
@@ -293,10 +310,10 @@ The target event is mechanical/execution observability and must not manufacture 
 Where required by the configurable execution layer policy:
 
 ```text
-Projected_RR_to_Primary_Target >= Configured_Minimum_RR
+Projected_RR_to_Resolved_Target >= Configured_Minimum_RR
 ```
 
-RR gating is a configurable trading policy, not a universal structural requirement. This is an entry/setup gate, not a target-location rule.
+RR gating is a configurable trading policy, not a universal structural requirement. This is an entry/setup gate, not a target-location rule. The RR gate consumes a resolved target object (`RESOLVED TARGET` / policy-designated Primary Target) only after the configured target policy resolves one. If no valid target is resolved (`NO_RESOLVED_TARGET`), no target may be manufactured merely to satisfy the RR gate.
 
 ### Counter-trend / pullback execution
 
