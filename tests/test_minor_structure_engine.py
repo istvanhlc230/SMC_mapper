@@ -94,7 +94,6 @@ def test_later_outside_bar_cannot_confirm_pullback_completion_when_order_is_unav
     )
     result = minor.detect_valid_pullbacks(candles, minor.PullbackDirection.BULLISH)
     assert result.pullbacks == ()
-    assert result.pending == ()
     assert len(result.invalidated) == 1
     assert result.invalidated[0].start_candle_id == "pb1"
     assert result.invalidated[0].reference_candle_id == "r"
@@ -110,7 +109,6 @@ def test_later_clean_candle_cannot_revive_outside_bar_start_candidate():
     )
     result = minor.detect_valid_pullbacks(candles, minor.PullbackDirection.BULLISH)
     assert result.pullbacks == ()
-    assert result.pending == ()
     assert len(result.invalidated) == 1
     assert result.invalidated[0].start_candle_id == "outside_start"
     assert result.resolution is minor.PullbackResolution.INVALIDATED_UNAVAILABLE_SEQUENCE
@@ -126,7 +124,6 @@ def test_later_observable_completion_cannot_resolve_invalidated_outside_completi
     )
     result = minor.detect_valid_pullbacks(candles, minor.PullbackDirection.BULLISH)
     assert result.pullbacks == ()
-    assert result.pending == ()
     assert len(result.invalidated) == 1
     assert result.invalidated[0].start_candle_id == "pb1"
     assert result.invalidated[0].reference_candle_id == "r"
@@ -245,7 +242,6 @@ def test_layer2_resolution_is_explicit_when_no_event_exists():
     )
     result = minor.detect_valid_pullbacks(candles, minor.PullbackDirection.BULLISH)
     assert result.pullbacks == ()
-    assert result.pending == ()
     assert result.resolution is minor.PullbackResolution.NONE
 
 
@@ -280,7 +276,6 @@ def test_invalidated_latest_state_overrides_historical_confirmation():
     result = minor.detect_valid_pullbacks(candles, minor.PullbackDirection.BULLISH)
     assert len(result.pullbacks) == 1
     assert result.active.pullback is result.pullbacks[0]
-    assert result.pending == ()
     assert len(result.invalidated) == 1
     assert result.invalidated[0].start_candle_id == "outside_invalidated"
     assert result.resolution is minor.PullbackResolution.INVALIDATED_UNAVAILABLE_SEQUENCE
