@@ -2205,3 +2205,17 @@ The GitHub workflow configuration is present and runs the full pytest suite on p
 **LAYER 4 PYTHON IMPLEMENTATION = IMPLEMENTED, PENDING RUNTIME CI VERIFICATION.**
 
 The previous Layer-4 blocker is resolved at the semantic-contract level. The remaining gate is runtime verification of the repository's complete pytest suite.
+
+
+## LAYER 4 TEST RE-RUN / FIX — 2026-09-27
+
+The first runtime run for commit `2b811206692bf497485dc885ef4b27ee2b90043e` failed during pytest collection, before any test executed. GitHub Actions reported a SyntaxError in `tests/test_bos_engine.py` caused by literal escaped newline sequences in the newly created Layer-4 Python/test files.
+
+### Correction
+- Rewrote `bos_engine.py` and `tests/test_bos_engine.py` with real newline characters.
+- No SMC semantic rule was changed.
+- No test logic was intentionally changed.
+- The correction is on `main` and must be runtime-verified by the workflow.
+
+### Verification status
+The corrected files have been pushed. A fresh GitHub Actions run is expected from the latest push; PASS is not claimed until that run completes.
