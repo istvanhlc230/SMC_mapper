@@ -95,6 +95,7 @@ def test_major_idm_body_close_enters_choch_gate():
         (c("body", "10.2", "10.3", "9.7", "9.8"),),
         ref,
         confirmation_gate_open=False,
+        ltf_context_active=True,
     )
     assert result.resolution is choch_engine.CHoCHResolution.CHOCH_ELIGIBLE
 
