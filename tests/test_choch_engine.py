@@ -67,7 +67,7 @@ def test_major_idm_wick_is_major_idm_sweep_not_choch():
         ref,
         confirmation_gate_open=True,
     )
-    assert result.resolution is choch_engine.CHoCHResolution.MAJOR_IDM_SWEEP
+    assert result.resolution is choch_engine.CHoCHResolution.NO_BOUNDARY_BREAK
     assert not result.confirmed
 
 
@@ -127,3 +127,18 @@ def test_layer5_does_not_export_downstream_semantics():
     assert not hasattr(choch_engine, "RR")
     assert not hasattr(choch_engine, "TARGET")
     assert not hasattr(choch_engine, "BOS")
+
+def test_protected_boundary_with_major_idm_provenance_wick_is_major_idm_sweep():
+    ref = choch_engine.reference_from_boundary(
+        PullbackDirection.BULLISH,
+        price=Decimal("10"),
+        source_candle_id="protected",
+        idm_class=structural.IDMClass.MAJOR_IDM,
+        idm_origin=structural.IDMOrigin.PROTECTED_EXTERNAL_BOUNDARY,
+    )
+    result = choch_engine.detect_choch(
+        (c("wick", "10.2", "10.4", "9.8", "10.1"),),
+        ref,
+        confirmation_gate_open=True,
+    )
+    assert result.resolution is choch_engine.CHoCHResolution.MAJOR_IDM_SWEEP
