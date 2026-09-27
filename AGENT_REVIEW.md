@@ -2164,3 +2164,44 @@ The repository's `.github/workflows/tests.yml` runs the full pytest suite on pus
 **LAYER 4 PYTHON IMPLEMENTATION AUDIT = BLOCKED / NOT APPROVED.**
 
 The canonical Layer-4 specification is internally aligned and knowledgebase-convergent, but implementation work must first resolve the Protected External Boundary → IDM_TAKEN / structural-event handoff and establish explicit execution-phase provenance. Only then should the retained `bos_engine.py` implementation and Layer-4 regression suite be introduced and runtime-verified.
+
+
+## LAYER 4 HANDOFF CORRECTION — 2026-09-27
+
+The Layer-4 audit blocker was corrected without changing canonical SMC rules.
+
+### Corrections
+
+1. **Protected External Boundary clarified**
+   - A Protected External Boundary-derived Major IDM is already a governing structural boundary.
+   - Layer 4 does not manufacture a new Confirmed Structural Swing from a sweep of that boundary.
+   - A boundary-derived Major-IDM sweep is therefore not a VALID_BOS candidate and remains outside Layer-4 continuation-BOS promotion.
+
+2. **Layer-3 qualification provenance**
+   - `RetracementQualification` now persists `qualification_end_candle_id`.
+   - The provenance is populated from the explicit retracement attempt end, or from the final candle of the evaluated qualification window when no explicit end was supplied.
+   - Layer 4 requires its explicit `execution_start_candle_id` to equal this stored qualification-end provenance and never reconstructs qualification boundaries from OHLC.
+
+3. **Layer-4 implementation**
+   - Added `bos_engine.py`.
+   - Layer 4 consumes Layer-3 `ConfirmedStructuralSwing` and stored retracement qualification.
+   - Physical wick/body penetration is detected through the canonical Layer-1 breach primitive.
+   - Equality/touch is not a break.
+   - Missing retracement qualification yields `IMPULSE_EXTENSION`, never `VALID_BOS`.
+   - Major-IDM boundary provenance is excluded from structural-BOS promotion.
+   - No CHoCH, POI, RR, target, or trade-management semantics are exported.
+
+4. **Regression coverage**
+   - Added `tests/test_bos_engine.py` covering wick BOS, equality non-break, unqualified external break, Major-IDM boundary exclusion, explicit execution provenance, and downstream semantic isolation.
+
+### Verification limitation
+
+The GitHub workflow configuration is present and runs the full pytest suite on pushes to `main`, but the available workflow-run interface returned no run for the current commits. A fresh CI PASS is therefore not claimed. An attempted external clone/test was also unavailable because the execution environment could not resolve GitHub.
+
+### Disposition
+
+**CANONICAL HANDOFF CORRECTION = IMPLEMENTED.**
+
+**LAYER 4 PYTHON IMPLEMENTATION = IMPLEMENTED, PENDING RUNTIME CI VERIFICATION.**
+
+The previous Layer-4 blocker is resolved at the semantic-contract level. The remaining gate is runtime verification of the repository's complete pytest suite.
