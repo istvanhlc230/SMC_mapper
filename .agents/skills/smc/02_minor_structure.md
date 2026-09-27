@@ -262,7 +262,7 @@ A compliant implementation preserves:
 - Outside Bar as an input to pullback formation, with unavailable intrabar order causing terminal candidate invalidation rather than retroactive confirmation.
 - Pullback Extreme Verification across the complete pullback window.
 - Structural qualification through the Layer 3 owner.
-- Active Pullback Pointer following the most recent structurally accepted pullback.
+- Active Pullback Pointer following the most recent completed Candle-Level Valid Pullback for the active impulsive leg. Layer 2 does not require Layer-3 structural acceptance to advance this pointer.
 - Pullback-derived liquidity references following the active pullback and verified extreme provenance; IDM classification is owned by Layer 3.
 - Structural lifecycle events being handed to Layer 3 rather than recreated in Layer 2.
 
