@@ -202,3 +202,13 @@ def test_layer1_observation_invariants_are_fail_closed():
         pass
     else:
         raise AssertionError("undefined trend with protection state accepted")
+
+
+def test_canonical_candle_sequence_model_is_not_historical_evidence():
+    bullish = c("b", "5", "10", "2", "9")
+    bearish = c("r", "9", "10", "1", "8")
+    doji = c("d", "5", "10", "2", "5")
+    assert m.candle_internal_sequence_model(bullish) == ("OPEN", "LOW", "HIGH", "CLOSE")
+    assert m.candle_internal_sequence_model(bearish) == ("OPEN", "HIGH", "LOW", "CLOSE")
+    assert m.candle_internal_sequence_model(doji) is None
+    assert m.SequenceStatus.METHODOLOGY_ASSUMED.value == "METHODOLOGY_ASSUMED"
