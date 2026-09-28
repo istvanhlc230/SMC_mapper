@@ -273,3 +273,67 @@ def test_analyzer_to_zones_to_monitor_round_trip(tmp_path):
 
     persisted = __import__("json").loads(path.read_text(encoding="utf-8"))
     assert persisted["setups"][0]["state"] == "TARGET_REACHED"
+
+
+def test_analyzer_snapshot_preserves_reached_state_only_for_same_version_and_target():
+    from smc_htf_ltf_monitor import Monitor, Candle as MonitorCandle, Notifier
+
+    path = __import__("pathlib").Path(
+        __import__("tempfile").mkstemp(suffix=".json")[1]
+    )
+    try:
+        candidates = (
+            TargetCandidate("T1", "configured", Decimal("10"), "CONFIGURED_TARGET_POLICY"),
+        )
+        timestamp = datetime(2026, 1, 2, tzinfo=timezone.utc)
+        result = SMCAnalyzer("TEST", "1h", PullbackDirection.BULLISH).analyze(
+            make_dummy_data(15),
+            target_candidates=candidates,
+            resolved_target_id="T1",
+            analysis_timestamp=timestamp,
+        )
+        write_monitor_snapshot(result, path)
+
+        monitor = Monitor(str(path))
+        monitor.load_config()
+        with pytest.MonkeyPatch.context() as mp:
+            mp.setattr(Notifier, "alert", lambda *args, **kwargs: None)
+            mp.setattr(
+                __import__("smc_htf_ltf_monitor").Notifier,
+                "alert",
+                lambda *args, **kwargs: None,
+            )
+            monitor.evaluate({
+                "TEST": MonitorCandle(
+                    timestamp,
+                    Decimal("10.20"),
+                    Decimal("9.80"),
+                )
+            })
+
+        reached = __import__("json").loads(path.read_text(encoding="utf-8"))
+        assert reached["setups"][0]["state"] == "TARGET_REACHED"
+
+        same_version = SMCAnalyzer("TEST", "1h", PullbackDirection.BULLISH).analyze(
+            make_dummy_data(15),
+            target_candidates=candidates,
+            resolved_target_id="T1",
+            analysis_timestamp=datetime(2026, 1, 3, tzinfo=timezone.utc),
+        )
+        write_monitor_snapshot(same_version, path)
+        preserved = __import__("json").loads(path.read_text(encoding="utf-8"))
+        assert preserved["setups"][0]["state"] == "TARGET_REACHED"
+
+        changed_target = SMCAnalyzer("TEST", "1h", PullbackDirection.BULLISH).analyze(
+            make_dummy_data(15),
+            target_candidates=(
+                TargetCandidate("T1", "configured", Decimal("10.10"), "CONFIGURED_TARGET_POLICY"),
+            ),
+            resolved_target_id="T1",
+            analysis_timestamp=datetime(2026, 1, 4, tzinfo=timezone.utc),
+        )
+        write_monitor_snapshot(changed_target, path)
+        reset = __import__("json").loads(path.read_text(encoding="utf-8"))
+        assert reset["setups"][0]["state"] == "TARGET_ACTIVE"
+    finally:
+        path.unlink(missing_ok=True)
