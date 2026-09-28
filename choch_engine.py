@@ -183,11 +183,25 @@ def _physical_break(candle: Candle, reference: CHoCHReference) -> tuple[BreachMo
     return observation.mode, body_close
 
 
-def _eligible_for_break(reference: CHoCHReference, body_close: bool) -> CHoCHResolution | None:
+def _eligible_for_break(
+    candle: Candle,
+    reference: CHoCHReference,
+    body_close: bool,
+    fallback_major_idm_reference: CHoCHReference | None = None,
+) -> CHoCHResolution | None:
     if reference.idm_class is IDMClass.MAJOR_IDM and not body_close:
         if reference.kind is CHoCHReferenceKind.PROTECTED_OPPOSING_BOUNDARY:
             return CHoCHResolution.MAJOR_IDM_SWEEP
-    if reference.kind is CHoCHReferenceKind.LTF_ACTIVE_IDM and reference.idm_class is IDMClass.MINOR_IDM and not body_close:
+    if (
+        reference.kind is CHoCHReferenceKind.LTF_ACTIVE_IDM
+        and reference.idm_class is IDMClass.MINOR_IDM
+        and not body_close
+    ):
+        if fallback_major_idm_reference is None:
+            return CHoCHResolution.NO_BOUNDARY_BREAK
+        fallback_event = _physical_break(candle, fallback_major_idm_reference)
+        if fallback_event is not None:
+            return CHoCHResolution.MAJOR_IDM_SWEEP
         return CHoCHResolution.NO_BOUNDARY_BREAK
     return None
 
@@ -199,6 +213,7 @@ def detect_choch(
     confirmation_gate_open: bool,
     break_candle_id: str | None = None,
     ltf_context_active: bool = False,
+    fallback_major_idm_reference: CHoCHReference | None = None,
 ) -> CHoCHAnalysis:
     """Classify the first physical opposing-boundary break.
 
@@ -234,7 +249,12 @@ def detect_choch(
         if event is None:
             continue
         mode, body_close = event
-        gated = _eligible_for_break(reference, body_close)
+        gated = _eligible_for_break(
+            candle,
+            reference,
+            body_close,
+            fallback_major_idm_reference,
+        )
         if gated is not None:
             return CHoCHAnalysis(gated, None, False, confirmation_gate_open)
 
