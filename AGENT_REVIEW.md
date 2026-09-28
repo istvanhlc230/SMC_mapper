@@ -1365,3 +1365,73 @@ Verified conditions:
 - regression tests cover the repaired paths;
 - GitHub Actions: **99 passed, 0 failed** on run 247;
 - documentation-only finalization also passed run 248.
+
+
+# PHASE 23 — ANALYZER ↔ zones.json ↔ MONITOR INTEGRATION REPAIR
+
+## 1. Scope
+Implementation-only repair of the Analyzer → zones.json → Monitor handoff.
+No files under .agents/skills/smc/ were modified.
+
+## 2. Repairs Applied
+
+### Analyzer
+- Added a versioned monitor-contract schema (TARGET_SCHEMA_VERSION = 1).
+- Added explicit target resolution status.
+- Target candidates require stable target_id, target_type, finite Decimal price, and explicit provenance.
+- Target selection remains explicit policy input; no universal target-selection rule was introduced.
+- Added explicit multi-target resolution (resolved_target_ids) for multi-leg Target Plans.
+- Target-plan legs must reference resolved targets.
+- Added deterministic structural_hash; wall-clock analysis_timestamp is excluded from the hash.
+- Added analyzer serialization and atomic zones.json snapshot writing.
+- Unresolved targets produce no monitorable setup.
+- Existing TARGET_REACHED state is preserved only when the same monitor_id, structural hash, and target price remain unchanged.
+
+### zones.json
+- Migrated from the legacy scalar-target structure to schema version 1.
+- Existing manually configured targets remain explicitly marked as CONFIGURATION / CONFIGURED_TARGET_POLICY.
+- No synthetic provenance is fabricated.
+
+### Monitor
+- Removed legacy implicit defaults for target identity/provenance.
+- Rejects legacy scalar-only target records.
+- Requires explicit target_resolution, candidate match, target object, target plan, stable monitor/setup/leg identity, and valid direction.
+- Analyzer-originated records require analysis_timestamp and structural_hash.
+- Uses Decimal consistently for target/live-candle prices.
+- Uses timezone-aware UTC timestamps.
+- Persists state by stable monitor_id, not array position.
+- State persistence is atomic and persistence errors suppress notifications.
+- TARGET_REACHED remains notification-only; no position close, stop movement, or order submission was added.
+- Multi-leg plans are represented as separate monitorable leg records.
+
+## 3. Regression / Integration Coverage
+Added tests for:
+- explicit target resolution and unresolved fail-closed behavior;
+- provenance validation;
+- deterministic structural identity independent of timestamp;
+- analyzer serialization;
+- multi-target/multi-leg serialization;
+- Analyzer → zones.json → Monitor round trip;
+- target reached state preservation across identical snapshots;
+- target state reset when target price changes;
+- monitor contract rejection of legacy/incomplete records;
+- Decimal/UTC candle handling;
+- notification suppression on persistence failure.
+
+## 4. Canonical Skill Impact
+**NO CANONICAL SKILL CHANGE REQUIRED.**
+
+The canonical target architecture remains:
+TARGET_CANDIDATE → CONFIGURED TARGET POLICY → RESOLVED TARGET(S) → RR.
+No universal target priority, target winner, or automatic TP policy was added.
+The existing first-BOS/source-gap wording was not changed.
+
+## 5. Verification
+The implementation changes are being verified through the repository's GitHub Actions test workflow.
+Earlier failures during this repair cycle were corrected:
+- incorrect BOS hash-field access;
+- inconsistent single-vs-multi resolved target modeling;
+- unresolved legs entering monitor serialization;
+- empty temporary test file being treated as valid JSON.
+
+Final status is recorded only after the latest GitHub Actions run is green.
