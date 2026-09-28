@@ -756,3 +756,58 @@ Result: `91 passed, 0 failed, 0 skipped/xfail in 1.04s`
 
 
 
+
+---
+
+# PHASE 20 — TARGETED CORRECTION (FINDINGS 1–5)
+
+## 1. Overview
+Implemented the 5 findings from the Phase 20 independent audit to ensure perfect alignment between source evidence, canonical structural authority, and downstream risk/implementation boundaries.
+
+## 2. Findings and Corrections
+
+### Finding 1: Overly broad determinism claim (L8)
+- **Issue:** §49.4 and §49.5 claimed full determinism without acknowledging the documented First-BOS retracement baseline specification gap.
+- **Correction Applied:** 
+  - Narrowed the determinism claim in \.agents/skills/smc/08_implementation.md\ to state that event detection, classification, and transition are deterministic *once the required canonical inputs exist*. 
+  - Kept the First-BOS gap explicit: \DETERMINISTIC AFTER REQUIRED CANONICAL INPUTS EXIST ? ALL REQUIRED INPUTS ARE CURRENTLY CANONICALLY SPECIFIED\.
+
+### Finding 2: Stale \Primary Target\ terminology (L8 / L6 / L7)
+- **Issue:** \Primary Target\ remained in the implementation file, implying a universal target despite the methodology clarifying it doesn't exist.
+- **Correction Applied:** 
+  - Removed \policy-designated Primary Target\ from \.agents/skills/smc/08_implementation.md\.
+  - Replaced it with the canonical \RESOLVED TARGET\ derived from \TARGET POLICY RESOLUTION\.
+  - Confirmed \Primary Target\ is removed as a canonical concept across L6, L7, and L8.
+
+### Finding 3: Ambiguous event-precedence ownership (L8)
+- **Issue:** The event precedence list was presented ambiguously, potentially reading like a source methodology rule.
+- **Correction Applied:** 
+  - Explicitly classified it in \.agents/skills/smc/08_implementation.md\ as an *implementation-level event-resolution precedence* used to deterministically resolve overlapping physical OHLC relationships, rather than a new semantic rule.
+
+### Finding 4: Stale pullback reference (Knowledgebase)
+- **Issue:** \knowledgebase/reference/03_pullback_retracement.md\ contained outdated wording (\The reduced retracement path uses exactly two candles\).
+- **Correction Applied:** 
+  - Updated to reflect the canonical L3 model: normal path >=3 candles, 2-candle reduced path, and 1-candle exceptional displacement outlier.
+  - Reiterated that this layer is evidence, not authority.
+
+### Finding 5: Strong pro-trend target wording (Knowledgebase)
+- **Issue:** \knowledgebase/reference/08_risk_targets_policy.md\ mapped the external extreme directly to a canonical target.
+- **Correction Applied:** 
+  - Updated to match the downstream architecture: \CANDIDATES / EXPLICIT POLICY TARGET ? CONFIGURED TARGET POLICY ? RESOLVED TARGET ? RR\.
+
+## 3. Cross-Layer Validation Result
+- **L3 ? L4 / L5:** Fully intact. First-BOS baseline gap remains formally bounded.
+- **L6 ? L7 ? L8:** Target candidate ? resolved target distinction is perfectly solid. 
+- **Knowledgebase ? Canonical Skill boundary:** Clarified that references are evidence; they do not dictate downstream logic.
+- **Event Precedence:** Safely scoped as an implementation tool.
+
+## 4. Source / Evidence Classification
+- First-BOS Retracement Baseline: **OPEN SPECIFICATION AMBIGUITY / SOURCE GAP**
+- Implementation Event Precedence: **IMPLEMENTATION CONTRACT**
+- Unidirectional Target Pipeline: **IMPLEMENTATION CONTRACT**
+
+## 5. Test Result
+- Command: \python -m pytest\
+- Result: \91 passed, 0 failed, 0 skipped/xfail\
+*Developer-local test execution; no independent GitHub Actions/CI verification.*
+

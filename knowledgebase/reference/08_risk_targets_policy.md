@@ -35,11 +35,36 @@ The numeric buffer remains configurable because the source language does not est
 
 ## Targets
 
-The pro-trend target path is canonicalized around the current confirmed external extreme or external liquidity.
+```text
+CONFIRMED EXTERNAL EXTREME
+        ↓
+CANONICAL TARGET CANDIDATE / STRUCTURAL INPUT
+        ↓
+TARGET POLICY
+        ↓
+RESOLVED TARGET
+```
 
-Exact LTF and universal countertrend target hierarchies remain partially open.
+The reference layer explicitly states:
+- the confirmed external extreme/external liquidity is a source-backed target candidate;
+- there is no universal target priority;
+- there is no universal `Primary Target`;
+- LTF target convention is policy-selected;
+- countertrend destination is setup-specific;
+- fixed-R may be used as a non-structural policy target where permitted;
+- RR does not create a target;
+- the reference layer must not canonicalize downstream target-policy details.
 
-RR consumes a resolved target; RR must not invent one.
+The canonical L6/L7/L8 architecture must be preserved:
+```text
+CANDIDATES / EXPLICIT POLICY TARGET
+        ↓
+CONFIGURED TARGET POLICY
+        ↓
+RESOLVED TARGET
+        ↓
+RR
+```
 
 ## Trading policy
 

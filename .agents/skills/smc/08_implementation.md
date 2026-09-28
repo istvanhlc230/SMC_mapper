@@ -823,7 +823,7 @@ Required mappings:
 - countertrend -> setup-specific next canonical destination candidate, such as the next valid POI, IDM, Engineering Liquidity, or external liquidity, according to the active setup contract;
 - the source does not define one universal priority among all simultaneously valid target candidates;
 - therefore the analyzer must not imply that Canonical SMC yields a universal Primary Target, and must not manufacture a single universal winner target merely to satisfy an RR calculation;
-- the RR gate may consume a resolved target ONLY after the configured target policy has resolved one (`RESOLVED TARGET` / policy-designated Primary Target);
+- the RR gate may consume a resolved target ONLY after the configured target policy has resolved one (`RESOLVED TARGET`);
 - if no valid target is resolved:
   ```text
   NO_RESOLVED_TARGET
@@ -956,7 +956,7 @@ Required invariants:
 - IDM never becomes POI;
 - OF failure does not automatically promote Extreme POI;
 - all four entry modules remain execution-layer mechanisms;
-- executable setups are gated by `Projected_RR_to_Resolved_Target >= Configured_Minimum_RR` when the configured trading policy requires an RR gate; here `Resolved Target` (or policy-designated Primary Target) is strictly a downstream resolved target-policy object, NOT a universal canonical SMC target; if no target is resolved (`NO_RESOLVED_TARGET`), no automatic TP submission occurs and no synthetic target may be manufactured to satisfy the RR gate;
+- executable setups are gated by `Projected_RR_to_Resolved_Target >= Configured_Minimum_RR` when the configured trading policy requires an RR gate; here `Resolved Target` is strictly a downstream resolved target-policy object, NOT a universal canonical SMC target; if no target is resolved (`NO_RESOLVED_TARGET`), no automatic TP submission occurs and no synthetic target may be manufactured to satisfy the RR gate;
 - closed-range POIs become non-tradable after lifecycle expiration.
 
 ### Genesis
@@ -1025,7 +1025,19 @@ NEW_SVP_QUALIFIED
 NO_EVENT / INTERNAL_PB
 ```
 
-The precedence applies only to **event detection**. It does not directly declare a structural outcome or next state.
+This is strictly an **implementation-level event-resolution precedence**, not a source-canonical True SMC methodology rule. It is used to deterministically resolve overlapping physical OHLC relationships and is not a new structural semantic rule, nor a basis for inventing new event classes or changing canonical event meaning.
+
+The ownership model is expressed as:
+
+```text
+SOURCE-CANONICAL EVENT SEMANTICS
+        ↓
+CANONICAL STRUCTURAL IDENTITY / PROVENANCE
+        ↓
+IMPLEMENTATION EVENT-RESOLUTION PRECEDENCE
+        ↓
+ONE REPRESENTED EVENT
+```
 
 Where multiple physical relationships appear possible, the event is resolved using the canonical structural identity and active lifecycle of the referenced level. Geometry alone must not manufacture a competing event class.
 
@@ -1149,7 +1161,7 @@ Canonical True SMC strictly prohibits fabricating a governing Dealing Range or m
 
 ### 49.5 Determinism invariants
 
-The following are mandatory:
+The following are deterministic **once the required canonical inputs exist**:
 
 ```text
 EVENT DETECTION
@@ -1159,7 +1171,16 @@ EVENT CLASSIFICATION
 → exactly ONE structural outcome for the detected event
 
 STATE TRANSITION
-→ exactly ONE next state for Current State + Outcome
+→ exactly ONE next state for a defined Current State + Outcome combination
+```
+
+**First-BOS Specification Gap:**
+The first `VALID_BOS` retracement baseline remains an `OPEN SPECIFICATION AMBIGUITY / SOURCE GAP`. Initial qualification is not fully specified until that baseline is canonicalized. The implementation must not solve this by inventing a synthetic dealing range, provisional Protected Structural Extreme, new heuristic, or initialization rule.
+
+```text
+DETERMINISTIC AFTER REQUIRED CANONICAL INPUTS EXIST
+≠
+ALL REQUIRED INPUTS ARE CURRENTLY CANONICALLY SPECIFIED
 ```
 
 Additional invariants:

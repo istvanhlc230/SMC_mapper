@@ -315,7 +315,7 @@ Where required by the configurable execution layer policy:
 Projected_RR_to_Resolved_Target >= Configured_Minimum_RR
 ```
 
-RR gating is a configurable trading policy, not a universal structural requirement. This is an entry/setup gate, not a target-location rule. The RR gate consumes a resolved target object (`RESOLVED TARGET` / policy-designated Primary Target) only after the configured target policy resolves one. If no valid target is resolved (`NO_RESOLVED_TARGET`), no target may be manufactured merely to satisfy the RR gate.
+RR gating is a configurable trading policy, not a universal structural requirement. This is an entry/setup gate, not a target-location rule. The RR gate consumes a resolved target object (`RESOLVED TARGET`) only after the configured target policy resolves one. If no valid target is resolved (`NO_RESOLVED_TARGET`), no target may be manufactured merely to satisfy the RR gate.
 
 ### Counter-trend / pullback execution
 

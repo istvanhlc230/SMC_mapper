@@ -17,8 +17,12 @@
 
 - 50% is the standard major-retracement qualification path.
 - 38.2% to below 50% is conditional and requires the applicable immediate Higher Timeframe valid-pullback path.
-- The reduced retracement path uses exactly two candles.
-- Structural retracement qualification has one semantic owner; downstream modules consume the qualification result instead of independently repeating the threshold logic.
+- The normal path requires at least 3 opposing retracement candles.
+- Reduced-candle qualification is a source-backed exception (the source material contains rare cases with fewer than 3 candles where the displacement is exceptional).
+- The current deterministic implementation formalization separates the 2-candle reduced case and the 1-candle exceptional displacement outlier.
+- Do NOT present the 1-candle formalization as a literal universal source rule.
+- The detailed deterministic qualification owner is `.agents/skills/smc/03_structural_semantic_authority.md`.
+- The `knowledgebase/reference/` layer remains evidence/reconciliation material, not canonical authority.
 
 ## Historical source evidence
 
