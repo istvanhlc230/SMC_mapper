@@ -1265,3 +1265,86 @@ Canonical methodology remains unchanged; the source gap remains explicit; implem
 ## 4. Phase 22 Status
 - **PASS**: No canonical contradictions, no state leakages, no engine type mismatches, no 7-event residue, no synthetic baselines, no CHoCH interface mismatch.
 
+
+---
+
+# PHASE 22 — CORRECTED IMPLEMENTATION RE-AUDIT
+
+## 1. Previous Phase 22 PASS — Superseded
+
+The earlier Phase 22 PASS was not valid because the implementation still contained:
+- a runtime-incompatible analyzer/engine call contract;
+- a First-BOS unresolved classification outcome;
+- stubbed L4/L5 analyzer outputs;
+- incomplete LTF Structural Glitch handling.
+
+This section supersedes that earlier PASS assessment.
+
+## 2. Corrections Applied
+
+### Analyzer / engine contract
+- Removed the redundant analyzer-local Candle type.
+- MarketDataNormalizer now emits canonical microstructure_engine.Candle instances.
+- SMCAnalyzer.analyze() now supplies the required Layer-2 direction.
+- Removed the invalid construction of IDMLifecycleContext with unrelated positional arguments.
+- Layer-3 IDM_TAKEN is derived from canonical active_idm.takeout_candle_id.
+- L4 and L5 now return explicit engine result objects instead of None stubs.
+- The analyzer delegates to the real L1→L2→L3→L4→L5 engine chain.
+
+### Event model
+The analyzer now contains exactly the six L8 event classes:
+- NO_EVENT_INTERNAL_PB
+- MINOR_IDM_EVENT
+- EXT_CONT_BREAK
+- EXT_OPP_BREAK
+- MAJOR_IDM_EVENT
+- NEW_SVP_QUALIFIED
+
+No FALLBACK_EVENT or REAL_MAJOR_IDM_EVENT remains.
+
+### First-BOS status separation
+FIRST_BOS_RETRACEMENT_UNRESOLVED was removed from ClassificationOutcome.
+
+FirstBOSRetracementBaselineStatus.UNSPECIFIED_CANONICAL_INPUT remains an input/process representation only.
+
+When the First-BOS baseline is unavailable:
+REQUIRED INPUT MISSING → NO VALID_BOS CLASSIFICATION → REMAIN.
+
+No synthetic baseline, protected extreme, or range rollover is created.
+
+### Deterministic dispatcher
+The dispatcher now returns no structural classification outcome when the First-BOS baseline input is unspecified.
+
+The five lifecycle states remain unchanged and CONFIRMATION GATE UNLOCKED remains a process condition rather than a lifecycle state.
+
+### LTF Structural Glitch / CHoCH
+choch_engine.py now accepts an explicit external Major IDM fallback reference for the Minor-IDM-only LTF Structural Glitch case.
+
+- Minor-IDM-only LTF wick without external Major IDM evidence fails closed.
+- When the external protected boundary is actually penetrated, the result is MAJOR_IDM_SWEEP.
+- The non-canonical MINOR_IDM_SWEEP resolution was removed.
+
+## 3. Test Coverage Added/Corrected
+
+Tests now cover:
+- six-event canonical enum;
+- canonical L1 Candle compatibility;
+- real SMCAnalyzer.analyze() execution through the L1→L5 chain;
+- explicit direction requirement;
+- First-BOS unresolved state separation;
+- post-BOS deterministic transition behavior;
+- LTF Minor-IDM wick with and without the required external Major IDM reference.
+
+## 4. Current Verification
+
+GitHub Actions executed the updated suite. The first post-repair run exposed and was corrected for a test-fixture error: the supplied candle did not penetrate the declared external Major IDM reference.
+
+The corrected fixture was committed after that failure.
+
+Final Phase 22 status must be determined from the newest GitHub Actions run for the corrected commit; no PASS is claimed here until that run reports success.
+
+## 5. Residual Findings
+
+No canonical methodology change is required for these implementation repairs.
+
+The analyzer still intentionally leaves L6/L7 target/POI resolution policy-driven and does not invent a universal target.
