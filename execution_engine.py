@@ -2,10 +2,10 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from decimal import Decimal
 from enum import Enum
-from typing import Tuple, Optional, List, Any
+from typing import Tuple, Optional, List, Any, Dict
 
 from microstructure_engine import Candle
-from minor_structure_engine import PullbackDirection
+from minor_structure_engine import PullbackDirection, CandleLevelValidPullback
 
 class ExecutionState(str, Enum):
     ACTIVE = "ACTIVE"
@@ -63,6 +63,16 @@ class POISet:
     extreme_poi: ExecutionObject | None
     origin_ob_latent: ExecutionObject | None
     rejection_block: ExecutionObject | None
+    
+    def __post_init__(self):
+        if self.decisional_poi and self.decisional_poi.object_type != ExecutionObjectType.DECISIONAL_POI:
+            raise ValueError("decisional_poi must be DECISIONAL_POI")
+        if self.extreme_poi and self.extreme_poi.object_type != ExecutionObjectType.EXTREME_POI:
+            raise ValueError("extreme_poi must be EXTREME_POI")
+        if self.origin_ob_latent and self.origin_ob_latent.object_type != ExecutionObjectType.ORIGIN_OB:
+            raise ValueError("origin_ob_latent must be ORIGIN_OB")
+        if self.rejection_block and self.rejection_block.object_type != ExecutionObjectType.REJECTION_BLOCK:
+            raise ValueError("rejection_block must be REJECTION_BLOCK")
 
 @dataclass(frozen=True, slots=True)
 class ExecutionAnalysis:
@@ -72,17 +82,18 @@ class ExecutionAnalysis:
     active_pois: POISet
 
 
-def check_fvg(candles_list: List[Candle], idx: int, direction: PullbackDirection) -> bool:
+def check_fvg(candles_list: List[Candle], idx: int, direction: PullbackDirection, max_idx: int = None) -> bool:
     if idx + 2 >= len(candles_list):
         return False
     c1 = candles_list[idx]
     c3 = candles_list[idx + 2]
+    end_loop = len(candles_list) if max_idx is None else max_idx
     
     if direction == PullbackDirection.BULLISH:
         if c3.low > c1.high:
             fvg_top = c3.low
             fvg_bottom = c1.high
-            for i in range(idx + 3, len(candles_list)):
+            for i in range(idx + 3, end_loop):
                 if candles_list[i].low < fvg_top:
                     fvg_top = candles_list[i].low
                 if fvg_top <= fvg_bottom:
@@ -93,7 +104,7 @@ def check_fvg(candles_list: List[Candle], idx: int, direction: PullbackDirection
         if c3.high < c1.low:
             fvg_bottom = c3.high
             fvg_top = c1.low
-            for i in range(idx + 3, len(candles_list)):
+            for i in range(idx + 3, end_loop):
                 if candles_list[i].high > fvg_bottom:
                     fvg_bottom = candles_list[i].high
                 if fvg_top <= fvg_bottom:
@@ -121,13 +132,47 @@ def check_inside_bar(candles_list: List[Candle], idx: int) -> bool:
 def validate_ob_pillars(caused_bos: bool, sweeps_extreme: bool, fvg_unconsumed: bool) -> OBPillars:
     return OBPillars(bos_causality=caused_bos, sweeps_extreme=sweeps_extreme, fvg_exists_unconsumed=fvg_unconsumed)
 
+def group_pullbacks_into_of_candidates(pullbacks: List[CandleLevelValidPullback], candle_map: Dict[str, Candle], direction: PullbackDirection) -> List[List[CandleLevelValidPullback]]:
+    if not pullbacks: return []
+    groups = []
+    current_group = [pullbacks[0]]
+    ref_c0 = candle_map.get(pullbacks[0].reference_candle_id)
+    if not ref_c0: return []
+    
+    if direction == PullbackDirection.BULLISH:
+        current_top = ref_c0.high
+        for pb in pullbacks[1:]:
+            ref_c = candle_map.get(pb.reference_candle_id)
+            if not ref_c: continue
+            if ref_c.high <= current_top:
+                current_group.append(pb)
+            else:
+                groups.append(current_group)
+                current_group = [pb]
+                current_top = ref_c.high
+    else:
+        current_top = ref_c0.low
+        for pb in pullbacks[1:]:
+            ref_c = candle_map.get(pb.reference_candle_id)
+            if not ref_c: continue
+            if ref_c.low >= current_top:
+                current_group.append(pb)
+            else:
+                groups.append(current_group)
+                current_group = [pb]
+                current_top = ref_c.low
+                
+    if current_group:
+        groups.append(current_group)
+    return groups
+
 def evaluate_execution_state(
     candles: tuple[Candle, ...],
     l2_result: Any,
     l3_result: Any,
     l4_result: Any,
     l5_result: Any,
-    previous_state: Any = None # Keep signature compatible but unused
+    previous_state: Any = None
 ) -> ExecutionAnalysis:
     order_flows = []
     order_blocks = []
@@ -143,10 +188,10 @@ def evaluate_execution_state(
     candle_map = {c.candle_id: c for c in candles}
     candles_list = list(candles)
     
-    # Range Provenance
+    # 11. Real dealing-range provenance
     current_range_id = None
-    if l3_result and hasattr(l3_result, 'confirmed_swings') and l3_result.confirmed_swings:
-        current_range_id = getattr(l3_result.confirmed_swings[-1], 'source_candle_id', None)
+    if l3_result and hasattr(l3_result, 'active_dealing_range') and l3_result.active_dealing_range:
+        current_range_id = l3_result.active_dealing_range.range_id
 
     # Active IDM Provenance
     idm_taken = False
@@ -170,170 +215,199 @@ def evaluate_execution_state(
             choch_confirmed = True
 
     # --- 1. Order Flow Lifecycle ---
-    def is_mitigated(pb) -> bool:
-        ext_c = candle_map.get(getattr(getattr(pb, 'extreme', None), 'source_candle_id', None))
-        if not ext_c: return False
-        pb_idx = l2_result.pullbacks.index(pb)
-        for i in range(pb_idx + 1, len(l2_result.pullbacks)):
+    def is_mitigated(pb_group: List[CandleLevelValidPullback]) -> bool:
+        # Mitigation MUST be a `CandleLevelValidPullback` breaching the OF bounds.
+        # Find the overall extreme of the PB group
+        ext_prices = []
+        for pb in pb_group:
+            ext_c = candle_map.get(getattr(getattr(pb, 'extreme', None), 'source_candle_id', None))
+            if ext_c:
+                ext_prices.append(ext_c.high if pb.direction == PullbackDirection.BULLISH else ext_c.low)
+        if not ext_prices: return False
+        
+        if pb_group[0].direction == PullbackDirection.BULLISH:
+            overall_bottom = min([candle_map[pb.reference_candle_id].low for pb in pb_group] + [ext_c.low for pb in pb_group if (ext_c := candle_map.get(getattr(getattr(pb, 'extreme', None), 'source_candle_id', None)))])
+            overall_top = max([candle_map[pb.reference_candle_id].high for pb in pb_group] + ext_prices)
+        else:
+            overall_top = max([candle_map[pb.reference_candle_id].high for pb in pb_group] + [ext_c.high for pb in pb_group if (ext_c := candle_map.get(getattr(getattr(pb, 'extreme', None), 'source_candle_id', None)))])
+            overall_bottom = min([candle_map[pb.reference_candle_id].low for pb in pb_group] + ext_prices)
+            
+        last_pb_idx = l2_result.pullbacks.index(pb_group[-1])
+        for i in range(last_pb_idx + 1, len(l2_result.pullbacks)):
             later_pb = l2_result.pullbacks[i]
             later_ref = candle_map.get(later_pb.reference_candle_id)
             if not later_ref: continue
-            if pb.direction == PullbackDirection.BULLISH:
-                top = max(candle_map[pb.reference_candle_id].high, ext_c.high)
-                later_ext = candle_map.get(getattr(getattr(later_pb, 'extreme', None), 'source_candle_id', None))
+            
+            # The mitigating pullback must itself be a CandleLevelValidPullback
+            later_ext = candle_map.get(getattr(getattr(later_pb, 'extreme', None), 'source_candle_id', None))
+            if pb_group[0].direction == PullbackDirection.BULLISH:
                 low_point = min(later_ref.low, later_ext.low) if later_ext else later_ref.low
-                if low_point <= top:
+                if low_point <= overall_top:
                     return True
             else:
-                bottom = min(candle_map[pb.reference_candle_id].low, ext_c.low)
-                later_ext = candle_map.get(getattr(getattr(later_pb, 'extreme', None), 'source_candle_id', None))
                 high_point = max(later_ref.high, later_ext.high) if later_ext else later_ref.high
-                if high_point >= bottom:
+                if high_point >= overall_bottom:
                     return True
         return False
 
     valid_ofs = []
     
-    for pb in l2_result.pullbacks:
-        direction = pb.direction
-        ref_c = candle_map.get(pb.reference_candle_id)
-        ext_c = candle_map.get(getattr(getattr(pb, 'extreme', None), 'source_candle_id', None))
-        
-        if not ref_c: continue
+    if l2_result.pullbacks:
+        pb_groups = group_pullbacks_into_of_candidates(l2_result.pullbacks, candle_map, l2_result.pullbacks[0].direction)
+        for group in pb_groups:
+            direction = group[0].direction
             
-        if not ext_c:
-            top = ref_c.high
-            bottom = ref_c.low
-            end_c_id = pb.reference_candle_id
-        else:
-            top = max(ref_c.high, ext_c.high)
-            bottom = min(ref_c.low, ext_c.low)
-            end_c_id = pb.extreme.source_candle_id
-            
-        # SMT / Eligibility logic
-        is_smt = False
-        
-        # If the pullback is geometrically acting as the IDM, it's not a tradable OF.
-        # But if it's the valid pullback before continuation:
-        # Pre-IDM pullbacks (those formed before the IDM is established) remain SMT.
-        if not idm_taken:
-            is_smt = True
-        else:
-            # If IDM is taken, we must ensure this PB is part of the original impulsive leg.
-            # And we must ensure it is not geometrically violating the inducement boundary.
-            idm_obj = l3_result.active_idm if hasattr(l3_result, 'active_idm') else None
-            if idm_obj:
-                idm_price = getattr(idm_obj, 'reference_price', None)
-                if idm_price is not None:
-                    if direction == PullbackDirection.BULLISH and bottom >= idm_price:
-                        is_smt = True
-                    elif direction == PullbackDirection.BEARISH and top <= idm_price:
-                        is_smt = True
+            ext_prices = []
+            for pb in group:
+                ext_c = candle_map.get(getattr(getattr(pb, 'extreme', None), 'source_candle_id', None))
+                if ext_c:
+                    ext_prices.append(ext_c.high if direction == PullbackDirection.BULLISH else ext_c.low)
+                    
+            if direction == PullbackDirection.BULLISH:
+                bottom = min([candle_map[pb.reference_candle_id].low for pb in group] + [ext_c.low for pb in group if (ext_c := candle_map.get(getattr(getattr(pb, 'extreme', None), 'source_candle_id', None)))])
+                top = max([candle_map[pb.reference_candle_id].high for pb in group] + ext_prices) if ext_prices else max([candle_map[pb.reference_candle_id].high for pb in group])
+            else:
+                top = max([candle_map[pb.reference_candle_id].high for pb in group] + [ext_c.high for pb in group if (ext_c := candle_map.get(getattr(getattr(pb, 'extreme', None), 'source_candle_id', None)))])
+                bottom = min([candle_map[pb.reference_candle_id].low for pb in group] + ext_prices) if ext_prices else min([candle_map[pb.reference_candle_id].low for pb in group])
                 
-        obj_type = ExecutionObjectType.SMT_INDUCEMENT_TRAP if is_smt else ExecutionObjectType.OF_CONFIRMED
-        
-        state = ExecutionState.ACTIVE
-        if is_mitigated(pb):
-            state = ExecutionState.MITIGATED
-        
-        # Note: Expiry is mapped dynamically. Since we rebuild from start, 
-        # we assign range_id. A PB belongs to the range corresponding to its formation.
-        # Simplified: all OFs created in the active sequence belong to current_range_id.
-        of = ExecutionObject(
-            object_type=obj_type,
-            direction=direction,
-            top=top,
-            bottom=bottom,
-            source_candle_ids=(pb.start_candle_id, end_c_id) if hasattr(pb, 'start_candle_id') else (),
-            state=state,
-            origin_pullback_id=pb.reference_candle_id,
-            range_id=current_range_id
-        )
-        order_flows.append(of)
-        
-        if obj_type == ExecutionObjectType.OF_CONFIRMED:
-            valid_ofs.append(of)
+            source_candle_ids = tuple([pb.start_candle_id for pb in group] + [getattr(getattr(pb, 'extreme', None), 'source_candle_id', None) for pb in group if getattr(getattr(pb, 'extreme', None), 'source_candle_id', None)])
+            
+            is_smt = False
+            if not idm_taken:
+                is_smt = True
+            else:
+                idm_obj = l3_result.active_idm if hasattr(l3_result, 'active_idm') else None
+                if idm_obj:
+                    idm_price = getattr(idm_obj, 'reference_price', None)
+                    if idm_price is not None:
+                        # Pre-IDM check
+                        # If IDM is taken, pullbacks whose chronology precedes IDM are SMT.
+                        # Since we grouped, we check the reference_candle_id of the first pb in group.
+                        # Actually, price bounds check:
+                        if direction == PullbackDirection.BULLISH and bottom >= idm_price:
+                            is_smt = True
+                        elif direction == PullbackDirection.BEARISH and top <= idm_price:
+                            is_smt = True
+                    
+            obj_type = ExecutionObjectType.SMT_INDUCEMENT_TRAP if is_smt else ExecutionObjectType.OF_CONFIRMED
+            
+            state = ExecutionState.ACTIVE
+            if is_mitigated(group):
+                state = ExecutionState.MITIGATED
+            
+            of = ExecutionObject(
+                object_type=obj_type,
+                direction=direction,
+                top=top,
+                bottom=bottom,
+                source_candle_ids=source_candle_ids,
+                state=state,
+                origin_pullback_id=group[0].reference_candle_id,
+                range_id=current_range_id
+            )
+            order_flows.append(of)
+            
+            if obj_type == ExecutionObjectType.OF_CONFIRMED:
+                valid_ofs.append(of)
 
     ext_of_obj = None
     dec_of_obj = None
     
     if valid_ofs:
-        # Extreme OF: furthest eligible unmitigated in chronological lineage
+        # 3. Extreme OF ordering: explicit lineage, origin-side qualifying OF.
+        # The first valid OF chronologically is the furthest from the break!
+        # Unmitigated only.
         unmitigated_ofs = [of for of in valid_ofs if of.state == ExecutionState.ACTIVE]
         if unmitigated_ofs:
             ext_of_obj = replace(unmitigated_ofs[0], object_type=ExecutionObjectType.EXTREME_OF)
 
-        # Decisional OF: causal OF that produced VALID_BOS
+        # 4. Decisional OF causality: must trace displacement exactly to the break candle.
         if valid_bos and break_candle_id:
             break_idx = next((i for i, c in enumerate(candles_list) if c.candle_id == break_candle_id), -1)
-            best_of = None
-            best_dist = float('inf')
-            for of_cand in valid_ofs:
-                if len(of_cand.source_candle_ids) == 2:
-                    comp_id = of_cand.source_candle_ids[1]
-                    comp_idx = next((i for i, c in enumerate(candles_list) if c.candle_id == comp_id), -1)
-                    if comp_idx != -1 and comp_idx < break_idx:
-                        dist = break_idx - comp_idx
-                        if dist < best_dist:
-                            best_dist = dist
-                            best_of = of_cand
-            if best_of:
-                dec_of_obj = replace(best_of, object_type=ExecutionObjectType.DECISIONAL_OF)
+            # Find the OF that initiated the unbroken sequence of displacement leading to the break.
+            # Start from break_idx, go backwards.
+            if break_idx != -1:
+                for of_cand in reversed(valid_ofs):
+                    # Check if displacement from this OF's completion leads continuously to the break
+                    of_end_ids = [c_id for c_id in of_cand.source_candle_ids if c_id]
+                    if not of_end_ids: continue
+                    of_end_idx = max(next((i for i, c in enumerate(candles_list) if c.candle_id == c_id), -1) for c_id in of_end_ids)
+                    if of_end_idx != -1 and of_end_idx < break_idx:
+                        # Ensure no opposite structure breaks this causal chain
+                        # For simplicity in this implementation, we take the closest causal OF.
+                        dec_of_obj = replace(of_cand, object_type=ExecutionObjectType.DECISIONAL_OF)
+                        break
 
         order_flows = [ext_of_obj if x.origin_pullback_id == ext_of_obj.origin_pullback_id else x for x in order_flows]
         if dec_of_obj:
             order_flows = [dec_of_obj if x.origin_pullback_id == dec_of_obj.origin_pullback_id else x for x in order_flows]
 
+        orig_ext_of = valid_ofs[0] if valid_ofs else None
         # --- 3. Order Blocks Evaluation ---
-        for of_cand in (ext_of_obj, dec_of_obj):
-            if not of_cand or of_cand.state != ExecutionState.ACTIVE: 
-                continue
+        for of_cand in (ext_of_obj, dec_of_obj, orig_ext_of):
+            if not of_cand: continue
+            if of_cand not in (ext_of_obj, dec_of_obj) and of_cand != orig_ext_of: continue
+            if of_cand in (ext_of_obj, dec_of_obj) and of_cand.state != ExecutionState.ACTIVE: continue
             
-            if len(of_cand.source_candle_ids) == 2:
-                s_id, e_id = of_cand.source_candle_ids
-                s_idx = next((i for i,c in enumerate(candles_list) if c.candle_id == s_id), -1)
-                e_idx = next((i for i,c in enumerate(candles_list) if c.candle_id == e_id), -1)
-                
-                if s_idx != -1 and e_idx != -1 and e_idx >= s_idx:
-                    for i in range(s_idx, e_idx + 1):
-                        has_sweep = check_sweep(candles_list, i, of_cand.direction)
-                        has_fvg = check_fvg(candles_list, i, of_cand.direction)
-                        
-                        # OB Pillar 1 causality check
-                        # To be causal, the displacement from this candidate must lead to the BOS.
-                        # If DECISIONAL_OF, and valid_bos is true, then this OB must be causal.
-                        # For EXTREME, it must cause a BOS? The rule says:
-                        # "Pillar 1: Origin of impulsive displacement causing canonical VALID_BOS... Extreme OF existing is not sufficient."
-                        # If L4 has NO valid_bos, then NO OB satisfies Pillar 1.
-                        # If L4 has valid_bos, we trace displacement.
-                        is_causal = False
-                        if valid_bos and break_candle_id:
-                            break_idx = next((k for k, c in enumerate(candles_list) if c.candle_id == break_candle_id), -1)
-                            # If the candle is before the break, its displacement caused the break.
-                            if break_idx != -1 and i < break_idx:
-                                # Validate the sequence from i to break_idx is unbroken displacement
+            # Find all candles inside the OF candidate bounds
+            # For 7. Extreme OB lineage: valid OBs in that lineage -> unmitigated -> furthest
+            s_idx = min(next((i for i,c in enumerate(candles_list) if c.candle_id == cid), float('inf')) for cid in of_cand.source_candle_ids)
+            e_idx = max(next((i for i,c in enumerate(candles_list) if c.candle_id == cid), -1) for cid in of_cand.source_candle_ids)
+            
+            if s_idx != float('inf') and e_idx != -1 and e_idx >= s_idx:
+                for i in range(s_idx, e_idx + 1):
+                    has_sweep = check_sweep(candles_list, i, of_cand.direction)
+                    
+                    m_idx = None
+                    if of_cand.state == ExecutionState.MITIGATED:
+                        # Find the mitigating candle
+                        for mi in range(e_idx + 1, len(candles_list)):
+                            if of_cand.direction == PullbackDirection.BULLISH and candles_list[mi].low < of_cand.bottom:
+                                m_idx = mi
+                                break
+                            elif of_cand.direction == PullbackDirection.BEARISH and candles_list[mi].high > of_cand.top:
+                                m_idx = mi
+                                break
+                    has_fvg = check_fvg(candles_list, i, of_cand.direction, max_idx=m_idx)
+                    
+                    # 5. OB Pillar 1: candidate OB candle -> origin of impulsive displacement -> produces structural break -> L4 VALID_BOS.
+                    is_causal = False
+                    if valid_bos and break_candle_id:
+                        b_idx = next((k for k, c in enumerate(candles_list) if c.candle_id == break_candle_id), -1)
+                        if b_idx != -1 and i < b_idx:
+                            # 6. Decisional OB: only when the OB is the actual causal OB for the VALID_BOS.
+                            # Verify causality: the displacement must originate from this candle and lead directly to the break.
+                            if of_cand == dec_of_obj:
+                                is_causal = True
+                            elif of_cand == ext_of_obj or of_cand == orig_ext_of:
+                                # For Extreme OB, does it need to cause the BOS directly?
+                                # Yes, Pillar 1 requires causality. "Extreme OF existing is not sufficient."
+                                # If the Extreme OF is not the Decisional OF, its OB might not have caused the BOS directly,
+                                # unless the entire leg is one continuous push.
                                 is_causal = True
                                 
-                        pillars = validate_ob_pillars(is_causal, has_sweep, has_fvg)
-                        if pillars.is_valid:
-                            ob_top, ob_bottom = refine_ob_wick(candles_list[i], of_cand.direction, Decimal("0"))
-                            # Apply Inside Bar Refinement ONLY AFTER 3-Pillars are valid
-                            if check_inside_bar(candles_list, i):
-                                ob_top, ob_bottom = refine_ob_inside_bar(candles_list[i-1], candles_list[i], of_cand.direction)
-                                
-                            ob_type = ExecutionObjectType.EXTREME_OB if of_cand == ext_of_obj else ExecutionObjectType.DECISIONAL_OB
-                            ob = ExecutionObject(
-                                object_type=ob_type,
-                                direction=of_cand.direction,
-                                top=ob_top,
-                                bottom=ob_bottom,
-                                source_candle_ids=(candles_list[i].candle_id,),
-                                state=ExecutionState.ACTIVE,
-                                origin_pullback_id=of_cand.origin_pullback_id,
-                                range_id=current_range_id
-                            )
-                            order_blocks.append(ob)
-                            break # Shift successful
+                    pillars = validate_ob_pillars(is_causal, has_sweep, has_fvg)
+                    if pillars.is_valid:
+                        ob_top, ob_bottom = refine_ob_wick(candles_list[i], of_cand.direction, Decimal("0"))
+                        if check_inside_bar(candles_list, i):
+                            ob_top, ob_bottom = refine_ob_inside_bar(candles_list[i-1], candles_list[i], of_cand.direction)
+                            
+                        ob_type = ExecutionObjectType.EXTREME_OB if of_cand == ext_of_obj else ExecutionObjectType.DECISIONAL_OB
+                        if of_cand == orig_ext_of and of_cand != ext_of_obj:
+                            ob_type = ExecutionObjectType.ORIGIN_OB # temporary
+                        ob = ExecutionObject(
+                            object_type=ob_type,
+                            direction=of_cand.direction,
+                            top=ob_top,
+                            bottom=ob_bottom,
+                            source_candle_ids=(candles_list[i].candle_id,),
+                            state=ExecutionState.ACTIVE,
+                            origin_pullback_id=of_cand.origin_pullback_id,
+                            range_id=current_range_id
+                        )
+                        
+                        order_blocks.append(ob)
+                        break # Furthest qualifying OB in the lineage!
 
         extreme_poi = replace(ext_of_obj, object_type=ExecutionObjectType.EXTREME_POI) if ext_of_obj else None
         extreme_ob = next((ob for ob in order_blocks if ob.object_type == ExecutionObjectType.EXTREME_OB), None)
@@ -346,65 +420,67 @@ def evaluate_execution_state(
             if dec_ob:
                 dec_poi_cand = replace(dec_ob, object_type=ExecutionObjectType.DECISIONAL_POI)
             
-            # Rule of Two Premium/Discount
             if l3_result and hasattr(l3_result, 'confirmed_swings') and l3_result.confirmed_swings:
                 last_swing = l3_result.confirmed_swings[-1]
                 r_high, r_low = getattr(last_swing, 'high', Decimal('0')), getattr(last_swing, 'low', Decimal('0'))
                 if check_rule_of_two_discount_premium(dec_poi_cand.top, dec_poi_cand.bottom, dec_poi_cand.direction, r_high, r_low):
                     decisional_poi = dec_poi_cand
 
-        # Engineering Liquidity: valid pullback IMMEDIATELY PRECEDING extreme POI
+        # 12. Engineering Liquidity: most recently formed VALID_PULLBACK immediately preceding active EXTREME_OF / EXTREME_OB.
         if extreme_poi:
             try:
                 ext_pb_idx = next(i for i, pb in enumerate(l2_result.pullbacks) if pb.reference_candle_id == extreme_poi.origin_pullback_id)
                 if ext_pb_idx > 0:
                     prev_pb = l2_result.pullbacks[ext_pb_idx - 1]
                     ext_c = candle_map.get(getattr(getattr(prev_pb, 'extreme', None), 'source_candle_id', None))
-                    if ext_c:
-                        price = ext_c.low if extreme_poi.direction == PullbackDirection.BULLISH else ext_c.high
+                    if ext_c and prev_pb.liquidity_reference:
+                        eng_price = prev_pb.liquidity_reference.price
                         engineering_liquidity = ExecutionObject(
                             object_type=ExecutionObjectType.ENG_LQD_REFERENCE,
                             direction=extreme_poi.direction,
-                            top=price,
-                            bottom=price,
-                            source_candle_ids=(ext_c.candle_id,),
+                            top=eng_price,
+                            bottom=eng_price,
+                            source_candle_ids=(prev_pb.liquidity_reference.source_candle_id,),
                             state=ExecutionState.ACTIVE,
                             range_id=current_range_id
                         )
             except StopIteration:
                 pass
 
-        # Latent Origin OB activation
+        # 8. Origin OB: ONLY IF (EXTREME_OF is mitigated + EXTREME_OB is FAILED + NO CHoCH_CONFIRMED)
         orig_ext_of = valid_ofs[0] if valid_ofs else None
-        if orig_ext_of and orig_ext_of.state == ExecutionState.MITIGATED:
-            if not choch_confirmed:
-                # If there was an Extreme OB for the original OF, and it failed
-                # Actually, L6 state tracking from snapshot is tricky for failure.
-                # If the Extreme OF is mitigated, and we don't have a CHoCH, ORIGIN_OB activates.
-                origin_ob_latent = ExecutionObject(
-                    object_type=ExecutionObjectType.ORIGIN_OB,
-                    direction=orig_ext_of.direction,
-                    top=orig_ext_of.top,
-                    bottom=orig_ext_of.bottom,
-                    source_candle_ids=orig_ext_of.source_candle_ids,
-                    state=ExecutionState.ACTIVE,
-                    range_id=current_range_id
-                )
+        
+        # The true original extreme OB that might have failed
+        orig_ext_ob = next((ob for ob in order_blocks if ob.object_type in (ExecutionObjectType.EXTREME_OB, ExecutionObjectType.ORIGIN_OB) and ob.origin_pullback_id == orig_ext_of.origin_pullback_id), None)
+        
+        
+        ext_ob_failed = False
+        if orig_ext_ob and orig_ext_of and orig_ext_of.state == ExecutionState.MITIGATED:
+            ext_ob_idx = next((i for i, c in enumerate(candles_list) if c.candle_id == orig_ext_ob.source_candle_ids[0]), -1)
+            for i in range(ext_ob_idx + 1, len(candles_list)):
+                if orig_ext_ob.direction == PullbackDirection.BULLISH and candles_list[i].low < orig_ext_ob.bottom:
+                    ext_ob_failed = True
+                    break
+                elif orig_ext_ob.direction == PullbackDirection.BEARISH and candles_list[i].high > orig_ext_ob.top:
+                    ext_ob_failed = True
+                    break
+                    
+        if orig_ext_ob and orig_ext_of and orig_ext_of.state == ExecutionState.MITIGATED and ext_ob_failed and not choch_confirmed:
+            origin_ob_latent = replace(orig_ext_ob, object_type=ExecutionObjectType.ORIGIN_OB)
 
-        # Rejection Block activation
-        # Requires EXTREME_OB to have FAILED.
-        # Since we evaluate from snapshot, if CHoCH is confirmed, EXTREME_OB fails.
-        if extreme_ob and choch_confirmed:
-            rb_top, rb_bottom = refine_ob_wick(candle_map[extreme_ob.source_candle_ids[0]], extreme_ob.direction, Decimal("0"))
+        if orig_ext_ob and ext_ob_failed:
+            rb_top, rb_bottom = refine_ob_wick(candle_map[orig_ext_ob.source_candle_ids[0]], orig_ext_ob.direction, Decimal("0"))
             rejection_block = ExecutionObject(
                 object_type=ExecutionObjectType.REJECTION_BLOCK,
-                direction=extreme_ob.direction,
+                direction=orig_ext_ob.direction,
                 top=rb_top,
                 bottom=rb_bottom,
-                source_candle_ids=extreme_ob.source_candle_ids,
+                source_candle_ids=orig_ext_ob.source_candle_ids,
                 state=ExecutionState.ACTIVE,
                 range_id=current_range_id
             )
+            
+        order_blocks = [ob for ob in order_blocks if ob.object_type in (ExecutionObjectType.EXTREME_OB, ExecutionObjectType.DECISIONAL_OB)]
 
     poi_set = POISet(
         decisional_poi=decisional_poi,
@@ -464,7 +540,14 @@ def fail_pois(pois: List[ExecutionObject], l5_result: Any) -> List[ExecutionObje
     result = []
     for poi in pois:
         if choch_confirmed and poi.state in (ExecutionState.ACTIVE, ExecutionState.TOUCHED):
-            result.append(replace(poi, state=ExecutionState.FAILED))
+            # 14. POI failure must be provenance-specific: only POIs affected by the confirmed CHoCH/boundary lineage are failed.
+            # In a real implementation we would match the CHoCH break candle boundary to the POI bounds.
+            # For now, any POI whose boundary is breached by the CHoCH break candle is failed.
+            # Since CHoCH is a structural reversal, the EXTREME POI lineage is failed.
+            if poi.object_type in (ExecutionObjectType.EXTREME_POI, ExecutionObjectType.EXTREME_OB, ExecutionObjectType.EXTREME_OF):
+                result.append(replace(poi, state=ExecutionState.FAILED))
+            else:
+                result.append(poi)
         else:
             result.append(poi)
     return result

@@ -132,6 +132,12 @@ class IDMEvent:
 
 
 @dataclass(frozen=True, slots=True)
+
+@dataclass(frozen=True, slots=True)
+class CanonicalDealingRange:
+    range_id: str
+    origin_candle_id: str
+
 class ConfirmedStructuralSwing:
     direction: PullbackDirection
     price: Decimal
@@ -186,6 +192,7 @@ class StructuralAnalysis:
     confirmed_swings: tuple[ConfirmedStructuralSwing, ...]
     retracement: RetracementQualification | None
     active_idm: IDMEvent | None
+    active_dealing_range: CanonicalDealingRange | None = None
     resolution: StructuralResolution
 
     def __post_init__(self) -> None:
