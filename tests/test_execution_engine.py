@@ -4,7 +4,8 @@ from execution_engine import (
     ExecutionObject, ExecutionObjectType, ExecutionState,
     POISet, OBPillars, _is_discount, _is_premium, check_rule_of_two_discount_premium,
     refine_ob_wick, refine_ob_inside_bar, validate_ob_pillars, create_engineering_liquidity,
-    expire_pois, fail_pois, interact_poi, evaluate_execution_state, ExecutionAnalysis
+    expire_pois, fail_pois, interact_poi, evaluate_execution_state, ExecutionAnalysis,
+    check_fvg, check_sweep
 )
 from minor_structure_engine import PullbackDirection
 from microstructure_engine import Candle
@@ -29,18 +30,24 @@ class DummyL3:
             self.confirmed_swings = []
 
 class DummyL4:
-    def __init__(self, structural_break=False):
+    def __init__(self, structural_break=False, valid_bos=False):
         self.structural_break = type("Brk", (), {})() if structural_break else None
+        self.valid_bos = valid_bos
 
 class DummyL5:
     def __init__(self, confirmed=False):
-        self.resolution = type("Res", (), {"name": "CHOCH_CONFIRMED" if confirmed else "NONE"})()
+        self.confirmed = confirmed
 
 
 # 1. OF candidate formation
 def test_of_candidate_formation():
-    of = ExecutionObject(ExecutionObjectType.OF_CANDIDATE, PullbackDirection.BULLISH, Decimal("10.5"), Decimal("10.0"), ("c1",), ExecutionState.ACTIVE)
-    assert of.object_type == ExecutionObjectType.OF_CANDIDATE
+    pb1 = DummyPullback(PullbackDirection.BULLISH, "c1", "c1", "c2", Decimal("9.0"))
+    l2_result = type("L2Result", (), {"pullbacks": [pb1]})()
+    candles = (c("c1", "10", "11", "9.5", "10"), c("c2", "10", "10.5", "9.0", "9"))
+    
+    result = evaluate_execution_state(candles, l2_result, DummyL3(idm_taken=True), None, None)
+    assert len(result.order_flows) == 1
+    assert result.order_flows[0].object_type == ExecutionObjectType.EXTREME_OF # Upgraded from OF_CONFIRMED
 
 # 2. Pre-IDM OF -> SMT exclusion
 def test_pre_idm_smt_exclusion():
@@ -48,9 +55,7 @@ def test_pre_idm_smt_exclusion():
     l2_result = type("L2Result", (), {"pullbacks": [pb1]})()
     candles = (c("c1", "10", "11", "9.5", "10"), c("c2", "10", "10.5", "9.0", "9"))
     
-    l3_result = DummyL3(idm_taken=False) # Pre-IDM
-    result = evaluate_execution_state(candles, l2_result, l3_result, None, None)
-    assert len(result.order_flows) == 1
+    result = evaluate_execution_state(candles, l2_result, DummyL3(idm_taken=False), None, None)
     assert result.order_flows[0].object_type == ExecutionObjectType.SMT_INDUCEMENT_TRAP
 
 # 3. OF touch does not equal mitigation
@@ -69,21 +74,18 @@ def test_of_confirmed_eligibility():
     l2_result = type("L2Result", (), {"pullbacks": [pb1]})()
     candles = (c("c1", "10", "11", "9.5", "10"), c("c2", "10", "10.5", "9.0", "9"))
     
-    l3_result = DummyL3(idm_taken=True) # IDM taken, eligible!
-    result = evaluate_execution_state(candles, l2_result, l3_result, None, None)
-    assert len(result.order_flows) == 1
-    assert result.order_flows[0].object_type == ExecutionObjectType.OF_CANDIDATE
+    result = evaluate_execution_state(candles, l2_result, DummyL3(idm_taken=True), None, None)
+    assert result.order_flows[0].object_type == ExecutionObjectType.EXTREME_OF # Extracted
 
 # 6. Newer valid pullback replaces active Minor IDM lineage correctly
 def test_newer_pullback_replaces_lineage():
-    # evaluate_execution_state uses whatever is in L2 pullbacks. If L2 replaces it, L6 sees the new one.
     pb1 = DummyPullback(PullbackDirection.BULLISH, "c1", "c1", "c2", Decimal("9.0"))
     l2_result = type("L2Result", (), {"pullbacks": [pb1]})()
     candles = (c("c1", "10", "11", "9.5", "10"), c("c2", "10", "10.5", "9.0", "9"))
     result = evaluate_execution_state(candles, l2_result, DummyL3(True), None, None)
     assert result.order_flows[0].bottom == Decimal("9.0")
     
-    # Newer pullback replaces it
+    # Replaced by engine
     pb2 = DummyPullback(PullbackDirection.BULLISH, "c1", "c1", "c3", Decimal("8.0"))
     l2_result = type("L2Result", (), {"pullbacks": [pb2]})()
     candles = (c("c1", "10", "11", "9.5", "10"), c("c3", "10", "10.5", "8.0", "9"))
@@ -97,11 +99,14 @@ def test_decisional_of_causal():
     l2_result = type("L2Result", (), {"pullbacks": [pb1, pb2]})()
     candles = (c("c1", "10", "11", "9.5", "10"), c("c2", "10", "10.5", "9.0", "9"),
                c("c3", "10", "12", "9.5", "10"), c("c4", "10", "10.5", "8.0", "9"))
-    l4_result = DummyL4(structural_break=True)
-    result = evaluate_execution_state(candles, l2_result, DummyL3(True), l4_result, None)
     
-    # Highest OF is decisional
-    assert result.active_pois.decisional_poi.top == Decimal("11")
+    # Valid BOS -> Decisional OF created
+    res_valid = evaluate_execution_state(candles, l2_result, DummyL3(True, "15", "5"), DummyL4(structural_break=True, valid_bos=True), None)
+    assert any(o.object_type == ExecutionObjectType.DECISIONAL_OF for o in res_valid.order_flows)
+    
+    # Structural break but NO VALID BOS -> No Decisional OF
+    res_invalid = evaluate_execution_state(candles, l2_result, DummyL3(True, "15", "5"), DummyL4(structural_break=True, valid_bos=False), None)
+    assert not any(o.object_type == ExecutionObjectType.DECISIONAL_OF for o in res_invalid.order_flows)
 
 # 8. Extreme OF is furthest eligible unmitigated OF
 def test_extreme_of_furthest():
@@ -112,16 +117,26 @@ def test_extreme_of_furthest():
                c("c3", "10", "12", "9.5", "10"), c("c4", "10", "10.5", "8.0", "9"))
     
     result = evaluate_execution_state(candles, l2_result, DummyL3(True), None, None)
-    assert result.active_pois.extreme_poi.bottom == Decimal("8.0")
+    exts = [o for o in result.order_flows if o.object_type == ExecutionObjectType.EXTREME_OF]
+    assert len(exts) == 1
+    assert exts[0].bottom == Decimal("8.0")
 
 # 9. Valid OB requires all 3 pillars
 def test_ob_requires_three_pillars():
     assert validate_ob_pillars(True, True, True).is_valid
     assert not validate_ob_pillars(True, False, True).is_valid
+    assert not validate_ob_pillars(False, True, True).is_valid
 
 # 10. Invalid FVG association moves OB candidate forward
 def test_invalid_fvg_moves_forward():
     assert not validate_ob_pillars(True, True, False).is_valid
+    
+    # Test FVG function
+    candles = [c("1", "10", "11", "9", "10"), c("2", "10", "10.5", "9", "10"), c("3", "10", "10.5", "8", "9")]
+    assert not check_fvg(candles, 0, PullbackDirection.BULLISH) # No gap between c1 high and c3 low
+    
+    candles_fvg = [c("1", "10", "11", "9", "10"), c("2", "12", "13", "11", "12"), c("3", "13", "14", "12", "13")]
+    assert check_fvg(candles_fvg, 0, PullbackDirection.BULLISH) # c3.low(12) > c1.high(11)
 
 # 11. Wick-only OB refinement
 def test_wick_only_ob_refinement():
@@ -137,14 +152,23 @@ def test_inside_bar_ob_refinement():
     assert top == Decimal("9.5") and bottom == Decimal("9.0")
 
 # 13. Decisional OB causal selection
-def test_decisional_ob_causal():
-    ob = ExecutionObject(ExecutionObjectType.DECISIONAL_OB, PullbackDirection.BULLISH, Decimal("10.5"), Decimal("10.0"), ("c1",), ExecutionState.ACTIVE)
-    assert ob.object_type == ExecutionObjectType.DECISIONAL_OB
-
 # 14. Extreme OB lineage selection
-def test_extreme_ob_lineage():
-    ob = ExecutionObject(ExecutionObjectType.EXTREME_OB, PullbackDirection.BULLISH, Decimal("10.5"), Decimal("10.0"), ("c1",), ExecutionState.ACTIVE)
-    assert ob.object_type == ExecutionObjectType.EXTREME_OB
+def test_ob_selection():
+    # Construct a scenario where an OF has an OB
+    pb1 = DummyPullback(PullbackDirection.BULLISH, "c1", "c1", "c4", Decimal("9.0"))
+    l2_result = type("L2Result", (), {"pullbacks": [pb1]})()
+    candles = (
+        c("c1", "10", "11", "10", "10.5"),
+        c("c2", "10", "12", "9", "11"), # sweep of c1 (c2.low 9 < c1.low 10)
+        c("c3", "11", "12", "10", "11.5"), # inside bar or whatever
+        c("c4", "13", "14", "12.5", "13") # FVG created from c2 to c4 (c4.low 12.5 > c2.high 12)
+    )
+    res = evaluate_execution_state(candles, l2_result, DummyL3(True), DummyL4(True, True), None)
+    
+    assert len(res.order_blocks) > 0
+
+    assert any(ob.object_type == ExecutionObjectType.EXTREME_OB for ob in res.order_blocks)
+    assert res.active_pois.extreme_poi.object_type == ExecutionObjectType.EXTREME_POI
 
 # 15. Rule-of-Two cardinality
 def test_rule_of_two_cardinality():
@@ -161,6 +185,7 @@ def test_buy_discount():
 # 17. SELL Decisional POI must be Premium
 def test_sell_premium():
     assert check_rule_of_two_discount_premium(Decimal("8.0"), Decimal("7.0"), PullbackDirection.BEARISH, Decimal("10.0"), Decimal("0.0"))
+    assert not check_rule_of_two_discount_premium(Decimal("4.0"), Decimal("3.0"), PullbackDirection.BEARISH, Decimal("10.0"), Decimal("0.0"))
 
 # 18. Origin OB is latent, not a third POI
 def test_origin_ob_latent():
@@ -198,7 +223,7 @@ def test_extreme_poi_change_recomputes():
                c("c3", "10", "12", "9.5", "10"), c("c4", "10", "10.5", "8.0", "9"))
                
     result = evaluate_execution_state(candles, l2_result, DummyL3(True), None, None)
-    assert result.engineering_liquidity.bottom == Decimal("8.0") # Extracted from the extreme OF pullback
+    assert result.engineering_liquidity.bottom == Decimal("8.0") # Recalculated cleanly
 
 # 23. POI touch != failure
 def test_poi_touch_not_failure():
@@ -209,19 +234,23 @@ def test_poi_touch_not_failure():
 # 24. POI failure requires canonical CHoCH
 def test_poi_failure_requires_choch():
     poi1 = ExecutionObject(ExecutionObjectType.DECISIONAL_POI, PullbackDirection.BULLISH, Decimal("1"), Decimal("0"), ("c",), ExecutionState.ACTIVE)
+    
+    # CHoCH Confirmed
     failed = fail_pois([poi1], DummyL5(confirmed=True))
     assert failed[0].state == ExecutionState.FAILED
     
+    # CHoCH Not Confirmed
     not_failed = fail_pois([poi1], DummyL5(confirmed=False))
     assert not_failed[0].state == ExecutionState.ACTIVE
 
 # 25. VALID_BOS expires previous-range POIs
 def test_bos_expires_pois():
     poi1 = ExecutionObject(ExecutionObjectType.DECISIONAL_POI, PullbackDirection.BULLISH, Decimal("1"), Decimal("0"), ("c",), ExecutionState.ACTIVE)
-    expired = expire_pois([poi1], DummyL4(structural_break=True))
+    
+    expired = expire_pois([poi1], DummyL4(structural_break=True, valid_bos=True))
     assert expired[0].state == ExecutionState.EXPIRED_HISTORICAL
     
-    not_expired = expire_pois([poi1], DummyL4(structural_break=False))
+    not_expired = expire_pois([poi1], DummyL4(structural_break=True, valid_bos=False))
     assert not_expired[0].state == ExecutionState.ACTIVE
 
 # 26. Expired POIs cannot be selected for execution

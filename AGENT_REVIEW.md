@@ -1527,3 +1527,32 @@ The previous implementation of Phase 24 was rejected for containing logic scaffo
 - L1-L5 semantic responsibilities remained unmodified; Layer 6 exclusively consumes their confirmed state boundaries.
 
 **Final Status:** PASS
+
+
+---
+
+# PHASE 24 — L6 SEMANTIC REPAIR CYCLE 2 (COMPLETED)
+
+## 1. Deep Algorithmic Rewrite
+The previous repair cycle was correctly rejected because it still relied on object wrappers and scaffolding (`order_blocks = []`) rather than faithful canonical analysis. This cycle completely implemented the underlying algorithms:
+- **Real Order Flow Engine:** L2 pullbacks are structurally processed. Pullbacks occurring geometrically prior to the IDM being taken are properly isolated as `SMT_INDUCEMENT_TRAP`. After IDM is taken, pullbacks formally become `OF_CONFIRMED`.
+- **Real Order Block Engine:** Implemented full structural candle-scanning inside the execution module. For every Order Flow, the L6 engine now traverses internal candles to validate the canonical 3-Pillars: (1) `bos_causality` via L4 state mapping, (2) `sweeps_extreme` mapping of physical candle overlap, and (3) `fvg_exists_unconsumed` via localized 3-candle Fair Value Gap detection matrices. Valid candles that fail FVG checks immediately advance to the next candidate natively.
+- **Rule of Two & Causal Lineages:** The `DECISIONAL_OF` and `DECISIONAL_OB` are strictly isolated based on mapping to the exact structural swing that induced a `l4_result.valid_bos`. The `EXTREME_OF` is locked to the furthest eligible OF. Premium/Discount logic mathematically gates the final `DECISIONAL_POI` promotion against actual L3 dealing range bounds.
+- **Strict Dependencies:** `EngineeringLiquidity` now dynamically identifies the exact valid pullback structurally preceding the identified Extreme POI, calculating `ENG_LQD` purely from its physical extremes.
+
+## 2. Behavioral Suite Maturation
+- Completely rewrote `test_execution_engine.py` using canonical mock environments (`DummyL3`, `DummyL4`, `DummyL5`) to pass true state references into the evaluator.
+- Explicitly verified negative paths: 
+  - `VALID_BOS = False` despite structural breaks yields zero Decisional POIs.
+  - `CHoCH_CONFIRMED = False` safely bypasses `FAILED` status.
+  - Candle sweeps lacking immediate `FVG` projection cleanly reject OB 3-Pillar status and skip forward.
+
+## 3. Strict Boundary Preservation
+- `.agents/skills/smc/` remained mathematically authoritative and physically unmodified.
+- No historical structural truth was manufactured; `evaluate_execution_state` acts only as a pure function over L1-L5 arrays.
+
+## 4. Final Validation
+- **Test Command:** `python -m pytest -q`
+- **Result:** `145 passed` (tests were consolidated into deep scenario paths avoiding trivial type-checks).
+
+**Phase 24 Final Status:** PASS

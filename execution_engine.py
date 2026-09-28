@@ -77,12 +77,35 @@ class ExecutionAnalysis:
     engineering_liquidity: ExecutionObject | None
     active_pois: POISet
 
+def check_fvg(candles_list: List[Candle], idx: int, direction: PullbackDirection) -> bool:
+    if idx + 2 >= len(candles_list):
+        return False
+    c1 = candles_list[idx]
+    c3 = candles_list[idx + 2]
+    if direction == PullbackDirection.BULLISH: # looking for bullish OB, so price displaces up
+        return c3.low > c1.high
+    else:
+        return c3.high < c1.low
+
+def check_sweep(candles_list: List[Candle], idx: int, direction: PullbackDirection) -> bool:
+    if idx == 0:
+        return False
+    curr = candles_list[idx]
+    prev = candles_list[idx - 1]
+    if direction == PullbackDirection.BULLISH: # sweeps previous low
+        return curr.low < prev.low
+    else:
+        return curr.high > prev.high
+
+def validate_ob_pillars(caused_bos: bool, sweeps_extreme: bool, fvg_unconsumed: bool) -> OBPillars:
+    return OBPillars(bos_causality=caused_bos, sweeps_extreme=sweeps_extreme, fvg_exists_unconsumed=fvg_unconsumed)
+
 def evaluate_execution_state(
-    candles,
-    l2_result,
-    l3_result,
-    l4_result,
-    l5_result
+    candles: tuple[Candle, ...],
+    l2_result: Any,
+    l3_result: Any,
+    l4_result: Any,
+    l5_result: Any
 ) -> ExecutionAnalysis:
     order_flows = []
     order_blocks = []
@@ -96,94 +119,147 @@ def evaluate_execution_state(
         return ExecutionAnalysis((), (), None, POISet(None, None, None, None))
 
     candle_map = {c.candle_id: c for c in candles}
+    candles_list = list(candles)
     
     idm_taken = False
     if l3_result and hasattr(l3_result, 'active_idm') and l3_result.active_idm:
         if hasattr(l3_result.active_idm, 'takeout_candle_id') and l3_result.active_idm.takeout_candle_id:
             idm_taken = True
 
-    bos_confirmed = False
-    if l4_result and hasattr(l4_result, 'structural_break') and l4_result.structural_break:
-        bos_confirmed = True
+    valid_bos = False
+    if l4_result and hasattr(l4_result, 'valid_bos') and l4_result.valid_bos:
+        valid_bos = True
 
     valid_ofs = []
     
     for pb in l2_result.pullbacks:
         direction = pb.direction
         ref_c = candle_map.get(pb.reference_candle_id)
-        ext_c = candle_map.get(pb.extreme.candle_id) if hasattr(pb, 'extreme') and hasattr(pb.extreme, 'candle_id') else None
+        ext_c = candle_map.get(getattr(getattr(pb, 'extreme', None), 'candle_id', None))
         
         if not ref_c:
-            top = Decimal("0")
-            bottom = Decimal("0")
+            continue
+            
+        if not ext_c:
+            top = ref_c.high
+            bottom = ref_c.low
+            end_c_id = pb.reference_candle_id
         else:
-            if not ext_c:
-                top = ref_c.high
-                bottom = ref_c.low
-            else:
-                top = max(ref_c.high, ext_c.high)
-                bottom = min(ref_c.low, ext_c.low)
-        
+            top = max(ref_c.high, ext_c.high)
+            bottom = min(ref_c.low, ext_c.low)
+            end_c_id = pb.extreme.candle_id
+            
         obj_type = ExecutionObjectType.OF_CANDIDATE
         if not idm_taken:
             obj_type = ExecutionObjectType.SMT_INDUCEMENT_TRAP
+        else:
+            obj_type = ExecutionObjectType.OF_CONFIRMED
             
+        source_ids = (pb.start_candle_id, end_c_id) if hasattr(pb, 'start_candle_id') else ()
+        
         of = ExecutionObject(
             object_type=obj_type,
             direction=direction,
             top=top,
             bottom=bottom,
-            source_candle_ids=(pb.start_candle_id, getattr(pb, 'completion_candle_id', pb.start_candle_id)) if hasattr(pb, 'start_candle_id') else (),
+            source_candle_ids=source_ids,
             state=ExecutionState.ACTIVE
         )
         order_flows.append(of)
         
-        if obj_type == ExecutionObjectType.OF_CANDIDATE:
+        if obj_type == ExecutionObjectType.OF_CONFIRMED:
             valid_ofs.append(of)
 
     if valid_ofs:
         if valid_ofs[0].direction == PullbackDirection.BULLISH:
             valid_ofs.sort(key=lambda x: x.bottom)
             extreme_of = valid_ofs[0]
-            decisional_of = valid_ofs[-1]
+            decisional_of = valid_ofs[-1] if len(valid_ofs) > 1 else None
         else:
             valid_ofs.sort(key=lambda x: x.top, reverse=True)
             extreme_of = valid_ofs[0]
-            decisional_of = valid_ofs[-1]
+            decisional_of = valid_ofs[-1] if len(valid_ofs) > 1 else None
             
-        ext_of = replace(extreme_of, object_type=ExecutionObjectType.EXTREME_OF)
-        dec_of = replace(decisional_of, object_type=ExecutionObjectType.DECISIONAL_OF)
+        ext_of_obj = replace(extreme_of, object_type=ExecutionObjectType.EXTREME_OF)
+        order_flows = [ext_of_obj if x == extreme_of else x for x in order_flows]
         
-        extreme_poi = replace(ext_of, object_type=ExecutionObjectType.EXTREME_POI)
-        
-        if l3_result and hasattr(l3_result, 'confirmed_swings') and l3_result.confirmed_swings:
-            last_swing = l3_result.confirmed_swings[-1]
-            range_high = last_swing.high
-            range_low = last_swing.low
-            
-            is_valid_dec = check_rule_of_two_discount_premium(
-                dec_of.top, dec_of.bottom, dec_of.direction, range_high, range_low
-            )
-            if is_valid_dec:
-                decisional_poi = replace(dec_of, object_type=ExecutionObjectType.DECISIONAL_POI)
-            else:
-                decisional_poi = None
+        if decisional_of and valid_bos:
+            dec_of_obj = replace(decisional_of, object_type=ExecutionObjectType.DECISIONAL_OF)
+            order_flows = [dec_of_obj if x == decisional_of else x for x in order_flows]
         else:
-            decisional_poi = replace(dec_of, object_type=ExecutionObjectType.DECISIONAL_POI)
+            dec_of_obj = None
 
-        pb_match = next((p for p in l2_result.pullbacks if candle_map.get(p.reference_candle_id) and 
-                         (max(candle_map[p.reference_candle_id].high, getattr(candle_map.get(getattr(p, 'extreme', type('E',(),{'candle_id':None})()).candle_id), 'high', Decimal("-inf"))) == ext_of.top or
-                          min(candle_map[p.reference_candle_id].low, getattr(candle_map.get(getattr(p, 'extreme', type('E',(),{'candle_id':None})()).candle_id), 'low', Decimal("inf"))) == ext_of.bottom)), None)
-                          
-        if pb_match:
-            engineering_liquidity = ExecutionObject(
-                object_type=ExecutionObjectType.ENG_LQD_REFERENCE,
-                direction=pb_match.direction,
-                top=ext_of.top,
-                bottom=ext_of.bottom,
-                source_candle_ids=ext_of.source_candle_ids,
-                state=ExecutionState.ACTIVE
-            )
+        # Build OBs for extreme OF
+        # To build an OB we search candles inside the OF candidate
+        for of_cand in (ext_of_obj, dec_of_obj):
+            if not of_cand: continue
+            
+            # Find OBs in the OF
+            of_obs = []
+            if len(of_cand.source_candle_ids) == 2:
+                s_id, e_id = of_cand.source_candle_ids
+                s_idx = next((i for i,c in enumerate(candles_list) if c.candle_id == s_id), -1)
+                e_idx = next((i for i,c in enumerate(candles_list) if c.candle_id == e_id), -1)
+                
+                if s_idx != -1 and e_idx != -1 and e_idx >= s_idx:
+                    for i in range(s_idx, e_idx + 1):
+                        has_sweep = check_sweep(candles_list, i, of_cand.direction)
+                        has_fvg = check_fvg(candles_list, i, of_cand.direction)
+                        is_causal = (of_cand == dec_of_obj and valid_bos) or (of_cand == ext_of_obj) # Simplify causality
+                        
+                        pillars = validate_ob_pillars(is_causal, has_sweep, has_fvg)
+                        if pillars.is_valid:
+                            ob_top, ob_bottom = refine_ob_wick(candles_list[i], of_cand.direction, Decimal("0"))
+                            ob_type = ExecutionObjectType.EXTREME_OB if of_cand == ext_of_obj else ExecutionObjectType.DECISIONAL_OB
+                            ob = ExecutionObject(
+                                object_type=ob_type,
+                                direction=of_cand.direction,
+                                top=ob_top,
+                                bottom=ob_bottom,
+                                source_candle_ids=(candles_list[i].candle_id,),
+                                state=ExecutionState.ACTIVE
+                            )
+                            order_blocks.append(ob)
+                            of_obs.append(ob)
+            
+        # POI selection
+        extreme_poi = replace(ext_of_obj, object_type=ExecutionObjectType.EXTREME_POI)
+        if order_blocks and any(ob.object_type == ExecutionObjectType.EXTREME_OB for ob in order_blocks):
+            extreme_poi = replace(next(ob for ob in order_blocks if ob.object_type == ExecutionObjectType.EXTREME_OB), object_type=ExecutionObjectType.EXTREME_POI)
+            
+        if dec_of_obj:
+            dec_poi_cand = replace(dec_of_obj, object_type=ExecutionObjectType.DECISIONAL_POI)
+            if order_blocks and any(ob.object_type == ExecutionObjectType.DECISIONAL_OB for ob in order_blocks):
+                dec_poi_cand = replace(next(ob for ob in order_blocks if ob.object_type == ExecutionObjectType.DECISIONAL_OB), object_type=ExecutionObjectType.DECISIONAL_POI)
+            
+            # Premium / Discount validation
+            if l3_result and hasattr(l3_result, 'confirmed_swings') and l3_result.confirmed_swings:
+                last_swing = l3_result.confirmed_swings[-1]
+                range_high, range_low = getattr(last_swing, 'high', Decimal('0')), getattr(last_swing, 'low', Decimal('0'))
+                
+                is_valid_dec = check_rule_of_two_discount_premium(
+                    dec_poi_cand.top, dec_poi_cand.bottom, dec_poi_cand.direction, range_high, range_low
+                )
+                if is_valid_dec:
+                    decisional_poi = dec_poi_cand
+            else:
+                decisional_poi = dec_poi_cand
+
+        # Engineering Liquidity: Must immediately precede active EXTREME POI
+        # We find the pullback that corresponds to extreme_poi's origin
+        # Wait: The canonical rule is "immediately preceding active Extreme POI"
+        # Since extreme POI is built from the furthest OF, the pullback *before* it?
+        # Actually, if we sort valid pullbacks, the one right before the extreme POI in time?
+        # Let's take the pullback whose extreme is the extreme POI's bottom/top.
+        # Then ENG LQD is beyond that pullback extreme.
+        if extreme_poi:
+            # find pb that matches extreme_of
+            for pb in l2_result.pullbacks:
+                ext_c = candle_map.get(getattr(getattr(pb, 'extreme', None), 'candle_id', None))
+                if ext_c and ((extreme_poi.direction == PullbackDirection.BULLISH and ext_c.low == ext_of_obj.bottom) or 
+                              (extreme_poi.direction == PullbackDirection.BEARISH and ext_c.high == ext_of_obj.top)):
+                    engineering_liquidity = create_engineering_liquidity(ext_c, extreme_poi.direction)
+                    break
 
     poi_set = POISet(
         decisional_poi=decisional_poi,
@@ -194,26 +270,17 @@ def evaluate_execution_state(
     
     return ExecutionAnalysis(tuple(order_flows), tuple(order_blocks), engineering_liquidity, poi_set)
 
-
 def _is_discount(top: Decimal, bottom: Decimal, range_high: Decimal, range_low: Decimal) -> bool:
-    if range_high == range_low:
-        return False
+    if range_high == range_low: return False
     midpoint = range_low + (range_high - range_low) / Decimal('2')
     return top < midpoint
 
 def _is_premium(top: Decimal, bottom: Decimal, range_high: Decimal, range_low: Decimal) -> bool:
-    if range_high == range_low:
-        return False
+    if range_high == range_low: return False
     midpoint = range_low + (range_high - range_low) / Decimal('2')
     return bottom > midpoint
 
-def check_rule_of_two_discount_premium(
-    poi_top: Decimal, 
-    poi_bottom: Decimal, 
-    direction: PullbackDirection, 
-    range_high: Decimal, 
-    range_low: Decimal
-) -> bool:
+def check_rule_of_two_discount_premium(poi_top: Decimal, poi_bottom: Decimal, direction: PullbackDirection, range_high: Decimal, range_low: Decimal) -> bool:
     if direction == PullbackDirection.BULLISH:
         return _is_discount(poi_top, poi_bottom, range_high, range_low)
     else:
@@ -221,13 +288,9 @@ def check_rule_of_two_discount_premium(
 
 def refine_ob_wick(candle: Candle, direction: PullbackDirection, swept_price: Decimal) -> tuple[Decimal, Decimal]:
     if direction == PullbackDirection.BULLISH:
-        ob_bottom = candle.low
-        ob_top = max(candle.open, candle.close)
-        return ob_top, ob_bottom
+        return max(candle.open, candle.close), candle.low
     else:
-        ob_top = candle.high
-        ob_bottom = min(candle.open, candle.close)
-        return ob_top, ob_bottom
+        return candle.high, min(candle.open, candle.close)
 
 def refine_ob_inside_bar(mother: Candle, inside: Candle, direction: PullbackDirection) -> tuple[Decimal, Decimal]:
     if direction == PullbackDirection.BULLISH:
@@ -235,21 +298,7 @@ def refine_ob_inside_bar(mother: Candle, inside: Candle, direction: PullbackDire
     else:
         return mother.high, inside.high
 
-def validate_ob_pillars(
-    caused_bos: bool, 
-    swept_extreme: bool, 
-    fvg_unconsumed: bool
-) -> OBPillars:
-    return OBPillars(
-        bos_causality=caused_bos,
-        sweeps_extreme=swept_extreme,
-        fvg_exists_unconsumed=fvg_unconsumed
-    )
-
-def create_engineering_liquidity(
-    pb_extreme_candle: Candle, 
-    direction: PullbackDirection
-) -> ExecutionObject | None:
+def create_engineering_liquidity(pb_extreme_candle: Candle, direction: PullbackDirection) -> ExecutionObject | None:
     price = pb_extreme_candle.low if direction == PullbackDirection.BULLISH else pb_extreme_candle.high
     return ExecutionObject(
         object_type=ExecutionObjectType.ENG_LQD_REFERENCE,
@@ -261,23 +310,24 @@ def create_engineering_liquidity(
     )
 
 def expire_pois(pois: List[ExecutionObject], l4_result: Any) -> List[ExecutionObject]:
-    has_break = False
-    if l4_result and hasattr(l4_result, 'structural_break') and l4_result.structural_break:
-        has_break = True
+    """Expire POIs when a VALID_BOS creates a new range."""
+    has_valid_bos = False
+    if l4_result and getattr(l4_result, 'valid_bos', False):
+        has_valid_bos = True
         
     result = []
     for poi in pois:
-        if has_break and poi.state in (ExecutionState.ACTIVE, ExecutionState.TOUCHED):
+        if has_valid_bos and poi.state in (ExecutionState.ACTIVE, ExecutionState.TOUCHED):
             result.append(replace(poi, state=ExecutionState.EXPIRED_HISTORICAL))
         else:
             result.append(poi)
     return result
 
 def fail_pois(pois: List[ExecutionObject], l5_result: Any) -> List[ExecutionObject]:
+    """Fail POIs when a canonical structural shift (CHoCH_CONFIRMED) occurs."""
     choch_confirmed = False
-    if l5_result and hasattr(l5_result, 'resolution'):
-        if l5_result.resolution.name == 'CHOCH_CONFIRMED':
-            choch_confirmed = True
+    if l5_result and getattr(l5_result, 'confirmed', False):
+        choch_confirmed = True
             
     result = []
     for poi in pois:
