@@ -989,9 +989,9 @@ The implementation separates the structural process into three deterministic lay
 ┌───────────────────────────────────────────────────────────────┐
 │ 3. STATE TRANSITION                                           │
 │                                                               │
-│ Current State + Structural Outcome + all required canonical   │
-│ process/context conditions determine exactly ONE next state   │
-│ ONLY ONCE REQUIRED CANONICAL INPUTS EXIST.                    │
+│ Current State + Structural Outcome determine exactly ONE      │
+│ next state FOR A DEFINED STATE + OUTCOME, ONCE REQUIRED       │
+│ CANONICAL INPUTS EXIST.                                       │
 └───────────────────────────────────────────────────────────────┘
 ```
 
@@ -1137,7 +1137,7 @@ MAJOR_IDM_EVENT
 NEW_SVP_QUALIFIED
 ```
 
-The transition matrix is exhaustive and deterministic:
+The transition matrix is exhaustive and deterministic once the required canonical inputs and process/context conditions exist:
 
 | Current State | NO_EVENT / INTERNAL_PB | MINOR_IDM_EVENT | EXT_CONT_BREAK | EXT_OPP_BREAK | MAJOR_IDM_EVENT | NEW_SVP_QUALIFIED |
 |---|---|---|---|---|---|---|

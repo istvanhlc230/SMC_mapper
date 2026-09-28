@@ -892,3 +892,194 @@ The state transition determinism contract is now fully accurate.
 - Command: `python -m pytest`
 - Result: `91 passed, 0 failed, 0 skipped/xfail`
 *Developer-local test execution; no independent GitHub Actions/CI verification.*
+
+---
+
+# PHASE 21 — FULL CANONICAL INTEGRATION AUDIT
+
+## 1. Audit Scope
+Complete point-by-point audit of the canonical `.agents/skills/smc/` skill chain (01-08), including:
+- File-by-file semantic audit (Pass A)
+- Cross-layer dependency consistency audit (Pass B)
+- Cross-layer concept ownership audit (Pass C)
+- State/event/outcome/process separation audit (Pass D)
+- Determinism contract re-audit (Pass E)
+- Knowledgebase coverage audit (Pass F)
+- Implementation boundary audit (Pass G)
+
+## 2. Findings
+
+### Finding 1 (BLOCKER — CORRECTED): §49.5 Determinism Invariant Inconsistency
+- **Issue:** `08_implementation.md` §49.5 (line 1175) still stated the STATE TRANSITION determinism key as `Current State + Outcome combination`, missing the `+ all required canonical process/context conditions` qualifier that was correctly applied to §49.1 during Phase 20 blocker resolution.
+- **Root Cause:** The Phase 20 blocker fix updated §49.1 but did not propagate the correction to the formal invariant declaration in §49.5.
+- **Severity:** BLOCKER — the formal invariant specification contradicted the corrected pipeline diagram.
+- **Correction:** Updated §49.5 line 1175 to read: `exactly ONE next state for a defined Current State + Structural Outcome + all required canonical process/context conditions`.
+- **Verification:** §49.1 (line 992-993) and §49.5 (line 1175) now use identical determinism keys.
+
+### Finding 2 (MINOR — CORRECTED): §49.4 Transition Matrix Introductory Text
+- **Issue:** Line 1140 stated `The transition matrix is exhaustive and deterministic:` without the conditional qualifier present throughout the rest of §49.
+- **Severity:** Minor inconsistency — the matrix content itself correctly encoded process conditions (Gate LOCKED/UNLOCKED, MAJOR_RETRACEMENT_QUALIFIED), but the introductory statement was unconditional.
+- **Correction:** Updated to `The transition matrix is exhaustive and deterministic once the required canonical inputs and process/context conditions exist:`.
+
+## 3. Layer-by-Layer Audit Results
+
+### L1 (01_micro_structure.md) — PASS
+- Candle geometry, wick/body semantics, Outside Bar, Inside Bar, EQH/EQL, CBT, Candle Internal Sequence all correctly defined.
+- Semantic ownership boundary explicitly states L1 does not create MINOR_IDM, MAJOR_IDM, CONFIRMED_STRUCTURAL_SWING, or VALID_BOS.
+- No downstream redefinition of L1 concepts found in L2-L8.
+- Outside Bar ownership correctly split: L1 owns geometry, L2 consumes for pullback, L6 consumes for reversal predicate.
+
+### L2 (02_minor_structure.md) — PASS
+- Pullback formation, verified extreme, Minor IDM lifecycle correctly owned.
+- L1 consumption without redefinition confirmed.
+- L2→L3 handoff correctly separates Minor IDM formation (L2) from Major IDM governance (L3).
+- Active Pullback Pointer correctly owned by L2 without requiring L3 structural acceptance.
+- No Major semantic authority taken by L2.
+
+### L3 (03_structural_semantic_authority.md) — PASS (CRITICAL AUDIT)
+- Major Structure, Protected Structural Extreme, IDM provenance, IDM lifecycle, structural swing confirmation, Confirmation Gate, genesis lifecycle, first-BOS lifecycle, Dealing Range — all correctly owned.
+- Retracement qualification architecture (50% standard, 38.2%-<50% conditional HTF, >=3 candle normal, 2-candle reduced, 1-candle displacement outlier) — all correctly documented.
+- First-BOS specification ambiguity / retracement baseline gap explicitly preserved as OPEN.
+- Confirmation Gate explicitly described as process condition, not lifecycle state (§3.2.1A, invariant 17 in L5).
+- No synthetic dealing range, fabricated protected extreme, or initialization heuristic found.
+- HTF pairing examples (3M→W1, W1→D1/H4, D1→H4, H4→M15, M15→M1) delegated to methodology_parameters.md scope.
+
+### L4 (04_BOS_mechanics.md) — PASS
+- Subordinate to L3 — explicitly declared.
+- Consumes stored Layer 3 qualification without recomputing thresholds.
+- IMPULSE_EXTENSION correctly treated as classification outcome, not event class.
+- Wick/body break semantics correct.
+- Major IDM interaction correctly produces MAJOR_IDM_SWEEP, not BOS.
+- No redefinition of L3 semantic authority.
+
+### L5 (05_CHOCH_mechanics.md) — PASS
+- Subordinate to L3 — explicitly declared.
+- CHoCH prerequisites, opposing break, Major IDM sweep all correctly defined.
+- LTF Structural Glitch correctly documented: reference substitution, not promotion; IDM-dependent break mode.
+- Major IDM wick → MAJOR_IDM_SWEEP; Minor IDM only → body-close required.
+- CONFIRMATION GATE UNLOCKED ≠ NEW STATE ENUM (invariant line 294-295).
+- No L3/L4 rule modifications.
+
+### L6 (06_execution.md) — PASS
+- POI ontology (OF_CONFIRMED, VALID_OB, Rejection Block separate) correctly defined.
+- Rule of Two, Engineering Liquidity, entry modules correctly scoped.
+- Structural consumption without manufacturing confirmed.
+- Target architecture uses neutral terminology (no "Primary Target" found).
+- FVG correctly scoped as OB validator only.
+
+### L7 (07_risk.md) — PASS
+- Target pipeline (CANDIDATES → POLICY → RESOLVED TARGET → RR) correctly implemented.
+- No universal target-selection winner.
+- Fixed-R as non-structural policy target, not canonical target.
+- BE as stop-management, not target.
+- NO_RESOLVED_TARGET → NO_SYNTHETIC_TARGET → NO_AUTOMATIC_TP_SUBMISSION correctly preserved.
+- Scoring boundary correctly delegates to L8.
+
+### L8 (08_implementation.md) — PASS (after corrections)
+- Five lifecycle states (BOOTSTRAP, CONFIRMATION_LOCKED, CONFIRMED_RANGE, POST_BOS, POST_CHOCH) correctly defined.
+- CONFIRMATION GATE UNLOCKED remains process condition (7 explicit declarations).
+- Six event classes correctly listed with implementation-level precedence (explicitly scoped as implementation, not methodology).
+- IMPULSE_EXTENSION remains classification outcome across all occurrences.
+- Determinism contract now consistent: §49.1, §49.4 intro, and §49.5 all use the same model.
+- First-BOS gap explicitly preserved in both §49.4.1 and §49.5.
+- No synthetic dealing range or fabricated protected extreme.
+
+## 4. Cross-Layer Concept Ownership Audit
+
+| Concept | Defined At | Semantic Owner | Downstream References | Redefinition | Leakage |
+|---|---|---|---|---|---|
+| Swing (candle-level) | L1 §10 | L1 | L2 consumes | None | None |
+| IDM (Minor) | L2 §5 | L2 | L3 consumes for IDM_TAKEN | None | None |
+| IDM (Major) | L3 §3.2.3 | L3 | L4, L5, L8 consume | None | None |
+| Pullback | L2 §2 | L2 | L3, L6 consume | None | None |
+| Outside Bar | L1 §6 | L1 (geometry) | L2 (pullback), L6 (reversal) | None | None |
+| Protected Structural Extreme | L3 §3.3 | L3 | L4, L5, L8 consume | None | None |
+| Structural Swing Break | L4 §3.4.2 | L4 (mechanics) under L3 | L8 consumes | None | None |
+| Retracement Qualification | L3 §3.3 | L3 | L4 consumes stored result | None | None |
+| VALID_BOS | L4 §3.4 | L4 under L3 | L6, L7, L8 consume | None | None |
+| IMPULSE_EXTENSION | L4 §3.4.4 | L4 under L3 | L8 classifies | None | None |
+| MAJOR_IDM_SWEEP | L4 §3.4.7 / L5 §3.5.4 | L3/L4/L5 | L8 consumes | None | None |
+| CHoCH | L5 §3.5 | L5 under L3 | L6, L7, L8 consume | None | None |
+| POI | L6 §36 | L6 | L7, L8 consume | None | None |
+| RB | L6 §38.5 | L6 | L8 consumes | None | None |
+| Entry | L6 §40 | L6 | L7, L8 consume | None | None |
+| Target Candidate | L6 §41 / L7 §5.2 | L6/L7 | L8 consumes | None | None |
+| Target Policy | L7 §5.2 | L7 | L8 consumes | None | None |
+| Resolved Target | L7 §5.2 | L7 | L8 consumes | None | None |
+| RR | L7 §5.2 | L7 | L8 consumes | None | None |
+| Lifecycle State | L8 §49.4 | L8 | — | None | None |
+| Event Class | L8 §49.2 | L8 | — | None | None |
+| Confirmation Gate | L3/L5/L8 | L3 (concept), L8 (process repr.) | L5 invariant | None | None |
+
+**No ownership conflicts, circular dependencies, or semantic leakage found.**
+
+## 5. Phase 20 Determinism Blocker Re-Audit
+
+### CONFIRMATION_LOCKED + EXT_CONT_BREAK — Three Cases Verified:
+
+1. **Gate LOCKED → DISQUALIFIED** — Correctly represented in transition matrix row CONFIRMATION_LOCKED / EXT_CONT_BREAK column.
+2. **Gate UNLOCKED + MAJOR_RETRACEMENT_QUALIFIED = TRUE → FIRST BOS / VALID_BOS → POST_BOS** — Correctly represented.
+3. **Gate UNLOCKED + MAJOR_RETRACEMENT_QUALIFIED = FALSE → IMPULSE_EXTENSION → REMAIN** — Correctly represented.
+
+The same pattern is correctly mirrored in POST_CHOCH row.
+
+### Determinism Model Consistency:
+- §49.1 diagram: `Current State + Structural Outcome + all required canonical process/context conditions` ✓
+- §49.4 matrix intro: `exhaustive and deterministic once the required canonical inputs and process/context conditions exist` ✓
+- §49.4 matrix content: Correctly encodes Gate and Retracement as additional decision inputs ✓
+- §49.4.1: Correctly documents the First-BOS specification boundary ✓
+- §49.5 invariant: `Current State + Structural Outcome + all required canonical process/context conditions` ✓
+- §49.5 First-BOS gap: Explicitly preserved as OPEN SPECIFICATION AMBIGUITY / SOURCE GAP ✓
+- §49.5 non-equivalence: `DETERMINISTIC AFTER REQUIRED CANONICAL INPUTS EXIST ≠ ALL REQUIRED INPUTS ARE CURRENTLY CANONICALLY SPECIFIED` ✓
+
+**Phase 20 blocker: RESOLVED. Determinism contract is internally consistent.**
+
+## 6. Knowledgebase Coverage Audit
+
+- `knowledgebase/reference/03_pullback_retracement.md`: Correctly defers to L3 as canonical authority. Normal >=3 candle path, reduced 2-candle exception, 1-candle displacement outlier all documented.
+- `knowledgebase/reference/08_risk_targets_policy.md`: Correctly defers to L6/L7/L8 target architecture. No universal "Primary Target" promoted. One historical mention documents *absence* of universal Primary Target — acceptable.
+- No competing canonical rules found in knowledgebase.
+- No indokolatlanul elveszett source-backed canonical content identified.
+
+## 7. Implementation Boundary Audit
+- Analyzer: Implementation, not canonical rule source.
+- Monitor: Notification-only (TARGET_REACHED → alert, no automatic buy/sell).
+- zones.json: Implementation data, not canonical specification.
+- Target resolution: Implementation architecture consuming canonical candidates.
+- Scoring: Implementation-owned (L7 §5.5 explicitly delegates).
+- No implementation policy leaked into canonical methodology.
+
+## 8. State/Event/Outcome/Process Separation Audit
+- IMPULSE_EXTENSION ≠ EVENT CLASS ✓ (L8 line 998, 1062)
+- CONFIRMATION GATE ≠ STATE ✓ (L8 line 1127, 1199; L5 line 294)
+- VALID_BOS ≠ EVENT CLASS ✓ (classification outcome of EXT_CONT_BREAK)
+- MAJOR_IDM_SWEEP ≠ CHoCH ✓ (L4 line 334, L5 line 280, L8 line 1202)
+- Target ≠ Stop Management ✓ (L7 §5.2.3)
+
+## 9. Test Result
+- Command: `python -m pytest`
+- Result: `91 passed, 0 failed, 0 skipped/xfail`
+
+## 10. Audit Iterations
+The audit completed in **2 iterations**:
+- Iteration 1: Complete read of all 8 canonical layers + methodology_parameters. Identified Findings 1-2.
+- Iteration 2: Applied corrections to §49.5 and §49.4 intro. Full re-audit verified consistency across the complete chain. No additional findings.
+
+## 11. Final Phase 21 Status
+**PASS.**
+
+All 15 PASS criteria verified:
+1. Every canonical concept has a clear semantic owner ✓
+2. No downstream redefinition of upstream semantics ✓
+3. 01→08 dependency chain consistent ✓
+4. No contradictions ✓
+5. No circular semantic dependencies ✓
+6. State/event/outcome/process condition separated ✓
+7. State machine deterministic (with explicit conditional model) ✓
+8. Phase 20 blocker resolved ✓
+9. First-BOS baseline gap not artificially closed ✓
+10. Target/risk policy not elevated to canonical methodology ✓
+11. Implementation boundary clean ✓
+12. No unjustifiably lost source-backed canonical content ✓
+13. No newly introduced heuristic ✓
+14. No unresolved finding blocking canonical closure ✓
