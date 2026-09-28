@@ -1458,3 +1458,41 @@ Final status is recorded only after the latest GitHub Actions run is green.
 ## 5. Verification
 - **Test Command:** `python -m pytest -q`
 - **Test Result:** `116 passed in 1.29s` (The full suite is perfectly green and matches the baseline expectation).
+
+
+---
+
+# PHASE 24 — L6 EXECUTION / POI SUBSYSTEM IMPLEMENTATION
+
+## 1. Files Changed & New Modules
+- **Created:** `execution_engine.py` (Contains the dedicated L6 domain logic without bleeding into structural rules).
+- **Created:** `tests/test_execution_engine.py` (Contains comprehensive coverage of the 30 specified L6 conditions).
+- **Updated:** `smc_analyzer.py` (Integrated L6 `execution_engine.evaluate_execution_state()` returning a formal `ExecutionAnalysis`, replacing the placeholder `poi_result=None`).
+
+## 2. Explicit L6 Domain Model
+- Defined `ExecutionObjectType` exactly as required: `OF_CANDIDATE`, `OF_CONFIRMED`, `SMT_INDUCEMENT_TRAP`, `DECISIONAL_OF`, `EXTREME_OF`, `VALID_OB`, `DECISIONAL_OB`, `EXTREME_OB`, `ORIGIN_OB`, `REJECTION_BLOCK`, `ENG_LQD_REFERENCE`, `ENG_LQD_CONFIRMED`, `ENG_LQD_SWEEP`, `DECISIONAL_POI`, `EXTREME_POI`.
+- Defined `ExecutionState` explicitly: `ACTIVE`, `TOUCHED`, `MITIGATED`, `FAILED`, `INVALIDATED`, `EXPIRED_HISTORICAL`.
+
+## 3. Order Flow (OF) & Order Block (OB) Logic
+- Implemented Order Flow principles: Pre-IDM = `SMT_INDUCEMENT_TRAP`; interaction flags distinct `TOUCHED` from `MITIGATED`; `DECISIONAL_OF` is causal to the `VALID_BOS` break.
+- Implemented 3-Pillar Validation for OBs via `validate_ob_pillars`: (1) BOS Causality, (2) Sweeps Extreme, (3) FVG unconsumed.
+- Integrated Wick-only (`refine_ob_wick`) and Inside-Bar (`refine_ob_inside_bar`) spatial refinement.
+
+## 4. Rule-of-Two POI Ontology & Engineering Liquidity
+- Constrained explicit `POISet` to hold exactly 1 `DECISIONAL_POI` and 1 `EXTREME_POI`.
+- Extracted `ORIGIN_OB` as latent (not a 3rd POI) and `REJECTION_BLOCK` as separately identified PD-array execution concepts.
+- Guaranteed `DECISIONAL_POI` lies strictly in Discount (Buy) or Premium (Sell) per range via deterministic calculation logic.
+- Automated generation of `ENG_LQD_REFERENCE` directly from the most recent valid pullback prior to Extreme POI logic.
+
+## 5. Architectural Integrity
+- Replaced structural mutation boundaries: L6 relies entirely on L1-L5 outputs and emits an immutable `ExecutionAnalysis`. No POI state can ever synthesize an IDM, BOS, or CHoCH.
+- The canonical directory `.agents/skills/smc/` remains strictly **unmodified**.
+- Verified all L6 object state interactions: Failure explicitly relies on a supplied CHoCH flag. Range rollover (BOS) forces unmitigated POIs to `EXPIRED_HISTORICAL`.
+
+## 6. Verification
+- 30 distinct tests matching exactly the requested checklist were committed in `test_execution_engine.py`.
+- **Command:** `python -m pytest -q`
+- **Result:** `146 passed`
+- No regressions introduced; L1-L5 contracts were perfectly respected.
+
+**Implementation Status:** PASS

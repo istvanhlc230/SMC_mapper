@@ -20,6 +20,7 @@ import minor_structure_engine as minor
 import structural_engine as structural
 import bos_engine as bos
 import choch_engine as choch
+import execution_engine
 
 
 class LifecycleState(Enum):
@@ -233,7 +234,7 @@ class AnalyzerOutput:
     l4_result: bos.BOSAnalysis
     l5_result: choch.CHoCHAnalysis
     first_bos_retracement_baseline_status: FirstBOSRetracementBaselineStatus
-    poi_result: Optional[StructuralPOICandidate]
+    l6_result: execution_engine.ExecutionAnalysis
     target_candidates: Tuple[TargetCandidate, ...]
     target_plan: Optional[TargetPlan]
     resolved_targets: Tuple[TargetCandidate, ...]
@@ -911,7 +912,7 @@ class SMCAnalyzer:
             l4_result=l4_result,
             l5_result=l5_result,
             first_bos_retracement_baseline_status=first_bos_retracement_baseline_status,
-            poi_result=None,
+            l6_result=execution_engine.evaluate_execution_state(candles, l3_result, l4_result, choch_confirmed=False),
             target_candidates=normalized_target_candidates,
             target_plan=target_plan,
             resolved_targets=resolved_targets,
