@@ -1341,10 +1341,27 @@ GitHub Actions executed the updated suite. The first post-repair run exposed and
 
 The corrected fixture was committed after that failure.
 
-Final Phase 22 status must be determined from the newest GitHub Actions run for the corrected commit; no PASS is claimed here until that run reports success.
+The corrected implementation commit 7be5d2a6c3a9e8312e40d9a07ee057113ddcfedf passed GitHub Actions run 247. The documentation-only follow-up commit 5bc252819e9bf9ad441be0be84a96c18cebd82f1 also passed GitHub Actions run 248.
 
 ## 5. Residual Findings
 
 No canonical methodology change is required for these implementation repairs.
 
 The analyzer still intentionally leaves L6/L7 target/POI resolution policy-driven and does not invent a universal target.
+
+## 6. Final Phase 22 Verdict
+
+**PASS — corrected implementation verified.**
+
+Verified conditions:
+- canonical six-event model;
+- canonical L1 Candle compatibility;
+- runnable analyzer orchestration across the available L1→L5 engine chain;
+- First-BOS unresolved baseline represented only as input/process status;
+- no synthetic First-BOS baseline;
+- no First-BOS unresolved classification outcome;
+- deterministic state transition contract preserved;
+- LTF Minor-IDM Structural Glitch fallback reconciled to the external Major IDM semantics;
+- regression tests cover the repaired paths;
+- GitHub Actions: **99 passed, 0 failed** on run 247;
+- documentation-only finalization also passed run 248.
