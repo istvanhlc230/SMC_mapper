@@ -2,10 +2,15 @@ import pytest
 from datetime import datetime, timezone, timedelta
 from decimal import Decimal
 from smc_analyzer import (
-    MarketDataNormalizer, 
-    DataNormalizationError, 
-    InsufficientHistoryError
+    MarketDataNormalizer,
+    DataNormalizationError,
+    InsufficientHistoryError,
+    AnalyzerContractError,
+    SMCAnalyzer,
+    LifecycleState,
+    DetectionEvent,
 )
+from minor_structure_engine import PullbackDirection
 from microstructure_engine import Candle, SequenceEvidence
 
 def make_dummy_data(count, start_time=None, incomplete_last=False):
@@ -97,8 +102,28 @@ def test_detection_event_enum():
     actual_names = {e.name for e in DetectionEvent}
     assert actual_names == expected_names
 
-def test_float_input_conversion():
+def test_float_input_conversion_at_external_adapter_boundary():
     raw = make_dummy_data(15)
     raw[0]['open'] = 1.1000
     candles = MarketDataNormalizer.normalize(raw)
     assert candles[0].open == Decimal("1.1")
+    assert isinstance(candles[0], __import__("microstructure_engine").Candle)
+
+
+def test_analyzer_executes_real_l1_to_l5_orchestration():
+    analyzer = SMCAnalyzer("TEST", "1h", PullbackDirection.BULLISH)
+    result = analyzer.analyze(make_dummy_data(15))
+
+    assert result.lifecycle_state == LifecycleState.BOOTSTRAP
+    assert result.detected_event == DetectionEvent.NO_EVENT_INTERNAL_PB
+    assert result.l2_result is not None
+    assert result.l3_result is not None
+    assert result.l4_result is not None
+    assert result.l5_result is not None
+    assert result.rr_result.reason == "NO_RESOLVED_TARGET"
+
+
+def test_analyzer_requires_direction_for_layer2_orchestration():
+    analyzer = SMCAnalyzer("TEST", "1h")
+    with pytest.raises(AnalyzerContractError, match="direction is required"):
+        analyzer.analyze(make_dummy_data(15))
