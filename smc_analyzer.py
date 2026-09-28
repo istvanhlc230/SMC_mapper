@@ -649,9 +649,27 @@ def write_monitor_snapshot(
                 existing = loaded
 
     data = serialize_monitor_snapshot(result, existing_config=existing)
-    with path.open("w", encoding="utf-8") as handle:
-        json.dump(data, handle, indent=2, ensure_ascii=False)
-        handle.write("\n")
+
+    # Atomic replacement prevents a partially-written zones.json snapshot.
+    import os
+    import tempfile
+
+    directory = path.parent if str(path.parent) else Path(".")
+    fd, temp_name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=directory)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            json.dump(data, handle, indent=2, ensure_ascii=False)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temp_name, path)
+    except Exception:
+        try:
+            os.unlink(temp_name)
+        except OSError:
+            pass
+        raise
+
     return data
 
 
