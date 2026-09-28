@@ -236,6 +236,7 @@ class AnalyzerOutput:
     poi_result: Optional[StructuralPOICandidate]
     target_candidates: Tuple[TargetCandidate, ...]
     target_plan: Optional[TargetPlan]
+    resolved_targets: Tuple[TargetCandidate, ...]
     resolved_target: Optional[TargetCandidate]
     target_resolution_status: TargetResolutionStatus
     rr_result: RRResult
@@ -402,6 +403,7 @@ def _validate_target_candidates(
 def _build_target_plan(
     candidates: Tuple[TargetCandidate, ...],
     target_legs: Sequence[TargetLeg] | None,
+    resolved_target_ids: Sequence[str] = (),
 ) -> Optional[TargetPlan]:
     if not target_legs:
         return None
@@ -409,6 +411,7 @@ def _build_target_plan(
     normalized: list[TargetLeg] = []
     seen_legs: set[str] = set()
     candidate_ids = {candidate.target_id for candidate in candidates}
+    resolved_ids = set(resolved_target_ids)
     for leg in target_legs:
         if not isinstance(leg, TargetLeg):
             raise AnalyzerContractError("target_legs must contain TargetLeg objects")
@@ -417,6 +420,10 @@ def _build_target_plan(
         if leg.target_id not in candidate_ids:
             raise AnalyzerContractError(
                 f"target leg {leg.leg_id} references unknown target_id {leg.target_id}"
+            )
+        if resolved_ids and leg.target_id not in resolved_ids:
+            raise AnalyzerContractError(
+                f"target leg {leg.leg_id} references target {leg.target_id} that is not resolved by policy"
             )
         if not isinstance(leg.allocation_pct, Decimal):
             raise AnalyzerContractError("allocation_pct must be Decimal")
@@ -429,19 +436,33 @@ def _build_target_plan(
     return TargetPlan(candidates=list(candidates), legs=normalized)
 
 
-def _resolve_target(
+def _resolve_targets(
     candidates: Tuple[TargetCandidate, ...],
-    resolved_target_id: str | None,
-) -> tuple[Optional[TargetCandidate], TargetResolutionStatus]:
-    if resolved_target_id is None:
-        return None, TargetResolutionStatus.NO_RESOLVED_TARGET
-    for candidate in candidates:
-        if candidate.target_id == resolved_target_id:
-            return candidate, TargetResolutionStatus.RESOLVED
-    raise AnalyzerContractError(
-        f"resolved_target_id {resolved_target_id!r} is not present in target_candidates"
-    )
+    resolved_target_ids: Sequence[str] | None,
+) -> tuple[Tuple[TargetCandidate, ...], TargetResolutionStatus]:
+    if resolved_target_ids is None:
+        return (), TargetResolutionStatus.NO_RESOLVED_TARGET
 
+    normalized_ids: list[str] = []
+    seen_ids: set[str] = set()
+    for target_id in resolved_target_ids:
+        if not isinstance(target_id, str) or not target_id:
+            raise AnalyzerContractError("resolved_target_ids must contain non-empty strings")
+        if target_id in seen_ids:
+            raise AnalyzerContractError("resolved_target_ids must be unique")
+        seen_ids.add(target_id)
+        normalized_ids.append(target_id)
+
+    by_id = {candidate.target_id: candidate for candidate in candidates}
+    missing = [target_id for target_id in normalized_ids if target_id not in by_id]
+    if missing:
+        raise AnalyzerContractError(
+            f"resolved_target_ids contain unknown candidates: {', '.join(missing)}"
+        )
+
+    return tuple(by_id[target_id] for target_id in normalized_ids), (
+        TargetResolutionStatus.RESOLVED if normalized_ids else TargetResolutionStatus.NO_RESOLVED_TARGET
+    )
 
 def _structural_hash(
     instrument: str,
@@ -570,10 +591,15 @@ def serialize_monitor_snapshot(
                 "analysis_timestamp": result.analysis_timestamp.isoformat(),
                 "structural_hash": result.structural_hash,
                 "target_resolution": {
-                    "status": result.target_resolution_status.value,
-                    "resolved_target_id": result.resolved_target.target_id
-                    if result.resolved_target
-                    else None,
+                    "status": (
+                        "RESOLVED"
+                        if any(
+                            target.target_id == leg.target_id
+                            for target in result.resolved_targets
+                        )
+                        else "NO_RESOLVED_TARGET"
+                    ),
+                    "resolved_target_id": leg.target_id,
                 },
                 "target_candidates": base_candidates,
                 "target_plan": _target_leg_to_json(leg),
@@ -595,6 +621,7 @@ def serialize_monitor_snapshot(
                 result.classification_outcome.name if result.classification_outcome else None
             ),
             "target_resolution_status": result.target_resolution_status.value,
+            "resolved_target_ids": [target.target_id for target in result.resolved_targets],
         },
         "setups": setups,
     }
@@ -663,6 +690,7 @@ class SMCAnalyzer:
         major_idm_qualified: bool = False,
         target_candidates: Sequence[TargetCandidate] | None = None,
         resolved_target_id: str | None = None,
+        resolved_target_ids: Sequence[str] | None = None,
         target_legs: Sequence[TargetLeg] | None = None,
         analysis_timestamp: datetime | None = None,
     ) -> AnalyzerOutput:
@@ -690,10 +718,27 @@ class SMCAnalyzer:
             resolved_analysis_timestamp = analysis_timestamp.astimezone(timezone.utc)
 
         normalized_target_candidates = _validate_target_candidates(target_candidates)
-        target_plan = _build_target_plan(normalized_target_candidates, target_legs)
-        resolved_target, target_resolution_status = _resolve_target(
-            normalized_target_candidates, resolved_target_id
+
+        if resolved_target_ids is not None and resolved_target_id is not None:
+            if tuple(resolved_target_ids) != (resolved_target_id,):
+                raise AnalyzerContractError(
+                    "resolved_target_id and resolved_target_ids disagree; provide one policy representation"
+                )
+
+        effective_resolved_target_ids = (
+            tuple(resolved_target_ids)
+            if resolved_target_ids is not None
+            else ((resolved_target_id,) if resolved_target_id is not None else ())
         )
+        resolved_targets, target_resolution_status = _resolve_targets(
+            normalized_target_candidates, effective_resolved_target_ids
+        )
+        target_plan = _build_target_plan(
+            normalized_target_candidates,
+            target_legs,
+            effective_resolved_target_ids,
+        )
+        resolved_target = resolved_targets[0] if resolved_targets else None
 
         first_bos_state = self.state in {
             LifecycleState.BOOTSTRAP,
@@ -842,6 +887,7 @@ class SMCAnalyzer:
             poi_result=None,
             target_candidates=normalized_target_candidates,
             target_plan=target_plan,
+            resolved_targets=resolved_targets,
             resolved_target=resolved_target,
             target_resolution_status=target_resolution_status,
             rr_result=RRResult(
