@@ -1435,3 +1435,26 @@ Earlier failures during this repair cycle were corrected:
 - empty temporary test file being treated as valid JSON.
 
 Final status is recorded only after the latest GitHub Actions run is green.
+
+
+---
+
+# PHASE 22.1 — SYNCHRONIZATION AND INTEGRATION AUDIT
+
+## 1. Uncommitted Developer Changes Present
+- No tracked developer changes were present in the working tree prior to synchronization. Only untracked scratch utility scripts (e.g., `fix_candle.py`, `fix_choch.py`, etc.) from previous automated repair tasks existed.
+
+## 2. Synchronization Strategy
+- A direct fast-forward `git pull --rebase origin main` was executed to retrieve the authoritative integration baseline `2e976dade23175c6354761b856b637fa9ccb3b30` pushed directly by the user.
+
+## 3. Conflict Resolution
+- **No merge conflicts were encountered.** The local working tree cleanly integrated the remote changes via fast-forward without requiring manual conflict mediation.
+- The remote integration contract in `smc_analyzer.py`, `smc_htf_ltf_monitor.py`, `zones.json`, and their respective tests is fully preserved as the authoritative version.
+
+## 4. Retained Developer Changes
+- No tracked uncommitted developer changes needed to be reapplied. The authoritative remote codebase was cleanly absorbed.
+- The canonical `.agents/skills/smc/` rules remain completely unmutated.
+
+## 5. Verification
+- **Test Command:** `python -m pytest -q`
+- **Test Result:** `116 passed in 1.29s` (The full suite is perfectly green and matches the baseline expectation).
