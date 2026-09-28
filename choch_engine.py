@@ -25,7 +25,6 @@ from structural_engine import IDMClass, IDMOrigin, IDMEvent, PullbackDirection
 class CHoCHResolution(str, Enum):
     NO_EVIDENCE = "NO_EVIDENCE"
     NO_BOUNDARY_BREAK = "NO_BOUNDARY_BREAK"
-    MINOR_IDM_SWEEP = "MINOR_IDM_SWEEP"
     MAJOR_IDM_SWEEP = "MAJOR_IDM_SWEEP"
     CHOCH_ELIGIBLE = "CHOCH_ELIGIBLE"
     CHOCH_CONFIRMED = "CHOCH_CONFIRMED"
@@ -189,7 +188,7 @@ def _eligible_for_break(reference: CHoCHReference, body_close: bool) -> CHoCHRes
         if reference.kind is CHoCHReferenceKind.PROTECTED_OPPOSING_BOUNDARY:
             return CHoCHResolution.MAJOR_IDM_SWEEP
     if reference.kind is CHoCHReferenceKind.LTF_ACTIVE_IDM and reference.idm_class is IDMClass.MINOR_IDM and not body_close:
-        return CHoCHResolution.MINOR_IDM_SWEEP
+        return CHoCHResolution.NO_BOUNDARY_BREAK
     return None
 
 

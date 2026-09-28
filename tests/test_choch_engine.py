@@ -155,7 +155,7 @@ def test_ltf_minor_idm_wick_is_minor_idm_sweep():
         confirmation_gate_open=True,
         ltf_context_active=True,
     )
-    assert result.resolution is choch_engine.CHoCHResolution.MINOR_IDM_SWEEP
+    assert result.resolution is choch_engine.CHoCHResolution.NO_BOUNDARY_BREAK
     assert not result.confirmed
 
 

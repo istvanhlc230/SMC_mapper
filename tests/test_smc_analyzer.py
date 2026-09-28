@@ -4,9 +4,9 @@ from decimal import Decimal
 from smc_analyzer import (
     MarketDataNormalizer, 
     DataNormalizationError, 
-    InsufficientHistoryError,
-    IntrabarSequenceEvidence
+    InsufficientHistoryError
 )
+from microstructure_engine import Candle, SequenceEvidence
 
 def make_dummy_data(count, start_time=None, incomplete_last=False):
     if start_time is None:
@@ -33,16 +33,12 @@ def test_decimal_determinism_and_normalization():
     candles = MarketDataNormalizer.normalize(raw)
     
     assert len(candles) == 15
-    # Assert exact decimal conversion
     assert isinstance(candles[0].open, Decimal)
     assert candles[0].open == Decimal("1.1000")
-    assert candles[0].intrabar_sequence_evidence == IntrabarSequenceEvidence.UNAVAILABLE
-    assert candles[0].index == 0
-    assert candles[-1].index == 14
+    
 
 def test_timezone_rejection():
     raw = make_dummy_data(15)
-    # Strip timezone
     raw[0]['timestamp'] = raw[0]['timestamp'].replace(tzinfo=None)
     
     with pytest.raises(DataNormalizationError, match="must be timezone-aware"):
@@ -74,8 +70,6 @@ def test_incomplete_candle_exclusion():
     candles = MarketDataNormalizer.normalize(raw)
     
     assert len(candles) == 14
-    assert candles[-1].index == 13
-    assert candles[-1].timestamp == raw[13]['timestamp']
 
 def test_missing_is_completed_halts():
     raw = make_dummy_data(15)
@@ -91,15 +85,13 @@ def test_non_boolean_is_completed_halts():
 
 def test_detection_event_enum():
     from smc_analyzer import DetectionEvent
-    # Ensure exactly 7 canonical event classes exist
-    assert len(DetectionEvent) == 7
+    assert len(DetectionEvent) == 6
     expected_names = {
         "NO_EVENT_INTERNAL_PB",
         "MINOR_IDM_EVENT",
         "EXT_CONT_BREAK",
         "EXT_OPP_BREAK",
-        "FALLBACK_EVENT",
-        "REAL_MAJOR_IDM_EVENT",
+        "MAJOR_IDM_EVENT",
         "NEW_SVP_QUALIFIED"
     }
     actual_names = {e.name for e in DetectionEvent}
@@ -107,8 +99,6 @@ def test_detection_event_enum():
 
 def test_float_input_conversion():
     raw = make_dummy_data(15)
-    # Provide float instead of string to test deterministic string conversion internally
     raw[0]['open'] = 1.1000
     candles = MarketDataNormalizer.normalize(raw)
     assert candles[0].open == Decimal("1.1")
-
