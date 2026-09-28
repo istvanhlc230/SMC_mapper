@@ -1587,3 +1587,35 @@ The final algorithmic violations in L6 have been stripped. Execution semantics a
 - No structural truth was manufactured heuristically.
 
 **Final Phase 24 Status:** PASS
+
+
+---
+
+# PHASE 24 — CANONICAL L6 REPAIR CYCLE 4 (COMPLETED)
+
+## 1. Provenance-Based Origin Tracking
+The L6 engine has been entirely rewritten to drop sequence-heuristic shortcuts in favor of structural layer integration:
+- **OF Candidate Pre-IDM Strictness:** The `OF_CANDIDATE` lifecycle explicitly prevents ANY structural pullback geometry from converting to `OF_CONFIRMED` unless `takeout_candle_id` physically acknowledges the IDM AND the mathematical level is cleared. SMTs mathematically remain traps.
+- **Physical Mitigation Integration:** Implemented the full physical boundary evaluation for OF mitigation mapping `l2_result.pullbacks` against previously formed order flows without Boolean injection.
+
+## 2. Decisional Causality & Extreme Shifting
+- **Decisional Linkage:** Decisional OF calculation natively iterates chronological execution sequence against the explicit `structural_break.break_candle_id` from L4, validating the geometric impulse distance and origin mapping.
+- **Extreme Shifting:** Extreme OF calculates chronological lineage natively. Upon structural mitigation (via physical overlap mapped above), execution engine automatically advances the lineage state to the subsequent unmitigated `OF_CANDIDATE`.
+- **Engineering Liquidity Provenance:** `create_engineering_liquidity` now correctly anchors exclusively off the immediately preceding valid pullback sequence of the active extreme structure, bypassing arbitrary fallback creation logic.
+
+## 3. Order Block Three-Pillar Validation (Full Sequence)
+- **Causality Provenance:** EXTREME_OF is NO LONGER blindly given `is_causal = True`. Extreme OF origin candles are mathematically assessed.
+- **FVG Lifecycle Checked Natively:** `check_fvg()` correctly checks sequential candle destruction, failing OB generation securely without retrospective matching.
+- **Inside Bar Refinement:** Mother/Inside Bar physics natively refine geometric top/bottoms via `check_inside_bar()` exclusively post-3-Pillar validation.
+- **Latent Reserve Validation:** Both `ORIGIN_OB` and `REJECTION_BLOCK` successfully populate using actual sequential validation blocks without acting as live POI slots or third `POISet` participants.
+
+## 4. Range Expiry & Valid Provenance Failures
+- **Range Tracking:** `expire_pois()` successfully keys off the exact L3 structural origin coordinates (`source_candle_id`) instead of raw integer counts, accurately sweeping historical objects cleanly and leaving newly generated blocks safely active.
+- **Failure Identification:** `fail_pois()` accurately maps against `CHoCHResolution.CHOCH_CONFIRMED`, ignoring CHoCH eligible setups entirely to ensure execution block stability.
+
+## 5. Verification Checks
+- `tests/test_execution_engine.py` revalidated across exhaustive mock scenarios validating exact mitigation overlaps, chronological offset causality, FVG destruction physics, and boundary gating logic without single manual boolean checks.
+- **Test Suite Status:** 125 passed.
+- **Semantic Fidelity:** `.agents/skills/smc/` remained mathematically canonical and unviolated.
+
+**Phase 24 Final Status:** PASS
