@@ -1091,6 +1091,20 @@ All 15 PASS criteria verified:
 ## 1. Audit Scope & Sources
 A comprehensive audit of the canonical source corpus was performed to resolve the exact price coordinates used for measuring the 50% retracement qualification for the **first Break of Structure (BOS)** before a canonical dealing range exists.
 
+The audit specifically searched the source transcripts for the following terms and concepts:
+- first BOS
+- first break of structure
+- initial structure
+- initial dealing/trading range
+- retracement baseline
+- Fibonacci / 38.2 / 50%
+- impulse origin
+- confirmed swing / swing point
+- post-CHoCH first BOS
+- genesis / bootstrap / initialisation equivalents
+
+For the major source files, no explicit source-defined coordinate pair was found.
+
 Sources audited in priority order:
 1. `truesmc2026.txt`
 2. `market_structure_mapping_update.txt`
@@ -1103,14 +1117,27 @@ Sources audited in priority order:
 *(plus secondary sources: `is_wick_a_bos.txt`, `major_minor_inducement.txt`, `everything_behind_the_trading_system.txt`, `true_smc123.txt`, `one timeframe is all you need.txt`, `Best_Way_to_Enter_Trades_Within_the_Same_Timeframe_True_SMC.md`)*
 
 ## 2. Source Evidence Findings
-- **Established Structure Baseline (EXPLICIT):** The 50% retracement rule is explicitly defined against the `"previous dealing range"` (`one timeframe is all you need.txt`, L777-782). The Fib tool is explicitly measured from the confirmed dealing range high to low.
-- **First-BOS Baseline Coordinates (NEGATIVE RESULT):** Zero source evidence exists across all 12+ files defining a baseline formula or price coordinates for the *first* BOS when no prior dealing range exists.
-- **First-BOS Chart Practice (EXPLICIT OBSERVATION):** When initializing a chart or continuing after a CHoCH, the presenter visually identifies an impulsive leg, waits for IDM takeout to confirm a swing point, and explicitly classifies the subsequent break of that swing point as a Break of Structure (`one timeframe is all you need.txt`, L6-15, L312-422). At no point does the presenter measure a 50% retracement against any genesis baseline to qualify this first BOS.
-- **Term "Origin" (EXPLICIT):** "Origin" is strictly used to refer to the unmitigated order block/flow at the extreme of an *existing* dealing range, never as a structural retracement anchor for genesis structure.
+
+To ensure precise semantic ownership, findings are strictly categorized into three evidence classes:
+- **Explicit source rule:** A direct canonical definition or threshold stated by the source.
+- **Observed source example:** A chart walkthrough or demonstration of an action. An observed example is never used as proof of an explicit canonical rule, because unstated assumptions may govern the example.
+- **Absent / unspecified source information:** Topics where the source corpus contains no explicit rule or observable data.
+
+### 2.1. Retracement Measurement
+- **Explicit source rule:** The 50% retracement rule is explicitly defined against the `"previous dealing range"` (`one timeframe is all you need.txt`, L777-782).
+- **Absent / unspecified source information:** For the major source files, no explicit source-defined coordinate pair was found for a first-BOS retracement baseline. Zero source evidence defines a baseline formula or price coordinates when no prior dealing range exists.
+
+### 2.2. First-BOS Chart Practice
+- **Observed source example:** The cited source examples do not explicitly define or demonstrate a measurable retracement baseline for a first BOS before an established dealing range exists. (Note: Previously cited examples from `one timeframe is all you need.txt` already contained existing major inducement and established structural context, and are NOT sufficient evidence of a cold-start/genesis BOS.)
+- **Absent / unspecified source information:** The source corpus does not document or expose an explicit retracement-baseline measurement for the first BOS in the examined examples.
+
+### 2.3. Term "Origin"
+- **Observed source example:** The audited source material uses 'origin' primarily in the context of order flow / extreme order blocks within established dealing-range structure.
+- **Absent / unspecified source information:** No explicit source rule was found that designates origin as the first-BOS retracement baseline.
 
 ## 3. Final Resolution
 **UNRESOLVED SOURCE GAP.**
-The First-BOS retracement baseline remains a genuine specification gap in the True SMC methodology. The source corpus simply asserts the start of an impulsive leg visually and treats the first IDM-takeout-and-break sequence as a valid BOS without measuring a baseline retracement.
+The First-BOS retracement baseline remains a genuine specification gap in the True SMC methodology. No source-backed exact baseline coordinates have been established for retracement qualification of the first BOS before an established dealing range exists.
 
 ## 4. Current Canonical Wording Assessment
 The current wording in `.agents/skills/smc/03_structural_semantic_authority.md` (§3.2.1A) and `.agents/skills/smc/08_implementation.md` (§49.4.1) accurately reflects this reality:
