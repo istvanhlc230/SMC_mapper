@@ -1124,7 +1124,7 @@ To ensure precise semantic ownership, findings are strictly categorized into thr
 - **Absent / unspecified source information:** Topics where the source corpus contains no explicit rule or observable data.
 
 ### 2.1. Retracement Measurement
-- **Explicit source rule:** The 50% retracement rule is explicitly defined against the `"previous dealing range"` (`one timeframe is all you need.txt`, L777-782).
+- **Explicit source rule:** The cited transcript demonstrates 50% retracement evaluation in an existing dealing-range context (`one timeframe is all you need.txt`, L777-782); it does not define the first-BOS baseline.
 - **Absent / unspecified source information:** For the major source files, no explicit source-defined coordinate pair was found for a first-BOS retracement baseline. Zero source evidence defines a baseline formula or price coordinates when no prior dealing range exists.
 
 ### 2.2. First-BOS Chart Practice
@@ -1144,6 +1144,46 @@ The current wording in `.agents/skills/smc/03_structural_semantic_authority.md` 
 - It correctly identifies the gap.
 - It correctly prohibits the invention of a synthetic dealing range, provisional protected extreme, or initialization heuristic to bypass it.
 **No canonical changes are required to L3, L4, or L8.** The architectural treatment defined in L3 and L8 is correct and source-accurate.
+
+## 5. Test Result
+- Command: `python -m pytest`
+- Result: `91 passed, 0 failed, 0 skipped/xfail`
+
+
+---
+
+# FIRST-BOS RETRACEMENT BOUNDARY IMPLEMENTATION
+
+## 1. Files Changed
+- `.agents/skills/smc/08_implementation.md`
+- `AGENT_REVIEW.md`
+
+## 2. First-BOS Implementation Behavior
+The canonical lifecycle (`BOOTSTRAP` → `IDM_TAKEN` → `CONFIRMED_STRUCTURAL_SWING` → `CONFIRMATION GATE UNLOCKED` → retracement evaluation) has been strictly preserved. 
+
+An explicit implementation-level state condition has been added to `08_implementation.md` (§49.4, §49.4.1):
+`FIRST_BOS_RETRACEMENT_BASELINE = UNAVAILABLE / UNSPECIFIED`
+
+When evaluating a first-BOS scenario under this condition, the transition matrix explicitly yields:
+`FIRST_BOS_RETRACEMENT_UNRESOLVED → REMAIN`
+
+The implementation is expressly forbidden from producing `VALID_BOS`, locking a `PROTECTED_STRUCTURAL_EXTREME`, or executing `TRADING_RANGE_ROLLOVER`.
+
+To maintain the architectural boundary, the implementation representation now includes the state field:
+`first_bos_retracement_baseline_status`
+with an allowed value of `UNSPECIFIED_CANONICAL_INPUT`.
+
+## 3. Ownership Audit Result (03 → 04 → 05 → 08)
+- **L3 (Semantic Authority):** Remains the exclusive canonical owner of retracement qualification.
+- **L4 (BOS Mechanics):** Unchanged; does not assume baseline-definition responsibility.
+- **L8 (Implementation):** Accurately represents the missing canonical input without defining it.
+- **No Synthetic Heuristics:** The unresolved gap is strictly preserved. No synthetic dealing range, provisional protected extreme, fixed initialization distance, impulse-origin heuristic, or "first-BOS does not need retracement" exception was invented.
+
+## 4. Regression Audit Result
+The determinism contract has been explicitly reinforced:
+`REQUIRED CANONICAL INPUT MISSING → NO VALID_BOS CLASSIFICATION → NO RANGE ROLLOVER → NO PROTECTED EXTREME LOCK`.
+
+The distinction between `UNRESOLVED`, `DISQUALIFIED`, `IMPULSE_EXTENSION`, and `VALID_BOS` is strictly enforced. The source specification gap remains open, but the implementation behavior is completely deterministic.
 
 ## 5. Test Result
 - Command: `python -m pytest`
