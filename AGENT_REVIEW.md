@@ -849,3 +849,46 @@ Implemented the final two residual findings from the Phase 20 independent audit 
 ## 5. Final Phase 20 Status
 **PASS.**
 All identified findings and residual representation issues have been completely corrected without redefining structural semantics or closing documented source gaps.
+
+---
+
+# DETERMINISM CONTRACT RE-AUDIT (PHASE 20 BLOCKER RESOLUTION)
+
+## 1. Exact Blocker Found
+The state transition determinism contract in `.agents/skills/smc/08_implementation.md` (§49.1, §49.5) claimed that `Current State + Outcome combination` alone deterministically yields exactly ONE next state. This was found to be factually incorrect, because the actual required transition matrix relies heavily on additional canonical process/context conditions (e.g., `CONFIRMATION GATE LOCKED / UNLOCKED`, `MAJOR_RETRACEMENT_QUALIFIED = TRUE/FALSE`).
+
+## 2. Exact Sections Corrected
+- `.agents/skills/smc/08_implementation.md` §49.1 (Three-layer deterministic pipeline diagram)
+- `.agents/skills/smc/08_implementation.md` §49.5 (Determinism invariants text)
+
+## 3. Corrected Determinism Model
+The determinism contract was updated to accurately reflect the real decision inputs used by the structural state machine:
+`STATE TRANSITION → exactly ONE next state for a defined Current State + Structural Outcome + all required canonical process/context conditions`
+(Evaluated *ONLY ONCE REQUIRED CANONICAL INPUTS EXIST*).
+
+## 4. Re-Audit Chain and Findings
+An independent re-audit was performed across: `03_structural_semantic_authority.md` → `04_BOS_mechanics.md` → `05_CHOCH_mechanics.md` → `08_implementation.md` (§49.1, §49.4, §49.4.1, §49.5).
+
+**Audit Findings:**
+1. **Event Detection:** Still produces exactly one of the six event classes.
+2. **Event Classification:** Still produces exactly one outcome once all required canonical inputs exist.
+3. **State Transition Determinism:** Now accurately and explicitly depends on *every required canonical decision condition*.
+4. **No Overbroad Claims:** No transition claims to be deterministic from `Current State + Outcome` alone when additional context is required.
+5. **Process Conditions:** `CONFIRMATION GATE UNLOCKED` remains strictly a process condition, never a sixth lifecycle state.
+6. **Model Consistency:** The transition matrix in §49.4 and invariants in §49.5 now strictly share the identical determinism model.
+7. **Source Gaps Preserved:** The First-BOS retracement baseline specification gap remains completely open.
+8. **No Fabricated Ranges:** No synthetic dealing range or protected extreme has been introduced.
+9. **No Semantic Leakage:** No semantic ownership has leaked from L3/L4/L5 into L8.
+10. **No Contradictions:** No new contradiction was introduced by the correction.
+
+## 5. Additional Issues Found
+None. The previous corrections applied to Phase 20 successfully addressed all other anomalies, and the transition matrix accurately modeled the contextual inputs; only the *written invariant claim* needed expansion to match it.
+
+## 6. Final Blocker Status
+**RESOLVED (PASS)**.
+The state transition determinism contract is now fully accurate.
+
+## 7. Test Result
+- Command: `python -m pytest`
+- Result: `91 passed, 0 failed, 0 skipped/xfail`
+*Developer-local test execution; no independent GitHub Actions/CI verification.*

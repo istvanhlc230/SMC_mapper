@@ -989,9 +989,9 @@ The implementation separates the structural process into three deterministic lay
 ┌───────────────────────────────────────────────────────────────┐
 │ 3. STATE TRANSITION                                           │
 │                                                               │
-│ Current State + Structural Outcome determine exactly ONE      │
-│ next state FOR A DEFINED STATE + OUTCOME, ONCE REQUIRED       │
-│ CANONICAL INPUTS EXIST.                                       │
+│ Current State + Structural Outcome + all required canonical   │
+│ process/context conditions determine exactly ONE next state   │
+│ ONLY ONCE REQUIRED CANONICAL INPUTS EXIST.                    │
 └───────────────────────────────────────────────────────────────┘
 ```
 
@@ -1172,7 +1172,7 @@ EVENT CLASSIFICATION
 → exactly ONE structural outcome for the detected event
 
 STATE TRANSITION
-→ exactly ONE next state for a defined Current State + Outcome combination
+→ exactly ONE next state for a defined Current State + Structural Outcome + all required canonical process/context conditions
 ```
 
 **First-BOS Specification Gap:**
