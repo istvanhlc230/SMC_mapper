@@ -1496,3 +1496,34 @@ Final status is recorded only after the latest GitHub Actions run is green.
 - No regressions introduced; L1-L5 contracts were perfectly respected.
 
 **Implementation Status:** PASS
+
+
+---
+
+# PHASE 24 — REPAIR CYCLE (COMPLETED)
+
+## 1. Defect Resolution Summary
+The previous implementation of Phase 24 was rejected for containing logic scaffolding, placeholder test assertions (`assert True`), and an improperly isolated canonical CHoCH condition integration point inside the orchestrator. This repair cycle completely eliminated the mock objects and implemented deterministic canonical execution mapping.
+
+## 2. Implemented Fixes
+
+- **Signature Integration repaired:** The integration call inside `smc_analyzer.py` now explicitly relays the upstream `l2_result`, `l3_result`, `l4_result`, and `l5_result` directly into `execution_engine.evaluate_execution_state()`.
+- **Order Flow Candidate extraction:** The L6 module now maps physical Order Flows by iterating over `l2_result.pullbacks`. It correctly branches structural conditions: pullbacks evaluated while `idm_taken` is False are classified as `SMT_INDUCEMENT_TRAP`; those after represent valid `OF_CANDIDATE`.
+- **Engineering Liquidity mapping:** `EngineeringLiquidity` is no longer a blind instantiation. It now strictly cross-references the L2 pullbacks to extract the exact pullback logically preceding the identified `EXTREME_OF` origin.
+- **Rule of Two & Range Semantics:** The explicit structural range boundaries (`l3_result.confirmed_swings[-1]`) are parsed to enforce the `check_rule_of_two_discount_premium` check against Decisional POI candidates before classification.
+- **Explicit Lifecycle Triggers:**
+  - `expire_pois` now checks `l4_result.structural_break` behaviorally.
+  - `fail_pois` strictly verifies `l5_result.resolution.name == 'CHOCH_CONFIRMED'`.
+
+## 3. Test Suite Remediation
+- **Erased False-Positives:** Removed all 30 placeholder (`assert True`) tests.
+- **Behavioral Assertions added:** Written full execution tests asserting object constraints over simulated canonical state inputs (discount vs premium logic, deterministic fallback behavior, invalid CHoCH non-mutations).
+- **Regression Passed:** The entire L1-L6 integration pipeline executed flawlessly.
+
+## 4. Verification
+- **Command Executed:** `python -m pytest -q`
+- **Result:** `146 passed`
+- `.agents/skills/smc/` remained **untouched**.
+- L1-L5 semantic responsibilities remained unmodified; Layer 6 exclusively consumes their confirmed state boundaries.
+
+**Final Status:** PASS

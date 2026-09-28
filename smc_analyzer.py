@@ -912,7 +912,7 @@ class SMCAnalyzer:
             l4_result=l4_result,
             l5_result=l5_result,
             first_bos_retracement_baseline_status=first_bos_retracement_baseline_status,
-            l6_result=execution_engine.evaluate_execution_state(candles, l3_result, l4_result, choch_confirmed=False),
+            l6_result=execution_engine.evaluate_execution_state(candles, l2_result, l3_result, l4_result, l5_result),
             target_candidates=normalized_target_candidates,
             target_plan=target_plan,
             resolved_targets=resolved_targets,

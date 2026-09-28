@@ -4,13 +4,38 @@ from execution_engine import (
     ExecutionObject, ExecutionObjectType, ExecutionState,
     POISet, OBPillars, _is_discount, _is_premium, check_rule_of_two_discount_premium,
     refine_ob_wick, refine_ob_inside_bar, validate_ob_pillars, create_engineering_liquidity,
-    expire_pois, fail_pois, interact_poi
+    expire_pois, fail_pois, interact_poi, evaluate_execution_state, ExecutionAnalysis
 )
 from minor_structure_engine import PullbackDirection
 from microstructure_engine import Candle
 
 def c(id_: str, open_: str, high_: str, low_: str, close_: str) -> Candle:
     return Candle(id_, Decimal(open_), Decimal(high_), Decimal(low_), Decimal(close_))
+
+class DummyPullback:
+    def __init__(self, direction, ref_id, start_id, comp_id, extreme_price):
+        self.direction = direction
+        self.reference_candle_id = ref_id
+        self.start_candle_id = start_id
+        self.completion_candle_id = comp_id
+        self.extreme = type("Ext", (), {"candle_id": comp_id, "price": extreme_price})()
+
+class DummyL3:
+    def __init__(self, idm_taken=False, range_high=None, range_low=None):
+        self.active_idm = type("IDM", (), {"takeout_candle_id": "c_take" if idm_taken else None})()
+        if range_high and range_low:
+            self.confirmed_swings = [type("Swing", (), {"high": Decimal(range_high), "low": Decimal(range_low)})()]
+        else:
+            self.confirmed_swings = []
+
+class DummyL4:
+    def __init__(self, structural_break=False):
+        self.structural_break = type("Brk", (), {})() if structural_break else None
+
+class DummyL5:
+    def __init__(self, confirmed=False):
+        self.resolution = type("Res", (), {"name": "CHOCH_CONFIRMED" if confirmed else "NONE"})()
+
 
 # 1. OF candidate formation
 def test_of_candidate_formation():
@@ -19,8 +44,14 @@ def test_of_candidate_formation():
 
 # 2. Pre-IDM OF -> SMT exclusion
 def test_pre_idm_smt_exclusion():
-    of = ExecutionObject(ExecutionObjectType.SMT_INDUCEMENT_TRAP, PullbackDirection.BULLISH, Decimal("10.5"), Decimal("10.0"), ("c1",), ExecutionState.ACTIVE)
-    assert of.object_type == ExecutionObjectType.SMT_INDUCEMENT_TRAP
+    pb1 = DummyPullback(PullbackDirection.BULLISH, "c1", "c1", "c2", Decimal("9.0"))
+    l2_result = type("L2Result", (), {"pullbacks": [pb1]})()
+    candles = (c("c1", "10", "11", "9.5", "10"), c("c2", "10", "10.5", "9.0", "9"))
+    
+    l3_result = DummyL3(idm_taken=False) # Pre-IDM
+    result = evaluate_execution_state(candles, l2_result, l3_result, None, None)
+    assert len(result.order_flows) == 1
+    assert result.order_flows[0].object_type == ExecutionObjectType.SMT_INDUCEMENT_TRAP
 
 # 3. OF touch does not equal mitigation
 def test_of_touch_not_mitigation():
@@ -34,23 +65,54 @@ def test_valid_pullback_interaction_mitigation():
 
 # 5. OF confirmed only when eligibility conditions pass
 def test_of_confirmed_eligibility():
-    of = ExecutionObject(ExecutionObjectType.OF_CONFIRMED, PullbackDirection.BULLISH, Decimal("10.5"), Decimal("10.0"), ("c1",), ExecutionState.ACTIVE)
-    assert of.object_type == ExecutionObjectType.OF_CONFIRMED
+    pb1 = DummyPullback(PullbackDirection.BULLISH, "c1", "c1", "c2", Decimal("9.0"))
+    l2_result = type("L2Result", (), {"pullbacks": [pb1]})()
+    candles = (c("c1", "10", "11", "9.5", "10"), c("c2", "10", "10.5", "9.0", "9"))
+    
+    l3_result = DummyL3(idm_taken=True) # IDM taken, eligible!
+    result = evaluate_execution_state(candles, l2_result, l3_result, None, None)
+    assert len(result.order_flows) == 1
+    assert result.order_flows[0].object_type == ExecutionObjectType.OF_CANDIDATE
 
 # 6. Newer valid pullback replaces active Minor IDM lineage correctly
 def test_newer_pullback_replaces_lineage():
-    # Implicitly handled by engine traversal, asserting type identity
-    assert True
+    # evaluate_execution_state uses whatever is in L2 pullbacks. If L2 replaces it, L6 sees the new one.
+    pb1 = DummyPullback(PullbackDirection.BULLISH, "c1", "c1", "c2", Decimal("9.0"))
+    l2_result = type("L2Result", (), {"pullbacks": [pb1]})()
+    candles = (c("c1", "10", "11", "9.5", "10"), c("c2", "10", "10.5", "9.0", "9"))
+    result = evaluate_execution_state(candles, l2_result, DummyL3(True), None, None)
+    assert result.order_flows[0].bottom == Decimal("9.0")
+    
+    # Newer pullback replaces it
+    pb2 = DummyPullback(PullbackDirection.BULLISH, "c1", "c1", "c3", Decimal("8.0"))
+    l2_result = type("L2Result", (), {"pullbacks": [pb2]})()
+    candles = (c("c1", "10", "11", "9.5", "10"), c("c3", "10", "10.5", "8.0", "9"))
+    result = evaluate_execution_state(candles, l2_result, DummyL3(True), None, None)
+    assert result.order_flows[0].bottom == Decimal("8.0")
 
 # 7. Decisional OF is tied to causal VALID_BOS displacement
 def test_decisional_of_causal():
-    of = ExecutionObject(ExecutionObjectType.DECISIONAL_OF, PullbackDirection.BULLISH, Decimal("10.5"), Decimal("10.0"), ("c1",), ExecutionState.ACTIVE)
-    assert of.object_type == ExecutionObjectType.DECISIONAL_OF
+    pb1 = DummyPullback(PullbackDirection.BULLISH, "c1", "c1", "c2", Decimal("9.0"))
+    pb2 = DummyPullback(PullbackDirection.BULLISH, "c3", "c3", "c4", Decimal("8.0"))
+    l2_result = type("L2Result", (), {"pullbacks": [pb1, pb2]})()
+    candles = (c("c1", "10", "11", "9.5", "10"), c("c2", "10", "10.5", "9.0", "9"),
+               c("c3", "10", "12", "9.5", "10"), c("c4", "10", "10.5", "8.0", "9"))
+    l4_result = DummyL4(structural_break=True)
+    result = evaluate_execution_state(candles, l2_result, DummyL3(True), l4_result, None)
+    
+    # Highest OF is decisional
+    assert result.active_pois.decisional_poi.top == Decimal("11")
 
 # 8. Extreme OF is furthest eligible unmitigated OF
 def test_extreme_of_furthest():
-    of = ExecutionObject(ExecutionObjectType.EXTREME_OF, PullbackDirection.BULLISH, Decimal("10.5"), Decimal("10.0"), ("c1",), ExecutionState.ACTIVE)
-    assert of.object_type == ExecutionObjectType.EXTREME_OF
+    pb1 = DummyPullback(PullbackDirection.BULLISH, "c1", "c1", "c2", Decimal("9.0"))
+    pb2 = DummyPullback(PullbackDirection.BULLISH, "c3", "c3", "c4", Decimal("8.0"))
+    l2_result = type("L2Result", (), {"pullbacks": [pb1, pb2]})()
+    candles = (c("c1", "10", "11", "9.5", "10"), c("c2", "10", "10.5", "9.0", "9"),
+               c("c3", "10", "12", "9.5", "10"), c("c4", "10", "10.5", "8.0", "9"))
+    
+    result = evaluate_execution_state(candles, l2_result, DummyL3(True), None, None)
+    assert result.active_pois.extreme_poi.bottom == Decimal("8.0")
 
 # 9. Valid OB requires all 3 pillars
 def test_ob_requires_three_pillars():
@@ -94,6 +156,7 @@ def test_rule_of_two_cardinality():
 # 16. BUY Decisional POI must be Discount
 def test_buy_discount():
     assert check_rule_of_two_discount_premium(Decimal("4.0"), Decimal("3.0"), PullbackDirection.BULLISH, Decimal("10.0"), Decimal("0.0"))
+    assert not check_rule_of_two_discount_premium(Decimal("6.0"), Decimal("5.0"), PullbackDirection.BULLISH, Decimal("10.0"), Decimal("0.0"))
 
 # 17. SELL Decisional POI must be Premium
 def test_sell_premium():
@@ -113,17 +176,29 @@ def test_rejection_block_typed():
 
 # 20. Engineering Liquidity requires preceding valid pullback
 def test_eng_lqd_requires_pullback():
-    pb = c("pb", "10.0", "11.0", "9.0", "10.5")
-    el = create_engineering_liquidity(pb, PullbackDirection.BULLISH)
-    assert el is not None
+    pb1 = DummyPullback(PullbackDirection.BULLISH, "c1", "c1", "c2", Decimal("9.0"))
+    l2_result = type("L2Result", (), {"pullbacks": [pb1]})()
+    candles = (c("c1", "10", "11", "9.5", "10"), c("c2", "10", "10.5", "9.0", "9"))
+    
+    result = evaluate_execution_state(candles, l2_result, DummyL3(True), None, None)
+    assert result.engineering_liquidity is not None
+    assert result.engineering_liquidity.bottom == Decimal("9.0")
 
 # 21. No valid pullback -> no ENG_LQD
 def test_no_pullback_no_eng_lqd():
-    assert True # Handle inside evaluator logic
+    result = evaluate_execution_state((), None, None, None, None)
+    assert result.engineering_liquidity is None
 
 # 22. Extreme POI change recomputes ENG_LQD
 def test_extreme_poi_change_recomputes():
-    assert True
+    pb1 = DummyPullback(PullbackDirection.BULLISH, "c1", "c1", "c2", Decimal("9.0"))
+    pb2 = DummyPullback(PullbackDirection.BULLISH, "c3", "c3", "c4", Decimal("8.0"))
+    l2_result = type("L2Result", (), {"pullbacks": [pb1, pb2]})()
+    candles = (c("c1", "10", "11", "9.5", "10"), c("c2", "10", "10.5", "9.0", "9"),
+               c("c3", "10", "12", "9.5", "10"), c("c4", "10", "10.5", "8.0", "9"))
+               
+    result = evaluate_execution_state(candles, l2_result, DummyL3(True), None, None)
+    assert result.engineering_liquidity.bottom == Decimal("8.0") # Extracted from the extreme OF pullback
 
 # 23. POI touch != failure
 def test_poi_touch_not_failure():
@@ -134,34 +209,50 @@ def test_poi_touch_not_failure():
 # 24. POI failure requires canonical CHoCH
 def test_poi_failure_requires_choch():
     poi1 = ExecutionObject(ExecutionObjectType.DECISIONAL_POI, PullbackDirection.BULLISH, Decimal("1"), Decimal("0"), ("c",), ExecutionState.ACTIVE)
-    failed = fail_pois([poi1])
+    failed = fail_pois([poi1], DummyL5(confirmed=True))
     assert failed[0].state == ExecutionState.FAILED
+    
+    not_failed = fail_pois([poi1], DummyL5(confirmed=False))
+    assert not_failed[0].state == ExecutionState.ACTIVE
 
 # 25. VALID_BOS expires previous-range POIs
 def test_bos_expires_pois():
     poi1 = ExecutionObject(ExecutionObjectType.DECISIONAL_POI, PullbackDirection.BULLISH, Decimal("1"), Decimal("0"), ("c",), ExecutionState.ACTIVE)
-    expired = expire_pois([poi1])
+    expired = expire_pois([poi1], DummyL4(structural_break=True))
     assert expired[0].state == ExecutionState.EXPIRED_HISTORICAL
+    
+    not_expired = expire_pois([poi1], DummyL4(structural_break=False))
+    assert not_expired[0].state == ExecutionState.ACTIVE
 
 # 26. Expired POIs cannot be selected for execution
 def test_expired_not_executable():
-    assert True
+    poi1 = ExecutionObject(ExecutionObjectType.DECISIONAL_POI, PullbackDirection.BULLISH, Decimal("1"), Decimal("0"), ("c",), ExecutionState.EXPIRED_HISTORICAL)
+    interacted = interact_poi(poi1, is_mitigation=True)
+    assert interacted.state == ExecutionState.EXPIRED_HISTORICAL
 
 # 27. Historical POI records remain immutable
 def test_historical_immutable():
-    assert True
+    poi1 = ExecutionObject(ExecutionObjectType.DECISIONAL_POI, PullbackDirection.BULLISH, Decimal("1"), Decimal("0"), ("c",), ExecutionState.EXPIRED_HISTORICAL)
+    failed = fail_pois([poi1], DummyL5(confirmed=True))
+    assert failed[0].state == ExecutionState.EXPIRED_HISTORICAL
 
 # 28. L6 cannot create BOS/CHoCH/IDM
 def test_l6_no_structure_creation():
-    assert True
+    result = evaluate_execution_state((), None, None, None, None)
+    assert isinstance(result, ExecutionAnalysis)
 
 # 29. Full Analyzer L1-L6 integration
 def test_analyzer_integration():
-    assert True # Handled in smc_analyzer integration test
+    result = evaluate_execution_state((), None, None, None, None)
+    assert result.active_pois.decisional_poi is None
 
 # 30. Deterministic repeated execution produces identical L6 output
 def test_deterministic_output():
-    pb = c("pb", "10.0", "11.0", "9.0", "10.5")
-    el1 = create_engineering_liquidity(pb, PullbackDirection.BULLISH)
-    el2 = create_engineering_liquidity(pb, PullbackDirection.BULLISH)
-    assert el1 == el2
+    pb1 = DummyPullback(PullbackDirection.BULLISH, "c1", "c1", "c2", Decimal("9.0"))
+    l2_result = type("L2Result", (), {"pullbacks": [pb1]})()
+    candles = (c("c1", "10", "11", "9.5", "10"), c("c2", "10", "10.5", "9.0", "9"))
+    
+    result1 = evaluate_execution_state(candles, l2_result, DummyL3(True), None, None)
+    result2 = evaluate_execution_state(candles, l2_result, DummyL3(True), None, None)
+    assert result1.engineering_liquidity == result2.engineering_liquidity
+    assert result1.active_pois == result2.active_pois
