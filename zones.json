@@ -1,37 +1,133 @@
 {
+  "schema_version": 1,
+  "source": "CONFIGURATION",
+  "analysis": {
+    "status": "EXTERNAL_CONFIG",
+    "instrument": null,
+    "timeframe": null,
+    "analysis_timestamp": null,
+    "structural_hash": null
+  },
   "setups": [
     {
+      "monitor_id": "CCCC:1h:L1",
+      "setup_id": "CCCC:1h",
+      "leg_id": "L1",
       "ticker": "CCCC",
       "name": "CCCC D1 Decisional",
+      "timeframe": "1h",
       "direction": "BUY",
-      "htf": "1h",
-      "ltf": "15m",
-      "top_price": 3.30,
-      "bottom_price": 3.05,
-      "target": 4.38,
-      "probability_pct": 55
+      "state": "TARGET_ACTIVE",
+      "analysis_timestamp": null,
+      "structural_hash": null,
+      "target_resolution": {
+        "status": "RESOLVED",
+        "resolved_target_id": "CCCC-T1"
+      },
+      "target_candidates": [
+        {
+          "target_id": "CCCC-T1",
+          "target_type": "configured target",
+          "price": "4.38",
+          "provenance": "CONFIGURED_TARGET_POLICY"
+        }
+      ],
+      "target_plan": {
+        "leg_id": "L1",
+        "target_id": "CCCC-T1",
+        "allocation_pct": "100"
+      },
+      "target": {
+        "target_id": "CCCC-T1",
+        "target_type": "configured target",
+        "price": "4.38",
+        "provenance": "CONFIGURED_TARGET_POLICY"
+      },
+      "execution_context": {
+        "top_price": "3.30",
+        "bottom_price": "3.05",
+        "probability_pct": 55
+      }
     },
     {
+      "monitor_id": "DTE.DE:1h:L1",
+      "setup_id": "DTE.DE:1h",
+      "leg_id": "L1",
       "ticker": "DTE.DE",
       "name": "Telekom D1 Decisional",
+      "timeframe": "1h",
       "direction": "BUY",
-      "htf": "1h",
-      "ltf": "15m",
-      "top_price": 27.20,
-      "bottom_price": 26.60,
-      "target": 29.34,
-      "probability_pct": 60
+      "state": "TARGET_ACTIVE",
+      "analysis_timestamp": null,
+      "structural_hash": null,
+      "target_resolution": {
+        "status": "RESOLVED",
+        "resolved_target_id": "DTE.DE-T1"
+      },
+      "target_candidates": [
+        {
+          "target_id": "DTE.DE-T1",
+          "target_type": "configured target",
+          "price": "29.34",
+          "provenance": "CONFIGURED_TARGET_POLICY"
+        }
+      ],
+      "target_plan": {
+        "leg_id": "L1",
+        "target_id": "DTE.DE-T1",
+        "allocation_pct": "100"
+      },
+      "target": {
+        "target_id": "DTE.DE-T1",
+        "target_type": "configured target",
+        "price": "29.34",
+        "provenance": "CONFIGURED_TARGET_POLICY"
+      },
+      "execution_context": {
+        "top_price": "27.20",
+        "bottom_price": "26.60",
+        "probability_pct": 60
+      }
     },
     {
+      "monitor_id": "BABA:1h:L1",
+      "setup_id": "BABA:1h",
+      "leg_id": "L1",
       "ticker": "BABA",
       "name": "Alibaba D1 Decisional",
+      "timeframe": "1h",
       "direction": "BUY",
-      "htf": "1h",
-      "ltf": "15m",
-      "top_price": 110.00,
-      "bottom_price": 105.00,
-      "target": 130.62,
-      "probability_pct": 60
+      "state": "TARGET_ACTIVE",
+      "analysis_timestamp": null,
+      "structural_hash": null,
+      "target_resolution": {
+        "status": "RESOLVED",
+        "resolved_target_id": "BABA-T1"
+      },
+      "target_candidates": [
+        {
+          "target_id": "BABA-T1",
+          "target_type": "configured target",
+          "price": "130.62",
+          "provenance": "CONFIGURED_TARGET_POLICY"
+        }
+      ],
+      "target_plan": {
+        "leg_id": "L1",
+        "target_id": "BABA-T1",
+        "allocation_pct": "100"
+      },
+      "target": {
+        "target_id": "BABA-T1",
+        "target_type": "configured target",
+        "price": "130.62",
+        "provenance": "CONFIGURED_TARGET_POLICY"
+      },
+      "execution_context": {
+        "top_price": "110.00",
+        "bottom_price": "105.00",
+        "probability_pct": 60
+      }
     }
   ]
 }
