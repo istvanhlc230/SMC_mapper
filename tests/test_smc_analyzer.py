@@ -275,12 +275,10 @@ def test_analyzer_to_zones_to_monitor_round_trip(tmp_path):
     assert persisted["setups"][0]["state"] == "TARGET_REACHED"
 
 
-def test_analyzer_snapshot_preserves_reached_state_only_for_same_version_and_target():
+def test_analyzer_snapshot_preserves_reached_state_only_for_same_version_and_target(tmp_path):
     from smc_htf_ltf_monitor import Monitor, Candle as MonitorCandle, Notifier
 
-    path = __import__("pathlib").Path(
-        __import__("tempfile").mkstemp(suffix=".json")[1]
-    )
+    path = tmp_path / "zones.json"
     try:
         candidates = (
             TargetCandidate("T1", "configured", Decimal("10"), "CONFIGURED_TARGET_POLICY"),
@@ -298,11 +296,6 @@ def test_analyzer_snapshot_preserves_reached_state_only_for_same_version_and_tar
         monitor.load_config()
         with pytest.MonkeyPatch.context() as mp:
             mp.setattr(Notifier, "alert", lambda *args, **kwargs: None)
-            mp.setattr(
-                __import__("smc_htf_ltf_monitor").Notifier,
-                "alert",
-                lambda *args, **kwargs: None,
-            )
             monitor.evaluate({
                 "TEST": MonitorCandle(
                     timestamp,
