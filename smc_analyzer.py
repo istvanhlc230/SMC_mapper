@@ -553,6 +553,15 @@ def serialize_monitor_snapshot(
     ]
 
     if result.target_plan is not None:
+        unresolved_legs = [
+            leg for leg in result.target_plan.legs
+            if not any(target.target_id == leg.target_id for target in result.resolved_targets)
+        ]
+        if unresolved_legs:
+            unresolved_ids = ", ".join(leg.target_id for leg in unresolved_legs)
+            raise AnalyzerContractError(
+                f"target plan contains unresolved target IDs: {unresolved_ids}"
+            )
         legs = list(result.target_plan.legs)
     elif result.resolved_target is not None:
         legs = [TargetLeg("DIRECT", result.resolved_target.target_id, Decimal("100"))]
