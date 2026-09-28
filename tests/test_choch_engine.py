@@ -151,7 +151,7 @@ def test_ltf_minor_idm_wick_requires_external_major_idm_reference():
     ref = choch_engine.reference_from_ltf_idm(idm)
     external_major = choch_engine.reference_from_boundary(
         PullbackDirection.BULLISH,
-        price=Decimal("9"),
+        price=Decimal("9.8"),
         source_candle_id="protected",
         idm_class=structural.IDMClass.MAJOR_IDM,
         idm_origin=structural.IDMOrigin.PROTECTED_EXTERNAL_BOUNDARY,
