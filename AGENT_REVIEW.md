@@ -1083,3 +1083,41 @@ All 15 PASS criteria verified:
 12. No unjustifiably lost source-backed canonical content ✓
 13. No newly introduced heuristic ✓
 14. No unresolved finding blocking canonical closure ✓
+
+---
+
+# FIRST-BOS RETRACEMENT BASELINE RESOLUTION AUDIT
+
+## 1. Audit Scope & Sources
+A comprehensive audit of the canonical source corpus was performed to resolve the exact price coordinates used for measuring the 50% retracement qualification for the **first Break of Structure (BOS)** before a canonical dealing range exists.
+
+Sources audited in priority order:
+1. `truesmc2026.txt`
+2. `market_structure_mapping_update.txt`
+3. `advanced_market_structure_mapping.txt`
+4. `market_structure_mapping_made_simple.txt`
+5. `true_smc_21dayBootCamp.txt`
+6. `Become-a-TRUE-Forex-Trader-Become-a-TRUE-Forex-Trader_text_format.txt`
+7. `smc_trader_missing_piece.txt`
+8. `smc_trader_another_missing_piece.txt`
+*(plus secondary sources: `is_wick_a_bos.txt`, `major_minor_inducement.txt`, `everything_behind_the_trading_system.txt`, `true_smc123.txt`, `one timeframe is all you need.txt`, `Best_Way_to_Enter_Trades_Within_the_Same_Timeframe_True_SMC.md`)*
+
+## 2. Source Evidence Findings
+- **Established Structure Baseline (EXPLICIT):** The 50% retracement rule is explicitly defined against the `"previous dealing range"` (`one timeframe is all you need.txt`, L777-782). The Fib tool is explicitly measured from the confirmed dealing range high to low.
+- **First-BOS Baseline Coordinates (NEGATIVE RESULT):** Zero source evidence exists across all 12+ files defining a baseline formula or price coordinates for the *first* BOS when no prior dealing range exists.
+- **First-BOS Chart Practice (EXPLICIT OBSERVATION):** When initializing a chart or continuing after a CHoCH, the presenter visually identifies an impulsive leg, waits for IDM takeout to confirm a swing point, and explicitly classifies the subsequent break of that swing point as a Break of Structure (`one timeframe is all you need.txt`, L6-15, L312-422). At no point does the presenter measure a 50% retracement against any genesis baseline to qualify this first BOS.
+- **Term "Origin" (EXPLICIT):** "Origin" is strictly used to refer to the unmitigated order block/flow at the extreme of an *existing* dealing range, never as a structural retracement anchor for genesis structure.
+
+## 3. Final Resolution
+**UNRESOLVED SOURCE GAP.**
+The First-BOS retracement baseline remains a genuine specification gap in the True SMC methodology. The source corpus simply asserts the start of an impulsive leg visually and treats the first IDM-takeout-and-break sequence as a valid BOS without measuring a baseline retracement.
+
+## 4. Current Canonical Wording Assessment
+The current wording in `.agents/skills/smc/03_structural_semantic_authority.md` (§3.2.1A) and `.agents/skills/smc/08_implementation.md` (§49.4.1) accurately reflects this reality:
+- It correctly identifies the gap.
+- It correctly prohibits the invention of a synthetic dealing range, provisional protected extreme, or initialization heuristic to bypass it.
+**No canonical changes are required to L3, L4, or L8.** The architectural treatment defined in L3 and L8 is correct and source-accurate.
+
+## 5. Test Result
+- Command: `python -m pytest`
+- Result: `91 passed, 0 failed, 0 skipped/xfail`
