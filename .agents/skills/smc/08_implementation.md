@@ -805,7 +805,7 @@ POI_MITIGATION → ENTRY_AUTHORIZED (without confirmation)
 
 ### Target Resolution implementation mapping
 
-Target resolution must produce canonical target candidates before any downstream TP handling. Canonical True SMC does NOT define a universal target-selection algorithm or a universal "Primary Target".
+Target resolution must produce canonical target candidates before any downstream TP handling. Canonical True SMC does NOT define a universal target-selection algorithm or a universal target-selection winner.
 
 ```text
 CANONICAL STRUCTURAL / LIQUIDITY TARGET CANDIDATES
@@ -822,7 +822,7 @@ Required mappings:
 - LTF execution -> explicit policy selecting `HTF_EXTERNAL_TARGET` or `LTF_STRUCTURAL_TARGET`; no implicit default;
 - countertrend -> setup-specific next canonical destination candidate, such as the next valid POI, IDM, Engineering Liquidity, or external liquidity, according to the active setup contract;
 - the source does not define one universal priority among all simultaneously valid target candidates;
-- therefore the analyzer must not imply that Canonical SMC yields a universal Primary Target, and must not manufacture a single universal winner target merely to satisfy an RR calculation;
+- therefore the analyzer must not imply that Canonical SMC yields a universal target-selection winner, and must not manufacture a single universal winner target merely to satisfy an RR calculation;
 - the RR gate may consume a resolved target ONLY after the configured target policy has resolved one (`RESOLVED TARGET`);
 - if no valid target is resolved:
   ```text
@@ -966,7 +966,7 @@ Required invariants:
 
 ## 49. State-Transition Coverage & Determinism
 
-The structural state machine is formally separated into three deterministic layers. A candle must not directly manufacture a state transition.
+The implementation separates the structural process into three deterministic layers once the required canonical inputs exist. A candle must not directly manufacture a state transition.
 
 ### 49.1 Three-layer deterministic pipeline
 
@@ -974,23 +974,24 @@ The structural state machine is formally separated into three deterministic laye
 ┌───────────────────────────────────────────────────────────────┐
 │ 1. EVENT DETECTION                                            │
 │                                                               │
-│ Physical OHLC/level relations select exactly ONE of the       │
-│ six disjoint event classes.                                 │
+│ Physical OHLC/level relations select exactly ONE event class  │
+│ ONLY ONCE REQUIRED CANONICAL INPUTS EXIST.                    │
 └───────────────────────────────┬───────────────────────────────┘
                                 ↓
 ┌───────────────────────────────────────────────────────────────┐
 │ 2. EVENT CLASSIFICATION                                       │
 │                                                               │
-│ Retracement sufficiency, level provenance, liquidity, and    │
-│ structural prerequisite gates determine the structural        │
-│ outcome of the detected event.                                │
+│ Retracement sufficiency, level provenance, liquidity, and     │
+│ structural prerequisite gates determine exactly ONE outcome   │
+│ ONLY ONCE REQUIRED CANONICAL INPUTS EXIST.                    │
 └───────────────────────────────┬───────────────────────────────┘
                                 ↓
 ┌───────────────────────────────────────────────────────────────┐
 │ 3. STATE TRANSITION                                           │
 │                                                               │
-│ Current State + Structural Outcome determine exactly ONE     │
-│ next state.                                                   │
+│ Current State + Structural Outcome determine exactly ONE      │
+│ next state FOR A DEFINED STATE + OUTCOME, ONCE REQUIRED       │
+│ CANONICAL INPUTS EXIST.                                       │
 └───────────────────────────────────────────────────────────────┘
 ```
 

@@ -947,7 +947,7 @@ Do not fail over from OF_CONFIRMED to Extreme OB solely because price wicked int
 
 ### Risk, Targets, and RR
 
-Risk management, target resolution, and Reward-to-Risk (RR) gating are downstream execution/trading-policy constraints. Canonical True SMC does NOT define a universal target-selection priority or a universal "Primary Target".
+Risk management, target resolution, and Reward-to-Risk (RR) gating are downstream execution/trading-policy constraints. Canonical True SMC does NOT define a universal target-selection priority or a universal target-selection winner.
 
 The execution layer operates under the strict unidirectional pipeline:
 
@@ -962,7 +962,7 @@ RR EVALUATION
 ```
 
 Required interface semantics:
-- The confirmed external range extreme is a **canonical target candidate / structural input**, but is not automatically a universal primary target.
+- The confirmed external range extreme is a **canonical target candidate / structural input**, but is not automatically a universal target-selection winner.
 - For LTF execution, multiple source-backed target conventions exist (e.g., HTF external liquidity vs. LTF structural/BOS destination); the downstream target policy selects the applicable convention.
 - For countertrend execution, no universal TP coordinate or implicit fallback target exists; destination selection is setup-specific target policy.
 - Break-even (`BE`), profit-lock, and trailing stop rules are stop-management concepts, not structural targets.

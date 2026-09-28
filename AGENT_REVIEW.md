@@ -811,3 +811,41 @@ Implemented the 5 findings from the Phase 20 independent audit to ensure perfect
 - Result: \91 passed, 0 failed, 0 skipped/xfail\
 *Developer-local test execution; no independent GitHub Actions/CI verification.*
 
+
+---
+
+# PHASE 20 — RESIDUAL CORRECTION (FINDINGS 1–2)
+
+## 1. Overview
+Implemented the final two residual findings from the Phase 20 independent audit to ensure the specification remains strictly compliant with the conditionally deterministic pipeline and completely eliminates obsolete terminology.
+
+## 2. Findings and Corrections
+
+### Finding 1: Unconditional determinism wording (L8)
+- **Issue:** `.agents/skills/smc/08_implementation.md` §49.1 still stated the deterministic pipeline too broadly (e.g. "Physical OHLC/level relations select exactly ONE...") without attaching the necessary condition regarding required inputs.
+- **Correction Applied:** 
+  - Reworded §49.1 to make determinism explicitly conditional on the required canonical inputs existing.
+  - The diagram text now reads: `ONLY ONCE REQUIRED CANONICAL INPUTS EXIST`.
+  - The state transition explicitly requires a `DEFINED STATE + OUTCOME, ONCE REQUIRED CANONICAL INPUTS EXIST`.
+  - The First-BOS retracement baseline remains completely open as an `OPEN SPECIFICATION AMBIGUITY / SOURCE GAP` without any synthetic dealing range or heuristic.
+
+### Finding 2: Residual `Primary Target` terminology (L6 / L7 / L8)
+- **Issue:** Active canonical prose still used the phrase `Primary Target`, even when clarifying it does not exist (e.g. `Canonical True SMC does NOT define a universal "Primary Target"`).
+- **Correction Applied:** 
+  - Replaced all remaining instances of `Primary Target` in active canonical prose with neutral architecture terminology such as `universal target-selection priority` or `universal target-selection winner`.
+  - Re-verified zero active occurrences of `Primary Target` across all canonical L6, L7, and L8 documents.
+  - The canonical target objects strictly remain: `TARGET CANDIDATE`, `TARGET POLICY`, `RESOLVED TARGET`, and `TARGET PLAN`.
+
+## 3. Cross-Layer Validation Result
+- **L3 → L4 / L5:** Fully intact.
+- **L5 → L8:** Fully intact.
+- **L6 → L7 → L8:** Zero residual `Primary Target` terminology. Target architecture unchanged and strictly unidirectional.
+
+## 4. Test Result
+- Command: `python -m pytest`
+- Result: `91 passed, 0 failed, 0 skipped/xfail`
+*Developer-local test execution; no independent GitHub Actions/CI verification.*
+
+## 5. Final Phase 20 Status
+**PASS.**
+All identified findings and residual representation issues have been completely corrected without redefining structural semantics or closing documented source gaps.

@@ -124,7 +124,7 @@ This remains an execution/risk event and is not POI failure, structural invalida
 
 ## 5.2 Target Source / Implementation Boundary
 
-Canonical SMC methodology does not prescribe a universal target-selection priority or a universal "Primary Target". It provides structural/liquidity chart facts that downstream implementation may use as target inputs.
+Canonical SMC methodology does not prescribe a universal target-selection priority or a universal target-selection winner. It provides structural/liquidity chart facts that downstream implementation may use as target inputs.
 
 The risk and trade-management layer operates under the strict unidirectional pipeline:
 
