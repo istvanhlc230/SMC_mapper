@@ -40,6 +40,8 @@ class ExecutionObject:
     bottom: Decimal
     source_candle_ids: tuple[str, ...]
     state: ExecutionState
+    origin_pullback_id: str | None = None
+    range_id: str | None = None
     
     def __post_init__(self):
         if not isinstance(self.top, Decimal) or not isinstance(self.bottom, Decimal):
@@ -63,12 +65,6 @@ class POISet:
     extreme_poi: ExecutionObject | None
     origin_ob_latent: ExecutionObject | None
     rejection_block: ExecutionObject | None
-    
-    def __post_init__(self):
-        if self.decisional_poi and self.decisional_poi.object_type != ExecutionObjectType.DECISIONAL_POI:
-            raise ValueError("Decisional POI must be typed DECISIONAL_POI")
-        if self.extreme_poi and self.extreme_poi.object_type != ExecutionObjectType.EXTREME_POI:
-            raise ValueError("Extreme POI must be typed EXTREME_POI")
 
 @dataclass(frozen=True, slots=True)
 class ExecutionAnalysis:
@@ -77,22 +73,43 @@ class ExecutionAnalysis:
     engineering_liquidity: ExecutionObject | None
     active_pois: POISet
 
+
 def check_fvg(candles_list: List[Candle], idx: int, direction: PullbackDirection) -> bool:
     if idx + 2 >= len(candles_list):
         return False
     c1 = candles_list[idx]
+    c2 = candles_list[idx + 1]
     c3 = candles_list[idx + 2]
-    if direction == PullbackDirection.BULLISH: # looking for bullish OB, so price displaces up
-        return c3.low > c1.high
+    
+    if direction == PullbackDirection.BULLISH:
+        if c3.low > c1.high:
+            fvg_top = c3.low
+            fvg_bottom = c1.high
+            for i in range(idx + 3, len(candles_list)):
+                if candles_list[i].low < fvg_top:
+                    fvg_top = candles_list[i].low
+                if fvg_top <= fvg_bottom:
+                    return False
+            return True
+        return False
     else:
-        return c3.high < c1.low
+        if c3.high < c1.low:
+            fvg_bottom = c3.high
+            fvg_top = c1.low
+            for i in range(idx + 3, len(candles_list)):
+                if candles_list[i].high > fvg_bottom:
+                    fvg_bottom = candles_list[i].high
+                if fvg_top <= fvg_bottom:
+                    return False
+            return True
+        return False
 
 def check_sweep(candles_list: List[Candle], idx: int, direction: PullbackDirection) -> bool:
     if idx == 0:
         return False
     curr = candles_list[idx]
     prev = candles_list[idx - 1]
-    if direction == PullbackDirection.BULLISH: # sweeps previous low
+    if direction == PullbackDirection.BULLISH:
         return curr.low < prev.low
     else:
         return curr.high > prev.high
@@ -105,7 +122,8 @@ def evaluate_execution_state(
     l2_result: Any,
     l3_result: Any,
     l4_result: Any,
-    l5_result: Any
+    l5_result: Any,
+    previous_state: ExecutionAnalysis | None = None
 ) -> ExecutionAnalysis:
     order_flows = []
     order_blocks = []
@@ -122,23 +140,54 @@ def evaluate_execution_state(
     candles_list = list(candles)
     
     idm_taken = False
+    idm_price = None
     if l3_result and hasattr(l3_result, 'active_idm') and l3_result.active_idm:
-        if hasattr(l3_result.active_idm, 'takeout_candle_id') and l3_result.active_idm.takeout_candle_id:
+        idm_price = l3_result.active_idm.reference_price
+        if getattr(l3_result.active_idm, 'takeout_candle_id', None):
             idm_taken = True
 
     valid_bos = False
-    if l4_result and hasattr(l4_result, 'valid_bos') and l4_result.valid_bos:
+    if l4_result and getattr(l4_result, 'valid_bos', False):
         valid_bos = True
+        
+    range_id = None
+    if l3_result and hasattr(l3_result, 'confirmed_swings') and l3_result.confirmed_swings:
+        range_id = str(len(l3_result.confirmed_swings))
 
     valid_ofs = []
     
+    # Mitigate OFs based on subsequent L2 pullbacks
+    # An OF is mitigated if a subsequent pullback interacts with it
+    def is_mitigated(pb) -> bool:
+        ext_c = candle_map.get(getattr(getattr(pb, 'extreme', None), 'candle_id', None))
+        if not ext_c: return False
+        pb_idx = l2_result.pullbacks.index(pb)
+        for i in range(pb_idx + 1, len(l2_result.pullbacks)):
+            later_pb = l2_result.pullbacks[i]
+            later_ref = candle_map.get(later_pb.reference_candle_id)
+            if not later_ref: continue
+            if pb.direction == PullbackDirection.BULLISH:
+                # Top is max(ref, ext)
+                top = max(candle_map[pb.reference_candle_id].high, ext_c.high)
+                # If later pullback dips below top, it interacts!
+                later_ext = candle_map.get(getattr(getattr(later_pb, 'extreme', None), 'candle_id', None))
+                low_point = min(later_ref.low, later_ext.low) if later_ext else later_ref.low
+                if low_point <= top:
+                    return True
+            else:
+                bottom = min(candle_map[pb.reference_candle_id].low, ext_c.low)
+                later_ext = candle_map.get(getattr(getattr(later_pb, 'extreme', None), 'candle_id', None))
+                high_point = max(later_ref.high, later_ext.high) if later_ext else later_ref.high
+                if high_point >= bottom:
+                    return True
+        return False
+
     for pb in l2_result.pullbacks:
         direction = pb.direction
         ref_c = candle_map.get(pb.reference_candle_id)
         ext_c = candle_map.get(getattr(getattr(pb, 'extreme', None), 'candle_id', None))
         
-        if not ref_c:
-            continue
+        if not ref_c: continue
             
         if not ext_c:
             top = ref_c.high
@@ -149,12 +198,18 @@ def evaluate_execution_state(
             bottom = min(ref_c.low, ext_c.low)
             end_c_id = pb.extreme.candle_id
             
-        obj_type = ExecutionObjectType.OF_CANDIDATE
+        is_smt = False
         if not idm_taken:
-            obj_type = ExecutionObjectType.SMT_INDUCEMENT_TRAP
-        else:
-            obj_type = ExecutionObjectType.OF_CONFIRMED
-            
+            is_smt = True
+        elif idm_price is not None:
+            if direction == PullbackDirection.BULLISH and bottom >= idm_price:
+                is_smt = True
+            elif direction == PullbackDirection.BEARISH and top <= idm_price:
+                is_smt = True
+                
+        obj_type = ExecutionObjectType.SMT_INDUCEMENT_TRAP if is_smt else ExecutionObjectType.OF_CONFIRMED
+        state = ExecutionState.MITIGATED if is_mitigated(pb) else ExecutionState.ACTIVE
+        
         source_ids = (pb.start_candle_id, end_c_id) if hasattr(pb, 'start_candle_id') else ()
         
         of = ExecutionObject(
@@ -163,39 +218,39 @@ def evaluate_execution_state(
             top=top,
             bottom=bottom,
             source_candle_ids=source_ids,
-            state=ExecutionState.ACTIVE
+            state=state,
+            origin_pullback_id=pb.reference_candle_id,
+            range_id=range_id
         )
         order_flows.append(of)
         
-        if obj_type == ExecutionObjectType.OF_CONFIRMED:
+        if obj_type == ExecutionObjectType.OF_CONFIRMED and state != ExecutionState.MITIGATED:
             valid_ofs.append(of)
 
+    ext_of_obj = None
+    dec_of_obj = None
+    
     if valid_ofs:
         if valid_ofs[0].direction == PullbackDirection.BULLISH:
             valid_ofs.sort(key=lambda x: x.bottom)
-            extreme_of = valid_ofs[0]
-            decisional_of = valid_ofs[-1] if len(valid_ofs) > 1 else None
+            ext_of_obj = replace(valid_ofs[0], object_type=ExecutionObjectType.EXTREME_OF)
+            if valid_bos:
+                # The dec OF is the one immediately preceding the BOS displacement
+                dec_of_obj = replace(valid_ofs[-1], object_type=ExecutionObjectType.DECISIONAL_OF) if len(valid_ofs) > 1 else None
         else:
             valid_ofs.sort(key=lambda x: x.top, reverse=True)
-            extreme_of = valid_ofs[0]
-            decisional_of = valid_ofs[-1] if len(valid_ofs) > 1 else None
-            
-        ext_of_obj = replace(extreme_of, object_type=ExecutionObjectType.EXTREME_OF)
-        order_flows = [ext_of_obj if x == extreme_of else x for x in order_flows]
-        
-        if decisional_of and valid_bos:
-            dec_of_obj = replace(decisional_of, object_type=ExecutionObjectType.DECISIONAL_OF)
-            order_flows = [dec_of_obj if x == decisional_of else x for x in order_flows]
-        else:
-            dec_of_obj = None
+            ext_of_obj = replace(valid_ofs[0], object_type=ExecutionObjectType.EXTREME_OF)
+            if valid_bos:
+                dec_of_obj = replace(valid_ofs[-1], object_type=ExecutionObjectType.DECISIONAL_OF) if len(valid_ofs) > 1 else None
 
-        # Build OBs for extreme OF
-        # To build an OB we search candles inside the OF candidate
+        if ext_of_obj:
+            order_flows = [ext_of_obj if x.origin_pullback_id == ext_of_obj.origin_pullback_id else x for x in order_flows]
+        if dec_of_obj:
+            order_flows = [dec_of_obj if x.origin_pullback_id == dec_of_obj.origin_pullback_id else x for x in order_flows]
+
+        # Extract OBs
         for of_cand in (ext_of_obj, dec_of_obj):
             if not of_cand: continue
-            
-            # Find OBs in the OF
-            of_obs = []
             if len(of_cand.source_candle_ids) == 2:
                 s_id, e_id = of_cand.source_candle_ids
                 s_idx = next((i for i,c in enumerate(candles_list) if c.candle_id == s_id), -1)
@@ -205,7 +260,7 @@ def evaluate_execution_state(
                     for i in range(s_idx, e_idx + 1):
                         has_sweep = check_sweep(candles_list, i, of_cand.direction)
                         has_fvg = check_fvg(candles_list, i, of_cand.direction)
-                        is_causal = (of_cand == dec_of_obj and valid_bos) or (of_cand == ext_of_obj) # Simplify causality
+                        is_causal = (of_cand == dec_of_obj and valid_bos) or (of_cand == ext_of_obj)
                         
                         pillars = validate_ob_pillars(is_causal, has_sweep, has_fvg)
                         if pillars.is_valid:
@@ -217,13 +272,14 @@ def evaluate_execution_state(
                                 top=ob_top,
                                 bottom=ob_bottom,
                                 source_candle_ids=(candles_list[i].candle_id,),
-                                state=ExecutionState.ACTIVE
+                                state=ExecutionState.ACTIVE,
+                                origin_pullback_id=of_cand.origin_pullback_id,
+                                range_id=range_id
                             )
                             order_blocks.append(ob)
-                            of_obs.append(ob)
-            
-        # POI selection
-        extreme_poi = replace(ext_of_obj, object_type=ExecutionObjectType.EXTREME_POI)
+                            break # Found the OB for this OF! Move to next OF
+
+        extreme_poi = replace(ext_of_obj, object_type=ExecutionObjectType.EXTREME_POI) if ext_of_obj else None
         if order_blocks and any(ob.object_type == ExecutionObjectType.EXTREME_OB for ob in order_blocks):
             extreme_poi = replace(next(ob for ob in order_blocks if ob.object_type == ExecutionObjectType.EXTREME_OB), object_type=ExecutionObjectType.EXTREME_POI)
             
@@ -232,33 +288,29 @@ def evaluate_execution_state(
             if order_blocks and any(ob.object_type == ExecutionObjectType.DECISIONAL_OB for ob in order_blocks):
                 dec_poi_cand = replace(next(ob for ob in order_blocks if ob.object_type == ExecutionObjectType.DECISIONAL_OB), object_type=ExecutionObjectType.DECISIONAL_POI)
             
-            # Premium / Discount validation
             if l3_result and hasattr(l3_result, 'confirmed_swings') and l3_result.confirmed_swings:
                 last_swing = l3_result.confirmed_swings[-1]
-                range_high, range_low = getattr(last_swing, 'high', Decimal('0')), getattr(last_swing, 'low', Decimal('0'))
+                r_high, r_low = getattr(last_swing, 'high', Decimal('0')), getattr(last_swing, 'low', Decimal('0'))
                 
-                is_valid_dec = check_rule_of_two_discount_premium(
-                    dec_poi_cand.top, dec_poi_cand.bottom, dec_poi_cand.direction, range_high, range_low
-                )
+                is_valid_dec = check_rule_of_two_discount_premium(dec_poi_cand.top, dec_poi_cand.bottom, dec_poi_cand.direction, r_high, r_low)
                 if is_valid_dec:
                     decisional_poi = dec_poi_cand
             else:
                 decisional_poi = dec_poi_cand
 
-        # Engineering Liquidity: Must immediately precede active EXTREME POI
-        # We find the pullback that corresponds to extreme_poi's origin
-        # Wait: The canonical rule is "immediately preceding active Extreme POI"
-        # Since extreme POI is built from the furthest OF, the pullback *before* it?
-        # Actually, if we sort valid pullbacks, the one right before the extreme POI in time?
-        # Let's take the pullback whose extreme is the extreme POI's bottom/top.
-        # Then ENG LQD is beyond that pullback extreme.
         if extreme_poi:
-            # find pb that matches extreme_of
+            # ENG LQD: immediately preceding valid pullback in lineage
+            # The extreme OF was formed by some PB. The pullback BEFORE it? 
+            # Or the exact PB corresponding to extreme POI? "liquidity beyond that pullback extreme"
+            # It's the pullback immediately preceding the active extreme POI in space?
+            # Wait, "pullback immediately preceding the active Extreme POI"
+            # Usually, the extreme POI IS an OF or OB. 
+            # The pullback we need is the one that formed the Extreme OF.
             for pb in l2_result.pullbacks:
-                ext_c = candle_map.get(getattr(getattr(pb, 'extreme', None), 'candle_id', None))
-                if ext_c and ((extreme_poi.direction == PullbackDirection.BULLISH and ext_c.low == ext_of_obj.bottom) or 
-                              (extreme_poi.direction == PullbackDirection.BEARISH and ext_c.high == ext_of_obj.top)):
-                    engineering_liquidity = create_engineering_liquidity(ext_c, extreme_poi.direction)
+                if pb.reference_candle_id == extreme_poi.origin_pullback_id:
+                    ext_c = candle_map.get(getattr(getattr(pb, 'extreme', None), 'candle_id', None))
+                    if ext_c:
+                        engineering_liquidity = create_engineering_liquidity(ext_c, extreme_poi.direction)
                     break
 
     poi_set = POISet(
@@ -309,22 +361,23 @@ def create_engineering_liquidity(pb_extreme_candle: Candle, direction: PullbackD
         state=ExecutionState.ACTIVE
     )
 
-def expire_pois(pois: List[ExecutionObject], l4_result: Any) -> List[ExecutionObject]:
-    """Expire POIs when a VALID_BOS creates a new range."""
+def expire_pois(pois: List[ExecutionObject], l4_result: Any, current_range_id: str | None = None) -> List[ExecutionObject]:
     has_valid_bos = False
     if l4_result and getattr(l4_result, 'valid_bos', False):
         has_valid_bos = True
         
     result = []
     for poi in pois:
-        if has_valid_bos and poi.state in (ExecutionState.ACTIVE, ExecutionState.TOUCHED):
-            result.append(replace(poi, state=ExecutionState.EXPIRED_HISTORICAL))
+        if has_valid_bos and current_range_id and poi.range_id and poi.range_id != current_range_id:
+            if poi.state in (ExecutionState.ACTIVE, ExecutionState.TOUCHED):
+                result.append(replace(poi, state=ExecutionState.EXPIRED_HISTORICAL))
+            else:
+                result.append(poi)
         else:
             result.append(poi)
     return result
 
 def fail_pois(pois: List[ExecutionObject], l5_result: Any) -> List[ExecutionObject]:
-    """Fail POIs when a canonical structural shift (CHoCH_CONFIRMED) occurs."""
     choch_confirmed = False
     if l5_result and getattr(l5_result, 'confirmed', False):
         choch_confirmed = True
@@ -336,10 +389,3 @@ def fail_pois(pois: List[ExecutionObject], l5_result: Any) -> List[ExecutionObje
         else:
             result.append(poi)
     return result
-
-def interact_poi(poi: ExecutionObject, is_mitigation: bool) -> ExecutionObject:
-    if poi.state not in (ExecutionState.ACTIVE, ExecutionState.TOUCHED):
-        return poi
-    if is_mitigation:
-        return replace(poi, state=ExecutionState.MITIGATED)
-    return replace(poi, state=ExecutionState.TOUCHED)
