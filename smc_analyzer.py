@@ -825,7 +825,7 @@ class SMCAnalyzer:
         return AnalyzerOutput(
             instrument=self.instrument,
             timeframe=self.timeframe,
-            direction=analysis_direction.name,
+            direction="BUY" if analysis_direction is minor.PullbackDirection.BULLISH else "SELL",
             lifecycle_state=next_state,
             previous_lifecycle_state=previous_state,
             detected_event=event,
