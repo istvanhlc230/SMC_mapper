@@ -143,7 +143,7 @@ def test_target_resolution_is_explicit_and_non_universal():
     result = analyzer.analyze(
         make_dummy_data(15),
         target_candidates=candidates,
-        resolved_target_id="T2",
+        resolved_target_ids=("T1", "T2"),
         target_legs=(
             TargetLeg("LEG-A", "T1", Decimal("40")),
             TargetLeg("LEG-B", "T2", Decimal("60")),
@@ -152,11 +152,17 @@ def test_target_resolution_is_explicit_and_non_universal():
     )
 
     assert result.target_resolution_status is TargetResolutionStatus.RESOLVED
+    assert [target.target_id for target in result.resolved_targets] == ["T1", "T2"]
     assert result.resolved_target is not None
-    assert result.resolved_target.target_id == "T2"
+    assert result.resolved_target.target_id == "T1"
     assert result.target_plan is not None
     assert [leg.leg_id for leg in result.target_plan.legs] == ["LEG-A", "LEG-B"]
     assert result.rr_result.reason == "RR_INPUTS_UNAVAILABLE"
+
+    data = serialize_monitor_snapshot(result)
+    assert len(data["setups"]) == 2
+    assert {setup["target_resolution"]["resolved_target_id"] for setup in data["setups"]} == {"T1", "T2"}
+    assert all(setup["target_resolution"]["status"] == "RESOLVED" for setup in data["setups"])
 
 
 def test_target_resolution_missing_is_fail_closed():
