@@ -138,7 +138,37 @@ def test_ltf_minor_idm_no_physical_break():
     assert result.structural_break is None
 
 
-def test_ltf_minor_idm_wick_is_minor_idm_sweep():
+def test_ltf_minor_idm_wick_requires_external_major_idm_reference():
+    idm = structural.IDMEvent(
+        structural.IDMClass.MINOR_IDM,
+        structural.IDMOrigin.PULLBACK_DERIVED,
+        PullbackDirection.BULLISH,
+        Decimal("10"),
+        "idm-source",
+        "pb-ref",
+        "pb-done",
+    )
+    ref = choch_engine.reference_from_ltf_idm(idm)
+    external_major = choch_engine.reference_from_boundary(
+        PullbackDirection.BULLISH,
+        price=Decimal("9"),
+        source_candle_id="protected",
+        idm_class=structural.IDMClass.MAJOR_IDM,
+        idm_origin=structural.IDMOrigin.PROTECTED_EXTERNAL_BOUNDARY,
+    )
+
+    result = choch_engine.detect_choch(
+        (c("minor-wick", "10.2", "10.4", "9.5", "10.1"),),
+        ref,
+        confirmation_gate_open=True,
+        ltf_context_active=True,
+        fallback_major_idm_reference=external_major,
+    )
+    assert result.resolution is choch_engine.CHoCHResolution.MAJOR_IDM_SWEEP
+    assert not result.confirmed
+
+
+def test_ltf_minor_idm_wick_fails_closed_without_external_major_idm_reference():
     idm = structural.IDMEvent(
         structural.IDMClass.MINOR_IDM,
         structural.IDMOrigin.PULLBACK_DERIVED,
