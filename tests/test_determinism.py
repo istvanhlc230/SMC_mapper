@@ -46,7 +46,7 @@ def test_determinism_confirmation_locked():
         True
     )
     assert state == LifecycleState.CONFIRMATION_LOCKED
-    assert outcome == ClassificationOutcome.FIRST_BOS_RETRACEMENT_UNRESOLVED
+    assert outcome is None
 
     # EXT_CONT_BREAK + GATE UNLOCKED + QUALIFIED -> VALID_BOS -> POST_BOS
     state, outcome = determine_next_state(
@@ -115,4 +115,19 @@ def test_determinism_post_choch():
         True
     )
     assert state == LifecycleState.POST_CHOCH
-    assert outcome == ClassificationOutcome.FIRST_BOS_RETRACEMENT_UNRESOLVED
+    assert outcome is None
+
+def test_first_bos_unresolved_is_not_a_classification_outcome():
+    assert not hasattr(ClassificationOutcome, "FIRST_BOS_RETRACEMENT_UNRESOLVED")
+
+
+def test_post_bos_continuation_does_not_create_second_bos_immediately():
+    state, outcome = determine_next_state(
+        LifecycleState.POST_BOS,
+        DetectionEvent.EXT_CONT_BREAK,
+        [],
+        FirstBOSRetracementBaselineStatus.AVAILABLE,
+        True,
+    )
+    assert state == LifecycleState.POST_BOS
+    assert outcome is None
