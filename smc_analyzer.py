@@ -10,7 +10,10 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from decimal import Decimal
 from enum import Enum, auto
-from typing import Any, List, Optional, Tuple
+import hashlib
+import json
+from pathlib import Path
+from typing import Any, List, Optional, Sequence, Tuple
 
 from microstructure_engine import Candle
 import minor_structure_engine as minor
@@ -61,6 +64,14 @@ class ClassificationOutcome(Enum):
 class FirstBOSRetracementBaselineStatus(Enum):
     AVAILABLE = auto()
     UNSPECIFIED_CANONICAL_INPUT = auto()
+
+
+class TargetResolutionStatus(Enum):
+    RESOLVED = "RESOLVED"
+    NO_RESOLVED_TARGET = "NO_RESOLVED_TARGET"
+
+
+TARGET_SCHEMA_VERSION = 1
 
 
 class SMCError(Exception):
@@ -210,6 +221,7 @@ class RRResult:
 class AnalyzerOutput:
     instrument: str
     timeframe: str
+    direction: str
     lifecycle_state: LifecycleState
     previous_lifecycle_state: LifecycleState
     detected_event: DetectionEvent
@@ -223,8 +235,12 @@ class AnalyzerOutput:
     first_bos_retracement_baseline_status: FirstBOSRetracementBaselineStatus
     poi_result: Optional[StructuralPOICandidate]
     target_candidates: Tuple[TargetCandidate, ...]
+    target_plan: Optional[TargetPlan]
     resolved_target: Optional[TargetCandidate]
+    target_resolution_status: TargetResolutionStatus
     rr_result: RRResult
+    analysis_timestamp: datetime
+    structural_hash: str
 
 
 def determine_next_state(
@@ -358,6 +374,249 @@ def _result_event(
     return DetectionEvent.NO_EVENT_INTERNAL_PB
 
 
+
+def _validate_target_candidates(
+    candidates: Sequence[TargetCandidate] | None,
+) -> Tuple[TargetCandidate, ...]:
+    if candidates is None:
+        return ()
+
+    normalized: list[TargetCandidate] = []
+    seen_ids: set[str] = set()
+    for candidate in candidates:
+        if not isinstance(candidate, TargetCandidate):
+            raise AnalyzerContractError("target_candidates must contain TargetCandidate objects")
+        if not candidate.target_id or candidate.target_id in seen_ids:
+            raise AnalyzerContractError("target_id must be non-empty and unique")
+        if not candidate.target_type:
+            raise AnalyzerContractError(f"target_type is required for {candidate.target_id}")
+        if not candidate.provenance:
+            raise AnalyzerContractError(f"provenance is required for {candidate.target_id}")
+        if not isinstance(candidate.price, Decimal) or not candidate.price.is_finite():
+            raise AnalyzerContractError(f"target price must be finite Decimal for {candidate.target_id}")
+        seen_ids.add(candidate.target_id)
+        normalized.append(candidate)
+    return tuple(normalized)
+
+
+def _build_target_plan(
+    candidates: Tuple[TargetCandidate, ...],
+    target_legs: Sequence[TargetLeg] | None,
+) -> Optional[TargetPlan]:
+    if not target_legs:
+        return None
+
+    normalized: list[TargetLeg] = []
+    seen_legs: set[str] = set()
+    candidate_ids = {candidate.target_id for candidate in candidates}
+    for leg in target_legs:
+        if not isinstance(leg, TargetLeg):
+            raise AnalyzerContractError("target_legs must contain TargetLeg objects")
+        if not leg.leg_id or leg.leg_id in seen_legs:
+            raise AnalyzerContractError("leg_id must be non-empty and unique")
+        if leg.target_id not in candidate_ids:
+            raise AnalyzerContractError(
+                f"target leg {leg.leg_id} references unknown target_id {leg.target_id}"
+            )
+        if not isinstance(leg.allocation_pct, Decimal):
+            raise AnalyzerContractError("allocation_pct must be Decimal")
+        if not leg.allocation_pct.is_finite() or leg.allocation_pct < 0 or leg.allocation_pct > 100:
+            raise AnalyzerContractError(
+                f"allocation_pct must be within [0, 100] for {leg.leg_id}"
+            )
+        seen_legs.add(leg.leg_id)
+        normalized.append(leg)
+    return TargetPlan(candidates=list(candidates), legs=normalized)
+
+
+def _resolve_target(
+    candidates: Tuple[TargetCandidate, ...],
+    resolved_target_id: str | None,
+) -> tuple[Optional[TargetCandidate], TargetResolutionStatus]:
+    if resolved_target_id is None:
+        return None, TargetResolutionStatus.NO_RESOLVED_TARGET
+    for candidate in candidates:
+        if candidate.target_id == resolved_target_id:
+            return candidate, TargetResolutionStatus.RESOLVED
+    raise AnalyzerContractError(
+        f"resolved_target_id {resolved_target_id!r} is not present in target_candidates"
+    )
+
+
+def _structural_hash(
+    instrument: str,
+    timeframe: str,
+    lifecycle_state: LifecycleState,
+    detected_event: DetectionEvent,
+    process_conditions: Sequence[ProcessCondition],
+    structural_facts: Sequence[StructuralFact],
+    classification_outcome: ClassificationOutcome | None,
+    l2_result: Any,
+    l3_result: Any,
+    l4_result: bos.BOSAnalysis,
+    l5_result: choch.CHoCHAnalysis,
+) -> str:
+    payload = {
+        "instrument": instrument,
+        "timeframe": timeframe,
+        "lifecycle_state": lifecycle_state.name,
+        "detected_event": detected_event.name,
+        "process_conditions": sorted(condition.name for condition in process_conditions),
+        "structural_facts": sorted(fact.name for fact in structural_facts),
+        "classification_outcome": classification_outcome.name if classification_outcome else None,
+        "l2": {
+            "pullback_present": bool(getattr(getattr(l2_result, "active", None), "pullback", None)),
+        },
+        "l3": {
+            "active_idm_takeout": bool(
+                getattr(getattr(l3_result, "active_idm", None), "takeout_candle_id", None)
+            ),
+            "confirmed_swings": [
+                repr(swing) for swing in getattr(l3_result, "confirmed_swings", ())
+            ],
+            "retracement": repr(getattr(l3_result, "retracement", None)),
+        },
+        "l4": {
+            "resolution": getattr(l4_result.resolution, "name", None),
+            "structural_break": repr(l4_result.structural_break),
+            "qualified": bool(l4_result.qualified),
+        },
+        "l5": {
+            "resolution": getattr(l5_result.resolution, "name", None),
+            "structural_break": repr(l5_result.structural_break),
+            "confirmation_gate_open": bool(l5_result.confirmation_gate_open),
+        },
+    }
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _target_candidate_to_json(candidate: TargetCandidate) -> dict[str, str]:
+    return {
+        "target_id": candidate.target_id,
+        "target_type": candidate.target_type,
+        "price": str(candidate.price),
+        "provenance": candidate.provenance,
+    }
+
+
+def _target_leg_to_json(leg: TargetLeg) -> dict[str, str]:
+    return {
+        "leg_id": leg.leg_id,
+        "target_id": leg.target_id,
+        "allocation_pct": str(leg.allocation_pct),
+    }
+
+
+def serialize_monitor_snapshot(
+    result: AnalyzerOutput,
+    *,
+    existing_config: dict | None = None,
+) -> dict:
+    if not isinstance(result, AnalyzerOutput):
+        raise AnalyzerContractError("result must be an AnalyzerOutput")
+
+    existing = existing_config if isinstance(existing_config, dict) else {}
+    existing_setups = existing.get("setups", [])
+    prior_by_monitor_id: dict[str, dict] = {}
+    if isinstance(existing_setups, list):
+        for node in existing_setups:
+            if isinstance(node, dict) and isinstance(node.get("monitor_id"), str):
+                prior_by_monitor_id[node["monitor_id"]] = node
+
+    setup_id = f"{result.instrument}:{result.timeframe}"
+    base_candidates = [
+        _target_candidate_to_json(candidate) for candidate in result.target_candidates
+    ]
+
+    if result.target_plan is not None:
+        legs = list(result.target_plan.legs)
+    elif result.resolved_target is not None:
+        legs = [TargetLeg("DIRECT", result.resolved_target.target_id, Decimal("100"))]
+    else:
+        legs = []
+
+    setups: list[dict] = []
+    for leg in legs:
+        candidate = next(
+            (candidate for candidate in result.target_candidates if candidate.target_id == leg.target_id),
+            None,
+        )
+        if candidate is None:
+            raise AnalyzerContractError(
+                f"target plan leg {leg.leg_id} has no corresponding candidate"
+            )
+
+        monitor_id = f"{setup_id}:{leg.leg_id}"
+        prior = prior_by_monitor_id.get(monitor_id)
+        same_version = (
+            isinstance(prior, dict)
+            and prior.get("structural_hash") == result.structural_hash
+            and str(prior.get("target", {}).get("price")) == str(candidate.price)
+        )
+        state = "TARGET_REACHED" if same_version and prior.get("state") == "TARGET_REACHED" else "TARGET_ACTIVE"
+
+        setups.append(
+            {
+                "monitor_id": monitor_id,
+                "setup_id": setup_id,
+                "leg_id": leg.leg_id,
+                "ticker": result.instrument,
+                "timeframe": result.timeframe,
+                "direction": result.direction.replace("PULLBACK_", ""),
+                "state": state,
+                "analysis_timestamp": result.analysis_timestamp.isoformat(),
+                "structural_hash": result.structural_hash,
+                "target_resolution": {
+                    "status": result.target_resolution_status.value,
+                    "resolved_target_id": result.resolved_target.target_id
+                    if result.resolved_target
+                    else None,
+                },
+                "target_candidates": base_candidates,
+                "target_plan": _target_leg_to_json(leg),
+                "target": _target_candidate_to_json(candidate),
+            }
+        )
+
+    return {
+        "schema_version": TARGET_SCHEMA_VERSION,
+        "source": "ANALYZER",
+        "analysis": {
+            "instrument": result.instrument,
+            "timeframe": result.timeframe,
+            "analysis_timestamp": result.analysis_timestamp.isoformat(),
+            "structural_hash": result.structural_hash,
+            "lifecycle_state": result.lifecycle_state.name,
+            "detected_event": result.detected_event.name,
+            "classification_outcome": (
+                result.classification_outcome.name if result.classification_outcome else None
+            ),
+            "target_resolution_status": result.target_resolution_status.value,
+        },
+        "setups": setups,
+    }
+
+
+def write_monitor_snapshot(
+    result: AnalyzerOutput,
+    config_path: str | Path = "zones.json",
+) -> dict:
+    path = Path(config_path)
+    existing: dict = {}
+    if path.exists():
+        with path.open("r", encoding="utf-8") as handle:
+            loaded = json.load(handle)
+            if isinstance(loaded, dict):
+                existing = loaded
+
+    data = serialize_monitor_snapshot(result, existing_config=existing)
+    with path.open("w", encoding="utf-8") as handle:
+        json.dump(data, handle, indent=2, ensure_ascii=False)
+        handle.write("\n")
+    return data
+
+
 class SMCAnalyzer:
     """Snapshot orchestrator over the canonical Layer-1 through Layer-5 engines."""
 
@@ -400,6 +659,10 @@ class SMCAnalyzer:
         ltf_context_active: bool = False,
         external_major_idm_reference: choch.CHoCHReference | None = None,
         major_idm_qualified: bool = False,
+        target_candidates: Sequence[TargetCandidate] | None = None,
+        resolved_target_id: str | None = None,
+        target_legs: Sequence[TargetLeg] | None = None,
+        analysis_timestamp: datetime | None = None,
     ) -> AnalyzerOutput:
         analysis_direction = direction or self.direction
         if not isinstance(analysis_direction, minor.PullbackDirection):
@@ -412,6 +675,23 @@ class SMCAnalyzer:
             FirstBOSRetracementBaselineStatus,
         ):
             raise AnalyzerContractError("invalid First-BOS baseline status")
+
+        if analysis_timestamp is None:
+            resolved_analysis_timestamp = datetime.now(timezone.utc)
+        else:
+            if (
+                not isinstance(analysis_timestamp, datetime)
+                or analysis_timestamp.tzinfo is None
+                or analysis_timestamp.tzinfo.utcoffset(analysis_timestamp) is None
+            ):
+                raise AnalyzerContractError("analysis_timestamp must be timezone-aware")
+            resolved_analysis_timestamp = analysis_timestamp.astimezone(timezone.utc)
+
+        normalized_target_candidates = _validate_target_candidates(target_candidates)
+        target_plan = _build_target_plan(normalized_target_candidates, target_legs)
+        resolved_target, target_resolution_status = _resolve_target(
+            normalized_target_candidates, resolved_target_id
+        )
 
         first_bos_state = self.state in {
             LifecycleState.BOOTSTRAP,
@@ -545,6 +825,7 @@ class SMCAnalyzer:
         return AnalyzerOutput(
             instrument=self.instrument,
             timeframe=self.timeframe,
+            direction=analysis_direction.name,
             lifecycle_state=next_state,
             previous_lifecycle_state=previous_state,
             detected_event=event,
@@ -557,9 +838,29 @@ class SMCAnalyzer:
             l5_result=l5_result,
             first_bos_retracement_baseline_status=first_bos_retracement_baseline_status,
             poi_result=None,
-            target_candidates=(),
-            resolved_target=None,
-            rr_result=RRResult(False, None, "NO_RESOLVED_TARGET"),
+            target_candidates=normalized_target_candidates,
+            target_plan=target_plan,
+            resolved_target=resolved_target,
+            target_resolution_status=target_resolution_status,
+            rr_result=RRResult(
+                False,
+                None,
+                "NO_RESOLVED_TARGET" if resolved_target is None else "RR_INPUTS_UNAVAILABLE",
+            ),
+            analysis_timestamp=resolved_analysis_timestamp,
+            structural_hash=_structural_hash(
+                self.instrument,
+                self.timeframe,
+                next_state,
+                event,
+                conditions,
+                tuple(dict.fromkeys(structural_facts)),
+                outcome,
+                l2_result,
+                l3_result,
+                l4_result,
+                l5_result,
+            ),
         )
 
 
@@ -571,6 +872,8 @@ __all__ = [
     "DetectionEvent",
     "FirstBOSRetracementBaselineStatus",
     "InsufficientHistoryError",
+    "TARGET_SCHEMA_VERSION",
+    "TargetResolutionStatus",
     "LifecycleState",
     "MarketDataNormalizer",
     "ProcessCondition",
@@ -580,5 +883,7 @@ __all__ = [
     "TargetCandidate",
     "TargetLeg",
     "TargetPlan",
+    "serialize_monitor_snapshot",
+    "write_monitor_snapshot",
     "determine_next_state",
 ]
