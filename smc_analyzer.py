@@ -479,7 +479,9 @@ def _structural_hash(
         "l4": {
             "resolution": getattr(l4_result.resolution, "name", None),
             "structural_break": repr(l4_result.structural_break),
-            "qualified": bool(l4_result.qualified),
+            "valid_bos": bool(l4_result.valid_bos),
+            "idm_taken": bool(l4_result.idm_taken),
+            "retracement_qualified": bool(l4_result.retracement_qualified),
         },
         "l5": {
             "resolution": getattr(l5_result.resolution, "name", None),
