@@ -855,3 +855,178 @@ HTF/LTF dependency handling is orchestration.
 Canonical SMC meaning remains owned by the relevant canonical skill layers.
 
 The mapper may transport and align canonical HTF context; it must not invent new HTF pullback, structural, BOS or CHoCH semantics.
+
+
+---
+
+# D. POI VOLUME / DELTA ANALYTICS
+
+## D1. Scope
+
+POI volume analytics is a non-canonical analytical extension of the canonical POI result.
+
+It may enrich an already canonical POI with total volume, estimated buy volume, estimated sell volume, volume delta, directional delta ratio, and a volume-derived likelihood percentage.
+
+Volume analytics must never create, remove, retype, or canonically invalidate a POI.
+
+The canonical POI ontology and Rule-of-Two remain owned by Layer 6.
+
+## D2. POI volume provenance
+
+POI volume must be calculated from candles deterministically associated with the POI's canonical provenance.
+
+The mapper must not use an arbitrary fixed number of candles around the POI.
+
+Where available, the JSON should distinguish formation volume, causal displacement volume, and their aggregate.
+
+For a multi-leg canonical OF, the complete canonical opposing move must be represented where that move is the POI provenance; the implementation must not reduce it to an arbitrary final sub-leg.
+
+Historical POI outcome performance must not be used.
+
+## D3. Buy / sell volume source hierarchy
+
+Use the strongest available volume-side information:
+
+1. BID_ASK_OBSERVED — genuine provider-supplied bid/ask-side volume.
+2. INTRABAR_ESTIMATED — lower-timeframe OHLCV permits directional estimation.
+3. OHLC_ESTIMATED — only aggregate parent-candle OHLCV is available.
+4. UNAVAILABLE — no defensible side-volume calculation exists.
+
+An estimated buy/sell split must never be represented as observed bid/ask aggressor volume.
+
+## D4. Aggregate-OHLC calculation
+
+For each candle with total volume V and High > Low:
+
+```
+buy_volume  = V * (Close - Low) / (High - Low)
+sell_volume = V * (High - Close) / (High - Low)
+delta       = buy_volume - sell_volume
+delta_ratio = delta / V
+```
+
+Therefore:
+
+```
+buy_volume + sell_volume = V
+delta = V * (2*Close - High - Low) / (High - Low)
+```
+
+If High == Low:
+
+```
+buy_volume  = V / 2
+sell_volume = V / 2
+delta       = 0
+delta_ratio = 0
+```
+
+This is a directional volume estimate, not proof of historical bid/ask execution.
+
+## D5. Intrabar calculation
+
+When lower-timeframe data is available, directional volume should be calculated from the contained completed intrabars instead of directly splitting the parent candle.
+
+For each intrabar:
+
+```
+Close > Open → buy side
+Close < Open → sell side
+Close = Open → neutral; do not force a side
+```
+
+Parent-bar buy volume, sell volume and delta are the sums of the classified intrabar volumes.
+
+Intrabar estimation remains explicitly marked as estimated unless genuine bid/ask-side volume is available.
+
+## D6. POI JSON representation
+
+Each canonical POI may contain:
+
+```json
+"volume": {
+  "method": "OHLC_ESTIMATED",
+  "formation": {
+    "total": "...",
+    "buy": "...",
+    "sell": "...",
+    "delta": "...",
+    "delta_ratio": "..."
+  },
+  "causal_displacement": {
+    "total": "...",
+    "buy": "...",
+    "sell": "...",
+    "delta": "...",
+    "delta_ratio": "..."
+  },
+  "aggregate": {
+    "total": "...",
+    "buy": "...",
+    "sell": "...",
+    "delta": "...",
+    "delta_ratio": "..."
+  },
+  "poi_likelihood_pct": null
+}
+```
+
+Values are null/omitted when the relevant provenance or volume data is unavailable.
+
+## D7. Volume-derived POI likelihood
+
+The mapper may expose `poi_likelihood_pct` as a deterministic **volume-alignment likelihood measure** for an already canonical POI.
+
+It is not a historical success probability and must not use historical POI outcomes.
+
+Directional alignment:
+
+```
+BUY POI  → aligned_delta = +delta
+SELL POI → aligned_delta = -delta
+```
+
+For an available aggregate:
+
+```
+poi_likelihood_pct
+    = 50 * (1 + aligned_delta / total_volume)
+```
+
+Equivalent form:
+
+```
+BUY POI:
+    poi_likelihood_pct = 100 * buy_volume / total_volume
+
+SELL POI:
+    poi_likelihood_pct = 100 * sell_volume / total_volume
+```
+
+Interpretation:
+
+```
+aligned positive delta → higher percentage
+near-zero delta       → approximately 50%
+opposing delta        → lower percentage
+strong opposing delta → very low percentage
+```
+
+This percentage is a volume-derived directional measure, not an empirically calibrated forecast of future POI success.
+
+If no defensible volume-side data exists, `poi_likelihood_pct` must be null/omitted.
+
+## D8. Provenance
+
+Every POI volume record must retain sufficient provenance to reproduce the calculation, including where applicable:
+
+- source candle IDs or canonical provenance references;
+- formation start/end;
+- causal displacement start/end;
+- volume calculation method;
+- observed vs estimated status;
+- total/buy/sell/delta;
+- delta ratio;
+- `poi_likelihood_pct`.
+
+The volume-derived percentage must never be used by downstream code as canonical POI validity.
