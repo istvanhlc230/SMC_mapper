@@ -42,25 +42,29 @@ Example:
 
 ## A4. Timeframe relationship
 
-There are two distinct operating modes.
+The mapper determines the analysis mode from the supplied timeframe parameters.
 
-### Single-timeframe mode
+### Single-timeframe analysis
 
-If only one of --htf or --ltf is supplied, the selected timeframe is the only analyzed timeframe.
+Use single-timeframe analysis when:
 
-Internally:
+- only `--htf` is supplied;
+- only `--ltf` is supplied; or
+- both are supplied but they specify the **same timeframe**.
+
+In single-timeframe analysis, the selected timeframe is analyzed once.
+
+Internally, the analysis may represent:
 
 `HTF = LTF = selected timeframe`
 
-This equality is an internal representation only. It does **not** activate HTF pullback validation.
+but this does **not** activate HTF pullback validation.
 
-### Two-timeframe mode
+### Two-timeframe analysis
 
-If both are supplied:
+Use two-timeframe analysis only when both are supplied and they are different:
 
 `HTF > LTF`
-
-An equal HTF/LTF pair is not valid in two-timeframe mode.
 
 An invalid relationship is an input error.
 
@@ -70,9 +74,9 @@ The mapper must never silently swap or otherwise correct the supplied timeframes
 
 ## A5. HTF Pullback Validation
 
-HTF pullback validation is enabled only in **two-timeframe mode**, when both HTF and LTF are explicitly supplied.
+HTF pullback validation is enabled only in **two-timeframe analysis**, when both HTF and LTF are explicitly supplied and they are different.
 
-### Both supplied
+### Both supplied and different
 
 `--htf H4 --ltf M15`
 
@@ -85,7 +89,6 @@ HTF pullback validation is enabled only in **two-timeframe mode**, when both HTF
 `--htf H4`
 
 - Analyze only H4.
-- Internally treat `HTF = LTF = H4`.
 - Do not perform HTF pullback validation.
 
 ### Only LTF supplied
@@ -93,8 +96,16 @@ HTF pullback validation is enabled only in **two-timeframe mode**, when both HTF
 `--ltf M15`
 
 - Analyze only M15.
-- Internally treat `HTF = LTF = M15`.
 - Do not perform HTF pullback validation.
+
+### Both supplied and equal
+
+`--htf H1 --ltf H1`
+
+- Treat the request as a single-timeframe H1 analysis.
+- Analyze H1 once.
+- Do not perform HTF pullback validation.
+- Do not treat H1 as its own Higher Timeframe for canonical Gate 2.
 
 The mapper must never automatically select or invent a different HTF when only one timeframe is supplied.
 
