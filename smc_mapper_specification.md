@@ -520,10 +520,13 @@ In single-timeframe mode, it identifies the latest completed candle of the selec
 When no explicit analysis date boundary is supplied:
 
 1. For an existing JSON with a valid "last_processed_candle_time", process every newly completed driving-timeframe candle after that checkpoint through the current latest completed candle, in chronological order.
-2. If the checkpoint is absent or unusable, perform the required structural bootstrap from the earliest effective history through the current latest completed driving-timeframe candle.
-3. After successful processing, persist the timestamp of the newest completed candle actually incorporated into the structural result.
+2. A candle at or before the checkpoint is already incorporated and must not be processed again as a new canonical input.
+3. If the checkpoint is absent or unusable, perform the required structural bootstrap from the earliest effective history through the current latest completed driving-timeframe candle.
+4. After successful processing, persist the timestamp of the newest completed candle actually incorporated into the structural result.
 
 The mapper must not advance "last_processed_candle_time" past a candle whose canonical processing was not successfully incorporated.
+
+Structural state and "last_processed_candle_time" must be persisted as one consistent checkpointed result. The mapper must not publish an advanced processing timestamp without the corresponding structural state, nor publish new structural state while retaining an earlier timestamp in a way that can cause unsafe divergence. The concrete atomic file-write mechanism is implementation-defined.
 
 When explicit analysis date boundaries are supplied, the requested/effective interval rules in A7-A8 govern the bounded analysis; the checkpoint must not silently shorten that explicitly requested interval.
 
