@@ -393,6 +393,26 @@ No mapper configuration file is to be introduced for timeframe selection, histor
 
 Timeframe selection is controlled only by `--htf` and/or `--ltf` according to A4–A6.
 
+Volume analytics method is controlled by the optional CLI parameter:
+
+```
+--volume-method {NONE,OHLC,ORDERFLOW}
+```
+
+Default:
+
+```
+--volume-method OHLC
+```
+
+Semantics:
+
+- `NONE` — do not run volume/delta analytics or calculate POI likelihood.
+- `OHLC` — calculate directional buy/sell volume and delta from available OHLC/volume data.
+- `ORDERFLOW` — use the available OrderFlowProvider for buy/sell volume and delta.
+
+An unsupported value is an input error. The selected method is an implementation/data-source choice and does not alter canonical SMC rules.
+
 ---
 
 # B. CANDLE / MARKET DATA NORMALIZATION
