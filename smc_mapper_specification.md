@@ -463,21 +463,27 @@ The canonical engine consumes normalized candle data only.
 
 ## A17. Bootstrap
 
-Structural state must be constructed by processing candles chronologically:
+The mapper constructs structural state by processing candles chronologically.
 
-"earliest effective candle -> latest effective candle"
+For an initial build, or whenever a complete bootstrap is explicitly required:
+
+"earliest required effective candle -> latest completed driving-timeframe candle"
 
 The mapper must not use a latest-window shortcut that bypasses required structural bootstrap.
 
-### A17.1 Two-timeframe LTF bootstrap anchor
+For incremental execution after a valid persisted checkpoint, the persisted current structural state is the resume baseline and the mapper processes only the subsequently completed driving-timeframe candles, in chronological order, as defined by A18.
 
-In two-timeframe analysis, LTF data coverage must extend far enough backward to provide sufficient history for deterministic LTF structural bootstrap in the applicable HTF execution context.
+### A17.1 Two-timeframe LTF bootstrap coverage anchor
 
-When a confirmed HTF Dealing Range exists, the LTF bootstrap coverage anchor is the applicable HTF **Protected Structural Extreme**. This is a data-coverage/reference anchor only; it is not an LTF structural start and does not create or promote any LTF structure.
+In two-timeframe analysis, the LTF data request must extend far enough backward to provide sufficient history for deterministic LTF structural bootstrap in the applicable HTF execution context.
+
+When a confirmed HTF Dealing Range exists, the LTF bootstrap coverage anchor is the applicable **Protected Structural Extreme**. This is a data-coverage/reference anchor only; it is not an LTF structural start and does not create or promote any LTF structure.
 
 If the active execution context has no current confirmed HTF Dealing Range, the mapper may use the most recent preceding confirmed HTF Protected Structural Extreme as the LTF bootstrap coverage anchor. This is also a coverage/reference decision only and must not manufacture a canonical range or protected extreme.
 
 The LTF canonical engine may require additional candles before the anchor for its own deterministic warm-up. Such additional history may be fetched as required.
+
+The bootstrap coverage anchor does not replace the canonical LTF bootstrap sequence and does not imply that the first LTF structural event occurs at the anchor.
 
 If no applicable confirmed HTF Protected Structural Extreme exists, the mapper must preserve the canonical genesis/source-gap boundary and must not fabricate one merely to bootstrap LTF history.
 ## A18. Monitor boundary and mapper checkpoint
@@ -947,9 +953,11 @@ The number of LTF structures associated with an HTF Dealing Range is unrestricte
 
 An LTF structure must not be duplicated merely because multiple LTF evaluations occur inside the same HTF range.
 
-Each stored LTF structure is associated with the single HTF context in which it is represented. This association is storage provenance only; the LTF structure retains its own canonical formation and lifecycle timestamps.
+For deterministic storage association, an LTF structural record is associated with the HTF Dealing Range that is applicable at that LTF structure's canonical `formation_time`. The association is storage/context provenance only; it does not change the LTF structure's canonical formation time, lifecycle, or semantic ownership.
 
-If an LTF lifecycle crosses an HTF range transition, the canonical LTF lifecycle remains unchanged and the stored representation must preserve enough provenance to associate the structure deterministically without duplicating the same LTF object.
+If the LTF structure forms while a confirmed HTF Dealing Range is current, it is stored under that range. If no confirmed HTF Dealing Range exists at the LTF structure's formation time, the structure must not be assigned to a fabricated range.
+
+If an LTF lifecycle crosses an HTF range transition, the canonical LTF lifecycle remains unchanged. The stored representation retains its original HTF context association and sufficient canonical provenance to represent the cross-boundary lifecycle without duplicating the same LTF object.
 ## C5. Canonical HTF-interaction routes
 
 Where a canonical LTF route explicitly requires HTF interaction, the mapper must expose the required HTF context to the LTF engine.
