@@ -111,20 +111,21 @@ The mapper must never automatically select or invent a different HTF when only o
 
 ---
 
-## A6. Analysis order
+## A6. Analysis order and timeframe synchronization
 
-When both timeframes are supplied:
+When both timeframes are supplied, the mapper establishes the HTF structural context first and then processes HTF and LTF chronologically on their shared time axis.
 
-`HTF -> LTF`
+"HTF context establishment -> synchronized HTF/LTF processing"
 
-The HTF analysis is completed first.
+The HTF analysis provides the structural context required by canonical LTF rules. The LTF analysis may consume that context where required, but the LTF analysis must never redefine or mutate HTF structure.
 
-The LTF analysis may consume HTF structural context where required, but the LTF analysis must never modify the HTF result.
+Within synchronized processing:
+
+- a newly completed HTF candle updates HTF canonical state before later LTF evaluations may consume that new HTF information;
+- each completed LTF candle is evaluated against only the HTF canonical context that already exists at that LTF evaluation time;
+- the mapper does not use a later HTF event to reinterpret an earlier LTF event.
 
 When only one timeframe is supplied, only that timeframe is analyzed.
-
----
-
 ## A7. Start time
 
 `--starttime` defines the requested start of the analysis window.
@@ -353,39 +354,43 @@ Illustrative logical structure for two-timeframe analysis:
 {
   "symbol": "CCCC",
   "history_no": 5000,
-  "htf": {
-    "timeframe": "H4",
-    "current_dealing_range": {
-      "start_time": "...",
-      "close_time": null,
-      "structural_state": {},
-      "ltf_structures": []
-    },
-    "history": [
-      {
-        "start_time": "...",
-        "close_time": "...",
-        "structural_state": {},
-        "ltf_structures": [
-          {},
-          {}
-        ]
-      }
-    ]
+  "htf": "H4",
+  "ltf": "M15",
+  "last_processed_candle_time": "2026-09-29T18:45:00Z",
+
+  "current": {
+    "start_time": "...",
+    "close_time": null,
+    "structural_state": {},
+    "ltf_structures": []
   },
-  "ltf": {
-    "timeframe": "M15"
-  }
+
+  "history": [
+    {
+      "start_time": "...",
+      "close_time": "...",
+      "structural_state": {},
+      "ltf_structures": [
+        {},
+        {}
+      ]
+    }
+  ]
 }
 ```
 
-This is a logical schema illustration, not a new canonical ontology. `history_no` is the single symbol-level retention limit for closed HTF Dealing Ranges. `ltf_structures` may contain any number of canonical LTF structural records relevant to the HTF context and is not counted against `history_no`.
+This is a logical schema illustration, not a new canonical ontology.
 
----
+- "history_no" is stored once at symbol level.
+- In two-timeframe mode it limits retained CLOSED HTF Dealing Ranges only.
+- "ltf_structures" are context-scoped records inside the applicable HTF range and are not counted against "history_no".
+- "current.start_time" and historical "start_time" values are HTF Dealing Range lifecycle timestamps. They are not separate LTF start timestamps.
+- "last_processed_candle_time" is root-level mapper processing metadata and, in two-timeframe mode, refers to the LTF driving timeframe already identified by "ltf".
 
+The JSON does not require a separate "ltf" object merely to repeat the LTF timeframe.
 ## A14. Stored state
 
-The mapper JSON stores **structural analysis only**.
+The mapper JSON stores canonical **structural analysis** plus the minimal mapper-processing metadata required for deterministic incremental execution.
 
 It may contain canonical structural state, provenance and structural history, including:
 
@@ -412,8 +417,7 @@ The mapper must not persist dynamic monitoring or trade state such as:
 
 Those are owned by the monitor.
 
----
-
+The root-level "last_processed_candle_time" is an exception to the structural-only content above: it is mapper processing provenance/checkpoint metadata and carries no canonical SMC meaning.
 ## A15. Input validation
 
 Before analysis, validate at minimum:
@@ -461,13 +465,22 @@ The canonical engine consumes normalized candle data only.
 
 Structural state must be constructed by processing candles chronologically:
 
-`earliest effective candle -> latest effective candle`
+"earliest effective candle -> latest effective candle"
 
 The mapper must not use a latest-window shortcut that bypasses required structural bootstrap.
 
----
+### A17.1 Two-timeframe LTF bootstrap anchor
 
-## A18. Monitor boundary
+In two-timeframe analysis, LTF data coverage must extend far enough backward to provide sufficient history for deterministic LTF structural bootstrap in the applicable HTF execution context.
+
+When a confirmed HTF Dealing Range exists, the LTF bootstrap coverage anchor is the applicable HTF **Protected Structural Extreme**. This is a data-coverage/reference anchor only; it is not an LTF structural start and does not create or promote any LTF structure.
+
+If the active execution context has no current confirmed HTF Dealing Range, the mapper may use the most recent preceding confirmed HTF Protected Structural Extreme as the LTF bootstrap coverage anchor. This is also a coverage/reference decision only and must not manufacture a canonical range or protected extreme.
+
+The LTF canonical engine may require additional candles before the anchor for its own deterministic warm-up. Such additional history may be fetched as required.
+
+If no applicable confirmed HTF Protected Structural Extreme exists, the mapper must preserve the canonical genesis/source-gap boundary and must not fabricate one merely to bootstrap LTF history.
+## A18. Monitor boundary and mapper checkpoint
 
 The monitor consumes mapper JSON and owns dynamic monitoring functions, including:
 
@@ -479,10 +492,43 @@ The monitor consumes mapper JSON and owns dynamic monitoring functions, includin
 
 The monitor must not redefine canonical SMC semantics.
 
-When re-analysis is required, the monitor may invoke the mapper for the relevant symbol and timeframe configuration.
+In two-timeframe analysis, the monitor is driven by the close of each completed LTF candle and invokes the mapper after that LTF close. In single-timeframe analysis, the selected timeframe is the driving timeframe.
 
----
+The mapper must tolerate missed invocations and process all subsequently completed driving-timeframe candles in chronological order rather than assuming one mapper invocation per candle.
 
+"last_processed_candle_time" is mapper processing metadata, not canonical SMC state and not dynamic trade/monitor state. It is stored once at the JSON root, alongside "symbol", "history_no", "htf", and "ltf".
+
+Example root metadata:
+
+```json
+{
+  "symbol": "CCCC",
+  "history_no": 5000,
+  "htf": "H4",
+  "ltf": "M15",
+  "last_processed_candle_time": "2026-09-29T18:45:00Z"
+}
+```
+
+In two-timeframe mode, "last_processed_candle_time" identifies the latest completed LTF candle whose canonical processing has been successfully incorporated into the stored structural result.
+
+In single-timeframe mode, it identifies the latest completed candle of the selected driving timeframe.
+
+When no explicit analysis date boundary is supplied:
+
+1. For an existing JSON with a valid "last_processed_candle_time", process every newly completed driving-timeframe candle after that checkpoint through the current latest completed candle, in chronological order.
+2. If the checkpoint is absent or unusable, perform the required structural bootstrap from the earliest effective history through the current latest completed driving-timeframe candle.
+3. After successful processing, persist the timestamp of the newest completed candle actually incorporated into the structural result.
+
+The mapper must not advance "last_processed_candle_time" past a candle whose canonical processing was not successfully incorporated.
+
+When explicit analysis date boundaries are supplied, the requested/effective interval rules in A7-A8 govern the bounded analysis; the checkpoint must not silently shorten that explicitly requested interval.
+
+"last_processed_candle_time" must not be placed inside "current" or "history", because it describes mapper processing provenance rather than a Dealing Range or structural object.
+
+The monitor must not infer canonical structure from the checkpoint itself. The checkpoint only identifies where mapper processing may resume.
+
+When re-analysis is required, the monitor invokes the mapper for the relevant symbol and timeframe configuration.
 ## A19. Configuration
 
 No separate mapper configuration file is required.
@@ -850,58 +896,44 @@ It must not become a canonical SMC decision input unless an explicit canonical s
 
 Each timeframe is analyzed according to its own canonical structural rules.
 
-In two-timeframe mode:
-
-```
-HTF canonical analysis
-LTF canonical analysis
-```
+In two-timeframe mode, HTF and LTF remain separate canonical analyses while sharing a synchronized execution timeline.
 
 The LTF is not a canonical child of the HTF and must not redefine or mutate HTF structure.
 
-The HTF nevertheless provides the governing execution context in which relevant LTF entry analysis is performed.
+The HTF provides the execution context required by canonical LTF rules where such context is explicitly specified.
 
 In single-timeframe mode, no HTF/LTF execution relationship exists.
-
----
-
-## C2. HTF-guided LTF execution
+## C2. HTF/LTF synchronization and execution context
 
 When an HTF and LTF are both supplied:
 
-1. analyze the HTF canonical structure first;
-2. establish the applicable HTF Dealing Range / structural context;
-3. use that context to scope and guide relevant LTF execution analysis;
-4. analyze LTF structure using its own canonical rules;
+1. establish the current HTF canonical structural context first;
+2. establish the applicable HTF execution context and bootstrap coverage anchor;
+3. process subsequent completed HTF and LTF candles chronologically on the shared timeline;
+4. evaluate each LTF candle using only the HTF canonical context that already exists at that LTF evaluation time;
 5. apply HTF context only where required by a canonical downstream rule.
 
 The LTF exists to refine and qualify entry within the applicable HTF context; it does not create a competing higher-level narrative.
 
 The existence of HTF context must not automatically invalidate an LTF structural event. Only canonical rules that explicitly require HTF context may use it as a qualification, activation, or routing condition.
 
----
-
+HTF structural synchronization is an orchestration relationship. It does not transfer semantic ownership from HTF rules to LTF rules.
 ## C3. Point-in-time HTF context
 
-For every LTF evaluation that requires HTF information, only HTF structural information that already existed at that evaluation time may be used.
+For every LTF evaluation that requires HTF information, only HTF structural facts that already existed at that evaluation time may be used.
 
-```
-HTF formation_time <= LTF evaluation_time
-```
+For each consumed HTF structural fact:
+
+"formation_time <= LTF evaluation_time"
 
 A later HTF structural event must never be used to reinterpret an earlier LTF event.
 
-No separate HTF snapshot ontology is required.
-
-The applicable HTF Dealing Range and its canonical structural state are the context reference.
-
----
-
+The applicable HTF Dealing Range and the canonical HTF structural facts available at that point in time provide the LTF context reference.
 ## C4. LTF structures within HTF range context
 
 In two-timeframe analysis, LTF structural records may be stored within the applicable HTF Dealing Range record for execution-context organization.
 
-This storage relationship does not transfer semantic ownership:
+This storage relationship uses the HTF Dealing Range as the LTF context container; it does not define an LTF structural start or transfer semantic ownership:
 
 ```
 HTF Dealing Range
@@ -911,14 +943,13 @@ execution context
 LTF canonical structure
 ```
 
-The number of LTF structures associated with an HTF Dealing Range is unrestricted by `history_no`.
+The number of LTF structures associated with an HTF Dealing Range is unrestricted by "history_no".
 
 An LTF structure must not be duplicated merely because multiple LTF evaluations occur inside the same HTF range.
 
-If an LTF lifecycle spans an HTF Dealing Range transition, its canonical lifecycle and provenance must remain intact; the HTF transition must not retroactively rewrite the LTF structure.
+Each stored LTF structure is associated with the single HTF context in which it is represented. This association is storage provenance only; the LTF structure retains its own canonical formation and lifecycle timestamps.
 
----
-
+If an LTF lifecycle crosses an HTF range transition, the canonical LTF lifecycle remains unchanged and the stored representation must preserve enough provenance to associate the structure deterministically without duplicating the same LTF object.
 ## C5. Canonical HTF-interaction routes
 
 Where a canonical LTF route explicitly requires HTF interaction, the mapper must expose the required HTF context to the LTF engine.
