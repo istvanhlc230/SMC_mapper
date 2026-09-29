@@ -865,7 +865,7 @@ The mapper may transport and align canonical HTF context; it must not invent new
 
 POI volume analytics is a non-canonical analytical extension of the canonical POI result.
 
-It may enrich an already canonical POI with total volume, estimated buy volume, estimated sell volume, volume delta, directional delta ratio, and a volume-derived likelihood percentage.
+It may enrich an already canonical POI with total volume, buy volume, sell volume, volume delta, directional delta ratio, and a volume-derived likelihood percentage when a usable volume method is available.
 
 Volume analytics must never create, remove, retype, or canonically invalidate a POI.
 
@@ -890,7 +890,7 @@ Use the strongest available volume-side information:
 1. ORDERFLOW — genuine orderflow volume/delta supplied by the provider.
 2. OHLC — directional volume estimated from OHLC data, using lower-timeframe data when available.
 3. OHLC — directional volume estimated from aggregate candle OHLCV.
-4. NONE — no usable volume-side calculation exists.
+4. NONE — no usable volume-side calculation exists. In this state, the volume/delta analytics path is skipped entirely; no volume, delta, or POI likelihood calculation is performed.
 
 An estimated buy/sell split must never be represented as observed bid/ask aggressor volume.
 
@@ -971,7 +971,7 @@ Each canonical POI may contain:
 }
 ```
 
-Values are null/omitted when the relevant provenance or volume data is unavailable.
+When method = NONE, the volume/delta analytics block is not processed and no volume-derived values or POI likelihood are calculated. Otherwise, values are null/omitted only when the relevant provenance data is unavailable.
 
 ## D7. Volume-derived POI likelihood
 
@@ -1014,7 +1014,7 @@ strong opposing delta → very low percentage
 
 This percentage is a volume-derived directional measure, not an empirically calibrated forecast of future POI success.
 
-If no defensible volume-side data exists, `poi_likelihood_pct` must be null/omitted.
+If method = NONE, `poi_likelihood_pct` must not be calculated and the volume analytics branch must not run.
 
 ## D8. Provenance
 
@@ -1030,3 +1030,5 @@ Every POI volume record must retain sufficient provenance to reproduce the calcu
 - `poi_likelihood_pct`.
 
 The volume-derived percentage must never be used by downstream code as canonical POI validity.
+
+When method = NONE, downstream code must treat volume analytics as absent rather than as a zero/neutral weighting.
