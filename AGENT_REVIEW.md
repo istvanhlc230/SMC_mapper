@@ -1782,3 +1782,198 @@ Re-audit confirmed:
 - unrestricted LTF structure count within HTF range context;
 - no general HTF-parent/LTF-child semantic ontology;
 - JSON structure explicitly represents the intended storage scope.
+
+
+# MAPPER SPECIFICATION — FULL A–D AUDIT / HTF-LTF SYNCHRONIZATION (COMPLETED)
+
+## 1. Scope
+
+Audited the complete current `smc_mapper_specification.md` against the canonical implementation authority in `.agents/skills/smc/`, with focused cross-checks against Layers 1–8 and the existing Phase 24 execution contracts.
+
+The audit specifically covered:
+
+- timeframe orchestration and HTF/LTF synchronization;
+- HTF-only closed Dealing Range history and collective `history_no`;
+- LTF context-scoped storage;
+- LTF bootstrap coverage;
+- monitor-driven incremental mapper execution;
+- restart / missed-invocation recovery;
+- checkpoint idempotency and persistence consistency;
+- candle completion and end-time semantics;
+- structural-only JSON state vs mapper processing metadata;
+- POI/volume/orderflow boundaries;
+- target/RR ownership boundaries.
+
+## 2. New approved HTF/LTF runtime model
+
+The approved runtime model is:
+
+```
+HTF canonical context
+        ↓
+HTF/LTF synchronized chronological processing
+        ↓
+LTF canonical structure in HTF execution context
+        ↓
+JSON structural result
+        ↓
+MONITOR
+```
+
+In two-timeframe mode the monitor is driven by completed LTF-candle closes and invokes the mapper after each LTF close.
+
+The mapper tolerates missed invocations by processing all subsequently completed LTF candles after the persisted checkpoint, in chronological order.
+
+HTF and LTF remain separate canonical analyses. HTF context is synchronization/orchestration context and does not transfer semantic ownership to LTF.
+
+## 3. LTF bootstrap reference
+
+The mapper uses the applicable HTF Protected Structural Extreme as the LTF bootstrap coverage anchor when a confirmed HTF Dealing Range exists.
+
+If no current confirmed HTF Dealing Range exists, the most recent preceding confirmed HTF Protected Structural Extreme is used when available.
+
+The anchor is strictly a data-coverage/reference anchor:
+
+- it is not an LTF structural start;
+- it does not create an LTF structure;
+- it does not redefine canonical LTF bootstrap;
+- additional pre-anchor warm-up candles may be fetched when required.
+
+If no applicable confirmed Protected Structural Extreme exists, the mapper preserves the canonical genesis/source-gap boundary and does not fabricate one.
+
+## 4. JSON / checkpoint contract
+
+The approved root structure contains:
+
+```json
+{
+  "symbol": "CCCC",
+  "history_no": 5000,
+  "htf": "H4",
+  "ltf": "M15",
+  "last_processed_candle_time": "2026-09-29T18:45:00Z",
+  "current": {},
+  "history": []
+}
+```
+
+`last_processed_candle_time` is mapper processing provenance/checkpoint metadata, not canonical SMC state and not dynamic monitoring/trade state.
+
+It is stored once at JSON root. The timeframe is not repeated because `ltf` already identifies the driving timeframe in two-timeframe mode.
+
+In single-timeframe mode the checkpoint refers to the selected driving timeframe.
+
+## 5. Restart / missed-candle behavior
+
+No explicit date boundary:
+
+- existing valid checkpoint -> process every subsequently completed driving-timeframe candle;
+- candles at or before the checkpoint are already incorporated and are not new canonical inputs;
+- missing/unusable checkpoint -> full required structural bootstrap;
+- checkpoint advances only through the newest successfully incorporated candle.
+
+Structural state and checkpoint metadata are persisted as one consistent checkpointed result. An implementation must not publish an advanced checkpoint without its corresponding structural state.
+
+## 6. LTF context storage association
+
+An LTF structural record is associated with the HTF Dealing Range applicable at its canonical `formation_time`.
+
+This is storage/context provenance only.
+
+It does not:
+
+- create HTF-parent/LTF-child semantics;
+- change LTF ownership;
+- change LTF lifecycle timestamps;
+- duplicate an LTF object.
+
+If an LTF lifecycle crosses an HTF range transition, its original HTF context association remains and its canonical lifecycle is not rewritten.
+
+At an exact same-timestamp HTF transition and LTF formation, HTF lifecycle processing occurs first on the synchronized timeline, making the resulting HTF context the deterministic association context.
+
+## 7. Candle completion correction
+
+Explicit `--endtime` inclusion uses the canonical candle completion boundary, not the candle timestamp alone.
+
+The normalized provider/completion contract confirms candle completion before canonical analysis.
+
+This closes the ambiguity where a candle timestamp could precede its actual completion time.
+
+## 8. Full audit findings
+
+### PASS — A. Input / orchestration
+
+- HTF/LTF relationship and mode selection remain deterministic.
+- HTF pullback validation remains restricted to explicit distinct HTF/LTF mode.
+- Incremental processing and restart behavior are defined.
+- `history_no` remains one collective symbol-level value and applies only to HTF closed-range history in two-timeframe mode.
+- First-BOS genesis remains explicitly source-bounded; no synthetic protected extreme is introduced.
+
+### PASS — B. Candle / market-data normalization
+
+- Completed-candle requirement is explicit.
+- End-time selection uses completion boundary.
+- No synthetic candles are permitted.
+- Decimal OHLC representation remains enforced.
+- Aggregate OHLC cannot manufacture intrabar path evidence.
+- Volume provenance and method distinctions remain intact.
+
+### PASS — C. HTF/LTF execution context
+
+- HTF and LTF retain independent canonical ownership.
+- Synchronization is explicit and chronological.
+- Point-in-time HTF consumption is enforced object-by-object through formation time.
+- LTF bootstrap has a deterministic HTF Protected Structural Extreme coverage anchor.
+- LTF records are context-scoped without a parent/child semantic ontology.
+- Exact-timestamp range-transition association is deterministic.
+
+### PASS — D. POI volume / delta analytics
+
+- OHLC directional volume remains explicitly estimated, not observed orderflow.
+- ORDERFLOW remains a distinct evidence method.
+- Statistical POI probability remains downstream/non-canonical and requires a calibrated model.
+- Target/RR semantics remain outside this mapper structural contract and under the canonical risk/execution ownership already established in Layers 6–8.
+
+## 9. Canonical ownership verification
+
+No change to `.agents/skills/smc/` was required by this audit.
+
+The specification continues to consume:
+
+- Layer 1 for candle-level primitives;
+- Layer 2 for minor/pullback structure;
+- Layer 3 for major structure, IDM governance and retracement qualification;
+- Layer 4 for BOS mechanics;
+- Layer 5 for CHoCH mechanics;
+- Layer 6 for execution/POI semantics;
+- Layer 7 for risk/target policy;
+- Layer 8 for implementation contracts.
+
+No downstream specification rule redefines canonical structural semantics.
+
+## 10. Legacy-model verification
+
+Verified absent from the current mapper specification:
+
+- rotating structural-snapshot history;
+- LIFO history retention;
+- per-timeframe `history_no` in two-timeframe mode;
+- nested `htf.timeframe` + `ltf.timeframe` JSON duplication;
+- separate LTF history quota;
+- separate LTF structural-start ontology;
+- universal LTF body-close rule;
+- automatic target winner / universal target priority.
+
+## 11. Final status
+
+**PASS — FULL SPECIFICATION AUDIT COMPLETED**
+
+The current mapper specification is internally coherent with the approved HTF-synchronized LTF execution model and the canonical SMC skill ownership boundaries.
+
+Specification commits:
+- `e9ca21d2fc7acca63650a1ddbd8ca3625b77fbed` — initial HTF/LTF sync + checkpoint refinement
+- `7197e06b55e667c787805d407f035bfa01e533d1` — bootstrap/context association repair
+- `025634d8806b40799f2dd137ddfb1540360421cd` — checkpoint idempotency/atomicity hardening
+
+Final specification blob SHA:
+`8ca1ccbefe566f469705714e7e40ac18b1fa4d4e`
