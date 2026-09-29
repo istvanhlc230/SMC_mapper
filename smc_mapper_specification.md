@@ -42,9 +42,25 @@ Example:
 
 ## A4. Timeframe relationship
 
-When both are supplied:
+There are two distinct operating modes.
 
-`HTF >= LTF`
+### Single-timeframe mode
+
+If only one of --htf or --ltf is supplied, the selected timeframe is the only analyzed timeframe.
+
+Internally:
+
+`HTF = LTF = selected timeframe`
+
+This equality is an internal representation only. It does **not** activate HTF pullback validation.
+
+### Two-timeframe mode
+
+If both are supplied:
+
+`HTF > LTF`
+
+An equal HTF/LTF pair is not valid in two-timeframe mode.
 
 An invalid relationship is an input error.
 
@@ -54,7 +70,7 @@ The mapper must never silently swap or otherwise correct the supplied timeframes
 
 ## A5. HTF Pullback Validation
 
-HTF pullback validation is enabled only when **both HTF and LTF are explicitly supplied**.
+HTF pullback validation is enabled only in **two-timeframe mode**, when both HTF and LTF are explicitly supplied.
 
 ### Both supplied
 
@@ -69,6 +85,7 @@ HTF pullback validation is enabled only when **both HTF and LTF are explicitly s
 `--htf H4`
 
 - Analyze only H4.
+- Internally treat `HTF = LTF = H4`.
 - Do not perform HTF pullback validation.
 
 ### Only LTF supplied
@@ -76,9 +93,10 @@ HTF pullback validation is enabled only when **both HTF and LTF are explicitly s
 `--ltf M15`
 
 - Analyze only M15.
+- Internally treat `HTF = LTF = M15`.
 - Do not perform HTF pullback validation.
 
-The mapper must never automatically select or invent an HTF when only one timeframe is supplied.
+The mapper must never automatically select or invent a different HTF when only one timeframe is supplied.
 
 ---
 
@@ -296,7 +314,7 @@ Before analysis, validate at minimum:
 - timezone validity;
 - completed-candle status;
 - OHLC integrity;
-- required timeframe data availability.
+- required timeframe data availability;\n- two-timeframe HTF/LTF mode requirements.
 
 Invalid input must fail explicitly.
 
@@ -361,6 +379,8 @@ Mapper behavior is controlled by:
 - canonical SMC skill.
 
 No mapper configuration file is to be introduced for timeframe selection, history retention or analysis window.
+
+Timeframe selection is controlled only by `--htf` and/or `--ltf` according to A4–A6.
 
 ---
 
@@ -660,3 +680,167 @@ This includes, where applicable:
 Volume retention is market-data metadata only.
 
 It must not become a canonical SMC decision input unless an explicit canonical skill rule defines a volume-dependent decision.
+
+
+---
+
+# C. HTF / LTF CONTEXT & DEPENDENCY MODEL
+
+## C1. Context dependency
+
+Two-timeframe analysis has a strict dependency direction:
+
+`HTF analysis -> HTF structural context -> LTF analysis`
+
+The LTF analysis may consume HTF context.
+
+The LTF analysis must never modify the HTF result.
+
+---
+
+## C2. Point-in-time HTF context
+
+For every LTF evaluation that consumes HTF context, the mapper must use the latest applicable HTF structural snapshot known at or before the LTF evaluation time.
+
+The rule is:
+
+`HTF formation_time <= LTF evaluation_time`
+
+A HTF state that forms later must never be used to evaluate an earlier LTF event.
+
+This prevents future HTF information from leaking backward into historical LTF analysis.
+
+---
+
+## C3. HTF context snapshot reference
+
+When HTF context is consumed by an LTF structural decision, the LTF result must retain sufficient provenance to identify the exact HTF context used.
+
+At minimum, where applicable:
+
+- `htf_context_structure_id`
+- `htf_context_structure_hash`
+- `htf_context_formation_time`
+
+This creates deterministic HTF-to-LTF provenance.
+
+---
+
+## C4. Read-only context
+
+HTF context supplied to the LTF engine is read-only.
+
+The LTF engine must not:
+
+- modify HTF structural state;
+- create or replace HTF structural objects;
+- reinterpret HTF canonical semantics;
+- write changes into the HTF analysis history.
+
+---
+
+## C5. Context scope
+
+The HTF context contract must expose only information required by canonical downstream rules.
+
+The LTF implementation must not depend on arbitrary internal fields of the complete HTF runtime state.
+
+The exact context fields must be defined by canonical consumer requirements rather than by implementation convenience.
+
+---
+
+## C6. HTF pullback validation states
+
+When HTF pullback validation is not required:
+
+`HTF_PULLBACK_CHECK = NOT_REQUIRED`
+
+When required, the result must distinguish:
+
+- `VALID` — the applicable HTF pullback is canonically valid;
+- `INVALID` — sufficient HTF context exists and the applicable pullback is not valid;
+- `UNAVAILABLE` — the required HTF historical/context data is unavailable.
+
+`INVALID != UNAVAILABLE`
+
+Missing data must never be converted into a negative structural observation.
+
+---
+
+## C7. HTF history shorter than LTF history
+
+HTF and LTF may have different available history.
+
+Example:
+
+```
+HTF: 2026-06-01 -> 2026-09-29
+LTF: 2026-01-01 -> 2026-09-29
+```
+
+For LTF evaluation times before the first usable HTF context:
+
+`HTF_CONTEXT_UNAVAILABLE`
+
+The LTF analysis may continue through its own available history, but any canonical decision that specifically requires HTF validation must remain unresolved / fail closed until applicable HTF context exists.
+
+---
+
+## C8. HTF context transition
+
+When a new HTF structural snapshot forms:
+
+```
+old HTF context
+      ↓
+new HTF structural snapshot
+      ↓
+subsequent LTF evaluations use the new context
+```
+
+A newly formed HTF snapshot does not retroactively change historical LTF decisions that were made using the previous HTF context.
+
+---
+
+## C9. Single-timeframe mode
+
+When only one timeframe parameter is supplied, the internal representation may use:
+
+`HTF = LTF = selected timeframe`
+
+but no HTF-to-LTF dependency exists and `HTF_PULLBACK_CHECK = NOT_REQUIRED`.
+
+The mapper must not evaluate the selected timeframe as its own Higher Timeframe for canonical Gate 2.
+
+---
+
+## C10. Two-timeframe chronological execution
+
+When both timeframes are supplied:
+
+1. Normalize and bootstrap the HTF series.
+2. Analyze the HTF series chronologically.
+3. Expose point-in-time HTF structural context.
+4. Normalize/bootstrap the LTF series.
+5. Analyze the LTF series chronologically.
+6. For each LTF evaluation requiring HTF context, consume the applicable point-in-time HTF snapshot.
+
+The mapper must not perform a complete future-aware HTF analysis and then apply its final state to all historical LTF candles.
+
+---
+
+## C11. HTF context and structural history
+
+Stored LTF structural snapshots that depend on HTF context must retain the identity of the HTF structural snapshot used for that decision.
+
+If `history_no` rotates out an old HTF snapshot from the current JSON history, the LTF historical record must remain self-consistent through its stored provenance metadata. The mapper must not rewrite historical LTF decisions merely because the referenced HTF snapshot is no longer retained in the rotating current-history window.
+
+---
+
+## C12. Canonical ownership
+
+HTF/LTF dependency handling is orchestration.
+
+Canonical SMC meaning remains owned by the relevant canonical skill layers.
+
+The mapper may transport and align canonical HTF context; it must not invent new HTF pullback, structural, BOS or CHoCH semantics.
