@@ -1685,3 +1685,31 @@ The implementation strictly adheres to `.agents/skills/smc/06_execution.md` ensu
 * Clean separation of states ensures deterministic evaluation.
 
 **Phase 24 Final Status:** PASS
+
+
+# HISTORY MODEL CORRECTION — CLOSED DEALING RANGE RETENTION (COMPLETED)
+
+## Specification change
+Updated `smc_mapper_specification.md` to replace the obsolete rotating structural-snapshot history model with the approved CLOSED DEALING RANGE history model.
+
+### Final contract
+- `history_no` = maximum number of retained CLOSED DEALING RANGES per timeframe.
+- New symbol without `--history_no` -> default `5000`.
+- Existing symbol without `--history_no` -> preserve stored value.
+- `--history_no=N` -> persist and use N.
+- N >= 1.
+- History identity = `timeframe + start_time + close_time`.
+- `formation_time` remains structural-object formation time and is distinct from range `close_time`.
+- Open/current ranges are excluded from history.
+- Same retained identity is reconciled in place; duplicates are forbidden.
+- Capacity overflow evicts the oldest retained closed range (FIFO).
+- Retention eviction is storage policy only and never canonical invalidation.
+- HTF/LTF point-in-time provenance remains independent of history retention; historical LTF decisions are not rewritten when referenced HTF context falls outside retention.
+
+## Boundary preservation
+- `.agents/skills/smc/` was not modified.
+- No new canonical SMC rule was invented for first-range/genesis semantics.
+- Volume semantics remain unchanged.
+
+## Verification
+- Specification commit: `f1a61ebdbe7d1563d63047d58da9ca83985a770d`
