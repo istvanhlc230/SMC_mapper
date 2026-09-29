@@ -1713,3 +1713,9 @@ Updated `smc_mapper_specification.md` to replace the obsolete rotating structura
 
 ## Verification
 - Specification commit: `f1a61ebdbe7d1563d63047d58da9ca83985a770d`
+
+
+## Follow-up correction
+The initial history-model commit was followed by a verification pass that caught an omission in the replacement operation: the A12 closed-range identity/retention contract had not been inserted. A12 and A12a have now been explicitly restored in the specification.
+
+Final specification commit: `d9cabdce6d26811a751c93fb365b0681aa587901`.
