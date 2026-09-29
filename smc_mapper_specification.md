@@ -321,7 +321,7 @@ A range falling outside the retention window is not a canonical removal event.
 The mapper derives Dealing Range history boundaries strictly from the canonical structural lifecycle.
 
 - A currently open Dealing Range is runtime state, not history.
-- `VALID_BOS` is the canonical lifecycle event that closes the previous governing Dealing Range and establishes the next confirmed range lifecycle.
+- `VALID_BOS` is the canonical lifecycle event that establishes the next confirmed Dealing Range lifecycle; when a governing range already exists, it closes that previous range first. The first `VALID_BOS` establishes the first confirmed Dealing Range and therefore has no pre-existing governing range to close.
 - The mapper must not close or start a Dealing Range because of a physical break, IDM sweep, CHoCH-eligible break, insufficient-retracement `IMPULSE_EXTENSION`, mapper execution boundary, or retention operation.
 - Before the first canonical `VALID_BOS`, no governing Dealing Range may be fabricated for history or used as a substitute for the unresolved first-BOS canonical baseline.
 - The exact first-BOS retracement baseline remains the canonical/source gap documented by the SMC skill; the mapper must fail closed rather than invent a synthetic initialization rule.
@@ -346,6 +346,40 @@ A mapper execution for one symbol updates only that symbol's file.
 The monitor must be capable of discovering and processing all symbol files.
 
 There is no single multi-symbol mapper JSON file.
+
+Illustrative logical structure for two-timeframe analysis:
+
+```json
+{
+  "symbol": "CCCC",
+  "history_no": 5000,
+  "htf": {
+    "timeframe": "H4",
+    "current_dealing_range": {
+      "start_time": "...",
+      "close_time": null,
+      "structural_state": {},
+      "ltf_structures": []
+    },
+    "history": [
+      {
+        "start_time": "...",
+        "close_time": "...",
+        "structural_state": {},
+        "ltf_structures": [
+          {},
+          {}
+        ]
+      }
+    ]
+  },
+  "ltf": {
+    "timeframe": "M15"
+  }
+}
+```
+
+This is a logical schema illustration, not a new canonical ontology. `history_no` is the single symbol-level retention limit for closed HTF Dealing Ranges. `ltf_structures` may contain any number of canonical LTF structural records relevant to the HTF context and is not counted against `history_no`.
 
 ---
 
