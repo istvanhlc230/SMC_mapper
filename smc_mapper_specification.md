@@ -250,21 +250,28 @@ timeframe + start_time + close_time
 
 This is the history identity. `structure_hash` is not a closed-range identity and must not be used to distinguish repeated representations of the same closed range.
 
+`start_time` and `close_time` are lifecycle timestamps derived from the canonical Dealing Range lifecycle. The mapper must not invent a new range-start rule, provisional range boundary, or synthetic start timestamp.
+
 `formation_time`, where present on structural objects or state within the range, identifies when that structural object/state formed. It is semantically distinct from the Dealing Range `close_time`.
 
-For an existing retained range with the same identity, reconciliation updates that range in place rather than creating a duplicate. A newly closed range with a new identity is inserted.
+A closed range's identity is immutable once canonically closed. For an existing retained range with the same identity, reconciliation updates that range in place rather than creating a duplicate. A newly closed range with a new identity is inserted. If a previously evicted range is reconstructed and is again within the retained window, it may be reinserted using its canonical identity.
 
 After insertion or update, the mapper applies `history_no` retention for that timeframe.
 
 ### `history_no` persistence rules
 
-- New symbol JSON + no `--history_no` -> create with `history_no = 5000`.
-- New symbol JSON + `--history_no=N` -> create with `history_no = N`.
-- Existing symbol JSON + no `--history_no` -> preserve the stored `history_no`.
-- Existing symbol JSON + `--history_no=N` -> update and persist `history_no = N`.
+`history_no` is stored **per timeframe**, because retention is independently bounded for each timeframe.
+
+- New symbol JSON + no `--history_no` -> initialize `history_no = 5000` for each analyzed timeframe and persist it.
+- New symbol JSON + `--history_no=N` -> initialize `history_no = N` for each analyzed timeframe and persist it.
+- Existing symbol JSON + no `--history_no` -> preserve the stored `history_no` for each analyzed timeframe.
+- Existing symbol JSON + `--history_no=N` -> update and persist `history_no = N` for each analyzed timeframe affected by that mapper execution. Timeframes not analyzed by that execution retain their stored value.
+- If an existing analyzed timeframe has no stored `history_no` value, initialize and persist `history_no = 5000` unless the CLI explicitly supplies `--history_no=N`.
 - `N` must be an integer >= 1.
 
 Changing `history_no` changes retention capacity only. It does not change canonical SMC semantics.
+
+The CLI `--history_no=N` is one execution-level override; when an execution analyzes both HTF and LTF timeframes, that override applies to both analyzed timeframes.
 
 ---
 
@@ -295,6 +302,16 @@ The mapper must reconcile canonical closed ranges deterministically:
 5. if capacity is exceeded, evict the oldest retained closed range.
 
 A range falling outside the retention window is not a canonical removal event.
+
+### A12b. Dealing Range lifecycle boundary
+
+The mapper derives Dealing Range history boundaries strictly from the canonical structural lifecycle.
+
+- A currently open Dealing Range is runtime state, not history.
+- `VALID_BOS` is the canonical lifecycle event that closes the previous governing Dealing Range and establishes the next confirmed range lifecycle.
+- The mapper must not close or start a Dealing Range because of a physical break, IDM sweep, CHoCH-eligible break, insufficient-retracement `IMPULSE_EXTENSION`, mapper execution boundary, or retention operation.
+- Before the first canonical `VALID_BOS`, no governing Dealing Range may be fabricated for history or used as a substitute for the unresolved first-BOS canonical baseline.
+- The exact first-BOS retracement baseline remains the canonical/source gap documented by the SMC skill; the mapper must fail closed rather than invent a synthetic initialization rule.
 ---
 
 ## A13. JSON storage
@@ -364,7 +381,8 @@ Before analysis, validate at minimum:
 - timezone validity;
 - completed-candle status;
 - OHLC integrity;
-- required timeframe data availability;\n- two-timeframe HTF/LTF mode requirements.
+- required timeframe data availability;
+- two-timeframe HTF/LTF mode requirements.
 
 Invalid input must fail explicitly.
 
@@ -808,15 +826,17 @@ This prevents future HTF information from leaking backward into historical LTF a
 
 ## C3. HTF context snapshot reference
 
-When HTF context is consumed by an LTF structural decision, the LTF result must retain sufficient provenance to identify the exact HTF context used.
+When HTF context is consumed by an LTF structural decision, the LTF result must retain sufficient provenance to identify the exact point-in-time HTF context used.
 
-At minimum, where applicable:
+The provenance must include, at minimum:
 
-- `htf_context_structure_id`
-- `htf_context_structure_hash`
-- `htf_context_formation_time`
+- the HTF timeframe;
+- `htf_context_formation_time`;
+- a deterministic structural content fingerprint such as `htf_context_structure_hash`, when such a fingerprint is emitted.
 
-This creates deterministic HTF-to-LTF provenance.
+An implementation-level `structure_id` may be retained as an additional reference, but it is not a canonical history identity and is not required to create a separate structural-object identity system.
+
+The HTF context provenance exists to identify the historical context consumed by the LTF decision; it must remain independent of CLOSED DEALING RANGE retention identity.
 
 ---
 
