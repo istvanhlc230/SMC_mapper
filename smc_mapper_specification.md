@@ -213,13 +213,13 @@ If a canonical decision depends on unavailable HTF context, the decision must re
 
 ## A11. Closed Dealing Range history and `history_no`
 
-`history_no` specifies the maximum number of **CLOSED DEALING RANGES** retained per timeframe.
+`history_no` specifies the maximum total number of **CLOSED DEALING RANGES** retained in the symbol JSON across all analyzed timeframes.
 
 The history unit is the canonical closed Dealing Range, not a mapper-run snapshot and not a generic structural-state snapshot.
 
 Only a Dealing Range that has been canonically closed may enter history. The currently open Dealing Range is never a history item.
 
-Retention is newest-first storage with **oldest-first (FIFO) eviction** when capacity is exceeded.
+Retention is newest-first storage with **oldest-first (FIFO) eviction** when the collective symbol-level capacity is exceeded.
 
 Example with `history_no = 3`:
 
@@ -256,22 +256,22 @@ This is the history identity. `structure_hash` is not a closed-range identity an
 
 A closed range's identity is immutable once canonically closed. For an existing retained range with the same identity, reconciliation updates that range in place rather than creating a duplicate. A newly closed range with a new identity is inserted. If a previously evicted range is reconstructed and is again within the retained window, it may be reinserted using its canonical identity.
 
-After insertion or update, the mapper applies `history_no` retention for that timeframe.
+After insertion or update, the mapper applies the collective symbol-level `history_no` retention across the retained closed-range history.
 
 ### `history_no` persistence rules
 
-`history_no` is stored **per timeframe**, because retention is independently bounded for each timeframe.
+`history_no` is **one collective value per symbol JSON file**, not a separate value per timeframe. It defines the maximum total number of recent CLOSED DEALING RANGES retained across all analyzed timeframes in that symbol file.
 
-- **New symbol JSON** + no `--history_no` -> initialize `history_no = 5000` for each analyzed timeframe and persist it.
-- **New symbol JSON** + `--history_no=N` -> initialize `history_no = N` for each analyzed timeframe and persist it.
-- **Existing symbol JSON** + no `--history_no` -> preserve the stored `history_no` for each analyzed timeframe.
-- **Existing symbol JSON** + `--history_no=N` -> `--history_no` has **no effect**. Preserve the stored `history_no` for each analyzed timeframe; do not update or replace it from the CLI.
-- If an existing analyzed timeframe has no stored `history_no` value, initialize and persist `history_no = 5000`. A CLI `--history_no=N` still has no effect for that existing file.
+- **New symbol JSON** + no `--history_no` -> initialize and persist `history_no = 5000`.
+- **New symbol JSON** + `--history_no=N` -> initialize and persist `history_no = N`.
+- **Existing symbol JSON** + no `--history_no` -> preserve the stored collective `history_no`.
+- **Existing symbol JSON** + `--history_no=N` -> `--history_no` has **no effect**. Preserve the stored collective `history_no`; do not update or replace it from the CLI.
+- If an existing symbol JSON has no stored `history_no` value, initialize and persist `history_no = 5000`. A CLI `--history_no=N` still has no effect for that existing file.
 - `N` must be an integer >= 1 when the CLI value is supplied.
 
 Changing `history_no` changes retention capacity only. It does not change canonical SMC semantics.
 
-`--history_no` is therefore a **creation-time setting only**. Once the symbol JSON exists, the stored per-timeframe `history_no` is authoritative and the CLI parameter must not alter it.
+`--history_no` is therefore a **creation-time setting only**. Once the symbol JSON exists, the stored collective `history_no` is authoritative and the CLI parameter must not alter it.
 
 ---
 
@@ -298,8 +298,9 @@ The mapper must reconcile canonical closed ranges deterministically:
 1. same `timeframe + start_time + close_time` -> update existing retained range;
 2. new identity -> insert new range;
 3. duplicate identity -> never create a second history entry;
-4. apply `history_no` after reconciliation;
-5. if capacity is exceeded, evict the oldest retained closed range.
+4. reconcile across the symbol's retained closed-range history;
+5. apply the collective symbol-level `history_no` after reconciliation;
+6. if collective capacity is exceeded, evict the oldest retained closed range.
 
 A range falling outside the retention window is not a canonical removal event.
 
