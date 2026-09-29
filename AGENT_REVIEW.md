@@ -1739,3 +1739,18 @@ Updated `smc_mapper_specification.md` so that `--history_no` is a **creation-tim
 Confirmed the specification contains no remaining rule granting `--history_no` override behavior for an existing JSON file.
 
 Specification commit: `014ab5de4e407aa96294bd4ad8ab6fcca4cc2de1`.
+
+
+# HISTORY_NO COLLECTIVE SYMBOL-LEVEL RULE (COMPLETED)
+
+## Final contract
+- `history_no` is one collective value per symbol JSON file.
+- It is the maximum total number of retained CLOSED DEALING RANGES across all analyzed timeframes in that file.
+- New file without `--history_no` -> `5000`.
+- New file with `--history_no=N` -> `N`.
+- Existing file: `--history_no` has no effect; stored collective value remains authoritative.
+- Retention ordering is global across the symbol's closed ranges, newest-first by canonical `close_time`.
+- Equal `close_time` uses a deterministic secondary ordering from the range identity.
+- Capacity overflow evicts the oldest retained closed range only; eviction is storage retention, not canonical invalidation.
+
+Specification commit: `49f4e117aa9afcddb49d4f77c9ae8c6909535b95`.
