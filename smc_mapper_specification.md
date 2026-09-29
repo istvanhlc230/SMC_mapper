@@ -211,50 +211,32 @@ If a canonical decision depends on unavailable HTF context, the decision must re
 
 ---
 
-## A11. history_no
+## A11. Closed Dealing Range history and `history_no`
 
-`history_no` specifies the maximum number of most recent **structurally distinct state snapshots** retained per timeframe.
+`history_no` specifies the maximum number of **CLOSED DEALING RANGES** retained per timeframe.
 
-History is rotating:
+The history unit is the canonical closed Dealing Range, not a mapper-run snapshot and not a generic structural-state snapshot.
 
-- newest snapshot is inserted at index `0`;
-- existing snapshots shift toward higher indexes;
-- when capacity N is exceeded, the oldest snapshot is removed.
+Only a Dealing Range that has been canonically closed may enter history. The currently open Dealing Range is never a history item.
 
-The retention model is therefore **first-in, last-out** for the retained snapshot window.
+Retention is newest-first storage with **oldest-first (FIFO) eviction** when capacity is exceeded.
 
 Example with `history_no = 3`:
 
 ```
-S1        -> [S1]
+R1 -> [R1]
 
-S2        -> [S2, S1]
+R2 -> [R2, R1]
 
-S3        -> [S3, S2, S1]
+R3 -> [R3, R2, R1]
 
-S4        -> [S4, S3, S2]
-                         S1 removed
+R4 -> [R4, R3, R2]
+               R1 evicted
 ```
 
-A repeated mapper execution that produces no structural change must not create a duplicate snapshot.
+Eviction is a storage-retention operation only. A range evicted because of `history_no` remains canonical historical structure; it is not invalidated, deleted semantically, or marked stale.
 
----
-
-## A12. Structural snapshot identity
-
-Each stored structural snapshot should contain:
-
-- `structure_id`
-- `structure_hash`
-- `formation_time`
-
-`formation_time` identifies when the complete structural state was formed.
-
-`structure_hash` is a deterministic fingerprint of the relevant complete structural state and is used for structural change detection.
-
-The history index is positional only and is not the permanent identity of the snapshot.
-
-The exact `structure_id` generation rule remains to be finalized.
+A repeated mapper execution must not create a duplicate closed range when the same range identity is already retained.
 
 ---
 
@@ -294,7 +276,7 @@ It may contain canonical structural state, provenance and structural history, in
 - BOS;
 - CHoCH;
 - canonical L6 structural / POI results;
-- structural history;
+- retained closed Dealing Range history;
 - structure identity/change metadata.
 
 The mapper must not persist dynamic monitoring or trade state such as:
@@ -884,11 +866,21 @@ The mapper must not perform a complete future-aware HTF analysis and then apply 
 
 ---
 
-## C11. HTF context and structural history
+## C11. HTF context provenance and retained history
 
-Stored LTF structural snapshots that depend on HTF context must retain the identity of the HTF structural snapshot used for that decision.
+Every historical LTF structural decision that consumes HTF context must retain sufficient provenance to identify the exact point-in-time HTF structural context used for that decision.
 
-If `history_no` rotates out an old HTF snapshot from the current JSON history, the LTF historical record must remain self-consistent through its stored provenance metadata. The mapper must not rewrite historical LTF decisions merely because the referenced HTF snapshot is no longer retained in the rotating current-history window.
+The HTF context provenance is independent of closed Dealing Range history retention.
+
+If the referenced HTF structural context or its containing closed Dealing Range later falls outside the retained `history_no` window, the LTF historical decision must remain self-consistent through its stored provenance metadata. Retention eviction must never cause the mapper to rewrite, reinterpret, or retroactively re-evaluate that LTF decision.
+
+The closed-range history identity:
+
+```
+timeframe + start_time + close_time
+```
+
+must not be substituted for the point-in-time HTF context provenance required by C2-C3.
 
 ---
 
