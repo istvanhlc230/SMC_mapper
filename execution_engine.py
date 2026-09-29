@@ -171,8 +171,7 @@ def evaluate_execution_state(
     l2_result: Any,
     l3_result: Any,
     l4_result: Any,
-    l5_result: Any,
-    previous_state: Any = None
+    l5_result: Any
 ) -> ExecutionAnalysis:
     order_flows = []
     order_blocks = []
@@ -273,21 +272,16 @@ def evaluate_execution_state(
             source_candle_ids = tuple([pb.start_candle_id for pb in group] + [getattr(getattr(pb, 'extreme', None), 'source_candle_id', None) for pb in group if getattr(getattr(pb, 'extreme', None), 'source_candle_id', None)])
             
             is_smt = False
-            if not idm_taken:
-                is_smt = True
+            idm_obj = l3_result.active_idm if hasattr(l3_result, 'active_idm') else None
+            if idm_obj and idm_obj.takeout_candle_id:
+                takeout_idx = next((i for i, cn in enumerate(candles_list) if cn.candle_id == idm_obj.takeout_candle_id), -1)
+                last_pb = group[-1]
+                end_c_id = getattr(getattr(last_pb, 'extreme', None), 'source_candle_id', None) or last_pb.reference_candle_id
+                end_idx = next((i for i, cn in enumerate(candles_list) if cn.candle_id == end_c_id), -1)
+                if takeout_idx == -1 or end_idx == -1 or end_idx < takeout_idx:
+                    is_smt = True
             else:
-                idm_obj = l3_result.active_idm if hasattr(l3_result, 'active_idm') else None
-                if idm_obj:
-                    idm_price = getattr(idm_obj, 'reference_price', None)
-                    if idm_price is not None:
-                        # Pre-IDM check
-                        # If IDM is taken, pullbacks whose chronology precedes IDM are SMT.
-                        # Since we grouped, we check the reference_candle_id of the first pb in group.
-                        # Actually, price bounds check:
-                        if direction == PullbackDirection.BULLISH and bottom >= idm_price:
-                            is_smt = True
-                        elif direction == PullbackDirection.BEARISH and top <= idm_price:
-                            is_smt = True
+                is_smt = True
                     
             obj_type = ExecutionObjectType.SMT_INDUCEMENT_TRAP if is_smt else ExecutionObjectType.OF_CONFIRMED
             
@@ -328,17 +322,26 @@ def evaluate_execution_state(
             # Start from break_idx, go backwards.
             if break_idx != -1:
                 for of_cand in reversed(valid_ofs):
-                    # Check if displacement from this OF's completion leads continuously to the break
                     of_end_ids = [c_id for c_id in of_cand.source_candle_ids if c_id]
                     if not of_end_ids: continue
-                    of_end_idx = max(next((i for i, c in enumerate(candles_list) if c.candle_id == c_id), -1) for c_id in of_end_ids)
+                    of_end_idx = max(next((i for i, cn in enumerate(candles_list) if cn.candle_id == c_id), -1) for c_id in of_end_ids)
                     if of_end_idx != -1 and of_end_idx < break_idx:
-                        # Ensure no opposite structure breaks this causal chain
-                        # For simplicity in this implementation, we take the closest causal OF.
-                        dec_of_obj = replace(of_cand, object_type=ExecutionObjectType.DECISIONAL_OF)
-                        break
+                        is_causal = True
+                        for k in range(of_end_idx + 1, break_idx + 1):
+                            if of_cand.direction == PullbackDirection.BULLISH:
+                                if candles_list[k].low < of_cand.bottom:
+                                    is_causal = False
+                                    break
+                            else:
+                                if candles_list[k].high > of_cand.top:
+                                    is_causal = False
+                                    break
+                        if is_causal:
+                            dec_of_obj = replace(of_cand, object_type=ExecutionObjectType.DECISIONAL_OF)
+                            break
 
-        order_flows = [ext_of_obj if x.origin_pullback_id == ext_of_obj.origin_pullback_id else x for x in order_flows]
+        if ext_of_obj:
+            order_flows = [ext_of_obj if x.origin_pullback_id == ext_of_obj.origin_pullback_id else x for x in order_flows]
         if dec_of_obj:
             order_flows = [dec_of_obj if x.origin_pullback_id == dec_of_obj.origin_pullback_id else x for x in order_flows]
 

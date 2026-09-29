@@ -14,8 +14,9 @@ def c(id_: str, open_: str, high_: str, low_: str, close_: str) -> Candle:
     return Candle(id_, Decimal(open_), Decimal(high_), Decimal(low_), Decimal(close_))
 
 class DummyL3:
-    def __init__(self, idm_taken=False, range_high=None, range_low=None, num_swings=1, idm_price=Decimal("15.0"), range_id="range_0"):
-        self.active_idm = type("IDM", (), {"takeout_candle_id": "c_take" if idm_taken else None, "reference_price": idm_price, "source_candle_id": "c_idm"})()
+    def __init__(self, idm_taken=False, range_high=None, range_low=None, num_swings=1, idm_price=Decimal("15.0"), range_id="range_0", takeout_candle_id=None):
+        _takeout = takeout_candle_id if takeout_candle_id else ("c_take" if idm_taken else None)
+        self.active_idm = type("IDM", (), {"takeout_candle_id": _takeout, "reference_price": idm_price, "source_candle_id": "c_idm"})()
         self.active_dealing_range = type("Range", (), {"range_id": range_id})()
         if range_high and range_low:
             self.confirmed_swings = [type("Swing", (), {"high": Decimal(range_high), "low": Decimal(range_low), "source_candle_id": f"sc_{i}"})() for i in range(num_swings)]
@@ -87,7 +88,7 @@ def test_decisional_of_wrong_lineage():
         c("c5", "12", "13", "11.5", "12.5"), c("c6", "13", "15", "12.5", "14"), # c6 is break_candle_id
         c("c7", "11.1", "12", "11.1", "11.5"), c("c8", "11.2", "12", "11.1", "11.5")
     )
-    res_valid = evaluate_execution_state(candles, l2_result, DummyL3(True, "15", "5"), DummyL4(True, True, "c6"), None)
+    res_valid = evaluate_execution_state(candles, l2_result, DummyL3(True, "15", "5", takeout_candle_id="c1"), DummyL4(True, True, "c6"), None)
     dec_of = next((o for o in res_valid.order_flows if o.object_type == ExecutionObjectType.DECISIONAL_OF), None)
     assert dec_of is not None
     assert dec_of.origin_pullback_id == "c1" # PB1 is selected because PB2 is after the BOS!
@@ -100,7 +101,7 @@ def test_extreme_of_alone_no_pillar1():
         c("c1", "10", "11", "10", "10.5"), c("c2", "10", "12", "9", "11"), 
         c("c3", "11", "12", "10", "11.5"), c("c4", "12.5", "14", "12.5", "13")
     )
-    res = evaluate_execution_state(candles, l2_result, DummyL3(True), DummyL4(False, False), None)
+    res = evaluate_execution_state(candles, l2_result, DummyL3(True, takeout_candle_id="c1"), DummyL4(False, False), None)
     # Even though sweep and FVG exist, L4 valid_bos is FALSE, so Pillar 1 fails!
     assert len(res.order_blocks) == 0
 
@@ -113,7 +114,7 @@ def test_valid_ob_wrong_lineage_no_pillar1():
         c("c3", "11", "12", "10", "11.5"), c("c4", "12.5", "14", "12.5", "13")
     )
     # L4 valid_bos is True, break is c1! So c2 didn't cause it!
-    res = evaluate_execution_state(candles, l2_result, DummyL3(True), DummyL4(True, True, "c1"), None)
+    res = evaluate_execution_state(candles, l2_result, DummyL3(True, takeout_candle_id="c1"), DummyL4(True, True, "c1"), None)
     assert len(res.order_blocks) == 0
 
 # 8. No failed Extreme OB -> no ORIGIN_OB.
@@ -125,7 +126,7 @@ def test_no_failed_extreme_ob_no_origin_ob():
         c("c3", "11", "12", "10", "11.5"), c("c4", "12.5", "14", "12.5", "13")
     )
     # Extreme OF is NOT mitigated, so Origin OB shouldn't activate.
-    res = evaluate_execution_state(candles, l2_result, DummyL3(True), DummyL4(True, True, "c4"), None)
+    res = evaluate_execution_state(candles, l2_result, DummyL3(True, takeout_candle_id="c1"), DummyL4(True, True, "c4"), None)
     assert res.active_pois.origin_ob_latent is None
 
 # 9. CHoCH alone -> no RB.
@@ -133,7 +134,7 @@ def test_choch_alone_no_rb():
     # If no EXTREME_OB exists or failed, CHoCH does not create an RB.
     l2_result = type("L2Result", (), {"pullbacks": []})()
     candles = (c("c1", "10", "11", "10", "10.5"),)
-    res = evaluate_execution_state(candles, l2_result, DummyL3(True), DummyL4(False, False), DummyL5(True))
+    res = evaluate_execution_state(candles, l2_result, DummyL3(True, takeout_candle_id="c1"), DummyL4(False, False), DummyL5(True))
     assert res.active_pois.rejection_block is None
 
 # 10. Wrong-lineage pullback -> no ENG_LQD.
@@ -172,7 +173,7 @@ def test_real_failure_origin_ob_and_rb():
         c("c5", "14", "15", "13.5", "14.5"), c("c6", "10", "10.5", "8.0", "9"), # PB2 forms and fails c2!
         c("c7", "12", "14", "12", "13") # BOS candle
     )
-    res = evaluate_execution_state(candles, l2_result, DummyL3(True), DummyL4(True, True, "c7"), DummyL5(False))
+    res = evaluate_execution_state(candles, l2_result, DummyL3(True, takeout_candle_id="c1"), DummyL4(True, True, "c7"), DummyL5(False))
     assert res.active_pois.origin_ob_latent is not None
     assert res.active_pois.origin_ob_latent.object_type == ExecutionObjectType.ORIGIN_OB
     assert res.active_pois.rejection_block is not None
