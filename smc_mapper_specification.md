@@ -240,6 +240,63 @@ A repeated mapper execution must not create a duplicate closed range when the sa
 
 ---
 
+## A12. Closed Dealing Range identity and retention configuration
+
+A stored CLOSED DEALING RANGE is identified by the tuple:
+
+```
+timeframe + start_time + close_time
+```
+
+This is the history identity. `structure_hash` is not a closed-range identity and must not be used to distinguish repeated representations of the same closed range.
+
+`formation_time`, where present on structural objects or state within the range, identifies when that structural object/state formed. It is semantically distinct from the Dealing Range `close_time`.
+
+For an existing retained range with the same identity, reconciliation updates that range in place rather than creating a duplicate. A newly closed range with a new identity is inserted.
+
+After insertion or update, the mapper applies `history_no` retention for that timeframe.
+
+### `history_no` persistence rules
+
+- New symbol JSON + no `--history_no` -> create with `history_no = 5000`.
+- New symbol JSON + `--history_no=N` -> create with `history_no = N`.
+- Existing symbol JSON + no `--history_no` -> preserve the stored `history_no`.
+- Existing symbol JSON + `--history_no=N` -> update and persist `history_no = N`.
+- `N` must be an integer >= 1.
+
+Changing `history_no` changes retention capacity only. It does not change canonical SMC semantics.
+
+---
+
+## A12a. Closed Dealing Range history contract
+
+Each retained history element represents one closed Dealing Range and may contain the canonical structural state and objects that belong to that range, including where applicable:
+
+- structural direction/lifecycle state;
+- structural swings;
+- protected structural extremes;
+- IDM provenance;
+- retracement qualification;
+- BOS;
+- CHoCH;
+- canonical Layer-6 POIs;
+- volume metadata associated with those canonical structural points/POIs.
+
+The history record must preserve the canonical formation/provenance times of its contained objects.
+
+History is not an append-only mapper execution log. It is a retained representation of canonically closed Dealing Ranges.
+
+The mapper must reconcile canonical closed ranges deterministically:
+
+1. same `timeframe + start_time + close_time` -> update existing retained range;
+2. new identity -> insert new range;
+3. duplicate identity -> never create a second history entry;
+4. apply `history_no` after reconciliation;
+5. if capacity is exceeded, evict the oldest retained closed range.
+
+A range falling outside the retention window is not a canonical removal event.
+---
+
 ## A13. JSON storage
 
 Use **one JSON file per symbol**.
