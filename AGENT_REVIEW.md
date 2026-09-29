@@ -1754,3 +1754,31 @@ Specification commit: `014ab5de4e407aa96294bd4ad8ab6fcca4cc2de1`.
 - Capacity overflow evicts the oldest retained closed range only; eviction is storage retention, not canonical invalidation.
 
 Specification commit: `49f4e117aa9afcddb49d4f77c9ae8c6909535b95`.
+
+
+# HTF-ONLY HISTORY / LTF CONTEXT CONSOLIDATION (COMPLETED)
+
+## Final model
+- `history_no` is one collective value stored once per symbol JSON.
+- In two-timeframe analysis, `history_no` applies only to the retained HTF CLOSED DEALING RANGE history.
+- LTF has no separate history quota and no separate `history_no`.
+- An HTF Dealing Range may contain any number of context-scoped LTF structural/entry-analysis records.
+- LTF records stored under an HTF range do not create a canonical parent/child ontology; LTF semantic ownership remains with canonical LTF rules.
+- A JSON-level example was added showing `history_no` once at symbol level and `ltf_structures` within HTF ranges.
+- First `VALID_BOS` genesis wording was clarified: the first `VALID_BOS` establishes the first confirmed Dealing Range; only later `VALID_BOS` events close a pre-existing governing range before establishing the next one.
+- The obsolete snapshot-history model remains absent.
+
+## Existing-file CLI rule
+`--history_no` remains creation-time only:
+- new file: CLI value may set initial `history_no`;
+- existing file: CLI `--history_no` has no effect.
+
+## Verification
+Specification commit: `cd373e8330b69023ef85533bcdda7b27a693ff77`.
+Re-audit confirmed:
+- no legacy snapshot/LIFO history model;
+- one symbol-level `history_no`;
+- HTF-only retention in two-timeframe mode;
+- unrestricted LTF structure count within HTF range context;
+- no general HTF-parent/LTF-child semantic ontology;
+- JSON structure explicitly represents the intended storage scope.
