@@ -219,7 +219,7 @@ The history unit is the canonical closed Dealing Range, not a mapper-run snapsho
 
 Only a Dealing Range that has been canonically closed may enter history. The currently open Dealing Range is never a history item.
 
-Retention is newest-first storage with **oldest-first (FIFO) eviction** when the collective symbol-level capacity is exceeded.
+Retention is ordered globally across the symbol's retained CLOSED DEALING RANGES, newest-first by canonical `close_time`. When two ranges have the same `close_time`, ordering must use a deterministic secondary key based on the range identity (`timeframe + start_time + close_time`). Capacity overflow uses **oldest-first (FIFO) eviction** from this global ordering.
 
 Example with `history_no = 3`:
 
@@ -256,7 +256,7 @@ This is the history identity. `structure_hash` is not a closed-range identity an
 
 A closed range's identity is immutable once canonically closed. For an existing retained range with the same identity, reconciliation updates that range in place rather than creating a duplicate. A newly closed range with a new identity is inserted. If a previously evicted range is reconstructed and is again within the retained window, it may be reinserted using its canonical identity.
 
-After insertion or update, the mapper applies the collective symbol-level `history_no` retention across the retained closed-range history.
+After insertion or update, the mapper applies the collective symbol-level `history_no` retention across the retained closed-range history, using the global deterministic ordering defined above.
 
 ### `history_no` persistence rules
 
