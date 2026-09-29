@@ -471,17 +471,21 @@ For incremental execution after a valid persisted checkpoint, the persisted curr
 
 ### A17.1 Two-timeframe LTF bootstrap
 
-In two-timeframe analysis, the LTF canonical series starts from the **earliest actually available completed LTF candle** within the applicable requested/effective data range.
+In two-timeframe analysis, the mapper establishes an LTF bootstrap coverage reference from the applicable HTF canonical structural context.
 
-The mapper must use all available LTF history from that point forward so that the LTF canonical engine receives the maximum available historical context for deterministic bootstrap.
+When a confirmed HTF Dealing Range exists, the applicable HTF **Protected Structural Extreme** is the preferred LTF bootstrap coverage reference. This reference determines where the mapper should seek sufficient LTF history for deterministic structural buildup. It is a data-coverage/reference point only; it is not an LTF structural start and does not create or promote any LTF structure.
 
-The LTF start is therefore determined by LTF data availability and the requested/effective analysis window. It is not derived from an HTF structural point, Protected Structural Extreme, IDM, POI, or other HTF event.
+If completed LTF candle data is available from the reference onward, the mapper builds the LTF structure from that reference, subject to any additional LTF warm-up candles required by the canonical LTF rules.
 
-HTF and LTF may have different available history starts. The HTF is processed from its own earliest available completed HTF candle, while the LTF is processed from its own earliest available completed LTF candle.
+If no completed LTF candle data is available from the reference onward because the LTF provider history begins later, the mapper uses the **first actually available completed LTF candle after the reference** as the effective LTF bootstrap start and builds the LTF structure chronologically from that candle through the latest completed driving-timeframe candle.
 
-If the earliest available LTF candle does not provide enough historical context for a canonical LTF rule to become deterministically resolvable, the mapper must preserve that unresolved/data-insufficient condition and must not fabricate missing LTF history or synthetic structural objects.
+If the LTF provider has data beginning before the HTF reference, that earlier data may be retained and used as additional canonical LTF warm-up when required; the HTF Protected Structural Extreme remains the context/coverage reference.
 
-There is no separate LTF structural-start ontology. The earliest available LTF candle is a data-processing boundary only; the first LTF structural object is determined by the canonical LTF rules and may occur later.
+If the applicable confirmed HTF Protected Structural Extreme does not exist, the mapper does not fabricate one. The LTF bootstrap then follows the available LTF history subject to the canonical genesis/source-gap boundaries.
+
+The LTF bootstrap reference is not an LTF structural-start ontology. The first LTF structural object is determined only by the canonical LTF rules.
+
+The requested/effective analysis-window rules in A7-A8 and the independent timeframe data-availability rules in A9 continue to apply. No missing LTF candles are fabricated.
 ## A18. Monitor boundary and mapper checkpoint
 
 The monitor consumes mapper JSON and owns dynamic monitoring functions, including:
