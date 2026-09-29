@@ -1719,3 +1719,23 @@ Updated `smc_mapper_specification.md` to replace the obsolete rotating structura
 The initial history-model commit was followed by a verification pass that caught an omission in the replacement operation: the A12 closed-range identity/retention contract had not been inserted. A12 and A12a have now been explicitly restored in the specification.
 
 Final specification commit: `d9cabdce6d26811a751c93fb365b0681aa587901`.
+
+
+# HISTORY_NO CREATION-TIME RULE (COMPLETED)
+
+## Specification correction
+Updated `smc_mapper_specification.md` so that `--history_no` is a **creation-time setting only**.
+
+### Final behavior
+- New symbol JSON + no `--history_no` -> `history_no = 5000`.
+- New symbol JSON + `--history_no=N` -> `history_no = N`.
+- Existing symbol JSON + no `--history_no` -> preserve stored per-timeframe value.
+- Existing symbol JSON + `--history_no=N` -> CLI value is ignored; stored value remains authoritative.
+- Existing timeframe with missing stored value -> initialize to `5000`; CLI still has no effect.
+- `N >= 1` when supplied.
+- `history_no` remains storage retention policy only and does not alter canonical SMC semantics.
+
+## Verification
+Confirmed the specification contains no remaining rule granting `--history_no` override behavior for an existing JSON file.
+
+Specification commit: `014ab5de4e407aa96294bd4ad8ab6fcca4cc2de1`.
