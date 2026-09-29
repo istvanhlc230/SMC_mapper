@@ -262,16 +262,16 @@ After insertion or update, the mapper applies `history_no` retention for that ti
 
 `history_no` is stored **per timeframe**, because retention is independently bounded for each timeframe.
 
-- New symbol JSON + no `--history_no` -> initialize `history_no = 5000` for each analyzed timeframe and persist it.
-- New symbol JSON + `--history_no=N` -> initialize `history_no = N` for each analyzed timeframe and persist it.
-- Existing symbol JSON + no `--history_no` -> preserve the stored `history_no` for each analyzed timeframe.
-- Existing symbol JSON + `--history_no=N` -> update and persist `history_no = N` for each analyzed timeframe affected by that mapper execution. Timeframes not analyzed by that execution retain their stored value.
-- If an existing analyzed timeframe has no stored `history_no` value, initialize and persist `history_no = 5000` unless the CLI explicitly supplies `--history_no=N`.
-- `N` must be an integer >= 1.
+- **New symbol JSON** + no `--history_no` -> initialize `history_no = 5000` for each analyzed timeframe and persist it.
+- **New symbol JSON** + `--history_no=N` -> initialize `history_no = N` for each analyzed timeframe and persist it.
+- **Existing symbol JSON** + no `--history_no` -> preserve the stored `history_no` for each analyzed timeframe.
+- **Existing symbol JSON** + `--history_no=N` -> `--history_no` has **no effect**. Preserve the stored `history_no` for each analyzed timeframe; do not update or replace it from the CLI.
+- If an existing analyzed timeframe has no stored `history_no` value, initialize and persist `history_no = 5000`. A CLI `--history_no=N` still has no effect for that existing file.
+- `N` must be an integer >= 1 when the CLI value is supplied.
 
 Changing `history_no` changes retention capacity only. It does not change canonical SMC semantics.
 
-The CLI `--history_no=N` is one execution-level override; when an execution analyzes both HTF and LTF timeframes, that override applies to both analyzed timeframes.
+`--history_no` is therefore a **creation-time setting only**. Once the symbol JSON exists, the stored per-timeframe `history_no` is authoritative and the CLI parameter must not alter it.
 
 ---
 
