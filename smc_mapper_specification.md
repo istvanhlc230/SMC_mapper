@@ -446,6 +446,18 @@ Each normalized candle must contain at minimum:
 - `low`
 - `close`
 
+When volume processing is enabled and the source provides volume, the normalized candle may additionally contain:
+
+- `volume`
+- `buy_volume`
+- `sell_volume`
+- `delta`
+- `volume_method`
+
+where `volume_method` is one of `NONE`, `OHLC`, or `ORDERFLOW`.
+
+For `NONE`, the volume/delta analytics path is skipped and the optional side-volume fields are not calculated.
+
 The normalized representation is immutable after creation.
 
 ---
@@ -903,16 +915,29 @@ For a multi-leg canonical OF, the complete canonical opposing move must be repre
 
 Historical POI outcome performance must not be used.
 
-## D3. Buy / sell volume source hierarchy
+## D3. Volume method
 
-Use the strongest available volume-side information:
+The volume method is selected by the CLI:
 
-1. ORDERFLOW — genuine orderflow volume/delta supplied by the provider.
-2. OHLC — directional volume estimated from OHLC data, using lower-timeframe data when available.
-3. OHLC — directional volume estimated from aggregate candle OHLCV.
-4. NONE — no usable volume-side calculation exists. In this state, the volume/delta analytics path is skipped entirely; no volume, delta, or POI likelihood calculation is performed.
+```
+--volume-method {NONE,OHLC,ORDERFLOW}
+```
 
-An estimated buy/sell split must never be represented as observed bid/ask aggressor volume.
+Default:
+
+```
+OHLC
+```
+
+The three methods are:
+
+1. `NONE` — skip volume/delta analytics entirely. No buy/sell split, delta, or POI likelihood is calculated.
+2. `OHLC` — calculate directional buy/sell volume and delta from available OHLC/volume data. When suitable lower-timeframe data is available, it may be used to improve the directional estimate.
+3. `ORDERFLOW` — obtain buy/sell volume and delta from an external orderflow-capable data source through the Candle Data Interface.
+
+The external provider is implementation-defined and is not selected by the canonical SMC layer.
+
+An estimated buy/sell split must never be represented as observed orderflow data.
 
 ## D4. Aggregate-OHLC calculation
 
@@ -943,9 +968,9 @@ delta_ratio = 0
 
 This is a directional volume estimate, not proof of historical bid/ask execution.
 
-## D5. Intrabar calculation
+## D5. OHLC lower-timeframe refinement
 
-When lower-timeframe data is available, directional volume should be calculated from the contained completed intrabars instead of directly splitting the parent candle.
+When `--volume-method OHLC` is selected and suitable lower-timeframe data is available, directional volume should be calculated from the contained completed intrabars instead of directly splitting the parent candle.
 
 For each intrabar:
 
@@ -957,7 +982,7 @@ Close = Open → neutral; do not force a side
 
 Parent-bar buy volume, sell volume and delta are the sums of the classified intrabar volumes.
 
-OHLC-derived directional volume remains marked as `OHLC`; genuine orderflow data is marked as `ORDERFLOW`.
+OHLC-derived directional volume is marked as `OHLC`; genuine orderflow data is marked as `ORDERFLOW`.
 
 ## D6. POI JSON representation
 
