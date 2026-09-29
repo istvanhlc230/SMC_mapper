@@ -1977,3 +1977,88 @@ Specification commits:
 
 Final specification blob SHA:
 `8ca1ccbefe566f469705714e7e40ac18b1fa4d4e`
+
+
+# LTF BOOTSTRAP AVAILABILITY FALLBACK AUDIT (COMPLETED)
+
+## 1. Specification change
+
+Updated `smc_mapper_specification.md` `A17.1` to define the LTF bootstrap coverage reference and its data-availability fallback.
+
+Approved behavior:
+
+- With a confirmed HTF Dealing Range, the applicable HTF Protected Structural Extreme is the preferred LTF bootstrap coverage reference.
+- The reference is a data-coverage/context point only; it is not an LTF structural start.
+- If completed LTF data exists from the reference onward, LTF structure is built from that reference, subject to canonical LTF warm-up needs.
+- If LTF history begins later and no completed LTF data exists from the reference onward, the first actually available completed LTF candle after the reference becomes the effective LTF bootstrap start.
+- LTF processing continues chronologically through the latest completed driving-timeframe candle.
+- If LTF data exists before the HTF reference, earlier LTF history may be retained as additional warm-up.
+- If no applicable confirmed HTF Protected Structural Extreme exists, no synthetic anchor is created; LTF bootstrap follows available LTF history and the canonical genesis/source-gap boundaries.
+- Requested/effective analysis-window rules and independent timeframe availability rules remain authoritative.
+- Missing LTF candles are never fabricated.
+
+## 2. Full re-audit
+
+Re-audited the complete current `smc_mapper_specification.md` across A-D and cross-checked the relevant canonical sources:
+
+- `.agents/skills/smc/01_micro_structure.md`
+- `.agents/skills/smc/02_minor_structure.md`
+- `.agents/skills/smc/03_structural_semantic_authority.md`
+- `.agents/skills/smc/05_CHOCH_mechanics.md`
+- `.agents/skills/smc/06_execution.md`
+- `.agents/skills/smc/07_risk.md`
+- `.agents/skills/smc/08_implementation.md`
+
+## 3. Verification results
+
+### PASS — HTF/LTF synchronization
+
+HTF and LTF remain separate canonical analyses. The mapper synchronizes them chronologically without creating an HTF-parent/LTF-child semantic ontology.
+
+### PASS — LTF bootstrap
+
+The Protected Structural Extreme is used only as a bootstrap/data-coverage reference. The effective LTF start falls back to the first actually available completed LTF candle when provider history begins after the reference.
+
+### PASS — Independent history availability
+
+HTF and LTF may have different available history starts. HTF history is not truncated to the LTF start, and LTF history is not fabricated to reach the HTF reference.
+
+### PASS — Checkpoint/restart
+
+`last_processed_candle_time` remains root-level mapper processing metadata. Missed mapper invocations are recovered chronologically from the checkpoint.
+
+### PASS — Closed-candle semantics
+
+Only completed candles enter canonical analysis. Explicit end-time handling uses the canonical completion boundary.
+
+### PASS — History model
+
+`history_no` remains a single symbol-level retention value. In two-timeframe mode it limits only retained HTF closed Dealing Ranges. LTF structure count remains unrestricted.
+
+### PASS — Context storage
+
+LTF structures remain context-scoped under the applicable HTF Dealing Range without semantic ownership transfer or duplicate storage.
+
+### PASS — Canonical ownership
+
+No canonical SMC rule was added to `.agents/skills/smc/`. The new fallback is mapper data-coverage/orchestration behavior only.
+
+### PASS — No legacy model
+
+The current mapper specification contains no rotating snapshot history, LIFO retention, separate LTF history quota, separate LTF structural-start ontology, or duplicated nested timeframe schema.
+
+## 4. Remaining boundary
+
+The first-BOS retracement baseline remains the pre-existing documented canonical/source gap. The LTF bootstrap fallback does not attempt to solve or bypass that gap.
+
+## 5. Final status
+
+**PASS — LTF AVAILABILITY FALLBACK FULLY INTEGRATED AND RE-AUDITED**
+
+Specification commit:
+`38b2fefb0f7125184d343a39da685fe7afa47708`
+
+Final specification blob SHA:
+`76c3dd3a255df8e6e5daa48e34786baca0ee135b`
+
+No test-suite execution is claimed for this specification-only change.
