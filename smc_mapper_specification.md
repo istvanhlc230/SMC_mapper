@@ -351,7 +351,7 @@ It may contain canonical structural state, provenance and structural history, in
 - CHoCH;
 - canonical L6 structural / POI results;
 - retained closed Dealing Range history;
-- structure identity/change metadata.
+- structural provenance/change metadata (distinct from CLOSED DEALING RANGE history identity).
 
 The mapper must not persist dynamic monitoring or trade state such as:
 
