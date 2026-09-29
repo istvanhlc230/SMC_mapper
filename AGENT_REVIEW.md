@@ -1620,34 +1620,34 @@ The L6 engine has been entirely rewritten to drop sequence-heuristic shortcuts i
 
 **Phase 24 Final Status:** PASS
 
- #   P H A S E   2 4   -   C A N O N I C A L   L 6   R E P A I R   C Y C L E   5   ( C O M P L E T E D ) 
- 
- # #   1 .   D e e p   D e t e r m i n i s t i c   S t a t e   M a c h i n e   R e w r i t e 
- T h e   E x e c u t i o n   E n g i n e   ( ` e x e c u t i o n _ e n g i n e . p y ` )   h a s   b e e n   e n t i r e l y   r e d e s i g n e d   a s   a   p u r e ,   d e t e r m i n i s t i c   f u n c t i o n   m a p p i n g   f r o m   L 1 - L 5   s n a p s h o t s   i n t o   t h e   L 6   s e m a n t i c   s t a t e   m a c h i n e ,   s o l v i n g   t h e   s n a p s h o t - v s - h i s t o r y   o r c h e s t r a t i o n   m i s m a t c h   w i t h o u t   i n v e n t i n g   a   f a k e   s t a t e - w r a p p e r . 
- -   * * R e m o v e d   ` p r e v i o u s _ s t a t e `   p a r a m e t e r * * :   P O I   l i f e c y c l e s   a n d   s t a t e s   ( ` A C T I V E ` ,   ` M I T I G A T E D ` ,   ` F A I L E D ` ,   ` E X P I R E D _ H I S T O R I C A L ` )   a r e   n o w   d e t e r m i n i s t i c a l l y   a n d   c h r o n o l o g i c a l l y   r e c o n s t r u c t e d   o n   e v e r y   t i c k   f r o m   t h e   c a n o n i c a l   L 2   ` p u l l b a c k s `   h i s t o r y   a n d   L 3 / L 4 / L 5   e v e n t   b o u n d s .   
- 
- # #   2 .   S t r i c t   S e m a n t i c   P r o v e n a n c e   a n d   L i n e a g e 
- -   * * P r e - I D M   S M T   T r a c i n g * * :   R e s t o r e d   s t r i c t   c h r o n o l o g i c a l   b o u n d a r y   c h e c k s   f o r   O r d e r   F l o w   C a n d i d a t e s .   P u l l b a c k s   f o r m e d   n a t i v e l y   b e f o r e   t h e   e x p l i c i t   ` a c t i v e _ i d m `   a r e   p e r m a n e n t l y   i d e n t i f i e d   a s   ` S M T _ I N D U C E M E N T _ T R A P `   u s i n g   u p s t r e a m   p r o v e n a n c e   i n s t e a d   o f   s i m p l e   g e o m e t r i c   c o m p a r i s o n s   t h a t   w e r e   p o l l u t i n g   t h e   l i n e a g e . 
- -   * * G e n u i n e   L 2   M i t i g a t i o n   V a l i d a t i o n * * :   R e p l a c e d   a b s t r a c t   o v e r l a p   m a t h   w i t h   c h r o n o l o g i c a l   t r a v e r s a l   o f   t h e   ` l 2 _ r e s u l t . p u l l b a c k s `   a r r a y .   A   p u l l b a c k   i s   o n l y   m i t i g a t e d   i f   a   s u b s e q u e n t   _ v a l i d _   p u l l b a c k   ( v e r i f i e d   d y n a m i c a l l y   a g a i n s t   i t s   L 1   c a n d l e s )   b r e a c h e s   i t s   m a t h e m a t i c a l   o r i g i n   b o u n d a r i e s . 
- -   * * C a u s a l i t y   P r o v e n a n c e   T r a c e * * :   T h e   ` D E C I S I O N A L _ O F `   a n d   ` D E C I S I O N A L _ O B `   l o g i c   t r a c e s   c h r o n o l o g i c a l l y   b a c k w a r d   f r o m   ` l 4 _ r e s u l t . s t r u c t u r a l _ b r e a k . b r e a k _ c a n d l e _ i d `   i n s t e a d   o f   g e o m e t r i c a l l y   s n a p p i n g   t o   t h e   n e a r e s t   s w i n g ,   r e s t o r i n g   t h e   " i m p u l s e   c a u s a l "   r e q u i r e m e n t .   ` E X T R E M E _ O B `   P i l l a r   1   c a u s a l i t y   i s   p r o p e r l y   r e s t r i c t e d   b a s e d   o n   s t r u c t u r a l   ` v a l i d _ b o s `   p r e s e n c e . 
- -   * * E n g i n e e r i n g   L i q u i d i t y   L i n e a g e * * :   ` E n g i n e e r i n g L i q u i d i t y `   n o w   s e a r c h e s   e x a c t l y   o n e   v a l i d   p u l l b a c k   c h r o n o l o g i c a l l y   b a c k w a r d   f r o m   t h e   E x t r e m e   P O I ` s   m a t h e m a t i c a l   o r i g i n   i n s t e a d   o f   b l i n d   g e o m e t r i c   a r r a y   i n d e x i n g . 
- 
- # #   3 .   E x p l i c i t   R a n g e   P r o v e n a n c e 
- -   ` r a n g e _ i d `   p r o v e n a n c e   i s   n o w   d e r i v e d   e x c l u s i v e l y   f r o m   t h e   c a n o n i c a l   ` L 3 `   s t r u c t u r a l   c y c l e   b o u n d s   ( ` c o n f i r m e d _ s w i n g s `   a n d   i n t e r n a l   t i m e l i n e ) . 
- -   E x p i r y   m e c h a n i c s   ( ` E X P I R E D _ H I S T O R I C A L ` )   n a t i v e l y   k e y   o f f   t h e   c h r o n o l o g i c a l   ` r a n g e _ i d `   b o u n d a r i e s   o f   p r i o r   l o o p s ,   s a t i s f y i n g   t h e   " c o n s u m e   e x p l i c i t   r a n g e   p r o v e n a n c e   f r o m   t h e   c a n o n i c a l   l a y e r "   m a n d a t e . 
- 
- # #   4 .   T e s t   S u i t e   M a t u r a t i o n 
- -   D e s t r o y e d   a r b i t r a r y   s t a t e   i n j e c t i o n   a n d   m o c k   b o o l e a n s . 
- -   R e - a r c h i t e c t e d   ` t e s t s / t e s t _ e x e c u t i o n _ e n g i n e . p y `   w i t h   8   h i g h l y - s p e c i f i c   s e m a n t i c   t e s t s   s i m u l a t i n g   r e a l   c r o s s - l a y e r   i n t e r a c t i o n s   ( ` C a n d l e L e v e l V a l i d P u l l b a c k ` ,   ` V e r i f i e d P u l l b a c k E x t r e m e ` ,   e t c . ) . 
- -   P r o v e n   t e s t   c o v e r a g e   o f   S M T   f o r m a t i o n ,   r e a l   m i t i g a t i o n   f a i l u r e / s u c c e s s ,   D e c i s i o n a l   c a u s a l i t y   f a i l u r e s   ( w h e n   o f f s e t   f r o m   b r e a k ) ,   P i l l a r   1   s t r i c t n e s s   w i t h o u t   ` v a l i d _ b o s ` ,   a n d   O r i g i n   O B   /   R e j e c t i o n   B l o c k   l a t e n t   a c t i v a t i o n   v i a   c o r r e c t   c h r o n o l o g i c a l   r e s o l u t i o n . 
- 
- # #   5 .   V e r i f i c a t i o n   C h e c k s 
- -   * * T e s t   S u i t e   S t a t u s : * *   1 4 7   t e s t s   p a s s e d   n a t i v e l y   w i t h o u t   w a r n i n g s . 
- -   * * S e m a n t i c   F i d e l i t y : * *   ` . a g e n t s / s k i l l s / s m c / `   r e m a i n s   p h y s i c a l l y   u n m o d i f i e d . 
- 
- * * P h a s e   2 4   F i n a l   S t a t u s : * *   P A S S 
-  
- 
+# PHASE 24 - CANONICAL L6 REPAIR CYCLE 5 (COMPLETED)
+
+## 1. Deep Deterministic State Machine Rewrite
+The Execution Engine (`execution_engine.py`) has been entirely redesigned as a pure, deterministic function mapping from L1-L5 snapshots into the L6 semantic state machine, solving the snapshot-vs-history orchestration mismatch without inventing a fake state-wrapper.
+- **Removed `previous_state` parameter**: POI lifecycles and states (`ACTIVE`, `MITIGATED`, `FAILED`, `EXPIRED_HISTORICAL`) are now deterministically and chronologically reconstructed on every tick from the canonical L2 `pullbacks` history and L3/L4/L5 event bounds. 
+
+## 2. Strict Semantic Provenance and Lineage
+- **Pre-IDM SMT Tracing**: Restored strict chronological boundary checks for Order Flow Candidates. Pullbacks formed natively before the explicit `active_idm` are permanently identified as `SMT_INDUCEMENT_TRAP` using upstream provenance instead of simple geometric comparisons that were polluting the lineage.
+- **Genuine L2 Mitigation Validation**: Replaced abstract overlap math with chronological traversal of the `l2_result.pullbacks` array. A pullback is only mitigated if a subsequent _valid_ pullback (verified dynamically against its L1 candles) breaches its mathematical origin boundaries.
+- **Causality Provenance Trace**: The `DECISIONAL_OF` and `DECISIONAL_OB` logic traces chronologically backward from `l4_result.structural_break.break_candle_id` instead of geometrically snapping to the nearest swing, restoring the "impulse causal" requirement. `EXTREME_OB` Pillar 1 causality is properly restricted based on structural `valid_bos` presence.
+- **Engineering Liquidity Lineage**: `EngineeringLiquidity` now searches exactly one valid pullback chronologically backward from the Extreme POI`s mathematical origin instead of blind geometric array indexing.
+
+## 3. Explicit Range Provenance
+- `range_id` provenance is now derived exclusively from the canonical `L3` structural cycle bounds (`confirmed_swings` and internal timeline).
+- Expiry mechanics (`EXPIRED_HISTORICAL`) natively key off the chronological `range_id` boundaries of prior loops, satisfying the "consume explicit range provenance from the canonical layer" mandate.
+
+## 4. Test Suite Maturation
+- Destroyed arbitrary state injection and mock booleans.
+- Re-architected `tests/test_execution_engine.py` with 8 highly-specific semantic tests simulating real cross-layer interactions (`CandleLevelValidPullback`, `VerifiedPullbackExtreme`, etc.).
+- Proven test coverage of SMT formation, real mitigation failure/success, Decisional causality failures (when offset from break), Pillar 1 strictness without `valid_bos`, and Origin OB / Rejection Block latent activation via correct chronological resolution.
+
+## 5. Verification Checks
+- **Test Suite Status:** 147 tests passed natively without warnings.
+- **Semantic Fidelity:** `.agents/skills/smc/` remains physically unmodified.
+
+**Phase 24 Final Status:** PASS
+
+
 # PHASE 24 - CANONICAL L6 REPAIR CYCLE 6 (COMPLETED)
 
 ## 1. Strict Semantic Origin Refactoring
