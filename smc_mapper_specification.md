@@ -393,25 +393,37 @@ No mapper configuration file is to be introduced for timeframe selection, histor
 
 Timeframe selection is controlled only by `--htf` and/or `--ltf` according to A4–A6.
 
-Volume analytics method is controlled by the optional CLI parameter:
+Volume processing is controlled by the optional CLI parameter:
 
 ```
 --volume-method {NONE,OHLC,ORDERFLOW}
 ```
 
-Default:
+When the parameter is omitted, the mapper uses **automatic method selection** in this order:
 
 ```
---volume-method OHLC
+ORDERFLOW → OHLC → NONE
 ```
 
-Semantics:
+Selection rules:
 
-- `NONE` — do not run volume/delta analytics or calculate POI likelihood.
-- `OHLC` — calculate directional buy/sell volume and delta from available OHLC/volume data.
-- `ORDERFLOW` — use the available OrderFlowProvider for buy/sell volume and delta.
+1. If compatible orderflow data is available from the active market-data feed, use `ORDERFLOW`.
+2. Otherwise, if usable OHLC/volume data is available, use `OHLC`.
+3. Otherwise, use `NONE`.
 
-An unsupported value is an input error. The selected method is an implementation/data-source choice and does not alter canonical SMC rules.
+The selected effective method must be stored in the normalized data/output as `NONE`, `OHLC`, or `ORDERFLOW`.
+
+Explicit CLI values override automatic selection:
+
+- `NONE` — skip volume/delta analytics and POI likelihood calculation.
+- `OHLC` — use OHLC-based directional volume/delta processing; if the required volume data is unavailable, volume analytics cannot be calculated.
+- `ORDERFLOW` — require an orderflow-capable source; if the required orderflow data is unavailable, do not silently substitute another method.
+
+The mapper does not require the user to know which provider supports which data level. Provider capabilities are detected by the market-data interface.
+
+An unsupported CLI value is an input error.
+
+The selected/effective volume method is a data/implementation choice and does not alter canonical SMC rules.
 
 ---
 
@@ -917,25 +929,35 @@ Historical POI outcome performance must not be used.
 
 ## D3. Volume method
 
-The volume method is selected by the CLI:
+The user may explicitly select:
 
 ```
 --volume-method {NONE,OHLC,ORDERFLOW}
 ```
 
-Default:
+When omitted, the effective method is selected automatically:
 
 ```
-OHLC
+ORDERFLOW → OHLC → NONE
 ```
 
-The three methods are:
+The Candle Data Interface/provider reports which volume information is actually available. The mapper then selects the highest available method in that order.
 
-1. `NONE` — skip volume/delta analytics entirely. No buy/sell split, delta, or POI likelihood is calculated.
-2. `OHLC` — calculate directional buy/sell volume and delta from available OHLC/volume data. When suitable lower-timeframe data is available, it may be used to improve the directional estimate.
-3. `ORDERFLOW` — obtain buy/sell volume and delta from an external orderflow-capable data source through the Candle Data Interface.
+1. `ORDERFLOW` — use genuine orderflow buy/sell volume and delta supplied by an orderflow-capable source.
+2. `OHLC` — calculate directional buy/sell volume and delta from available OHLC/volume data. Suitable lower-timeframe data may refine the estimate.
+3. `NONE` — no volume/delta processing is performed.
 
-The external provider is implementation-defined and is not selected by the canonical SMC layer.
+For automatic selection:
+
+- orderflow available → `ORDERFLOW`;
+- no orderflow but usable OHLC/volume available → `OHLC`;
+- neither available → `NONE`.
+
+If `ORDERFLOW` is explicitly requested and unavailable, the mapper must not silently downgrade to `OHLC`.
+
+If `OHLC` is explicitly requested but required volume data is unavailable, the mapper must not fabricate volume values.
+
+The concrete external provider is implementation-defined and is not part of canonical SMC semantics.
 
 An estimated buy/sell split must never be represented as observed orderflow data.
 
