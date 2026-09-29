@@ -909,7 +909,7 @@ The mapper may transport and align canonical HTF context; it must not invent new
 
 POI volume analytics is a non-canonical analytical extension of the canonical POI result.
 
-It may enrich an already canonical POI with total volume, buy volume, sell volume, volume delta, directional delta ratio, and a volume-derived likelihood percentage when a usable volume method is available.
+It may enrich an already canonical POI with total volume, buy volume, sell volume, volume delta, directional delta ratio, and a statistical probability value when a usable volume method and calibrated probability model are available.
 
 Volume analytics must never create, remove, retype, or canonically invalidate a POI.
 
@@ -1034,7 +1034,7 @@ Each canonical POI may contain:
     "delta": "...",
     "delta_ratio": "..."
   },
-  "poi_likelihood_pct": null
+  "probability": null
 }
 ```
 
@@ -1062,13 +1062,15 @@ The mapper runtime uses the current canonical POI context and its available volu
 
 The outcome being predicted must be explicitly defined by the statistical model contract. The model must not use an undefined notion of "POI success".
 
-The stored value should be a probability in the normalized numeric form:
+The stored value is a probability in normalized numeric form:
 
 ```
 0.0 <= probability <= 1.0
 ```
 
 not a percentage field.
+
+For human-readable output, the mapper/reporting layer may display the same value as a percentage (for example, `0.73` displayed as `73%`), but the JSON canonical numeric representation remains `0.73`.
 
 Recommended JSON representation:
 
@@ -1100,6 +1102,8 @@ Every POI probability record must retain sufficient provenance to identify and r
 - causal displacement start/end.
 
 The statistical probability must never be used by downstream code as canonical POI validity.
+
+The probability must be visible for each canonical POI for which a calibrated model and required inputs are available. If the probability cannot be evaluated, it must be absent/undefined rather than replaced by a neutral value.
 
 When method = NONE, downstream code must treat volume analytics and probability as absent rather than as a zero/neutral weighting.
 
