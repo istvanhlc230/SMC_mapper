@@ -887,10 +887,10 @@ Historical POI outcome performance must not be used.
 
 Use the strongest available volume-side information:
 
-1. BID_ASK_OBSERVED — genuine provider-supplied bid/ask-side volume.
-2. INTRABAR_ESTIMATED — lower-timeframe OHLCV permits directional estimation.
-3. OHLC_ESTIMATED — only aggregate parent-candle OHLCV is available.
-4. UNAVAILABLE — no defensible side-volume calculation exists.
+1. ORDERFLOW — genuine orderflow volume/delta supplied by the provider.
+2. OHLC — directional volume estimated from OHLC data, using lower-timeframe data when available.
+3. OHLC — directional volume estimated from aggregate candle OHLCV.
+4. NONE — no usable volume-side calculation exists.
 
 An estimated buy/sell split must never be represented as observed bid/ask aggressor volume.
 
@@ -937,7 +937,7 @@ Close = Open → neutral; do not force a side
 
 Parent-bar buy volume, sell volume and delta are the sums of the classified intrabar volumes.
 
-Intrabar estimation remains explicitly marked as estimated unless genuine bid/ask-side volume is available.
+OHLC-derived directional volume remains marked as `OHLC`; genuine orderflow data is marked as `ORDERFLOW`.
 
 ## D6. POI JSON representation
 
@@ -945,7 +945,7 @@ Each canonical POI may contain:
 
 ```json
 "volume": {
-  "method": "OHLC_ESTIMATED",
+  "method": "OHLC",
   "formation": {
     "total": "...",
     "buy": "...",
