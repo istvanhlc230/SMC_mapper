@@ -211,15 +211,20 @@ If a canonical decision depends on unavailable HTF context, the decision must re
 
 ---
 
-## A11. Closed Dealing Range history and `history_no`
 
-`history_no` specifies the maximum total number of **CLOSED DEALING RANGES** retained in the symbol JSON across all analyzed timeframes.
+## A11. HTF Closed Dealing Range history and `history_no`
+
+`history_no` is one **collective symbol-level value**.
+
+In **two-timeframe analysis**, it applies to the HTF CLOSED DEALING RANGE history only. It defines the maximum number of recent closed HTF Dealing Ranges retained in the symbol JSON.
+
+The LTF does **not** have a separate `history_no`. Any number of LTF structural records may be interpreted and stored within the context of an HTF Dealing Range. The number of LTF structures is therefore not limited by `history_no`.
 
 The history unit is the canonical closed Dealing Range, not a mapper-run snapshot and not a generic structural-state snapshot.
 
-Only a Dealing Range that has been canonically closed may enter history. The currently open Dealing Range is never a history item.
+Only a Dealing Range that has been canonically closed may enter history. The currently open HTF Dealing Range is never a history item.
 
-Retention is ordered globally across the symbol's retained CLOSED DEALING RANGES, newest-first by canonical `close_time`. When two ranges have the same `close_time`, ordering must use a deterministic secondary key based on the range identity (`timeframe + start_time + close_time`). Capacity overflow uses **oldest-first (FIFO) eviction** from this global ordering.
+Retention is newest-first by canonical HTF `close_time`, with **oldest-first (FIFO) eviction** when capacity is exceeded.
 
 Example with `history_no = 3`:
 
@@ -236,7 +241,9 @@ R4 -> [R4, R3, R2]
 
 Eviction is a storage-retention operation only. A range evicted because of `history_no` remains canonical historical structure; it is not invalidated, deleted semantically, or marked stale.
 
-A repeated mapper execution must not create a duplicate closed range when the same range identity is already retained.
+A repeated mapper execution must not create a duplicate closed HTF range when the same range identity is already retained.
+
+In **single-timeframe analysis**, where no distinct HTF/LTF pair exists, `history_no` applies to the selected timeframe's CLOSED DEALING RANGE history.
 
 ---
 
@@ -254,53 +261,58 @@ This is the history identity. `structure_hash` is not a closed-range identity an
 
 `formation_time`, where present on structural objects or state within the range, identifies when that structural object/state formed. It is semantically distinct from the Dealing Range `close_time`.
 
-A closed range's identity is immutable once canonically closed. For an existing retained range with the same identity, reconciliation updates that range in place rather than creating a duplicate. A newly closed range with a new identity is inserted. If a previously evicted range is reconstructed and is again within the retained window, it may be reinserted using its canonical identity.
-
-After insertion or update, the mapper applies the collective symbol-level `history_no` retention across the retained closed-range history, using the global deterministic ordering defined above.
+A closed range's identity is immutable once canonically closed. For an existing retained range with the same identity, reconciliation updates that range in place rather than creating a duplicate. A newly closed range with a new identity is inserted. If a previously evicted range is reconstructed, it may be reinserted using its canonical identity when it again falls within the retained window.
 
 ### `history_no` persistence rules
 
-`history_no` is **one collective value per symbol JSON file**, not a separate value per timeframe. It defines the maximum total number of recent CLOSED DEALING RANGES retained across all analyzed timeframes in that symbol file.
+`history_no` is stored **once per symbol JSON**, not per timeframe.
 
 - **New symbol JSON** + no `--history_no` -> initialize and persist `history_no = 5000`.
 - **New symbol JSON** + `--history_no=N` -> initialize and persist `history_no = N`.
-- **Existing symbol JSON** + no `--history_no` -> preserve the stored collective `history_no`.
-- **Existing symbol JSON** + `--history_no=N` -> `--history_no` has **no effect**. Preserve the stored collective `history_no`; do not update or replace it from the CLI.
+- **Existing symbol JSON** + no `--history_no` -> preserve the stored `history_no`.
+- **Existing symbol JSON** + `--history_no=N` -> `--history_no` has **no effect**. Preserve the stored `history_no`; do not update or replace it from the CLI.
 - If an existing symbol JSON has no stored `history_no` value, initialize and persist `history_no = 5000`. A CLI `--history_no=N` still has no effect for that existing file.
 - `N` must be an integer >= 1 when the CLI value is supplied.
 
-Changing `history_no` changes retention capacity only. It does not change canonical SMC semantics.
+`--history_no` is therefore a **creation-time setting only**. Once the symbol JSON exists, the stored collective `history_no` is authoritative.
 
-`--history_no` is therefore a **creation-time setting only**. Once the symbol JSON exists, the stored collective `history_no` is authoritative and the CLI parameter must not alter it.
+Changing `history_no` changes retention capacity only. It does not change canonical SMC semantics.
 
 ---
 
-## A12a. Closed Dealing Range history contract
+## A12a. HTF Dealing Range history contract
 
-Each retained history element represents one closed Dealing Range and may contain the canonical structural state and objects that belong to that range, including where applicable:
+Each retained history element represents one CLOSED HTF Dealing Range and may contain the canonical HTF structural state and, where two-timeframe analysis is active, any number of LTF structures interpreted in that HTF range context.
 
-- structural direction/lifecycle state;
-- structural swings;
-- protected structural extremes;
-- IDM provenance;
-- retracement qualification;
-- BOS;
-- CHoCH;
-- canonical Layer-6 POIs;
-- volume metadata associated with those canonical structural points/POIs.
+The LTF records stored under an HTF range are **context-scoped execution analysis**, not a new canonical parent/child ontology. LTF semantic ownership remains with the LTF canonical rules.
+
+The history record may contain, where applicable:
+
+- HTF structural direction/lifecycle state;
+- HTF structural swings;
+- HTF protected structural extremes;
+- HTF IDM provenance;
+- HTF retracement qualification;
+- HTF BOS;
+- HTF CHoCH;
+- canonical HTF Layer-6 POIs;
+- associated LTF structural/entry-analysis records;
+- volume metadata associated with canonical structural points/POIs.
+
+There is no fixed maximum number of LTF structures within one HTF Dealing Range.
 
 The history record must preserve the canonical formation/provenance times of its contained objects.
 
-History is not an append-only mapper execution log. It is a retained representation of canonically closed Dealing Ranges.
+History is not an append-only mapper execution log. It is a retained representation of canonically closed HTF Dealing Ranges with their context-scoped LTF analysis.
 
-The mapper must reconcile canonical closed ranges deterministically:
+The mapper must reconcile canonical closed HTF ranges deterministically:
 
-1. same `timeframe + start_time + close_time` -> update existing retained range;
-2. new identity -> insert new range;
+1. same `timeframe + start_time + close_time` -> update existing retained HTF range;
+2. new identity -> insert new HTF range;
 3. duplicate identity -> never create a second history entry;
-4. reconcile across the symbol's retained closed-range history;
-5. apply the collective symbol-level `history_no` after reconciliation;
-6. if collective capacity is exceeded, evict the oldest retained closed range.
+4. reconcile the associated LTF context-scoped records without changing their canonical ownership;
+5. apply the single symbol-level `history_no` after reconciliation;
+6. if capacity is exceeded, evict the oldest retained HTF Dealing Range.
 
 A range falling outside the retention window is not a canonical removal event.
 
@@ -313,6 +325,7 @@ The mapper derives Dealing Range history boundaries strictly from the canonical 
 - The mapper must not close or start a Dealing Range because of a physical break, IDM sweep, CHoCH-eligible break, insufficient-retracement `IMPULSE_EXTENSION`, mapper execution boundary, or retention operation.
 - Before the first canonical `VALID_BOS`, no governing Dealing Range may be fabricated for history or used as a substitute for the unresolved first-BOS canonical baseline.
 - The exact first-BOS retracement baseline remains the canonical/source gap documented by the SMC skill; the mapper must fail closed rather than invent a synthetic initialization rule.
+
 ---
 
 ## A13. JSON storage
@@ -797,179 +810,122 @@ It must not become a canonical SMC decision input unless an explicit canonical s
 
 ---
 
-# C. HTF / LTF CONTEXT & DEPENDENCY MODEL
+# C. HTF-GUIDED LTF EXECUTION CONTEXT
 
-## C1. Context dependency
+## C1. Independent timeframe analysis
 
-Two-timeframe analysis has a strict dependency direction:
+Each timeframe is analyzed according to its own canonical structural rules.
 
-`HTF analysis -> HTF structural context -> LTF analysis`
-
-The LTF analysis may consume HTF context.
-
-The LTF analysis must never modify the HTF result.
-
----
-
-## C2. Point-in-time HTF context
-
-For every LTF evaluation that consumes HTF context, the mapper must use the latest applicable HTF structural snapshot known at or before the LTF evaluation time.
-
-The rule is:
-
-`HTF formation_time <= LTF evaluation_time`
-
-A HTF state that forms later must never be used to evaluate an earlier LTF event.
-
-This prevents future HTF information from leaking backward into historical LTF analysis.
-
----
-
-## C3. HTF context snapshot reference
-
-When HTF context is consumed by an LTF structural decision, the LTF result must retain sufficient provenance to identify the exact point-in-time HTF context used.
-
-The provenance must include, at minimum:
-
-- the HTF timeframe;
-- `htf_context_formation_time`;
-- a deterministic structural content fingerprint such as `htf_context_structure_hash`, when such a fingerprint is emitted.
-
-An implementation-level `structure_id` may be retained as an additional reference, but it is not a canonical history identity and is not required to create a separate structural-object identity system.
-
-The HTF context provenance exists to identify the historical context consumed by the LTF decision; it must remain independent of CLOSED DEALING RANGE retention identity.
-
----
-
-## C4. Read-only context
-
-HTF context supplied to the LTF engine is read-only.
-
-The LTF engine must not:
-
-- modify HTF structural state;
-- create or replace HTF structural objects;
-- reinterpret HTF canonical semantics;
-- write changes into the HTF analysis history.
-
----
-
-## C5. Context scope
-
-The HTF context contract must expose only information required by canonical downstream rules.
-
-The LTF implementation must not depend on arbitrary internal fields of the complete HTF runtime state.
-
-The exact context fields must be defined by canonical consumer requirements rather than by implementation convenience.
-
----
-
-## C6. HTF pullback validation states
-
-When HTF pullback validation is not required:
-
-`HTF_PULLBACK_CHECK = NOT_REQUIRED`
-
-When required, the result must distinguish:
-
-- `VALID` — the applicable HTF pullback is canonically valid;
-- `INVALID` — sufficient HTF context exists and the applicable pullback is not valid;
-- `UNAVAILABLE` — the required HTF historical/context data is unavailable.
-
-`INVALID != UNAVAILABLE`
-
-Missing data must never be converted into a negative structural observation.
-
----
-
-## C7. HTF history shorter than LTF history
-
-HTF and LTF may have different available history.
-
-Example:
+In two-timeframe mode:
 
 ```
-HTF: 2026-06-01 -> 2026-09-29
-LTF: 2026-01-01 -> 2026-09-29
+HTF canonical analysis
+LTF canonical analysis
 ```
 
-For LTF evaluation times before the first usable HTF context:
+The LTF is not a canonical child of the HTF and must not redefine or mutate HTF structure.
 
-`HTF_CONTEXT_UNAVAILABLE`
+The HTF nevertheless provides the governing execution context in which relevant LTF entry analysis is performed.
 
-The LTF analysis may continue through its own available history, but any canonical decision that specifically requires HTF validation must remain unresolved / fail closed until applicable HTF context exists.
+In single-timeframe mode, no HTF/LTF execution relationship exists.
 
 ---
 
-## C8. HTF context transition
+## C2. HTF-guided LTF execution
 
-When a new HTF structural snapshot forms:
+When an HTF and LTF are both supplied:
 
-```
-old HTF context
-      ↓
-new HTF structural snapshot
-      ↓
-subsequent LTF evaluations use the new context
-```
+1. analyze the HTF canonical structure first;
+2. establish the applicable HTF Dealing Range / structural context;
+3. use that context to scope and guide relevant LTF execution analysis;
+4. analyze LTF structure using its own canonical rules;
+5. apply HTF context only where required by a canonical downstream rule.
 
-A newly formed HTF snapshot does not retroactively change historical LTF decisions that were made using the previous HTF context.
+The LTF exists to refine and qualify entry within the applicable HTF context; it does not create a competing higher-level narrative.
 
----
-
-## C9. Single-timeframe mode
-
-When only one timeframe parameter is supplied, the internal representation may use:
-
-`HTF = LTF = selected timeframe`
-
-but no HTF-to-LTF dependency exists and `HTF_PULLBACK_CHECK = NOT_REQUIRED`.
-
-The mapper must not evaluate the selected timeframe as its own Higher Timeframe for canonical Gate 2.
+The existence of HTF context must not automatically invalidate an LTF structural event. Only canonical rules that explicitly require HTF context may use it as a qualification, activation, or routing condition.
 
 ---
 
-## C10. Two-timeframe chronological execution
+## C3. Point-in-time HTF context
 
-When both timeframes are supplied:
+For every LTF evaluation that requires HTF information, only HTF structural information that already existed at that evaluation time may be used.
 
-1. Normalize and bootstrap the HTF series.
-2. Analyze the HTF series chronologically.
-3. Expose point-in-time HTF structural context.
-4. Normalize/bootstrap the LTF series.
-5. Analyze the LTF series chronologically.
-6. For each LTF evaluation requiring HTF context, consume the applicable point-in-time HTF snapshot.
+```
+HTF formation_time <= LTF evaluation_time
+```
 
-The mapper must not perform a complete future-aware HTF analysis and then apply its final state to all historical LTF candles.
+A later HTF structural event must never be used to reinterpret an earlier LTF event.
+
+No separate HTF snapshot ontology is required.
+
+The applicable HTF Dealing Range and its canonical structural state are the context reference.
 
 ---
 
-## C11. HTF context provenance and retained history
+## C4. LTF structures within HTF range context
 
-Every historical LTF structural decision that consumes HTF context must retain sufficient provenance to identify the exact point-in-time HTF structural context used for that decision.
+In two-timeframe analysis, LTF structural records may be stored within the applicable HTF Dealing Range record for execution-context organization.
 
-The HTF context provenance is independent of closed Dealing Range history retention.
-
-If the referenced HTF structural context or its containing closed Dealing Range later falls outside the retained `history_no` window, the LTF historical decision must remain self-consistent through its stored provenance metadata. Retention eviction must never cause the mapper to rewrite, reinterpret, or retroactively re-evaluate that LTF decision.
-
-The closed-range history identity:
+This storage relationship does not transfer semantic ownership:
 
 ```
-timeframe + start_time + close_time
+HTF Dealing Range
+    ↓
+execution context
+    ↓
+LTF canonical structure
 ```
 
-must not be substituted for the point-in-time HTF context provenance required by C2-C3.
+The number of LTF structures associated with an HTF Dealing Range is unrestricted by `history_no`.
+
+An LTF structure must not be duplicated merely because multiple LTF evaluations occur inside the same HTF range.
+
+If an LTF lifecycle spans an HTF Dealing Range transition, its canonical lifecycle and provenance must remain intact; the HTF transition must not retroactively rewrite the LTF structure.
 
 ---
 
-## C12. Canonical ownership
+## C5. Canonical HTF-interaction routes
 
-HTF/LTF dependency handling is orchestration.
+Where a canonical LTF route explicitly requires HTF interaction, the mapper must expose the required HTF context to the LTF engine.
 
-Canonical SMC meaning remains owned by the relevant canonical skill layers.
+This includes the canonical LTF Structural Glitch / CHoCH route after HTF POI interaction or HTF core-liquidity takeout, as defined by `05_CHOCH_mechanics.md`.
 
-The mapper may transport and align canonical HTF context; it must not invent new HTF pullback, structural, BOS or CHoCH semantics.
+The mapper must transport and align the required HTF context but must not invent a new CHoCH, BOS, IDM, POI, or entry rule.
 
+---
+
+## C6. Historical independence
+
+HTF history and LTF context-scoped records are structural analysis data, not dynamic monitor state.
+
+Retention of HTF closed ranges is controlled by the single symbol-level `history_no`.
+
+LTF structures do not consume a separate history quota.
+
+Retention eviction must never invalidate canonical structure or cause historical LTF decisions to be rewritten.
+
+The mapper preserves the canonical distinction between:
+
+```
+canonical structural truth
+        ≠
+JSON retention
+        ≠
+dynamic monitoring/trade state
+```
+
+---
+
+## C7. Canonical ownership boundary
+
+HTF canonical semantics remain owned by the HTF analysis and its canonical skill layers.
+
+LTF canonical semantics remain owned by the LTF analysis and its canonical skill layers.
+
+The mapper defines only the orchestration and storage relationship between them.
+
+It must not introduce a general HTF-parent/LTF-child semantic ontology.
 
 ---
 
