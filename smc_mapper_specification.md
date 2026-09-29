@@ -169,13 +169,13 @@ Examples:
 
 `--endtime 2026-09-29T15:30:00`
 
-If omitted, use the latest available completed candle at or before the current time.
+If omitted, use the latest available completed driving-timeframe candle at the mapper execution time.
 
-If supplied, use the latest completed candle whose timestamp is less than or equal to the requested end time.
+If supplied, use the latest completed candle whose canonical completion boundary is less than or equal to the requested end time.
+
+The normalized candle `timestamp` alone must not be treated as proof that a candle has completed. Completion is determined by the normalized completion status/time contract in B6.
 
 An incomplete/current candle must never enter canonical analysis.
-
----
 
 ## A9. Independent history per timeframe
 
@@ -221,9 +221,7 @@ In **two-timeframe analysis**, it applies to the HTF CLOSED DEALING RANGE histor
 
 The LTF does **not** have a separate `history_no`. Any number of LTF structural records may be interpreted and stored within the context of an HTF Dealing Range. The number of LTF structures is therefore not limited by `history_no`.
 
-The history unit is the canonical closed Dealing Range, not a mapper-run snapshot and not a generic structural-state snapshot.
-
-Only a Dealing Range that has been canonically closed may enter history. The currently open HTF Dealing Range is never a history item.
+The history unit is the canonical closed Dealing Range. Only a Dealing Range that has been canonically closed may enter history. The currently open HTF Dealing Range is never a history item.
 
 Retention is newest-first by canonical HTF `close_time`, with **oldest-first (FIFO) eviction** when capacity is exceeded.
 
@@ -245,8 +243,6 @@ Eviction is a storage-retention operation only. A range evicted because of `hist
 A repeated mapper execution must not create a duplicate closed HTF range when the same range identity is already retained.
 
 In **single-timeframe analysis**, where no distinct HTF/LTF pair exists, `history_no` applies to the selected timeframe's CLOSED DEALING RANGE history.
-
----
 
 ## A12. Closed Dealing Range identity and retention configuration
 
@@ -479,13 +475,14 @@ In two-timeframe analysis, the LTF data request must extend far enough backward 
 
 When a confirmed HTF Dealing Range exists, the LTF bootstrap coverage anchor is the applicable **Protected Structural Extreme**. This is a data-coverage/reference anchor only; it is not an LTF structural start and does not create or promote any LTF structure.
 
-If the active execution context has no current confirmed HTF Dealing Range, the mapper may use the most recent preceding confirmed HTF Protected Structural Extreme as the LTF bootstrap coverage anchor. This is also a coverage/reference decision only and must not manufacture a canonical range or protected extreme.
+If the active execution context has no current confirmed HTF Dealing Range, the mapper uses the most recent preceding confirmed HTF Protected Structural Extreme as the LTF bootstrap coverage anchor when one exists. This is also a coverage/reference decision only and must not manufacture a canonical range or protected extreme.
 
 The LTF canonical engine may require additional candles before the anchor for its own deterministic warm-up. Such additional history may be fetched as required.
 
 The bootstrap coverage anchor does not replace the canonical LTF bootstrap sequence and does not imply that the first LTF structural event occurs at the anchor.
 
 If no applicable confirmed HTF Protected Structural Extreme exists, the mapper must preserve the canonical genesis/source-gap boundary and must not fabricate one merely to bootstrap LTF history.
+
 ## A18. Monitor boundary and mapper checkpoint
 
 The monitor consumes mapper JSON and owns dynamic monitoring functions, including:
@@ -675,9 +672,11 @@ The canonical engine receives an already ordered series.
 
 Only completed candles may enter canonical analysis.
 
-An incomplete/current candle must be excluded from the canonical analysis series.
+A candle is considered completed only after its canonical timeframe interval has closed and the normalized provider/completion contract confirms that closure.
 
----
+The mapper must use the candle's canonical completion boundary when deciding whether it is eligible for an explicit analysis end time. The candle `timestamp` is not by itself sufficient evidence of completion.
+
+An incomplete/current candle must be excluded from the canonical analysis series.
 
 ## B7. Numeric representation
 
@@ -956,6 +955,8 @@ An LTF structure must not be duplicated merely because multiple LTF evaluations 
 For deterministic storage association, an LTF structural record is associated with the HTF Dealing Range that is applicable at that LTF structure's canonical `formation_time`. The association is storage/context provenance only; it does not change the LTF structure's canonical formation time, lifecycle, or semantic ownership.
 
 If the LTF structure forms while a confirmed HTF Dealing Range is current, it is stored under that range. If no confirmed HTF Dealing Range exists at the LTF structure's formation time, the structure must not be assigned to a fabricated range.
+
+When an HTF Dealing Range transition and an LTF formation occur at the same timestamp, the HTF lifecycle update is applied first on the synchronized timeline; the LTF structure is therefore associated with the HTF context that is canonical after that timestamp's HTF lifecycle processing.
 
 If an LTF lifecycle crosses an HTF range transition, the canonical LTF lifecycle remains unchanged. The stored representation retains its original HTF context association and sufficient canonical provenance to represent the cross-boundary lifecycle without duplicating the same LTF object.
 ## C5. Canonical HTF-interaction routes
