@@ -1040,62 +1040,67 @@ Each canonical POI may contain:
 
 When method = NONE, the volume/delta analytics block is not processed and no volume-derived values or POI likelihood are calculated. Otherwise, values are null/omitted only when the relevant provenance data is unavailable.
 
-## D7. Volume-derived POI likelihood
+## D7. Statistical POI probability
 
-The mapper may expose `poi_likelihood_pct` as a deterministic **volume-alignment likelihood measure** for an already canonical POI.
+The mapper may expose a **statistical probability** for an already canonical POI.
 
-It is not a historical success probability and must not use historical POI outcomes.
+This value must represent an actual calibrated probability estimate, not a volume ratio, directional score, confidence score, or percentage derived directly from buy/sell volume.
 
-Directional alignment:
-
-```
-BUY POI  → aligned_delta = +delta
-SELL POI → aligned_delta = -delta
-```
-
-For an available aggregate:
+POI-linked volume and delta are model inputs/features. They may increase or decrease the estimated probability, but the mapper must not convert:
 
 ```
-poi_likelihood_pct
-    = 50 * (1 + aligned_delta / total_volume)
+buy / total
+sell / total
+delta / total
 ```
 
-Equivalent form:
+directly into a probability.
+
+A valid probability requires an explicitly defined statistical model that has been trained/calibrated on labeled observations and whose output is interpretable as an estimated probability of the defined POI outcome.
+
+The mapper runtime uses the current canonical POI context and its available volume/orderflow features as model inputs. The mapper does not calculate historical POI success rates on the fly.
+
+The outcome being predicted must be explicitly defined by the statistical model contract. The model must not use an undefined notion of "POI success".
+
+The stored value should be a probability in the normalized numeric form:
 
 ```
-BUY POI:
-    poi_likelihood_pct = 100 * buy_volume / total_volume
-
-SELL POI:
-    poi_likelihood_pct = 100 * sell_volume / total_volume
+0.0 <= probability <= 1.0
 ```
 
-Interpretation:
+not a percentage field.
 
+Recommended JSON representation:
+
+```json
+"probability": {
+  "value": 0.73,
+  "model": "MODEL_ID",
+  "model_version": "VERSION",
+  "calibrated": true
+}
 ```
-aligned positive delta → higher percentage
-near-zero delta       → approximately 50%
-opposing delta        → lower percentage
-strong opposing delta → very low percentage
-```
 
-This percentage is a volume-derived directional measure, not an empirically calibrated forecast of future POI success.
+If no calibrated statistical model is available, probability must be absent/undefined. The mapper must not fabricate a probability from delta or volume ratios.
 
-If method = NONE, `poi_likelihood_pct` must not be calculated and the volume analytics branch must not run.
+When method = NONE, no volume-derived statistical probability can be evaluated and the probability calculation branch must not run.
 
-## D8. Provenance
+## D8. Statistical model provenance
 
-Every POI volume record must retain sufficient provenance to reproduce the calculation, including where applicable:
+Every POI probability record must retain sufficient provenance to identify and reproduce the probability estimate, including where applicable:
 
+- model identifier;
+- model version;
+- calibration status;
+- outcome definition/version;
+- input feature set/version;
+- volume method;
 - source candle IDs or canonical provenance references;
 - formation start/end;
-- causal displacement start/end;
-- volume calculation method;
-- observed vs estimated status;
-- total/buy/sell/delta;
-- delta ratio;
-- `poi_likelihood_pct`.
+- causal displacement start/end.
 
-The volume-derived percentage must never be used by downstream code as canonical POI validity.
+The statistical probability must never be used by downstream code as canonical POI validity.
 
-When method = NONE, downstream code must treat volume analytics as absent rather than as a zero/neutral weighting.
+When method = NONE, downstream code must treat volume analytics and probability as absent rather than as a zero/neutral weighting.
+
+A statistical probability model necessarily requires empirical observations for training/calibration. Those observations may be prepared and maintained outside the mapper runtime; the mapper only consumes the resulting calibrated model. Without such empirical calibration, a true statistical probability cannot be claimed.
