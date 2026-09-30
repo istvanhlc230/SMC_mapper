@@ -2441,3 +2441,16 @@ PASS — canonical terminology should map consistently to code terminology.
 PASS — readability takes precedence where an extremely short name would become ambiguous.
 
 **FINAL STATUS: PASS — IMPLEMENTATION CODE STYLE CONTRACT DEFINED**
+
+
+# IMPLEMENTATION-READINESS AUDIT — 2026-09-29
+
+## Decisions Applied
+- `--volume-method` now accepts `NONE,OHLC,ORDERFLOW,MIXED`.
+- `MIXED` uses available OHLC-derived and genuine orderflow analytics in parallel; it never relabels or overwrites either source. If only one is available it uses that source; if neither is available the effective result is NONE.
+- The **entry timeframe** is the driving timeframe for incremental acquisition, mapper processing, checkpoint advancement, and monitor scheduling. Single-TF uses the selected timeframe; two-TF uses LTF.
+- Mapper `--starttime` is mandatory and is part of analysis identity.
+- `endtime` remains an analysis boundary, not analysis identity.
+
+## Implementation-Readiness Result
+PASS for the requested decisions. The specification now exposes one unambiguous driving/entry timeframe concept and the requested MIXED volume mode. Remaining implementation work should proceed from the specification without introducing additional architecture.
