@@ -2187,3 +2187,81 @@ Specification commit:
 
 **Final status: PASS — DEBUG INFORMATION IS TERMINAL-ONLY AND CANNOT ENTER MAPPER/MONITOR DATA INPUT**
 
+
+# FULL SPECIFICATION AUDIT — CONSOLIDATED MARKET-DATA JSON PLAN
+
+## Result
+
+**FAIL — the current specification is not yet internally consistent with the latest approved two-file market-data architecture.**
+
+## Findings
+
+### 1. BLOCKER — stale CLI candle-data transport
+
+`A16`, `A6`, `A15`, `B1`, `C2`, and `A19.1` still contain the previous model where normalized candle data is emitted on CLI stdout and consumed directly by the mapper. The latest approved model is file-based:
+
+`market_data.py -> <SYMBOL>_marketdata.json -> smc_mapper.py`.
+
+Therefore stdout must not be the candle-data transport between Market Data CLI and mapper.
+
+### 2. BLOCKER — stale Market Data Layer/service wording
+
+Several sections still describe a provider-independent in-process/range-query service even though the approved boundary is a standalone `market_data.py` CLI plus persistent market-data JSON.
+
+### 3. BLOCKER — market-data retention is undefined
+
+`<SYMBOL>_marketdata.json` is now persistent and multi-timeframe, but the specification does not define how long candle data is retained, when old candles may be deleted, or how missing older data is reacquired.
+
+The clean separation should remain: retention is an operational market-data policy, not SMC logic. A bounded per-timeframe retention policy is recommended; data outside retention may be reacquired from the provider when needed for an explicit bootstrap/rebuild.
+
+### 4. BLOCKER — multiple analyses + `history_no` is ambiguous
+
+`<SYMBOL>_structures.json` now contains multiple analyses, but `history_no` remains one symbol-level value while the older text describes one symbol-level/one-history context. The specification must explicitly state whether that single value is applied independently to each analysis's own closed-range history.
+
+Recommended simple interpretation: one stored symbol-level `history_no` configuration value, applied independently to each analysis's own applicable closed Dealing Range history.
+
+### 5. BLOCKER — concurrent file update semantics are not specified
+
+The agreed `wait until writable` behavior is not sufficient by itself to prevent lost updates if two processes both read the same JSON before either writes it.
+
+To stay simple, the finished architecture should make the monitor the serial orchestrator for a symbol and define each JSON update as a single read-modify-write transaction with atomic replacement. If multiple independent writers are explicitly supported, a real OS file lock or equivalent transaction mechanism is required.
+
+### 6. GAP — periodic one-candle update contract is not fully specified
+
+The specification does not yet fully define the normal monitor cycle in file terms:
+
+`existing last completed candle -> market_data update -> append/deduplicate new completed candles -> mapper reads persisted file -> analysis checkpoint advances`.
+
+It also needs the no-new-candle no-op and missed-multiple-candle batch cases.
+
+### 7. GAP — one market-data file containing all timeframes needs update semantics
+
+`<SYMBOL>_marketdata.json` correctly groups all acquired timeframes, but the specification must define how a timeframe section is created, incrementally extended, deduplicated, ordered, and independently retained without affecting other timeframe sections.
+
+### 8. CLEANUP — debug contract
+
+The terminal-only debug rule is conceptually correct, but the current debug section still describes stdout as a process-to-process machine-data channel. Under the latest file-based design, candle data is persisted to JSON instead. Debug remains `stderr` -> terminal only; normal runtime should produce no user-visible CLI output.
+
+## Canonical SMC audit
+
+No canonical SMC semantic conflict was found in the reviewed specification architecture. The canonical skill remains authoritative, and the mapper specification still avoids redefining the core Layer 1-8 semantics. The key canonical boundaries remain consistent:
+
+- Layer 3 owns retracement qualification and IDM governance.
+- Layer 4 consumes stored qualification and does not recompute it.
+- `VALID_BOS` remains gated by `IDM_TAKEN`, qualified retracement, and structural swing break.
+- Layer 5 retains the LTF Structural Glitch route.
+- Layer 6 owns canonical POI/Rule-of-Two semantics.
+- Layer 7/8 retain downstream target and notification boundaries; BE/trailing remain trade-management concepts.
+
+## Required repair order
+
+1. Replace every stale stdout/CLI candle-transfer statement with the persistent `<SYMBOL>_marketdata.json` boundary.
+2. Remove the obsolete in-process Market Data service wording.
+3. Define simple market-data retention and reacquisition policy.
+4. Resolve symbol-level `history_no` application across multiple analyses.
+5. Define serialized/atomic JSON update semantics.
+6. Define the one-candle, no-op, and missed-batch monitor update cycle.
+7. Re-audit A-D after the repair.
+
+**Current audit status: FAIL — architecture direction is sound, but the specification needs reconciliation before implementation.**
+
