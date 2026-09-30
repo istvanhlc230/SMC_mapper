@@ -1232,3 +1232,17 @@ The probability must be visible for each canonical POI for which a calibrated mo
 When method = NONE, downstream code must treat volume analytics and probability as absent rather than as a zero/neutral weighting.
 
 A statistical probability model necessarily requires empirical observations for training/calibration. Those observations may be prepared and maintained outside the mapper runtime; the mapper only consumes the resulting calibrated model. Without such empirical calibration, a true statistical probability cannot be claimed.
+
+
+# E. IMPLEMENTATION CODE STYLE
+
+Implementation code should be written for human readability and easy maintenance.
+
+- Prefer short, descriptive variable names that are immediately understandable from context.
+- Avoid cryptic abbreviations and unnecessary long names.
+- Use consistent naming conventions throughout the project: `snake_case` for variables and functions, `PascalCase` for classes/types, and `UPPER_SNAKE_CASE` for constants.
+- Keep functions and modules focused and reasonably short.
+- Prefer simple, direct control flow over unnecessary abstraction.
+- Use the same term for the same concept everywhere in the codebase.
+- Conventional short names such as `i`, `j`, or `x` are acceptable only where their meaning is obvious from immediate local context.
+- Readability takes priority over saving characters when a shorter name would make the code ambiguous.
