@@ -2062,3 +2062,31 @@ Final specification blob SHA:
 `76c3dd3a255df8e6e5daa48e34786baca0ee135b`
 
 No test-suite execution is claimed for this specification-only change.
+
+# MAPPER DATA-ARCHITECTURE REPAIR — MARKET DATA RANGE SERVICE (COMPLETED)
+
+## Scope
+Reconciled the mapper specification with the approved finished-product runtime scope:
+- `market_data.py`
+- `smc_mapper.py`
+- `smc_monitor.py`
+
+The older monitor/analyzer/Layer-engine artifacts are explicitly excluded from finished-product architecture.
+
+## Final data architecture
+- Market Data Layer owns provider access, normalization, completion handling, cache/buffer, availability and deterministic range retrieval.
+- `smc_mapper.py` has no direct provider dependency.
+- The mapper may request normalized candle ranges through an abstract service such as `get_candles(symbol, timeframe, start, end)`.
+- The monitor is not a market-data relay and does not feed individual candles to the mapper.
+- Mapper and monitor may both consume the same Market Data Layer.
+- LTF bootstrap/activation is satisfied by deterministic range retrieval rather than per-candle requests.
+- The Market Data Layer may expose a CLI range-retrieval interface using the same normalized candle contract.
+- No reverse `DATA_REQUEST` protocol is part of the mapper architecture.
+
+## Audit result
+PASS — no remaining old monitor->mapper feed contract, concrete provider dependency, mapper->monitor data request, or per-candle retrieval requirement remains in the mapper specification.
+
+## Verification
+- No canonical SMC skill file was modified.
+- No product implementation was claimed or tested by this specification-only repair.
+- Final mapper specification commit: `e3ea54bc1d73821a561d2ad6526eb8d73fc575b2`
