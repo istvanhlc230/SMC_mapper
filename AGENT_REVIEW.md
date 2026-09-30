@@ -2355,3 +2355,11 @@ PASS — no stale candle-level volume_method contract remains.
 Removed the duplicated B6 current-candle sentence and tightened the normalized volume numeric representation to the same deterministic Decimal-compatible policy.
 
 Result: PASS — no semantic or architectural change; documentation consistency repair only.
+
+
+# SECOND POST-REPAIR MICRO-AUDIT — COMPLETED
+
+Removed the remaining stale A19 rule that persisted one exclusive effective volume method into normalized market-data metadata. Clarified the current snapshot identity/content contract.
+
+PASS — normalized market data now stores parallel volume availability; runtime volume-method selection remains separate.
+PASS — current snapshot has explicit identity/market-data semantics and remains non-canonical.

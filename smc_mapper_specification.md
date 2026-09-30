@@ -552,27 +552,19 @@ No mapper configuration file is to be introduced for timeframe selection, histor
 
 Timeframe selection is controlled only by `--htf` and/or `--ltf` according to A4-A6.
 
-Volume processing is controlled by the optional CLI parameter:
+Volume analysis is controlled by the optional mapper CLI parameter:
 
 ```
 --volume-method {NONE,OHLC,ORDERFLOW}
 ```
 
-When the parameter is omitted, the mapper uses automatic method selection in this order:
+When the parameter is omitted, the mapper uses automatic runtime selection in this order:
 
 ```
 ORDERFLOW -> OHLC -> NONE
 ```
 
-Selection rules:
-
-1. If compatible orderflow data is available, use `ORDERFLOW`.
-2. Otherwise, if usable OHLC/volume data is available, use `OHLC`.
-3. Otherwise, use `NONE`.
-
-The selected effective method must be represented in normalized market-data metadata as `NONE`, `OHLC`, or `ORDERFLOW`.
-
-Explicit CLI values override automatic selection.
+The selected method is an analysis-time processing decision. It is not persisted as a single exclusive volume provenance field in normalized market-data candles, and it does not remove or overwrite any parallel volume data that is available. Explicit CLI values override automatic selection.
 
 ## A19.1 CLI debug output
 
@@ -682,6 +674,8 @@ A normalized candle may therefore contain parallel volume information:
 Each nested volume section is optional and exists only when its corresponding data or deterministic estimate is available. Presence or absence is the availability signal; no single exclusive candle-level method field is required.
 
 candles[] contains only completed normalized candles and is immutable after persistence. The separate current snapshot may change while its candle is in progress.
+
+The current snapshot carries the same candle identity and basic OHLC fields needed to identify the in-progress interval. It may also contain the provider-available total volume and any separately available orderflow data for that interval. It is runtime state only and is not included in completed-candle retention or canonical structural history.
 
 ## B3. Candle identifier
 
