@@ -2143,3 +2143,24 @@ Debug-only follow-up commit:
 
 **Final status: PASS — CLI-ONLY DATA TRANSFER AND DEBUG STREAM CONTRACT VERIFIED**
 
+
+# CLI OUTPUT VISIBILITY CORRECTION — COMPLETED
+
+## Final behavior
+
+- Normal runtime produces no user-visible CLI output.
+- `market_data.py` and `smc_mapper.py` keep machine-readable payloads on `stdout` for process-to-process transfer.
+- `smc_monitor.py` / launcher captures those streams instead of displaying them.
+- Debug/diagnostic information is emitted on `stderr` only when `--debug` is enabled.
+- Required errors may still be surfaced through application error handling.
+- Debug mode does not change canonical calculations or machine-readable data semantics.
+
+## Verification
+
+Re-audited the final specification and confirmed that no in-process Market Data service contract remains and that normal CLI runtime is explicitly non-user-facing.
+
+Specification commit:
+`67f4ee27fcf39ab5dd3f1be34482637ad5632363`
+
+**Final status: PASS — NORMAL RUNTIME CLI OUTPUT IS CAPTURED; USER-VISIBLE DIAGNOSTICS REQUIRE `--debug`**
+
