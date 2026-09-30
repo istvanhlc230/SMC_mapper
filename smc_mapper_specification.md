@@ -439,7 +439,7 @@ Invalid mapper configuration or normalized candle data must fail explicitly.
 
 The mapper has no direct connection to any concrete market-data provider and has no runtime import dependency on `market_data.py`.
 
-`market_data.py` is a standalone Market Data CLI process. It owns provider access, provider abstraction, normalization, completion handling, timestamp normalization, price-basis handling, availability detection, deterministic range retrieval, incremental updates, retention and persistence to `<SYMBOL>_marketdata.json`.
+`market_data.py` is a standalone Market Data CLI process. It owns provider access, provider abstraction, normalization, completion handling, timestamp normalization, availability detection, deterministic range retrieval, incremental updates, retention and persistence to `<SYMBOL>_marketdata.json`.
 
 The durable market-data boundary is `<SYMBOL>_marketdata.json`.
 
@@ -885,21 +885,9 @@ Provider-specific metadata must not enter the canonical candle representation un
 
 ---
 
-## B16. Price basis
-
-The provider adapter must use one clearly defined and consistent historical price basis for the normalized market-data dataset it supplies.
-
-Adjusted and unadjusted historical prices must not be mixed within one analysis.
-
-Price basis is a Market Data provider-policy concern, not a canonical SMC semantic rule.
-
-The price basis is not a `market_data.py` CLI parameter. It is fixed by the provider-adapter implementation and must be documented in the corresponding provider source file.
-
-The same basis must be used across the full structural history of an analysis.
-
 ---
 
-## B17. Deterministic normalization
+## B16. Deterministic normalization
 
 Given the same provider data and normalization policy:
 
@@ -918,7 +906,7 @@ Normalization must not depend on:
 
 ---
 
-## B18. Normalization failure
+## B17. Normalization failure
 
 Invalid provider data or normalization failure must not be silently ignored.
 
@@ -928,7 +916,7 @@ The canonical engine must never receive malformed or ambiguous candle data.
 
 ---
 
-## B19. Volume retention
+## B18. Volume retention
 
 When total traded volume is available from the provider, market_data.py preserves it as volume.total on the underlying normalized candle.
 

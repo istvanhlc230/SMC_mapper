@@ -2381,3 +2381,12 @@ Removed remaining negative wording about an undefined stdout candle-data channel
 Price basis remains outside the CLI and is documented as provider-adapter source-file policy.
 
 Final audit prerequisite passed: no stdout references remain; no candle-level volume_method field remains; current/live and parallel volume contracts remain intact.
+
+
+# PRICE-BASIS SPECIFICATION REMOVAL — COMPLETED
+
+Removed price-basis handling completely from the mapper specification because neither the mapper CLI nor mapper logic uses it.
+
+Removed the obsolete provider price-basis ownership wording from A16 and deleted the entire B16 Price Basis section. Subsequent B-sections were renumbered to preserve sequential normalization section numbering.
+
+Final audit requirement: price-basis is no longer a mapper specification concept.
