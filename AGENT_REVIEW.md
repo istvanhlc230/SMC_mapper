@@ -2265,3 +2265,54 @@ No canonical SMC semantic conflict was found in the reviewed specification archi
 
 **Current audit status: FAIL — architecture direction is sound, but the specification needs reconciliation before implementation.**
 
+
+# FULL SPECIFICATION REPAIR — TWO-FILE MARKET-DATA ARCHITECTURE (COMPLETED)
+
+## Final architecture
+
+- One `<SYMBOL>_marketdata.json` stores normalized completed candles for all acquired timeframes of the symbol.
+- One `<SYMBOL>_structures.json` stores all distinct mapper analyses for the symbol.
+- Analysis identity is deterministic from timeframe configuration plus requested start boundary.
+- Each analysis has its own `last_processed_candle_time` checkpoint.
+- A single symbol-level `history_no` value is stored once and applies independently to each analysis's applicable closed Dealing Range history.
+- Market-data retention is a bounded rolling operational policy per timeframe; it is not an SMC semantic rule.
+- When required history is outside the retained market-data window, the Market Data CLI reacquires it.
+
+## Runtime update contract
+
+- Initial/bootstrap execution acquires required historical completed candles into the market-data JSON, then the mapper reads them.
+- Normal monitor execution updates only newly completed candles.
+- One new completed candle is a normal update case.
+- Missed cycles are recovered as one chronological completed-candle range.
+- No new completed candle is a no-op.
+- Market-data and structure JSON updates are complete read-modify-write operations with temporary-file + atomic replacement.
+- If a file is temporarily unavailable for writing, the writer waits and retries up to a finite timeout.
+- One active monitor orchestration instance per symbol avoids multi-writer coordination complexity; multiple analyses run within that monitor.
+
+## CLI/debug contract
+
+- Candle data is persisted to `<SYMBOL>_marketdata.json`; it is not transferred to the mapper through stdout.
+- Debug output is `stderr` only.
+- Debug `stderr` is terminal-only and must not be captured, parsed, forwarded, merged, persisted, or passed to mapper/monitor.
+- Normal runtime is user-silent.
+
+## Full audit result
+
+Re-audited the repaired `smc_mapper_specification.md` against the canonical `.agents/skills/smc/` Layer 1-8 files and the internal A-D specification structure.
+
+Verified no remaining:
+- Market Data Layer/in-process service contract;
+- candle `stdout` pipe to mapper;
+- direct provider dependency in mapper;
+- single-analysis-only structures file model;
+- unspecified one-candle / missed-batch update path;
+- missing analysis identity/checkpoint separation;
+- missing file write safety contract.
+
+Verified canonical ownership remains intact and no `.agents/skills/smc/` file was modified.
+
+Final specification commit:
+`2ae61dcbbff50f32d55a2b2e514634e9e7d30d1e`
+
+**FINAL STATUS: PASS — SPECIFICATION RECONCILED WITH THE APPROVED TWO-FILE, PERSISTENT-MARKET-DATA RUNTIME MODEL**
+
