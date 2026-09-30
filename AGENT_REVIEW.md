@@ -2363,3 +2363,12 @@ Removed the remaining stale A19 rule that persisted one exclusive effective volu
 
 PASS — normalized market data now stores parallel volume availability; runtime volume-method selection remains separate.
 PASS — current snapshot has explicit identity/market-data semantics and remains non-canonical.
+
+
+# PRICE-BASIS CLI REMOVAL — COMPLETED
+
+Decision: price basis is not a market_data.py CLI parameter.
+
+The specification now requires the provider adapter to use one consistent price basis and documents that the selected basis must be recorded in the corresponding provider source file. The same basis must be maintained across an analysis; adjusted and unadjusted prices must never be mixed.
+
+This remains Market Data provider policy and does not redefine canonical SMC semantics.

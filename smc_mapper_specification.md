@@ -887,11 +887,13 @@ Provider-specific metadata must not enter the canonical candle representation un
 
 ## B16. Price basis
 
-The provider implementation must use a clearly defined and consistent historical price basis.
+The provider adapter must use one clearly defined and consistent historical price basis for the normalized market-data dataset it supplies.
 
 Adjusted and unadjusted historical prices must not be mixed within one analysis.
 
-The selected price basis is a data-policy concern, not a canonical SMC semantic rule.
+Price basis is a Market Data provider-policy concern, not a canonical SMC semantic rule.
+
+The price basis is not a `market_data.py` CLI parameter. It is fixed by the provider-adapter implementation and must be documented in the corresponding provider source file.
 
 The same basis must be used across the full structural history of an analysis.
 
