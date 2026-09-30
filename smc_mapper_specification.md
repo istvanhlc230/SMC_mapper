@@ -340,63 +340,84 @@ The mapper derives Dealing Range history boundaries strictly from the canonical 
 
 ## A13. JSON storage
 
-Use **one JSON file per symbol**.
+Use **two symbol-scoped JSON files per symbol**, with strictly separated ownership:
 
-Example:
+```text
+data/
+    CCCC_marketdata.json
+    BABA_marketdata.json
+    DTE.DE_marketdata.json
 
-```
 structures/
     CCCC_structures.json
     BABA_structures.json
     DTE.DE_structures.json
 ```
 
-A mapper execution for one symbol updates only that symbol's file.
+### Market-data JSON
 
-The monitor must be capable of discovering and processing all symbol files.
+`<SYMBOL>_marketdata.json` is the persistent normalized market-data store for that symbol.
 
-There is no single multi-symbol mapper JSON file.
+It contains candle data for **all timeframes requested or acquired for that symbol**, grouped explicitly by timeframe. A separate market-data file is not created per timeframe.
 
-Illustrative logical structure for two-timeframe analysis:
+Logical shape:
+
+```json
+{
+  "symbol": "CCCC",
+  "timeframes": {
+    "H4": { "candles": [] },
+    "M15": { "candles": [] },
+    "M1": { "candles": [] }
+  }
+}
+```
+
+The market-data JSON contains normalized candle data only. It must not contain canonical structural state, mapper history, POIs, trade state, or monitor state.
+
+### Structures JSON
+
+`<SYMBOL>_structures.json` is the canonical mapper structural-state file for that symbol.
+
+It contains **all distinct mapper analyses for the symbol in one file**. Each analysis is identified by a deterministic analysis key derived from its timeframe configuration, for example `H4_M15`, `H1_M5`, or `M15`.
+
+Logical shape:
 
 ```json
 {
   "symbol": "CCCC",
   "history_no": 5000,
-  "htf": "H4",
-  "ltf": "M15",
-  "last_processed_candle_time": "2026-09-29T18:45:00Z",
-
-  "current": {
-    "start_time": "...",
-    "close_time": null,
-    "structural_state": {},
-    "ltf_structures": []
-  },
-
-  "history": [
-    {
-      "start_time": "...",
-      "close_time": "...",
-      "structural_state": {},
-      "ltf_structures": [
-        {},
-        {}
-      ]
+  "analyses": {
+    "H4_M15": {
+      "htf": "H4",
+      "ltf": "M15",
+      "analysis_mode": "HTF_LTF",
+      "last_processed_candle_time": "...",
+      "current": {},
+      "history": []
+    },
+    "M15": {
+      "htf": null,
+      "ltf": "M15",
+      "analysis_mode": "SINGLE",
+      "last_processed_candle_time": "...",
+      "current": {},
+      "history": []
     }
-  ]
+  }
 }
 ```
 
-This is a logical schema illustration, not a new canonical ontology.
+The analysis key is an implementation-level identifier for stored mapper output. It does not redefine canonical SMC ontology.
 
-- "history_no" is stored once at symbol level.
-- In two-timeframe mode it limits retained CLOSED HTF Dealing Ranges only.
-- "ltf_structures" are context-scoped records inside the applicable HTF range and are not counted against "history_no".
-- "current.start_time" and historical "start_time" values are HTF Dealing Range lifecycle timestamps. They are not separate LTF start timestamps.
-- "last_processed_candle_time" is root-level mapper processing metadata and, in two-timeframe mode, refers to the LTF driving timeframe already identified by "ltf".
+`history_no` remains stored once at symbol level. Each analysis retains only the structural history permitted by the applicable retention rules.
 
-The JSON does not require a separate "ltf" object merely to repeat the LTF timeframe.
+A Market Data CLI execution updates only `<SYMBOL>_marketdata.json`. A mapper execution updates only the relevant analysis entry inside `<SYMBOL>_structures.json`.
+
+The monitor discovers the symbol file and then identifies each analysis by its stored `analysis_mode`, `htf`, `ltf`, and deterministic analysis key. It must not infer analysis identity solely from the filename.
+
+There is no single multi-symbol mapper JSON file and no single multi-symbol market-data JSON file.
+
 ## A14. Stored state
 
 The mapper JSON stores canonical **structural analysis** plus the minimal mapper-processing metadata required for deterministic incremental execution.
@@ -510,7 +531,7 @@ The normalized candle contract is the portability boundary for future platform a
 
 ## A17. Bootstrap
 
-The mapper constructs structural state by processing normalized candle ranges received through the Market Data CLI boundary.
+The mapper constructs structural state by processing normalized candle ranges read from `<SYMBOL>_marketdata.json`.
 
 For an initial build, or whenever a complete bootstrap is explicitly required:
 
@@ -518,9 +539,9 @@ earliest required effective candle -> latest completed driving-timeframe candle
 
 The mapper must not use a latest-window shortcut that bypasses required structural bootstrap.
 
-The launcher invokes the Market Data CLI for the required bootstrap range in deterministic batch form and passes the normalized result to the mapper CLI. The mapper does not obtain bootstrap data from the monitor and does not access a concrete provider.
+The launcher invokes the Market Data CLI for the required bootstrap range in deterministic batch form and updates `<SYMBOL>_marketdata.json`. The mapper then reads the required bootstrap range from that file. The mapper does not obtain bootstrap data from the monitor and does not access a concrete provider.
 
-For incremental execution after a valid persisted checkpoint, the launcher invokes the Market Data CLI for only the subsequently completed driving-timeframe range after the checkpoint, in chronological order, then passes that normalized range to the mapper CLI as defined by A18.
+For incremental execution after a valid persisted checkpoint, the launcher invokes the Market Data CLI for only the subsequently completed driving-timeframe range after the checkpoint, updates `<SYMBOL>_marketdata.json`, and then invokes the mapper against the resulting persisted range as defined by A18.
 
 ### A17.1 Two-timeframe LTF bootstrap
 
@@ -528,7 +549,7 @@ In two-timeframe analysis, the mapper establishes an LTF bootstrap coverage refe
 
 When a confirmed HTF Dealing Range exists, the applicable HTF Protected Structural Extreme is the preferred LTF bootstrap coverage reference. This reference determines the minimum historical LTF coverage needed for deterministic structural buildup. It is a data-coverage/reference point only; it is not an LTF structural start and does not create or promote any LTF structure.
 
-When LTF bootstrap is required, the launcher invokes the Market Data CLI once for one deterministic LTF range covering the anchor through the activation/current boundary, subject to any additional LTF warm-up required by the canonical LTF rules, then passes that range to the mapper CLI.
+When LTF bootstrap is required, the launcher invokes the Market Data CLI once for one deterministic LTF range covering the anchor through the activation/current boundary, subject to any additional LTF warm-up required by the canonical LTF rules, updates `<SYMBOL>_marketdata.json`, and then invokes the mapper against the persisted range.
 
 If the requested LTF coverage begins later than the anchor because the source has no completed LTF data at or after the requested anchor, the mapper uses the first actually supplied completed LTF candle after the reference as the effective LTF bootstrap start. No attempt is made by the mapper to access the provider directly.
 
@@ -544,7 +565,7 @@ The requested/effective analysis-window rules in A7-A8 and the Market Data Layer
 
 The monitor owns interactive runtime control, scheduling, current-price/runtime monitoring, target monitoring, alerts/notifications, and CLI orchestration.
 
-The mapper and Market Data CLI communicate only by CLI input/output. The mapper does not import `market_data.py` and the monitor is not a market-data object relay.
+The mapper and Market Data CLI are separate processes. `market_data.py` persists market data to `<SYMBOL>_marketdata.json`; the mapper reads normalized ranges from that file. The monitor is not a market-data object relay.
 
 The normal runtime relationship is:
 
@@ -564,9 +585,9 @@ The normal runtime relationship is:
                  smc_monitor.py
 ```
 
-A mapper CLI invocation consumes a complete normalized candle range for its requested execution. It must process the supplied range chronologically.
+A mapper invocation reads the complete required normalized candle range from `<SYMBOL>_marketdata.json` for its requested execution. It must process the selected range chronologically.
 
-In two-timeframe analysis, the launcher first obtains the required HTF range through the Market Data CLI, then obtains the required LTF range through the same CLI boundary and passes the normalized ranges to the mapper. The mapper establishes HTF context first and processes LTF candles against point-in-time HTF context.
+In two-timeframe analysis, the launcher first ensures the required HTF range is present in `<SYMBOL>_marketdata.json`, then ensures the required LTF range is present, and invokes the mapper against the persisted ranges. The mapper establishes HTF context first and processes LTF candles against point-in-time HTF context.
 
 A mapper invocation may cover multiple newly completed driving-timeframe candles. No per-candle subprocess contract is required.
 
