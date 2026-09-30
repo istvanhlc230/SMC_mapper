@@ -141,14 +141,14 @@ Examples:
 
 `--starttime 2026-09-01T09:30:00`
 
-Earlier candles may be fetched when required for structural bootstrap/warm-up.
+The mapper does not fetch earlier candles. Any candles required for structural bootstrap/warm-up must be supplied by the monitor/data layer as part of the historical replay or feed.
 
 The mapper must distinguish:
 
 - `requested_start`
 - `effective_start`
 
-If the requested history is unavailable, the mapper starts from the earliest available candle and reports this explicitly.
+If the requested start precedes the supplied feed, the mapper uses the earliest supplied completed candle that is valid for the requested analysis/bootstrap and reports that the effective start is later than requested.
 
 Missing historical data must never be fabricated.
 
@@ -169,9 +169,9 @@ Examples:
 
 `--endtime 2026-09-29T15:30:00`
 
-If omitted, use the latest available completed driving-timeframe candle at the mapper execution time.
+If omitted, use the latest supplied completed driving-timeframe candle.
 
-If supplied, use the latest completed candle whose canonical completion boundary is less than or equal to the requested end time.
+If supplied, use the latest supplied completed candle whose canonical completion boundary is less than or equal to the requested end time.
 
 The normalized candle `timestamp` alone must not be treated as proof that a candle has completed. Completion is determined by the normalized completion status/time contract in B6.
 
@@ -877,7 +877,7 @@ The mapper does not use data-availability metadata as permission to fetch additi
 
 After all required bootstrap/warm-up history has been supplied, the mapper determines the effective analysis interval from the requested start/end constraints.
 
-The provider must not prematurely clip away candles required for structural bootstrap.
+The market-data layer must not prematurely clip away candles required for structural bootstrap.
 
 ---
 
