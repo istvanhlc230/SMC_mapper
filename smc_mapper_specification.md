@@ -566,7 +566,7 @@ Timeframe selection is controlled only by `--htf` and/or `--ltf` according to A4
 Volume analysis is controlled by the optional mapper CLI parameter:
 
 ```
---volume-method {NONE,OHLC,ORDERFLOW}
+--volume-method {NONE,OHLC,ORDERFLOW,MIXED}
 ```
 
 When the parameter is omitted, the mapper uses automatic runtime selection in this order:
@@ -1139,7 +1139,11 @@ This is a directional volume estimate, not proof of historical bid/ask execution
 
 ## D5. OHLC lower-timeframe refinement
 
-When `--volume-method OHLC` is selected and suitable lower-timeframe data is available, directional volume should be calculated from the contained completed intrabars instead of directly splitting the parent candle.
+When `--volume-method OHLC` is selected, the mapper may refine a parent candle's directional-volume estimate from already-persisted completed lower-timeframe candles.
+
+The lower-timeframe source must already exist in `<SYMBOL>_marketdata.json`. The mapper must not call a provider, request an implicit timeframe, or create missing intrabars.
+
+When a suitable persisted lower-timeframe series fully covers the parent candle's completed interval, directional volume is calculated from the contained completed intrabars instead of directly splitting the parent candle.
 
 For each intrabar:
 
@@ -1149,9 +1153,11 @@ Close < Open → sell side
 Close = Open → neutral; do not force a side
 ```
 
-Parent-bar buy volume, sell volume and delta are the sums of the classified intrabar volumes.
+Parent-bar buy volume, sell volume and delta are the sums of the classified intrabar volumes. Neutral intrabars do not contribute to either directional side.
 
-OHLC-derived directional volume is stored under volume.ohlc; genuine orderflow data is stored under volume.orderflow. The two branches may coexist for the same candle.
+If no suitable persisted lower-timeframe series exists, or coverage is incomplete, the mapper falls back to the deterministic D4 aggregate-OHLC calculation for the parent candle. It must not fabricate or partially synthesize intrabar coverage.
+
+OHLC-derived directional volume is stored under `volume.ohlc`; genuine orderflow data is stored under `volume.orderflow`. The two branches may coexist for the same candle.
 
 ## D6. POI JSON representation
 
@@ -1196,6 +1202,8 @@ directly into a probability.
 A valid probability requires an explicitly defined statistical model that has been trained/calibrated on labeled observations and whose output is interpretable as an estimated probability of the defined POI outcome.
 
 The mapper runtime uses the current canonical POI context and its available volume/orderflow features as model inputs. The mapper does not calculate historical POI success rates on the fly.
+
+**V1 probability contract:** the V1 runtime does not ship with a calibrated probability model. Probability is therefore absent/undefined in V1 unless an externally supplied calibrated model is explicitly integrated. Canonical POI processing and all volume analytics must operate correctly without probability.
 
 The outcome being predicted must be explicitly defined by the statistical model contract. The model must not use an undefined notion of "POI success".
 
