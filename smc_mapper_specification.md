@@ -84,6 +84,17 @@ The mapper must never silently swap or otherwise correct the supplied timeframes
 
 ---
 
+## A4a. Entry timeframe
+
+The entry timeframe is the driving timeframe for incremental processing and runtime scheduling.
+
+- Single-timeframe analysis: the selected timeframe is the entry timeframe.
+- Two-timeframe analysis: the LTF is the entry timeframe.
+
+The entry timeframe determines `last_processed_candle_time`, incremental market-data acquisition, mapper processing boundaries, and monitor update scheduling. HTF remains the higher-context timeframe and is processed as required to provide point-in-time context for the entry timeframe.
+
+---
+
 ## A5. HTF Pullback Validation
 
 HTF pullback validation is enabled only in **two-timeframe analysis**, when both HTF and LTF are explicitly supplied and they are different.
@@ -185,7 +196,7 @@ Examples:
 
 `--endtime 2026-09-29T15:30:00`
 
-If omitted, use the latest completed driving-timeframe candle available in `<SYMBOL>_marketdata.json` after the required update.
+If omitted, use the latest completed entry-timeframe candle available in `<SYMBOL>_marketdata.json` after the required update.
 
 If supplied, use the latest completed candle in `<SYMBOL>_marketdata.json` whose canonical completion boundary is less than or equal to the requested end time.
 
@@ -480,13 +491,13 @@ The mapper constructs structural state by processing normalized candle ranges re
 
 For an initial build, or whenever a complete bootstrap is explicitly required:
 
-earliest required effective candle -> latest completed driving-timeframe candle
+earliest required effective candle -> latest completed entry-timeframe candle
 
 The mapper must not use a latest-window shortcut that bypasses required structural bootstrap.
 
 The launcher invokes the Market Data CLI for the required bootstrap range in deterministic batch form and updates `<SYMBOL>_marketdata.json`. The mapper then reads the required bootstrap range from that file.
 
-For incremental execution after a valid persisted checkpoint, the launcher invokes the Market Data CLI for only the subsequently completed driving-timeframe range after the checkpoint, in chronological order, updates `<SYMBOL>_marketdata.json`, and then invokes the mapper against the resulting persisted range as defined by A18.
+For incremental execution after a valid persisted checkpoint, the launcher invokes the Market Data CLI for only the subsequently completed entry-timeframe range after the checkpoint, in chronological order, updates `<SYMBOL>_marketdata.json`, and then invokes the mapper against the resulting persisted range as defined by A18.
 
 The mapper does not obtain market data from the monitor and does not access a concrete provider.
 
@@ -514,7 +525,7 @@ The mapper and Market Data CLI are separate processes. `market_data.py` persists
 
 The monitor orchestrates each symbol update cycle in this order:
 
-1. Determine which configured analysis entries need new completed driving-timeframe data.
+1. Determine which configured analysis entries need new completed entry-timeframe data.
 2. Invoke the Market Data CLI to update the required timeframe sections in `<SYMBOL>_marketdata.json`.
 3. Invoke each affected mapper analysis.
 4. The mapper reads the persisted ranges, processes new candles chronologically, and updates only its analysis entry.
@@ -528,7 +539,7 @@ The Market Data CLI may also refresh the current in-progress snapshot when live 
 
 If neither a new completed candle nor a changed or newly available requested current snapshot exists, that Market Data update is a no-op.
 
-Each analysis entry has its own `last_processed_candle_time`. It identifies the latest completed driving-timeframe candle incorporated by that analysis.
+Each analysis entry has its own `last_processed_candle_time`. It identifies the latest completed entry-timeframe candle incorporated by that analysis.
 
 Multiple analyses for the same symbol may overlap in time and share the same `<SYMBOL>_marketdata.json`. Their structural state and checkpoints remain separate inside `<SYMBOL>_structures.json`.
 
