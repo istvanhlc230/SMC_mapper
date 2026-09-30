@@ -607,6 +607,8 @@ Mapper behavior is controlled by:
 
 Market-data provider configuration belongs to the market-data layer and is not a mapper semantic dependency.
 
+The Market Data Layer may also expose a CLI interface for explicit candle-range retrieval. The CLI must emit the same normalized candle contract used by the in-process Market Data service and is an external integration boundary, not a canonical SMC dependency.
+
 No mapper configuration file is to be introduced for timeframe selection, history retention or analysis window.
 
 Timeframe selection is controlled only by `--htf` and/or `--ltf` according to A4–A6.
