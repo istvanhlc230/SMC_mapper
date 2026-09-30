@@ -8,6 +8,17 @@
 
 # A. INPUT / ORCHESTRATION
 
+## A0. Active product runtime components
+
+The intended finished product uses these active Python runtime components:
+
+- `market_data.py` — Market Data Layer: provider access, normalization, completion handling, caching/buffering, and deterministic candle-range retrieval.
+- `smc_mapper.py` — canonical SMC mapper: structural analysis, HTF/LTF processing, and persistent structural state.
+- `smc_monitor.py` — interactive runtime: scheduling, user interaction, runtime/target monitoring, and alerts.
+
+The older `smc_htf_ltf_monitor.py`, `smc_analyzer.py`, and Layer-1-to-Layer-6 `*_engine.py` test/implementation artifacts are not components of the finished product architecture.
+
+This specification defines the mapper contract and its boundaries with the Market Data Layer and interactive monitor.
 ## A1. Symbol
 
 One required instrument per mapper execution.
@@ -144,19 +155,16 @@ Examples:
 
 `--starttime 2026-09-01T09:30:00`
 
-The mapper does not fetch earlier candles. Any candles required for structural bootstrap/warm-up must be supplied by the monitor/data layer as part of the historical replay or feed.
+The mapper does not access a concrete provider to obtain earlier candles. Any candles required for structural bootstrap/warm-up are obtained through the Market Data Layer using the mapper's normalized range-query contract.
 
 The mapper must distinguish:
 
 - `requested_start`
 - `effective_start`
 
-If the requested start precedes the supplied feed, the mapper uses the earliest supplied completed candle that is valid for the requested analysis/bootstrap and reports that the effective start is later than requested.
+If the requested start precedes the available completed data, the mapper uses the earliest supplied completed candle that is valid for the requested analysis/bootstrap and reports that the effective start is later than requested.
 
 Missing historical data must never be fabricated.
-
----
-
 ## A8. End time
 
 `--endtime` is optional.
