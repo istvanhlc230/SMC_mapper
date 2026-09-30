@@ -144,7 +144,7 @@ When only one timeframe is supplied, only that timeframe is analyzed.
 
 ## A7. Start time
 
-`--starttime` defines the requested start of the analysis window.
+`--starttime` is required and defines the requested start of the analysis window.
 
 It may be specified as:
 
@@ -1073,7 +1073,7 @@ The normalized market-data record may contain multiple volume types in parallel.
 
 The user may explicitly select the analytical method with:
 
-    --volume-method {NONE,OHLC,ORDERFLOW}
+    --volume-method {NONE,OHLC,ORDERFLOW,MIXED}
 
 When omitted, the effective analytical method is selected automatically in this order:
 
@@ -1082,6 +1082,8 @@ When omitted, the effective analytical method is selected automatically in this 
 ORDERFLOW requires genuine orderflow buy/sell volume and delta in volume.orderflow.
 
 OHLC requires volume.total and calculates directional buy/sell volume and delta deterministically from OHLC data. Suitable lower-timeframe data may refine the estimate.
+
+MIXED uses the available OHLC-derived and genuine orderflow analytics in parallel. If only one is available, it uses that source; if neither is available, the effective result is NONE.
 
 NONE means that no supported analytical volume path is available.
 
