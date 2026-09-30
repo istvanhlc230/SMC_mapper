@@ -111,9 +111,10 @@ The mapper must never automatically select or invent a different HTF when only o
 
 ---
 
+
 ## A6. Analysis order and timeframe synchronization
 
-When both timeframes are supplied, the mapper establishes the HTF structural context first and then processes HTF and LTF chronologically on their shared time axis.
+When both timeframes are supplied, the mapper obtains the required normalized HTF/LTF candle ranges from the Market Data Layer and processes them chronologically on their shared time axis.
 
 "HTF context establishment -> synchronized HTF/LTF processing"
 
@@ -124,6 +125,8 @@ Within synchronized processing:
 - a newly completed HTF candle updates HTF canonical state before later LTF evaluations may consume that new HTF information;
 - each completed LTF candle is evaluated against only the HTF canonical context that already exists at that LTF evaluation time;
 - the mapper does not use a later HTF event to reinterpret an earlier LTF event.
+
+The mapper determines which candle ranges are required and requests them from the Market Data Layer in deterministic batches. It does not request market data from the monitor.
 
 When only one timeframe is supplied, only that timeframe is analyzed.
 ## A7. Start time
@@ -177,25 +180,25 @@ The normalized candle `timestamp` alone must not be treated as proof that a cand
 
 An incomplete/current candle must never enter canonical analysis.
 
+
 ## A9. Independent timeframe feed ranges
 
-HTF and LTF candle feeds may cover different temporal ranges.
+HTF and LTF candle data may cover different temporal ranges.
 
-The monitor/data layer is responsible for supplying whatever historical replay/backfill is available for each timeframe. The mapper must not assume that both feeds begin at the same time and must not fabricate unavailable candles.
+The Market Data Layer owns acquisition and exposes the actual available range for each timeframe. The mapper requests only the range required by its current analysis and must not fabricate unavailable candles.
 
 Example:
 
-- HTF feed: `2026-06-01 -> 2026-09-29`
-- LTF feed: `2026-01-01 -> 2026-09-29`
+- HTF data: 2026-06-01 -> 2026-09-29
+- LTF data: 2026-01-01 -> 2026-09-29
 
-The longer LTF history must not be truncated merely because the HTF feed is shorter.
+The longer LTF history must not be truncated merely because the HTF history is shorter.
 
-The absence of HTF data before its supplied start does not imply that HTF structure did not exist.
+The absence of HTF data before its available start does not imply that HTF structure did not exist.
 
-Feed-range metadata may be supplied for diagnostics and deterministic bootstrap decisions, but data acquisition remains outside mapper ownership.
+Availability metadata may be used by the mapper to determine whether a requested structural range can be satisfied. If the required range cannot be satisfied, the mapper must represent the resulting data/context unavailability explicitly and fail closed where canonical rules require unavailable context.
 
----
-
+The mapper does not perform provider-specific acquisition.
 ## A10. Missing HTF context
 
 When an LTF canonical rule requires HTF pullback validation but the required HTF historical context is unavailable, represent the condition explicitly as:
@@ -416,16 +419,17 @@ The mapper must not persist dynamic monitoring or trade state such as:
 Those are owned by the monitor.
 
 The root-level "last_processed_candle_time" is an exception to the structural-only content above: it is mapper processing provenance/checkpoint metadata and carries no canonical SMC meaning.
+
 ## A15. Input validation
 
-Before canonical analysis, the mapper validates the supplied configuration and normalized feed contract, including at minimum:
+Before canonical analysis, the mapper validates the supplied configuration and normalized candle contract, including at minimum:
 
 - symbol;
 - timeframe values;
 - HTF/LTF relationship;
 - start/end values;
-- `starttime < endtime` when both are specified;
-- `history_no`;
+- starttime < endtime when both are specified;
+- history_no;
 - timestamp ordering;
 - duplicate timestamps;
 - timezone validity;
@@ -433,118 +437,125 @@ Before canonical analysis, the mapper validates the supplied configuration and n
 - OHLC integrity;
 - two-timeframe HTF/LTF mode requirements.
 
-Provider-specific availability checks and provider/API errors belong to the market-data layer, not to the mapper.
+Provider-specific availability checks, provider/API failures, and acquisition errors belong to the Market Data Layer.
 
-Invalid mapper input or normalized feed data must fail explicitly.
-
----
+Invalid mapper configuration or normalized candle data must fail explicitly.
 
 ## A16. Market-data boundary and ownership
 
-The mapper has **no direct connection to any market-data provider**.
+The mapper has no direct connection to any concrete market-data provider.
 
-Market-data acquisition is owned outside the mapper. The initial implementation may provide that acquisition and normalization in a single replaceable Python module, for example:
+Market-data acquisition, provider abstraction, normalization, completion handling, timestamp normalization, price-basis handling, caching/buffering, and volume/orderflow capability detection are owned by the Market Data Layer. The initial implementation may place these responsibilities in one replaceable Python module: market_data.py
 
-`market_data.py`
+The Market Data Layer exposes a provider-independent candle service to both the mapper and the monitor.
 
-That module may contain the provider abstraction, the initial Yahoo Charts implementation, provider-specific parsing, completion handling, timestamp normalization, price-basis handling, and volume/orderflow capability detection.
+The mapper may request normalized candle ranges from that service through a stable range interface such as:
 
-The monitor owns orchestration of that market-data layer and delivers normalized completed candle data to the mapper through a one-way feed:
+get_candles(symbol, timeframe, start, end)
 
-```
-Market-data provider
-        ↓
-market_data.py
-        ↓
-Monitor
-        ↓
-Mapper
-```
+The returned candles are normalized according to Section B. The mapper does not know whether a requested range was served from memory, persistent cache, replay storage, or an external provider.
+
+The monitor may use the same service for runtime/current-data needs. The monitor is not a relay between the mapper and the market-data provider.
+
+The architectural relationship is:
+
+                 market_data.py
+              +------------------+
+Provider(s) ->| acquisition      |
+              | normalization    |
+              | cache / buffer   |
+              +--------+---------+
+                       |
+                 +-----+-----+
+                 |           |
+                 v           v
+              Mapper       Monitor
 
 The mapper must never:
 
-- call Yahoo Charts or another provider directly;
+- call Yahoo Charts or another concrete provider directly;
 - perform provider-specific HTTP/API requests;
-- request historical data from the monitor or provider;
-- issue a reverse `DATA_REQUEST` solely to obtain candles.
+- depend on provider-specific response formats;
+- request market data from the monitor;
+- expose a provider-specific dependency through its canonical SMC interface.
 
-The mapper consumes only the normalized candle/feed contract defined in Section B.
-
-The one-way feed may contain historical replay/backfill candles and subsequently completed live candles. The mapper must process the received data deterministically and must not depend on how the monitor obtained it.
-
-The provider implementation is replaceable without changing canonical SMC logic or the mapper's canonical processing contract.
+The Market Data Layer must provide deterministic range retrieval and may satisfy a request from cache/buffer or acquire only the missing range from the configured provider.
 
 Future provider adapters may include:
 
 - Yahoo Charts;
 - MetaTrader / MT4 / MT5;
 - Pine Script data integration;
-- broker or replay sources.
+- broker feeds;
+- historical/replay sources.
 
 Provider-specific API details remain outside the canonical SMC engine.
 
----
+The normalized candle contract is the portability boundary for future platform adapters.
 
 ## A17. Bootstrap
 
-The mapper constructs structural state by processing the normalized candle feed chronologically.
+The mapper constructs structural state by processing normalized candle ranges obtained from the Market Data Layer.
 
-For an initial build, or whenever a complete bootstrap/replay is supplied:
+For an initial build, or whenever a complete bootstrap is explicitly required:
 
-"earliest required effective candle in the supplied feed -> latest completed driving-timeframe candle"
+earliest required effective candle -> latest completed driving-timeframe candle
 
 The mapper must not use a latest-window shortcut that bypasses required structural bootstrap.
 
-The monitor/data layer may supply the required historical replay before live incremental candles. The mapper does not fetch missing bootstrap data.
+The mapper requests the required bootstrap range from the Market Data Layer in deterministic batch form. The mapper does not obtain bootstrap data from the monitor and does not access a concrete provider.
 
-For incremental execution after a valid persisted checkpoint, the persisted current structural state is the resume baseline and the mapper processes only subsequently supplied completed driving-timeframe candles, in chronological order, as defined by A18.
+For incremental execution after a valid persisted checkpoint, the mapper requests only the subsequently completed driving-timeframe range after the checkpoint, in chronological order, as defined by A18.
 
 ### A17.1 Two-timeframe LTF bootstrap
 
 In two-timeframe analysis, the mapper establishes an LTF bootstrap coverage reference from the applicable HTF canonical structural context.
 
-When a confirmed HTF Dealing Range exists, the applicable HTF **Protected Structural Extreme** is the preferred LTF bootstrap coverage reference. This reference determines the minimum historical LTF coverage needed for deterministic structural buildup. It is a data-coverage/reference point only; it is not an LTF structural start and does not create or promote any LTF structure.
+When a confirmed HTF Dealing Range exists, the applicable HTF Protected Structural Extreme is the preferred LTF bootstrap coverage reference. This reference determines the minimum historical LTF coverage needed for deterministic structural buildup. It is a data-coverage/reference point only; it is not an LTF structural start and does not create or promote any LTF structure.
 
-The mapper may receive a historical LTF replay containing candles before and after this reference. From the supplied replay, it uses the reference as the coverage anchor and applies any additional LTF warm-up required by the canonical LTF rules.
+When LTF bootstrap is required, the mapper requests one deterministic LTF range covering the anchor through the activation/current boundary from the Market Data Layer, subject to any additional LTF warm-up required by the canonical LTF rules.
 
-If the supplied LTF feed begins later than the reference, the mapper uses the **first actually supplied completed LTF candle after the reference** as the effective LTF bootstrap start. No attempt is made by the mapper to retrieve earlier data.
+If the requested LTF coverage begins later than the anchor because the source has no completed LTF data at or after the requested anchor, the mapper uses the first actually supplied completed LTF candle after the reference as the effective LTF bootstrap start. No attempt is made by the mapper to access the provider directly.
 
-If the supplied LTF feed begins before the HTF reference, that earlier data may be retained and used as additional canonical LTF warm-up when required; the HTF Protected Structural Extreme remains the context/coverage reference.
+If the supplied LTF data begins before the HTF reference, that earlier data may be retained and used as additional canonical LTF warm-up when required; the HTF Protected Structural Extreme remains the context/coverage reference.
 
 If the applicable confirmed HTF Protected Structural Extreme does not exist, the mapper does not fabricate one. The LTF bootstrap then follows the supplied LTF history subject to the canonical genesis/source-gap boundaries.
 
 The LTF bootstrap reference is not an LTF structural-start ontology. The first LTF structural object is determined only by the canonical LTF rules.
 
-The requested/effective analysis-window rules in A7-A8 and the supplied feed-range rules in A9 continue to apply. No missing LTF candles are fabricated.
+The requested/effective analysis-window rules in A7-A8 and the Market Data Layer availability rules in A9/B13 continue to apply. No missing LTF candles are fabricated.
+
 ## A18. Monitor boundary and mapper checkpoint
 
-The monitor owns dynamic monitoring functions, market-data acquisition, feed scheduling, and delivery of normalized completed candle data to the mapper.
+The monitor owns interactive runtime control, scheduling, current-price/runtime monitoring, target monitoring, and alerts/notifications.
+
+The Market Data Layer owns market-data acquisition and exposes normalized candle-range queries. The mapper uses that service directly for structural analysis.
+
+The monitor may query the same Market Data Layer for runtime data, but it is not a relay between the mapper and the market-data provider.
 
 The monitor must not redefine canonical SMC semantics.
 
-The mapper is **feed-driven**. The normal communication direction is:
+The normal runtime relationship is:
 
-```
-Monitor
-   ↓
-normalized completed candle batch
-   ↓
-Mapper
-```
+                 Market Data Layer
+                /                 \
+               v                   v
+            Mapper              Monitor
+               |                   |
+               +---- state/events--+
 
-There is no reverse mapper-to-monitor market-data request channel.
+There is no mapper-to-monitor market-data request channel, and there is no requirement for the monitor to feed individual candles to the mapper.
 
-In two-timeframe analysis, the monitor may continuously deliver completed HTF and LTF candles even when LTF structural mapping is currently inactive. The mapper decides whether the received LTF data is buffered, replayed for activation/bootstrap, or processed as active LTF structure according to the canonical execution-context rules.
+In two-timeframe analysis, the mapper obtains HTF/LTF historical or incremental ranges directly from the Market Data Layer. The mapper establishes the HTF context first, then processes only the LTF range required by the applicable execution-context state. LTF bootstrap/activation may therefore be satisfied with one range query rather than individual candle delivery.
 
 In single-timeframe analysis, the selected timeframe is the driving timeframe.
 
-The mapper must tolerate missed monitor invocations and must process all subsequently supplied completed driving-timeframe candles in chronological order rather than assuming one mapper call per candle.
+The monitor triggers mapper analysis according to the runtime schedule or user interaction. A mapper invocation may cover multiple newly completed driving-timeframe candles; the mapper must process the returned range chronologically.
 
-"last_processed_candle_time" is mapper processing metadata, not canonical SMC state and not dynamic trade/monitor state. It is stored once at the JSON root, alongside "symbol", "history_no", "htf", and "ltf".
+last_processed_candle_time is mapper processing metadata, not canonical SMC state and not dynamic trade/monitor state. It is stored once at the JSON root, alongside symbol, history_no, htf, and ltf.
 
 Example root metadata:
 
-```json
 {
   "symbol": "CCCC",
   "history_no": 5000,
@@ -552,33 +563,29 @@ Example root metadata:
   "ltf": "M15",
   "last_processed_candle_time": "2026-09-29T18:45:00Z"
 }
-```
 
-In two-timeframe mode, "last_processed_candle_time" identifies the latest completed driving-timeframe candle that the mapper has successfully incorporated into its persisted processing state. It is not evidence that the LTF structural engine was active for that candle.
+In two-timeframe mode, last_processed_candle_time identifies the latest completed driving-timeframe candle that the mapper has successfully incorporated into its persisted processing state.
 
 In single-timeframe mode, it identifies the latest completed candle of the selected driving timeframe.
 
 When no explicit analysis date boundary is supplied:
 
-1. For an existing JSON with a valid "last_processed_candle_time", process every newly supplied completed driving-timeframe candle after that checkpoint through the newest supplied completed driving-timeframe candle, in chronological order.
+1. For an existing JSON with a valid last_processed_candle_time, the mapper requests every newly completed driving-timeframe candle after that checkpoint through the latest completed driving-timeframe candle from the Market Data Layer, in chronological order.
 2. A candle at or before the checkpoint is already incorporated and must not be processed again as a new canonical input.
-3. If the checkpoint is absent or unusable, perform the required structural bootstrap from the earliest effective history available in the supplied feed through the newest supplied completed driving-timeframe candle.
+3. If the checkpoint is absent or unusable, the mapper requests the required bootstrap range from the Market Data Layer through the latest completed driving-timeframe candle.
 4. After successful processing, persist the timestamp of the newest completed driving-timeframe candle actually incorporated into mapper processing state.
 
-The mapper must not advance "last_processed_candle_time" past a candle whose processing was not successfully incorporated.
+The mapper must not advance last_processed_candle_time past a candle whose processing was not successfully incorporated.
 
-Structural state and "last_processed_candle_time" must be persisted as one consistent checkpointed result. The mapper must not publish an advanced processing timestamp without the corresponding structural state, nor publish new structural state while retaining an earlier timestamp in a way that can cause unsafe divergence. The concrete atomic file-write mechanism is implementation-defined.
+Structural state and last_processed_candle_time must be persisted as one consistent checkpointed result. The mapper must not publish an advanced checkpoint without the corresponding structural state, nor publish new structural state while retaining an earlier timestamp in a way that can cause unsafe divergence. The concrete atomic file-write mechanism is implementation-defined.
 
 When explicit analysis date boundaries are supplied, the requested/effective interval rules in A7-A8 govern the bounded analysis; the checkpoint must not silently shorten that explicitly requested interval.
 
-"last_processed_candle_time" must not be placed inside "current" or "history", because it describes mapper processing provenance rather than a Dealing Range or structural object.
+last_processed_candle_time must not be placed inside current or history, because it describes mapper processing provenance rather than a Dealing Range or structural object.
 
 The monitor must not infer canonical structure from the checkpoint itself. The checkpoint only identifies where mapper processing may resume.
 
-When re-analysis is required, the monitor supplies the relevant normalized historical replay and/or subsequent completed candle feed to the mapper. The mapper does not fetch that data itself.
-
----
-
+When re-analysis is required, the monitor triggers the mapper; the mapper obtains the required normalized candle ranges from the Market Data Layer.
 ## A19. Configuration
 
 No separate mapper configuration file is required.
@@ -632,30 +639,29 @@ The selected/effective volume method is a data/implementation choice and does no
 
 # B. CANDLE / MARKET DATA NORMALIZATION
 
+
 ## B1. Provider boundary
 
-The market-data layer, outside the canonical mapper, receives provider-specific market data and converts it into a provider-independent normalized candle/feed representation.
+The Market Data Layer, outside the canonical mapper, receives provider-specific market data and converts it into a provider-independent normalized candle representation.
 
-```
 Provider-specific data
-        ↓
-Market-data acquisition / normalization
-        ↓
-Normalized Candle Feed
-        ↓
-Monitor
-        ↓
-Mapper / Canonical SMC Engine
-```
+        |
+        v
+Market Data Layer
+  acquisition / normalization
+        |
+        v
+Normalized Candle
+        |
+        +-------> Mapper and/or Monitor
 
 Canonical SMC logic must consume only normalized candle data.
 
-The mapper has no provider-specific acquisition dependency. Provider-specific API access, transport, retry, pagination, authentication, timestamp parsing, completion detection, and raw-field mapping belong to the market-data layer.
+Provider-specific API access, transport, retry, pagination, authentication, timestamp parsing, completion detection, and raw-field mapping belong to the Market Data Layer.
 
-The concrete market-data implementation may initially reside in one Python module such as `market_data.py`; it may later be split into multiple provider modules without changing the normalized candle contract.
+The concrete implementation may initially reside in one Python module such as market_data.py. That module may later be split into provider/cache modules without changing the normalized candle contract.
 
----
-
+The Market Data Layer must support deterministic range retrieval rather than requiring one provider request per candle.
 ## B2. Normalized candle representation
 
 Each normalized candle must contain at minimum:
@@ -849,38 +855,36 @@ The canonical engine must not contain provider-specific conversion logic.
 
 ---
 
+
 ## B13. Data availability
 
-The market-data layer should expose the actual available temporal range of each supplied timeframe feed.
+The Market Data Layer should expose the actual available temporal range of each requested timeframe.
 
 At minimum:
 
-- `available_start`
-- `available_end`
+- available_start
+- available_end
 
 This is useful because HTF and LTF may have different available history.
 
-The mapper must distinguish:
+The mapper distinguishes:
 
-```
 requested analysis range
-supplied/effective feed range
-```
+available/supplied range
 
-rather than silently treating unavailable data as absent structure.
+and uses the Market Data Layer to request the required range.
 
-The mapper does not use data-availability metadata as permission to fetch additional candles. Missing data remains missing unless the monitor/data layer supplies it.
+If the requested range cannot be fully supplied, the mapper must represent the resulting data/context unavailability explicitly and must fail closed where a canonical decision depends on unavailable information.
 
----
+The mapper does not access provider availability APIs directly.
 
 ## B14. Data clipping
 
-After all required bootstrap/warm-up history has been supplied, the mapper determines the effective analysis interval from the requested start/end constraints.
+The Market Data Layer must not prematurely clip away candles required for structural bootstrap.
 
-The market-data layer must not prematurely clip away candles required for structural bootstrap.
+The mapper requests a range that includes all required bootstrap/warm-up candles and then determines the effective analysis interval from the requested start/end constraints.
 
----
-
+Range retrieval may be served from cache/buffer and may include more historical candles than the final requested structural interval when those candles are required for deterministic warm-up.
 ## B15. Candle metadata
 
 The canonical candle representation contains information required for candle-level structural processing.
@@ -965,21 +969,23 @@ The LTF is not a canonical child of the HTF and must not redefine or mutate HTF 
 The HTF provides the execution context required by canonical LTF rules where such context is explicitly specified.
 
 In single-timeframe mode, no HTF/LTF execution relationship exists.
+
 ## C2. HTF/LTF synchronization and execution context
 
 When an HTF and LTF are both supplied:
 
-1. establish the current HTF canonical structural context first;
-2. establish the applicable HTF execution context and bootstrap coverage anchor;
-3. process subsequent completed HTF and LTF candles chronologically on the shared timeline;
-4. evaluate each LTF candle using only the HTF canonical context that already exists at that LTF evaluation time;
-5. apply HTF context only where required by a canonical downstream rule.
+1. the mapper requests the required HTF range from the Market Data Layer and establishes the current HTF canonical structural context first;
+2. the mapper determines the applicable HTF execution context and any LTF bootstrap/activation requirement;
+3. the mapper requests only the LTF range required by the applicable analysis state, in deterministic batch form;
+4. HTF and LTF candles are processed chronologically on the shared time axis;
+5. each LTF candle is evaluated using only HTF canonical context that already exists at that LTF evaluation time;
+6. a later HTF event must never reinterpret an earlier LTF event.
 
 The LTF exists to refine and qualify entry within the applicable HTF context; it does not create a competing higher-level narrative.
 
 The existence of HTF context must not automatically invalidate an LTF structural event. Only canonical rules that explicitly require HTF context may use it as a qualification, activation, or routing condition.
 
-HTF structural synchronization is an orchestration relationship. It does not transfer semantic ownership from HTF rules to LTF rules.
+HTF/LTF synchronization is an orchestration relationship implemented through the Market Data Layer; it does not transfer semantic ownership from HTF rules to LTF rules.
 ## C3. Point-in-time HTF context
 
 For every LTF evaluation that requires HTF information, only HTF structural facts that already existed at that evaluation time may be used.
@@ -1016,16 +1022,14 @@ If the LTF structure forms while a confirmed HTF Dealing Range is current, it is
 When an HTF Dealing Range transition and an LTF formation occur at the same timestamp, the HTF lifecycle update is applied first on the synchronized timeline; the LTF structure is therefore associated with the HTF context that is canonical after that timestamp's HTF lifecycle processing.
 
 If an LTF lifecycle crosses an HTF range transition, the canonical LTF lifecycle remains unchanged. The stored representation retains its original HTF context association and sufficient canonical provenance to represent the cross-boundary lifecycle without duplicating the same LTF object.
+
 ## C5. Canonical HTF-interaction routes
 
-Where a canonical LTF route explicitly requires HTF interaction, the mapper must expose the required HTF context to the LTF engine.
+Where a canonical LTF route explicitly requires HTF interaction, the mapper obtains the required HTF context from its canonical HTF state and requests any required LTF analysis range from the Market Data Layer.
 
-This includes the canonical LTF Structural Glitch / CHoCH route after HTF POI interaction or HTF core-liquidity takeout, as defined by `05_CHOCH_mechanics.md`.
+This includes the canonical LTF Structural Glitch / CHoCH route after HTF POI interaction or HTF core-liquidity takeout, as defined by 05_CHOCH_mechanics.md.
 
-The mapper must transport and align the required HTF context but must not invent a new CHoCH, BOS, IDM, POI, or entry rule.
-
----
-
+The mapper must align the returned candle range with the applicable point-in-time HTF context but must not invent a new CHoCH, BOS, IDM, POI, or entry rule.
 ## C6. Historical independence
 
 HTF history and LTF context-scoped records are structural analysis data, not dynamic monitor state.
