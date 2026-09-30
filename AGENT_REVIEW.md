@@ -2164,3 +2164,26 @@ Specification commit:
 
 **Final status: PASS — NORMAL RUNTIME CLI OUTPUT IS CAPTURED; USER-VISIBLE DIAGNOSTICS REQUIRE `--debug`**
 
+
+# DEBUG STDERR TERMINAL-ONLY CORRECTION — COMPLETED
+
+## Final contract
+
+- `stdout` carries machine-readable candle/data payloads only.
+- `stdout` is captured/piped between CLI processes and is not user-facing during normal runtime.
+- Debug/diagnostic output uses `stderr`.
+- Debug `stderr` is terminal-only and remains attached to the user's console.
+- The launcher/monitor must not capture, parse, forward, merge, persist, or pass debug `stderr` to the mapper or monitor.
+- `stderr` must never be merged into `stdout`.
+- `--debug` controls visibility of diagnostics; without it, debug/trace output is suppressed.
+- Debug mode does not alter canonical calculations or machine-readable output.
+
+## Verification
+
+Re-audited the mapper specification and confirmed the CLI process contract explicitly prevents debug information from entering mapper/monitor data paths.
+
+Specification commit:
+`02cca4e0b0ab417d2cb820ed782d77ab7f5128d2`
+
+**Final status: PASS — DEBUG INFORMATION IS TERMINAL-ONLY AND CANNOT ENTER MAPPER/MONITOR DATA INPUT**
+
