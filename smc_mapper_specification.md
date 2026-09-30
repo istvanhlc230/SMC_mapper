@@ -12,7 +12,7 @@
 
 The intended finished product uses these active Python runtime components:
 
-- `market_data.py` — Market Data Layer: provider access, normalization, completion handling, caching/buffering, and deterministic candle-range retrieval.
+- `market_data.py` — standalone Market Data CLI: provider access, normalization, completion handling, and deterministic candle-range retrieval. It emits the normalized candle contract for downstream consumers.
 - `smc_mapper.py` — canonical SMC mapper: structural analysis, HTF/LTF processing, and persistent structural state.
 - `smc_monitor.py` — interactive runtime: scheduling, user interaction, runtime/target monitoring, and alerts.
 
@@ -137,7 +137,7 @@ Within synchronized processing:
 - each completed LTF candle is evaluated against only the HTF canonical context that already exists at that LTF evaluation time;
 - the mapper does not use a later HTF event to reinterpret an earlier LTF event.
 
-The mapper determines which candle ranges are required and requests them from the Market Data Layer in deterministic batches. It does not request market data from the monitor.
+The mapper determines which candle ranges are required and obtains them from the Market Data CLI in deterministic batch form. The CLI response is the mapper's market-data input boundary. It does not request market data from the monitor.
 
 When only one timeframe is supplied, only that timeframe is analyzed.
 ## A7. Start time
@@ -155,7 +155,7 @@ Examples:
 
 `--starttime 2026-09-01T09:30:00`
 
-The mapper does not access a concrete provider to obtain earlier candles. Any candles required for structural bootstrap/warm-up are obtained through the Market Data Layer using the mapper's normalized range-query contract.
+The mapper does not access a concrete provider to obtain earlier candles. Any candles required for structural bootstrap/warm-up are obtained by invoking the Market Data CLI for the required normalized range.
 
 The mapper must distinguish:
 
@@ -193,7 +193,7 @@ An incomplete/current candle must never enter canonical analysis.
 
 HTF and LTF candle data may cover different temporal ranges.
 
-The Market Data Layer owns acquisition and exposes the actual available range for each timeframe. The mapper requests only the range required by its current analysis and must not fabricate unavailable candles.
+The Market Data CLI owns acquisition and exposes the actual available range for each timeframe through its normalized CLI contract. The mapper obtains only the range required by its current analysis and must not fabricate unavailable candles.
 
 Example:
 
@@ -445,49 +445,56 @@ Before canonical analysis, the mapper validates the supplied configuration and n
 - OHLC integrity;
 - two-timeframe HTF/LTF mode requirements.
 
-Provider-specific availability checks, provider/API failures, and acquisition errors belong to the Market Data Layer.
+Provider-specific availability checks, provider/API failures, and acquisition errors belong to the Market Data CLI process. The mapper sees only the normalized CLI result or an explicit acquisition/error result.
 
 Invalid mapper configuration or normalized candle data must fail explicitly.
 
 ## A16. Market-data boundary and ownership
 
-The mapper has no direct connection to any concrete market-data provider.
+The mapper has no direct connection to any concrete market-data provider and has no in-process dependency on `market_data.py`.
 
-Market-data acquisition, provider abstraction, normalization, completion handling, timestamp normalization, price-basis handling, caching/buffering, and volume/orderflow capability detection are owned by the Market Data Layer. The initial implementation may place these responsibilities in one replaceable Python module: market_data.py
+`market_data.py` is a standalone Market Data CLI process. It owns provider access, provider abstraction, normalization, completion handling, timestamp normalization, price-basis handling, availability detection, and deterministic candle-range retrieval.
 
-The Market Data Layer exposes a provider-independent candle service to both the mapper and the monitor.
+The only mapper-to-market-data boundary is **CLI data transfer**.
 
-The mapper may request normalized candle ranges from that service through a stable range interface such as:
+The Market Data CLI accepts a deterministic range request, for example:
 
-get_candles(symbol, timeframe, start, end)
+    python market_data.py --symbol CCCC --timeframe M15 --start 2026-09-01T00:00:00Z --end 2026-09-29T18:45:00Z
 
-The returned candles are normalized according to Section B. The mapper does not know whether a requested range was served from memory, persistent cache, replay storage, or an external provider.
+It emits the normalized candle contract on stdout. The mapper consumes that normalized result through its CLI input boundary. The exact transport mechanism is an implementation detail, but the runtime contract remains CLI-based.
 
-The monitor may use the same service for runtime/current-data needs. The monitor is not a relay between the mapper and the market-data provider.
+The normalized candle contract is the portability boundary. The mapper must not know whether the Market Data CLI obtained the range from Yahoo, MT4/MT5, Pine/replay, a broker adapter, or another provider.
+
+The monitor may orchestrate the CLI calls and may independently invoke the Market Data CLI for runtime/current-data needs. The monitor is not a provider relay and does not feed individual candles through a Python object API.
 
 The architectural relationship is:
 
-                 market_data.py
-              +------------------+
-Provider(s) ->| acquisition      |
-              | normalization    |
-              | cache / buffer   |
-              +--------+---------+
-                       |
-                 +-----+-----+
-                 |           |
-                 v           v
-              Mapper       Monitor
+```text
+Provider(s)
+    |
+    v
+market_data.py (CLI)
+    |
+    | normalized candle range
+    v
+smc_mapper.py (CLI)
+    |
+    v
+structural JSON
+    |
+    v
+smc_monitor.py
+```
 
-The mapper must never:
+The architecture must not require:
 
-- call Yahoo Charts or another concrete provider directly;
-- perform provider-specific HTTP/API requests;
-- depend on provider-specific response formats;
-- request market data from the monitor;
-- expose a provider-specific dependency through its canonical SMC interface.
+- importing `market_data.py` into the mapper;
+- a shared in-memory `CandleStore` between processes;
+- a mapper-to-monitor `DATA_REQUEST` channel;
+- direct mapper access to Yahoo Charts or another concrete provider;
+- provider-specific response formats inside the mapper.
 
-The Market Data Layer must provide deterministic range retrieval and may satisfy a request from cache/buffer or acquire only the missing range from the configured provider.
+Any cache or buffer used by the Market Data CLI is an implementation optimization only. It is not shared runtime state with the mapper and must not be required for correctness. If persistence is later added, it remains behind the Market Data CLI boundary.
 
 Future provider adapters may include:
 
@@ -503,7 +510,7 @@ The normalized candle contract is the portability boundary for future platform a
 
 ## A17. Bootstrap
 
-The mapper constructs structural state by processing normalized candle ranges obtained from the Market Data Layer.
+The mapper constructs structural state by processing normalized candle ranges received through the Market Data CLI boundary.
 
 For an initial build, or whenever a complete bootstrap is explicitly required:
 
@@ -511,9 +518,9 @@ earliest required effective candle -> latest completed driving-timeframe candle
 
 The mapper must not use a latest-window shortcut that bypasses required structural bootstrap.
 
-The mapper requests the required bootstrap range from the Market Data Layer in deterministic batch form. The mapper does not obtain bootstrap data from the monitor and does not access a concrete provider.
+The launcher invokes the Market Data CLI for the required bootstrap range in deterministic batch form and passes the normalized result to the mapper CLI. The mapper does not obtain bootstrap data from the monitor and does not access a concrete provider.
 
-For incremental execution after a valid persisted checkpoint, the mapper requests only the subsequently completed driving-timeframe range after the checkpoint, in chronological order, as defined by A18.
+For incremental execution after a valid persisted checkpoint, the launcher invokes the Market Data CLI for only the subsequently completed driving-timeframe range after the checkpoint, in chronological order, then passes that normalized range to the mapper CLI as defined by A18.
 
 ### A17.1 Two-timeframe LTF bootstrap
 
@@ -521,7 +528,7 @@ In two-timeframe analysis, the mapper establishes an LTF bootstrap coverage refe
 
 When a confirmed HTF Dealing Range exists, the applicable HTF Protected Structural Extreme is the preferred LTF bootstrap coverage reference. This reference determines the minimum historical LTF coverage needed for deterministic structural buildup. It is a data-coverage/reference point only; it is not an LTF structural start and does not create or promote any LTF structure.
 
-When LTF bootstrap is required, the mapper requests one deterministic LTF range covering the anchor through the activation/current boundary from the Market Data Layer, subject to any additional LTF warm-up required by the canonical LTF rules.
+When LTF bootstrap is required, the launcher invokes the Market Data CLI once for one deterministic LTF range covering the anchor through the activation/current boundary, subject to any additional LTF warm-up required by the canonical LTF rules, then passes that range to the mapper CLI.
 
 If the requested LTF coverage begins later than the anchor because the source has no completed LTF data at or after the requested anchor, the mapper uses the first actually supplied completed LTF candle after the reference as the effective LTF bootstrap start. No attempt is made by the mapper to access the provider directly.
 
@@ -535,65 +542,40 @@ The requested/effective analysis-window rules in A7-A8 and the Market Data Layer
 
 ## A18. Monitor boundary and mapper checkpoint
 
-The monitor owns interactive runtime control, scheduling, current-price/runtime monitoring, target monitoring, and alerts/notifications.
+The monitor owns interactive runtime control, scheduling, current-price/runtime monitoring, target monitoring, alerts/notifications, and CLI orchestration.
 
-The Market Data Layer owns market-data acquisition and exposes normalized candle-range queries. The mapper uses that service directly for structural analysis.
-
-The monitor may query the same Market Data Layer for runtime data, but it is not a relay between the mapper and the market-data provider.
-
-The monitor must not redefine canonical SMC semantics.
+The mapper and Market Data CLI communicate only by CLI input/output. The mapper does not import `market_data.py` and the monitor is not a market-data object relay.
 
 The normal runtime relationship is:
 
-                 Market Data Layer
-                /                 \
-               v                   v
-            Mapper              Monitor
-               |                   |
-               +---- state/events--+
+```text
+                 smc_monitor.py
+                      |
+          invokes Market Data CLI
+                      v
+                 market_data.py
+                      |
+            normalized candle range
+                      v
+                 smc_mapper.py
+                      |
+               structural JSON
+                      v
+                 smc_monitor.py
+```
 
-There is no mapper-to-monitor market-data request channel, and there is no requirement for the monitor to feed individual candles to the mapper.
+A mapper CLI invocation consumes a complete normalized candle range for its requested execution. It must process the supplied range chronologically.
 
-In two-timeframe analysis, the mapper obtains HTF/LTF historical or incremental ranges directly from the Market Data Layer. The mapper establishes the HTF context first, then processes only the LTF range required by the applicable execution-context state. LTF bootstrap/activation may therefore be satisfied with one range query rather than individual candle delivery.
+In two-timeframe analysis, the launcher first obtains the required HTF range through the Market Data CLI, then obtains the required LTF range through the same CLI boundary and passes the normalized ranges to the mapper. The mapper establishes HTF context first and processes LTF candles against point-in-time HTF context.
 
-In single-timeframe analysis, the selected timeframe is the driving timeframe.
+A mapper invocation may cover multiple newly completed driving-timeframe candles. No per-candle subprocess contract is required.
 
-The monitor triggers mapper analysis according to the runtime schedule or user interaction. A mapper invocation may cover multiple newly completed driving-timeframe candles; the mapper must process the returned range chronologically.
+`last_processed_candle_time` is mapper processing metadata, not canonical SMC state and not dynamic trade/monitor state. It is stored once at the JSON root, alongside symbol, history_no, htf, and ltf.
 
-last_processed_candle_time is mapper processing metadata, not canonical SMC state and not dynamic trade/monitor state. It is stored once at the JSON root, alongside symbol, history_no, htf, and ltf.
+The monitor/launcher uses the persisted checkpoint to determine the next required range. The checkpoint advances only when the corresponding mapper result is successfully persisted.
 
-Example root metadata:
+There is no mapper-to-monitor market-data request channel and no requirement for shared process memory.
 
-{
-  "symbol": "CCCC",
-  "history_no": 5000,
-  "htf": "H4",
-  "ltf": "M15",
-  "last_processed_candle_time": "2026-09-29T18:45:00Z"
-}
-
-In two-timeframe mode, last_processed_candle_time identifies the latest completed driving-timeframe candle that the mapper has successfully incorporated into its persisted processing state.
-
-In single-timeframe mode, it identifies the latest completed candle of the selected driving timeframe.
-
-When no explicit analysis date boundary is supplied:
-
-1. For an existing JSON with a valid last_processed_candle_time, the mapper requests every newly completed driving-timeframe candle after that checkpoint through the latest completed driving-timeframe candle from the Market Data Layer, in chronological order.
-2. A candle at or before the checkpoint is already incorporated and must not be processed again as a new canonical input.
-3. If the checkpoint is absent or unusable, the mapper requests the required bootstrap range from the Market Data Layer through the latest completed driving-timeframe candle.
-4. After successful processing, persist the timestamp of the newest completed driving-timeframe candle actually incorporated into mapper processing state.
-
-The mapper must not advance last_processed_candle_time past a candle whose processing was not successfully incorporated.
-
-Structural state and last_processed_candle_time must be persisted as one consistent checkpointed result. The mapper must not publish an advanced checkpoint without the corresponding structural state, nor publish new structural state while retaining an earlier timestamp in a way that can cause unsafe divergence. The concrete atomic file-write mechanism is implementation-defined.
-
-When explicit analysis date boundaries are supplied, the requested/effective interval rules in A7-A8 govern the bounded analysis; the checkpoint must not silently shorten that explicitly requested interval.
-
-last_processed_candle_time must not be placed inside current or history, because it describes mapper processing provenance rather than a Dealing Range or structural object.
-
-The monitor must not infer canonical structure from the checkpoint itself. The checkpoint only identifies where mapper processing may resume.
-
-When re-analysis is required, the monitor triggers the mapper; the mapper obtains the required normalized candle ranges from the Market Data Layer.
 ## A19.1 CLI debug output
 
 The Market Data CLI and mapper CLI must keep machine-readable data separate from human-readable diagnostics.
@@ -629,7 +611,7 @@ Mapper behavior is controlled by:
 
 Market-data provider configuration belongs to the market-data layer and is not a mapper semantic dependency.
 
-The Market Data Layer may also expose a CLI interface for explicit candle-range retrieval. The CLI must emit the same normalized candle contract used by the in-process Market Data service and is an external integration boundary, not a canonical SMC dependency.
+`market_data.py` provides the required CLI interface for explicit candle-range retrieval. The CLI emits the normalized candle contract consumed by the mapper CLI and monitor runtime. No in-process Market Data service is required.
 
 No mapper configuration file is to be introduced for timeframe selection, history retention or analysis window.
 
@@ -674,26 +656,28 @@ The selected/effective volume method is a data/implementation choice and does no
 
 ## B1. Provider boundary
 
-The Market Data Layer, outside the canonical mapper, receives provider-specific market data and converts it into a provider-independent normalized candle representation.
+The Market Data CLI, outside the canonical mapper, receives provider-specific market data and converts it into a provider-independent normalized candle representation.
 
 Provider-specific data
         |
         v
-Market Data Layer
+market_data.py (CLI)
   acquisition / normalization
         |
         v
-Normalized Candle
+Normalized Candle Range (stdout)
         |
-        +-------> Mapper and/or Monitor
+        +-------> smc_mapper.py (CLI)
+        |
+        +-------> smc_monitor.py
 
 Canonical SMC logic must consume only normalized candle data.
 
-Provider-specific API access, transport, retry, pagination, authentication, timestamp parsing, completion detection, and raw-field mapping belong to the Market Data Layer.
+Provider-specific API access, transport, retry, pagination, authentication, timestamp parsing, completion detection, and raw-field mapping belong to the Market Data CLI.
 
-The concrete implementation may initially reside in one Python module such as market_data.py. That module may later be split into provider/cache modules without changing the normalized candle contract.
+The concrete implementation resides initially in one standalone executable Python module, `market_data.py`. It may later be split internally without changing the CLI or normalized candle contract.
 
-The Market Data Layer must support deterministic range retrieval rather than requiring one provider request per candle.
+The Market Data CLI must support deterministic range retrieval rather than requiring one provider request per candle.
 ## B2. Normalized candle representation
 
 Each normalized candle must contain at minimum:
@@ -890,7 +874,7 @@ The canonical engine must not contain provider-specific conversion logic.
 
 ## B13. Data availability
 
-The Market Data Layer should expose the actual available temporal range of each requested timeframe.
+`market_data.py` must expose the actual available temporal range of each requested timeframe through its CLI result or explicit availability response.
 
 At minimum:
 
@@ -904,7 +888,7 @@ The mapper distinguishes:
 requested analysis range
 available/supplied range
 
-and uses the Market Data Layer to request the required range.
+and obtains the required range through the Market Data CLI boundary.
 
 If the requested range cannot be fully supplied, the mapper must represent the resulting data/context unavailability explicitly and must fail closed where a canonical decision depends on unavailable information.
 
@@ -912,11 +896,11 @@ The mapper does not access provider availability APIs directly.
 
 ## B14. Data clipping
 
-The Market Data Layer must not prematurely clip away candles required for structural bootstrap.
+The Market Data CLI must not prematurely clip away candles required for structural bootstrap.
 
-The mapper requests a range that includes all required bootstrap/warm-up candles and then determines the effective analysis interval from the requested start/end constraints.
+The launcher requests a range that includes all required bootstrap/warm-up candles through the Market Data CLI, and the mapper then determines the effective analysis interval from the requested start/end constraints.
 
-Range retrieval may be served from cache/buffer and may include more historical candles than the final requested structural interval when those candles are required for deterministic warm-up.
+CLI range retrieval may internally use a provider cache or buffer and may include more historical candles than the final requested structural interval when those candles are required for deterministic warm-up. Such cache/buffer state is internal to the Market Data CLI and is not shared with the mapper process.
 ## B15. Candle metadata
 
 The canonical candle representation contains information required for candle-level structural processing.
@@ -1017,7 +1001,7 @@ The LTF exists to refine and qualify entry within the applicable HTF context; it
 
 The existence of HTF context must not automatically invalidate an LTF structural event. Only canonical rules that explicitly require HTF context may use it as a qualification, activation, or routing condition.
 
-HTF/LTF synchronization is an orchestration relationship implemented through the Market Data Layer; it does not transfer semantic ownership from HTF rules to LTF rules.
+HTF/LTF synchronization is an orchestration relationship implemented by the launcher/monitor around CLI-delivered normalized ranges; it does not transfer semantic ownership from HTF rules to LTF rules.
 ## C3. Point-in-time HTF context
 
 For every LTF evaluation that requires HTF information, only HTF structural facts that already existed at that evaluation time may be used.
@@ -1057,7 +1041,7 @@ If an LTF lifecycle crosses an HTF range transition, the canonical LTF lifecycle
 
 ## C5. Canonical HTF-interaction routes
 
-Where a canonical LTF route explicitly requires HTF interaction, the mapper obtains the required HTF context from its canonical HTF state and requests any required LTF analysis range from the Market Data Layer.
+Where a canonical LTF route explicitly requires HTF interaction, the mapper consumes the HTF context already supplied in its CLI input and the launcher obtains any required additional LTF analysis range from the Market Data CLI.
 
 This includes the canonical LTF Structural Glitch / CHoCH route after HTF POI interaction or HTF core-liquidity takeout, as defined by 05_CHOCH_mechanics.md.
 
