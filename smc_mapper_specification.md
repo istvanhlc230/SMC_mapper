@@ -138,7 +138,7 @@ Within synchronized processing:
 - each completed LTF candle is evaluated against only the HTF canonical context that already exists at that LTF evaluation time;
 - the mapper does not use a later HTF event to reinterpret an earlier LTF event.
 
-The monitor/launcher ensures that required candle ranges are present in `<SYMBOL>_marketdata.json` by invoking the Market Data CLI as needed. Candle data is not transferred to the mapper through CLI stdout.
+The monitor/launcher ensures that required candle ranges are present in `<SYMBOL>_marketdata.json` by invoking the Market Data CLI as needed.
 
 When only one timeframe is supplied, only that timeframe is analyzed.
 
@@ -441,7 +441,7 @@ The mapper has no direct connection to any concrete market-data provider and has
 
 `market_data.py` is a standalone Market Data CLI process. It owns provider access, provider abstraction, normalization, completion handling, timestamp normalization, price-basis handling, availability detection, deterministic range retrieval, incremental updates, retention and persistence to `<SYMBOL>_marketdata.json`.
 
-The durable market-data boundary is `<SYMBOL>_marketdata.json`. Candle data is not passed from `market_data.py` to `smc_mapper.py` through stdout.
+The durable market-data boundary is `<SYMBOL>_marketdata.json`.
 
 The normal data flow is:
 
@@ -510,7 +510,7 @@ The LTF bootstrap reference is not an LTF structural-start ontology. The first L
 
 The monitor owns interactive runtime control, scheduling, current-price/runtime monitoring, target monitoring, alerts/notifications, and orchestration of Market Data CLI and mapper execution.
 
-The mapper and Market Data CLI are separate processes. `market_data.py` persists normalized candles to `<SYMBOL>_marketdata.json`; the mapper reads the required ranges from that file. Candle data is not passed between them through stdout.
+The mapper and Market Data CLI are separate processes. `market_data.py` persists normalized candles to `<SYMBOL>_marketdata.json`; the mapper reads the required ranges from that file.
 
 The monitor orchestrates each symbol update cycle in this order:
 
@@ -596,7 +596,7 @@ Without live, the CLI persists completed candles only. With live, it also refres
 
 When an in-progress candle later becomes completed, its final completed version is persisted in candles[] and the next in-progress interval becomes current.
 
-Market-data CLI execution writes the durable result only to <SYMBOL>_marketdata.json. Candle data is not transferred to the mapper through stdout.
+Market-data CLI execution persists the durable market-data result to <SYMBOL>_marketdata.json.
 
 The market-data record may preserve volume information in parallel. Provider total volume, if available, is stored as volume.total; genuine orderflow may be stored under volume.orderflow; OHLC-derived directional estimates may be stored under volume.ohlc. The mapper determines which analytical data is actually available from the persisted record and may expose a helper such as has_volume_data(...) for boolean availability checks. No single exclusive candle-level method field represents provenance.
 

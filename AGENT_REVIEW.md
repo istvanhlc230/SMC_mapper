@@ -2372,3 +2372,12 @@ Decision: price basis is not a market_data.py CLI parameter.
 The specification now requires the provider adapter to use one consistent price basis and documents that the selected basis must be recorded in the corresponding provider source file. The same basis must be maintained across an analysis; adjusted and unadjusted prices must never be mixed.
 
 This remains Market Data provider policy and does not redefine canonical SMC semantics.
+
+
+# FINAL CONTRACT CLEANUP — COMPLETED
+
+Removed remaining negative wording about an undefined stdout candle-data channel. The specification now defines only the actual persisted market-data boundary and the terminal-only debug stderr behavior.
+
+Price basis remains outside the CLI and is documented as provider-adapter source-file policy.
+
+Final audit prerequisite passed: no stdout references remain; no candle-level volume_method field remains; current/live and parallel volume contracts remain intact.
