@@ -580,79 +580,44 @@ There is no mapper-to-monitor market-data request channel and no requirement for
 
 ## A19.1 CLI debug output
 
-The Market Data CLI and mapper CLI must keep machine-readable data separate from human-visible diagnostics.
+The CLI interfaces must strictly separate machine-readable data from user-visible diagnostics.
 
-- Normalized candle data and other machine-readable CLI payloads are written to **stdout**.
-- During normal application runtime, the launcher/monitor must capture the CLI `stdout` stream and must not display it to the user.
-- Debug, diagnostic, timing, provider/request tracing, cache/buffer messages, and non-data status messages are written to **stderr**.
-- Without `--debug`, debug/trace diagnostics are suppressed; required errors may still be reported through the application's error handling.
-- With `--debug`, diagnostic messages are emitted to `stderr` and are visible to the user.
-- Normal runtime must therefore produce no user-visible CLI output.
+- Normalized candle data and other machine-readable payloads are written to **stdout** only.
+- `stdout` is the sole process-to-process data channel.
+- Debug, diagnostic, timing, provider/request tracing, cache/buffer messages, and other human-readable diagnostics are written to **stderr**.
+- **Debug `stderr` is terminal-only.** It must remain directly attached to the user's terminal/console.
+- The launcher/monitor must not capture, parse, forward, merge, persist, or otherwise pass debug `stderr` to `smc_mapper.py`, `smc_monitor.py`, or any other application component.
+- `stderr` must never be merged into `stdout`.
+- Without `--debug`, debug/trace diagnostics are suppressed.
+- With `--debug`, diagnostics are visible directly on the terminal through `stderr`.
+- Required application errors are handled separately from debug output and must not be encoded into the machine-readable `stdout` data stream.
 - Debug mode must never alter canonical SMC calculations, normalized candle values, ordering, timestamps, or CLI data semantics.
-- Debug output must never contaminate `stdout`, because `stdout` is the machine-readable data channel.
-- A CLI invocation used by the finished product is expected to be orchestrated/captured by `smc_monitor.py` or an equivalent launcher; the machine-readable stream is not a user interface.
+- Normal runtime must produce no user-visible machine-readable output from the CLI pipeline; `stdout` is captured for inter-process transfer.
 
-Example runtime flow:
+### Process-launch requirement
 
-    smc_monitor.py -> market_data.py (capture stdout) -> smc_mapper.py (capture stdout)
+When the finished product invokes a CLI process:
 
-With debugging enabled:
-
-    smc_monitor.py -> market_data.py (capture stdout, show stderr) -> smc_mapper.py (capture stdout, show stderr)
-
-In both cases, the mapper data channel remains machine-readable and non-user-facing; only debug diagnostics become visible when `--debug` is enabled.
-
-
-No separate mapper configuration file is required. CLI execution includes an optional `--debug` flag as defined in A19.1.
-
-Mapper behavior is controlled by:
-
-- CLI parameters;
-- explicit defaults;
-- normalized feed capabilities/metadata;
-- canonical SMC skill.
-
-Market-data provider configuration belongs to the market-data layer and is not a mapper semantic dependency.
-
-`market_data.py` provides the required CLI interface for explicit candle-range retrieval. The CLI emits the normalized candle contract consumed by the mapper CLI and monitor runtime. No in-process Market Data service is required.
-
-No mapper configuration file is to be introduced for timeframe selection, history retention or analysis window.
-
-Timeframe selection is controlled only by `--htf` and/or `--ltf` according to A4–A6.
-
-Volume processing is controlled by the optional CLI parameter:
-
-```
---volume-method {NONE,OHLC,ORDERFLOW}
+```text
+stdout  -> pipe/capture -> next process
+stderr  -> inherit terminal -> user
 ```
 
-When the parameter is omitted, the mapper uses **automatic method selection** in this order:
+`stderr` must therefore not be redirected to the mapper or monitor input.
 
+Example:
+
+```bash
+python market_data.py --symbol CCCC --timeframe M15 ... --debug | python smc_mapper.py --symbol CCCC --ltf M15
 ```
-ORDERFLOW → OHLC → NONE
-```
 
-Selection rules:
+In this example:
 
-1. If compatible orderflow data is available from the active market-data feed, use `ORDERFLOW`.
-2. Otherwise, if usable OHLC/volume data is available, use `OHLC`.
-3. Otherwise, use `NONE`.
+- normalized candle data travels through `stdout` to the mapper;
+- Market Data CLI debug information goes directly to the terminal through `stderr`;
+- the mapper receives no Market Data CLI debug information.
 
-The selected effective method must be stored in the normalized data/output as `NONE`, `OHLC`, or `ORDERFLOW`.
-
-Explicit CLI values override automatic selection:
-
-- `NONE` — skip volume/delta analytics and POI likelihood calculation.
-- `OHLC` — use OHLC-based directional volume/delta processing; if the required volume data is unavailable, volume analytics cannot be calculated.
-- `ORDERFLOW` — require an orderflow-capable source; if the required orderflow data is unavailable, do not silently substitute another method.
-
-The mapper does not require the user to know which provider supports which data level. Provider capabilities are detected by the market-data interface.
-
-An unsupported CLI value is an input error.
-
-The selected/effective volume method is a data/implementation choice and does not alter canonical SMC rules.
-
----
+The same rule applies to mapper diagnostics: mapper debug output goes directly to the terminal and is not returned to or processed by the monitor as mapper input.
 
 # B. CANDLE / MARKET DATA NORMALIZATION
 
