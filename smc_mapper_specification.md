@@ -12,7 +12,7 @@
 
 The intended finished product uses these active Python runtime components:
 
-- `market_data.py` — standalone Market Data CLI: provider access, normalization, completion handling, deterministic range retrieval, incremental update, retention and persistence to `<SYMBOL>_marketdata.json`.
+- `market_data.py` — standalone Market Data CLI: provider access, normalization, completion handling, deterministic range retrieval, incremental update, bounded retention, completed-candle persistence, current-candle snapshot refresh, and persistence to `<SYMBOL>_marketdata.json`.
 - `smc_mapper.py` — canonical SMC mapper: structural analysis, HTF/LTF processing, and persistent structural state in `<SYMBOL>_structures.json`.
 - `smc_monitor.py` — interactive runtime: scheduling, user interaction, runtime/target monitoring, alerts, and orchestration of Market Data CLI and mapper execution.
 
@@ -331,30 +331,34 @@ structures/
 
 ### Market-data JSON
 
-`<SYMBOL>_marketdata.json` is the persistent normalized market-data store for that symbol.
+<SYMBOL>_marketdata.json is the persistent normalized market-data store for that symbol.
 
-It contains the normalized completed candle series for all acquired timeframes for that symbol, grouped explicitly by timeframe. A separate market-data file is not created per timeframe.
+It contains all acquired timeframes for the symbol in one file. Each timeframe section contains a completed-candle series plus an optional current in-progress candle snapshot. A separate market-data file is not created per timeframe.
 
 Logical shape:
 
-```json
-{
-  "symbol": "CCCC",
-  "timeframes": {
-    "H4": { "available_start": "...", "available_end": "...", "candles": [] },
-    "M15": { "available_start": "...", "available_end": "...", "candles": [] },
-    "M5": { "available_start": "...", "available_end": "...", "candles": [] }
-  }
-}
-```
+    {
+      "symbol": "CCCC",
+      "timeframes": {
+        "H4": { "available_start": "...", "available_end": "...", "candles": [], "current": null },
+        "M15": { "available_start": "...", "available_end": "...", "candles": [], "current": null },
+        "M5": { "available_start": "...", "available_end": "...", "candles": [], "current": null }
+      }
+    }
 
 Only normalized market-data state belongs here. No canonical structure, mapper history, POIs, trade state, monitor state, or debug text may be stored.
+
+Completed candles are stored in candles[]. They are the only market-data records eligible for canonical mapper processing. The optional current field stores only the latest in-progress candle snapshot for that timeframe and is never canonical structural input.
+
+A current snapshot may be refreshed while the candle is forming. It may contain the provider-available OHLC and total volume for that in-progress interval. It must never be copied into candles[] until the interval is confirmed completed.
 
 Market-data retention is a bounded rolling operational policy applied independently to each timeframe. Its capacity is a market-data implementation/storage setting, not a canonical SMC parameter.
 
 If an analysis requires candles outside the retained window, the Market Data CLI reacquires that missing range and merges it into the corresponding timeframe before mapper processing.
 
-Each timeframe section is independently created, extended, deduplicated by canonical candle identity, chronologically ordered, and retention-managed. Updating one timeframe must not alter another timeframe's candle series.
+Each timeframe section is independently created, extended, deduplicated by canonical candle identity, chronologically ordered, and retention-managed. Updating one timeframe must not alter another timeframe's completed candle series or current snapshot.
+
+The available_start and available_end fields refer only to the persisted completed-candle series, not to the current snapshot.
 
 ### Structures JSON
 
@@ -520,7 +524,9 @@ A normal monitor cycle may add exactly one newly completed candle to a timeframe
 
 If the monitor was not running for multiple completed candles, the Market Data CLI adds the entire missing completed range in one update and the mapper processes those candles chronologically.
 
-If no new completed candle exists for an affected timeframe, that update is a no-op.
+The Market Data CLI may also refresh the current in-progress snapshot when live mode is requested, even when no new completed candle exists. A current-snapshot-only refresh must not trigger canonical structural processing or advance any mapper checkpoint.
+
+If neither a new completed candle nor a changed or newly available requested current snapshot exists, that Market Data update is a no-op.
 
 Each analysis entry has its own `last_processed_candle_time`. It identifies the latest completed driving-timeframe candle incorporated by that analysis.
 
@@ -581,6 +587,27 @@ The CLI interfaces must strictly separate persistent market data from user-visib
 - Debug mode must never alter canonical calculations or normalized market-data semantics.
 - Normal runtime must produce no user-visible CLI output.
 
+### Market Data CLI contract
+
+market_data.py is invoked as a standalone process. Its CLI accepts:
+
+    --symbol SYMBOL
+    --timeframes TF [TF ...]
+    --starttime ISO8601
+    --endtime ISO8601
+    --live
+    --debug
+
+symbol is required. timeframes accepts one or more supported timeframes and is not limited to the mapper's one- or two-timeframe analysis model. starttime and endtime are optional range bounds.
+
+Without live, the CLI persists completed candles only. With live, it also refreshes the latest provider-available in-progress candle snapshot for each requested timeframe when such a snapshot exists. If an endtime is supplied before the current interval, no current snapshot is stored for that request.
+
+When an in-progress candle later becomes completed, its final completed version is persisted in candles[] and the next in-progress interval becomes current.
+
+Market-data CLI execution writes the durable result only to <SYMBOL>_marketdata.json. Candle data is not transferred to the mapper through stdout.
+
+The market-data record may preserve volume information in parallel. Provider total volume, if available, is stored as volume.total; genuine orderflow may be stored under volume.orderflow; OHLC-derived directional estimates may be stored under volume.ohlc. The mapper determines which analytical data is actually available from the persisted record and may expose a helper such as has_volume_data(...) for boolean availability checks. No single exclusive candle-level method field represents provenance.
+
 ### Process-launch requirement
 
 ```text
@@ -631,30 +658,30 @@ The Market Data CLI must support deterministic range retrieval and incremental u
 
 ## B2. Normalized candle representation
 
-Each normalized candle must contain at minimum:
+Each normalized completed candle must contain at minimum:
 
-- `candle_id`
-- `timestamp`
-- `open`
-- `high`
-- `low`
-- `close`
+- candle_id
+- timestamp
+- open
+- high
+- low
+- close
 
-When volume processing is enabled and the source provides volume, the normalized candle may additionally contain:
+When the provider supplies total candle volume, preserve it as normalized volume.total.
 
-- `volume`
-- `buy_volume`
-- `sell_volume`
-- `delta`
-- `volume_method`
+When genuine orderflow data is available, preserve it independently under volume.orderflow.
 
-where `volume_method` is one of `NONE`, `OHLC`, or `ORDERFLOW`.
+OHLC-derived directional volume is an analytical estimate and may be stored independently under volume.ohlc. It must never overwrite or be represented as observed orderflow.
 
-For `NONE`, the volume/delta analytics path is skipped and the optional side-volume fields are not calculated.
+A normalized candle may therefore contain parallel volume information:
 
-The normalized representation is immutable after creation.
+    volume.total
+    volume.ohlc = { buy, sell, delta }
+    volume.orderflow = { buy, sell, delta }
 
----
+Each nested volume section is optional and exists only when its corresponding data or deterministic estimate is available. Presence or absence is the availability signal; no single exclusive candle-level method field is required.
+
+candles[] contains only completed normalized candles and is immutable after persistence. The separate current snapshot may change while its candle is in progress.
 
 ## B3. Candle identifier
 
@@ -702,9 +729,11 @@ Only completed candles may enter canonical analysis.
 
 A candle is considered completed only after its canonical timeframe interval has closed and the normalized provider/completion contract confirms that closure.
 
-The mapper must use the candle's canonical completion boundary when deciding whether it is eligible for an explicit analysis end time. The candle `timestamp` is not by itself sufficient evidence of completion.
+The mapper must use the candle's canonical completion boundary when deciding whether it is eligible for an explicit analysis end time. The candle timestamp is not by itself sufficient evidence of completion.
 
-An incomplete/current candle must be excluded from the canonical analysis series.
+An incomplete/current candle must be excluded from the canonical analysis series. It may be stored only in the per-timeframe current snapshot of <SYMBOL>_marketdata.json and must never be consumed as canonical structural input. It may be stored only in the per-timeframe current snapshot of <SYMBOL>_marketdata.json and must never be consumed as canonical structural input.
+
+The current snapshot is runtime market-data state, not historical candle state. Refreshing it must not alter structural history or mapper checkpoints.
 
 ## B7. Numeric representation
 
@@ -718,6 +747,8 @@ Invalid values include:
 - Infinity;
 - non-numeric values;
 - silently coerced invalid numeric values.
+
+The same deterministic numeric policy applies to normalized volume values when present. Total, buy, sell, and delta volume values must be numeric and finite and must not be silently coerced or fabricated.
 
 ---
 
@@ -903,25 +934,13 @@ The canonical engine must never receive malformed or ambiguous candle data.
 
 ## B19. Volume retention
 
-When traded volume is available from the provider, the mapper must preserve the volume associated with the underlying candle.
+When total traded volume is available from the provider, market_data.py preserves it as volume.total on the underlying normalized candle.
 
-Volume must be stored with every stored structural point that references a candle for which volume is available.
+When genuine orderflow is available, it is preserved independently under volume.orderflow. When deterministic OHLC directional estimation is available, it may be preserved independently under volume.ohlc.
 
-This includes, where applicable:
+The mapper must preserve the applicable volume information when storing structural-point references to source candles. Parallel volume types must not overwrite one another.
 
-- confirmed structural swings;
-- protected structural extremes;
-- IDM;
-- BOS;
-- CHoCH;
-- canonical POI structural points.
-
-Volume retention is market-data metadata only.
-
-It must not become a canonical SMC decision input unless an explicit canonical skill rule defines a volume-dependent decision.
-
-
----
+Volume provenance is represented by the data branch that is actually present. A single exclusive volume source or volume method field is not required on the candle.
 
 # C. HTF-GUIDED LTF EXECUTION CONTEXT
 
@@ -1059,33 +1078,27 @@ Historical POI outcome performance must not be used.
 
 ## D3. Volume method
 
-The user may explicitly select:
+The normalized market-data record may contain multiple volume types in parallel. Availability is determined from the actual presence of the relevant data, not from one exclusive provenance or method field.
 
-```
---volume-method {NONE,OHLC,ORDERFLOW}
-```
+The user may explicitly select the analytical method with:
 
-When omitted, the effective method is selected automatically:
+    --volume-method {NONE,OHLC,ORDERFLOW}
 
-```
-ORDERFLOW → OHLC → NONE
-```
+When omitted, the effective analytical method is selected automatically in this order:
 
-The Candle Data Interface/provider reports which volume information is actually available. The mapper then selects the highest available method in that order.
+    ORDERFLOW -> OHLC -> NONE
 
-1. `ORDERFLOW` — use genuine orderflow buy/sell volume and delta supplied by an orderflow-capable source.
-2. `OHLC` — calculate directional buy/sell volume and delta from available OHLC/volume data. Suitable lower-timeframe data may refine the estimate.
-3. `NONE` — no volume/delta processing is performed.
+ORDERFLOW requires genuine orderflow buy/sell volume and delta in volume.orderflow.
 
-For automatic selection:
+OHLC requires volume.total and calculates directional buy/sell volume and delta deterministically from OHLC data. Suitable lower-timeframe data may refine the estimate.
 
-- orderflow available → `ORDERFLOW`;
-- no orderflow but usable OHLC/volume available → `OHLC`;
-- neither available → `NONE`.
+NONE means that no supported analytical volume path is available.
 
-If `ORDERFLOW` is explicitly requested and unavailable, the mapper must not silently downgrade to `OHLC`.
+The selected analytical method is a runtime processing decision. It does not erase, overwrite, or relabel other available volume data.
 
-If `OHLC` is explicitly requested but required volume data is unavailable, the mapper must not fabricate volume values.
+If ORDERFLOW is explicitly requested and unavailable, the mapper must not silently downgrade to OHLC.
+
+If OHLC is explicitly requested but required volume data is unavailable, the mapper must not fabricate volume values.
 
 The concrete external provider is implementation-defined and is not part of canonical SMC semantics.
 
@@ -1134,41 +1147,31 @@ Close = Open → neutral; do not force a side
 
 Parent-bar buy volume, sell volume and delta are the sums of the classified intrabar volumes.
 
-OHLC-derived directional volume is marked as `OHLC`; genuine orderflow data is marked as `ORDERFLOW`.
+OHLC-derived directional volume is stored under volume.ohlc; genuine orderflow data is stored under volume.orderflow. The two branches may coexist for the same candle.
 
 ## D6. POI JSON representation
 
-Each canonical POI may contain:
+Each canonical POI may contain parallel volume-analytics branches.
 
-```json
-"volume": {
-  "method": "OHLC",
-  "formation": {
-    "total": "...",
-    "buy": "...",
-    "sell": "...",
-    "delta": "...",
-    "delta_ratio": "..."
-  },
-  "causal_displacement": {
-    "total": "...",
-    "buy": "...",
-    "sell": "...",
-    "delta": "...",
-    "delta_ratio": "..."
-  },
-  "aggregate": {
-    "total": "...",
-    "buy": "...",
-    "sell": "...",
-    "delta": "...",
-    "delta_ratio": "..."
-  },
-  "probability": null
-}
-```
+The logical representation is:
 
-When method = NONE, the volume/delta analytics block is not processed and no volume-derived values or POI likelihood are calculated. Otherwise, values are null/omitted only when the relevant provenance data is unavailable.
+    volume.ohlc
+        formation
+        causal_displacement
+        aggregate
+
+    volume.orderflow
+        formation
+        causal_displacement
+        aggregate
+
+Each formation, causal_displacement, and aggregate object may contain total, buy, sell, delta, and delta_ratio.
+
+The ohlc and orderflow branches may coexist for the same POI. Values are omitted or null only when the relevant provenance data is unavailable.
+
+The runtime-selected analytical method does not delete or overwrite the other available branch.
+
+When no supported volume analytical path is available, no volume-derived analytics or POI probability is calculated.
 
 ## D7. Statistical POI probability
 

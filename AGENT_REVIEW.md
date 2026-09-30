@@ -2316,3 +2316,35 @@ Final specification commit:
 
 **FINAL STATUS: PASS — SPECIFICATION RECONCILED WITH THE APPROVED TWO-FILE, PERSISTENT-MARKET-DATA RUNTIME MODEL**
 
+
+
+# FULL SPECIFICATION AUDIT + CURRENT-SNAPSHOT / PARALLEL-VOLUME REPAIR — COMPLETED
+
+## Repaired model
+
+- <SYMBOL>_marketdata.json stores all acquired timeframes for the symbol.
+- Each timeframe has completed candles plus an optional current in-progress snapshot.
+- current is never canonical structural input and never advances mapper checkpoints.
+- market_data.py supports 1..N requested timeframes through --timeframes TF [TF ...].
+- --live refreshes current snapshots without forcing structural processing when no completed candle changed.
+- Provider total volume, OHLC-derived directional estimates, and genuine orderflow can coexist as separate volume branches.
+- No single candle-level volume method is used as provenance.
+- POI volume analytics can preserve OHLC and ORDERFLOW branches simultaneously.
+- Volume values have deterministic numeric validation.
+
+## Full audit result
+
+Re-audited the repaired smc_mapper_specification.md against the canonical .agents/skills/smc/ Layer 1-8 files and the internal A-D specification structure.
+
+PASS — file-based market-data boundary; no in-process Market Data Layer or candle stdout transport.
+PASS — completed versus in-progress candle separation is explicit.
+PASS — multi-timeframe market-data acquisition is distinct from mapper one/two-timeframe semantics.
+PASS — current snapshot refresh is explicitly separate from completed-candle structural processing.
+PASS — raw total volume, OHLC estimate, and orderflow are parallel data, not mutually exclusive alternatives.
+PASS — runtime analytical-method selection is separate from persisted data availability/provenance.
+PASS — POI volume analytics supports parallel OHLC and ORDERFLOW branches.
+PASS — canonical Layer 1-8 ownership remains intact; no skill file was modified.
+PASS — IDM governance, retracement qualification, VALID_BOS gates, LTF Structural Glitch, Rule-of-Two, and downstream target/risk boundaries remain unchanged.
+PASS — no stale candle-level volume_method contract remains.
+
+**FINAL STATUS: PASS — SPECIFICATION RECONCILED WITH CURRENT-SNAPSHOT MARKET DATA, MULTI-TIMEFRAME CLI, AND PARALLEL VOLUME DATA MODEL**
