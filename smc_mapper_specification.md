@@ -580,26 +580,27 @@ There is no mapper-to-monitor market-data request channel and no requirement for
 
 ## A19.1 CLI debug output
 
-The Market Data CLI and mapper CLI must keep machine-readable data separate from human-readable diagnostics.
+The Market Data CLI and mapper CLI must keep machine-readable data separate from human-visible diagnostics.
 
 - Normalized candle data and other machine-readable CLI payloads are written to **stdout**.
+- During normal application runtime, the launcher/monitor must capture the CLI `stdout` stream and must not display it to the user.
 - Debug, diagnostic, timing, provider/request tracing, cache/buffer messages, and non-data status messages are written to **stderr**.
-- Without `--debug`, debug/trace diagnostics are suppressed from stderr except for required error reporting.
-- With `--debug`, diagnostic messages are emitted to stderr and are visible to the user.
+- Without `--debug`, debug/trace diagnostics are suppressed; required errors may still be reported through the application's error handling.
+- With `--debug`, diagnostic messages are emitted to `stderr` and are visible to the user.
+- Normal runtime must therefore produce no user-visible CLI output.
 - Debug mode must never alter canonical SMC calculations, normalized candle values, ordering, timestamps, or CLI data semantics.
-- Debug output must never contaminate stdout, because stdout may be piped directly into another CLI process.
+- Debug output must never contaminate `stdout`, because `stdout` is the machine-readable data channel.
+- A CLI invocation used by the finished product is expected to be orchestrated/captured by `smc_monitor.py` or an equivalent launcher; the machine-readable stream is not a user interface.
 
-The mapper CLI and Market Data CLI should therefore be composable as a pipe/stream without requiring debug parsing rules.
+Example runtime flow:
 
-Example:
-
-    python market_data.py --symbol CCCC --timeframe M15 --start ... --end ... | python smc_mapper.py --symbol CCCC --ltf M15
+    smc_monitor.py -> market_data.py (capture stdout) -> smc_mapper.py (capture stdout)
 
 With debugging enabled:
 
-    python market_data.py --symbol CCCC --timeframe M15 --start ... --end ... --debug | python smc_mapper.py --symbol CCCC --ltf M15 --debug
+    smc_monitor.py -> market_data.py (capture stdout, show stderr) -> smc_mapper.py (capture stdout, show stderr)
 
-In both cases, machine-readable stdout remains unchanged; only stderr diagnostics differ.
+In both cases, the mapper data channel remains machine-readable and non-user-facing; only debug diagnostics become visible when `--debug` is enabled.
 
 
 No separate mapper configuration file is required. CLI execution includes an optional `--debug` flag as defined in A19.1.
