@@ -594,9 +594,31 @@ last_processed_candle_time must not be placed inside current or history, because
 The monitor must not infer canonical structure from the checkpoint itself. The checkpoint only identifies where mapper processing may resume.
 
 When re-analysis is required, the monitor triggers the mapper; the mapper obtains the required normalized candle ranges from the Market Data Layer.
+## A19.1 CLI debug output
+
+The Market Data CLI and mapper CLI must keep machine-readable data separate from human-readable diagnostics.
+
+- Normalized candle data and other machine-readable CLI payloads are written to **stdout**.
+- Debug, diagnostic, timing, provider/request tracing, cache/buffer messages, and non-data status messages are written to **stderr**.
+- Without `--debug`, debug/trace diagnostics are suppressed from stderr except for required error reporting.
+- With `--debug`, diagnostic messages are emitted to stderr and are visible to the user.
+- Debug mode must never alter canonical SMC calculations, normalized candle values, ordering, timestamps, or CLI data semantics.
+- Debug output must never contaminate stdout, because stdout may be piped directly into another CLI process.
+
+The mapper CLI and Market Data CLI should therefore be composable as a pipe/stream without requiring debug parsing rules.
+
+Example:
+
+    python market_data.py --symbol CCCC --timeframe M15 --start ... --end ... | python smc_mapper.py --symbol CCCC --ltf M15
+
+With debugging enabled:
+
+    python market_data.py --symbol CCCC --timeframe M15 --start ... --end ... --debug | python smc_mapper.py --symbol CCCC --ltf M15 --debug
+
+In both cases, machine-readable stdout remains unchanged; only stderr diagnostics differ.
 ## A19. Configuration
 
-No separate mapper configuration file is required.
+No separate mapper configuration file is required. CLI execution includes an optional `--debug` flag as defined in A19.1.
 
 Mapper behavior is controlled by:
 
