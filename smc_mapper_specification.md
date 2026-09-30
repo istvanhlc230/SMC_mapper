@@ -587,10 +587,17 @@ market_data.py is invoked as a standalone process. Its CLI accepts:
     --timeframes TF [TF ...]
     --starttime ISO8601
     --endtime ISO8601
+    --lastcandle
     --live
     --debug
 
 symbol is required. timeframes accepts one or more supported timeframes and is not limited to the mapper's one- or two-timeframe analysis model. starttime and endtime are optional range bounds.
+
+--lastcandle is an alternative completed-candle acquisition mode. When supplied, the Market Data CLI retrieves exactly the latest completed candle for each requested timeframe and reconciles it into that timeframe's candles[] series. It does not refresh or replace the current in-progress snapshot by itself.
+
+--lastcandle is mutually exclusive with --starttime and --endtime because it requests a single latest completed candle rather than a historical range. --lastcandle may be combined with --live: in that case the latest completed candle is reconciled into candles[] and the latest in-progress snapshot is refreshed independently in current when available.
+
+If the latest completed candle is already present in the persisted timeframe series, deduplication leaves the existing candle identity intact and no duplicate record is created. --lastcandle never fabricates a candle and never causes an incomplete/current candle to enter candles[].
 
 Without live, the CLI persists completed candles only. With live, it also refreshes the latest provider-available in-progress candle snapshot for each requested timeframe when such a snapshot exists. If an endtime is supplied before the current interval, no current snapshot is stored for that request.
 

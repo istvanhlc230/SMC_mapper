@@ -2390,3 +2390,40 @@ Removed price-basis handling completely from the mapper specification because ne
 Removed the obsolete provider price-basis ownership wording from A16 and deleted the entire B16 Price Basis section. Subsequent B-sections were renumbered to preserve sequential normalization section numbering.
 
 Final audit requirement: price-basis is no longer a mapper specification concept.
+
+# V1 FINALIZATION — --lastcandle COMPLETED-CANDLE ACQUISITION CONTRACT
+
+## Final decision
+
+V1 explicitly supports --lastcandle in market_data.py.
+
+### Final semantics
+
+- --lastcandle retrieves exactly the latest completed candle for each requested timeframe.
+- The result is reconciled into that timeframe's candles[] series.
+- --lastcandle does not refresh or replace current by itself.
+- --lastcandle is mutually exclusive with --starttime and --endtime.
+- --lastcandle may be combined with --live; the completed candle and current snapshot remain independent.
+- Existing candle identity is deduplicated rather than duplicated.
+- Incomplete candles are never promoted into candles[].
+
+Example:
+
+    python market_data.py --symbol CCCC --timeframes H4 M15 M5 --lastcandle
+
+retrieves one latest completed candle for H4, M15, and M5 respectively.
+
+With --lastcandle --live, both the latest completed candle and the latest in-progress snapshot may be refreshed in the same execution.
+
+## Audit
+
+Re-audited the specification after integrating the V1 --lastcandle contract.
+
+PASS — completed-candle acquisition and live current-snapshot acquisition are distinct data operations.
+PASS — --lastcandle is timeframe-local and returns exactly one latest completed candle per requested timeframe.
+PASS — --lastcandle cannot conflict with historical range bounds.
+PASS — --lastcandle + --live is explicitly supported without semantic overlap.
+PASS — deduplication and completed/current separation remain intact.
+PASS — no canonical SMC rule or .agents/skills/smc/ file was modified.
+
+**FINAL STATUS: PASS — V1 SPECIFICATION FINALIZED**
