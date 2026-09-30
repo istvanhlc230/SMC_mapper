@@ -576,6 +576,8 @@ The monitor/launcher uses the persisted checkpoint to determine the next require
 
 There is no mapper-to-monitor market-data request channel and no requirement for shared process memory.
 
+## A19. Configuration
+
 ## A19.1 CLI debug output
 
 The Market Data CLI and mapper CLI must keep machine-readable data separate from human-readable diagnostics.
@@ -598,7 +600,7 @@ With debugging enabled:
     python market_data.py --symbol CCCC --timeframe M15 --start ... --end ... --debug | python smc_mapper.py --symbol CCCC --ltf M15 --debug
 
 In both cases, machine-readable stdout remains unchanged; only stderr diagnostics differ.
-## A19. Configuration
+
 
 No separate mapper configuration file is required. CLI execution includes an optional `--debug` flag as defined in A19.1.
 
@@ -990,9 +992,9 @@ In single-timeframe mode, no HTF/LTF execution relationship exists.
 
 When an HTF and LTF are both supplied:
 
-1. the mapper requests the required HTF range from the Market Data Layer and establishes the current HTF canonical structural context first;
+1. the launcher obtains the required HTF range from the Market Data CLI and passes the normalized range to the mapper CLI, which establishes the current HTF canonical structural context first;
 2. the mapper determines the applicable HTF execution context and any LTF bootstrap/activation requirement;
-3. the mapper requests only the LTF range required by the applicable analysis state, in deterministic batch form;
+3. the launcher obtains only the LTF range required by the applicable analysis state from the Market Data CLI and passes it to the mapper CLI in deterministic batch form;
 4. HTF and LTF candles are processed chronologically on the shared time axis;
 5. each LTF candle is evaluated using only HTF canonical context that already exists at that LTF evaluation time;
 6. a later HTF event must never reinterpret an earlier LTF event.
