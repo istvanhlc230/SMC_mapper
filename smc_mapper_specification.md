@@ -346,9 +346,9 @@ Example:
 
 ```
 structures/
-    CCCC.json
-    BABA.json
-    DTE.DE.json
+    CCCC_structures.json
+    BABA_structures.json
+    DTE.DE_structures.json
 ```
 
 A mapper execution for one symbol updates only that symbol's file.
