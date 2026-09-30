@@ -2090,3 +2090,56 @@ PASS — no remaining old monitor->mapper feed contract, concrete provider depen
 - No canonical SMC skill file was modified.
 - No product implementation was claimed or tested by this specification-only repair.
 - Final mapper specification commit: `e3ea54bc1d73821a561d2ad6526eb8d73fc575b2`
+
+# CLI-ONLY MARKET-DATA + DEBUG CONTRACT AUDIT — COMPLETED
+
+## Approved runtime boundary
+
+The mapper runtime now uses CLI data transfer only for market-data input.
+
+- `market_data.py` is a standalone Market Data CLI process.
+- It owns provider access, normalization, completion handling, availability and deterministic range retrieval.
+- `smc_mapper.py` consumes normalized candle ranges through its CLI input boundary.
+- `smc_monitor.py` orchestrates CLI calls and may invoke the Market Data CLI independently for runtime data.
+- No in-process Market Data service or shared process-memory cache is required.
+- Any Market Data CLI cache/buffer is an internal optimization only and is not part of the mapper correctness contract.
+- No mapper-to-monitor `DATA_REQUEST` market-data channel exists.
+
+## Debug contract
+
+- Machine-readable CLI output remains on `stdout`.
+- Debug/diagnostic output is written to `stderr`.
+- `--debug` enables diagnostic visibility; without it, debug/trace output is suppressed except required errors.
+- Debug output must never contaminate the machine-readable `stdout` stream.
+- Debug mode must not alter canonical calculations or normalized data semantics.
+
+## Verification
+
+Re-audited the updated mapper specification for residual in-process market-data dependencies, concrete-provider coupling, per-candle subprocess requirements, and stdout/stderr contamination risks.
+
+Verified absent:
+- `get_candles(...)` Python-service boundary;
+- provider-independent in-process Market Data service requirement;
+- mapper-to-monitor market-data request channel;
+- direct mapper provider/API access;
+- per-candle subprocess requirement.
+
+Verified present:
+- CLI-only market-data boundary;
+- deterministic batch range transfer;
+- normalized candle portability contract;
+- explicit `--debug` behavior;
+- stdout/stderr separation.
+
+## Canonical boundary
+
+No `.agents/skills/smc/` files were modified. The change is implementation/interface architecture only and does not redefine canonical SMC semantics.
+
+Mapper specification commit:
+`a0b64deada9ef8b9d71d62bc917ae4b34475faea`
+
+Debug-only follow-up commit:
+`e1f6b7690355df1c94f14552f5abd5f0ff6eae6f`
+
+**Final status: PASS — CLI-ONLY DATA TRANSFER AND DEBUG STREAM CONTRACT VERIFIED**
+
