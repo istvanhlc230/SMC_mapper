@@ -731,7 +731,7 @@ A candle is considered completed only after its canonical timeframe interval has
 
 The mapper must use the candle's canonical completion boundary when deciding whether it is eligible for an explicit analysis end time. The candle timestamp is not by itself sufficient evidence of completion.
 
-An incomplete/current candle must be excluded from the canonical analysis series. It may be stored only in the per-timeframe current snapshot of <SYMBOL>_marketdata.json and must never be consumed as canonical structural input. It may be stored only in the per-timeframe current snapshot of <SYMBOL>_marketdata.json and must never be consumed as canonical structural input.
+An incomplete/current candle must be excluded from the canonical analysis series. It may be stored only in the per-timeframe current snapshot of <SYMBOL>_marketdata.json and must never be consumed as canonical structural input.
 
 The current snapshot is runtime market-data state, not historical candle state. Refreshing it must not alter structural history or mapper checkpoints.
 
@@ -748,7 +748,7 @@ Invalid values include:
 - non-numeric values;
 - silently coerced invalid numeric values.
 
-The same deterministic numeric policy applies to normalized volume values when present. Total, buy, sell, and delta volume values must be numeric and finite and must not be silently coerced or fabricated.
+The same deterministic numeric policy applies to normalized volume values when present. Total, buy, sell, and delta volume values must use Decimal-compatible deterministic numeric representation, be finite, and must not be silently coerced or fabricated.
 
 ---
 

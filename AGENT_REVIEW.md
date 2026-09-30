@@ -2348,3 +2348,10 @@ PASS — IDM governance, retracement qualification, VALID_BOS gates, LTF Structu
 PASS — no stale candle-level volume_method contract remains.
 
 **FINAL STATUS: PASS — SPECIFICATION RECONCILED WITH CURRENT-SNAPSHOT MARKET DATA, MULTI-TIMEFRAME CLI, AND PARALLEL VOLUME DATA MODEL**
+
+
+# POST-REPAIR MICRO-AUDIT — COMPLETED
+
+Removed the duplicated B6 current-candle sentence and tightened the normalized volume numeric representation to the same deterministic Decimal-compatible policy.
+
+Result: PASS — no semantic or architectural change; documentation consistency repair only.
