@@ -663,16 +663,14 @@ Timeframe selection is controlled only by `--htf` and/or `--ltf` according to A4
 Volume analysis is controlled by the optional mapper CLI parameter:
 
 ```
---volume-method {NONE,OHLC,ORDERFLOW,MIXED}
+--volume-method {NONE,OHLC,ORDERFLOW,BOTH}
 ```
 
-When the parameter is omitted, the mapper uses automatic runtime selection in this order:
+When the parameter is omitted, the default is BOTH.
 
-```
-ORDERFLOW -> OHLC -> NONE
-```
+BOTH uses both available genuine orderflow analytics and OHLC-derived directional volume analytics in parallel. The two evidence branches remain separate and are never combined into a single volume value. If only one branch is available, that branch is used. If neither branch is available, no POI volume analytics are produced.
 
-The selected method is an analysis-time processing decision. It is not persisted as a single exclusive volume provenance field in normalized market-data candles, and it does not remove or overwrite any parallel volume data that is available. Explicit CLI values override automatic selection.
+The selected method is an analysis-time processing decision. It is not persisted as a single exclusive volume provenance field in normalized market-data candles, and it does not remove or overwrite any parallel volume data that is available. Explicit CLI values override the default.
 
 ## A19.1 CLI debug output
 
@@ -1231,19 +1229,17 @@ The normalized market-data record may contain multiple volume types in parallel.
 
 The user may explicitly select the analytical method with:
 
-    --volume-method {NONE,OHLC,ORDERFLOW,MIXED}
+    --volume-method {NONE,OHLC,ORDERFLOW,BOTH}
 
-When omitted, the effective analytical method is selected automatically in this order:
-
-    ORDERFLOW -> OHLC -> NONE
+When omitted, the default is BOTH.
 
 ORDERFLOW requires genuine orderflow buy/sell volume and delta in volume.orderflow.
 
 OHLC requires volume.total and calculates directional buy/sell volume and delta deterministically from OHLC data. V1 does not use lower-timeframe intrabar refinement.
 
-MIXED uses the available OHLC-derived and genuine orderflow analytics in parallel. If only one is available, it uses that source; if neither is available, the effective result is NONE.
+BOTH uses both available OHLC-derived and genuine orderflow analytics in parallel. The two evidence branches remain separate and are never combined into a single volume value. If only one branch is available, that branch is used. If neither branch is available, no POI volume analytics are produced.
 
-NONE means that no supported analytical volume path is available.
+NONE disables POI volume analytics.
 
 The selected analytical method is a runtime processing decision. It does not erase, overwrite, or relabel other available volume data.
 
