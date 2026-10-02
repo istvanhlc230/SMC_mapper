@@ -69,7 +69,7 @@ Recommended source order:
 2. standard-library imports
 3. optional typing imports
 4. module constants
-5. data models / base classs
+5. data models / classes
 6. CLI argument construction
 7. input parsing + validation
 8. provider abstraction
