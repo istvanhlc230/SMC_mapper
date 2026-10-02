@@ -424,6 +424,7 @@ Function:
 ~~~python
 def plan_news_updates(
     symbol: str,
+    analysis_views: list[StoredAnalysisView],
     news_state: dict[str, Any],
     now: datetime,
 ) -> NewsDataUpdatePlan | None:
@@ -444,7 +445,7 @@ class NewsDataUpdatePlan:
 
 The news update plan is symbol-scoped because each symbol owns an independent normalized news store. The Monitor plans and refreshes news independently for each selected symbol; the same external event may therefore appear in multiple symbol stores.
 
-The plan must request enough forward coverage to contain the Monitor's configured warning horizon. Its exact refresh interval and forward/recent coverage are operational policy owned by the news-data/Monitor runtime boundary and must have one owner.
+The plan must request enough forward coverage to contain the maximum dynamic warning horizon required by the selected symbol's stored analyses. The horizon is derived from each analysis entry timeframe using the dynamic warning-window model in §12.4; HIGH impact uses the largest possible factor (2× the entry-timeframe duration) for coverage planning. Its exact refresh interval and recent/backward coverage remain operational policy owned by the news-data/Monitor runtime boundary and must have one owner.
 
 ## 4.4 No-new-candle path
 
@@ -1486,7 +1487,7 @@ discover_analysis_views(structures)
 validate_analysis_view(analysis)
 
 plan_market_data_updates(analysis_views, market_data, now)
-plan_news_updates(symbol, news_state, now)
+plan_news_updates(symbol, analysis_views, news_state, now)
 get_due_analyses(registry, now)
 
 invoke_market_data(plan, debug)
@@ -1718,7 +1719,7 @@ test_analysis_registry_is_checkpoint_isolated
 ### Session and news orchestration
 
 ~~~text
-test_plan_news_updates_uses_warning_horizon
+test_plan_news_updates_uses_dynamic_warning_horizon
 test_invoke_news_data_uses_persisted_json_not_stdout
 test_news_warning_is_independent_of_market_data_update
 test_active_sessions_use_named_timezones
