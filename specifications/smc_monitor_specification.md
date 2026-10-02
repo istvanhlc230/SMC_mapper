@@ -247,7 +247,19 @@ The current snapshot is never canonical structural input.
 
 Market Data JSON serialization remains owned by market_data.py.
 
-## 2.3 Read-only consumer model
+## 2.3 News Data JSON
+
+For each selected symbol, load:
+
+~~~text
+<DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json
+~~~
+
+The Monitor may consume normalized event fields required by the warning contract, including event identity, canonical UTC event time, title, normalized impact/status, affected currencies/instruments, source provenance, and forecast/previous/actual when available.
+
+The Monitor must validate the persisted symbol identity before evaluating warnings. News Data remains external runtime context and never becomes canonical SMC state.
+
+## 2.4 Read-only consumer model
 
 Use explicit read-only view models at the file boundary.
 
@@ -1471,7 +1483,7 @@ resolve_target_plan(analysis_state, current_market_view)
 is_target_cleared(target_price, current_price, direction)
 calculate_projected_rr(target_price, entry_reference_price, stop_price)
 get_active_sessions(utc_time, session_definitions)
-plan_news_updates(news_state, now)
+plan_news_updates(symbol, news_state, now)
 evaluate_news_warnings(news_events, current_time, symbol)
 build_news_warning_key(event_id, warning_window)
 
@@ -1825,13 +1837,21 @@ validate input
  ↓
 load selected symbols
  ↓
-load structures JSON for each symbol
+resolve each symbol data directory
+ ↓
+load structures, market-data, and symbol news-data JSON for each symbol
  ↓
 discover stored analyses
  ↓
 register analysis schedules
  ↓
 for each due symbol
+    ↓
+    plan/refresh symbol news data when due
+    ↓
+    invoke news_data.py --symbol SYMBOL
+    ↓
+    reload symbol news-data JSON
     ↓
     plan required Market Data coverage
     ↓
@@ -1844,6 +1864,10 @@ for each due symbol
     reload structures JSON
     ↓
     refresh current market reference
+    ↓
+    evaluate trading-session context
+    ↓
+    evaluate news warnings
     ↓
     consume canonical setup/entry state
     ↓
