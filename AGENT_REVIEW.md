@@ -2845,3 +2845,30 @@ PASS — Market Data, Mapper, Monitor, and News Data do not share persistent own
 PASS — session and news requirements are represented in focused combined Monitor/news tests.
 
 **STATUS: PASS — FINAL CROSS-FILE SESSION/NEWS AUDIT**
+
+# SYMBOL DIRECTORY + SYMBOL NEWS STORE SPECIFICATION AUDIT — 2026-10-02
+
+User-approved storage decision:
+- every symbol has its own directory under the existing common data root;
+- all product JSON outputs for that symbol live in that directory;
+- News Data is symbol-scoped as <SYMBOL>_news_data.json;
+- each program automatically resolves the symbol directory from the normalized symbol; no per-file path CLI option is introduced.
+
+Updated normative contracts:
+- specifications/market_data_specification.md §12.1–§12.3: <DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json, automatic directory resolution, path-safety rules.
+- specifications/smc_mapper_specification.md §0.4, §15.3, §16: symbol-directory discovery and <DATA_ROOT>/<SYMBOL>/<SYMBOL>_structures.json.
+- specifications/smc_monitor_specification.md §1.2, §2, §4.3.1, §5.1, §12, §13, §15, §19, §24: symbol-local discovery, symbol-scoped news planning/refresh, and <SYMBOL>_news_data.json.
+- specifications/news_data_specification.md §1.1a, §3, §6, §7: symbol-scoped NewsDataRequest/CLI, persisted document identity, and <DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json.
+- specifications/full_specification.md: consolidated symbol-directory architecture.
+
+Multi-strategy audit:
+PASS — Ownership: Market Data writes only market-data JSON, Mapper writes only structures JSON, News Data writes only symbol news JSON; Monitor remains a read/orchestration consumer.
+PASS — Symbol isolation: no symbol may consume another symbol's market-data, structural, news, target, or alert state.
+PASS — Path determinism/safety: symbol directory is derived from normalized symbol; unsafe filesystem path components are rejected; resolved paths remain within the data root.
+PASS — Process boundary: Monitor invokes news_data.py --symbol SYMBOL and consumes persisted JSON, never stdout as machine news data.
+PASS — Runtime flow: symbol news refresh/reload occurs before warning evaluation; news remains warning-only and cannot mutate canonical SMC, target/RR, checkpoints, or order state.
+PASS — Document integrity: symbol-scoped News Data carries its own symbol identity so path and payload can be cross-validated.
+PASS — Cross-file consistency: all former news_events.json references were removed from the normative specifications.
+PASS — Section/contract consistency: duplicate Monitor news-planner declaration was removed; Mapper and Market Data section ordering was corrected.
+
+No implementation code was changed in this audit step. The audited specifications are implementation-ready for the symbol-directory/storage migration.
