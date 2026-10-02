@@ -164,14 +164,20 @@ OHLC-derived directional volume is an analytical estimate and may be stored inde
 A normalized candle may therefore contain parallel volume information:
 
     volume.total
-    volume.ohlc = { buy, sell, delta }
-    volume.orderflow = { buy, sell, delta }
+    volume.ohlc = { buy, sell }
+    volume.orderflow = { buy, sell }
 
-Each nested volume section is optional and exists only when its corresponding data or deterministic estimate is available. Presence or absence is the availability signal; no single exclusive candle-level method field is required.
+Source-level volume delta is not persisted. When required by mapper analytics:
+
+    delta = buy - sell
+
+Each branch is optional and exists only when its corresponding data or deterministic estimate is available. Presence or absence is the availability signal; no single exclusive candle-level method field is required.
+
+Persisted numeric volume values use the deterministic decimal-compatible representation defined by the Market Data persistence contract.
 
 candles[] contains only completed normalized candles and is immutable after persistence. The separate current snapshot may change while its candle is in progress.
 
-The current snapshot carries the same candle identity and basic OHLC fields needed to identify the in-progress interval. It may also contain the provider-available total volume and any separately available orderflow data for that interval. It is runtime state only and is not included in completed-candle retention or canonical structural history.
+The mapper reads canonical structural input only from candles[]. The timeframe current snapshot is never part of canonical structural processing.
 
 ## 1.4 Candle identity
 
@@ -867,7 +873,7 @@ In two-timeframe analysis, the mapper establishes an LTF bootstrap coverage refe
 
 When a confirmed HTF Dealing Range exists, the applicable HTF Protected Structural Extreme is the preferred LTF bootstrap coverage reference. This reference determines the minimum historical LTF coverage needed for deterministic structural buildup. It is a data-coverage/reference point only; it is not an LTF structural start and does not create or promote any LTF structure.
 
-When LTF bootstrap is required, the launcher invokes the Market Data CLI once for one deterministic LTF range covering the anchor through the activation/current boundary, subject to any additional LTF warm-up required by the canonical LTF rules, updates `<SYMBOL>_marketdata.json`, and then invokes the mapper against the persisted range.
+When LTF bootstrap is required, the monitor/orchestrator invokes the Market Data CLI once for one deterministic LTF range covering the anchor through the activation/current boundary, subject to any additional LTF warm-up required by the canonical LTF rules, updates `<SYMBOL>_marketdata.json`, and then invokes the mapper against the persisted range.
 
 If the requested LTF coverage begins later than the anchor because the source has no completed LTF data at or after the requested anchor, the mapper uses the first actually available completed LTF candle after the reference as the effective LTF bootstrap start. No attempt is made by the mapper to access the provider directly.
 
@@ -948,7 +954,7 @@ In single-timeframe mode, no HTF/LTF execution relationship exists.
 
 When an HTF and LTF are both supplied:
 
-1. the launcher ensures the required HTF range is present in `<SYMBOL>_marketdata.json`; the mapper reads it and establishes the current HTF canonical structural context first;
+1. the monitor/orchestrator ensures the required HTF range is present in `<SYMBOL>_marketdata.json`; the mapper reads it and establishes the current HTF canonical structural context first;
 2. the mapper determines the applicable HTF execution context and any LTF bootstrap/activation requirement;
 3. the launcher ensures the LTF range required by the applicable analysis state is present in `<SYMBOL>_marketdata.json`; the mapper reads that persisted range;
 4. HTF and LTF candles are processed chronologically on the shared time axis;
@@ -1235,10 +1241,12 @@ OHLC aggregate_total      = Σ volume.total
 ORDERFLOW aggregate_total = Σ (volume.orderflow.buy + volume.orderflow.sell)
 aggregate_buy             = Σ buy
 aggregate_sell            = Σ sell
-aggregate_delta           = Σ delta
+aggregate_delta           = aggregate_buy - aggregate_sell
 
 delta_ratio = aggregate_delta / aggregate_total
 ```
+
+For ORDERFLOW, source-candle delta is derived from each candle's buy and sell values when needed; it is not read from a persisted source-level delta field.
 
 The aggregate is calculated from sums. Candle-level `delta_ratio` values must never be averaged.
 
@@ -1254,7 +1262,7 @@ The user may explicitly select the analytical method with:
 
 When omitted, the default is BOTH.
 
-ORDERFLOW requires genuine orderflow buy/sell volume and delta in volume.orderflow.
+ORDERFLOW requires genuine orderflow buy/sell volume in volume.orderflow. Delta is derived when needed as buy - sell.
 
 OHLC requires volume.total and calculates directional buy/sell volume and delta deterministically from OHLC data. V1 does not use lower-timeframe intrabar refinement.
 
@@ -1508,3 +1516,283 @@ Implementation code should be written for human readability and easy maintenance
 - Use the same term for the same concept everywhere in the codebase.
 - Conventional short names such as `i`, `j`, or `x` are acceptable only where their meaning is obvious from immediate local context.
 - Readability takes priority over saving characters when a shorter name would make the code ambiguous.
+
+# 14. IMPLEMENTATION ARCHITECTURE AND MODULE CONTRACT
+
+## 14.1 V1 module boundary
+
+V1 is implemented as one standalone executable module:
+
+    smc_mapper.py
+
+The module may later be split internally, but the following ownership boundaries must remain stable:
+
+1. CLI/input parsing
+2. analysis identity and configuration resolution
+3. market-data JSON loading/validation
+4. coverage and analysis-window selection
+5. synchronized HTF/LTF orchestration
+6. canonical SMC processing
+7. canonical Dealing Range / POI state reconciliation
+8. optional POI volume enrichment
+9. structures JSON persistence
+10. process entrypoint and diagnostics
+
+The mapper must not import or runtime-call market_data.py, smc_monitor.py, smc_htf_ltf_monitor.py, smc_analyzer.py, or legacy engine modules.
+
+The monitor may launch both the Market Data CLI and mapper as separate processes. The mapper receives normalized market-data state only through <SYMBOL>_marketdata.json.
+
+## 14.2 Dependency direction
+
+The implementation dependency direction is:
+
+    CLI -> identity -> persisted input -> coverage -> canonical processing -> enrichment -> persistence -> checkpoint
+
+Canonical SMC logic must not depend on:
+
+- monitor state;
+- provider state;
+- current/in-progress market-data snapshots;
+- debug output;
+- JSON retention policy;
+- downstream target/RR policy.
+
+POI volume enrichment may consume canonical POI provenance, but it cannot feed results back into canonical structure.
+
+## 14.3 Domain-state containers
+
+Use explicit state containers for mapper-owned processing state. Python may use dataclass for implementation convenience, but the architecture must remain directly reproducible in MQL4/MQL5.
+
+The following conceptual models are sufficient for the V1 mapper boundary:
+
+    MapperRequest
+        symbol
+        htf
+        ltf
+        start_time
+        end_time
+        history_no
+        volume_method
+        debug
+
+    AnalysisIdentity
+        analysis_key
+        htf
+        ltf
+        analysis_mode
+        entry_timeframe
+        analysis_start
+
+    MarketDataSeries
+        symbol
+        timeframe
+        available_start
+        available_end
+        candles
+
+    AnalysisState
+        identity
+        requested_start
+        effective_start
+        last_processed_candle_time
+        structural_state
+        history
+
+    StructuresDocument
+        symbol
+        history_no
+        analyses
+
+The conceptual structural_state and history fields are ownership containers for canonical layer state. The mapper specification must not invent a second canonical ontology inside them. Actual canonical objects and fields are taken from .agents/skills/smc/ during implementation.
+
+A transient processing context may be represented separately when needed, containing only explicit point-in-time inputs such as evaluation time, active HTF context reference, and the current completed candle. It must not become persisted monitor state.
+
+## 14.4 MQL4/MQL5 portability
+
+The mapper class contract must be reproducible in both MQL4 and MQL5.
+
+Required portability rules:
+
+- explicit state fields and explicit ownership;
+- conceptual arrays of named records instead of Python-only collection semantics;
+- no generators, Python Protocol, reflection, metaclasses, dynamic attributes, or properties as correctness dependencies;
+- public operations expose explicit success/failure paths;
+- UTC timestamps map to MQL datetime semantics;
+- canonical field names and meanings remain stable across Python/MQL implementations;
+- JSON dictionaries are persistence representation only;
+- Python Decimal is an implementation detail of deterministic arithmetic, not a portable type requirement.
+
+Portability does not require reproducing Python's CLI or JSON library implementation details in MQL. It requires the same domain contracts and state transitions.
+
+---
+
+# 15. MAPPER FUNCTION NAMING AND RESPONSIBILITY CONTRACT
+
+The following function boundaries are implementation contracts. Canonical layer-internal helper names are intentionally not prescribed here.
+
+## 15.1 CLI and validation
+
+    build_argument_parser() -> parser
+    parse_mapper_request(argv) -> MapperRequest
+    validate_mapper_request(request) -> success/failure
+    parse_iso8601(value) -> UTC datetime
+
+These functions validate mapper CLI semantics only. They must not execute canonical SMC analysis.
+
+## 15.2 Analysis identity
+
+    build_analysis_key(identity) -> string
+    resolve_analysis_identity(request, structures, market_data) -> AnalysisIdentity
+
+Identity resolution must remain deterministic. Analysis key generation must not depend on current wall-clock time except when the actual effective analysis boundary has already been resolved from persisted completed data.
+
+## 15.3 Market-data boundary
+
+    load_market_data(path, symbol) -> MarketDataDocument
+    validate_market_data_document(market_data, symbol) -> success/failure
+    select_completed_candles(market_data, timeframe, start_time, end_time) -> candle array
+
+The mapper reader must validate the persisted Market Data contract without importing Market Data classes. It must accept the serialized timeframes object keyed by timeframe.
+
+At this boundary:
+
+- available_start / available_end describe completed-candle coverage only;
+- candles are canonical market-data input;
+- current is excluded from canonical processing;
+- candle completion_time is the eligibility boundary for explicit --endtime;
+- volume branches are total, ohlc.buy/sell, and orderflow.buy/sell;
+- source-level delta is derived as buy - sell when needed;
+- persisted numeric values must be parsed deterministically and validated before use.
+
+## 15.4 Structures persistence
+
+    create_empty_structures(symbol, history_no) -> StructuresDocument
+    load_structures(path, symbol) -> StructuresDocument
+    save_structures_atomic(path, structures) -> success/failure
+
+The structures writer owns only mapper structural persistence. It must not write the Market Data JSON.
+
+Persistence helpers may translate domain objects to/from plain Python dictionaries/lists, but mapper canonical logic must operate on explicit domain state rather than depending on dictionary layout.
+
+## 15.5 Canonical processing
+
+    process_analysis(analysis, htf_series, ltf_series) -> changed
+    process_candle(analysis, candle, htf_context) -> changed
+
+These are orchestration boundaries. They must delegate semantic decisions to the canonical SMC skill implementation rather than create mapper-specific substitutes for BOS, CHoCH, IDM, retracement qualification, Dealing Range, or POI rules.
+
+## 15.6 POI enrichment
+
+    enrich_poi_volume(poi, source_candles, volume_method) -> changed
+
+This function is downstream of canonical POI formation and lifecycle. It cannot create, remove, retype, invalidate, or revive a canonical POI.
+
+## 15.7 Entrypoint
+
+    run(request) -> exit_status
+    main(argv) -> exit_status
+
+Normal execution is user-silent; diagnostics are emitted only with --debug according to Section 12.
+
+---
+
+# 16. PERSISTENCE AND CHECKPOINT CONTRACT
+
+## 16.1 Structures JSON transaction boundary
+
+The mapper persists one symbol-scoped file:
+
+    <SYMBOL>_structures.json
+
+Conceptually:
+
+    {
+      "symbol": "CCCC",
+      "history_no": 5000,
+      "analyses": {
+        "H4_M15_2026-06-10T12:00:00Z": { ... }
+      }
+    }
+
+The JSON form may use an object keyed by deterministic analysis key even though the portable domain model represents analyses as an explicit array. The key is an index/serialization convenience; canonical semantics do not depend on JSON container type.
+
+A mapper invocation performs one complete read-modify-write transaction for the affected symbol. Unrelated analysis entries must be preserved semantically and must not be dropped or merged.
+
+## 16.2 Atomic persistence
+
+Use the same persistence discipline as Market Data:
+
+1. serialize the complete structures document deterministically;
+2. write a temporary file in the same directory;
+3. flush and close successfully;
+4. atomically replace the target;
+5. retry finite transient failures;
+6. remove temporary files on failure.
+
+No separate lock file is required for V1 because the monitor serializes active orchestration per symbol.
+
+## 16.3 Checkpoint ordering
+
+The mapper must update last_processed_candle_time in the in-memory analysis state only as part of a successful processing result, and the persisted checkpoint is authoritative only after the complete structures document has been atomically persisted.
+
+A failure before persistence must not leave a falsely advanced checkpoint in durable state.
+
+The checkpoint is implementation provenance only; it has no canonical SMC meaning.
+
+---
+
+# 17. PURE-FUNCTION AND TESTABILITY BOUNDARIES
+
+Where practical, the following operations must be deterministic/pure with explicit inputs:
+
+- CLI validation after parsing;
+- analysis-key construction;
+- analysis-window selection;
+- point-in-time HTF context selection;
+- candle eligibility selection from persisted data;
+- Dealing Range history reconciliation input/output;
+- POI volume aggregation;
+- OHLC directional-volume calculation;
+- JSON serialization of already-resolved state.
+
+Stateful orchestration is allowed only where state mutation is the purpose of the function. Avoid hidden global state, hidden caches that affect correctness, or provider calls from canonical processing.
+
+Tests must be able to execute canonical-processing logic from fixed persisted candles without network access or live wall-clock dependence.
+
+---
+
+# 18. REQUIRED TEST STRUCTURE AND DEFINITION OF DONE
+
+At minimum, the finished mapper implementation must have focused tests covering:
+
+- CLI option parsing, including equal HTF/LTF single-timeframe mode and invalid HTF<LTF combinations;
+- deterministic analysis-key creation and ambiguous existing-analysis selection;
+- UTC parsing and completion_time-based end-time eligibility;
+- rejection of current/in-progress candles as canonical input;
+- independent HTF/LTF ranges and HTF_CONTEXT_UNAVAILABLE behavior;
+- point-in-time HTF context, proving later HTF events do not reinterpret earlier LTF events;
+- bootstrap versus incremental resume from last_processed_candle_time;
+- deterministic Dealing Range identity/history reconciliation and history_no retention;
+- canonical POI lifecycle pass-through without introducing mapper-specific lifecycle states;
+- POI volume provenance and branch separation for NONE/OHLC/ORDERFLOW/BOTH;
+- source-level delta derivation from buy/sell with no persisted candle-level delta dependency;
+- deterministic OHLC directional-volume aggregation and zero-volume behavior;
+- structures JSON atomic persistence and checkpoint ordering;
+- MQL-portable domain-state behavior independent of Python-specific collection mechanics;
+- absence of runtime/import dependencies on legacy modules and Market Data/Monitor modules.
+
+Definition of done:
+
+- smc_mapper.py implements the contracts in this specification;
+- mapper consumes only persisted normalized Market Data JSON and never a concrete provider;
+- Market Data and mapper JSON stores remain strictly separated by ownership;
+- canonical SMC decisions are governed by .agents/skills/smc/;
+- Market Data current snapshot never enters canonical structural input;
+- no source-level orderflow delta field is required;
+- checkpoint advances only after successful atomic persistence;
+- structures state is deterministic and incrementally resumable;
+- implementation contains no runtime dependency on legacy artifacts;
+- focused mapper tests pass without network access;
+- the code structure remains directly portable at the class/contract level to both MQL4 and MQL5.
+
+**STATUS: IMPLEMENTATION-READY CONTRACT — RE-AUDITED FOR MARKET-DATA COMPATIBILITY AND PORTABILITY**
