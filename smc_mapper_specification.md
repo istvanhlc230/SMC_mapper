@@ -1,14 +1,14 @@
 # SMC Mapper Specification
 
-**Status:** Working specification. Sections are approved incrementally.  
-**Scope:** Functional and implementation specification for the future `smc_mapper.py`.  
+**Status:** Working specification. Sections are approved incrementally.
+**Scope:** Functional and implementation specification for the future `smc_mapper.py`.
 **Canonical authority:** `.agents/skills/smc/` remains the sole authority for canonical SMC semantics. This document does not redefine those rules.
 
 ---
 
-# A. INPUT / ORCHESTRATION
+# 0. SCOPE, AUTHORITY, AND RUNTIME BOUNDARIES
 
-## A0. Active product runtime components
+## 0.1 Active product runtime components
 
 The intended finished product uses these active Python runtime components:
 
@@ -20,460 +20,7 @@ The older `smc_htf_ltf_monitor.py`, `smc_analyzer.py`, and Layer-1-to-Layer-6 `*
 
 This specification defines the mapper contract and its boundaries with the standalone Market Data CLI and interactive monitor.
 
-## A1. Symbol
-
-One required instrument per mapper execution.
-
-One mapper execution analyzes one symbol.
-
----
-
-## A2. HTF
-
-Optional.
-
-Exactly one timeframe may be supplied.
-
-Example:
-
-`--htf H4`
-
----
-
-## A3. LTF
-
-Optional.
-
-Exactly one timeframe may be supplied.
-
-Example:
-
-`--ltf M15`
-
----
-
-## A4. Timeframe relationship
-
-The mapper determines the analysis mode from the supplied timeframe parameters.
-
-### Single-timeframe analysis
-
-Use single-timeframe analysis when:
-
-- only `--htf` is supplied;
-- only `--ltf` is supplied; or
-- both are supplied but they specify the **same timeframe**.
-
-In single-timeframe analysis, the selected timeframe is analyzed once.
-
-Internally, the analysis may represent:
-
-`HTF = LTF = selected timeframe`
-
-but this does **not** activate HTF pullback validation.
-
-### Two-timeframe analysis
-
-Use two-timeframe analysis only when both are supplied and they are different:
-
-`HTF > LTF`
-
-An invalid relationship is an input error.
-
-The mapper must never silently swap or otherwise correct the supplied timeframes.
-
----
-
-## A4a. Entry timeframe
-
-The entry timeframe is the driving timeframe for incremental processing and runtime scheduling.
-
-- Single-timeframe analysis: the selected timeframe is the entry timeframe.
-- Two-timeframe analysis: the LTF is the entry timeframe.
-
-The entry timeframe determines `last_processed_candle_time`, incremental market-data acquisition, mapper processing boundaries, and monitor update scheduling. HTF remains the higher-context timeframe and is processed as required to provide point-in-time context for the entry timeframe.
-
----
-
-## A5. HTF Pullback Validation
-
-HTF pullback validation is enabled only in **two-timeframe analysis**, when both HTF and LTF are explicitly supplied and they are different.
-
-### Both supplied and different
-
-`--htf H4 --ltf M15`
-
-- Analyze H4 first.
-- Analyze M15 second.
-- M15 may consume the required H4 structural context for canonical HTF pullback validation.
-
-### Only HTF supplied
-
-`--htf H4`
-
-- Analyze only H4.
-- Do not perform HTF pullback validation.
-
-### Only LTF supplied
-
-`--ltf M15`
-
-- Analyze only M15.
-- Do not perform HTF pullback validation.
-
-### Both supplied and equal
-
-`--htf H1 --ltf H1`
-
-- Treat the request as a single-timeframe H1 analysis.
-- Analyze H1 once.
-- Do not perform HTF pullback validation.
-- Do not treat H1 as its own Higher Timeframe for canonical Gate 2.
-
-The mapper must never automatically select or invent a different HTF when only one timeframe is supplied.
-
----
-
-
-## A6. Analysis order and timeframe synchronization
-
-When both timeframes are supplied, the mapper reads the required normalized HTF/LTF candle ranges from the corresponding timeframe sections of `<SYMBOL>_marketdata.json` and processes them chronologically on their shared time axis.
-
-"HTF context establishment -> synchronized HTF/LTF processing"
-
-The HTF analysis provides the structural context required by canonical LTF rules. The LTF analysis may consume that context where required, but the LTF analysis must never redefine or mutate HTF structure.
-
-Within synchronized processing:
-
-- a newly completed HTF candle updates HTF canonical state before later LTF evaluations may consume that new HTF information;
-- each completed LTF candle is evaluated against only the HTF canonical context that already exists at that LTF evaluation time;
-- the mapper does not use a later HTF event to reinterpret an earlier LTF event.
-
-The monitor/launcher ensures that required candle ranges are present in `<SYMBOL>_marketdata.json` by invoking the Market Data CLI as needed.
-
-When only one timeframe is supplied, only that timeframe is analyzed.
-
-## A7. Start time
-
-`--starttime` is optional.
-
-When supplied, it defines the requested start of the analysis window and selects the analysis identity associated with that requested boundary. It may be specified as:
-
-- a date, or
-- an exact datetime.
-
-Examples:
-
-`--starttime 2026-09-01`
-
-`--starttime 2026-09-01T09:30:00`
-
-When `--starttime` is omitted:
-
-- if exactly one existing analysis matches the supplied timeframe configuration, the mapper resumes that analysis from its persisted `last_processed_candle_time`;
-- if multiple existing analyses match the supplied timeframe configuration but have different analysis start boundaries, the request is ambiguous and must fail explicitly; `--starttime` is required to select one;
-- if no existing analysis matches the supplied timeframe configuration, the mapper creates a new analysis using the earliest available completed entry-timeframe candle in `<SYMBOL>_marketdata.json` as its persisted initial analysis boundary. This boundary comes from actual persisted data and is not invented.
-
-For an existing analysis, the next eligible completed entry-timeframe candle after `last_processed_candle_time` is the incremental processing start.
-
-For a newly created analysis without `--starttime`, the mapper performs the required bootstrap/warm-up from the persisted available history beginning at the selected initial analysis boundary.
-
-The resume path is specifically intended to support restarting the program after a previous shutdown.
-
-The mapper must distinguish the explicitly requested `requested_start`, when supplied, from the persisted analysis boundary and the computed `effective_start`.
-
-If required historical data is outside the retained market-data window, the Market Data CLI reacquires the missing range before mapper processing.
-
-Missing historical data must never be fabricated.
-
-## A8. End time
-
-`--endtime` is optional.
-
-It may be specified as:
-
-- a date, or
-- an exact datetime.
-
-Examples:
-
-`--endtime 2026-09-29`
-
-`--endtime 2026-09-29T15:30:00`
-
-If omitted, use the latest completed entry-timeframe candle available in `<SYMBOL>_marketdata.json` after the required update.
-
-If supplied, use the latest completed candle in `<SYMBOL>_marketdata.json` whose canonical completion boundary is less than or equal to the requested end time.
-
-The normalized candle `timestamp` alone must not be treated as proof that a candle has completed. Completion is determined by the normalized completion status/time contract in B6.
-
-An incomplete/current candle must never enter canonical analysis.
-
-## A9. Independent timeframe feed ranges
-
-HTF and LTF candle data may cover different temporal ranges.
-
-The Market Data CLI owns acquisition and persists the actual available range for each timeframe in `<SYMBOL>_marketdata.json`. The mapper reads only the range required by its current analysis and must not fabricate unavailable candles.
-
-Example:
-
-- HTF data: 2026-06-01 -> 2026-09-29
-- LTF data: 2026-01-01 -> 2026-09-29
-
-The longer LTF history must not be truncated merely because the HTF history is shorter.
-
-The absence of HTF data before its available start does not imply that HTF structure did not exist.
-
-Availability metadata is read from `<SYMBOL>_marketdata.json`. If the required range cannot be satisfied, the mapper must represent the resulting data/context unavailability explicitly and fail closed where canonical rules require unavailable context.
-
-The mapper does not perform provider-specific acquisition.
-
-## A10. Missing HTF context
-
-When an LTF canonical rule requires HTF pullback validation but the required HTF historical context is unavailable, represent the condition explicitly as:
-
-`HTF_CONTEXT_UNAVAILABLE`
-
-Do not convert it to:
-
-`HTF_VALID_PULLBACK = FALSE`
-
-Therefore:
-
-`HTF_CONTEXT_UNAVAILABLE != HTF_VALID_PULLBACK_FALSE`
-
-If a canonical decision depends on unavailable HTF context, the decision must remain unresolved / fail closed.
-
----
-
-
-## A11. Closed Dealing Range history and `history_no`
-
-`history_no` is one collective symbol-level configuration value, stored once in `<SYMBOL>_structures.json`.
-
-In two-timeframe mode, it applies independently to the HTF CLOSED DEALING RANGE history retained inside each distinct mapper analysis entry. The LTF does not have a separate `history_no`.
-
-In single-timeframe analysis, it applies to the selected timeframe's CLOSED DEALING RANGE history for that analysis.
-
-The history unit is the canonical closed Dealing Range. Only a Dealing Range that has been canonically closed may enter history. The currently open Dealing Range is never a history item.
-
-Retention is newest-first by canonical `close_time`, with oldest-first (FIFO) eviction within each analysis when that analysis's retained history exceeds `history_no`.
-
-Eviction is a storage-retention operation only. It does not invalidate canonical historical structure.
-
-A repeated mapper execution must reconcile an existing range identity in place and must not create a duplicate history entry.
-
-## A12. Closed Dealing Range identity and retention configuration
-
-A stored CLOSED DEALING RANGE is identified by:
-
-```
-timeframe + start_time + close_time
-```
-
-This is the history identity. `structure_hash` is not a closed-range identity.
-
-`start_time` and `close_time` are lifecycle timestamps derived from the canonical Dealing Range lifecycle. The mapper must not invent a new range-start rule, provisional range boundary, or synthetic start timestamp.
-
-`formation_time`, where present on structural objects or state within the range, identifies when that structural object/state formed. It is semantically distinct from the Dealing Range `close_time`.
-
-A closed range identity is immutable once canonically closed. For an existing retained range with the same identity, reconciliation updates that range in place. A newly closed range with a new identity is inserted.
-
-### `history_no` persistence rules
-
-`history_no` is stored once per symbol structures JSON, not per timeframe or analysis.
-
-- New symbol structures JSON + no `--history_no` -> initialize and persist `history_no = 5000`.
-- New symbol structures JSON + `--history_no=N` -> initialize and persist `history_no = N`.
-- Existing symbol structures JSON + no `--history_no` -> preserve the stored `history_no`.
-- Existing symbol structures JSON + `--history_no=N` -> ignore the CLI value and preserve the stored `history_no`.
-- If an existing symbol structures JSON lacks `history_no`, initialize and persist `5000`.
-- `N` must be an integer >= 1 when supplied.
-
-Changing `history_no` changes retention capacity only. It does not change canonical SMC semantics.
-
-## A12a. HTF Dealing Range history contract
-
-Within each retained mapper analysis entry, each history element represents one CLOSED Dealing Range for that analysis and may contain canonical HTF structural state and, where two-timeframe analysis is active, any number of LTF structures interpreted in that HTF range context.
-
-The LTF records stored under an HTF range are context-scoped execution analysis, not a new canonical parent/child ontology. LTF semantic ownership remains with the LTF canonical rules.
-
-The history record may contain, where applicable:
-
-- HTF structural direction/lifecycle state;
-- HTF structural swings;
-- HTF protected structural extremes;
-- HTF IDM provenance;
-- HTF retracement qualification;
-- HTF BOS;
-- HTF CHoCH;
-- canonical HTF Layer-6 POIs;
-- associated LTF structural/entry-analysis records;
-- volume metadata associated with canonical POIs.
-
-There is no fixed maximum number of LTF structures within one HTF Dealing Range.
-
-The history record must preserve canonical formation/provenance times of its contained objects.
-
-History is not an append-only mapper execution log. It is retained canonical Dealing Range history for the specific mapper analysis.
-
-### A12b. Dealing Range lifecycle boundary
-
-The mapper derives Dealing Range history boundaries strictly from the canonical structural lifecycle.
-
-- A currently open Dealing Range is runtime state, not history.
-- `VALID_BOS` is the canonical lifecycle event that establishes the next confirmed Dealing Range lifecycle; when a governing range already exists, it closes that previous range first. The first `VALID_BOS` establishes the first confirmed Dealing Range and therefore has no pre-existing governing range to close.
-- The mapper must not close or start a Dealing Range because of a physical break, IDM sweep, CHoCH-eligible break, insufficient-retracement `IMPULSE_EXTENSION`, mapper execution boundary, or retention operation.
-- Before the first canonical `VALID_BOS`, no governing Dealing Range may be fabricated for history or used as a substitute for the unresolved first-BOS canonical baseline.
-- The exact first-BOS retracement baseline remains the canonical/source gap documented by the SMC skill; the mapper must fail closed rather than invent a synthetic initialization rule.
-
----
-
-## A13. JSON storage
-
-Use two symbol-scoped JSON files per symbol:
-
-```text
-data/
-    CCCC_marketdata.json
-    BABA_marketdata.json
-    DTE.DE_marketdata.json
-
-structures/
-    CCCC_structures.json
-    BABA_structures.json
-    DTE.DE_structures.json
-```
-
-### Market-data JSON
-
-<SYMBOL>_marketdata.json is the persistent normalized market-data store for that symbol.
-
-It contains all acquired timeframes for the symbol in one file. Each timeframe section contains a completed-candle series plus an optional current in-progress candle snapshot. A separate market-data file is not created per timeframe.
-
-Logical shape:
-
-    {
-      "symbol": "CCCC",
-      "timeframes": {
-        "H4": { "available_start": "...", "available_end": "...", "candles": [], "current": null },
-        "M15": { "available_start": "...", "available_end": "...", "candles": [], "current": null },
-        "M5": { "available_start": "...", "available_end": "...", "candles": [], "current": null }
-      }
-    }
-
-Only normalized market-data state belongs here. No canonical structure, mapper history, POIs, trade state, monitor state, or debug text may be stored.
-
-Completed candles are stored in candles[]. They are the only market-data records eligible for canonical mapper processing. The optional current field stores only the latest in-progress candle snapshot for that timeframe and is never canonical structural input.
-
-A current snapshot may be refreshed while the candle is forming. It may contain the provider-available OHLC and total volume for that in-progress interval. It must never be copied into candles[] until the interval is confirmed completed.
-
-Market-data retention is a bounded rolling operational policy applied independently to each timeframe. Its capacity is a market-data implementation/storage setting, not a canonical SMC parameter.
-
-If an analysis requires candles outside the retained window, the Market Data CLI reacquires that missing range and merges it into the corresponding timeframe before mapper processing.
-
-Each timeframe section is independently created, extended, deduplicated by canonical candle identity, chronologically ordered, and retention-managed. Updating one timeframe must not alter another timeframe's completed candle series or current snapshot.
-
-The available_start and available_end fields refer only to the persisted completed-candle series, not to the current snapshot.
-
-### Structures JSON
-
-`<SYMBOL>_structures.json` is the canonical mapper structural-state file for that symbol.
-
-It contains all distinct mapper analyses for the symbol in one file. Each analysis is identified by a deterministic analysis key derived from its timeframe configuration and persisted initial analysis boundary.
-
-Examples:
-
-```text
-H4_M15_2026-06-10T12:00:00Z
-H1_M5_2026-07-01T09:00:00Z
-M15_2026-06-10T12:00:00Z
-```
-
-The persisted `requested_start` records the explicitly supplied start boundary when one was used. For a newly created analysis without `--starttime`, the persisted analysis boundary is the earliest available completed entry-timeframe candle selected by A7; `requested_start` may therefore be null/absent while the analysis key remains deterministic.
-
-When `--starttime` is omitted, an existing analysis is selected by timeframe configuration only when that selection is unambiguous. If multiple analysis keys share the same timeframe configuration, `--starttime` is required.
-
-The analysis key is an implementation-level identifier only; it does not redefine canonical SMC ontology.
-
-Logical shape:
-
-```json
-{
-  "symbol": "CCCC",
-  "history_no": 5000,
-  "analyses": {
-    "H4_M15_2026-06-10T12:00:00Z": {
-      "htf": "H4",
-      "ltf": "M15",
-      "analysis_mode": "HTF_LTF",
-      "requested_start": "2026-06-10T12:00:00Z",
-      "last_processed_candle_time": "...",
-      "current": {},
-      "canonical_pois": [],
-      "history": []
-    }
-  }
-}
-```
-
-`history_no` is stored once at symbol level and applies independently to each analysis's applicable closed Dealing Range history.
-
-A Market Data CLI execution updates only `<SYMBOL>_marketdata.json`. A mapper execution updates only its relevant analysis entry inside `<SYMBOL>_structures.json`.
-
-The monitor identifies each stored analysis from its deterministic analysis key and validates the stored `analysis_mode`, `htf`, `ltf`, and persisted analysis boundary. `requested_start` is validated when present; it may be null/absent for an analysis created without an explicit `--starttime`.
-
-### Monitor multi-symbol / multi-analysis contract
-
-The monitor is not limited to one symbol or one timeframe analysis.
-
-- One monitor runtime may manage multiple symbols.
-- Each symbol retains its own `<SYMBOL>_marketdata.json` and `<SYMBOL>_structures.json`.
-- Within one symbol's structures JSON, multiple distinct mapper analyses may coexist.
-- Each analysis is identified and scheduled independently by its deterministic analysis key.
-- Multiple HTF/LTF analysis pairs may therefore coexist for the same symbol, for example `H4/M15`, `H1/M5`, and `M15/M1`, subject to the normal timeframe and data-availability contracts.
-- Single-timeframe analyses may coexist with HTF/LTF analyses for the same symbol.
-- A monitor update for one symbol/analysis must not overwrite, merge, or alter another symbol/analysis.
-- Entry-timeframe scheduling and mapper checkpoints remain independent for every stored analysis.
-- The monitor must maintain at most one active orchestration instance per symbol while allowing that instance to manage all configured analyses for the symbol.
-- A failure or temporary data unavailability affecting one symbol or one analysis must not corrupt or invalidate unrelated symbols or analyses.
-
-The monitor may schedule these analyses independently according to their entry timeframes while sharing the symbol-level market-data store.
-
-There is no single multi-symbol mapper JSON file and no single multi-symbol market-data JSON file.
-
-## A14. Stored state
-
-Each mapper analysis entry stores canonical structural analysis plus the minimal mapper-processing metadata required for deterministic incremental execution.
-
-It may contain structural lifecycle/state, structural swings, protected structural extremes, dealing range, IDM state/provenance, retracement qualification, BOS, CHoCH, canonical L6 structural / POI results, canonical POI registry, retained closed Dealing Range history, and structural provenance/change metadata.
-
-The mapper must not persist dynamic monitoring or trade state such as current market price, active trade/order state, stop state, break-even state, trailing state, target-hit state, or the monitor's transient POI selection state. Those are owned by the monitor.
-
-Each analysis entry contains its own `last_processed_candle_time` as mapper processing provenance/checkpoint metadata. It carries no canonical SMC meaning.
-
-## A15. Input validation
-
-Before canonical analysis, the mapper validates the supplied configuration and normalized candle contract, including at minimum:
-
-- symbol;
-- timeframe values;
-- HTF/LTF relationship;
-- start/end values;
-- starttime < endtime when both are specified;
-- history_no;
-- timestamp ordering;
-- duplicate timestamps;
-- timezone validity;
-- completed-candle status;
-- OHLC integrity;
-- two-timeframe HTF/LTF mode requirements.
-
-Provider-specific availability checks, provider/API failures, and acquisition errors belong to the Market Data CLI process. The mapper sees only the normalized CLI result or an explicit acquisition/error result.
-
-Invalid mapper configuration or normalized candle data must fail explicitly.
-
-## A16. Market-data boundary and ownership
+## 0.2 Implementation ownership boundaries
 
 The mapper has no direct connection to any concrete market-data provider and has no runtime import dependency on `market_data.py`.
 
@@ -512,151 +59,540 @@ V1 uses a Yahoo Charts provider adapter as the initial concrete Market Data impl
 
 Provider-specific API details remain outside the canonical SMC engine.
 
-## A17. Bootstrap
-
-The mapper constructs structural state by processing normalized candle ranges read from `<SYMBOL>_marketdata.json`.
-
-For an initial build, or whenever a complete bootstrap is explicitly required:
-
-earliest required effective candle -> latest completed entry-timeframe candle
-
-The mapper must not use a latest-window shortcut that bypasses required structural bootstrap.
-
-The launcher invokes the Market Data CLI for the required bootstrap range in deterministic batch form and updates `<SYMBOL>_marketdata.json`. The mapper then reads the required bootstrap range from that file.
-
-For incremental execution after a valid persisted checkpoint, the launcher invokes the Market Data CLI for only the subsequently completed entry-timeframe range after the checkpoint, in chronological order, updates `<SYMBOL>_marketdata.json`, and then invokes the mapper against the resulting persisted range as defined by A18.
-
-The mapper does not obtain market data from the monitor and does not access a concrete provider.
-
-### A17.1 Two-timeframe LTF bootstrap
-
-In two-timeframe analysis, the mapper establishes an LTF bootstrap coverage reference from the applicable HTF canonical structural context.
-
-When a confirmed HTF Dealing Range exists, the applicable HTF Protected Structural Extreme is the preferred LTF bootstrap coverage reference. This reference determines the minimum historical LTF coverage needed for deterministic structural buildup. It is a data-coverage/reference point only; it is not an LTF structural start and does not create or promote any LTF structure.
-
-When LTF bootstrap is required, the launcher invokes the Market Data CLI once for one deterministic LTF range covering the anchor through the activation/current boundary, subject to any additional LTF warm-up required by the canonical LTF rules, updates `<SYMBOL>_marketdata.json`, and then invokes the mapper against the persisted range.
-
-If the requested LTF coverage begins later than the anchor because the source has no completed LTF data at or after the requested anchor, the mapper uses the first actually available completed LTF candle after the reference as the effective LTF bootstrap start. No attempt is made by the mapper to access the provider directly.
-
-If the supplied LTF data begins before the HTF reference, that earlier data may be retained and used as additional canonical LTF warm-up when required; the HTF Protected Structural Extreme remains the context/coverage reference.
-
-If the applicable confirmed HTF Protected Structural Extreme does not exist, the mapper does not fabricate one. The LTF bootstrap then follows the supplied LTF history subject to the canonical genesis/source-gap boundaries.
-
-The LTF bootstrap reference is not an LTF structural-start ontology. The first LTF structural object is determined only by the canonical LTF rules.
-
-## A18. Monitor boundary and mapper checkpoint
-
-The monitor owns interactive runtime control, scheduling, current-price/runtime monitoring, target monitoring, alerts/notifications, and orchestration of Market Data CLI and mapper execution.
-
-The mapper and Market Data CLI are separate processes. `market_data.py` persists normalized candles to `<SYMBOL>_marketdata.json`; the mapper reads the required ranges from that file.
-
-The monitor orchestrates each symbol update cycle in this order:
-
-1. Determine which configured analysis entries need new completed entry-timeframe data.
-2. Invoke the Market Data CLI to update the required timeframe sections in `<SYMBOL>_marketdata.json`.
-3. Invoke each affected mapper analysis.
-4. The mapper reads the persisted ranges, processes new candles chronologically, and updates only its analysis entry.
-5. The completed mapper result is persisted in `<SYMBOL>_structures.json`.
-
-A normal monitor cycle may add exactly one newly completed candle to a timeframe. This is the normal incremental case.
-
-If the monitor was not running for multiple completed candles, the Market Data CLI adds the entire missing completed range in one update and the mapper processes those candles chronologically.
-
-The Market Data CLI may also refresh the current in-progress snapshot when live mode is requested, even when no new completed candle exists. A current-snapshot-only refresh must not trigger canonical structural processing or advance any mapper checkpoint.
-
-If neither a new completed candle nor a changed or newly available requested current snapshot exists, that Market Data update is a no-op.
-
-Each analysis entry has its own `last_processed_candle_time`. It identifies the latest completed entry-timeframe candle incorporated by that analysis.
-
-Multiple analyses for the same symbol may overlap in time and share the same `<SYMBOL>_marketdata.json`. Their structural state and checkpoints remain separate inside `<SYMBOL>_structures.json`.
-
-To keep file coordination simple, the finished product supports one active `smc_monitor.py` orchestration instance per symbol. Multiple analyses run inside that monitor instance.
-
-Each JSON update is performed as a complete read-modify-write operation using a temporary file followed by atomic replacement. If a target file is temporarily unavailable for writing, the writer waits briefly and retries up to a finite timeout. No separate lock file is required.
-
-The monitor advances an analysis checkpoint only after the corresponding structural state has been successfully persisted.
-
-### RR / minimum-RR policy
-
-Minimum RR is a downstream trading-policy constraint, not a mapper/canonical-SMC parameter.
-
-Therefore `--rr` does **not** belong to `smc_mapper.py`.
-
-If exposed as a CLI control, it belongs to `smc_monitor.py`:
+### Process-launch requirement
 
 ```text
---rr DECIMAL
+market_data.py
+    |
+    +--> <SYMBOL>_marketdata.json
+    |
+    +--> stderr -> terminal (debug only)
+
+smc_mapper.py
+    |
+    +--> reads <SYMBOL>_marketdata.json
+    |
+    +--> stderr -> terminal (debug only)
 ```
 
-The parameter is optional. If `--rr` is absent, RR is not used as an alert-eligibility filter. If `--rr` is supplied, the monitor applies the gate only after target resolution and target clearance:
+`stderr` must never be redirected into mapper or monitor data input.
 
-```text
-Projected_RR >= --rr
+With `--debug`, only the relevant process's diagnostics become visible on the terminal. Debug information is never written into the market-data JSON and never becomes mapper or monitor input.
+
+---
+
+# 1. EXTERNAL MARKET-DATA CONTRACT
+
+## 1.1 Provider boundary
+
+The Market Data CLI, outside the canonical mapper, receives provider-specific market data, converts it into a provider-independent normalized candle representation, and persists the normalized candles into `<SYMBOL>_marketdata.json`.
+
+Provider-specific data
+        |
+        v
+market_data.py (CLI)
+  acquisition / normalization
+        |
+        v
+<SYMBOL>_marketdata.json
+        |
+        +-------> smc_mapper.py
+        |
+        +-------> smc_monitor.py
+
+Canonical SMC logic must consume only normalized candle data.
+
+Provider-specific API access, transport, retry, pagination, authentication, timestamp parsing, completion detection, and raw-field mapping belong to the Market Data CLI.
+
+The concrete implementation resides initially in one standalone executable Python module, `market_data.py`. It may later be split internally without changing the persisted market-data schema or CLI contract.
+
+The Market Data CLI must support deterministic range retrieval and incremental update rather than requiring one provider request per candle.
+
+## 1.2 Persisted market-data store
+
+<SYMBOL>_marketdata.json is the persistent normalized market-data store for that symbol.
+
+It contains all acquired timeframes for the symbol in one file. Each timeframe section contains a completed-candle series plus an optional current in-progress candle snapshot. A separate market-data file is not created per timeframe.
+
+Logical shape:
+
+    {
+      "symbol": "CCCC",
+      "timeframes": {
+        "H4": { "available_start": "...", "available_end": "...", "candles": [], "current": null },
+        "M15": { "available_start": "...", "available_end": "...", "candles": [], "current": null },
+        "M5": { "available_start": "...", "available_end": "...", "candles": [], "current": null }
+      }
+    }
+
+Only normalized market-data state belongs here. No canonical structure, mapper history, POIs, trade state, monitor state, or debug text may be stored.
+
+Completed candles are stored in candles[]. They are the only market-data records eligible for canonical mapper processing. The optional current field stores only the latest in-progress candle snapshot for that timeframe and is never canonical structural input.
+
+A current snapshot may be refreshed while the candle is forming. It may contain the provider-available OHLC and total volume for that in-progress interval. It must never be copied into candles[] until the interval is confirmed completed.
+
+Market-data retention is a bounded rolling operational policy applied independently to each timeframe. Its capacity is a market-data implementation/storage setting, not a canonical SMC parameter.
+
+If an analysis requires candles outside the retained window, the Market Data CLI reacquires that missing range and merges it into the corresponding timeframe before mapper processing.
+
+Each timeframe section is independently created, extended, deduplicated by canonical candle identity, chronologically ordered, and retention-managed. Updating one timeframe must not alter another timeframe's completed candle series or current snapshot.
+
+The available_start and available_end fields refer only to the persisted completed-candle series, not to the current snapshot.
+
+## 1.3 Normalized candle representation
+
+Each normalized completed candle must contain at minimum:
+
+- candle_id
+- timestamp
+- completion_time
+- open
+- high
+- low
+- close
+
+When the provider supplies total candle volume, preserve it as normalized volume.total.
+
+When genuine orderflow data is available, preserve it independently under volume.orderflow.
+
+OHLC-derived directional volume is an analytical estimate and may be stored independently under volume.ohlc. It must never overwrite or be represented as observed orderflow.
+
+A normalized candle may therefore contain parallel volume information:
+
+    volume.total
+    volume.ohlc = { buy, sell, delta }
+    volume.orderflow = { buy, sell, delta }
+
+Each nested volume section is optional and exists only when its corresponding data or deterministic estimate is available. Presence or absence is the availability signal; no single exclusive candle-level method field is required.
+
+candles[] contains only completed normalized candles and is immutable after persistence. The separate current snapshot may change while its candle is in progress.
+
+The current snapshot carries the same candle identity and basic OHLC fields needed to identify the in-progress interval. It may also contain the provider-available total volume and any separately available orderflow data for that interval. It is runtime state only and is not included in completed-candle retention or canonical structural history.
+
+## 1.4 Candle identity
+
+`candle_id` must be deterministic and stable across repeated downloads of the same candle.
+
+It must be derived from stable candle identity information rather than from an in-memory array index.
+
+The candle index must never be used as permanent candle identity.
+
+The exact identifier format remains an implementation detail.
+
+---
+
+## 1.5 Timestamp, ordering, and completion
+
+All normalized timestamps must be represented consistently in UTC.
+
+Provider-specific timezone information must be normalized before canonical analysis.
+
+Provider timezone details must not leak into canonical SMC calculations.
+
+---
+
+Normalized candles must be strictly chronological:
+
+```
+timestamp[n] < timestamp[n+1]
 ```
 
-There is no default minimum-RR value. `--rr` is policy, not structural truth, and must never alter canonical POI, BOS, CHoCH, IDM, Dealing Range, or target-coordinate semantics.
+The normalization layer must reject:
 
-An explicitly supplied `--rr` value applies only to the monitor invocation in which it is supplied.
+- duplicate timestamps;
+- reverse-ordered timestamps;
+- ambiguous timestamps that cannot be normalized deterministically.
 
-### A18a. Downstream setup and alert eligibility
+The canonical engine receives an already ordered series.
 
-Downstream alert eligibility consumes canonical mapper state; it does not redefine canonical structure.
+---
 
-The canonical POI lifecycle is the first eligibility gate for a new setup:
+Only completed candles may enter canonical analysis.
 
-```text
-CANONICAL POI LIFECYCLE
-        ↓
-CANONICAL EXECUTION AUTHORIZATION
-        ↓
-TARGET RESOLUTION
-        ↓
-TARGET CLEARANCE
-        ↓
-OPTIONAL RR POLICY
-        ↓
-ALERT ELIGIBILITY
+A candle is considered completed only after its canonical timeframe interval has closed and the normalized provider/completion contract confirms that closure. Every persisted normalized candle carries a UTC `completion_time` representing that canonical interval-close boundary. The mapper uses `completion_time` for explicit end-time eligibility; timestamp alone is not sufficient evidence of completion.
+
+The mapper must use the candle's canonical completion boundary when deciding whether it is eligible for an explicit analysis end time. The candle timestamp is not by itself sufficient evidence of completion.
+
+An incomplete/current candle must be excluded from the canonical analysis series. It may be stored only in the per-timeframe current snapshot of <SYMBOL>_marketdata.json and must never be consumed as canonical structural input.
+
+The current snapshot is runtime market-data state, not historical candle state. Refreshing it must not alter structural history or mapper checkpoints.
+
+## 1.6 Numeric and OHLC integrity
+
+OHLC values must use a deterministic financial numeric representation.
+
+The canonical implementation must use `Decimal`, not binary floating-point values, for normalized OHLC prices.
+
+Invalid values include:
+
+- NaN;
+- Infinity;
+- non-numeric values;
+- silently coerced invalid numeric values.
+
+The same deterministic numeric policy applies to normalized volume values when present. Total, buy, sell, and delta volume values must use Decimal-compatible deterministic numeric representation, be finite, and must not be silently coerced or fabricated.
+
+---
+
+Every normalized candle must satisfy the basic OHLC constraints:
+
+```
+high >= low
+low <= open <= high
+low <= close <= high
 ```
 
-Only a canonical POI with `lifecycle = ACTIVE` may be selected as the setup target. The `targeted` flag identifies that selected POI; `targeted` is selection state and is not a lifecycle state.
+In addition, the candle direction must be consistent with its canonical candle-formation model:
 
-The downstream consumer must reject POIs whose canonical lifecycle is `MITIGATED`, `FAILED`, or `EXPIRED_HISTORICAL`. A retained historical POI cannot become targetable again merely because it remains in the structures JSON.
+### Bullish candle
 
-Layer 6 owns canonical POI lifecycle. Downstream monitor logic consumes that state and must not invent an age-based freshness rule or independently decide canonical POI expiry.
-
-Target resolution is downstream policy. A resolved target must retain its provenance and must not be manufactured merely to satisfy an RR condition.
-
-Target clearance is downstream trading/alert policy. V1 target clearance is deterministic: a resolved target must exist, its price must be strictly beyond the current reference price in the intended direction, and it must not already have been reached at the evaluation time. A missing or unresolved target, missing current reference price, or failed clearance predicate fails closed.
-
-Minimum RR is optional monitor policy and is represented only by:
-
-```text
---rr DECIMAL
+```
+Low <= Open < Close <= High
+canonical formation model = OLHC
 ```
 
-When `--rr` is absent, RR is not an alert-eligibility filter. When `--rr` is supplied, the monitor requires:
+### Bearish candle
 
-```text
-Projected_RR >= --rr
+```
+Low <= Close < Open <= High
+canonical formation model = OHLC
 ```
 
-For V1:
+### Doji
 
-```text
-reward_distance = abs(resolved_target_price - entry_reference_price)
-risk_distance   = abs(stop_price - entry_reference_price)
-Projected_RR    = reward_distance / risk_distance
+```
+Low <= Open = Close <= High
+no directional OLHC/OHLC formation model
 ```
 
-Projected_RR is unresolved when the resolved target, entry reference, or stop price is missing, or when risk_distance <= 0. An unresolved RR cannot pass an explicit --rr gate.
+OHLC/OLHC here is a **methodology formation model**, not historical intrabar evidence.
 
-There is no default minimum-RR value. `--rr` does not alter POI, BOS, CHoCH, IDM, Dealing Range, or target-coordinate semantics.
+Aggregate OHLC must never be used to fabricate the historical order in which intrabar extremes were reached.
 
-Execution-quality conditions such as spread, expected slippage, market/session availability, broker/execution availability, or explicitly configured event filters are downstream policy only. Failure of such a condition must not mutate canonical structure or POI lifecycle.
+Invalid OHLC/formation data must be rejected rather than silently repaired.
 
-The monitor is alert/notification-only in the current product. Alerts are runtime events and are not persisted as canonical structure, setup snapshots, or alert records in `<SYMBOL>_structures.json`.
+---
 
-## A19. Configuration
+## 1.7 Data gaps and series integrity
+
+The mapper must not manufacture synthetic candles to fill missing provider data.
+
+Examples include:
+
+- non-trading periods;
+- market holidays;
+- provider gaps;
+- unavailable historical intervals.
+
+A missing candle is not equivalent to a zero-volume or unchanged candle.
+
+The temporal gap must remain observable to the provider/normalization/orchestration layer.
+
+Whether a particular gap prevents a downstream structural calculation is determined by the relevant canonical layer, not by the normalization layer.
+
+---
+
+Every normalized candle series belongs to exactly one timeframe.
+
+A candle from one timeframe must never be silently mixed with another timeframe.
+
+For a two-timeframe analysis:
+
+```
+HTF candle series
+LTF candle series
+```
+
+remain distinct series.
+
+---
+
+A normalized candle series belongs to exactly one symbol for a mapper execution.
+
+Data from different symbols must never be merged into the same canonical candle series.
+
+---
+
+Provider-specific concepts must be normalized before the canonical engine receives the data.
+
+Examples include:
+
+- provider-specific timestamp formats;
+- provider-specific field names;
+- provider-specific completion flags;
+- provider-specific numeric representations;
+- provider-specific timezone conventions.
+
+The canonical engine must not contain provider-specific conversion logic.
+
+---
+
+## 1.8 Data availability and reacquisition
+
+`market_data.py` persists the actual available temporal range of each timeframe in `<SYMBOL>_marketdata.json`.
+
+At minimum, each timeframe section tracks:
+
+- `available_start`
+- `available_end`
+
+This is important because HTF and LTF may have different available history.
+
+The mapper distinguishes requested analysis range from available/retained market-data range and reads the required range from the corresponding timeframe section of `<SYMBOL>_marketdata.json`.
+
+If the requested range is outside the retained market-data window, the launcher triggers Market Data CLI reacquisition before mapper processing.
+
+If the requested range cannot be supplied, the mapper must represent the resulting data/context unavailability explicitly and must fail closed where a canonical decision depends on unavailable information.
+
+The mapper does not access provider availability APIs directly.
+
+The Market Data CLI must not discard candles from a requested acquisition range before persistence.
+
+The launcher ensures that all required bootstrap/warm-up candles are acquired and persisted through the Market Data CLI, and the mapper then determines the effective analysis interval from the persisted data and requested start/end constraints.
+
+Market-data retention may remove older candles according to the bounded timeframe retention policy. Such removal is storage policy only and does not rewrite mapper structural history.
+
+If a later analysis requires removed candles, the Market Data CLI reacquires the missing range from the provider before that analysis is processed.
+
+## 1.9 Candle metadata, determinism, failure, and volume retention
+
+The canonical candle representation contains information required for candle-level structural processing.
+
+Provider-specific metadata must not enter the canonical candle representation unless a canonical rule explicitly requires it.
+
+---
+
+---
+
+Given the same provider data and normalization policy:
+
+```
+same raw data
+      ↓
+same normalized candles
+```
+
+Normalization must not depend on:
+
+- current wall-clock time;
+- array position;
+- random identifiers;
+- mutable global state.
+
+---
+
+Invalid provider data or normalization failure must not be silently ignored.
+
+The mapper must report sufficient information to identify the affected symbol, timeframe and candle/time range.
+
+The canonical engine must never receive malformed or ambiguous candle data.
+
+---
+
+When total traded volume is available from the provider, market_data.py preserves it as volume.total on the underlying normalized candle.
+
+When genuine orderflow is available, it is preserved independently under volume.orderflow. When deterministic OHLC directional estimation is available, it may be preserved independently under volume.ohlc.
+
+The mapper must preserve the applicable POI volume information when storing POI references to source candles. Parallel volume types must not overwrite one another.
+
+Volume provenance is represented by the data branch that is actually present. A single exclusive volume source or volume method field is not required on the candle.
+
+---
+
+# 2. CLI AND INPUT RESOLUTION
+
+## 2.1 Symbol
+
+One required instrument per mapper execution.
+
+One mapper execution analyzes one symbol.
+
+---
+
+## 2.2 HTF
+
+Optional.
+
+Exactly one timeframe may be supplied.
+
+Example:
+
+`--htf H4`
+
+---
+
+## 2.3 LTF
+
+Optional.
+
+Exactly one timeframe may be supplied.
+
+Example:
+
+`--ltf M15`
+
+---
+
+## 2.4 Timeframe relationship and analysis mode
+
+The mapper determines the analysis mode from the supplied timeframe parameters.
+
+### Single-timeframe analysis
+
+Use single-timeframe analysis when:
+
+- only `--htf` is supplied;
+- only `--ltf` is supplied; or
+- both are supplied but they specify the **same timeframe**.
+
+In single-timeframe analysis, the selected timeframe is analyzed once.
+
+Internally, the analysis may represent:
+
+`HTF = LTF = selected timeframe`
+
+but this does **not** activate HTF pullback validation.
+
+### Two-timeframe analysis
+
+Use two-timeframe analysis only when both are supplied and they are different:
+
+`HTF > LTF`
+
+An invalid relationship is an input error.
+
+The mapper must never silently swap or otherwise correct the supplied timeframes.
+
+---
+
+## 2.5 Entry timeframe
+
+The entry timeframe is the driving timeframe for incremental processing and runtime scheduling.
+
+- Single-timeframe analysis: the selected timeframe is the entry timeframe.
+- Two-timeframe analysis: the LTF is the entry timeframe.
+
+The entry timeframe determines `last_processed_candle_time`, incremental market-data acquisition, mapper processing boundaries, and monitor update scheduling. HTF remains the higher-context timeframe and is processed as required to provide point-in-time context for the entry timeframe.
+
+---
+
+## 2.6 HTF pullback validation
+
+HTF pullback validation is enabled only in **two-timeframe analysis**, when both HTF and LTF are explicitly supplied and they are different.
+
+### Both supplied and different
+
+`--htf H4 --ltf M15`
+
+- Analyze H4 first.
+- Analyze M15 second.
+- M15 may consume the required H4 structural context for canonical HTF pullback validation.
+
+### Only HTF supplied
+
+`--htf H4`
+
+- Analyze only H4.
+- Do not perform HTF pullback validation.
+
+### Only LTF supplied
+
+`--ltf M15`
+
+- Analyze only M15.
+- Do not perform HTF pullback validation.
+
+### Both supplied and equal
+
+`--htf H1 --ltf H1`
+
+- Treat the request as a single-timeframe H1 analysis.
+- Analyze H1 once.
+- Do not perform HTF pullback validation.
+- Do not treat H1 as its own Higher Timeframe for canonical Gate 2.
+
+The mapper must never automatically select or invent a different HTF when only one timeframe is supplied.
+
+---
+
+## 2.7 Start-time resolution
+
+`--starttime` is optional.
+
+When supplied, it defines the requested start of the analysis window and selects the analysis identity associated with that requested boundary. It may be specified as:
+
+- a date, or
+- an exact datetime.
+
+Examples:
+
+`--starttime 2026-09-01`
+
+`--starttime 2026-09-01T09:30:00`
+
+When `--starttime` is omitted:
+
+- if exactly one existing analysis matches the supplied timeframe configuration, the mapper resumes that analysis from its persisted `last_processed_candle_time`;
+- if multiple existing analyses match the supplied timeframe configuration but have different analysis start boundaries, the request is ambiguous and must fail explicitly; `--starttime` is required to select one;
+- if no existing analysis matches the supplied timeframe configuration, the mapper creates a new analysis using the earliest available completed entry-timeframe candle in `<SYMBOL>_marketdata.json` as its persisted initial analysis boundary. This boundary comes from actual persisted data and is not invented.
+
+For an existing analysis, the next eligible completed entry-timeframe candle after `last_processed_candle_time` is the incremental processing start.
+
+For a newly created analysis without `--starttime`, the mapper performs the required bootstrap/warm-up from the persisted available history beginning at the selected initial analysis boundary.
+
+The resume path is specifically intended to support restarting the program after a previous shutdown.
+
+The mapper must distinguish the explicitly requested `requested_start`, when supplied, from the persisted analysis boundary and the computed `effective_start`.
+
+If required historical data is outside the retained market-data window, the Market Data CLI reacquires the missing range before mapper processing.
+
+Missing historical data must never be fabricated.
+
+## 2.8 End-time resolution
+
+`--endtime` is optional.
+
+It may be specified as:
+
+- a date, or
+- an exact datetime.
+
+Examples:
+
+`--endtime 2026-09-29`
+
+`--endtime 2026-09-29T15:30:00`
+
+If omitted, use the latest completed entry-timeframe candle available in `<SYMBOL>_marketdata.json` after the required update.
+
+If supplied, use the latest completed candle in `<SYMBOL>_marketdata.json` whose canonical completion boundary is less than or equal to the requested end time.
+
+The normalized candle `timestamp` alone must not be treated as proof that a candle has completed. Completion is determined by the normalized completion status/time contract in B6.
+
+An incomplete/current candle must never enter canonical analysis.
+
+## 2.9 Input validation
+
+Before canonical analysis, the mapper validates the supplied configuration and normalized candle contract, including at minimum:
+
+- symbol;
+- timeframe values;
+- HTF/LTF relationship;
+- start/end values;
+- starttime < endtime when both are specified;
+- history_no;
+- timestamp ordering;
+- duplicate timestamps;
+- timezone validity;
+- completed-candle status;
+- OHLC integrity;
+- two-timeframe HTF/LTF mode requirements.
+
+Provider-specific availability checks, provider/API failures, and acquisition errors belong to the Market Data CLI process. The mapper sees only the normalized CLI result or an explicit acquisition/error result.
+
+Invalid mapper configuration or normalized candle data must fail explicitly.
+
+## 2.10 Configuration boundary
 
 No separate mapper configuration file is required.
 
@@ -682,66 +618,7 @@ BOTH uses both available genuine orderflow analytics and OHLC-derived directiona
 
 The selected method is an analysis-time processing decision. It is not persisted as a single exclusive volume provenance field in normalized market-data candles, and it does not remove or overwrite any parallel volume data that is available. Explicit CLI values override the default.
 
-## A19.1 CLI debug output
-
-The CLI interfaces must strictly separate persistent market data from user-visible diagnostics.
-
-- Normalized candle data is persisted to `<SYMBOL>_marketdata.json` and is not emitted as a mapper data pipe.
-- Debug and diagnostic information is written to `stderr` only.
-- Debug `stderr` is terminal-only. The launcher/monitor must not capture, parse, forward, merge, persist, or pass it to `smc_mapper.py`, `smc_monitor.py`, or the market-data JSON.
-- `stderr` must never be merged into a machine-readable data channel.
-- Without `--debug`, debug/trace output is suppressed.
-- With `--debug`, diagnostics are visible directly on the terminal.
-- Debug mode must never alter canonical calculations or normalized market-data semantics.
-- Normal runtime must produce no user-visible CLI output.
-
-### Market Data CLI contract
-
-market_data.py is invoked as a standalone process. Its CLI accepts:
-
-    --symbol SYMBOL
-    --timeframes TF [TF ...]
-    --starttime ISO8601
-    --endtime ISO8601
-    --lastcandle
-    --live
-    --debug
-
-symbol is required. timeframes accepts one or more supported timeframes and is not limited to the mapper's one- or two-timeframe analysis model. starttime and endtime are optional range bounds.
-
---lastcandle is an alternative completed-candle acquisition mode. When supplied, the Market Data CLI retrieves exactly the latest completed candle for each requested timeframe and reconciles it into that timeframe's candles[] series. It does not refresh or replace the current in-progress snapshot by itself.
-
---lastcandle is mutually exclusive with --starttime and --endtime because it requests a single latest completed candle rather than a historical range. --lastcandle may be combined with --live: in that case the latest completed candle is reconciled into candles[] and the latest in-progress snapshot is refreshed independently in current when available.
-
-If the latest completed candle is already present in the persisted timeframe series, deduplication leaves the existing candle identity intact and no duplicate record is created. --lastcandle never fabricates a candle and never causes an incomplete/current candle to enter candles[].
-
-Without live, the CLI persists completed candles only. With live, it also refreshes the latest provider-available in-progress candle snapshot for each requested timeframe when such a snapshot exists. If an endtime is supplied before the current interval, no current snapshot is stored for that request.
-
-When an in-progress candle later becomes completed, its final completed version is persisted in candles[] and the next in-progress interval becomes current.
-
-Market-data CLI execution persists the durable market-data result to <SYMBOL>_marketdata.json.
-
-The market-data record may preserve volume information in parallel. Provider total volume, if available, is stored as volume.total; genuine orderflow may be stored under volume.orderflow; OHLC-derived directional estimates may be stored under volume.ohlc. The mapper determines which analytical data is actually available from the persisted record and may expose a helper such as has_volume_data(...) for boolean availability checks. No single exclusive candle-level method field represents provenance.
-
-### Process-launch requirement
-
-```text
-market_data.py
-    |
-    +--> <SYMBOL>_marketdata.json
-    |
-    +--> stderr -> terminal (debug only)
-
-smc_mapper.py
-    |
-    +--> reads <SYMBOL>_marketdata.json
-    |
-    +--> stderr -> terminal (debug only)
-```
-
-`stderr` must never be redirected into mapper or monitor data input.
-
-With `--debug`, only the relevant process's diagnostics become visible on the terminal. Debug information is never written into the market-data JSON and never becomes mapper or monitor input.
+## 2.11 CLI and --help contracts
 
 ## A19.2. CLI contracts and --help
 
@@ -863,316 +740,212 @@ The monitor does not accept --htf or --ltf; it monitors the analyses already per
 
 CLI options are independent of canonical SMC semantic authority. Invalid option combinations must fail explicitly rather than being silently corrected.
 
-# B. CANDLE / MARKET DATA NORMALIZATION
+---
 
+# 3. ANALYSIS IDENTITY AND PERSISTENT STATE MODEL
 
-## B1. Provider boundary
+## 3.1 Analysis identity and structures JSON
 
-The Market Data CLI, outside the canonical mapper, receives provider-specific market data, converts it into a provider-independent normalized candle representation, and persists the normalized candles into `<SYMBOL>_marketdata.json`.
+`<SYMBOL>_structures.json` is the canonical mapper structural-state file for that symbol.
 
-Provider-specific data
-        |
-        v
-market_data.py (CLI)
-  acquisition / normalization
-        |
-        v
-<SYMBOL>_marketdata.json
-        |
-        +-------> smc_mapper.py
-        |
-        +-------> smc_monitor.py
+It contains all distinct mapper analyses for the symbol in one file. Each analysis is identified by a deterministic analysis key derived from its timeframe configuration and persisted initial analysis boundary.
 
-Canonical SMC logic must consume only normalized candle data.
+Examples:
 
-Provider-specific API access, transport, retry, pagination, authentication, timestamp parsing, completion detection, and raw-field mapping belong to the Market Data CLI.
+```text
+H4_M15_2026-06-10T12:00:00Z
+H1_M5_2026-07-01T09:00:00Z
+M15_2026-06-10T12:00:00Z
+```
 
-The concrete implementation resides initially in one standalone executable Python module, `market_data.py`. It may later be split internally without changing the persisted market-data schema or CLI contract.
+The persisted `requested_start` records the explicitly supplied start boundary when one was used. For a newly created analysis without `--starttime`, the persisted analysis boundary is the earliest available completed entry-timeframe candle selected by A7; `requested_start` may therefore be null/absent while the analysis key remains deterministic.
 
-The Market Data CLI must support deterministic range retrieval and incremental update rather than requiring one provider request per candle.
+When `--starttime` is omitted, an existing analysis is selected by timeframe configuration only when that selection is unambiguous. If multiple analysis keys share the same timeframe configuration, `--starttime` is required.
 
-## B2. Normalized candle representation
+The analysis key is an implementation-level identifier only; it does not redefine canonical SMC ontology.
 
-Each normalized completed candle must contain at minimum:
+Logical shape:
 
-- candle_id
-- timestamp
-- completion_time
-- open
-- high
-- low
-- close
+```json
+{
+  "symbol": "CCCC",
+  "history_no": 5000,
+  "analyses": {
+    "H4_M15_2026-06-10T12:00:00Z": {
+      "htf": "H4",
+      "ltf": "M15",
+      "analysis_mode": "HTF_LTF",
+      "requested_start": "2026-06-10T12:00:00Z",
+      "last_processed_candle_time": "...",
+      "current": {},
+      "canonical_pois": [],
+      "history": []
+    }
+  }
+}
+```
 
-When the provider supplies total candle volume, preserve it as normalized volume.total.
+`history_no` is stored once at symbol level and applies independently to each analysis's applicable closed Dealing Range history.
 
-When genuine orderflow data is available, preserve it independently under volume.orderflow.
+A Market Data CLI execution updates only `<SYMBOL>_marketdata.json`. A mapper execution updates only its relevant analysis entry inside `<SYMBOL>_structures.json`.
 
-OHLC-derived directional volume is an analytical estimate and may be stored independently under volume.ohlc. It must never overwrite or be represented as observed orderflow.
+The monitor identifies each stored analysis from its deterministic analysis key and validates the stored `analysis_mode`, `htf`, `ltf`, and persisted analysis boundary. `requested_start` is validated when present; it may be null/absent for an analysis created without an explicit `--starttime`.
 
-A normalized candle may therefore contain parallel volume information:
+## 3.2 Stored mapper state
 
-    volume.total
-    volume.ohlc = { buy, sell, delta }
-    volume.orderflow = { buy, sell, delta }
+Each mapper analysis entry stores canonical structural analysis plus the minimal mapper-processing metadata required for deterministic incremental execution.
 
-Each nested volume section is optional and exists only when its corresponding data or deterministic estimate is available. Presence or absence is the availability signal; no single exclusive candle-level method field is required.
+It may contain structural lifecycle/state, structural swings, protected structural extremes, dealing range, IDM state/provenance, retracement qualification, BOS, CHoCH, canonical L6 structural / POI results, canonical POI registry, retained closed Dealing Range history, and structural provenance/change metadata.
 
-candles[] contains only completed normalized candles and is immutable after persistence. The separate current snapshot may change while its candle is in progress.
+The mapper must not persist dynamic monitoring or trade state such as current market price, active trade/order state, stop state, break-even state, trailing state, target-hit state, or the monitor's transient POI selection state. Those are owned by the monitor.
 
-The current snapshot carries the same candle identity and basic OHLC fields needed to identify the in-progress interval. It may also contain the provider-available total volume and any separately available orderflow data for that interval. It is runtime state only and is not included in completed-candle retention or canonical structural history.
-
-## B3. Candle identifier
-
-`candle_id` must be deterministic and stable across repeated downloads of the same candle.
-
-It must be derived from stable candle identity information rather than from an in-memory array index.
-
-The candle index must never be used as permanent candle identity.
-
-The exact identifier format remains an implementation detail.
+Each analysis entry contains its own `last_processed_candle_time` as mapper processing provenance/checkpoint metadata. It carries no canonical SMC meaning.
 
 ---
 
-## B4. Timestamp normalization
+# 4. DATA COVERAGE, BOOTSTRAP, AND RESUME PLANNING
 
-All normalized timestamps must be represented consistently in UTC.
+## 4.1 Independent HTF/LTF feed ranges
 
-Provider-specific timezone information must be normalized before canonical analysis.
+HTF and LTF candle data may cover different temporal ranges.
 
-Provider timezone details must not leak into canonical SMC calculations.
+The Market Data CLI owns acquisition and persists the actual available range for each timeframe in `<SYMBOL>_marketdata.json`. The mapper reads only the range required by its current analysis and must not fabricate unavailable candles.
 
----
+Example:
 
-## B5. Chronological ordering
+- HTF data: 2026-06-01 -> 2026-09-29
+- LTF data: 2026-01-01 -> 2026-09-29
 
-Normalized candles must be strictly chronological:
+The longer LTF history must not be truncated merely because the HTF history is shorter.
 
-```
-timestamp[n] < timestamp[n+1]
-```
+The absence of HTF data before its available start does not imply that HTF structure did not exist.
 
-The normalization layer must reject:
+Availability metadata is read from `<SYMBOL>_marketdata.json`. If the required range cannot be satisfied, the mapper must represent the resulting data/context unavailability explicitly and fail closed where canonical rules require unavailable context.
 
-- duplicate timestamps;
-- reverse-ordered timestamps;
-- ambiguous timestamps that cannot be normalized deterministically.
+The mapper does not perform provider-specific acquisition.
 
-The canonical engine receives an already ordered series.
+## 4.2 Missing HTF context
 
----
+When an LTF canonical rule requires HTF pullback validation but the required HTF historical context is unavailable, represent the condition explicitly as:
 
-## B6. Completed-candle requirement
+`HTF_CONTEXT_UNAVAILABLE`
 
-Only completed candles may enter canonical analysis.
+Do not convert it to:
 
-A candle is considered completed only after its canonical timeframe interval has closed and the normalized provider/completion contract confirms that closure. Every persisted normalized candle carries a UTC `completion_time` representing that canonical interval-close boundary. The mapper uses `completion_time` for explicit end-time eligibility; timestamp alone is not sufficient evidence of completion.
+`HTF_VALID_PULLBACK = FALSE`
 
-The mapper must use the candle's canonical completion boundary when deciding whether it is eligible for an explicit analysis end time. The candle timestamp is not by itself sufficient evidence of completion.
+Therefore:
 
-An incomplete/current candle must be excluded from the canonical analysis series. It may be stored only in the per-timeframe current snapshot of <SYMBOL>_marketdata.json and must never be consumed as canonical structural input.
+`HTF_CONTEXT_UNAVAILABLE != HTF_VALID_PULLBACK_FALSE`
 
-The current snapshot is runtime market-data state, not historical candle state. Refreshing it must not alter structural history or mapper checkpoints.
-
-## B7. Numeric representation
-
-OHLC values must use a deterministic financial numeric representation.
-
-The canonical implementation must use `Decimal`, not binary floating-point values, for normalized OHLC prices.
-
-Invalid values include:
-
-- NaN;
-- Infinity;
-- non-numeric values;
-- silently coerced invalid numeric values.
-
-The same deterministic numeric policy applies to normalized volume values when present. Total, buy, sell, and delta volume values must use Decimal-compatible deterministic numeric representation, be finite, and must not be silently coerced or fabricated.
+If a canonical decision depends on unavailable HTF context, the decision must remain unresolved / fail closed.
 
 ---
 
-## B8. OHLC / OLHC integrity
+## 4.3 Bootstrap and warm-up
 
-Every normalized candle must satisfy the basic OHLC constraints:
+The mapper constructs structural state by processing normalized candle ranges read from `<SYMBOL>_marketdata.json`.
 
-```
-high >= low
-low <= open <= high
-low <= close <= high
-```
+For an initial build, or whenever a complete bootstrap is explicitly required:
 
-In addition, the candle direction must be consistent with its canonical candle-formation model:
+earliest required effective candle -> latest completed entry-timeframe candle
 
-### Bullish candle
+The mapper must not use a latest-window shortcut that bypasses required structural bootstrap.
 
-```
-Low <= Open < Close <= High
-canonical formation model = OLHC
-```
+The launcher invokes the Market Data CLI for the required bootstrap range in deterministic batch form and updates `<SYMBOL>_marketdata.json`. The mapper then reads the required bootstrap range from that file.
 
-### Bearish candle
+For incremental execution after a valid persisted checkpoint, the launcher invokes the Market Data CLI for only the subsequently completed entry-timeframe range after the checkpoint, in chronological order, updates `<SYMBOL>_marketdata.json`, and then invokes the mapper against the resulting persisted range as defined by A18.
 
-```
-Low <= Close < Open <= High
-canonical formation model = OHLC
-```
+The mapper does not obtain market data from the monitor and does not access a concrete provider.
 
-### Doji
+### A17.1 Two-timeframe LTF bootstrap
 
-```
-Low <= Open = Close <= High
-no directional OLHC/OHLC formation model
-```
+In two-timeframe analysis, the mapper establishes an LTF bootstrap coverage reference from the applicable HTF canonical structural context.
 
-OHLC/OLHC here is a **methodology formation model**, not historical intrabar evidence.
+When a confirmed HTF Dealing Range exists, the applicable HTF Protected Structural Extreme is the preferred LTF bootstrap coverage reference. This reference determines the minimum historical LTF coverage needed for deterministic structural buildup. It is a data-coverage/reference point only; it is not an LTF structural start and does not create or promote any LTF structure.
 
-Aggregate OHLC must never be used to fabricate the historical order in which intrabar extremes were reached.
+When LTF bootstrap is required, the launcher invokes the Market Data CLI once for one deterministic LTF range covering the anchor through the activation/current boundary, subject to any additional LTF warm-up required by the canonical LTF rules, updates `<SYMBOL>_marketdata.json`, and then invokes the mapper against the persisted range.
 
-Invalid OHLC/formation data must be rejected rather than silently repaired.
+If the requested LTF coverage begins later than the anchor because the source has no completed LTF data at or after the requested anchor, the mapper uses the first actually available completed LTF candle after the reference as the effective LTF bootstrap start. No attempt is made by the mapper to access the provider directly.
 
----
+If the supplied LTF data begins before the HTF reference, that earlier data may be retained and used as additional canonical LTF warm-up when required; the HTF Protected Structural Extreme remains the context/coverage reference.
 
-## B9. Missing candles / data gaps
+If the applicable confirmed HTF Protected Structural Extreme does not exist, the mapper does not fabricate one. The LTF bootstrap then follows the supplied LTF history subject to the canonical genesis/source-gap boundaries.
 
-The mapper must not manufacture synthetic candles to fill missing provider data.
+The LTF bootstrap reference is not an LTF structural-start ontology. The first LTF structural object is determined only by the canonical LTF rules.
 
-Examples include:
+### Two-timeframe LTF bootstrap
 
-- non-trading periods;
-- market holidays;
-- provider gaps;
-- unavailable historical intervals.
+In two-timeframe analysis, the mapper establishes an LTF bootstrap coverage reference from the applicable HTF canonical structural context.
 
-A missing candle is not equivalent to a zero-volume or unchanged candle.
+When a confirmed HTF Dealing Range exists, the applicable HTF Protected Structural Extreme is the preferred LTF bootstrap coverage reference. This reference determines the minimum historical LTF coverage needed for deterministic structural buildup. It is a data-coverage/reference point only; it is not an LTF structural start and does not create or promote any LTF structure.
 
-The temporal gap must remain observable to the provider/normalization/orchestration layer.
+When LTF bootstrap is required, the launcher invokes the Market Data CLI once for one deterministic LTF range covering the anchor through the activation/current boundary, subject to any additional LTF warm-up required by the canonical LTF rules, updates `<SYMBOL>_marketdata.json`, and then invokes the mapper against the persisted range.
 
-Whether a particular gap prevents a downstream structural calculation is determined by the relevant canonical layer, not by the normalization layer.
+If the requested LTF coverage begins later than the anchor because the source has no completed LTF data at or after the requested anchor, the mapper uses the first actually available completed LTF candle after the reference as the effective LTF bootstrap start. No attempt is made by the mapper to access the provider directly.
+
+If the supplied LTF data begins before the HTF reference, that earlier data may be retained and used as additional canonical LTF warm-up when required; the HTF Protected Structural Extreme remains the context/coverage reference.
+
+If the applicable confirmed HTF Protected Structural Extreme does not exist, the mapper does not fabricate one. The LTF bootstrap then follows the supplied LTF history subject to the canonical genesis/source-gap boundaries.
+
+The LTF bootstrap reference is not an LTF structural-start ontology. The first LTF structural object is determined only by the canonical LTF rules.
 
 ---
 
-## B10. Timeframe integrity
+# 5. MAPPER EXECUTION PIPELINE
 
-Every normalized candle series belongs to exactly one timeframe.
+## 5.1 Mapper execution pipeline
 
-A candle from one timeframe must never be silently mixed with another timeframe.
+The mapper executes the following dependency-ordered pipeline for every analysis invocation:
 
-For a two-timeframe analysis:
+1. Validate CLI inputs and the normalized market-data contract.
+2. Resolve the analysis mode, entry timeframe, requested/effective analysis boundaries, and deterministic analysis identity.
+3. Load the matching persisted analysis state, or create the required initial state.
+4. Verify required persisted market-data coverage and determine whether bootstrap, warm-up, or incremental processing is required.
+5. Process completed candles only, in chronological order, using the canonical SMC skill as the sole semantic authority.
+6. In single-timeframe mode, evaluate the selected timeframe without HTF pullback validation.
+7. In two-timeframe mode, establish and maintain point-in-time HTF context and evaluate LTF candles only against HTF facts already canonical at the LTF evaluation time.
+8. Reconcile canonical structural lifecycle, Dealing Range state/history, and canonical POI state according to the skill-owned semantics.
+9. Enrich already-canonical POIs with optional non-canonical volume analytics when requested and available.
+10. Persist the updated mapper analysis atomically and advance the mapper checkpoint only after successful persistence.
 
-```
-HTF candle series
-LTF candle series
-```
+The mapper must never use a later event, incomplete candle, analytical volume result, storage-retention event, or downstream monitor state to retroactively redefine canonical structure.
 
-remain distinct series.
+## 5.2 Canonical semantic ownership
 
----
+The exact SMC rules are implemented according to `.agents/skills/smc/`. This specification defines orchestration, data contracts, state boundaries, persistence, and downstream interfaces only.
 
-## B11. Symbol integrity
+The mapper must consume canonical outcomes from the applicable skill layers rather than reproduce their rules in the specification or invent alternative semantic gates.
 
-A normalized candle series belongs to exactly one symbol for a mapper execution.
+Canonical ownership remains:
 
-Data from different symbols must never be merged into the same canonical candle series.
+- structural and retracement/IDM rules: canonical skill Layer 3;
+- BOS rules and required upstream gates: canonical skill Layer 4;
+- CHoCH and LTF Structural Glitch routes: canonical skill Layer 5;
+- canonical POI/Rule-of-Two semantics and lifecycle: canonical skill Layer 6;
+- downstream risk/target policy: canonical downstream Layer 7 boundary;
+- implementation/state and observability contracts: canonical downstream Layer 8 boundary where applicable.
 
----
+No mapper-level section may redefine those semantic rules.
 
-## B12. Provider-independent semantics
+## 5.3 Processing-order invariants
 
-Provider-specific concepts must be normalized before the canonical engine receives the data.
+The mapper's canonical processing boundary is the completion of each eligible completed candle within the resolved analysis interval.
 
-Examples include:
+For every processed candle:
 
-- provider-specific timestamp formats;
-- provider-specific field names;
-- provider-specific completion flags;
-- provider-specific numeric representations;
-- provider-specific timezone conventions.
+- all required upstream canonical state is resolved before downstream state consumes it;
+- a canonical decision is evaluated only from information point-in-time available at that candle's evaluation time;
+- downstream analytical enrichment cannot mutate canonical structural truth;
+- persistence metadata such as `last_processed_candle_time` carries implementation provenance only and has no canonical SMC meaning.
 
-The canonical engine must not contain provider-specific conversion logic.
-
----
-
-
-## B13. Data availability
-
-`market_data.py` persists the actual available temporal range of each timeframe in `<SYMBOL>_marketdata.json`.
-
-At minimum, each timeframe section tracks:
-
-- `available_start`
-- `available_end`
-
-This is important because HTF and LTF may have different available history.
-
-The mapper distinguishes requested analysis range from available/retained market-data range and reads the required range from the corresponding timeframe section of `<SYMBOL>_marketdata.json`.
-
-If the requested range is outside the retained market-data window, the launcher triggers Market Data CLI reacquisition before mapper processing.
-
-If the requested range cannot be supplied, the mapper must represent the resulting data/context unavailability explicitly and must fail closed where a canonical decision depends on unavailable information.
-
-The mapper does not access provider availability APIs directly.
-
-## B14. Data clipping
-
-The Market Data CLI must not discard candles from a requested acquisition range before persistence.
-
-The launcher ensures that all required bootstrap/warm-up candles are acquired and persisted through the Market Data CLI, and the mapper then determines the effective analysis interval from the persisted data and requested start/end constraints.
-
-Market-data retention may remove older candles according to the bounded timeframe retention policy. Such removal is storage policy only and does not rewrite mapper structural history.
-
-If a later analysis requires removed candles, the Market Data CLI reacquires the missing range from the provider before that analysis is processed.
-
-## B15. Candle metadata
-
-The canonical candle representation contains information required for candle-level structural processing.
-
-Provider-specific metadata must not enter the canonical candle representation unless a canonical rule explicitly requires it.
+A successful invocation persists the resulting state before the checkpoint is advanced. A failed or unresolved canonical dependency must not be converted into a successful structural state.
 
 ---
 
----
+# 6. SYNCHRONIZED HTF/LTF CONTEXT
 
-## B16. Deterministic normalization
-
-Given the same provider data and normalization policy:
-
-```
-same raw data
-      ↓
-same normalized candles
-```
-
-Normalization must not depend on:
-
-- current wall-clock time;
-- array position;
-- random identifiers;
-- mutable global state.
-
----
-
-## B17. Normalization failure
-
-Invalid provider data or normalization failure must not be silently ignored.
-
-The mapper must report sufficient information to identify the affected symbol, timeframe and candle/time range.
-
-The canonical engine must never receive malformed or ambiguous candle data.
-
----
-
-## B18. Volume retention
-
-When total traded volume is available from the provider, market_data.py preserves it as volume.total on the underlying normalized candle.
-
-When genuine orderflow is available, it is preserved independently under volume.orderflow. When deterministic OHLC directional estimation is available, it may be preserved independently under volume.ohlc.
-
-The mapper must preserve the applicable POI volume information when storing POI references to source candles. Parallel volume types must not overwrite one another.
-
-Volume provenance is represented by the data branch that is actually present. A single exclusive volume source or volume method field is not required on the candle.
-
-# C. HTF-GUIDED LTF EXECUTION CONTEXT
-
-## C1. Independent timeframe analysis
+## 6.1 Independent timeframe semantics
 
 Each timeframe is analyzed according to its own canonical structural rules.
 
@@ -1184,7 +957,7 @@ The HTF provides the execution context required by canonical LTF rules where suc
 
 In single-timeframe mode, no HTF/LTF execution relationship exists.
 
-## C2. HTF/LTF synchronization and execution context
+## 6.2 Synchronized point-in-time processing
 
 When an HTF and LTF are both supplied:
 
@@ -1201,7 +974,7 @@ The existence of HTF context must not automatically invalidate an LTF structural
 
 HTF/LTF synchronization is an orchestration relationship around persisted normalized market-data ranges; it does not transfer semantic ownership from HTF rules to LTF rules.
 
-## C3. Point-in-time HTF context
+## 6.3 Point-in-time HTF context
 
 For every LTF evaluation that requires HTF information, only HTF structural facts that already existed at that evaluation time may be used.
 
@@ -1212,7 +985,8 @@ For each consumed HTF structural fact:
 A later HTF structural event must never be used to reinterpret an earlier LTF event.
 
 The applicable HTF Dealing Range and the canonical HTF structural facts available at that point in time provide the LTF context reference.
-## C4. LTF structures within HTF range context
+
+## 6.4 LTF records within HTF context
 
 In two-timeframe analysis, LTF structural records may be stored within the applicable HTF Dealing Range record for execution-context organization.
 
@@ -1238,7 +1012,7 @@ When an HTF Dealing Range transition and an LTF formation occur at the same time
 
 If an LTF lifecycle crosses an HTF range transition, the canonical LTF lifecycle remains unchanged. The stored representation retains its original HTF context association and sufficient canonical provenance to represent the cross-boundary lifecycle without duplicating the same LTF object.
 
-## C5. Canonical HTF-interaction routes
+## 6.5 Canonical HTF-interaction routes
 
 Where a canonical LTF route explicitly requires HTF interaction, the mapper consumes the applicable HTF context from its structural state and reads any required additional LTF analysis range from `<SYMBOL>_marketdata.json`; the launcher ensures that range is present before mapper execution.
 
@@ -1246,7 +1020,7 @@ This includes the canonical LTF Structural Glitch / CHoCH route after HTF POI in
 
 The mapper must align the persisted candle range with the applicable point-in-time HTF context but must not invent a new CHoCH, BOS, IDM, POI, or entry rule.
 
-## C6. Historical independence
+## 6.6 Historical independence
 
 HTF history and LTF context-scoped records are structural analysis data, not dynamic monitor state.
 
@@ -1268,7 +1042,7 @@ dynamic monitoring/trade state
 
 ---
 
-## C7. Canonical ownership boundary
+## 6.7 Canonical ownership boundary
 
 HTF canonical semantics remain owned by the HTF analysis and its canonical skill layers.
 
@@ -1280,7 +1054,107 @@ It must not introduce a general HTF-parent/LTF-child semantic ontology.
 
 ---
 
-# C8. Canonical POI representation
+---
+
+# 7. DEALING-RANGE LIFECYCLE, HISTORY, AND RETENTION
+
+## 7.1 Closed Dealing Range history
+
+`history_no` is one collective symbol-level configuration value, stored once in `<SYMBOL>_structures.json`.
+
+In two-timeframe mode, it applies independently to the HTF CLOSED DEALING RANGE history retained inside each distinct mapper analysis entry. The LTF does not have a separate `history_no`.
+
+In single-timeframe analysis, it applies to the selected timeframe's CLOSED DEALING RANGE history for that analysis.
+
+The history unit is the canonical closed Dealing Range. Only a Dealing Range that has been canonically closed may enter history. The currently open Dealing Range is never a history item.
+
+Retention is newest-first by canonical `close_time`, with oldest-first (FIFO) eviction within each analysis when that analysis's retained history exceeds `history_no`.
+
+Eviction is a storage-retention operation only. It does not invalidate canonical historical structure.
+
+A repeated mapper execution must reconcile an existing range identity in place and must not create a duplicate history entry.
+
+## 7.2 Dealing Range identity and retention configuration
+
+A stored CLOSED DEALING RANGE is identified by:
+
+```
+timeframe + start_time + close_time
+```
+
+This is the history identity. `structure_hash` is not a closed-range identity.
+
+`start_time` and `close_time` are lifecycle timestamps derived from the canonical Dealing Range lifecycle. The mapper must not invent a new range-start rule, provisional range boundary, or synthetic start timestamp.
+
+`formation_time`, where present on structural objects or state within the range, identifies when that structural object/state formed. It is semantically distinct from the Dealing Range `close_time`.
+
+A closed range identity is immutable once canonically closed. For an existing retained range with the same identity, reconciliation updates that range in place. A newly closed range with a new identity is inserted.
+
+### `history_no` persistence rules
+
+`history_no` is stored once per symbol structures JSON, not per timeframe or analysis.
+
+- New symbol structures JSON + no `--history_no` -> initialize and persist `history_no = 5000`.
+- New symbol structures JSON + `--history_no=N` -> initialize and persist `history_no = N`.
+- Existing symbol structures JSON + no `--history_no` -> preserve the stored `history_no`.
+- Existing symbol structures JSON + `--history_no=N` -> ignore the CLI value and preserve the stored `history_no`.
+- If an existing symbol structures JSON lacks `history_no`, initialize and persist `5000`.
+- `N` must be an integer >= 1 when supplied.
+
+Changing `history_no` changes retention capacity only. It does not change canonical SMC semantics.
+
+## 7.3 HTF Dealing Range history contract
+
+Within each retained mapper analysis entry, each history element represents one CLOSED Dealing Range for that analysis and may contain canonical HTF structural state and, where two-timeframe analysis is active, any number of LTF structures interpreted in that HTF range context.
+
+The LTF records stored under an HTF range are context-scoped execution analysis, not a new canonical parent/child ontology. LTF semantic ownership remains with the LTF canonical rules.
+
+The history record may contain, where applicable:
+
+- HTF structural direction/lifecycle state;
+- HTF structural swings;
+- HTF protected structural extremes;
+- HTF IDM provenance;
+- HTF retracement qualification;
+- HTF BOS;
+- HTF CHoCH;
+- canonical HTF Layer-6 POIs;
+- associated LTF structural/entry-analysis records;
+- volume metadata associated with canonical POIs.
+
+There is no fixed maximum number of LTF structures within one HTF Dealing Range.
+
+The history record must preserve canonical formation/provenance times of its contained objects.
+
+History is not an append-only mapper execution log. It is retained canonical Dealing Range history for the specific mapper analysis.
+
+### A12b. Dealing Range lifecycle boundary
+
+The mapper derives Dealing Range history boundaries strictly from the canonical structural lifecycle.
+
+- A currently open Dealing Range is runtime state, not history.
+- `VALID_BOS` is the canonical lifecycle event that establishes the next confirmed Dealing Range lifecycle; when a governing range already exists, it closes that previous range first. The first `VALID_BOS` establishes the first confirmed Dealing Range and therefore has no pre-existing governing range to close.
+- The mapper must not close or start a Dealing Range because of a physical break, IDM sweep, CHoCH-eligible break, insufficient-retracement `IMPULSE_EXTENSION`, mapper execution boundary, or retention operation.
+- Before the first canonical `VALID_BOS`, no governing Dealing Range may be fabricated for history or used as a substitute for the unresolved first-BOS canonical baseline.
+- The exact first-BOS retracement baseline remains the canonical/source gap documented by the SMC skill; the mapper must fail closed rather than invent a synthetic initialization rule.
+
+---
+
+## 7.4 Dealing Range lifecycle boundary
+
+The mapper derives Dealing Range history boundaries strictly from the canonical structural lifecycle.
+
+- A currently open Dealing Range is runtime state, not history.
+- `VALID_BOS` is the canonical lifecycle event that establishes the next confirmed Dealing Range lifecycle; when a governing range already exists, it closes that previous range first. The first `VALID_BOS` establishes the first confirmed Dealing Range and therefore has no pre-existing governing range to close.
+- The mapper must not close or start a Dealing Range because of a physical break, IDM sweep, CHoCH-eligible break, insufficient-retracement `IMPULSE_EXTENSION`, mapper execution boundary, or retention operation.
+- Before the first canonical `VALID_BOS`, no governing Dealing Range may be fabricated for history or used as a substitute for the unresolved first-BOS canonical baseline.
+- The exact first-BOS retracement baseline remains the canonical/source gap documented by the SMC skill; the mapper must fail closed rather than invent a synthetic initialization rule.
+
+---
+
+---
+
+# 8. CANONICAL POI REPRESENTATION
 
 The mapper uses a unified storage representation for canonical POIs. It does not redefine the Layer 6 POI ontology or lifecycle.
 
@@ -1346,9 +1220,11 @@ The selection view is downstream runtime state and must not alter the canonical 
 
 The canonical semantic POI and lifecycle definitions remain owned by Layer 6. This mapper specification defines only the storage representation and downstream selection boundary.
 
-# D. POI VOLUME / DELTA ANALYTICS
+---
 
-## D1. Scope
+# 9. POI VOLUME / DELTA ANALYTICS
+
+## 9.1 Scope
 
 POI volume analytics is a non-canonical analytical extension of the canonical POI result.
 
@@ -1358,7 +1234,7 @@ Volume analytics must never create, remove, retype, or canonically invalidate a 
 
 The canonical POI ontology and Rule-of-Two remain owned by Layer 6.
 
-## D2. POI volume provenance
+## 9.2 Volume provenance
 
 POI volume is calculated only from candles deterministically associated with the POI's canonical provenance. The mapper must not use an arbitrary fixed candle window.
 
@@ -1393,7 +1269,7 @@ The aggregate is calculated from sums. Candle-level `delta_ratio` values must ne
 
 The persisted POI provenance retains the source candle identities used for the aggregate. Historical POI outcome performance must not be used.
 
-## D3. Volume method
+## 9.3 Volume method
 
 The normalized market-data record may contain multiple volume types in parallel. Availability is determined from the actual presence of the relevant data, not from one exclusive provenance or method field.
 
@@ -1423,7 +1299,7 @@ An estimated buy/sell split must never be represented as observed orderflow data
 
 Evidence provenance remains explicit: genuine orderflow is observed execution-volume data when supplied by the provider; OHLC-derived directional volume is an estimate. BOTH preserves both branches rather than combining their values.
 
-## D4. Aggregate-OHLC calculation
+## 9.4 Deterministic OHLC aggregation
 
 For each candle with total volume V > 0 and High > Low:
 
@@ -1456,7 +1332,7 @@ OHLC directional volume is an estimate, not proof of historical bid/ask executio
 
 All volume arithmetic uses `Decimal`. Intermediate calculations retain full Decimal precision. When a division result must be persisted as a finite decimal string, it is rounded to 18 decimal places using `ROUND_HALF_EVEN`. The same deterministic policy applies to persisted `delta_ratio` values. Persisted volume values use decimal-compatible string representation.
 
-## D5. POI volume representation
+## 9.5 Persisted POI volume representation
 
 Volume analytics are stored on the canonical POI object, not as a general structural-point volume metric.
 
@@ -1483,7 +1359,297 @@ Volume analytics never alter POI validity, lifecycle, type, role, or downstream 
 
 When no supported volume analytical path is available, no POI-derived volume analytics are calculated.
 
-# E. IMPLEMENTATION CODE STYLE
+---
+
+# 10. MONITOR ORCHESTRATION AND CHECKPOINT PERSISTENCE
+
+## 10.1 Mapper/monitor boundary and update cycle
+
+The monitor owns interactive runtime control, scheduling, current-price/runtime monitoring, target monitoring, alerts/notifications, and orchestration of Market Data CLI and mapper execution.
+
+The mapper and Market Data CLI are separate processes. `market_data.py` persists normalized candles to `<SYMBOL>_marketdata.json`; the mapper reads the required ranges from that file.
+
+The monitor orchestrates each symbol update cycle in this order:
+
+1. Determine which configured analysis entries need new completed entry-timeframe data.
+2. Invoke the Market Data CLI to update the required timeframe sections in `<SYMBOL>_marketdata.json`.
+3. Invoke each affected mapper analysis.
+4. The mapper reads the persisted ranges, processes new candles chronologically, and updates only its analysis entry.
+5. The completed mapper result is persisted in `<SYMBOL>_structures.json`.
+
+A normal monitor cycle may add exactly one newly completed candle to a timeframe. This is the normal incremental case.
+
+If the monitor was not running for multiple completed candles, the Market Data CLI adds the entire missing completed range in one update and the mapper processes those candles chronologically.
+
+The Market Data CLI may also refresh the current in-progress snapshot when live mode is requested, even when no new completed candle exists. A current-snapshot-only refresh must not trigger canonical structural processing or advance any mapper checkpoint.
+
+If neither a new completed candle nor a changed or newly available requested current snapshot exists, that Market Data update is a no-op.
+
+Each analysis entry has its own `last_processed_candle_time`. It identifies the latest completed entry-timeframe candle incorporated by that analysis.
+
+Multiple analyses for the same symbol may overlap in time and share the same `<SYMBOL>_marketdata.json`. Their structural state and checkpoints remain separate inside `<SYMBOL>_structures.json`.
+
+To keep file coordination simple, the finished product supports one active `smc_monitor.py` orchestration instance per symbol. Multiple analyses run inside that monitor instance.
+
+Each JSON update is performed as a complete read-modify-write operation using a temporary file followed by atomic replacement. If a target file is temporarily unavailable for writing, the writer waits briefly and retries up to a finite timeout. No separate lock file is required.
+
+The monitor advances an analysis checkpoint only after the corresponding structural state has been successfully persisted.
+
+### RR / minimum-RR policy
+
+Minimum RR is a downstream trading-policy constraint, not a mapper/canonical-SMC parameter.
+
+Therefore `--rr` does **not** belong to `smc_mapper.py`.
+
+If exposed as a CLI control, it belongs to `smc_monitor.py`:
+
+```text
+--rr DECIMAL
+```
+
+The parameter is optional. If `--rr` is absent, RR is not used as an alert-eligibility filter. If `--rr` is supplied, the monitor applies the gate only after target resolution and target clearance:
+
+```text
+Projected_RR >= --rr
+```
+
+There is no default minimum-RR value. `--rr` is policy, not structural truth, and must never alter canonical POI, BOS, CHoCH, IDM, Dealing Range, or target-coordinate semantics.
+
+An explicitly supplied `--rr` value applies only to the monitor invocation in which it is supplied.
+
+### A18a. Downstream setup and alert eligibility
+
+Downstream alert eligibility consumes canonical mapper state; it does not redefine canonical structure.
+
+The canonical POI lifecycle is the first eligibility gate for a new setup:
+
+```text
+CANONICAL POI LIFECYCLE
+        ↓
+CANONICAL EXECUTION AUTHORIZATION
+        ↓
+TARGET RESOLUTION
+        ↓
+TARGET CLEARANCE
+        ↓
+OPTIONAL RR POLICY
+        ↓
+ALERT ELIGIBILITY
+```
+
+Only a canonical POI with `lifecycle = ACTIVE` may be selected as the setup target. The `targeted` flag identifies that selected POI; `targeted` is selection state and is not a lifecycle state.
+
+The downstream consumer must reject POIs whose canonical lifecycle is `MITIGATED`, `FAILED`, or `EXPIRED_HISTORICAL`. A retained historical POI cannot become targetable again merely because it remains in the structures JSON.
+
+Layer 6 owns canonical POI lifecycle. Downstream monitor logic consumes that state and must not invent an age-based freshness rule or independently decide canonical POI expiry.
+
+Target resolution is downstream policy. A resolved target must retain its provenance and must not be manufactured merely to satisfy an RR condition.
+
+Target clearance is downstream trading/alert policy. V1 target clearance is deterministic: a resolved target must exist, its price must be strictly beyond the current reference price in the intended direction, and it must not already have been reached at the evaluation time. A missing or unresolved target, missing current reference price, or failed clearance predicate fails closed.
+
+Minimum RR is optional monitor policy and is represented only by:
+
+```text
+--rr DECIMAL
+```
+
+When `--rr` is absent, RR is not an alert-eligibility filter. When `--rr` is supplied, the monitor requires:
+
+```text
+Projected_RR >= --rr
+```
+
+For V1:
+
+```text
+reward_distance = abs(resolved_target_price - entry_reference_price)
+risk_distance   = abs(stop_price - entry_reference_price)
+Projected_RR    = reward_distance / risk_distance
+```
+
+Projected_RR is unresolved when the resolved target, entry reference, or stop price is missing, or when risk_distance <= 0. An unresolved RR cannot pass an explicit --rr gate.
+
+There is no default minimum-RR value. `--rr` does not alter POI, BOS, CHoCH, IDM, Dealing Range, or target-coordinate semantics.
+
+Execution-quality conditions such as spread, expected slippage, market/session availability, broker/execution availability, or explicitly configured event filters are downstream policy only. Failure of such a condition must not mutate canonical structure or POI lifecycle.
+
+The monitor is alert/notification-only in the current product. Alerts are runtime events and are not persisted as canonical structure, setup snapshots, or alert records in `<SYMBOL>_structures.json`.
+
+## 10.2 Multi-symbol / multi-analysis orchestration
+
+The monitor is not limited to one symbol or one timeframe analysis.
+
+- One monitor runtime may manage multiple symbols.
+- Each symbol retains its own `<SYMBOL>_marketdata.json` and `<SYMBOL>_structures.json`.
+- Within one symbol's structures JSON, multiple distinct mapper analyses may coexist.
+- Each analysis is identified and scheduled independently by its deterministic analysis key.
+- Multiple HTF/LTF analysis pairs may therefore coexist for the same symbol, for example `H4/M15`, `H1/M5`, and `M15/M1`, subject to the normal timeframe and data-availability contracts.
+- Single-timeframe analyses may coexist with HTF/LTF analyses for the same symbol.
+- A monitor update for one symbol/analysis must not overwrite, merge, or alter another symbol/analysis.
+- Entry-timeframe scheduling and mapper checkpoints remain independent for every stored analysis.
+- The monitor must maintain at most one active orchestration instance per symbol while allowing that instance to manage all configured analyses for the symbol.
+- A failure or temporary data unavailability affecting one symbol or one analysis must not corrupt or invalidate unrelated symbols or analyses.
+
+The monitor may schedule these analyses independently according to their entry timeframes while sharing the symbol-level market-data store.
+
+There is no single multi-symbol mapper JSON file and no single multi-symbol market-data JSON file.
+
+---
+
+# 11. DOWNSTREAM TARGET, RR, AND ALERT ELIGIBILITY
+
+## 11.1 Minimum-RR policy
+
+Minimum RR is a downstream trading-policy constraint, not a mapper/canonical-SMC parameter.
+
+Therefore `--rr` does **not** belong to `smc_mapper.py`.
+
+If exposed as a CLI control, it belongs to `smc_monitor.py`:
+
+```text
+--rr DECIMAL
+```
+
+The parameter is optional. If `--rr` is absent, RR is not used as an alert-eligibility filter. If `--rr` is supplied, the monitor applies the gate only after target resolution and target clearance:
+
+```text
+Projected_RR >= --rr
+```
+
+There is no default minimum-RR value. `--rr` is policy, not structural truth, and must never alter canonical POI, BOS, CHoCH, IDM, Dealing Range, or target-coordinate semantics.
+
+An explicitly supplied `--rr` value applies only to the monitor invocation in which it is supplied.
+
+## 11.2 Setup and alert eligibility
+
+Downstream alert eligibility consumes canonical mapper state; it does not redefine canonical structure.
+
+The canonical POI lifecycle is the first eligibility gate for a new setup:
+
+```text
+CANONICAL POI LIFECYCLE
+        ↓
+CANONICAL EXECUTION AUTHORIZATION
+        ↓
+TARGET RESOLUTION
+        ↓
+TARGET CLEARANCE
+        ↓
+OPTIONAL RR POLICY
+        ↓
+ALERT ELIGIBILITY
+```
+
+Only a canonical POI with `lifecycle = ACTIVE` may be selected as the setup target. The `targeted` flag identifies that selected POI; `targeted` is selection state and is not a lifecycle state.
+
+The downstream consumer must reject POIs whose canonical lifecycle is `MITIGATED`, `FAILED`, or `EXPIRED_HISTORICAL`. A retained historical POI cannot become targetable again merely because it remains in the structures JSON.
+
+Layer 6 owns canonical POI lifecycle. Downstream monitor logic consumes that state and must not invent an age-based freshness rule or independently decide canonical POI expiry.
+
+Target resolution is downstream policy. A resolved target must retain its provenance and must not be manufactured merely to satisfy an RR condition.
+
+Target clearance is downstream trading/alert policy. V1 target clearance is deterministic: a resolved target must exist, its price must be strictly beyond the current reference price in the intended direction, and it must not already have been reached at the evaluation time. A missing or unresolved target, missing current reference price, or failed clearance predicate fails closed.
+
+Minimum RR is optional monitor policy and is represented only by:
+
+```text
+--rr DECIMAL
+```
+
+When `--rr` is absent, RR is not an alert-eligibility filter. When `--rr` is supplied, the monitor requires:
+
+```text
+Projected_RR >= --rr
+```
+
+For V1:
+
+```text
+reward_distance = abs(resolved_target_price - entry_reference_price)
+risk_distance   = abs(stop_price - entry_reference_price)
+Projected_RR    = reward_distance / risk_distance
+```
+
+Projected_RR is unresolved when the resolved target, entry reference, or stop price is missing, or when risk_distance <= 0. An unresolved RR cannot pass an explicit --rr gate.
+
+There is no default minimum-RR value. `--rr` does not alter POI, BOS, CHoCH, IDM, Dealing Range, or target-coordinate semantics.
+
+Execution-quality conditions such as spread, expected slippage, market/session availability, broker/execution availability, or explicitly configured event filters are downstream policy only. Failure of such a condition must not mutate canonical structure or POI lifecycle.
+
+The monitor is alert/notification-only in the current product. Alerts are runtime events and are not persisted as canonical structure, setup snapshots, or alert records in `<SYMBOL>_structures.json`.
+
+---
+
+# 12. DIAGNOSTICS
+
+## 12.1 CLI debug output
+
+The CLI interfaces must strictly separate persistent market data from user-visible diagnostics.
+
+- Normalized candle data is persisted to `<SYMBOL>_marketdata.json` and is not emitted as a mapper data pipe.
+- Debug and diagnostic information is written to `stderr` only.
+- Debug `stderr` is terminal-only. The launcher/monitor must not capture, parse, forward, merge, persist, or pass it to `smc_mapper.py`, `smc_monitor.py`, or the market-data JSON.
+- `stderr` must never be merged into a machine-readable data channel.
+- Without `--debug`, debug/trace output is suppressed.
+- With `--debug`, diagnostics are visible directly on the terminal.
+- Debug mode must never alter canonical calculations or normalized market-data semantics.
+- Normal runtime must produce no user-visible CLI output.
+
+### Market Data CLI contract
+
+market_data.py is invoked as a standalone process. Its CLI accepts:
+
+    --symbol SYMBOL
+    --timeframes TF [TF ...]
+    --starttime ISO8601
+    --endtime ISO8601
+    --lastcandle
+    --live
+    --debug
+
+symbol is required. timeframes accepts one or more supported timeframes and is not limited to the mapper's one- or two-timeframe analysis model. starttime and endtime are optional range bounds.
+
+--lastcandle is an alternative completed-candle acquisition mode. When supplied, the Market Data CLI retrieves exactly the latest completed candle for each requested timeframe and reconciles it into that timeframe's candles[] series. It does not refresh or replace the current in-progress snapshot by itself.
+
+--lastcandle is mutually exclusive with --starttime and --endtime because it requests a single latest completed candle rather than a historical range. --lastcandle may be combined with --live: in that case the latest completed candle is reconciled into candles[] and the latest in-progress snapshot is refreshed independently in current when available.
+
+If the latest completed candle is already present in the persisted timeframe series, deduplication leaves the existing candle identity intact and no duplicate record is created. --lastcandle never fabricates a candle and never causes an incomplete/current candle to enter candles[].
+
+Without live, the CLI persists completed candles only. With live, it also refreshes the latest provider-available in-progress candle snapshot for each requested timeframe when such a snapshot exists. If an endtime is supplied before the current interval, no current snapshot is stored for that request.
+
+When an in-progress candle later becomes completed, its final completed version is persisted in candles[] and the next in-progress interval becomes current.
+
+Market-data CLI execution persists the durable market-data result to <SYMBOL>_marketdata.json.
+
+The market-data record may preserve volume information in parallel. Provider total volume, if available, is stored as volume.total; genuine orderflow may be stored under volume.orderflow; OHLC-derived directional estimates may be stored under volume.ohlc. The mapper determines which analytical data is actually available from the persisted record and may expose a helper such as has_volume_data(...) for boolean availability checks. No single exclusive candle-level method field represents provenance.
+
+### Process-launch requirement
+
+```text
+market_data.py
+    |
+    +--> <SYMBOL>_marketdata.json
+    |
+    +--> stderr -> terminal (debug only)
+
+smc_mapper.py
+    |
+    +--> reads <SYMBOL>_marketdata.json
+    |
+    +--> stderr -> terminal (debug only)
+```
+
+`stderr` must never be redirected into mapper or monitor data input.
+
+With `--debug`, only the relevant process's diagnostics become visible on the terminal. Debug information is never written into the market-data JSON and never becomes mapper or monitor input.
+
+## 12.2 Diagnostic data boundary
+
+Debug and diagnostic output is terminal-only. It is not a machine-readable mapper data contract and must never be persisted into either JSON store.
+
+---
+
+# 13. IMPLEMENTATION CODE STYLE
 
 Implementation code should be written for human readability and easy maintenance.
 

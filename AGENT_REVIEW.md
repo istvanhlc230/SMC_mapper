@@ -2543,3 +2543,50 @@ This is a repository/legacy-test integrity issue, not a failure of the specifica
 ### Final status
 SPECIFICATION: PASS — READY FOR IMPLEMENTATION.
 REPOSITORY TEST SUITE: FAIL — pre-existing missing legacy module must be resolved before the repository can report a green full test run.
+
+# SPECIFICATION DEFRAGMENTATION / IMPLEMENTATION-ORDER AUDIT — 2026-10-02
+
+## Work completed
+
+Reorganized `smc_mapper_specification.md` into dependency-first implementation order without changing canonical SMC semantics.
+
+New implementation sequence:
+
+1. Scope, authority, and runtime boundaries
+2. External market-data contract
+3. CLI and input resolution
+4. Analysis identity and persistent state
+5. Data coverage / bootstrap / resume planning
+6. Mapper execution pipeline
+7. Synchronized HTF/LTF context
+8. Dealing-Range lifecycle, history, and retention
+9. Canonical POI representation
+10. POI volume / delta analytics
+11. Monitor orchestration and checkpoint persistence
+12. Downstream target / RR / alert eligibility
+13. Diagnostics and implementation code style
+
+## Defragmentation checks
+
+PASS — normalized market-data semantics are upstream of mapper processing.
+PASS — CLI/input resolution is separated from canonical processing.
+PASS — analysis identity/state is defined before bootstrap and processing.
+PASS — bootstrap/resume planning is separated from runtime monitor orchestration.
+PASS — synchronized HTF/LTF semantics have one dedicated owner section.
+PASS — Dealing Range lifecycle/history/retention are grouped together.
+PASS — canonical POI storage is separated from optional volume enrichment.
+PASS — downstream target/RR/alert logic remains outside canonical structure.
+PASS — debug/diagnostic behavior is separated from machine-readable data contracts.
+PASS — each major contract has one primary owner section; downstream references do not redefine it.
+PASS — OB inside-bar/mother-candle and OB→FVG selection mechanics remain skill-owned and were not copied into the mapper specification.
+PASS — no `.agents/skills/smc/` files were modified.
+
+## New normative implementation pipeline
+
+validate input/data -> resolve analysis identity -> load/create state -> verify coverage/bootstrap -> process completed candles chronologically -> apply canonical HTF/LTF context rules -> reconcile canonical lifecycle/POIs -> enrich POIs with optional volume analytics -> atomically persist -> advance checkpoint.
+
+## Audit result
+
+The specification is now organized for direct implementation from upstream dependencies to downstream consumers, while preserving the approved two-file data architecture, CLI contracts, point-in-time HTF/LTF rules, Dealing Range history semantics, canonical POI lifecycle, parallel volume branches, and monitor boundary.
+
+**STATUS: PASS — DEFRAGMENTED AND ORDERED FOR IMPLEMENTATION**
