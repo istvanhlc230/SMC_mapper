@@ -155,9 +155,9 @@ When only one timeframe is supplied, only that timeframe is analyzed.
 
 ## A7. Start time
 
-`--starttime` is required and defines the requested start of the analysis window.
+`--starttime` is optional.
 
-It may be specified as:
+When supplied, it defines the requested start of the analysis window. It may be specified as:
 
 - a date, or
 - an exact datetime.
@@ -168,14 +168,17 @@ Examples:
 
 `--starttime 2026-09-01T09:30:00`
 
-The mapper does not access a concrete provider to obtain earlier candles. Any candles required for structural bootstrap/warm-up are obtained by ensuring the required range is present in `<SYMBOL>_marketdata.json` through the Market Data CLI, then reading the persisted normalized range.
+When `--starttime` is omitted, the mapper resumes from the persisted analysis state in `<SYMBOL>_structures.json`:
 
-The mapper must distinguish:
+- for an existing deterministic analysis entry, processing resumes from that analysis's `last_processed_candle_time`;
+- the next eligible completed entry-timeframe candle after that checkpoint is the incremental processing start;
+- if no checkpoint exists for the requested analysis identity, the mapper uses the latest persisted completed entry-timeframe candle as the resume boundary and establishes the required bootstrap state from available canonical history.
 
-- `requested_start`
-- `effective_start`
+The resume path is specifically intended to support restarting the program after a previous shutdown.
 
-If the requested start precedes the available completed data, the mapper uses the earliest available completed candle that is valid for the requested analysis/bootstrap and reports that the effective start is later than requested.
+The mapper must distinguish the explicitly requested `requested_start`, when supplied, from the computed `effective_start`.
+
+When a new analysis has no persisted state, the mapper must not invent a historical start. Required bootstrap/warm-up candles are obtained by ensuring the required range is present in `<SYMBOL>_marketdata.json` through the Market Data CLI, then reading the persisted normalized range.
 
 If required historical data is outside the retained market-data window, the Market Data CLI reacquires the missing range before mapper processing.
 
