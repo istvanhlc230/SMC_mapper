@@ -3007,3 +3007,16 @@ Corrected two implementation details found during final audit:
 2. Cache refresh gating now validates both required coverage start and coverage end. An explicit historical query outside retained cache coverage therefore triggers an acquisition instead of silently returning incomplete results.
 
 No canonical SMC files modified.
+
+
+# PHASE 22 — QUERY TIME SEMANTICS
+
+Finalized News Data query behavior:
+
+- `--query SYMBOL` with no start/end is strictly cache-only and queries the complete currently retained shared database.
+- A time-bounded `--query SYMBOL` ensures the requested interval is available; it acquires from FMP only when the interval is not adequately covered/fresh, unless `--force` is supplied.
+- The resulting relevant events are materialized to `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json` beside Market Data and Structures.
+- Explicitly requested historical intervals are protected from normal retention for that acquisition/materialization operation.
+- Shared FMP cache remains directly beside `news_data.py`.
+
+No canonical SMC skill files modified.

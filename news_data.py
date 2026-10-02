@@ -407,12 +407,21 @@ def normalize_news_events(
 def apply_news_retention(
     events: Sequence[NewsEvent],
     now: datetime | None = None,
+    protected_start: datetime | None = None,
+    protected_end: datetime | None = None,
 ) -> list[NewsEvent]:
     now = now or datetime.now(timezone.utc)
     cutoff = now - timedelta(days=NEWS_RETENTION_DAYS)
-    return sort_news_events(
-        [event for event in events if event.event_time_utc >= cutoff]
-    )
+
+    def keep(event: NewsEvent) -> bool:
+        protected = (
+            protected_start is not None
+            and protected_end is not None
+            and protected_start <= event.event_time_utc <= protected_end
+        )
+        return protected or event.event_time_utc >= cutoff
+
+    return sort_news_events([event for event in events if keep(event)])
 
 
 def get_news_data_path() -> Path:
@@ -669,6 +678,8 @@ def update_news_cache(
     merged = apply_news_retention(
         merge_news_events(current, incoming),
         now=now,
+        protected_start=request.start_time,
+        protected_end=request.end_time,
     )
 
     old_start = _parse_doc_time(existing.get("available_start"))
@@ -695,15 +706,23 @@ def should_refresh_for_query(
     cache_document: dict[str, Any],
     now: datetime,
 ) -> bool:
+    explicit_range = (
+        request.start_time is not None
+        or request.end_time is not None
+    )
+    if not explicit_range:
+        return request.force
+
+    required_start = request.start_time or (
+        now - timedelta(days=NEWS_REFRESH_BACKFILL_DAYS)
+    )
     required_end = request.end_time or (
         now + timedelta(days=NEWS_FORWARD_DAYS)
     )
     return request.force or cache_refresh_due(
         cache_document,
         now,
-        required_start=request.start_time or (
-            now - timedelta(days=NEWS_REFRESH_BACKFILL_DAYS)
-        ),
+        required_start=required_start,
         required_end=required_end,
     )
 
@@ -748,25 +767,6 @@ def event_matches_symbol(event: NewsEvent, symbol: str) -> bool:
         )
 
     return False
-
-
-def _default_query_window(
-    request: NewsQueryRequest,
-    now: datetime,
-) -> NewsQueryRequest:
-    if request.start_time is not None or request.end_time is not None:
-        return request
-
-    return NewsQueryRequest(
-        symbol=request.symbol,
-        start_time=now - timedelta(days=NEWS_REFRESH_BACKFILL_DAYS),
-        end_time=now + timedelta(days=NEWS_FORWARD_DAYS),
-        impacts=request.impacts,
-        statuses=request.statuses,
-        limit=request.limit,
-        force=request.force,
-        debug=request.debug,
-    )
 
 
 def build_symbol_news_document(
@@ -925,7 +925,7 @@ def run_query(
     now: datetime | None = None,
 ) -> int:
     now = now or datetime.now(timezone.utc)
-    effective_request = _default_query_window(request, now)
+    effective_request = request
 
     try:
         cache_path = get_news_data_path()

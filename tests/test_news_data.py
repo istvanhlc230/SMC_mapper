@@ -287,22 +287,63 @@ def test_query_materializes_symbol_view(tmp_path, monkeypatch):
     assert len(saved["events"]) == 1
 
 
-def test_run_query_refreshes_then_materializes(tmp_path, monkeypatch):
+def test_run_query_without_time_is_cache_only(tmp_path, monkeypatch):
+    monkeypatch.setattr(news_data, "NEWS_CACHE_PATH", Path(tmp_path) / "news_data.json")
+    monkeypatch.setattr(news_data, "DEFAULT_DATA_DIRECTORY", Path(tmp_path) / "data")
+
+    event = news_data.normalize_source_event(
+        news_data.ProviderEvent(sample_event()),
+        now=dt("2026-10-02T12:00:00Z"),
+    )
+    news_data.save_news_data_atomic(
+        Path(tmp_path) / "news_data.json",
+        {
+            "schema_version": 2,
+            "provider": "FMP",
+            "events": [event],
+            "coverage": [{
+                "start": "2026-10-01T00:00:00+00:00",
+                "end": "2026-10-10T00:00:00+00:00",
+            }],
+            "available_start": "2026-10-01T00:00:00+00:00",
+            "available_end": "2026-10-10T00:00:00+00:00",
+            "last_successful_update_utc": "2026-10-02T11:30:00+00:00",
+        },
+    )
+
+    class FailingProvider(news_data.NewsDataProvider):
+        def fetch_range(self, start_time, end_time):
+            raise AssertionError("plain query must not call FMP")
+
+    assert news_data.run_query(
+        query_request("USDJPY"),
+        provider=FailingProvider(),
+        now=dt("2026-10-02T12:00:00Z"),
+    ) == 0
+    assert (
+        Path(tmp_path) / "data" / "USDJPY" / "USDJPY_news_data.json"
+    ).exists()
+
+
+def test_run_query_with_time_fetches_requested_period(tmp_path, monkeypatch):
     monkeypatch.setattr(news_data, "NEWS_CACHE_PATH", Path(tmp_path) / "news_data.json")
     monkeypatch.setattr(news_data, "DEFAULT_DATA_DIRECTORY", Path(tmp_path) / "data")
 
     calls = []
     provider = news_data.FMPNewsDataProvider(
         "key",
-        opener=opener_for([sample_event()], calls),
+        opener=opener_for([sample_event(date="2026-10-20 12:30:00")], calls),
     )
-    request = query_request("USDJPY")
-    rc = news_data.run_query(
+    request = query_request(
+        "USDJPY",
+        start=dt("2026-10-20T00:00:00Z"),
+        end=dt("2026-10-20T23:59:59Z"),
+    )
+    assert news_data.run_query(
         request,
         provider=provider,
         now=dt("2026-10-02T12:00:00Z"),
-    )
-    assert rc == 0
+    ) == 0
     assert len(calls) == 1
     assert (
         Path(tmp_path) / "data" / "USDJPY" / "USDJPY_news_data.json"
