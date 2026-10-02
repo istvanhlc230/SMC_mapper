@@ -61,6 +61,36 @@ V1 uses a Yahoo Charts provider adapter as the initial concrete Market Data impl
 
 Provider-specific API details remain outside the canonical SMC engine.
 
+
+
+## 0.3 Time-domain contract
+
+The Mapper operates on canonical UTC only.
+
+The Market Data boundary supplies:
+
+- `timestamp` — canonical UTC candle timestamp;
+- `completion_time` — canonical UTC completion boundary.
+
+Datasource-native timestamps are not canonical Mapper input.
+
+Local time is a transient presentation/runtime value derived from canonical UTC with an explicit IANA timezone. It may be used for human-readable diagnostics or for converting explicitly identified user-local input before the Mapper contract is invoked.
+
+Local time must never change:
+
+- candle ordering;
+- completion eligibility;
+- analysis identity;
+- Dealing Range timestamps;
+- mapper checkpoints;
+- canonical SMC calculations.
+
+All Mapper start/end boundaries must resolve to canonical UTC before analysis identity generation, effective-window selection, checkpoint comparison, or candle eligibility.
+
+The analysis key must use the resolved canonical UTC boundary, not the original local-time spelling.
+
+Timezone-aware ISO-8601 input is required at the Mapper contract boundary unless a higher-level UI layer has already converted an explicitly identified local-time input to canonical UTC.
+
 ### Process-launch requirement
 
 ```text

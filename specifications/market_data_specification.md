@@ -193,6 +193,8 @@ Recommended name: `ProviderCandle`.
 Provider-facing state may contain provider-specific types/metadata. Required conceptual fields are:
 
 ```text
+source_timestamp
+source_timezone
 timestamp
 open_price
 high_price
@@ -1465,6 +1467,8 @@ provider
 provider_candle
 provider_candles
 provider_response
+source_timestamp
+source_timezone
 provider_timestamp
 provider_metadata
 ```
@@ -1729,6 +1733,9 @@ test_parse_market_data_request_lastcandle_conflicts
 test_parse_market_data_request_lastcandle_live_allowed
 test_parse_market_data_request_requires_timeframe
 test_parse_iso8601_returns_utc
+test_normalize_source_time_with_timezone
+test_reject_naive_source_time_without_timezone
+test_local_time_conversion_is_dst_aware
 test_build_candle_id_is_deterministic
 test_normalize_provider_candle_uses_decimal
 test_normalize_provider_candle_rejects_invalid_ohlc

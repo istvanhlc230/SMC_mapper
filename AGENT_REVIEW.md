@@ -2746,3 +2746,25 @@ If implementation reality appears incompatible with a specification, the develop
 The developer agent may propose an implementation alternative, but it is not authorized to adopt that alternative when it conflicts with an approved requirement.
 
 **STATUS: ACTIVE — DEVELOPER AGENT CANNOT OVERRIDE APPROVED REQUIREMENTS OR AUDITED SPECIFICATIONS**
+
+
+# TIME-DOMAIN SPECIFICATION RECONCILIATION — 2026-10-02
+
+Requested structural capability: handle datasource time and local time explicitly.
+
+Specification changes:
+- Market Data: datasource timestamp/timezone are resolved at the provider boundary; canonical normalized timestamps remain UTC; naive source wall-clock time without timezone is rejected.
+- Mapper: canonical processing, analysis identity, end-time eligibility, and checkpoints remain UTC-only; local time is presentation/input-conversion only.
+- Monitor: local-time presentation is explicit and DST-aware through an optional IANA timezone setting; scheduler decisions remain based on canonical UTC and persisted completion_time.
+- Full specification: consolidated time-domain contract added.
+
+Multi-strategy audit:
+1. Ownership — each time domain has one owner and no cross-module reinterpretation.
+2. Determinism — canonical state cannot depend on host timezone or DST; local conversion is explicit.
+3. Completion/scheduling — local clock cannot declare candle completion; datasource/canonical completion remains authoritative.
+4. Persistence — no transient local-time fields pollute canonical JSON; analysis keys/checkpoints stay UTC.
+5. Portability — domain contracts use explicit timestamps/timezone identifiers; runtime timezone conversion is implementation-specific.
+
+No implementation code was changed. This is a specification change pending implementation instruction.
+
+**STATUS: PASS — DATASOURCE / CANONICAL UTC / LOCAL-TIME CONTRACT AUDITED**

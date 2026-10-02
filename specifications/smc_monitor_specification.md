@@ -107,6 +107,7 @@ Approved options:
 ~~~text
 --symbol SYMBOL [SYMBOL ...]
 --rr DECIMAL
+--timezone TZ
 --debug
 --help
 ~~~
@@ -180,6 +181,7 @@ Rules:
 class MonitorRequest:
     symbols: list[str]
     min_rr: Decimal | None
+    timezone: str | None
     debug: bool
 ~~~
 
@@ -1353,6 +1355,10 @@ test_monitor_accepts_multiple_symbols
 test_monitor_rr_optional
 test_monitor_rejects_invalid_rr
 test_monitor_debug_is_terminal_only
+test_monitor_accepts_timezone
+test_monitor_rejects_invalid_timezone
+test_local_time_conversion_is_dst_aware
+test_local_time_does_not_change_due_evaluation
 ~~~
 
 ### Analysis discovery

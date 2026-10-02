@@ -1,7 +1,7 @@
 # SMC_Mapper Full Specification — Consolidated Current Architecture
 
 **Status:** Current consolidated architecture reference.
-**Purpose:** One clean cross-file reference for the approved market-data, structures, and monitor runtime model.
+**Purpose:** One clean cross-file reference for the approved market-data, structures, and monitor runtime model, including datasource, canonical UTC, and local-time handling.
 
 **Normative ownership:**
 - `specifications/market_data_specification.md` owns the detailed Market Data implementation contract.
@@ -16,6 +16,18 @@ The former historical FAIL findings that were embedded here have been removed fr
 ---
 
 # Final Approved Architecture
+
+## Time-domain contract
+
+The system distinguishes three time domains:
+
+1. datasource time — provider-native source representation handled only at the Market Data boundary;
+2. canonical UTC — the authoritative domain for normalized timestamps, completion, ordering, persistence, Mapper structural processing, checkpoints, scheduling decisions, target identity, and alert evaluation;
+3. local time — a DST-aware runtime/presentation view derived from canonical UTC.
+
+Datasource timezone must never be guessed. Naive datasource wall-clock timestamps without a known timezone are rejected. Canonical JSON remains UTC-based. Local-time values are not added to canonical JSON solely for display.
+
+
 
 ## Final architecture
 
