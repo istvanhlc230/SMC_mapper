@@ -2708,3 +2708,16 @@ PASS — scaffold and detailed specification are aligned on portable model struc
 PASS — no legacy runtime dependency was introduced.
 
 **STATUS: PASS — MARKET_DATA.PY MQL4/MQL5 PORTABILITY AUDITED**
+
+
+# MARKET_DATA.PY FULL RE-AUDIT — 2026-10-02
+
+PASS — domain model hierarchy was normalized after the previous portability regression.
+PASS — `VolumeState` explicitly represents total/OHLC/orderflow source state; source-level delta remains derived as buy minus sell.
+PASS — `NormalizedCandle`, `TimeframeState`, and `MarketDataDocument` now use explicit fields/arrays that map cleanly to MQL4/MQL5.
+PASS — provider base class and provider range method no longer expose Python `Protocol` or `Iterable` as architecture.
+PASS — JSON dictionaries are explicitly isolated to persistence conversion.
+PASS — scaffold/specification function signatures are aligned.
+PASS — legacy files remain extraction-only and are not runtime dependencies.
+
+**STATUS: PASS — MARKET_DATA.PY DESIGN FULLY RE-AUDITED FOR MODULARITY AND MQL4/MQL5 PORTABILITY**

@@ -131,7 +131,7 @@ class MarketDataProvider:
         timeframe: str,
     ) -> ProviderCandle | None:
         """Fetch exactly one latest completed candle."""
-        ...
+        raise NotImplementedError
 
     def fetch_current(
         self,
@@ -139,7 +139,7 @@ class MarketDataProvider:
         timeframe: str,
     ) -> ProviderCandle | None:
         """Fetch the latest in-progress candle, when available."""
-        ...
+        raise NotImplementedError
 
 
 class YahooChartsProvider:
@@ -262,7 +262,7 @@ def build_candle_id(
 def normalize_provider_candle(
     provider_candle: ProviderCandle,
     timeframe: str,
-    symbol: str = "",
+    symbol: str,
 ) -> NormalizedCandle:
     """Normalize one provider record into the Decimal-backed candle model."""
     raise NotImplementedError

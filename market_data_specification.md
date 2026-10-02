@@ -168,11 +168,9 @@ The exact V1 candle-retention capacity is likewise an operational storage policy
 
 # 3. DATA MODELS
 
-Use small `dataclass` models for internal typed state where they improve readability. JSON persistence remains plain dictionaries/lists.
+Use small explicit state models. Python may use `dataclass` for implementation convenience. JSON persistence is a serialization representation, not the portable domain-class architecture.
 
 ## 3.1 Market-data request
-
-Recommended name:
 
 ```python
 @dataclass(frozen=True)
@@ -186,31 +184,20 @@ class MarketDataRequest:
     debug: bool
 ```
 
-Variable name:
-
-```python
-request
-```
-
-This object represents one CLI execution request after basic parsing.
+Variable name: `request`.
 
 ## 3.2 Provider candle
 
-Recommended name:
+Recommended name: `ProviderCandle`.
 
-```ProviderCandle
-```
-
-This is provider-facing data and may remain a lightweight dataclass or typed mapping.
-
-Required conceptual fields:
+Provider-facing state may contain provider-specific types/metadata. Required conceptual fields are:
 
 ```text
 timestamp
-open
-high
-low
-close
+open_price
+high_price
+low_price
+close_price
 total_volume
 orderflow_buy
 orderflow_sell
@@ -218,31 +205,14 @@ completion_hint
 provider_metadata
 ```
 
-The provider model may contain provider-specific fields.
+Provider-specific fields terminate at this boundary.
 
-Provider-specific fields must not leak into the normalized persisted candle object.
-
-## 3.3 Normalized candle
+## 3.3 Volume state
 
 Recommended name:
 
 ```python
 @dataclass(frozen=True)
-class NormalizedCandle:
-    candle_id: str
-    timestamp: datetime
-    completion_time: datetime
-    open: Decimal
-    high: Decimal
-    low: Decimal
-    close: Decimal
-    volume: dict[str, Any] | None
-```
-
-Internal normalization uses `Decimal`.
-
-Persisted JSON converts Decimal-backed values to the approved deterministic decimal-compatible string representation.
-
 class VolumeState:
     has_total: bool
     total: Decimal | None
@@ -252,66 +222,79 @@ class VolumeState:
     has_orderflow: bool
     orderflow_buy: Decimal | None
     orderflow_sell: Decimal | None
+```
 
-## 3.4 Timeframe state
+The independent source branches are `total`, `ohlc_buy/sell`, and `orderflow_buy/sell`.
 
-Recommended name:
+Source-level delta is not stored. When needed:
+
+```text
+delta = buy - sell
+```
+
+## 3.4 Normalized candle
+
+```python
+@dataclass(frozen=True)
+class NormalizedCandle:
+    candle_id: str
+    timestamp: datetime
+    completion_time: datetime
+    open_price: Decimal
+    high_price: Decimal
+    low_price: Decimal
+    close_price: Decimal
+    volume: VolumeState
+```
+
+## 3.5 Timeframe state
 
 ```python
 @dataclass
 class TimeframeState:
+    timeframe: str
     available_start: datetime | None
     available_end: datetime | None
-    candles: list[dict[str, Any]]
-    current: dict[str, Any] | None
+    candles: list[NormalizedCandle]
+    current: NormalizedCandle | None
 ```
 
-The persisted JSON schema remains the mapper-facing contract:
-
-```json
-{
-  "available_start": "...",
-  "available_end": "...",
-  "candles": [],
-  "current": null
-}
-```
-
-## 3.5 Market-data document
-
-Recommended name:
+## 3.6 Market-data document
 
 ```python
 @dataclass
 class MarketDataDocument:
     symbol: str
-    timeframes: dict[str, TimeframeState]
+    timeframes: list[TimeframeState]
 ```
 
-The JSON document is symbol-scoped and contains all acquired timeframes.
+The JSON persistence representation maps this array of timeframe objects to the approved object keyed by timeframe.
 
----
+## 3.7 Cross-language class portability (MQL4/MQL5)
 
-## 3.6 Cross-language class portability (MQL4/MQL5)
-
-The class/data-model contract is language-neutral and must be directly portable to both MQL4 and MQL5.
-
-Python may use `dataclass` for implementation convenience, but portability is defined by explicit fields and method semantics.
+The class/data-model contract is language-neutral and must be directly reproducible in both MQL4 and MQL5.
 
 Portable rules:
 
 - classes use explicit state fields;
-- public methods use simple values plus explicit output/reference parameters or output arrays conceptually;
-- correctness must not depend on Python-only typing, generators, tuples, properties, reflection, or dynamic attributes;
+- collections are conceptually arrays of named records;
+- public methods use simple values and explicit output/reference parameters or arrays conceptually;
+- correctness must not depend on Python-only typing, generators, tuples, properties, reflection, metaclasses, or dynamic attributes;
 - mutable state ownership is explicit;
 - public operations have an explicit success/failure result path;
 - UTC timestamps map naturally to MQL `datetime`;
 - field names and field meanings remain stable across Python, MQL4, and MQL5;
-- no implementation-critical behavior depends on Python object identity.
+- JSON dictionary structure is persistence-only and must not become a second domain-class architecture.
 
-Python may use `Decimal` internally for deterministic arithmetic. This is an implementation detail, not a portable interface requirement.
+Python may use `Decimal` internally for deterministic financial arithmetic; `Decimal` is not part of the portable interface.
 
-The Python classes must therefore be straightforward to reproduce as MQL4/MQL5 classes without designing a second architecture.
+## 3.8 Model vs. JSON representation boundary
+
+Core processing uses the explicit domain models above. Persistence helpers may use plain Python dictionaries/lists while translating to and from the approved JSON schema.
+
+No canonical SMC semantic meaning may depend on the JSON container type.
+
+---
 
 # 4. FUNCTION NAMING CONTRACT
 
@@ -355,6 +338,8 @@ build_current_snapshot
 merge_current_snapshot
 clear_completed_current_snapshot
 load_market_data
+create_empty_market_data
+serialize_market_data
 save_market_data_atomic
 update_timeframe
 update_market_data
