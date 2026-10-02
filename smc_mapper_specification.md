@@ -18,6 +18,8 @@ The intended finished product uses these active Python runtime components:
 
 The older `smc_htf_ltf_monitor.py`, `smc_analyzer.py`, and Layer-1-to-Layer-6 `*_engine.py` test/implementation artifacts are not components of the finished product architecture.
 
+These legacy artifacts are optional source material only. Reusable implementation patterns, algorithms, tests, or utility code may be extracted into the finished product when they are compatible with this specification and the canonical skill. The finished product must not retain a runtime, import, schema, or behavioral dependency on any legacy artifact.
+
 This specification defines the mapper contract and its boundaries with the standalone Market Data CLI and interactive monitor.
 
 ## 0.2 Implementation ownership boundaries

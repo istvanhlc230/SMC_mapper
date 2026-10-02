@@ -2613,3 +2613,15 @@ PASS — no canonical SMC semantic change.
 PASS — no skill files modified.
 
 **STATUS: PASS — SECTION REFERENCE AND HIERARCHY CLEANUP COMPLETE**
+
+# LEGACY COMPONENT SCOPE CLARIFICATION — 2026-10-02
+
+The finished product does **not** include `smc_htf_ltf_monitor.py`, `smc_analyzer.py`, or their legacy integration tests as runtime architecture.
+
+They remain optional source material only: reusable implementation ideas/code/tests may be extracted where compatible with the current specification and canonical skill, but the new product must not retain runtime/import/schema/behavioral dependencies on them.
+
+The current `tests/test_smc_htf_ltf_monitor.py` CI failure is therefore a legacy-test/repository hygiene issue, not a product-architecture failure. It must not drive the new architecture. Before declaring the finished-product test suite green, obsolete legacy tests should be retired or their reusable assertions migrated into tests for the new `market_data.py`, `smc_mapper.py`, and `smc_monitor.py` components.
+
+Historical review entries that mention preserving the old integration are audit history only and are superseded by this current product-scope decision.
+
+**STATUS: PASS — LEGACY COMPONENTS EXCLUDED FROM FINISHED PRODUCT; REUSE IS OPTIONAL AND EXTRACTION-ONLY**
