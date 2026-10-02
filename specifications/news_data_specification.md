@@ -608,3 +608,55 @@ The shared cache is stored directly beside `news_data.py`:
 ```
 
 Implementation resolves this as `Path(__file__).resolve().parent / "news_data.json"`. No `data/` directory, symbol subdirectory, or configurable cache path is used in V1.
+
+
+# V1 SHARED CACHE + SYMBOL QUERY
+
+The News Data module has two operational layers.
+
+    FMP Economic Calendar
+            |
+            v
+    <directory containing news_data.py>/news_data.json
+            |
+            v
+    python news_data.py --query SYMBOL
+            |
+            v
+    <DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json
+            |
+            v
+    smc_monitor.py
+
+The global cache is refreshed only when its refresh gate requires it, or when --force is supplied. A symbol query therefore does not imply a provider request.
+
+The normal Monitor interface is:
+
+    python news_data.py --query USDJPY
+
+Query behavior:
+
+1. load the shared cache;
+2. refresh it from FMP when stale or insufficiently covered;
+3. filter only explicit affected instrument/currency metadata;
+4. atomically write <DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json;
+5. emit the same materialized document as machine-readable stdout.
+
+The symbol-specific file is a derived view, not a second provider cache.
+
+CLI:
+
+    python news_data.py --query SYMBOL [--starttime ISO8601] [--endtime ISO8601] [--impact LOW|MEDIUM|HIGH|UNKNOWN] [--status SCHEDULED|RELEASED|CANCELLED|UNKNOWN] [--limit N] [--force] [--debug]
+    python news_data.py --update [--starttime ISO8601] [--endtime ISO8601] [--force] [--debug]
+
+--update is manual global-cache maintenance and does not create symbol views.
+
+The three runtime JSON files for a symbol are co-located:
+
+    <DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json
+    <DATA_ROOT>/<SYMBOL>/<SYMBOL>_structures.json
+    <DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json
+
+The shared provider cache remains outside the symbol directory beside news_data.py.
+
+FMP Economic Calendar is date-range based and documents a maximum 90-day range and UTC timestamps.

@@ -249,15 +249,23 @@ Market Data JSON serialization remains owned by market_data.py.
 
 ## 2.3 News Data JSON
 
-Load the shared normalized event cache:
+For each selected symbol, consume the derived symbol news view:
 
 ~~~text
-<NEWS_DATA_MODULE_DIR>/news_data.json
+<DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json
 ~~~
 
-The Monitor may consume normalized event fields required by the warning contract, including event identity, canonical UTC event time, title, normalized impact/status, affected currencies/instruments, source provenance, and forecast/previous/actual when available.
+The view is produced by the News Data query command:
 
-The Monitor performs final symbol/event relevance filtering from explicit affected metadata. News Data remains external runtime context and never becomes canonical SMC state.
+~~~text
+python news_data.py --query SYMBOL
+~~~
+
+The query command first checks the shared cache beside news_data.py. It refreshes FMP only when the cache gate requires it or --force is supplied, then filters explicit affected metadata and atomically materializes the symbol-specific file.
+
+The Monitor must not call FMP directly and must not issue one FMP refresh per symbol. Querying another symbol while the shared cache is fresh causes no provider request.
+
+The Monitor consumes the materialized file as external runtime context and performs final warning eligibility.
 
 ## 2.4 Read-only consumer model
 
@@ -1949,3 +1957,10 @@ Normal cycle:
 5. apply symbol/event relevance per selected analysis from explicit affected metadata.
 
 A `--force` request is reserved for manual immediate reconciliation and bypasses the News Data cache gate. News availability or refresh failure remains warning-context failure only and must not mutate canonical SMC state.
+
+
+---
+
+# SHARED NEWS CACHE ORCHESTRATION
+
+One invocation per symbol may use `python news_data.py --query SYMBOL`. The first query after cache expiry may refresh the shared FMP cache; subsequent symbol queries reuse it. `--force` is reserved for explicit immediate reconciliation. The symbol-specific news JSON is kept beside Market Data and Structures, while the provider cache remains beside news_data.py.

@@ -1,4 +1,4 @@
-"""Normalized economic-news acquisition CLI with a shared global FMP cache."""
+"""Shared FMP economic-news cache plus local symbol query/materialization CLI."""
 from __future__ import annotations
 import argparse, hashlib, json, os, sys, tempfile, time
 from dataclasses import dataclass
@@ -348,48 +348,281 @@ def update_news_events(request: NewsDataRequest, provider: NewsDataProvider,
     return apply_news_retention(merged, now=now, protected_start=request.start_time, protected_end=request.end_time), start, end, True
 
 def build_argument_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(description="Maintain shared normalized FMP economic-calendar cache.")
-    p.add_argument("--symbol", required=True)
-    p.add_argument("--starttime"); p.add_argument("--endtime")
-    p.add_argument("--live", action="store_true")
-    p.add_argument("--force", action="store_true", help="bypass the news cache refresh limit")
-    p.add_argument("--debug", action="store_true")
-    return p
+    parser = argparse.ArgumentParser(
+        description="Maintain the shared FMP news cache and materialize symbol news views."
+    )
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument(
+        "--query",
+        metavar="SYMBOL",
+        help="query/materialize one symbol from the local cache",
+    )
+    mode.add_argument(
+        "--update",
+        action="store_true",
+        help="refresh the shared cache without materializing a symbol view",
+    )
+    parser.add_argument("--starttime")
+    parser.add_argument("--endtime")
+    parser.add_argument("--impact", action="append",
+                        choices=["LOW", "MEDIUM", "HIGH", "UNKNOWN"])
+    parser.add_argument("--status", action="append",
+                        choices=["SCHEDULED", "RELEASED", "CANCELLED", "UNKNOWN"])
+    parser.add_argument("--limit", type=int)
+    parser.add_argument("--force", action="store_true",
+                        help="bypass the cache refresh gate")
+    parser.add_argument("--debug", action="store_true")
+    return parser
 
-def parse_news_data_request(argv: Sequence[str] | None = None) -> NewsDataRequest:
+
+def parse_cli_request(argv: Sequence[str] | None = None) -> tuple[str, Any]:
     args = build_argument_parser().parse_args(argv)
-    request = NewsDataRequest(normalize_symbol(args.symbol),
-        parse_iso8601(args.starttime) if args.starttime else None,
-        parse_iso8601(args.endtime) if args.endtime else None,
-        bool(args.live), bool(args.force), bool(args.debug))
-    validate_news_data_request(request); return request
-
-def validate_news_data_request(request: NewsDataRequest) -> None:
-    normalize_symbol(request.symbol)
-    if request.start_time and request.end_time and request.start_time > request.end_time:
+    start = parse_iso8601(args.starttime) if args.starttime else None
+    end = parse_iso8601(args.endtime) if args.endtime else None
+    if start and end and start > end:
         raise ValueError("starttime must not be after endtime")
+    if args.limit is not None and args.limit <= 0:
+        raise ValueError("limit must be positive")
 
-def run(request: NewsDataRequest, provider: NewsDataProvider | None = None) -> int:
+    if args.query is not None:
+        symbol = _normalize_query_symbol(args.query)
+        return "query", NewsQueryRequest(
+            symbol=symbol,
+            currency=None,
+            start_time=start,
+            end_time=end,
+            impacts=tuple(args.impact or ()),
+            statuses=tuple(args.status or ()),
+            limit=args.limit,
+            force=bool(args.force),
+            debug=bool(args.debug),
+        )
+
+    return "update", NewsUpdateRequest(
+        start_time=start,
+        end_time=end,
+        force=bool(args.force),
+        debug=bool(args.debug),
+    )
+
+
+@dataclass(frozen=True)
+class NewsQueryRequest:
+    symbol: str
+    currency: str | None
+    start_time: datetime | None
+    end_time: datetime | None
+    impacts: tuple[str, ...]
+    statuses: tuple[str, ...]
+    limit: int | None
+    force: bool
+    debug: bool
+
+
+def _normalize_query_symbol(symbol: str) -> str:
+    value = symbol.strip().upper()
+    if not value or value in {".", ".."} or "\x00" in value:
+        raise ValueError("invalid symbol")
+    if "/" in value or "\" in value or Path(value).drive:
+        raise ValueError("invalid symbol")
+    return value
+
+
+def resolve_symbol_query_keys(symbol: str) -> tuple[str, ...]:
+    normalized = _normalize_query_symbol(symbol)
+    keys = [normalized]
+    if len(normalized) == 6 and normalized.isalpha():
+        keys.extend((normalized[:3], normalized[3:]))
+    return tuple(dict.fromkeys(keys))
+
+
+def event_matches_symbol(event: NewsEvent, symbol: str) -> bool:
+    keys = set(resolve_symbol_query_keys(symbol))
+    instruments = {item.upper() for item in event.affected_instruments}
+    if keys.intersection(instruments):
+        return True
+
+    normalized = _normalize_query_symbol(symbol)
+    if len(normalized) == 6 and normalized.isalpha():
+        currencies = {item.upper() for item in event.affected_currencies}
+        return bool(
+            set((normalized[:3], normalized[3:])).intersection(currencies)
+        )
+    return False
+
+
+def query_news_events(
+    request: NewsQueryRequest,
+    document: dict[str, Any],
+) -> list[NewsEvent]:
+    events = [
+        event if isinstance(event, NewsEvent) else _event_from_dict(event)
+        for event in document.get("events", [])
+    ]
+    result: list[NewsEvent] = []
+    for event in events:
+        if not event_matches_symbol(event, request.symbol):
+            continue
+        if request.currency and request.currency not in event.affected_currencies:
+            continue
+        if request.start_time and event.event_time_utc < request.start_time:
+            continue
+        if request.end_time and event.event_time_utc > request.end_time:
+            continue
+        if request.impacts and event.impact not in request.impacts:
+            continue
+        if request.statuses and event.status not in request.statuses:
+            continue
+        result.append(event)
+    result = sort_news_events(result)
+    return result[:request.limit] if request.limit is not None else result
+
+
+def get_symbol_news_path(symbol: str) -> Path:
+    normalized = _normalize_query_symbol(symbol)
+    root = Path(__file__).resolve().parent
+    target = (root / normalized / f"{normalized}_news_data.json").resolve()
+    if target.parent.parent != root or target.parent == root:
+        raise ValueError("symbol news path escapes module directory")
+    return target
+
+
+def build_symbol_news_document(
+    request: NewsQueryRequest,
+    cache_document: dict[str, Any],
+) -> dict[str, Any]:
+    return {
+        "schema_version": 1,
+        "symbol": request.symbol,
+        "source": {
+            "provider": cache_document.get("provider", "FMP"),
+            "cache_available_start": cache_document.get("available_start"),
+            "cache_available_end": cache_document.get("available_end"),
+            "cache_last_successful_update_utc": cache_document.get(
+                "last_successful_update_utc"
+            ),
+        },
+        "query": {
+            "symbol": request.symbol,
+            "start_time": request.start_time.isoformat()
+            if request.start_time else None,
+            "end_time": request.end_time.isoformat()
+            if request.end_time else None,
+            "impacts": list(request.impacts),
+            "statuses": list(request.statuses),
+            "limit": request.limit,
+        },
+        "events": [
+            _event_to_dict(event)
+            for event in query_news_events(request, cache_document)
+        ],
+    }
+
+
+def materialize_symbol_news(
+    request: NewsQueryRequest,
+    cache_document: dict[str, Any],
+) -> Path:
+    path = get_symbol_news_path(request.symbol)
+    document = build_symbol_news_document(request, cache_document)
+
+    # Avoid rewriting the derived file when its logical content is unchanged.
+    if path.exists():
+        try:
+            current = json.loads(path.read_text(encoding="utf-8"))
+            if current == document:
+                return path
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+            pass
+
+    save_news_data_atomic(path, document)
+    return path
+
+
+def _refresh_cache_for_query(
+    request: NewsQueryRequest,
+    provider: NewsDataProvider,
+    existing: dict[str, Any],
+    now: datetime,
+) -> dict[str, Any]:
+    explicit_range = (
+        request.start_time is not None or request.end_time is not None
+    )
+    update_request = NewsUpdateRequest(
+        start_time=request.start_time,
+        end_time=request.end_time,
+        force=request.force,
+        debug=request.debug,
+    )
+    if not update_request.force and not explicit_range and not cache_refresh_due(
+        existing, now
+    ):
+        return existing
+    document, changed = update_news_cache(
+        update_request, provider, existing, now=now
+    )
+    if changed:
+        save_news_data_atomic(get_news_data_path(), document)
+    return document
+
+
+def run_query(
+    request: NewsQueryRequest,
+    provider: NewsDataProvider | None = None,
+    now: datetime | None = None,
+) -> int:
+    try:
+        now = now or datetime.now(timezone.utc)
+        path = get_news_data_path()
+        existing = load_news_data(path)
+        cache = _refresh_cache_for_query(
+            request, provider or create_news_provider(), existing, now
+        )
+        materialized = materialize_symbol_news(request, cache)
+        result = build_symbol_news_document(request, cache)
+        # stdout is a machine-readable result; the durable symbol view is also persisted.
+        print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+        if request.debug:
+            print(f"news_data: materialized {materialized}", file=sys.stderr)
+        return 0
+    except Exception as exc:
+        if request.debug:
+            print(f"news_data query: {exc}", file=sys.stderr)
+        return 1
+
+
+def run_update(
+    request: NewsUpdateRequest,
+    provider: NewsDataProvider | None = None,
+    now: datetime | None = None,
+) -> int:
+    now = now or datetime.now(timezone.utc)
     path = get_news_data_path()
     existing = load_news_data(path)
     try:
-        events, start, end, changed = update_news_events(request, provider or create_news_provider(),
-                                                         existing)
+        document, changed = update_news_cache(
+            request, provider or create_news_provider(), existing, now=now
+        )
         if not changed:
             return 0
-        document = {"events": events, "available_start": start.isoformat(),
-                    "available_end": end.isoformat(),
-                    "last_successful_update_utc": datetime.now(timezone.utc).isoformat()}
         save_news_data_atomic(path, document)
         return 0
     except Exception as exc:
-        if request.debug: print(f"news_data: {exc}", file=sys.stderr)
+        if request.debug:
+            print(f"news_data update: {exc}", file=sys.stderr)
         return 1
 
+
 def main(argv: Sequence[str] | None = None) -> int:
-    try: return run(parse_news_data_request(argv))
+    try:
+        mode, request = parse_cli_request(argv)
+        if mode == "query":
+            return run_query(request)
+        return run_update(request)
     except Exception as exc:
-        print(f"news_data: {exc}", file=sys.stderr); return 1
+        print(f"news_data: {exc}", file=sys.stderr)
+        return 1
+
 
 if __name__ == "__main__":
     raise SystemExit(main())

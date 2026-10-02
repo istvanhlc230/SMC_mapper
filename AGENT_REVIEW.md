@@ -2947,3 +2947,30 @@ CI run 415 on the initial shared-cache commit completed with failure, but the av
 ## PHASE 17 — NEWS CACHE MODULE-LOCAL PATH
 
 The shared `news_data.json` cache now resides directly beside `news_data.py` via `Path(__file__).resolve().parent`. No `data/` root, symbol subdirectory, or configurable cache path is used for News Data V1. Updated News Data/Monitor/Mapper/full specifications and tests to keep this path contract consistent.
+
+
+# PHASE 18 — SYMBOL QUERY + MATERIALIZED NEWS VIEW
+
+Implemented the revised news architecture requested by the product design:
+
+    shared FMP cache beside news_data.py
+              |
+              v
+    --query SYMBOL
+              |
+              v
+    <DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json
+
+`--symbol` is no longer an update-only context parameter. The primary Monitor interface is `python news_data.py --query SYMBOL`.
+
+Query behavior:
+- checks the shared cache;
+- refreshes FMP only when the cache gate requires it or `--force` is supplied;
+- filters events using explicit affected instrument/currency metadata;
+- atomically materializes the symbol-specific news JSON beside that symbol's Market Data and Structures files;
+- emits the materialized document as machine-readable stdout;
+- does not require an FMP API key when no refresh is necessary.
+
+`--update` remains available for manual global cache maintenance. No fallback provider was added. `.agents/skills/smc/` was not modified.
+
+The current FMP Economic Calendar documentation confirms the date-range endpoint, maximum 90-day range, UTC event times, and currency metadata used by this design.
