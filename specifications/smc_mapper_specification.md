@@ -68,22 +68,6 @@ Provider-specific API details remain outside the canonical SMC engine.
 
 The Mapper operates on canonical UTC only.
 
-## 0.4 Symbol data-directory and automatic file discovery
-
-All durable outputs for one symbol live under one directory beneath the common data root:
-
-```text
-<DATA_ROOT>/
-└── <SYMBOL>/
-    ├── <SYMBOL>_marketdata.json
-    ├── <SYMBOL>_structures.json
-    └── <SYMBOL>_news_data.json
-```
-
-The Mapper automatically resolves `<DATA_ROOT>/<SYMBOL>/` from its normalized symbol and reads `<SYMBOL>_marketdata.json` and `<SYMBOL>_structures.json` from that directory. Normal runtime does not require ad-hoc per-file path input from the Monitor or caller. The symbol directory is created by the component that owns a write when persistence is required.
-
-The Mapper must not search another symbol's directory and must reject a persisted document whose stored symbol identity does not match the requested symbol.
-
 
 
 The Market Data boundary supplies:
@@ -109,6 +93,22 @@ All Mapper start/end boundaries must resolve to canonical UTC before analysis id
 The analysis key must use the resolved canonical UTC boundary, not the original local-time spelling.
 
 Timezone-aware ISO-8601 input is required at the Mapper contract boundary unless a higher-level UI layer has already converted an explicitly identified local-time input to canonical UTC.
+
+## 0.4 Symbol data-directory and automatic file discovery
+
+All durable outputs for one symbol live under one directory beneath the common data root:
+
+```text
+<DATA_ROOT>/
+└── <SYMBOL>/
+    ├── <SYMBOL>_marketdata.json
+    ├── <SYMBOL>_structures.json
+    └── <SYMBOL>_news_data.json
+```
+
+The Mapper automatically resolves `<DATA_ROOT>/<SYMBOL>/` from its normalized symbol and reads `<SYMBOL>_marketdata.json` and `<SYMBOL>_structures.json` from that directory. Normal runtime does not require ad-hoc per-file path input from the Monitor or caller. The symbol directory is created by the component that owns a write when persistence is required.
+
+The Mapper must not search another symbol's directory and must reject a persisted document whose stored symbol identity does not match the requested symbol.
 
 ### Process-launch requirement
 
