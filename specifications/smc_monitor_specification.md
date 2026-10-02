@@ -912,7 +912,7 @@ No implicit minimum RR is applied when --rr is absent.
 
 ---
 
-# 13. ALERT ELIGIBILITY AND NOTIFICATION
+# 12. ALERT ELIGIBILITY AND NOTIFICATION
 
 ## 12.1 Eligibility
 
@@ -1468,8 +1468,6 @@ test_monitor_rejects_invalid_rr
 test_monitor_debug_is_terminal_only
 test_monitor_accepts_timezone
 test_monitor_rejects_invalid_timezone
-test_local_time_conversion_is_dst_aware
-test_local_time_does_not_change_due_evaluation
 test_local_time_conversion_is_dst_aware
 test_local_time_does_not_change_due_evaluation
 ~~~

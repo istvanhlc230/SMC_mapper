@@ -87,8 +87,6 @@ Verified no remaining:
 - missing file write safety contract.
 
 Verified canonical ownership remains intact and no `.agents/skills/smc/` file was modified.
-**FINAL STATUS: PASS — SPECIFICATION RECONCILED WITH THE SYMBOL-DIRECTORY, THREE-PERSISTENT-STORE RUNTIME MODEL**
-
----
+**FINAL STATUS: PASS — SPECIFICATION RECONCILED WITH THE SYMBOL-DIRECTORY, TWO-PERSISTENT-STORE RUNTIME MODEL**
 
 ---
