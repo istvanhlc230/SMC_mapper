@@ -1049,15 +1049,22 @@ A news event is relevant to an analysis when the normalized event metadata expli
 
 The Monitor must not guess relevance from event title text alone.
 
-## 12.4 Warning window
+## 12.4 Dynamic warning window
 
-Use a single Monitor-owned operational configuration:
+News warning timing is dynamically derived from the analysis entry timeframe and normalized event impact. Do not use a fixed `NEWS_WARNING_WINDOWS_MINUTES` table or a scalable warning-profile/category engine.
+
+The Monitor uses this deterministic model:
 
 ~~~text
-NEWS_WARNING_WINDOWS_MINUTES
+base_window = entry_timeframe_duration
+
+HIGH impact   -> warning_window = base_window × 2
+MEDIUM impact -> warning_window = base_window
+LOW impact    -> warning_window = base_window ÷ 2
+UNKNOWN impact -> no warning
 ~~~
 
-The exact V1 value(s) are an implementation-policy decision and must not be copied into Mapper or canonical SMC rules.
+The entry-timeframe duration must come from the existing timeframe-duration contract; the Monitor must not create a second independent timeframe-duration table.
 
 For an event with:
 
@@ -1065,7 +1072,15 @@ For an event with:
 event_time_utc
 ~~~
 
-a warning becomes eligible when the current canonical UTC time falls inside the configured pre-event window.
+a warning becomes eligible when:
+
+~~~text
+0 < (event_time_utc - current_utc) <= warning_window
+~~~
+
+The warning window is transient and calculated per analysis/event evaluation. It is not persisted as canonical state.
+
+The Monitor may expose the calculated window in diagnostics and warning output. Warning deduplication must use the calculated warning window identity for that event/analysis evaluation.
 
 V1 behavior is **warning-only**:
 
@@ -1074,7 +1089,7 @@ V1 behavior is **warning-only**:
 - news warning does not alter target/RR calculation;
 - news warning does not create an order or position.
 
-A future explicit policy may choose to use news as an alert gate, but that is a separate specification change and requires re-audit.
+A future change to use news as an alert gate requires a separate specification change and re-audit.
 
 ## 12.5 NewsWarningDecision
 
@@ -1484,7 +1499,7 @@ is_target_cleared(target_price, current_price, direction)
 calculate_projected_rr(target_price, entry_reference_price, stop_price)
 get_active_sessions(utc_time, session_definitions)
 evaluate_news_warnings(news_events, current_time, symbol)
-build_news_warning_key(event_id, warning_window)
+calculate_news_warning_window(entry_timeframe, impact)\nbuild_news_warning_key(event_id, warning_window)
 
 build_alert_key(analysis, target)
 evaluate_alert_eligibility(analysis, target, current_market_view, min_rr)
