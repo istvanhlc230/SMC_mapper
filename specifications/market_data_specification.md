@@ -22,7 +22,7 @@ Its responsibilities are:
 6. merge completed candles without duplication;
 7. maintain an independent current in-progress snapshot per timeframe;
 8. maintain bounded operational candle retention per timeframe;
-9. persist `<SYMBOL>_marketdata.json` atomically;
+9. persist `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json` atomically;
 10. expose no canonical SMC interpretation.
 
 The module is a **data acquisition and normalization boundary**, not an SMC analyzer.
@@ -134,6 +134,8 @@ Do not add a general HTTP framework merely for abstraction.
 ## 2.2 Module constants
 
 Use descriptive uppercase constants for immutable module policy values.
+
+`DEFAULT_DATA_DIRECTORY` denotes the common product data root under which every symbol gets its own output directory.
 
 Required/expected names:
 
@@ -961,17 +963,50 @@ The implementation must not assume retained storage is the only possible source 
 
 # 12. JSON PERSISTENCE
 
-## 12.1 File naming
+## 12.1 Symbol directory and file naming
 
-Use:
+The product uses one dedicated symbol directory under the common data root:
 
 ```text
-<SYMBOL>_marketdata.json
+<DATA_ROOT>/
+└── <SYMBOL>/
+    └── <SYMBOL>_marketdata.json
 ```
 
-One file per symbol.
+Rules:
 
-All acquired timeframes for that symbol live inside the same file.
+- `<DATA_ROOT>` is the existing `data_directory` / `DEFAULT_DATA_DIRECTORY` root; this change does not introduce a new user-facing path option;
+- `<SYMBOL>` is the normalized symbol identity used by the request;
+- the symbol directory is created automatically when persistence is required;
+- `market_data.py` automatically resolves and loads the symbol's market-data file from that directory;
+- normal callers do not supply an ad-hoc per-file path;
+- all acquired timeframes for that symbol live inside the same market-data file;
+- no market-data file is stored directly beside another symbol's file;
+- no timeframe-specific file is created.
+
+The symbol directory is a filesystem/output boundary only; it introduces no canonical SMC semantics.
+
+## 12.2 get_symbol_data_directory
+
+Signature:
+
+```python
+def get_symbol_data_directory(
+    symbol: str,
+    data_directory: Path,
+) -> Path:
+    ...
+```
+
+Rules:
+
+- deterministic;
+- resolves to `<DATA_ROOT>/<SYMBOL>`;
+- path calculation itself does not perform I/O;
+- directory creation occurs only as an explicit persistence prerequisite;
+- does not silently rename the symbol.
+
+## 12.3 get_market_data_path
 
 ## 12.2 get_market_data_path
 
@@ -988,12 +1023,13 @@ def get_market_data_path(
 Rules:
 
 - deterministic;
-- symbol-scoped;
+- resolves to `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json`;
+- uses `get_symbol_data_directory` as the single directory owner;
 - no timeframe-specific market-data file;
 - sanitize path components only as required for safe local file paths;
 - do not silently rename a symbol into another instrument identity.
 
-## 12.3 load_market_data
+## 12.4 load_market_data
 
 Signature:
 
@@ -1014,7 +1050,7 @@ Behavior:
 - reject malformed JSON/data;
 - do not silently discard malformed persisted state.
 
-## 12.4 ensure_timeframe_state
+## 12.5 ensure_timeframe_state
 
 Signature:
 
@@ -1039,7 +1075,7 @@ Creates the timeframe section when absent:
 
 Do not modify unrelated timeframe sections.
 
-## 12.5 update_available_bounds
+## 12.6 update_available_bounds
 
 Signature:
 
@@ -1061,7 +1097,7 @@ These fields describe completed-candle coverage only.
 
 Current snapshot does not affect availability bounds.
 
-## 12.6 save_market_data_atomic
+## 12.7 save_market_data_atomic
 
 Signature:
 
@@ -1089,7 +1125,7 @@ Do not use a separate lock file in V1.
 
 The finished monitor architecture serializes active orchestration per symbol.
 
-## 12.7 Deterministic JSON serialization
+## 12.8 Deterministic JSON serialization
 
 Use deterministic serialization:
 
@@ -1104,7 +1140,7 @@ The same logical market-data state must produce the same persisted JSON content.
 
 ---
 
-## 12.8 External JSON schema contract
+## 12.9 External JSON schema contract
 
 The following serialized structure is the mapper-facing V1 market-data contract:
 
@@ -1290,8 +1326,8 @@ def update_market_data(
 
 Execution order:
 
-1. resolve symbol/data path;
-2. load or create symbol-scoped market-data document;
+1. resolve the symbol data directory and market-data path;
+2. load or create the symbol-scoped market-data document;
 3. for each requested timeframe, independently:
    - ensure timeframe state;
    - resolve acquisition;
@@ -1752,6 +1788,8 @@ test_lastcandle_fetches_exactly_one_completed_candle_per_timeframe
 test_lastcandle_live_refreshes_current_independently
 test_noop_does_not_rewrite_unchanged_market_data
 test_multitimeframe_updates_share_one_symbol_file
+test_symbol_output_directory_is_resolved_automatically
+test_market_data_path_stays_within_symbol_directory
 test_multitimeframe_update_does_not_cross_contaminate
 test_missing_range_can_be_reacquired
 ```
@@ -1796,7 +1834,9 @@ validate input
  ↓
 create provider
  ↓
-load <SYMBOL>_marketdata.json
+resolve <DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json
+  ↓
+load symbol-scoped market-data document
  ↓
 for each requested timeframe
    ↓
@@ -1836,7 +1876,7 @@ The output of this process is only the normalized market-data JSON state. Canoni
 `market_data.py` is implementation-complete when:
 
 - the documented CLI exactly matches implementation;
-- all requested timeframes are stored in one symbol JSON file;
+- all requested timeframes are stored in one symbol JSON file under `<DATA_ROOT>/<SYMBOL>/`;
 - completed candles and current snapshots are strictly separated;
 - provider-specific data does not leak into normalized semantics;
 - UTC timestamps and completion boundaries are deterministic;
