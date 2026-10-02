@@ -1,7 +1,7 @@
 # SMC Monitor Specification
 
-**Status:** Working implementation specification.  
-**Scope:** Functional and implementation specification for the future smc_monitor.py.  
+**Status:** Working implementation specification.
+**Scope:** Functional and implementation specification for the future smc_monitor.py.
 **Canonical authority:** .agents/skills/smc/ remains the sole authority for canonical SMC semantics. This document defines runtime orchestration, scheduling, target evaluation, alerting, and process boundaries only.
 
 ---
@@ -122,16 +122,15 @@ Multiple symbols are allowed. Each symbol is monitored independently.
 
 The Monitor must never merge structures, market data, schedules, checkpoints, targets, or alerts between symbols.
 
-Each symbol uses one dedicated data directory for Market Data and Structures. News is shared:
+Each symbol uses one dedicated data directory for Market Data and Structures:
 
 ~~~text
 <DATA_ROOT>/<SYMBOL>/
     <SYMBOL>_marketdata.json
     <SYMBOL>_structures.json
-<NEWS_DATA_MODULE_DIR>/news_data.json
 ~~~
 
-The Monitor automatically resolves symbol directories for Market Data/Structures and the shared news cache from the common data root. It does not expose per-file path CLI options.
+The Monitor automatically resolves the symbol directory from the common data root. It does not expose per-file path CLI options.
 
 ## 1.3 --rr
 
@@ -247,8 +246,6 @@ The current snapshot is never canonical structural input.
 
 Market Data JSON serialization remains owned by market_data.py.
 
-## 2.3 News Data JSON
-
 For each selected symbol, consume the derived symbol news view:
 
 ~~~text
@@ -355,12 +352,6 @@ invoke market_data.py
         ↓
 reload persisted market-data state
         ↓
-plan/update normalized news events
-        ↓
-invoke news_data.py when a news refresh is due
-        ↓
-reload persisted news state
-        ↓
 identify analyses requiring mapper update
         ↓
 invoke affected mapper analyses
@@ -370,8 +361,6 @@ reload structures state
 refresh current market reference
         ↓
 evaluate session context
-        ↓
-evaluate news warnings
         ↓
 evaluate targets / RR / alerts
         ↓
@@ -425,8 +414,6 @@ Rules:
 
 Compatible requests may be grouped for efficiency. Incompatible ranges must be issued separately rather than being silently widened or narrowed.
 
-## 4.3.1 News-data planning
-
 Function:
 
 ~~~python
@@ -477,8 +464,6 @@ The Monitor must not invoke the Mapper once per missed candle unless an explicit
 ---
 
 # 5. PROCESS INVOCATION CONTRACT
-
-## 5.1 invoke_news_data
 
 Signature:
 
@@ -646,8 +631,6 @@ class TradingSession:
     enabled: bool
 ~~~
 
-
-
 Trading-session awareness is Monitor runtime context, not canonical SMC logic.
 
 The Monitor knows named regional sessions and determines their current status from canonical UTC using explicit IANA timezones and session-local definitions.
@@ -707,8 +690,6 @@ def get_active_sessions(
 ~~~
 
 The exact session hours are operational policy and have one Monitor-owned definition. They must not be duplicated in Mapper or Market Data specifications.
-
-
 
 A scheduler gap is recovered by range catch-up:
 
@@ -996,8 +977,6 @@ No implicit minimum RR is applied when --rr is absent.
 
 ---
 
-# 12. NEWS EVENT WARNING
-
 ## 12.1 Ownership and architecture
 
 Economic-news acquisition is a separate external-data boundary from market candles.
@@ -1236,7 +1215,7 @@ Canonical structure is never changed by re-evaluation.
 
 All runtime state and persisted external-data consumption are symbol-scoped.
 
-No symbol may receive another symbol's market-data, structural, news, target, or alert state.
+No symbol may receive another symbol's market-data, structural, target, or alert state.
 
 ## 13.2 Analysis isolation
 
@@ -1324,15 +1303,13 @@ Only smc_mapper.py writes:
 <DATA_ROOT>/<SYMBOL>/<SYMBOL>_structures.json
 ~~~
 
-## 15.3 News Data
-
 Only news_data.py writes:
 
 ~~~text
 <DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json
 ~~~
 
-## 15.4 Monitor runtime state
+## 15.3 Monitor runtime state
 
 Transient only in V1:
 
@@ -1643,18 +1620,15 @@ calculate_projected_rr
 
 Do not redefine canonical target/POI semantics.
 
-## Phase 8 — session/news context
+## Phase 8 — session context
 
 Implement:
 
 ~~~text
 get_active_sessions
-plan_news_updates
-evaluate_news_warnings
-build_news_warning_key
 ~~~
 
-Verify DST-aware sessions, event relevance, warning windows, deduplication, and non-interference with canonical/target state.
+Verify DST-aware session handling and non-interference with canonical state.
 
 ## Phase 9 — alerting
 
@@ -1724,17 +1698,6 @@ test_analysis_registry_is_symbol_isolated
 test_analysis_registry_is_checkpoint_isolated
 ~~~
 
-### Session and news orchestration
-
-~~~text
-test_plan_news_updates_uses_dynamic_warning_horizon
-test_invoke_news_data_uses_persisted_json_not_stdout
-test_news_warning_is_independent_of_market_data_update
-test_active_sessions_use_named_timezones
-test_session_dst_does_not_change_canonical_time
-test_news_warning_does_not_mutate_canonical_state
-~~~
-
 ### Market Data orchestration
 
 ~~~text
@@ -1784,13 +1747,6 @@ test_rr_gate_is_applied_after_target_clearance
 test_rr_failure_does_not_mutate_canonical_state
 test_no_rr_filter_when_option_absent
 ~~~
-
-### Sessions and news
-
-~~~text
-test_active_sessions_are_deterministic
-test_news_warning_identity_is_deterministic
-test_news_warning_does_not_change_target_or_rr
 
 ### Alerts
 
@@ -1863,19 +1819,13 @@ load selected symbols
  ↓
 resolve each symbol data directory
  ↓
-load structures, market-data, and symbol news-data JSON for each symbol
+load structures and market-data JSON for each symbol
  ↓
 discover stored analyses
  ↓
 register analysis schedules
  ↓
 for each due symbol
-    ↓
-    plan/refresh symbol news data when due
-    ↓
-    invoke news_data.py --symbol SYMBOL
-    ↓
-    reload symbol news-data JSON
     ↓
     plan required Market Data coverage
     ↓
@@ -1890,8 +1840,6 @@ for each due symbol
     refresh current market reference
     ↓
     evaluate trading-session context
-    ↓
-    evaluate news warnings
     ↓
     consume canonical setup/entry state
     ↓
@@ -1920,7 +1868,7 @@ smc_monitor.py is implementation-complete when:
 
 - the documented CLI exactly matches implementation;
 - selected symbols and all stored analyses are discovered correctly;
-- each selected symbol automatically resolves one dedicated data directory containing its Market Data, Structures, and News Data files;
+- each selected symbol automatically resolves one dedicated data directory containing its Market Data and Structures files;
 - Market Data and Mapper are invoked as independent processes;
 - persisted JSON is the machine-readable process boundary;
 - one active orchestration instance exists per symbol;
@@ -1941,40 +1889,4 @@ smc_monitor.py is implementation-complete when:
 
 **STATUS: IMPLEMENTATION-READY CONTRACT — CROSS-FILE OWNERSHIP AND RUNTIME BOUNDARIES RECONCILED WITH MARKET DATA AND MAPPER SPECIFICATIONS.**
 
-
 ---
-
-# 13. SHARED NEWS CACHE ORCHESTRATION
-
-News Data persistence is global because FMP's Economic Calendar endpoint is date-range based, not symbol-based. The Monitor must therefore avoid invoking FMP once per symbol when the shared cache is already fresh.
-
-Normal cycle:
-
-1. inspect `<NEWS_DATA_MODULE_DIR>/news_data.json`;
-2. if the cache is fresh and covers the operational forward window, skip the News Data provider call;
-3. otherwise invoke `news_data.py --symbol <context-symbol>` once for the refresh operation;
-4. reload the shared cache;
-5. apply symbol/event relevance per selected analysis from explicit affected metadata.
-
-A `--force` request is reserved for manual immediate reconciliation and bypasses the News Data cache gate. News availability or refresh failure remains warning-context failure only and must not mutate canonical SMC state.
-
-
----
-
-# SHARED NEWS CACHE ORCHESTRATION
-
-One invocation per symbol may use `python news_data.py --query SYMBOL`. The first query after cache expiry may refresh the shared FMP cache; subsequent symbol queries reuse it. `--force` is reserved for explicit immediate reconciliation. The symbol-specific news JSON is kept beside Market Data and Structures, while the provider cache remains inside `<DATA_ROOT>`.
-
-
-## FINAL V1 — NEWS QUERY INTERFACE
-
-The Monitor uses:
-
-    python news_data.py --query SYMBOL
-
-The query command is the only normal symbol-level news interface. It checks/refreshes the shared FMP cache when due, filters the requested symbol, and atomically materializes <DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json. A fresh shared cache causes no FMP request. Multiple sequential symbol queries therefore reuse the same cache.
-
-
-# FINAL NEWS QUERY SEMANTICS
-
-Monitor invokes `python news_data.py --query SYMBOL`. Without start/end, this is cache-only and uses the complete currently retained shared cache. With start/end, it ensures/acquires the requested interval and then materializes `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json`. `--force` explicitly bypasses cache freshness/coverage optimization. The shared FMP cache is reused across symbols.

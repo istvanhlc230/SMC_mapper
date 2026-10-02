@@ -1,7 +1,7 @@
 # SMC_Mapper Full Specification — Consolidated Current Architecture
 
 **Status:** Current consolidated architecture reference.
-**Purpose:** One clean cross-file reference for the approved market-data, structures, monitor, and news runtime model, including datasource, canonical UTC, local-time, trading-session, and news-warning handling.
+**Purpose:** One clean cross-file reference for the approved market-data, structures, and monitor runtime model, including datasource, canonical UTC, local-time, and trading-session handling.
 
 **Normative ownership:**
 - `specifications/market_data_specification.md` owns the detailed Market Data implementation contract.
@@ -17,8 +17,6 @@ The former historical FAIL findings that were embedded here have been removed fr
 
 # Final Approved Architecture
 
-## Trading sessions and news
-
 Named regional trading sessions are Monitor runtime context. V1 knows Sydney, Tokyo, London, and New York using explicit IANA timezones; exact local session hours are one Monitor-owned operational configuration.
 
 Economic-news acquisition is separated from price Market Data and is owned by `news_data.py` / `specifications/news_data_specification.md`. The Monitor consumes normalized UTC news events from shared `<DATA_ROOT>/news_data.json` and emits warning-only runtime notifications.
@@ -33,12 +31,9 @@ The common data root contains one dedicated directory per normalized symbol:
 <DATA_ROOT>/<SYMBOL>/
     <SYMBOL>_marketdata.json
     <SYMBOL>_structures.json
-    <SYMBOL>_news_data.json
-<directory containing news_data.py>/
-    news_data.json
 ```
 
-Market Data, Mapper, Monitor, and News Data automatically resolve their symbol directory from the requested symbol. No cross-symbol flat output store is used. The existing common data root is retained; this change only introduces the symbol directory boundary beneath it.
+Market Data, Mapper, and Monitor automatically resolve their symbol directory from the requested symbol. No cross-symbol flat output store is used. The existing common data root is retained; this change only introduces the symbol directory boundary beneath it.
 
 ## Time-domain contract
 
@@ -50,14 +45,11 @@ The system distinguishes three time domains:
 
 Datasource timezone must never be guessed. Naive datasource wall-clock timestamps without a known timezone are rejected. Canonical JSON remains UTC-based. Local-time values are not added to canonical JSON solely for display.
 
-
-
 ## Final architecture
 
 - Every symbol has one dedicated output directory: `<DATA_ROOT>/<SYMBOL>/`.
 - `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json` stores normalized completed candles for all acquired timeframes of the symbol.
 - `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_structures.json` stores all distinct mapper analyses for the symbol.
-- `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json` stores normalized external news events for that symbol.
 - Each active product program automatically resolves the selected symbol directory and discovers its owned input/output files there.
 - `smc_monitor.py` owns runtime scheduling, process orchestration, current-price observation, downstream target/RR evaluation, and alerting; its runtime state is transient.
 - Analysis identity is deterministic from timeframe configuration plus requested start boundary.
@@ -80,7 +72,7 @@ Datasource timezone must never be guessed. Naive datasource wall-clock timestamp
 ## CLI/debug contract
 
 - Candle data is persisted to `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json`; it is not transferred to the mapper through stdout.
-- Market-data and structure outputs are grouped under each symbol's directory; the external news event cache is intentionally shared at `<DATA_ROOT>/news_data.json`.
+- Market-data and structure outputs are grouped under each symbol's directory.
 - Debug output is `stderr` only.
 - Debug `stderr` is terminal-only and must not be captured, parsed, forwarded, merged, persisted, or passed to mapper/monitor.
 - Normal runtime is user-silent.
@@ -99,44 +91,8 @@ Verified no remaining:
 - missing file write safety contract.
 
 Verified canonical ownership remains intact and no `.agents/skills/smc/` file was modified.
-
-Final architecture revision: symbol-directory / symbol-news-store model.
-
 **FINAL STATUS: PASS — SPECIFICATION RECONCILED WITH THE SYMBOL-DIRECTORY, THREE-PERSISTENT-STORE RUNTIME MODEL**
 
 ---
 
-
 ---
-
-# SHARED NEWS CACHE V1
-
-The external news store is intentionally global rather than symbol-scoped. FMP's Economic Calendar endpoint accepts date ranges and has a maximum 90-day request interval; it does not require one request per trading symbol. citeturn743230search0
-
-The V1 cache maintains approximately 7 days forward coverage, refreshes at most once per 24 hours by default, and supports `--force` for an immediate refresh. This keeps identical calendar acquisition shared across all monitored symbols. FMP's Basic free tier currently documents 250 API requests/day. citeturn743230search7
-
-
-# NEWS DATA STORAGE MODEL
-
-News Data uses a shared provider cache plus a derived symbol view. The shared cache lives inside `<DATA_ROOT>`. The symbol view lives beside the symbol's Market Data and Structures files. The normal Monitor call is: python news_data.py --query SYMBOL. The query refreshes the shared cache only when required, then materializes the symbol's relevant events. This keeps three symbol runtime JSON files co-located without multiplying FMP requests.
-
-## FINAL V1 — NEWS STORAGE
-
-For each symbol, the three runtime JSON files are co-located:
-
-    <DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json
-    <DATA_ROOT>/<SYMBOL>/<SYMBOL>_structures.json
-    <DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json
-
-The source FMP event cache is shared and stored directly inside `<DATA_ROOT>`. The normal Monitor call is python news_data.py --query SYMBOL, which refreshes the shared cache only when required and then materializes the symbol-specific news view.
-
-
-# FINAL NEWS QUERY MODEL
-
-Shared source cache: `<DATA_ROOT>/news_data.json`.
-
-Symbol query: `python news_data.py --query SYMBOL`.
-
-No time parameters: read the complete retained cache only; no FMP request.
-
-Time parameters: ensure/acquire the requested interval, then materialize the symbol-specific news JSON beside the symbol's Market Data and Structures files. `--force` bypasses cache freshness/coverage optimization.

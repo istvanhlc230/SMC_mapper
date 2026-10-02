@@ -14,7 +14,6 @@ The intended finished product uses these active Python runtime components:
 
 - `market_data.py` — standalone Market Data CLI: provider access, normalization, completion handling, deterministic range retrieval, incremental update, bounded retention, completed-candle persistence, current-candle snapshot refresh, and persistence to `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json`.
 - `smc_mapper.py` — canonical SMC mapper: structural analysis, HTF/LTF processing, and persistent structural state in `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_structures.json`.
-- `news_data.py` — standalone normalized external-news process with shared persistence in `<DATA_ROOT>/news_data.json`.
 - `smc_monitor.py` — interactive runtime: scheduling, user interaction, runtime/target monitoring, alerts, and orchestration of Market Data CLI and mapper execution across multiple symbols and multiple stored analyses per symbol.
 
 The older `smc_htf_ltf_monitor.py`, `smc_analyzer.py`, and Layer-1-to-Layer-6 `*_engine.py` test/implementation artifacts are not components of the finished product architecture.
@@ -62,13 +61,9 @@ V1 uses a Yahoo Charts provider adapter as the initial concrete Market Data impl
 
 Provider-specific API details remain outside the canonical SMC engine.
 
-
-
 ## 0.3 Time-domain contract
 
 The Mapper operates on canonical UTC only.
-
-
 
 The Market Data boundary supplies:
 
@@ -102,8 +97,7 @@ All durable outputs for one symbol live under one directory beneath the common d
 <DATA_ROOT>/
 └── <SYMBOL>/
     ├── <SYMBOL>_marketdata.json
-    ├── <SYMBOL>_structures.json
-    └── <SYMBOL>_news_data.json
+    └── <SYMBOL>_structures.json
 ```
 
 The Mapper automatically resolves `<DATA_ROOT>/<SYMBOL>/` from its normalized symbol and reads `<SYMBOL>_marketdata.json` and `<SYMBOL>_structures.json` from that directory. Normal runtime does not require ad-hoc per-file path input from the Monitor or caller. The symbol directory is created by the component that owns a write when persistence is required.
@@ -682,7 +676,6 @@ BOTH uses both available genuine orderflow analytics and OHLC-derived directiona
 The selected method is an analysis-time processing decision. It is not persisted as a single exclusive volume provenance field in normalized market-data candles, and it does not remove or overwrite any parallel volume data that is available. Explicit CLI values override the default.
 
 ## 2.11 CLI and --help contracts
-
 
 Every CLI option defined by this specification is a real implementation contract. Each documented option must be parsed, validated, functionally applied, and documented by the corresponding English --help output. Documentation-only, placeholder, or future CLI options are not permitted.
 
@@ -1874,13 +1867,3 @@ Definition of done:
 - the code structure remains directly portable at the class/contract level to both MQL4 and MQL5.
 
 **STATUS: IMPLEMENTATION-READY CONTRACT — RE-AUDITED FOR MARKET-DATA COMPATIBILITY AND PORTABILITY**
-
-
-## FINAL V1 — NEWS FILE IS CONSUMER CONTEXT ONLY
-
-News Data materializes the symbol-specific <SYMBOL>_news_data.json beside Market Data and Structures. The Mapper does not consume it as canonical structural input. Canonical SMC calculation remains independent of external news.
-
-
-# FINAL NEWS BOUNDARY
-
-News Data produces symbol-specific runtime context; canonical Mapper processing remains independent of news.
