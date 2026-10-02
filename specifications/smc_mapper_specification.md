@@ -12,8 +12,9 @@
 
 The intended finished product uses these active Python runtime components:
 
-- `market_data.py` — standalone Market Data CLI: provider access, normalization, completion handling, deterministic range retrieval, incremental update, bounded retention, completed-candle persistence, current-candle snapshot refresh, and persistence to `<SYMBOL>_marketdata.json`.
-- `smc_mapper.py` — canonical SMC mapper: structural analysis, HTF/LTF processing, and persistent structural state in `<SYMBOL>_structures.json`.
+- `market_data.py` — standalone Market Data CLI: provider access, normalization, completion handling, deterministic range retrieval, incremental update, bounded retention, completed-candle persistence, current-candle snapshot refresh, and persistence to `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json`.
+- `smc_mapper.py` — canonical SMC mapper: structural analysis, HTF/LTF processing, and persistent structural state in `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_structures.json`.
+- `news_data.py` — standalone normalized external-news process with symbol-scoped persistence in `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json`.
 - `smc_monitor.py` — interactive runtime: scheduling, user interaction, runtime/target monitoring, alerts, and orchestration of Market Data CLI and mapper execution across multiple symbols and multiple stored analyses per symbol.
 
 The older `smc_htf_ltf_monitor.py`, `smc_analyzer.py`, and Layer-1-to-Layer-6 `*_engine.py` test/implementation artifacts are not components of the finished product architecture.
@@ -26,9 +27,9 @@ This specification defines the mapper contract and its boundaries with the stand
 
 The mapper has no direct connection to any concrete market-data provider and has no runtime import dependency on `market_data.py`.
 
-`market_data.py` is a standalone Market Data CLI process. It owns provider access, provider abstraction, normalization, completion handling, timestamp normalization, availability detection, deterministic range retrieval, incremental updates, retention and persistence to `<SYMBOL>_marketdata.json`.
+`market_data.py` is a standalone Market Data CLI process. It owns provider access, provider abstraction, normalization, completion handling, timestamp normalization, availability detection, deterministic range retrieval, incremental updates, retention and persistence to `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json`.
 
-The durable market-data boundary is `<SYMBOL>_marketdata.json`.
+The durable market-data boundary is the symbol-scoped file `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json`.
 
 The normal data flow is:
 
@@ -66,6 +67,24 @@ Provider-specific API details remain outside the canonical SMC engine.
 ## 0.3 Time-domain contract
 
 The Mapper operates on canonical UTC only.
+
+## 0.4 Symbol data-directory and automatic file discovery
+
+All durable outputs for one symbol live under one directory beneath the common data root:
+
+```text
+<DATA_ROOT>/
+└── <SYMBOL>/
+    ├── <SYMBOL>_marketdata.json
+    ├── <SYMBOL>_structures.json
+    └── <SYMBOL>_news_data.json
+```
+
+The Mapper automatically resolves `<DATA_ROOT>/<SYMBOL>/` from its normalized symbol and reads `<SYMBOL>_marketdata.json` and `<SYMBOL>_structures.json` from that directory. Normal runtime does not require ad-hoc per-file path input from the Monitor or caller. The symbol directory is created by the component that owns a write when persistence is required.
+
+The Mapper must not search another symbol's directory and must reject a persisted document whose stored symbol identity does not match the requested symbol.
+
+
 
 The Market Data boundary supplies:
 
@@ -789,7 +808,7 @@ CLI options are independent of canonical SMC semantic authority. Invalid option 
 
 ## 3.1 Analysis identity and structures JSON
 
-`<SYMBOL>_structures.json` is the canonical mapper structural-state file for that symbol.
+`<DATA_ROOT>/<SYMBOL>/<SYMBOL>_structures.json` is the canonical mapper structural-state file for that symbol.
 
 It contains all distinct mapper analyses for the symbol in one file. Each analysis is identified by a deterministic analysis key derived from its timeframe configuration and persisted initial analysis boundary.
 
@@ -830,7 +849,7 @@ Logical shape:
 
 `history_no` is stored once at symbol level and applies independently to each analysis's applicable closed Dealing Range history.
 
-A Market Data CLI execution updates only `<SYMBOL>_marketdata.json`. A mapper execution updates only its relevant analysis entry inside `<SYMBOL>_structures.json`.
+A Market Data CLI execution updates only `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json`. A mapper execution updates only its relevant analysis entry inside `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_structures.json`.
 
 The monitor identifies each stored analysis from its deterministic analysis key and validates the stored `analysis_mode`, `htf`, `ltf`, and persisted analysis boundary. `requested_start` is validated when present; it may be null/absent for an analysis created without an explicit `--starttime`.
 
@@ -1702,6 +1721,9 @@ Identity resolution must remain deterministic. Analysis key generation must not 
 
 ## 15.3 Market-data boundary
 
+    get_symbol_data_directory(symbol, data_directory) -> Path
+    get_market_data_path(symbol, data_directory) -> Path
+    get_structures_path(symbol, data_directory) -> Path
     load_market_data(path, symbol) -> MarketDataDocument
     validate_market_data_document(market_data, symbol) -> success/failure
     select_completed_candles(market_data, timeframe, start_time, end_time) -> candle array
@@ -1756,7 +1778,7 @@ Normal execution is user-silent; diagnostics are emitted only with --debug accor
 
 The mapper persists one symbol-scoped file:
 
-    <SYMBOL>_structures.json
+    <DATA_ROOT>/<SYMBOL>/<SYMBOL>_structures.json
 
 Conceptually:
 
