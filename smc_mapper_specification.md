@@ -1143,7 +1143,7 @@ When `--volume-method OHLC` is selected, the mapper may refine a parent candle's
 
 The lower-timeframe source must already exist in `<SYMBOL>_marketdata.json`. The mapper must not call a provider, request an implicit timeframe, or create missing intrabars.
 
-When a suitable persisted lower-timeframe series fully covers the parent candle's completed interval, directional volume is calculated from the contained completed intrabars instead of directly splitting the parent candle.
+When one or more suitable persisted lower-timeframe series are available, select the finest available timeframe whose completed candles fully partition and cover the parent candle's completed interval. Selection is deterministic. Directional volume is then calculated from the contained completed intrabars instead of directly splitting the parent candle.
 
 For each intrabar:
 
@@ -1155,7 +1155,7 @@ Close = Open → neutral; do not force a side
 
 Parent-bar buy volume, sell volume and delta are the sums of the classified intrabar volumes. Neutral intrabars do not contribute to either directional side.
 
-If no suitable persisted lower-timeframe series exists, or coverage is incomplete, the mapper falls back to the deterministic D4 aggregate-OHLC calculation for the parent candle. It must not fabricate or partially synthesize intrabar coverage.
+If no suitable persisted lower-timeframe series fully partitions and covers the interval, the mapper falls back to the deterministic D4 aggregate-OHLC calculation for the parent candle. It must not fabricate or partially synthesize intrabar coverage.
 
 OHLC-derived directional volume is stored under `volume.ohlc`; genuine orderflow data is stored under `volume.orderflow`. The two branches may coexist for the same candle.
 
