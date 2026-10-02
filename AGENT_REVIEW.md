@@ -2872,3 +2872,29 @@ PASS — Cross-file consistency: all former news_events.json references were rem
 PASS — Section/contract consistency: duplicate Monitor news-planner declaration was removed; Mapper and Market Data section ordering was corrected.
 
 No implementation code was changed in this audit step. The audited specifications are implementation-ready for the symbol-directory/storage migration.
+
+
+# PHASE 15 — NEWS DATA FMP V1 IMPLEMENTATION
+
+## 1. Scope
+Implemented `news_data.py` against the approved News Data contract with a provider-agnostic internal boundary and **FMP as the sole V1 concrete provider**. No fallback provider or multi-provider runtime was added.
+
+## 2. Implementation
+- `NewsDataProvider` is the stable extension boundary.
+- `FMPNewsDataProvider` owns FMP transport, authentication, 90-day request chunking, and raw response handling.
+- `ProviderEvent -> normalize_source_event() -> NewsEvent` remains the normalization boundary.
+- FMP API key is read only from `FMP_API_KEY`; it is not stored in code or JSON.
+- FMP Economic Calendar documented UTC timestamps are normalized to canonical UTC.
+- Symbol-scoped JSON persistence, deterministic event identity, merge/deduplication, retention, atomic persistence, and failure isolation are implemented.
+- `--live` uses the FMP range-based calendar as the current provider-state acquisition path; it is not streaming.
+
+## 3. Tests
+Added `tests/test_news_data.py` covering provider/raw boundary, API-key requirement, FMP normalization, mutable-field-independent fallback identity, duplicate merge, symbol isolation/path traversal, and atomic persistence/reload.
+
+Full-suite execution is pending in the repository runtime; this GitHub-side implementation was not executed locally in this audit environment.
+
+## 4. Provider limitation
+FMP's Economic Calendar API currently documents a maximum 90-day range per request. The adapter chunks larger caller ranges deterministically. The documented response exposes `date`, `country`, `event`, `currency`, `previous`, `estimate`, `actual`, `impact`, and `unit`; no undocumented provider fields were made canonical.
+
+## 5. Status
+IMPLEMENTATION COMPLETE — FMP-ONLY V1 WITH PROVIDER-AGNOSTIC INTERNAL ABSTRACTION.

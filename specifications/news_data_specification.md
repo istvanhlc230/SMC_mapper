@@ -1,7 +1,7 @@
 # News Data Specification
 
 **Status:** Working implementation specification for future `news_data.py`.  
-**Scope:** External economic-news acquisition, normalization, update, persistence, and consumer contract for `smc_monitor.py`.  
+**Scope:** External economic-news acquisition, normalization, update, persistence, and consumer contract for `smc_monitor.py`. V1 uses FMP as the sole concrete provider.  
 **Canonical authority:** `.agents/skills/smc/` remains the sole authority for canonical SMC semantics. News data is non-canonical external context.
 
 ---
@@ -28,7 +28,9 @@ It is not an SMC analyzer and does not decide whether a setup, POI, target, RR, 
 ## 0.2 Ownership
 
 ```text
-News Provider(s)
+FMP Economic Calendar API
+        ↓
+FMPNewsDataProvider
         ↓
 news_data.py --symbol SYMBOL
         ↓
@@ -144,6 +146,8 @@ Rules:
 
 ## 2.1 NewsDataProvider
 
+The provider contract is intentionally provider-agnostic so a future provider can be added without changing `NewsEvent`, persistence, or Monitor contracts. V1 implements **FMP only**. There is no fallback provider and no multi-provider runtime selection in V1.
+
 The provider contract returns provider-native records. Normalization remains owned by `news_data.py`.
 
 ```python
@@ -165,16 +169,31 @@ Provider-specific API transport, authentication, pagination, retries, raw field 
 
 The provider adapter must not implement Monitor warning windows, SMC interpretation, target/RR logic, or alerting.
 
-## 2.2 create_news_provider
+## 2.2 FMP provider implementation and factory
 
 ```python
-def create_news_provider(provider_name: str) -> NewsDataProvider:
+class FMPNewsDataProvider(NewsDataProvider):
+    ...
+
+def create_news_provider(provider_name: str = "fmp") -> NewsDataProvider:
     ...
 ```
 
-Keep provider selection behind one function.
+`NewsDataProvider` remains the stable abstraction boundary. `FMPNewsDataProvider` is the only V1 implementation. `create_news_provider()` is the single extension point for a future provider.
 
-No provider CLI option is required in V1 unless explicitly approved.
+V1 must reject provider names other than `fmp`; no fallback provider and no multi-provider runtime selection are implemented.
+
+FMP uses the Economic Calendar API endpoint and reads `FMP_API_KEY` from the environment. The key must never be hardcoded or persisted.
+
+FMP's documented calendar timestamps are UTC. The adapter therefore normalizes FMP timestamps as UTC and must not assume host-local time.
+
+FMP's documented calendar range is limited to a maximum 90-day interval per request. The adapter owns deterministic request chunking when a caller requests a larger range.
+
+The FMP response fields used by V1 are provider-native: `date`, `event`, `currency`, `impact`, `estimate`, `previous`, and `actual`. They are mapped only at `normalize_source_event()` into the canonical `NewsEvent` contract.
+
+No FMP-specific field may leak into `NewsEvent`, Monitor, or the persisted canonical news schema.
+
+No provider CLI option is required in V1.
 
 ## 2.3 Live acquisition semantics
 
@@ -524,3 +543,12 @@ Ownership rules:
 When implementation decisions are not specified, choose the smallest direct implementation and record it in AGENT_REVIEW.md.
 
 **STATUS: IMPLEMENTATION-READY NEWS-DATA CONTRACT — PROVIDER-RAW → NORMALIZED UTC EVENTS → SYMBOL-SCOPED STORE → MONITOR WARNING CONSUMPTION.**
+
+
+---
+
+# 9. V1 PROVIDER DECISION
+
+**FMP is the sole concrete News Data provider in V1.** The architecture remains provider-agnostic through `NewsDataProvider`, `ProviderEvent`, `normalize_source_event()`, and `create_news_provider()`. A future provider may be added behind that boundary without changing the canonical `NewsEvent` contract.
+
+There is **no fallback provider** in V1. Provider failure is a failed News Data update: the last good symbol-scoped JSON remains intact and the process returns non-zero.
