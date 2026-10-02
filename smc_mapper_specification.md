@@ -1109,7 +1109,7 @@ When omitted, the effective analytical method is selected automatically in this 
 
 ORDERFLOW requires genuine orderflow buy/sell volume and delta in volume.orderflow.
 
-OHLC requires volume.total and calculates directional buy/sell volume and delta deterministically from OHLC data. Suitable lower-timeframe data may refine the estimate.
+OHLC requires volume.total and calculates directional buy/sell volume and delta deterministically from OHLC data. V1 does not use lower-timeframe intrabar refinement.
 
 MIXED uses the available OHLC-derived and genuine orderflow analytics in parallel. If only one is available, it uses that source; if neither is available, the effective result is NONE.
 
