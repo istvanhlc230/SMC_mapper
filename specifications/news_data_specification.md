@@ -30,9 +30,9 @@ It is not an SMC analyzer and does not decide whether a setup, POI, target, RR, 
 ~~~text
 News Provider(s)
         ↓
-news_data.py
+news_data.py --symbol SYMBOL
         ↓
-news_events.json
+<DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json
         ↓
 smc_monitor.py
 ~~~
@@ -201,6 +201,7 @@ The persisted document is symbol-scoped and carries its symbol identity alongsid
 
 ~~~json
 {
+  "symbol": "CCCC",
   "events": [
     {
       "event_id": "...",
