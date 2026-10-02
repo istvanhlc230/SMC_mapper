@@ -122,16 +122,16 @@ Multiple symbols are allowed. Each symbol is monitored independently.
 
 The Monitor must never merge structures, market data, schedules, checkpoints, targets, or alerts between symbols.
 
-Each symbol uses one dedicated data directory:
+Each symbol uses one dedicated data directory for Market Data and Structures. News is shared:
 
 ~~~text
 <DATA_ROOT>/<SYMBOL>/
     <SYMBOL>_marketdata.json
     <SYMBOL>_structures.json
-    <SYMBOL>_news_data.json
+<DATA_ROOT>/news_data.json
 ~~~
 
-The Monitor automatically resolves the selected symbol directory and discovers its owned files there. It does not expose per-file path CLI options.
+The Monitor automatically resolves symbol directories for Market Data/Structures and the shared news cache from the common data root. It does not expose per-file path CLI options.
 
 ## 1.3 --rr
 
@@ -249,15 +249,15 @@ Market Data JSON serialization remains owned by market_data.py.
 
 ## 2.3 News Data JSON
 
-For each selected symbol, load:
+Load the shared normalized event cache:
 
 ~~~text
-<DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json
+<DATA_ROOT>/news_data.json
 ~~~
 
 The Monitor may consume normalized event fields required by the warning contract, including event identity, canonical UTC event time, title, normalized impact/status, affected currencies/instruments, source provenance, and forecast/previous/actual when available.
 
-The Monitor must validate the persisted symbol identity before evaluating warnings. News Data remains external runtime context and never becomes canonical SMC state.
+The Monitor performs final symbol/event relevance filtering from explicit affected metadata. News Data remains external runtime context and never becomes canonical SMC state.
 
 ## 2.4 Read-only consumer model
 
@@ -443,9 +443,9 @@ class NewsDataUpdatePlan:
     refresh_required: bool
 ~~~
 
-The news update plan is symbol-scoped because each symbol owns an independent normalized news store. The Monitor plans and refreshes news independently for each selected symbol; the same external event may therefore appear in multiple symbol stores.
+The news update plan targets one shared cache, not one file per symbol. The Monitor may derive the required forward coverage from all selected analyses and issue one news-data CLI call; repeated per-symbol calls must reuse the same fresh cache rather than multiplying provider requests.
 
-The plan must request enough forward coverage to contain the maximum dynamic warning horizon required by the selected symbol's stored analyses. The horizon is derived from each analysis entry timeframe using the dynamic warning-window model in §12.4; HIGH impact uses the largest possible factor (2× the entry-timeframe duration) for coverage planning. Its exact refresh interval and recent/backward coverage remain operational policy owned by the news-data/Monitor runtime boundary and must have one owner.
+The plan must request enough forward coverage to contain the maximum dynamic warning horizon required by the selected analyses. The actual warning window remains Monitor-owned; the shared cache uses News Data's independent 7-day forward coverage and 24-hour refresh policy.
 
 ## 4.4 No-new-candle path
 
@@ -488,7 +488,7 @@ Launch:
 python news_data.py --symbol SYMBOL ...
 ~~~
 
-The Monitor receives process status/diagnostics only. Normalized news events are read from `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json`.
+The Monitor receives process status/diagnostics only. Normalized news events are read from `<DATA_ROOT>/news_data.json`.
 
 The Monitor must never parse stdout as news-event data.
 
@@ -1932,3 +1932,20 @@ smc_monitor.py is implementation-complete when:
 - domain contracts remain directly portable at the conceptual level to MQL4/MQL5.
 
 **STATUS: IMPLEMENTATION-READY CONTRACT — CROSS-FILE OWNERSHIP AND RUNTIME BOUNDARIES RECONCILED WITH MARKET DATA AND MAPPER SPECIFICATIONS.**
+
+
+---
+
+# 13. SHARED NEWS CACHE ORCHESTRATION
+
+News Data persistence is global because FMP's Economic Calendar endpoint is date-range based, not symbol-based. The Monitor must therefore avoid invoking FMP once per symbol when the shared cache is already fresh.
+
+Normal cycle:
+
+1. inspect `<DATA_ROOT>/news_data.json`;
+2. if the cache is fresh and covers the operational forward window, skip the News Data provider call;
+3. otherwise invoke `news_data.py --symbol <context-symbol>` once for the refresh operation;
+4. reload the shared cache;
+5. apply symbol/event relevance per selected analysis from explicit affected metadata.
+
+A `--force` request is reserved for manual immediate reconciliation and bypasses the News Data cache gate. News availability or refresh failure remains warning-context failure only and must not mutate canonical SMC state.

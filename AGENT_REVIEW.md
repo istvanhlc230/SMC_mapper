@@ -2898,3 +2898,41 @@ FMP's Economic Calendar API currently documents a maximum 90-day range per reque
 
 ## 5. Status
 IMPLEMENTATION COMPLETE — FMP-ONLY V1 WITH PROVIDER-AGNOSTIC INTERNAL ABSTRACTION.
+
+
+# PHASE 16 — SHARED GLOBAL NEWS CACHE
+
+## Decision
+Revised V1 News Data persistence from symbol-scoped stores to one shared normalized cache because FMP Economic Calendar acquisition is date-range based rather than trading-symbol based. This prevents identical calendar requests from multiplying across monitored symbols.
+
+## Runtime policy
+- Cache file: `<DATA_ROOT>/news_data.json`.
+- Forward coverage: 7 days.
+- Refresh backfill: 1 day.
+- Default refresh interval: 24 hours.
+- `--force`: bypass freshness/coverage gate.
+- `--symbol` remains required as Monitor/query context but does not change the provider query or cache path.
+- Fresh cache: no provider request and no JSON rewrite.
+- Due refresh: refresh recent backfill and extend forward coverage.
+- FMP remains the sole V1 concrete provider; no fallback.
+
+## Provider abstraction
+`NewsDataProvider` remains stable. `FMPNewsDataProvider` remains behind the adapter boundary. Shared-cache semantics do not leak FMP-specific fields into `NewsEvent`.
+
+## Tests
+Expanded news tests for global cache path, freshness gating, force refresh, cross-symbol cache reuse semantics, live/current provider path, atomic persistence, and 90-day provider chunking. Tests remain provider-double based and do not require a live API key.
+
+## Documentation
+Updated:
+- `specifications/news_data_specification.md`
+- `specifications/smc_monitor_specification.md`
+- `specifications/smc_mapper_specification.md`
+- `specifications/full_specification.md`
+
+No `.agents/skills/smc/` files modified.
+
+## Limit basis
+FMP currently documents the Economic Calendar endpoint with a maximum 90-day date range and the Basic free tier with 250 API requests/day. These facts support the shared-cache design. citeturn743230search0turn743230search7
+
+## Status
+IMPLEMENTED — SHARED GLOBAL NEWS CACHE WITH 7-DAY FORWARD COVERAGE, 24-HOUR DEFAULT REFRESH LIMIT, `--force` OVERRIDE, FMP-ONLY PROVIDER.

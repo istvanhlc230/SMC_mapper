@@ -1,7 +1,7 @@
 # News Data Specification
 
-**Status:** Working implementation specification for future `news_data.py`.  
-**Scope:** External economic-news acquisition, normalization, update, persistence, and consumer contract for `smc_monitor.py`. V1 uses FMP as the sole concrete provider.  
+**Status:** V1 implementation specification — shared global news cache.  
+**Scope:** External economic-news acquisition, normalization, shared-cache update, persistence, and consumer contract for `smc_monitor.py`. V1 uses FMP as the sole concrete provider.  
 **Canonical authority:** `.agents/skills/smc/` remains the sole authority for canonical SMC semantics. News data is non-canonical external context.
 
 ---
@@ -20,7 +20,7 @@ Its responsibilities are:
 4. preserve relevant event metadata/provenance;
 5. merge/deduplicate events deterministically;
 6. maintain bounded operational retention;
-7. persist a normalized symbol-scoped news-data JSON store;
+7. persist one shared normalized news-data JSON cache;
 8. expose no canonical SMC interpretation.
 
 It is not an SMC analyzer and does not decide whether a setup, POI, target, RR, or alert is valid.
@@ -34,7 +34,7 @@ FMPNewsDataProvider
         ↓
 news_data.py --symbol SYMBOL
         ↓
-<DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json
+<DATA_ROOT>/news_data.json
         ↓
 smc_monitor.py
 ```
@@ -95,7 +95,7 @@ class NewsDataRequest:
     debug: bool
 ```
 
-One `news_data.py` execution is symbol-scoped. The request symbol determines the symbol output directory and news-data file path. The existing common data root is unchanged, and no data-path CLI option is required.
+`--symbol` remains required as Monitor/query context, but it does not create a symbol-specific file or provider query. The shared cache is the single persistence boundary. FMP Economic Calendar is queried by date range, not by trading symbol.
 
 ## 1.3 Impact
 
@@ -217,13 +217,13 @@ If both an explicit range and `live=True` are supplied, perform both acquisition
 
 ## 3.1 File
 
-Use one symbol-scoped store per symbol:
+Use one shared store for all symbols:
 
 ```text
 <DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json
 ```
 
-The same external economic event may therefore appear in multiple symbol stores. This duplication is intentional and provides filesystem-level symbol isolation.
+The same external economic event is stored once. Symbol isolation does not apply to this external event cache; symbol-specific relevance and alert state remain Monitor-owned.
 
 News Data preserves explicit affected currencies/instruments and does not perform title-text relevance inference. Final analysis/event relevance remains Monitor-owned.
 
@@ -297,11 +297,21 @@ Mutable fields such as forecast, previous, actual, status, and provider metadata
 
 # 4. ACQUISITION AND UPDATE
 
-## 4.1 Requested coverage
+## 4.1 Requested coverage and cache gate
+
+V1 uses a shared rolling cache. The normal operational acquisition window is:
+from = now - 1 day
+to   = now + 7 days
+
+A provider request is allowed only when the shared cache is due for refresh or an explicit range/force operation requires it. The default cache refresh interval is 24 hours. When the cache is fresh and already covers the forward window, the CLI must return successfully without a provider request and without rewriting the JSON.
+
+An explicit --force bypasses the freshness/coverage gate.
+
+An explicit --starttime/--endtime request is honored as a requested acquisition range even when the operational cache is fresh.
 
 News Data acquires only the coverage requested by the caller plus provider-specific pagination needed to satisfy that same range.
 
-The Monitor owns the required forward warning horizon. News Data must not calculate or invent a warning window.
+The Monitor owns the required forward warning horizon. News Data must not calculate or invent a warning window. News Data only maintains the shared cache using its fixed operational coverage/refresh policy.
 
 The acquisition layer may retrieve:
 
@@ -390,6 +400,7 @@ python news_data.py --symbol SYMBOL
     [--starttime ISO8601]
     [--endtime ISO8601]
     [--live]
+    [--force]
     [--debug]
 ```
 
@@ -398,7 +409,8 @@ Rules:
 - `--symbol` is required;
 - `--starttime` and `--endtime` define explicit UTC-resolved requested coverage;
 - if both are present, start must not be after end;
-- `--live` requests current provider-state acquisition as defined in §2.3;
+- `--live` permits the current operational refresh path but does not mean streaming; the cache gate still prevents unnecessary requests unless `--force` or explicit coverage requires acquisition;
+- `--force` bypasses the cache refresh limit;
 - no per-file data-path option exists;
 - the symbol directory is resolved automatically;
 - debug is stderr-only;
@@ -429,8 +441,8 @@ merge_news_events(existing, incoming)
 sort_news_events(events)
 apply_news_retention(events)
 get_symbol_data_directory(symbol, data_directory)
-get_news_data_path(symbol, data_directory)
-load_news_data(path, symbol)
+get_news_data_path(data_directory)
+load_news_data(path)
 save_news_data_atomic(path, document)
 resolve_news_range(request, existing)
 update_news_events(request, provider)
@@ -502,8 +514,11 @@ test_news_duplicate_events_merge
 test_news_conflicting_identity_is_rejected
 test_news_events_sort_by_utc_time
 test_news_requires_symbol
-test_news_data_path_is_symbol_scoped
-test_news_symbol_identity_matches_path
+test_news_data_path_is_global
+test_news_symbol_does_not_change_cache_path
+test_news_fresh_cache_skips_provider
+test_news_force_bypasses_cache
+test_news_shared_cache_reused_across_symbols
 test_news_retention_preserves_requested_future_coverage
 test_news_atomic_save
 test_news_last_successful_update_advances_only_after_atomic_persist
@@ -528,7 +543,7 @@ Do not:
 - calculate or persist Monitor warning windows;
 - make the Monitor depend on provider-specific news fields;
 - perform final symbol/event relevance inference from title text;
-- read or write another symbol's news-data file;
+- create or require symbol-specific news-data files;
 - write alert state into the news store;
 - make news events mutate Mapper state;
 - silently treat provider failure as a successful empty result.
@@ -552,3 +567,31 @@ When implementation decisions are not specified, choose the smallest direct impl
 **FMP is the sole concrete News Data provider in V1.** The architecture remains provider-agnostic through `NewsDataProvider`, `ProviderEvent`, `normalize_source_event()`, and `create_news_provider()`. A future provider may be added behind that boundary without changing the canonical `NewsEvent` contract.
 
 There is **no fallback provider** in V1. Provider failure is a failed News Data update: the last good symbol-scoped JSON remains intact and the process returns non-zero.
+
+
+---
+
+# 12. V1 SHARED CACHE OVERRIDE AND DECISION
+
+This section supersedes the earlier symbol-scoped persistence wording in §§1.2, 3.1 and related examples.
+
+V1 persists one shared normalized event cache at:
+
+    <DATA_ROOT>/news_data.json
+
+The CLI still requires `--symbol`, but that value is request/Monitor context only. It is not used as an FMP API filter and does not determine a storage path. The Monitor performs final symbol-event relevance from normalized affected metadata.
+
+Operational cache policy:
+
+    forward coverage = 7 days
+    refresh backfill = 1 day
+    refresh interval = 24 hours
+    force = bypass cache gate
+
+This design is intentional because FMP's Economic Calendar endpoint is date-range based (`from`, `to`) with a maximum 90-day interval rather than a trading-symbol query. citeturn743230search0turn743230search1
+
+The current FMP Basic free tier documents 250 API requests per day, so reusing one shared cache avoids multiplying identical calendar requests across monitored symbols. citeturn743230search7
+
+A normal due refresh should re-read the recent one-day backfill to reconcile releases, actuals, cancellations, or schedule changes, while extending forward coverage to approximately seven days. A fresh cache hit performs no network request and no persistence update. `--force` exists for manual recovery or immediate reconciliation.
+
+No fallback provider is implemented in V1. The provider abstraction remains intact so a future provider can be inserted behind `NewsDataProvider` without changing the normalized event contract or Monitor consumption.

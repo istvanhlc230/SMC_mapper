@@ -21,7 +21,7 @@ The former historical FAIL findings that were embedded here have been removed fr
 
 Named regional trading sessions are Monitor runtime context. V1 knows Sydney, Tokyo, London, and New York using explicit IANA timezones; exact local session hours are one Monitor-owned operational configuration.
 
-Economic-news acquisition is separated from price Market Data and is owned by `news_data.py` / `specifications/news_data_specification.md`. The Monitor consumes normalized UTC news events from `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json` and emits warning-only runtime notifications.
+Economic-news acquisition is separated from price Market Data and is owned by `news_data.py` / `specifications/news_data_specification.md`. The Monitor consumes normalized UTC news events from shared `<DATA_ROOT>/news_data.json` and emits warning-only runtime notifications.
 
 News warnings do not alter canonical SMC state, POI lifecycle, target coordinates, RR calculation, mapper checkpoints, or order/position behavior.
 
@@ -33,7 +33,7 @@ The common data root contains one dedicated directory per normalized symbol:
 <DATA_ROOT>/<SYMBOL>/
     <SYMBOL>_marketdata.json
     <SYMBOL>_structures.json
-    <SYMBOL>_news_data.json
+    news_data.json
 ```
 
 Market Data, Mapper, Monitor, and News Data automatically resolve their symbol directory from the requested symbol. No cross-symbol flat output store is used. The existing common data root is retained; this change only introduces the symbol directory boundary beneath it.
@@ -78,7 +78,7 @@ Datasource timezone must never be guessed. Naive datasource wall-clock timestamp
 ## CLI/debug contract
 
 - Candle data is persisted to `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json`; it is not transferred to the mapper through stdout.
-- All symbol outputs are grouped under that symbol's directory; no cross-symbol flat output files are used.
+- Market-data and structure outputs are grouped under each symbol's directory; the external news event cache is intentionally shared at `<DATA_ROOT>/news_data.json`.
 - Debug output is `stderr` only.
 - Debug `stderr` is terminal-only and must not be captured, parsed, forwarded, merged, persisted, or passed to mapper/monitor.
 - Normal runtime is user-silent.
@@ -103,3 +103,12 @@ Final architecture revision: symbol-directory / symbol-news-store model.
 **FINAL STATUS: PASS — SPECIFICATION RECONCILED WITH THE SYMBOL-DIRECTORY, THREE-PERSISTENT-STORE RUNTIME MODEL**
 
 ---
+
+
+---
+
+# SHARED NEWS CACHE V1
+
+The external news store is intentionally global rather than symbol-scoped. FMP's Economic Calendar endpoint accepts date ranges and has a maximum 90-day request interval; it does not require one request per trading symbol. citeturn743230search0
+
+The V1 cache maintains approximately 7 days forward coverage, refreshes at most once per 24 hours by default, and supports `--force` for an immediate refresh. This keeps identical calendar acquisition shared across all monitored symbols. FMP's Basic free tier currently documents 250 API requests/day. citeturn743230search7

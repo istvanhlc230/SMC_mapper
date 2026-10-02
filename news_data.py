@@ -1,4 +1,4 @@
-"""Normalized economic-news acquisition CLI. V1 concrete provider: FMP only."""
+"""Normalized economic-news acquisition CLI with a shared global FMP cache."""
 from __future__ import annotations
 import argparse, hashlib, json, os, sys, tempfile, time
 from dataclasses import dataclass
@@ -10,10 +10,14 @@ from urllib.parse import urlencode
 from urllib.request import Request as URLRequest, urlopen
 
 DEFAULT_DATA_DIRECTORY = Path("data")
+NEWS_DATA_FILENAME = "news_data.json"
 FMP_API_URL = "https://financialmodelingprep.com/stable/economic-calendar"
 FMP_API_KEY_ENV = "FMP_API_KEY"
 FMP_MAX_RANGE_DAYS = 90
 FMP_TIMEOUT_SECONDS = 20
+NEWS_FORWARD_DAYS = 7
+NEWS_REFRESH_INTERVAL = timedelta(hours=24)
+NEWS_REFRESH_BACKFILL_DAYS = 1
 NEWS_RETENTION_DAYS = 180
 WRITE_RETRY_LIMIT = 5
 WRITE_RETRY_DELAY_SECONDS = 0.25
@@ -44,6 +48,7 @@ class NewsDataRequest:
     start_time: datetime | None
     end_time: datetime | None
     live: bool
+    force: bool
     debug: bool
 
 class NewsDataProvider:
@@ -67,8 +72,7 @@ class FMPNewsDataProvider(NewsDataProvider):
         if start_time > end_time:
             raise ValueError("FMP start must not exceed end")
         result: list[ProviderEvent] = []
-        cursor = start_time.date()
-        final = end_time.date()
+        cursor, final = start_time.date(), end_time.date()
         while cursor <= final:
             chunk_end = min(final, cursor + timedelta(days=FMP_MAX_RANGE_DAYS - 1))
             query = urlencode({"from": cursor.isoformat(), "to": chunk_end.isoformat(),
@@ -104,8 +108,10 @@ class FMPNewsDataProvider(NewsDataProvider):
 
     def fetch_current(self) -> list[ProviderEvent]:
         now = datetime.now(timezone.utc)
-        start = datetime.combine(now.date(), datetime.min.time(), tzinfo=timezone.utc)
-        return self._fetch(start, now + timedelta(days=FMP_MAX_RANGE_DAYS - 1))
+        return self._fetch(
+            now - timedelta(days=NEWS_REFRESH_BACKFILL_DAYS),
+            now + timedelta(days=NEWS_FORWARD_DAYS),
+        )
 
 def create_news_provider(provider_name: str = "fmp") -> NewsDataProvider:
     if provider_name.lower() != "fmp":
@@ -126,7 +132,7 @@ def normalize_symbol(symbol: str) -> str:
     if not value or value in {".", ".."} or "\x00" in value:
         raise ValueError("invalid symbol")
     if "/" in value or "\\" in value or Path(value).drive:
-        raise ValueError("symbol must be one safe filesystem path component")
+        raise ValueError("symbol must be one safe input component")
     return value
 
 def normalize_impact(value: Any) -> str:
@@ -157,7 +163,6 @@ def _fmp_time(event: ProviderEvent) -> tuple[datetime, str]:
     if text.endswith("Z"):
         text = text[:-1] + "+00:00"
     parsed = datetime.fromisoformat(text)
-    # FMP documents Economic Calendar timestamps as UTC.
     if parsed.tzinfo is None:
         parsed = parsed.replace(tzinfo=timezone.utc)
     return parsed.astimezone(timezone.utc), "UTC"
@@ -192,16 +197,12 @@ def normalize_source_event(event: ProviderEvent) -> NewsEvent:
     status = normalize_status(raw.get("status"))
     if status == "UNKNOWN":
         status = "SCHEDULED" if event_time > datetime.now(timezone.utc) else "RELEASED"
-    result = NewsEvent(
-        event_id="", source_timestamp=event_time, source_timezone=source_tz,
-        event_time_utc=event_time, title=title, impact=normalize_impact(raw.get("impact")),
-        affected_currencies=normalize_affected_metadata(raw.get("currency")),
-        affected_instruments=normalize_affected_metadata(raw.get("affected_instruments")),
-        status=status,
-        forecast=None if raw.get("estimate") is None else str(raw.get("estimate")),
-        previous=None if raw.get("previous") is None else str(raw.get("previous")),
-        actual=None if raw.get("actual") is None else str(raw.get("actual")),
-        source="FMP")
+    result = NewsEvent("", event_time, source_tz, event_time, title, normalize_impact(raw.get("impact")),
+        normalize_affected_metadata(raw.get("currency")),
+        normalize_affected_metadata(raw.get("affected_instruments")), status,
+        None if raw.get("estimate") is None else str(raw.get("estimate")),
+        None if raw.get("previous") is None else str(raw.get("previous")),
+        None if raw.get("actual") is None else str(raw.get("actual")), "FMP")
     return NewsEvent(**{**result.__dict__, "event_id": build_event_id(result)})
 
 def validate_news_event(event: NewsEvent) -> None:
@@ -225,15 +226,13 @@ def _same_identity(a: NewsEvent, b: NewsEvent) -> bool:
 def _merge_pair(old: NewsEvent, new: NewsEvent) -> NewsEvent:
     if not _same_identity(old, new):
         raise ValueError(f"conflicting identity for event_id {old.event_id}")
-    return NewsEvent(
-        event_id=old.event_id, source_timestamp=old.source_timestamp,
-        source_timezone=old.source_timezone, event_time_utc=old.event_time_utc,
-        title=old.title, impact=new.impact if new.impact != "UNKNOWN" else old.impact,
-        affected_currencies=old.affected_currencies, affected_instruments=old.affected_instruments,
-        status=new.status if new.status != "UNKNOWN" else old.status,
-        forecast=new.forecast if new.forecast is not None else old.forecast,
-        previous=new.previous if new.previous is not None else old.previous,
-        actual=new.actual if new.actual is not None else old.actual, source=old.source)
+    return NewsEvent(old.event_id, old.source_timestamp, old.source_timezone, old.event_time_utc,
+        old.title, new.impact if new.impact != "UNKNOWN" else old.impact,
+        old.affected_currencies, old.affected_instruments,
+        new.status if new.status != "UNKNOWN" else old.status,
+        new.forecast if new.forecast is not None else old.forecast,
+        new.previous if new.previous is not None else old.previous,
+        new.actual if new.actual is not None else old.actual, old.source)
 
 def merge_news_events(existing: Sequence[NewsEvent], incoming: Sequence[NewsEvent]) -> list[NewsEvent]:
     merged: dict[str, NewsEvent] = {}
@@ -254,68 +253,50 @@ def apply_news_retention(events: Sequence[NewsEvent], now: datetime | None = Non
         (protected_start is not None and protected_end is not None and protected_start <= e.event_time_utc <= protected_end)
         or e.event_time_utc >= cutoff])
 
-def get_symbol_data_directory(symbol: str, data_directory: Path | str = DEFAULT_DATA_DIRECTORY) -> Path:
-    symbol = normalize_symbol(symbol)
-    root = Path(data_directory).resolve()
-    target = (root / symbol).resolve()
-    if target == root or root not in target.parents:
-        raise ValueError("symbol directory escapes data root")
-    return target
-
-def get_news_data_path(symbol: str, data_directory: Path | str = DEFAULT_DATA_DIRECTORY) -> Path:
-    symbol = normalize_symbol(symbol)
-    return get_symbol_data_directory(symbol, data_directory) / f"{symbol}_news_data.json"
+def get_news_data_path(data_directory: Path | str = DEFAULT_DATA_DIRECTORY) -> Path:
+    return Path(data_directory).resolve() / NEWS_DATA_FILENAME
 
 def _event_to_dict(event: NewsEvent) -> dict[str, Any]:
-    return {"event_id": event.event_id, "source_timestamp": event.source_timestamp.isoformat(),
-            "source_timezone": event.source_timezone, "event_time_utc": event.event_time_utc.isoformat(),
+    return {"event_id": event.event_id, "source_timestamp": event.source_timestamp.astimezone(timezone.utc).isoformat(),
+            "source_timezone": event.source_timezone, "event_time_utc": event.event_time_utc.astimezone(timezone.utc).isoformat(),
             "title": event.title, "impact": event.impact, "affected_currencies": event.affected_currencies,
             "affected_instruments": event.affected_instruments, "status": event.status,
             "forecast": event.forecast, "previous": event.previous, "actual": event.actual, "source": event.source}
 
 def _event_from_dict(raw: dict[str, Any]) -> NewsEvent:
-    event = NewsEvent(event_id=str(raw["event_id"]), source_timestamp=parse_iso8601(str(raw["source_timestamp"])),
-        source_timezone=raw.get("source_timezone"), event_time_utc=parse_iso8601(str(raw["event_time_utc"])),
-        title=str(raw["title"]), impact=str(raw["impact"]),
-        affected_currencies=normalize_affected_metadata(raw.get("affected_currencies")),
-        affected_instruments=normalize_affected_metadata(raw.get("affected_instruments")),
-        status=str(raw["status"]), forecast=raw.get("forecast"), previous=raw.get("previous"),
-        actual=raw.get("actual"), source=str(raw["source"]))
+    event = NewsEvent(str(raw["event_id"]), parse_iso8601(str(raw["source_timestamp"])),
+        raw.get("source_timezone"), parse_iso8601(str(raw["event_time_utc"])), str(raw["title"]),
+        str(raw["impact"]), normalize_affected_metadata(raw.get("affected_currencies")),
+        normalize_affected_metadata(raw.get("affected_instruments")), str(raw["status"]),
+        raw.get("forecast"), raw.get("previous"), raw.get("actual"), str(raw["source"]))
     validate_news_event(event)
     return event
 
-def load_news_data(path: Path | str, symbol: str) -> dict[str, Any]:
-    symbol = normalize_symbol(symbol)
+def load_news_data(path: Path | str) -> dict[str, Any]:
     target = Path(path)
     if not target.exists():
-        return {"symbol": symbol, "events": [], "available_start": None,
-                "available_end": None, "last_successful_update_utc": None}
+        return {"events": [], "available_start": None, "available_end": None,
+                "last_successful_update_utc": None}
     document = json.loads(target.read_text(encoding="utf-8"))
-    if document.get("symbol") != symbol:
-        raise ValueError("news JSON symbol does not match requested symbol")
     document["events"] = [_event_from_dict(e) for e in document.get("events", [])]
     return document
 
 def _serialize_document(document: dict[str, Any]) -> dict[str, Any]:
-    return {"symbol": document["symbol"],
-            "events": [_event_to_dict(e) if isinstance(e, NewsEvent) else e for e in document.get("events", [])],
+    return {"events": [_event_to_dict(e) if isinstance(e, NewsEvent) else e for e in document.get("events", [])],
             "available_start": document.get("available_start"),
             "available_end": document.get("available_end"),
             "last_successful_update_utc": document.get("last_successful_update_utc")}
 
 def save_news_data_atomic(path: Path | str, document: dict[str, Any]) -> None:
-    target = Path(path)
-    target.parent.mkdir(parents=True, exist_ok=True)
+    target = Path(path); target.parent.mkdir(parents=True, exist_ok=True)
     payload = json.dumps(_serialize_document(document), ensure_ascii=False, sort_keys=True, indent=2) + "\n"
     last_error = None
     for attempt in range(WRITE_RETRY_LIMIT):
         temp_name = None
         try:
             with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=target.parent, delete=False) as f:
-                temp_name = f.name
-                f.write(payload); f.flush(); os.fsync(f.fileno())
-            os.replace(temp_name, target)
-            return
+                temp_name = f.name; f.write(payload); f.flush(); os.fsync(f.fileno())
+            os.replace(temp_name, target); return
         except OSError as exc:
             last_error = exc
             if temp_name:
@@ -324,51 +305,80 @@ def save_news_data_atomic(path: Path | str, document: dict[str, Any]) -> None:
             if attempt + 1 < WRITE_RETRY_LIMIT: time.sleep(WRITE_RETRY_DELAY_SECONDS)
     raise RuntimeError(f"atomic news-data save failed: {last_error}")
 
-def resolve_news_range(request: NewsDataRequest, existing: dict[str, Any] | None = None) -> tuple[datetime, datetime]:
+def _parse_doc_time(value: Any) -> datetime | None:
+    if not value: return None
+    return parse_iso8601(str(value))
+
+def cache_refresh_due(document: dict[str, Any], now: datetime) -> bool:
+    last = _parse_doc_time(document.get("last_successful_update_utc"))
+    end = _parse_doc_time(document.get("available_end"))
+    return (last is None or now - last >= NEWS_REFRESH_INTERVAL or
+            end is None or end < now + timedelta(days=NEWS_FORWARD_DAYS))
+
+def resolve_news_range(request: NewsDataRequest, existing: dict[str, Any]) -> tuple[datetime, datetime]:
     now = datetime.now(timezone.utc)
-    start = request.start_time or now
-    end = request.end_time or (now + timedelta(days=FMP_MAX_RANGE_DAYS - 1))
+    if request.start_time is not None or request.end_time is not None:
+        start = request.start_time or now - timedelta(days=NEWS_REFRESH_BACKFILL_DAYS)
+        end = request.end_time or now + timedelta(days=NEWS_FORWARD_DAYS)
+    else:
+        start = now - timedelta(days=NEWS_REFRESH_BACKFILL_DAYS)
+        end = now + timedelta(days=NEWS_FORWARD_DAYS)
+        existing_end = _parse_doc_time(existing.get("available_end"))
+        if existing_end and existing_end > end:
+            end = existing_end
     if start > end: raise ValueError("news start_time must not exceed end_time")
     return start, end
 
 def update_news_events(request: NewsDataRequest, provider: NewsDataProvider,
-                       existing: dict[str, Any]) -> tuple[list[NewsEvent], datetime, datetime]:
+                       existing: dict[str, Any], now: datetime | None = None) -> tuple[list[NewsEvent], datetime, datetime, bool]:
+    now = now or datetime.now(timezone.utc)
+    explicit_range = request.start_time is not None or request.end_time is not None
+    if not request.force and not explicit_range and not request.live and not cache_refresh_due(existing, now):
+        current = [_event_from_dict(e) if isinstance(e, dict) else e for e in existing.get("events", [])]
+        end = _parse_doc_time(existing.get("available_end")) or now
+        start = _parse_doc_time(existing.get("available_start")) or now
+        return sort_news_events(current), start, end, False
+
     start, end = resolve_news_range(request, existing)
-    acquired: list[ProviderEvent] = []
-    if request.start_time is not None or request.end_time is not None:
-        acquired.extend(provider.fetch_range(start, end))
-    if request.live:
-        acquired.extend(provider.fetch_current())
+    acquired = provider.fetch_current() if request.live and not explicit_range else provider.fetch_range(start, end)
+    normalized = normalize_news_events(acquired)
     current = [_event_from_dict(e) if isinstance(e, dict) else e for e in existing.get("events", [])]
-    merged = merge_news_events(current, normalize_news_events(acquired))
-    return apply_news_retention(merged, protected_start=request.start_time, protected_end=request.end_time), start, end
+    merged = merge_news_events(current, normalized)
+    return apply_news_retention(merged, now=now, protected_start=request.start_time, protected_end=request.end_time), start, end, True
 
 def build_argument_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(description="Acquire normalized FMP economic-calendar data.")
-    p.add_argument("--symbol", required=True); p.add_argument("--starttime"); p.add_argument("--endtime")
-    p.add_argument("--live", action="store_true"); p.add_argument("--debug", action="store_true")
+    p = argparse.ArgumentParser(description="Maintain shared normalized FMP economic-calendar cache.")
+    p.add_argument("--symbol", required=True)
+    p.add_argument("--starttime"); p.add_argument("--endtime")
+    p.add_argument("--live", action="store_true")
+    p.add_argument("--force", action="store_true", help="bypass the news cache refresh limit")
+    p.add_argument("--debug", action="store_true")
     return p
 
 def parse_news_data_request(argv: Sequence[str] | None = None) -> NewsDataRequest:
     args = build_argument_parser().parse_args(argv)
     request = NewsDataRequest(normalize_symbol(args.symbol),
         parse_iso8601(args.starttime) if args.starttime else None,
-        parse_iso8601(args.endtime) if args.endtime else None, bool(args.live), bool(args.debug))
-    validate_news_data_request(request)
-    return request
+        parse_iso8601(args.endtime) if args.endtime else None,
+        bool(args.live), bool(args.force), bool(args.debug))
+    validate_news_data_request(request); return request
 
 def validate_news_data_request(request: NewsDataRequest) -> None:
     normalize_symbol(request.symbol)
     if request.start_time and request.end_time and request.start_time > request.end_time:
         raise ValueError("starttime must not be after endtime")
 
-def run(request: NewsDataRequest, provider: NewsDataProvider | None = None) -> int:
-    path = get_news_data_path(request.symbol)
-    existing = load_news_data(path, request.symbol)
+def run(request: NewsDataRequest, provider: NewsDataProvider | None = None,
+        data_directory: Path | str = DEFAULT_DATA_DIRECTORY) -> int:
+    path = get_news_data_path(data_directory)
+    existing = load_news_data(path)
     try:
-        events, start, end = update_news_events(request, provider or create_news_provider(), existing)
-        document = {"symbol": request.symbol, "events": events,
-                    "available_start": start.isoformat(), "available_end": end.isoformat(),
+        events, start, end, changed = update_news_events(request, provider or create_news_provider(),
+                                                         existing)
+        if not changed:
+            return 0
+        document = {"events": events, "available_start": start.isoformat(),
+                    "available_end": end.isoformat(),
                     "last_successful_update_utc": datetime.now(timezone.utc).isoformat()}
         save_news_data_atomic(path, document)
         return 0
