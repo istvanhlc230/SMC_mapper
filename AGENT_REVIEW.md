@@ -2649,3 +2649,16 @@ The mapper specification remains the external/mapper-facing contract; `market_da
 Legacy `smc_htf_ltf_monitor.py`, `smc_analyzer.py`, and old engine artifacts remain extraction-only source material and are not runtime dependencies.
 
 **STATUS: PASS — MARKET_DATA.PY IMPLEMENTATION CONTRACT CREATED**
+
+
+# MARKET_DATA.PY SCAFFOLD — 2026-10-02
+
+Created the structural `market_data.py` scaffold from `market_data_specification.md`.
+
+The scaffold establishes the approved function/class names, typed internal data models, provider abstraction, module ownership boundaries, orchestration order and extension points. It intentionally does not implement provider access or market-data business logic yet.
+
+The detailed implementation contract remains `market_data_specification.md`.
+
+Legacy `smc_htf_ltf_monitor.py`, `smc_analyzer.py`, and old engine artifacts remain extraction-only source material and are not runtime dependencies.
+
+**STATUS: PASS — MARKET_DATA.PY STRUCTURAL SCAFFOLD CREATED**
