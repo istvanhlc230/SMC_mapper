@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
-from typing import Any, Iterable, Protocol, Sequence
+from typing import Any, Iterable, Sequence
 
 
 # ============================================================================
@@ -61,7 +61,6 @@ class ProviderCandle:
     total_volume: Any | None = None
     orderflow_buy: Any | None = None
     orderflow_sell: Any | None = None
-    orderflow_delta: Any | None = None
     completion_hint: Any | None = None
     provider_metadata: dict[str, Any] | None = None
 
@@ -99,7 +98,7 @@ class MarketDataDocument:
 # PROVIDER ABSTRACTION
 # ============================================================================
 
-class MarketDataProvider(Protocol):
+class MarketDataProvider:
     """Minimal provider interface used by the application layer."""
 
     def fetch_range(
@@ -110,7 +109,7 @@ class MarketDataProvider(Protocol):
         end_time: datetime,
     ) -> Iterable[ProviderCandle]:
         """Fetch a deterministic provider range."""
-        ...
+        raise NotImplementedError
 
     def fetch_latest_completed(
         self,
