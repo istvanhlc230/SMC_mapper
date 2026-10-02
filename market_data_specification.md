@@ -158,6 +158,12 @@ Rules:
 
 If a constant is configurable later, keep its use behind one function/owner instead of scattering the value through the code.
 
+### V1 policy values requiring one authoritative implementation decision
+
+The exact V1 `SUPPORTED_TIMEFRAMES` set is not defined by the current mapper-facing contract. Do not invent or duplicate a timeframe list in multiple functions. Until the supported set is explicitly approved, keep it behind the single `SUPPORTED_TIMEFRAMES` / `TIMEFRAME_SECONDS` owner in this module.
+
+The exact V1 candle-retention capacity is likewise an operational storage policy rather than canonical SMC semantics. It must be represented by the single `DEFAULT_CANDLE_RETENTION` owner and must not become a CLI or mapper semantic parameter.
+
 ---
 
 # 3. DATA MODELS
@@ -652,6 +658,7 @@ Signature:
 def normalize_provider_candle(
     provider_candle: ProviderCandle,
     timeframe: str,
+    symbol: str = "",
 ) -> NormalizedCandle:
     ...
 ```

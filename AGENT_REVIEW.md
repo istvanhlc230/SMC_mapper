@@ -2662,3 +2662,22 @@ The detailed implementation contract remains `market_data_specification.md`.
 Legacy `smc_htf_ltf_monitor.py`, `smc_analyzer.py`, and old engine artifacts remain extraction-only source material and are not runtime dependencies.
 
 **STATUS: PASS — MARKET_DATA.PY STRUCTURAL SCAFFOLD CREATED**
+
+
+# MARKET_DATA.PY STRUCTURE MICRO-AUDIT — 2026-10-02
+
+PASS — function names, signatures and variable naming are internally aligned between `market_data.py` and `market_data_specification.md`.
+PASS — provider abstraction is isolated behind `MarketDataProvider`; Yahoo-specific behavior remains inside `YahooChartsProvider`.
+PASS — completed/current separation is explicit.
+PASS — normalization, merge, retention and persistence have distinct ownership.
+PASS — no canonical SMC logic is assigned to `market_data.py`.
+PASS — no runtime dependency on legacy `smc_htf_ltf_monitor.py` / `smc_analyzer.py` is permitted.
+PASS — the exact supported timeframe set and exact retention capacity are intentionally kept as single-owner operational decisions rather than duplicated/invented in the module.
+
+Open implementation-policy decisions before functional implementation:
+- approve/populate the single V1 `SUPPORTED_TIMEFRAMES` / `TIMEFRAME_SECONDS` set;
+- choose the V1 `DEFAULT_CANDLE_RETENTION` value.
+
+These are operational implementation decisions, not canonical SMC semantics.
+
+**STATUS: PASS — STRUCTURAL CONTRACT CONSISTENT; TWO EXPLICIT OPERATIONAL POLICY VALUES REMAIN TO BE FIXED BEFORE FUNCTIONAL IMPLEMENTATION**
