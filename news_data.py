@@ -16,9 +16,9 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request as URLRequest, urlopen
 
-DEFAULT_DATA_DIRECTORY = Path("data")
+DEFAULT_DATA_DIRECTORY = Path(__file__).resolve().parent / "data"
 NEWS_DATA_FILENAME = "news_data.json"
-NEWS_CACHE_PATH = Path(__file__).resolve().parent / NEWS_DATA_FILENAME
+NEWS_CACHE_PATH = DEFAULT_DATA_DIRECTORY / NEWS_DATA_FILENAME
 
 FMP_API_URL = "https://financialmodelingprep.com/stable/economic-calendar"
 FMP_API_KEY_ENV = "FMP_API_KEY"

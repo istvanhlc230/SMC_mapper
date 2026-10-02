@@ -136,10 +136,10 @@ def test_duplicate_merge_updates_actual():
     assert merged[0].actual == "3.4"
 
 
-def test_cache_path_is_module_local():
+def test_cache_path_is_in_data_directory():
     path = news_data.get_news_data_path()
-    assert path.name == "news_data.json"
-    assert path.parent == Path(news_data.__file__).resolve().parent
+    module_dir = Path(news_data.__file__).resolve().parent
+    assert path == (module_dir / "data" / "news_data.json").resolve()
 
 
 def test_cache_not_due():
@@ -247,7 +247,7 @@ def test_query_limit_and_filters():
 
 
 def test_query_materializes_symbol_view(tmp_path, monkeypatch):
-    monkeypatch.setattr(news_data, "NEWS_CACHE_PATH", Path(tmp_path) / "news_data.json")
+    monkeypatch.setattr(news_data, "NEWS_CACHE_PATH", Path(tmp_path) / "data" / "news_data.json")
     monkeypatch.setattr(
         news_data,
         "DEFAULT_DATA_DIRECTORY",

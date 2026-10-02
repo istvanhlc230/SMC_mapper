@@ -601,10 +601,10 @@ No fallback provider is implemented in V1. The provider abstraction remains inta
 
 # 13. CACHE FILE LOCATION
 
-The shared cache is stored directly beside `news_data.py`:
+The shared cache is stored directly inside `<DATA_ROOT>`:
 
 ```text
-<directory containing news_data.py>/news_data.json
+<DATA_ROOT>/news_data.json
 ```
 
 Implementation resolves this as `Path(__file__).resolve().parent / "news_data.json"`. No `data/` directory, symbol subdirectory, or configurable cache path is used in V1.
@@ -617,7 +617,7 @@ The News Data module has two operational layers.
     FMP Economic Calendar
             |
             v
-    <directory containing news_data.py>/news_data.json
+    <DATA_ROOT>/news_data.json
             |
             v
     python news_data.py --query SYMBOL
@@ -656,7 +656,7 @@ The three runtime JSON files for a symbol are co-located:
     <DATA_ROOT>/<SYMBOL>/<SYMBOL>_structures.json
     <DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json
 
-The shared provider cache remains outside the symbol directory beside news_data.py.
+The shared provider cache remains outside the symbol directory inside `<DATA_ROOT>`.
 
 FMP Economic Calendar is date-range based and documents a maximum 90-day range and UTC timestamps.
 
@@ -666,13 +666,13 @@ Primary Monitor operation:
 
     python news_data.py --query USDJPY
 
-This operation checks the shared cache beside news_data.py, refreshes FMP only when the cache gate requires it or --force is supplied, filters relevant events by explicit currency/instrument metadata, and materializes:
+This operation checks the shared cache inside `<DATA_ROOT>`, refreshes FMP only when the cache gate requires it or --force is supplied, filters relevant events by explicit currency/instrument metadata, and materializes:
 
     <DATA_ROOT>/USDJPY/USDJPY_news_data.json
 
 The symbol file is a derived consumer view. The global cache remains:
 
-    <directory containing news_data.py>/news_data.json
+    <DATA_ROOT>/news_data.json
 
 Manual cache-only refresh:
 
@@ -686,3 +686,14 @@ A no-time query has no artificial default time window and uses the complete reta
 `--query SYMBOL` without a time bound is a pure local query over the complete existing cache. It never performs a provider request because of cache age.
 
 `--query SYMBOL --starttime ... --endtime ...` is a time-bounded ensure/acquire operation: if the requested interval is not adequately covered, News Data acquires that interval from FMP and merges it into the shared cache; if it is covered and fresh, it reuses the cache. `--force` always reacquires.
+
+
+# CACHE FILE LOCATION
+
+The shared provider cache is stored at:
+
+```text
+<DATA_ROOT>/news_data.json
+```
+
+`<DATA_ROOT>` is the repository data directory used by the other runtime JSON stores. Symbol materialized news views remain under `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json`.

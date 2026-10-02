@@ -21,7 +21,7 @@ The former historical FAIL findings that were embedded here have been removed fr
 
 Named regional trading sessions are Monitor runtime context. V1 knows Sydney, Tokyo, London, and New York using explicit IANA timezones; exact local session hours are one Monitor-owned operational configuration.
 
-Economic-news acquisition is separated from price Market Data and is owned by `news_data.py` / `specifications/news_data_specification.md`. The Monitor consumes normalized UTC news events from shared `<directory containing news_data.py>/news_data.json` and emits warning-only runtime notifications.
+Economic-news acquisition is separated from price Market Data and is owned by `news_data.py` / `specifications/news_data_specification.md`. The Monitor consumes normalized UTC news events from shared `<DATA_ROOT>/news_data.json` and emits warning-only runtime notifications.
 
 News warnings do not alter canonical SMC state, POI lifecycle, target coordinates, RR calculation, mapper checkpoints, or order/position behavior.
 
@@ -80,7 +80,7 @@ Datasource timezone must never be guessed. Naive datasource wall-clock timestamp
 ## CLI/debug contract
 
 - Candle data is persisted to `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json`; it is not transferred to the mapper through stdout.
-- Market-data and structure outputs are grouped under each symbol's directory; the external news event cache is intentionally shared at `<directory containing news_data.py>/news_data.json`.
+- Market-data and structure outputs are grouped under each symbol's directory; the external news event cache is intentionally shared at `<DATA_ROOT>/news_data.json`.
 - Debug output is `stderr` only.
 - Debug `stderr` is terminal-only and must not be captured, parsed, forwarded, merged, persisted, or passed to mapper/monitor.
 - Normal runtime is user-silent.
@@ -118,7 +118,7 @@ The V1 cache maintains approximately 7 days forward coverage, refreshes at most 
 
 # NEWS DATA STORAGE MODEL
 
-News Data uses a shared provider cache plus a derived symbol view. The shared cache lives beside news_data.py. The symbol view lives beside the symbol's Market Data and Structures files. The normal Monitor call is: python news_data.py --query SYMBOL. The query refreshes the shared cache only when required, then materializes the symbol's relevant events. This keeps three symbol runtime JSON files co-located without multiplying FMP requests.
+News Data uses a shared provider cache plus a derived symbol view. The shared cache lives inside `<DATA_ROOT>`. The symbol view lives beside the symbol's Market Data and Structures files. The normal Monitor call is: python news_data.py --query SYMBOL. The query refreshes the shared cache only when required, then materializes the symbol's relevant events. This keeps three symbol runtime JSON files co-located without multiplying FMP requests.
 
 ## FINAL V1 — NEWS STORAGE
 
@@ -128,12 +128,12 @@ For each symbol, the three runtime JSON files are co-located:
     <DATA_ROOT>/<SYMBOL>/<SYMBOL>_structures.json
     <DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json
 
-The source FMP event cache is shared and stored directly beside news_data.py. The normal Monitor call is python news_data.py --query SYMBOL, which refreshes the shared cache only when required and then materializes the symbol-specific news view.
+The source FMP event cache is shared and stored directly inside `<DATA_ROOT>`. The normal Monitor call is python news_data.py --query SYMBOL, which refreshes the shared cache only when required and then materializes the symbol-specific news view.
 
 
 # FINAL NEWS QUERY MODEL
 
-Shared source cache: `<directory containing news_data.py>/news_data.json`.
+Shared source cache: `<DATA_ROOT>/news_data.json`.
 
 Symbol query: `python news_data.py --query SYMBOL`.
 

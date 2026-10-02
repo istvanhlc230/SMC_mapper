@@ -14,7 +14,7 @@ The intended finished product uses these active Python runtime components:
 
 - `market_data.py` — standalone Market Data CLI: provider access, normalization, completion handling, deterministic range retrieval, incremental update, bounded retention, completed-candle persistence, current-candle snapshot refresh, and persistence to `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json`.
 - `smc_mapper.py` — canonical SMC mapper: structural analysis, HTF/LTF processing, and persistent structural state in `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_structures.json`.
-- `news_data.py` — standalone normalized external-news process with shared persistence in `<directory containing news_data.py>/news_data.json`.
+- `news_data.py` — standalone normalized external-news process with shared persistence in `<DATA_ROOT>/news_data.json`.
 - `smc_monitor.py` — interactive runtime: scheduling, user interaction, runtime/target monitoring, alerts, and orchestration of Market Data CLI and mapper execution across multiple symbols and multiple stored analyses per symbol.
 
 The older `smc_htf_ltf_monitor.py`, `smc_analyzer.py`, and Layer-1-to-Layer-6 `*_engine.py` test/implementation artifacts are not components of the finished product architecture.

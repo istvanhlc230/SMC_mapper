@@ -261,7 +261,7 @@ The view is produced by the News Data query command:
 python news_data.py --query SYMBOL
 ~~~
 
-The query command first checks the shared cache beside news_data.py. It refreshes FMP only when the cache gate requires it or --force is supplied, then filters explicit affected metadata and atomically materializes the symbol-specific file.
+The query command first checks the shared cache inside `<DATA_ROOT>`. It refreshes FMP only when the cache gate requires it or --force is supplied, then filters explicit affected metadata and atomically materializes the symbol-specific file.
 
 The Monitor must not call FMP directly and must not issue one FMP refresh per symbol. Querying another symbol while the shared cache is fresh causes no provider request.
 
@@ -1963,7 +1963,7 @@ A `--force` request is reserved for manual immediate reconciliation and bypasses
 
 # SHARED NEWS CACHE ORCHESTRATION
 
-One invocation per symbol may use `python news_data.py --query SYMBOL`. The first query after cache expiry may refresh the shared FMP cache; subsequent symbol queries reuse it. `--force` is reserved for explicit immediate reconciliation. The symbol-specific news JSON is kept beside Market Data and Structures, while the provider cache remains beside news_data.py.
+One invocation per symbol may use `python news_data.py --query SYMBOL`. The first query after cache expiry may refresh the shared FMP cache; subsequent symbol queries reuse it. `--force` is reserved for explicit immediate reconciliation. The symbol-specific news JSON is kept beside Market Data and Structures, while the provider cache remains inside `<DATA_ROOT>`.
 
 
 ## FINAL V1 — NEWS QUERY INTERFACE

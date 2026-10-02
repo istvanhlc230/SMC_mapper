@@ -3032,3 +3032,16 @@ Finalized per product direction:
 - Explicit requested historical intervals are protected from normal retention for the acquisition/materialization operation.
 - Coverage intervals are tracked explicitly to prevent false continuous coverage across acquisition gaps.
 - No `.agents/skills/smc/` files modified.
+
+
+# PHASE 19 — NEWS CACHE LOCATION
+
+Changed the shared FMP cache location to the common `data` directory:
+
+    <DATA_ROOT>/news_data.json
+
+Symbol materialized views remain:
+
+    <DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json
+
+Therefore each symbol directory still contains the three runtime JSON files: Market Data, Structures, and derived News. The global cache is the only shared News Data artifact. `news_data.py` uses `Path(__file__).resolve().parent / "data" / "news_data.json"` as the default cache location.
