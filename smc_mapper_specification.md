@@ -14,7 +14,7 @@ The intended finished product uses these active Python runtime components:
 
 - `market_data.py` — standalone Market Data CLI: provider access, normalization, completion handling, deterministic range retrieval, incremental update, bounded retention, completed-candle persistence, current-candle snapshot refresh, and persistence to `<SYMBOL>_marketdata.json`.
 - `smc_mapper.py` — canonical SMC mapper: structural analysis, HTF/LTF processing, and persistent structural state in `<SYMBOL>_structures.json`.
-- `smc_monitor.py` — interactive runtime: scheduling, user interaction, runtime/target monitoring, alerts, and orchestration of Market Data CLI and mapper execution.
+- `smc_monitor.py` — interactive runtime: scheduling, user interaction, runtime/target monitoring, alerts, and orchestration of Market Data CLI and mapper execution across multiple symbols and multiple stored analyses per symbol.
 
 The older `smc_htf_ltf_monitor.py`, `smc_analyzer.py`, and Layer-1-to-Layer-6 `*_engine.py` test/implementation artifacts are not components of the finished product architecture.
 
@@ -412,6 +412,23 @@ Logical shape:
 A Market Data CLI execution updates only `<SYMBOL>_marketdata.json`. A mapper execution updates only its relevant analysis entry inside `<SYMBOL>_structures.json`.
 
 The monitor identifies each stored analysis from its deterministic analysis key and validates the stored `analysis_mode`, `htf`, `ltf`, and `requested_start`.
+
+### Monitor multi-symbol / multi-analysis contract
+
+The monitor is not limited to one symbol or one timeframe analysis.
+
+- One monitor runtime may manage multiple symbols.
+- Each symbol retains its own `<SYMBOL>_marketdata.json` and `<SYMBOL>_structures.json`.
+- Within one symbol's structures JSON, multiple distinct mapper analyses may coexist.
+- Each analysis is identified and scheduled independently by its deterministic analysis key.
+- Multiple HTF/LTF analysis pairs may therefore coexist for the same symbol, for example `H4/M15`, `H1/M5`, and `M15/M1`, subject to the normal timeframe and data-availability contracts.
+- Single-timeframe analyses may coexist with HTF/LTF analyses for the same symbol.
+- A monitor update for one symbol/analysis must not overwrite, merge, or alter another symbol/analysis.
+- Entry-timeframe scheduling and mapper checkpoints remain independent for every stored analysis.
+- The monitor must maintain at most one active orchestration instance per symbol while allowing that instance to manage all configured analyses for the symbol.
+- A failure or temporary data unavailability affecting one symbol or one analysis must not corrupt or invalidate unrelated symbols or analyses.
+
+The monitor may schedule these analyses independently according to their entry timeframes while sharing the symbol-level market-data store.
 
 There is no single multi-symbol mapper JSON file and no single multi-symbol market-data JSON file.
 
