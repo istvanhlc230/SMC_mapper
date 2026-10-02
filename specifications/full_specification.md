@@ -19,19 +19,24 @@ The former historical FAIL findings that were embedded here have been removed fr
 
 ## Trading sessions and news
 
-Trading-session awareness is a Monitor runtime concern. Named regional sessions use explicit IANA timezones and local session definitions so daylight-saving changes are handled correctly.
-
-V1 session identities include Sydney, Tokyo, London, and New York. Exact local session hours are Monitor-owned operational policy and are not duplicated elsewhere.
-
-Economic-news acquisition is a separate external-data concern owned by `news_data.py`. The Monitor consumes normalized UTC news events and emits transient warning notifications. News warnings do not alter canonical SMC state, target/RR semantics, or order/position behavior.
-
-## Trading sessions and news
-
 Named regional trading sessions are Monitor runtime context. V1 knows Sydney, Tokyo, London, and New York using explicit IANA timezones; exact local session hours are one Monitor-owned operational configuration.
 
 Economic-news acquisition is separated from price Market Data and is owned by `news_data.py` / `specifications/news_data_specification.md`. The Monitor consumes normalized UTC news events from `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json` and emits warning-only runtime notifications.
 
 News warnings do not alter canonical SMC state, POI lifecycle, target coordinates, RR calculation, mapper checkpoints, or order/position behavior.
+
+## Symbol output-directory contract
+
+The common data root contains one dedicated directory per normalized symbol:
+
+```text
+<DATA_ROOT>/<SYMBOL>/
+    <SYMBOL>_marketdata.json
+    <SYMBOL>_structures.json
+    <SYMBOL>_news_data.json
+```
+
+Market Data, Mapper, Monitor, and News Data automatically resolve their symbol directory from the requested symbol. No cross-symbol flat output store is used. The existing common data root is retained; this change only introduces the symbol directory boundary beneath it.
 
 ## Time-domain contract
 
