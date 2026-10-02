@@ -2590,3 +2590,16 @@ validate input/data -> resolve analysis identity -> load/create state -> verify 
 The specification is now organized for direct implementation from upstream dependencies to downstream consumers, while preserving the approved two-file data architecture, CLI contracts, point-in-time HTF/LTF rules, Dealing Range history semantics, canonical POI lifecycle, parallel volume branches, and monitor boundary.
 
 **STATUS: PASS — DEFRAGMENTED AND ORDERED FOR IMPLEMENTATION**
+
+# SPECIFICATION POST-AUDIT CORRECTION — 2026-10-02
+
+Removed the remaining structural duplication introduced during the initial dependency-order reorganization:
+
+PASS — §4 bootstrap no longer embeds and repeats the renamed LTF-bootstrap subsection.
+PASS — §7 Dealing-Range history no longer embeds and repeats its lifecycle subsection.
+PASS — §10 monitor orchestration no longer embeds downstream RR/setup sections.
+PASS — §12 diagnostics contains only diagnostic behavior; Market Data CLI/process-launch contracts have one owner section.
+PASS — downstream setup eligibility no longer treats `ACTIVE` as a canonical POI lifecycle enum; it consumes the Layer-6 active tradable set/lifecycle state.
+PASS — canonical skill ownership remains unchanged.
+
+**STATUS: PASS — DUPLICATION CLEANUP AND LIFECYCLE ENUM ALIGNMENT COMPLETE**

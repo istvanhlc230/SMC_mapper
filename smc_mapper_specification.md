@@ -858,22 +858,6 @@ For incremental execution after a valid persisted checkpoint, the launcher invok
 
 The mapper does not obtain market data from the monitor and does not access a concrete provider.
 
-### A17.1 Two-timeframe LTF bootstrap
-
-In two-timeframe analysis, the mapper establishes an LTF bootstrap coverage reference from the applicable HTF canonical structural context.
-
-When a confirmed HTF Dealing Range exists, the applicable HTF Protected Structural Extreme is the preferred LTF bootstrap coverage reference. This reference determines the minimum historical LTF coverage needed for deterministic structural buildup. It is a data-coverage/reference point only; it is not an LTF structural start and does not create or promote any LTF structure.
-
-When LTF bootstrap is required, the launcher invokes the Market Data CLI once for one deterministic LTF range covering the anchor through the activation/current boundary, subject to any additional LTF warm-up required by the canonical LTF rules, updates `<SYMBOL>_marketdata.json`, and then invokes the mapper against the persisted range.
-
-If the requested LTF coverage begins later than the anchor because the source has no completed LTF data at or after the requested anchor, the mapper uses the first actually available completed LTF candle after the reference as the effective LTF bootstrap start. No attempt is made by the mapper to access the provider directly.
-
-If the supplied LTF data begins before the HTF reference, that earlier data may be retained and used as additional canonical LTF warm-up when required; the HTF Protected Structural Extreme remains the context/coverage reference.
-
-If the applicable confirmed HTF Protected Structural Extreme does not exist, the mapper does not fabricate one. The LTF bootstrap then follows the supplied LTF history subject to the canonical genesis/source-gap boundaries.
-
-The LTF bootstrap reference is not an LTF structural-start ontology. The first LTF structural object is determined only by the canonical LTF rules.
-
 ### Two-timeframe LTF bootstrap
 
 In two-timeframe analysis, the mapper establishes an LTF bootstrap coverage reference from the applicable HTF canonical structural context.
@@ -1127,18 +1111,6 @@ There is no fixed maximum number of LTF structures within one HTF Dealing Range.
 The history record must preserve canonical formation/provenance times of its contained objects.
 
 History is not an append-only mapper execution log. It is retained canonical Dealing Range history for the specific mapper analysis.
-
-### A12b. Dealing Range lifecycle boundary
-
-The mapper derives Dealing Range history boundaries strictly from the canonical structural lifecycle.
-
-- A currently open Dealing Range is runtime state, not history.
-- `VALID_BOS` is the canonical lifecycle event that establishes the next confirmed Dealing Range lifecycle; when a governing range already exists, it closes that previous range first. The first `VALID_BOS` establishes the first confirmed Dealing Range and therefore has no pre-existing governing range to close.
-- The mapper must not close or start a Dealing Range because of a physical break, IDM sweep, CHoCH-eligible break, insufficient-retracement `IMPULSE_EXTENSION`, mapper execution boundary, or retention operation.
-- Before the first canonical `VALID_BOS`, no governing Dealing Range may be fabricated for history or used as a substitute for the unresolved first-BOS canonical baseline.
-- The exact first-BOS retracement baseline remains the canonical/source gap documented by the SMC skill; the mapper must fail closed rather than invent a synthetic initialization rule.
-
----
 
 ## 7.4 Dealing Range lifecycle boundary
 
@@ -1395,86 +1367,6 @@ Each JSON update is performed as a complete read-modify-write operation using a 
 
 The monitor advances an analysis checkpoint only after the corresponding structural state has been successfully persisted.
 
-### RR / minimum-RR policy
-
-Minimum RR is a downstream trading-policy constraint, not a mapper/canonical-SMC parameter.
-
-Therefore `--rr` does **not** belong to `smc_mapper.py`.
-
-If exposed as a CLI control, it belongs to `smc_monitor.py`:
-
-```text
---rr DECIMAL
-```
-
-The parameter is optional. If `--rr` is absent, RR is not used as an alert-eligibility filter. If `--rr` is supplied, the monitor applies the gate only after target resolution and target clearance:
-
-```text
-Projected_RR >= --rr
-```
-
-There is no default minimum-RR value. `--rr` is policy, not structural truth, and must never alter canonical POI, BOS, CHoCH, IDM, Dealing Range, or target-coordinate semantics.
-
-An explicitly supplied `--rr` value applies only to the monitor invocation in which it is supplied.
-
-### A18a. Downstream setup and alert eligibility
-
-Downstream alert eligibility consumes canonical mapper state; it does not redefine canonical structure.
-
-The canonical POI lifecycle is the first eligibility gate for a new setup:
-
-```text
-CANONICAL POI LIFECYCLE
-        ↓
-CANONICAL EXECUTION AUTHORIZATION
-        ↓
-TARGET RESOLUTION
-        ↓
-TARGET CLEARANCE
-        ↓
-OPTIONAL RR POLICY
-        ↓
-ALERT ELIGIBILITY
-```
-
-Only a canonical POI with `lifecycle = ACTIVE` may be selected as the setup target. The `targeted` flag identifies that selected POI; `targeted` is selection state and is not a lifecycle state.
-
-The downstream consumer must reject POIs whose canonical lifecycle is `MITIGATED`, `FAILED`, or `EXPIRED_HISTORICAL`. A retained historical POI cannot become targetable again merely because it remains in the structures JSON.
-
-Layer 6 owns canonical POI lifecycle. Downstream monitor logic consumes that state and must not invent an age-based freshness rule or independently decide canonical POI expiry.
-
-Target resolution is downstream policy. A resolved target must retain its provenance and must not be manufactured merely to satisfy an RR condition.
-
-Target clearance is downstream trading/alert policy. V1 target clearance is deterministic: a resolved target must exist, its price must be strictly beyond the current reference price in the intended direction, and it must not already have been reached at the evaluation time. A missing or unresolved target, missing current reference price, or failed clearance predicate fails closed.
-
-Minimum RR is optional monitor policy and is represented only by:
-
-```text
---rr DECIMAL
-```
-
-When `--rr` is absent, RR is not an alert-eligibility filter. When `--rr` is supplied, the monitor requires:
-
-```text
-Projected_RR >= --rr
-```
-
-For V1:
-
-```text
-reward_distance = abs(resolved_target_price - entry_reference_price)
-risk_distance   = abs(stop_price - entry_reference_price)
-Projected_RR    = reward_distance / risk_distance
-```
-
-Projected_RR is unresolved when the resolved target, entry reference, or stop price is missing, or when risk_distance <= 0. An unresolved RR cannot pass an explicit --rr gate.
-
-There is no default minimum-RR value. `--rr` does not alter POI, BOS, CHoCH, IDM, Dealing Range, or target-coordinate semantics.
-
-Execution-quality conditions such as spread, expected slippage, market/session availability, broker/execution availability, or explicitly configured event filters are downstream policy only. Failure of such a condition must not mutate canonical structure or POI lifecycle.
-
-The monitor is alert/notification-only in the current product. Alerts are runtime events and are not persisted as canonical structure, setup snapshots, or alert records in `<SYMBOL>_structures.json`.
-
 ## 10.2 Multi-symbol / multi-analysis orchestration
 
 The monitor is not limited to one symbol or one timeframe analysis.
@@ -1540,7 +1432,7 @@ OPTIONAL RR POLICY
 ALERT ELIGIBILITY
 ```
 
-Only a canonical POI with `lifecycle = ACTIVE` may be selected as the setup target. The `targeted` flag identifies that selected POI; `targeted` is selection state and is not a lifecycle state.
+Only a canonical POI that remains in the active tradable set under Layer-6 lifecycle rules may be selected as the setup target. The `targeted` flag identifies that selected POI; `targeted` is selection state and is not a lifecycle state.
 
 The downstream consumer must reject POIs whose canonical lifecycle is `MITIGATED`, `FAILED`, or `EXPIRED_HISTORICAL`. A retained historical POI cannot become targetable again merely because it remains in the structures JSON.
 
@@ -1594,54 +1486,6 @@ The CLI interfaces must strictly separate persistent market data from user-visib
 - With `--debug`, diagnostics are visible directly on the terminal.
 - Debug mode must never alter canonical calculations or normalized market-data semantics.
 - Normal runtime must produce no user-visible CLI output.
-
-### Market Data CLI contract
-
-market_data.py is invoked as a standalone process. Its CLI accepts:
-
-    --symbol SYMBOL
-    --timeframes TF [TF ...]
-    --starttime ISO8601
-    --endtime ISO8601
-    --lastcandle
-    --live
-    --debug
-
-symbol is required. timeframes accepts one or more supported timeframes and is not limited to the mapper's one- or two-timeframe analysis model. starttime and endtime are optional range bounds.
-
---lastcandle is an alternative completed-candle acquisition mode. When supplied, the Market Data CLI retrieves exactly the latest completed candle for each requested timeframe and reconciles it into that timeframe's candles[] series. It does not refresh or replace the current in-progress snapshot by itself.
-
---lastcandle is mutually exclusive with --starttime and --endtime because it requests a single latest completed candle rather than a historical range. --lastcandle may be combined with --live: in that case the latest completed candle is reconciled into candles[] and the latest in-progress snapshot is refreshed independently in current when available.
-
-If the latest completed candle is already present in the persisted timeframe series, deduplication leaves the existing candle identity intact and no duplicate record is created. --lastcandle never fabricates a candle and never causes an incomplete/current candle to enter candles[].
-
-Without live, the CLI persists completed candles only. With live, it also refreshes the latest provider-available in-progress candle snapshot for each requested timeframe when such a snapshot exists. If an endtime is supplied before the current interval, no current snapshot is stored for that request.
-
-When an in-progress candle later becomes completed, its final completed version is persisted in candles[] and the next in-progress interval becomes current.
-
-Market-data CLI execution persists the durable market-data result to <SYMBOL>_marketdata.json.
-
-The market-data record may preserve volume information in parallel. Provider total volume, if available, is stored as volume.total; genuine orderflow may be stored under volume.orderflow; OHLC-derived directional estimates may be stored under volume.ohlc. The mapper determines which analytical data is actually available from the persisted record and may expose a helper such as has_volume_data(...) for boolean availability checks. No single exclusive candle-level method field represents provenance.
-
-### Process-launch requirement
-
-```text
-market_data.py
-    |
-    +--> <SYMBOL>_marketdata.json
-    |
-    +--> stderr -> terminal (debug only)
-
-smc_mapper.py
-    |
-    +--> reads <SYMBOL>_marketdata.json
-    |
-    +--> stderr -> terminal (debug only)
-```
-
-`stderr` must never be redirected into mapper or monitor data input.
-
-With `--debug`, only the relevant process's diagnostics become visible on the terminal. Debug information is never written into the market-data JSON and never becomes mapper or monitor input.
 
 ## 12.2 Diagnostic data boundary
 
