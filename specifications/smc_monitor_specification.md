@@ -189,7 +189,7 @@ class MonitorRequest:
     debug: bool
 ~~~
 
-The request contains no HTF/LTF configuration because the Monitor does not create analyses.
+The request contains no HTF/LTF configuration because the Monitor does not create analyses. The existing common data root is unchanged; the Monitor automatically derives the symbol subdirectory from the selected normalized symbol and does not expose a data-path CLI option.
 
 ---
 
@@ -998,7 +998,7 @@ The active architecture is:
 ~~~text
 News Provider(s)
         ↓
-news_data.py
+news_data.py --symbol SYMBOL
         ↓
 <DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json
         ↓
@@ -1282,7 +1282,7 @@ When a persisted checkpoint is later than the requested operational end boundary
 
 # 15. PERSISTENCE OWNERSHIP
 
-The Monitor does not own either persistent JSON schema.
+The Monitor does not own any persistent JSON schema.
 
 ## 15.1 Market Data
 
@@ -1300,7 +1300,7 @@ Only smc_mapper.py writes:
 <DATA_ROOT>/<SYMBOL>/<SYMBOL>_structures.json
 ~~~
 
-## 15.2a News Data
+## 15.3 News Data
 
 Only news_data.py writes:
 
@@ -1308,7 +1308,7 @@ Only news_data.py writes:
 <DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json
 ~~~
 
-## 15.3 Monitor runtime state
+## 15.4 Monitor runtime state
 
 Transient only in V1:
 
@@ -1679,6 +1679,7 @@ Focused tests must cover at minimum.
 test_monitor_requires_symbol
 test_monitor_accepts_multiple_symbols
 test_monitor_resolves_symbol_output_directory
+test_monitor_news_data_requires_symbol
 test_monitor_rr_optional
 test_monitor_rejects_invalid_rr
 test_monitor_debug_is_terminal_only
