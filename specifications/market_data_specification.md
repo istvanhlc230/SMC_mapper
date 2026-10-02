@@ -1004,11 +1004,11 @@ Rules:
 - resolves to `<DATA_ROOT>/<SYMBOL>`;
 - path calculation itself does not perform I/O;
 - directory creation occurs only as an explicit persistence prerequisite;
-- does not silently rename the symbol.
+- does not silently rename the symbol;
+- the symbol directory component must be a safe single filesystem path component; path separators, drive prefixes, `.`/`..`, NUL characters, and traversal sequences must be rejected rather than sanitized into another symbol identity.
+- the resolved path must remain inside `<DATA_ROOT>`.
 
 ## 12.3 get_market_data_path
-
-## 12.2 get_market_data_path
 
 Signature:
 
@@ -1027,6 +1027,7 @@ Rules:
 - uses `get_symbol_data_directory` as the single directory owner;
 - no timeframe-specific market-data file;
 - sanitize path components only as required for safe local file paths;
+- the resolved path must remain inside `<DATA_ROOT>/<SYMBOL>`.
 - do not silently rename a symbol into another instrument identity.
 
 ## 12.4 load_market_data
