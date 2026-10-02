@@ -34,7 +34,7 @@ FMPNewsDataProvider
         ↓
 news_data.py --symbol SYMBOL
         ↓
-<DATA_ROOT>/news_data.json
+<NEWS_DATA_MODULE_DIR>/news_data.json
         ↓
 smc_monitor.py
 ```
@@ -577,7 +577,7 @@ This section supersedes the earlier symbol-scoped persistence wording in §§1.2
 
 V1 persists one shared normalized event cache at:
 
-    <DATA_ROOT>/news_data.json
+    <NEWS_DATA_MODULE_DIR>/news_data.json
 
 The CLI still requires `--symbol`, but that value is request/Monitor context only. It is not used as an FMP API filter and does not determine a storage path. The Monitor performs final symbol-event relevance from normalized affected metadata.
 
@@ -595,3 +595,16 @@ The current FMP Basic free tier documents 250 API requests per day, so reusing o
 A normal due refresh should re-read the recent one-day backfill to reconcile releases, actuals, cancellations, or schedule changes, while extending forward coverage to approximately seven days. A fresh cache hit performs no network request and no persistence update. `--force` exists for manual recovery or immediate reconciliation.
 
 No fallback provider is implemented in V1. The provider abstraction remains intact so a future provider can be inserted behind `NewsDataProvider` without changing the normalized event contract or Monitor consumption.
+
+
+---
+
+# 13. CACHE FILE LOCATION
+
+The shared cache is stored directly beside `news_data.py`:
+
+```text
+<directory containing news_data.py>/news_data.json
+```
+
+Implementation resolves this as `Path(__file__).resolve().parent / "news_data.json"`. No `data/` directory, symbol subdirectory, or configurable cache path is used in V1.

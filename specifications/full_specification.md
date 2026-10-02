@@ -21,7 +21,7 @@ The former historical FAIL findings that were embedded here have been removed fr
 
 Named regional trading sessions are Monitor runtime context. V1 knows Sydney, Tokyo, London, and New York using explicit IANA timezones; exact local session hours are one Monitor-owned operational configuration.
 
-Economic-news acquisition is separated from price Market Data and is owned by `news_data.py` / `specifications/news_data_specification.md`. The Monitor consumes normalized UTC news events from shared `<DATA_ROOT>/news_data.json` and emits warning-only runtime notifications.
+Economic-news acquisition is separated from price Market Data and is owned by `news_data.py` / `specifications/news_data_specification.md`. The Monitor consumes normalized UTC news events from shared `<NEWS_DATA_MODULE_DIR>/news_data.json` and emits warning-only runtime notifications.
 
 News warnings do not alter canonical SMC state, POI lifecycle, target coordinates, RR calculation, mapper checkpoints, or order/position behavior.
 
@@ -78,7 +78,7 @@ Datasource timezone must never be guessed. Naive datasource wall-clock timestamp
 ## CLI/debug contract
 
 - Candle data is persisted to `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json`; it is not transferred to the mapper through stdout.
-- Market-data and structure outputs are grouped under each symbol's directory; the external news event cache is intentionally shared at `<DATA_ROOT>/news_data.json`.
+- Market-data and structure outputs are grouped under each symbol's directory; the external news event cache is intentionally shared at `<NEWS_DATA_MODULE_DIR>/news_data.json`.
 - Debug output is `stderr` only.
 - Debug `stderr` is terminal-only and must not be captured, parsed, forwarded, merged, persisted, or passed to mapper/monitor.
 - Normal runtime is user-silent.

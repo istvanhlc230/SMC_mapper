@@ -2942,3 +2942,8 @@ IMPLEMENTED — SHARED GLOBAL NEWS CACHE WITH 7-DAY FORWARD COVERAGE, 24-HOUR DE
 Corrected the shared-cache live path so `--live` no longer bypasses the 24-hour cache gate. `--force` is the explicit bypass. Due normal refreshes may use the provider's current-state method, while repeated live calls reuse a fresh cache.
 
 CI run 415 on the initial shared-cache commit completed with failure, but the available GitHub job metadata did not expose the pytest failure text. A follow-up correction commit is being used to re-run the full suite.
+
+
+## PHASE 17 — NEWS CACHE MODULE-LOCAL PATH
+
+The shared `news_data.json` cache now resides directly beside `news_data.py` via `Path(__file__).resolve().parent`. No `data/` root, symbol subdirectory, or configurable cache path is used for News Data V1. Updated News Data/Monitor/Mapper/full specifications and tests to keep this path contract consistent.

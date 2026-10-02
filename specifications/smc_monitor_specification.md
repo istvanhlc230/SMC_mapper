@@ -128,7 +128,7 @@ Each symbol uses one dedicated data directory for Market Data and Structures. Ne
 <DATA_ROOT>/<SYMBOL>/
     <SYMBOL>_marketdata.json
     <SYMBOL>_structures.json
-<DATA_ROOT>/news_data.json
+<NEWS_DATA_MODULE_DIR>/news_data.json
 ~~~
 
 The Monitor automatically resolves symbol directories for Market Data/Structures and the shared news cache from the common data root. It does not expose per-file path CLI options.
@@ -252,7 +252,7 @@ Market Data JSON serialization remains owned by market_data.py.
 Load the shared normalized event cache:
 
 ~~~text
-<DATA_ROOT>/news_data.json
+<NEWS_DATA_MODULE_DIR>/news_data.json
 ~~~
 
 The Monitor may consume normalized event fields required by the warning contract, including event identity, canonical UTC event time, title, normalized impact/status, affected currencies/instruments, source provenance, and forecast/previous/actual when available.
@@ -488,7 +488,7 @@ Launch:
 python news_data.py --symbol SYMBOL ...
 ~~~
 
-The Monitor receives process status/diagnostics only. Normalized news events are read from `<DATA_ROOT>/news_data.json`.
+The Monitor receives process status/diagnostics only. Normalized news events are read from `<NEWS_DATA_MODULE_DIR>/news_data.json`.
 
 The Monitor must never parse stdout as news-event data.
 
@@ -1942,7 +1942,7 @@ News Data persistence is global because FMP's Economic Calendar endpoint is date
 
 Normal cycle:
 
-1. inspect `<DATA_ROOT>/news_data.json`;
+1. inspect `<NEWS_DATA_MODULE_DIR>/news_data.json`;
 2. if the cache is fresh and covers the operational forward window, skip the News Data provider call;
 3. otherwise invoke `news_data.py --symbol <context-symbol>` once for the refresh operation;
 4. reload the shared cache;

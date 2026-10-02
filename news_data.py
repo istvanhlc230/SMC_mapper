@@ -9,8 +9,8 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request as URLRequest, urlopen
 
-DEFAULT_DATA_DIRECTORY = Path("data")
 NEWS_DATA_FILENAME = "news_data.json"
+NEWS_DATA_PATH = Path(__file__).resolve().parent / NEWS_DATA_FILENAME
 FMP_API_URL = "https://financialmodelingprep.com/stable/economic-calendar"
 FMP_API_KEY_ENV = "FMP_API_KEY"
 FMP_MAX_RANGE_DAYS = 90
@@ -253,8 +253,9 @@ def apply_news_retention(events: Sequence[NewsEvent], now: datetime | None = Non
         (protected_start is not None and protected_end is not None and protected_start <= e.event_time_utc <= protected_end)
         or e.event_time_utc >= cutoff])
 
-def get_news_data_path(data_directory: Path | str = DEFAULT_DATA_DIRECTORY) -> Path:
-    return Path(data_directory).resolve() / NEWS_DATA_FILENAME
+def get_news_data_path() -> Path:
+    """Return the shared cache located beside this module."""
+    return NEWS_DATA_PATH
 
 def _event_to_dict(event: NewsEvent) -> dict[str, Any]:
     return {"event_id": event.event_id, "source_timestamp": event.source_timestamp.astimezone(timezone.utc).isoformat(),
@@ -368,9 +369,8 @@ def validate_news_data_request(request: NewsDataRequest) -> None:
     if request.start_time and request.end_time and request.start_time > request.end_time:
         raise ValueError("starttime must not be after endtime")
 
-def run(request: NewsDataRequest, provider: NewsDataProvider | None = None,
-        data_directory: Path | str = DEFAULT_DATA_DIRECTORY) -> int:
-    path = get_news_data_path(data_directory)
+def run(request: NewsDataRequest, provider: NewsDataProvider | None = None) -> int:
+    path = get_news_data_path()
     existing = load_news_data(path)
     try:
         events, start, end, changed = update_news_events(request, provider or create_news_provider(),

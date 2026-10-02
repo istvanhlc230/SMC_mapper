@@ -54,8 +54,9 @@ def test_duplicate_merge_updates_actual():
     merged = news_data.merge_news_events([a], [b])
     assert len(merged) == 1 and merged[0].actual == "3.4"
 
-def test_shared_global_path(tmp_path):
-    assert news_data.get_news_data_path(tmp_path) == (Path(tmp_path)/"news_data.json").resolve()
+def test_shared_global_path():
+    assert news_data.get_news_data_path() == news_data.NEWS_DATA_PATH
+    assert news_data.get_news_data_path().name == "news_data.json"
 
 def test_cache_not_due():
     now = dt("2026-10-02T12:00:00Z")
@@ -90,11 +91,12 @@ def test_fresh_cache_skips_network():
         request(), FailingProvider(), existing, now=dt("2026-10-02T12:00:00Z"))
     assert not changed and events == []
 
-def test_symbol_does_not_create_symbol_scoped_file(tmp_path):
-    assert news_data.get_news_data_path(tmp_path).name == "news_data.json"
+def test_symbol_does_not_change_cache_path():
+    assert news_data.get_news_data_path() == news_data.NEWS_DATA_PATH
 
-def test_atomic_save_reload(tmp_path):
-    path = news_data.get_news_data_path(tmp_path)
+def test_atomic_save_reload(tmp_path, monkeypatch):
+    path = (Path(tmp_path) / "news_data.json").resolve()
+    monkeypatch.setattr(news_data, "NEWS_DATA_PATH", path)
     e = news_data.normalize_source_event(news_data.ProviderEvent(payload()[0]))
     news_data.save_news_data_atomic(path, {"events":[e],
         "available_start":"2026-10-05T00:00:00+00:00","available_end":"2026-10-10T00:00:00+00:00",
