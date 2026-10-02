@@ -759,7 +759,7 @@ Exact canonical target types/coordinates are owned by the canonical downstream t
 
 The Monitor may use transient candidate views, but not a second canonical target ontology.
 
-V1 resolves one target per active setup. Multi-leg target allocation / multi-leg Target Plans are out of scope for the current Monitor product and must not be introduced as an additional runtime target model.
+V1 resolves one target per active setup. Target allocation beyond one resolved target is out of scope for the current Monitor product and must not be introduced as an additional runtime target model.
 
 ## 9.3 Target principles
 
