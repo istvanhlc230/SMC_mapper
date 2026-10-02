@@ -176,79 +176,11 @@ If an implementation uses a technically shared field, the semantic restriction r
 
 The mapper's concrete risk calculation is implementation-owned. The risk methodology document defines the semantic risk boundaries; this section records how the current engine represents those boundaries so documentation does not compete with executable behavior.
 
-### Weighted final score
+### Risk calculation boundary
 
-```
-Structure = 25%
-Setup     = 30%
-Location  = 20%
-Liquidity = 15%
-Risk      = 10%
-```
+The mapper does not define or expose a composite quality score, quality tier, weighted score, or penalty-based risk-quality score.
 
-Quality tiers:
-
-```
-HIGH   >= 70
-MEDIUM >= 55
-LOW    >= 40
-WATCH  < 40
-```
-
-### Current mapper risk-quality calculation
-
-The current implementation starts risk quality at 80 when a confirmed dealing range exists.
-
-Retracement-depth handling:
-
-```
-retracement > 100.0%
-    → depth_penalty = 80
-    → setup invalidated
-
-78.6% < retracement <= 90.0%
-    → depth_penalty = 25
-
-90.0% < retracement <= 100.0%
-    → depth_penalty = 45
-```
-
-Protected-level proximity handling:
-
-```
-invalidation distance < 10% of range
-    → prox_penalty = 25
-
-invalidation distance < 3% of range
-    → prox_penalty = 45
-```
-
-The implementation bounds these two penalty families with:
-
-```
-risk_penalty = max(depth_penalty, prox_penalty)
-risk_quality = 80 - risk_penalty
-```
-
-Additional directional risk adjustment:
-
-```
-bullish + PREMIUM → -15
-bearish + DISCOUNT → -15
-no BOS            → -10
-```
-
-Risk quality is bounded to 0–100.
-
-These are implementation facts, not additional structural SMC rules. They must not be used to manufacture IDM, swing confirmation, BOS, CHoCH, or any other structural state.
-
-### Liquidity-quality implementation values
-
-```
-Major IDM = 80
-```
-
-These values are scoring outputs applied to already-established methodology state.
+Risk and execution policy consume canonical structural and execution state directly. Any future quantitative trading-policy metric must be explicitly defined as a separate implementation/trading-policy contract and must not be presented as canonical SMC quality.
 
 ### Boundary
 
