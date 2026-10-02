@@ -99,7 +99,7 @@ class NewsDataRequest:
     debug: bool
 ~~~
 
-One `news_data.py` execution is symbol-scoped. The request symbol determines the symbol output directory and news-data file path.
+One `news_data.py` execution is symbol-scoped. The request symbol determines the symbol output directory and news-data file path. The existing common data root is unchanged, and no data-path CLI option is required.
 
 ## 1.2 Impact
 
@@ -413,6 +413,7 @@ test_news_event_id_is_deterministic
 test_news_duplicate_events_merge
 test_news_conflicting_identity_is_rejected
 test_news_events_sort_by_utc_time
+test_news_requires_symbol
 test_news_data_path_is_symbol_scoped
 test_news_symbol_identity_matches_path
 test_news_retention_preserves_future_events
