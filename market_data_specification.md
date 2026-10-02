@@ -294,6 +294,30 @@ Core processing uses the explicit domain models above. Persistence helpers may u
 
 No canonical SMC semantic meaning may depend on the JSON container type.
 
+The persisted JSON form of VolumeState is explicitly normalized for the external mapper boundary:
+
+    "volume": {
+      "total": "...",
+      "ohlc": {
+        "buy": "...",
+        "sell": "..."
+      },
+      "orderflow": {
+        "buy": "...",
+        "sell": "..."
+      }
+    }
+
+Rules:
+
+- total is present only when has_total is true;
+- ohlc is present only when has_ohlc is true;
+- orderflow is present only when has_orderflow is true;
+- source-level delta is not persisted in any branch; derive delta as buy - sell when needed;
+- absent optional branches are represented by omission or the canonical null form used by the serializer and must be interpreted as unavailable by consumers;
+- persisted Decimal-backed numeric values use the deterministic decimal-compatible string representation;
+- the JSON volume schema is a serialization boundary and does not redefine the internal VolumeState field names.
+
 ---
 
 # 4. FUNCTION NAMING CONTRACT
@@ -1075,6 +1099,30 @@ Use deterministic serialization:
 - no random IDs or timestamps generated merely for serialization.
 
 The same logical market-data state must produce the same persisted JSON content.
+
+---
+
+## 12.8 External JSON schema contract
+
+The following serialized structure is the mapper-facing V1 market-data contract:
+
+    {
+      "symbol": "CCCC",
+      "timeframes": {
+        "H4": {
+          "available_start": "...",
+          "available_end": "...",
+          "candles": [ ... ],
+          "current": null
+        }
+      }
+    }
+
+Each completed candle contains candle_id, timestamp, completion_time, open, high, low, close and the volume object defined in Section 3.8. Timestamp and completion_time are UTC ISO-8601 values. Persisted numeric price and volume values use the deterministic decimal-compatible string representation.
+
+The current field uses the same serialized candle shape when present, but it is an in-progress runtime snapshot. It does not contribute to available_start/available_end and is never a completed-candle substitute.
+
+The mapper may deserialize this schema into its own read-only view model. It must not import Market Data domain classes merely to read the JSON boundary.
 
 ---
 
