@@ -3045,3 +3045,17 @@ Symbol materialized views remain:
     <DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json
 
 Therefore each symbol directory still contains the three runtime JSON files: Market Data, Structures, and derived News. The global cache is the only shared News Data artifact. `news_data.py` uses `Path(__file__).resolve().parent / "data" / "news_data.json"` as the default cache location.
+
+
+# PHASE 24 — TARGET SCOPE AND VOLUME SCHEMA CORRECTION
+
+## Decisions
+1. Multi-leg target allocation / multi-leg Target Plans are removed from the current V1 product scope. The Monitor resolves one target per active setup. This does not modify canonical Layer-7/8 terminology; it defines the current product boundary.
+2. Market Data JSON no longer persists source-level `delta` inside `volume.ohlc` or `volume.orderflow`.
+3. Derived POI volume delta analytics remain: `delta = buy - sell`, with `delta_ratio` retained where applicable.
+
+## Verification
+- Active specifications contain no multi-leg Target Plan requirement.
+- `volume.ohlc` and `volume.orderflow` source schemas contain only buy/sell at the Market Data boundary.
+- Derived delta analytics remain in the Mapper POI volume contract.
+- No `.agents/skills/smc/` file was modified.
