@@ -1195,7 +1195,6 @@ Side effects belong in:
 ~~~text
 load_structures
 load_market_data
-invoke_news_data
 invoke_market_data
 invoke_mapper
 refresh_current_market_view
@@ -1248,17 +1247,14 @@ parse_decimal(value)
 get_symbol_data_directory(symbol, data_directory)
 get_market_data_path(symbol, data_directory)
 get_structures_path(symbol, data_directory)
-get_news_data_path(symbol, data_directory)
 
 load_structures(path, symbol)
 load_market_data(path, symbol)
-load_news_data(path, symbol)
 
 discover_analysis_views(structures)
 validate_analysis_view(analysis)
 
 plan_market_data_updates(analysis_views, market_data, now)
-plan_news_updates(symbol, analysis_views, news_state, now)
 get_due_analyses(registry, now)
 
 invoke_market_data(plan, debug)
@@ -1270,8 +1266,6 @@ resolve_target_plan(analysis_state, current_market_view)
 is_target_cleared(target_price, current_price, direction)
 calculate_projected_rr(target_price, entry_reference_price, stop_price)
 get_active_sessions(utc_time, session_definitions)
-evaluate_news_warnings(news_events, current_time, symbol)
-calculate_news_warning_window(entry_timeframe, impact)\nbuild_news_warning_key(event_id, warning_window)
 
 build_alert_key(analysis, target)
 evaluate_alert_eligibility(analysis, target, current_market_view, min_rr)
@@ -1539,10 +1533,6 @@ test_alert_eligibility_with_rr
 test_session_status_uses_named_timezone
 test_session_status_handles_dst_transition
 test_session_context_does_not_change_canonical_state
-test_news_relevance_uses_normalized_metadata
-test_news_warning_window
-test_news_warning_is_deduplicated
-test_news_unavailability_does_not_suppress_structural_alert
 test_alert_identity_is_deterministic
 test_unchanged_alert_is_not_repeated
 test_monitor_restart_resets_transient_alert_memory
@@ -1553,7 +1543,6 @@ test_alert_does_not_claim_position_open
 
 ~~~text
 test_symbol_isolation
-test_symbol_news_store_isolation
 test_analysis_isolation
 test_one_monitor_instance_per_symbol_orchestration
 test_monitor_does_not_write_structures_json
