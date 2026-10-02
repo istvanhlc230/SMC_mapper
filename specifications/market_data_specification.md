@@ -836,8 +836,7 @@ When supplied by the provider:
 
 ```volume.orderflow = {
     buy,
-    sell,
-    delta
+    sell
 }
 ```
 
@@ -851,8 +850,7 @@ When required by the normalized data contract and source values are usable, pres
 
 ```volume.ohlc = {
     buy,
-    sell,
-    delta
+    sell
 }
 ```
 
