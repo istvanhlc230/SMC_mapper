@@ -59,11 +59,11 @@ The Monitor must not create an alternative canonical ontology for structure, POI
 ~~~text
 market_data.py
         ↓
-<SYMBOL>_marketdata.json
+<DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json
         ↓
 smc_mapper.py
         ↓
-<SYMBOL>_structures.json
+<DATA_ROOT>/<SYMBOL>/<SYMBOL>_structures.json
         ↓
 smc_monitor.py
 ~~~
@@ -122,12 +122,16 @@ Multiple symbols are allowed. Each symbol is monitored independently.
 
 The Monitor must never merge structures, market data, schedules, checkpoints, targets, or alerts between symbols.
 
-Each symbol uses:
+Each symbol uses one dedicated data directory:
 
 ~~~text
-<SYMBOL>_marketdata.json
-<SYMBOL>_structures.json
+<DATA_ROOT>/<SYMBOL>/
+    <SYMBOL>_marketdata.json
+    <SYMBOL>_structures.json
+    <SYMBOL>_news_data.json
 ~~~
+
+The Monitor automatically resolves the selected symbol directory and discovers its owned files there. It does not expose per-file path CLI options.
 
 ## 1.3 --rr
 
@@ -196,7 +200,7 @@ The request contains no HTF/LTF configuration because the Monitor does not creat
 For each selected symbol, load:
 
 ~~~text
-<SYMBOL>_structures.json
+<DATA_ROOT>/<SYMBOL>/<SYMBOL>_structures.json
 ~~~
 
 Validate at minimum:
@@ -228,7 +232,7 @@ Mapper remains the sole structures writer.
 For each selected symbol, load:
 
 ~~~text
-<SYMBOL>_marketdata.json
+<DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json
 ~~~
 
 The Monitor may consume:
@@ -407,6 +411,7 @@ Function:
 
 ~~~python
 def plan_news_updates(
+    symbol: str,
     news_state: dict[str, Any],
     now: datetime,
 ) -> NewsDataUpdatePlan | None:
@@ -418,13 +423,14 @@ Model:
 ~~~python
 @dataclass(frozen=True)
 class NewsDataUpdatePlan:
+    symbol: str
     start_time: datetime | None
     end_time: datetime | None
     live: bool
     refresh_required: bool
 ~~~
 
-The plan is shared across the Monitor's selected symbols because news_events.json is a shared normalized event store. Symbol relevance is evaluated after the event data is available.
+The news update plan is symbol-scoped because each symbol owns an independent normalized news store. The Monitor plans and refreshes news independently for each selected symbol; the same external event may therefore appear in multiple symbol stores.
 
 The plan must request enough forward coverage to contain the Monitor's configured warning horizon. Its exact refresh interval and forward/recent coverage are operational policy owned by the news-data/Monitor runtime boundary and must have one owner.
 
@@ -466,10 +472,10 @@ def invoke_news_data(
 Launch:
 
 ~~~text
-python news_data.py ...
+python news_data.py --symbol SYMBOL ...
 ~~~
 
-The Monitor receives process status/diagnostics only. Normalized news events are read from `news_events.json`.
+The Monitor receives process status/diagnostics only. Normalized news events are read from `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json`.
 
 The Monitor must never parse stdout as news-event data.
 
@@ -982,7 +988,7 @@ News Provider(s)
         ↓
 news_data.py
         ↓
-news_events.json
+<DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json
         ↓
 smc_monitor.py
         ↓
@@ -1192,9 +1198,9 @@ Canonical structure is never changed by re-evaluation.
 
 ## 13.1 Symbol isolation
 
-All runtime state is symbol-scoped.
+All runtime state and persisted external-data consumption are symbol-scoped.
 
-No symbol may receive another symbol's market-data, structural, target, or alert state.
+No symbol may receive another symbol's market-data, structural, news, target, or alert state.
 
 ## 13.2 Analysis isolation
 
@@ -1271,7 +1277,7 @@ The Monitor does not own either persistent JSON schema.
 Only market_data.py writes:
 
 ~~~text
-<SYMBOL>_marketdata.json
+<DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json
 ~~~
 
 ## 15.2 Structures
@@ -1279,7 +1285,15 @@ Only market_data.py writes:
 Only smc_mapper.py writes:
 
 ~~~text
-<SYMBOL>_structures.json
+<DATA_ROOT>/<SYMBOL>/<SYMBOL>_structures.json
+~~~
+
+## 15.2a News Data
+
+Only news_data.py writes:
+
+~~~text
+<DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json
 ~~~
 
 ## 15.3 Monitor runtime state
@@ -1432,17 +1446,20 @@ validate_monitor_request(request)
 normalize_symbol(symbol)
 parse_decimal(value)
 
+get_symbol_data_directory(symbol, data_directory)
 get_market_data_path(symbol, data_directory)
 get_structures_path(symbol, data_directory)
+get_news_data_path(symbol, data_directory)
 
 load_structures(path, symbol)
 load_market_data(path, symbol)
+load_news_data(path, symbol)
 
 discover_analysis_views(structures)
 validate_analysis_view(analysis)
 
 plan_market_data_updates(analysis_views, market_data, now)
-plan_news_updates(news_state, now)
+plan_news_updates(symbol, news_state, now)
 get_due_analyses(registry, now)
 
 invoke_market_data(plan, debug)
@@ -1455,7 +1472,7 @@ is_target_cleared(target_price, current_price, direction)
 calculate_projected_rr(target_price, entry_reference_price, stop_price)
 get_active_sessions(utc_time, session_definitions)
 plan_news_updates(news_state, now)
-evaluate_news_warnings(news_events, current_time, symbols)
+evaluate_news_warnings(news_events, current_time, symbol)
 build_news_warning_key(event_id, warning_window)
 
 build_alert_key(analysis, target)
@@ -1650,6 +1667,7 @@ Focused tests must cover at minimum.
 ~~~text
 test_monitor_requires_symbol
 test_monitor_accepts_multiple_symbols
+test_monitor_resolves_symbol_output_directory
 test_monitor_rr_optional
 test_monitor_rejects_invalid_rr
 test_monitor_debug_is_terminal_only
@@ -1760,6 +1778,7 @@ test_alert_does_not_claim_position_open
 
 ~~~text
 test_symbol_isolation
+test_symbol_news_store_isolation
 test_analysis_isolation
 test_one_monitor_instance_per_symbol_orchestration
 test_monitor_does_not_write_structures_json
@@ -1853,6 +1872,7 @@ smc_monitor.py is implementation-complete when:
 
 - the documented CLI exactly matches implementation;
 - selected symbols and all stored analyses are discovered correctly;
+- each selected symbol automatically resolves one dedicated data directory containing its Market Data, Structures, and News Data files;
 - Market Data and Mapper are invoked as independent processes;
 - persisted JSON is the machine-readable process boundary;
 - one active orchestration instance exists per symbol;
