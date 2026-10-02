@@ -466,26 +466,6 @@ TARGET_HIT ≠ VALID_BOS
 CHoCH_CONFIRMED ↛ mandatory MARKET_CLOSE_ON_CHOCH
 ```
 
-## 5.5 Scoring boundary — IMPLEMENTATION-OWNED
-
-The mapper exposes a weighted quality score, but the weights, tier thresholds, penalty arithmetic, and liquidity-quality values are implementation behavior rather than independent SMC methodology.
-
-`07_risk.md` does not own those numeric values. The single detailed implementation mapping is maintained in `08_implementation.md`, alongside the executable risk-quality calculation.
-
-This document therefore records only the ownership boundary:
-
-```
-RISK METHODOLOGY
-    ↓
-consumes canonical structural/execution state
-    ↓
-08_implementation.md / mapper implementation
-    ↓
-concrete scoring arithmetic
-```
-
-No risk score, tier, or implementation penalty may manufacture or validate IDM, CONFIRMED_STRUCTURAL_SWING, Protected Structural Extreme, VALID_BOS, CHoCH_CONFIRMED, Trading Range, or POI ontology.
-
 ## 5.6 Architectural Separation
 
 Risk remains a downstream consumer of structural and execution state. No risk rule may manufacture IDM, CONFIRMED_STRUCTURAL_SWING, Protected Structural Extreme, VALID_BOS, CHoCH_CONFIRMED, Trading Range, or POI ontology.
