@@ -1931,7 +1931,7 @@ This closes the ambiguity where a candle timestamp could precede its actual comp
 
 - OHLC directional volume remains explicitly estimated, not observed orderflow.
 - ORDERFLOW remains a distinct evidence method.
-- Statistical POI probability remains downstream/non-canonical and requires a calibrated model.
+- Volume analytics remain non-canonical and do not alter POI validity or lifecycle.
 - Target/RR semantics remain outside this mapper structural contract and under the canonical risk/execution ownership already established in Layers 6–8.
 
 ## 9. Canonical ownership verification
