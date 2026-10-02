@@ -414,7 +414,31 @@ The Monitor must not invoke the Mapper once per missed candle unless an explicit
 
 # 5. PROCESS INVOCATION CONTRACT
 
-## 5.1 invoke_market_data
+## 5.1 invoke_news_data
+
+Signature:
+
+~~~python
+def invoke_news_data(
+    request: NewsDataUpdatePlan,
+    debug: bool = False,
+) -> ProcessResult:
+    ...
+~~~
+
+Launch:
+
+~~~text
+python news_data.py ...
+~~~
+
+The Monitor receives process status/diagnostics only. Normalized news events are read from `news_events.json`.
+
+The Monitor must never parse stdout as news-event data.
+
+A non-zero exit status means the warning feed is unavailable for that update. This does not suppress an otherwise eligible structural/target alert because news is warning-only.
+
+## 5.2 invoke_market_data
 
 Signature:
 
@@ -440,7 +464,7 @@ The Monitor must never parse stdout as candle data.
 
 A non-zero exit status blocks dependent mapper execution for the affected data path.
 
-## 5.2 invoke_mapper
+## 5.3 invoke_mapper
 
 Signature:
 
@@ -474,7 +498,7 @@ When debug is enabled, the Monitor may propagate --debug to smc_mapper.py so map
 
 A non-zero mapper exit status prevents downstream use of a newer structural state for that analysis. The last successfully persisted state remains authoritative.
 
-## 5.3 Process isolation
+## 5.4 Process isolation
 
 Each subprocess receives explicit arguments and the environment required for execution.
 
@@ -482,7 +506,7 @@ stdout/stderr remain diagnostics/process output only.
 
 No process may consume another process's debug output as machine data.
 
-## 5.4 Successful persistence dependency
+## 5.5 Successful persistence dependency
 
 For downstream evaluation, Mapper success requires:
 
@@ -546,6 +570,20 @@ single chronological Mapper update
 
 ## 6.5 Trading-session model
 
+Use an explicit runtime model:
+
+~~~python
+@dataclass(frozen=True)
+class TradingSession:
+    name: str
+    timezone_name: str
+    local_start: time
+    local_end: time
+    enabled: bool
+~~~
+
+
+
 Trading-session awareness is Monitor runtime context, not canonical SMC logic.
 
 The Monitor knows named regional sessions and determines their current status from canonical UTC using explicit IANA timezones and session-local definitions.
@@ -567,7 +605,7 @@ Session definitions are represented by one Monitor-owned configuration structure
 - local end time;
 - enabled flag.
 
-The implementation must convert canonical UTC to the session timezone and evaluate the local session interval there. It must not encode fixed UTC offsets because London, New York, and Sydney observe daylight-saving changes on different calendars, while Tokyo does not. This is why session definitions use named timezones rather than fixed offsets. citeturn923238search0turn923238search10
+The implementation must convert canonical UTC to the session timezone and evaluate the local session interval there. It must not encode fixed UTC offsets because London, New York, and Sydney observe daylight-saving changes on different calendars, while Tokyo does not. This is why session definitions use named timezones rather than fixed offsets.
 
 Session status may be:
 
@@ -925,7 +963,7 @@ specifications/news_data_specification.md
 
 The news store is not canonical SMC state and does not affect Mapper structural decisions.
 
-A structured economic calendar can provide event time, currency/region, impact, forecast/previous, and actual values; these are appropriate normalized fields for the news boundary. citeturn923238search1
+A structured economic calendar can provide event time, currency/region, impact, forecast/previous, and actual values; these are appropriate normalized fields for the news boundary.
 
 ## 12.2 News event consumption
 
@@ -1307,6 +1345,7 @@ Side effects belong in:
 ~~~text
 load_structures
 load_market_data
+invoke_news_data
 invoke_market_data
 invoke_mapper
 refresh_current_market_view
@@ -1366,6 +1405,7 @@ discover_analysis_views(structures)
 validate_analysis_view(analysis)
 
 plan_market_data_updates(analysis_views, market_data, now)
+plan_news_updates(news_state, now)
 get_due_analyses(registry, now)
 
 invoke_market_data(plan, debug)
@@ -1580,8 +1620,6 @@ test_monitor_accepts_timezone
 test_monitor_rejects_invalid_timezone
 test_local_time_conversion_is_dst_aware
 test_local_time_does_not_change_due_evaluation
-test_monitor_accepts_timezone
-test_monitor_rejects_invalid_timezone
 test_local_time_conversion_is_dst_aware
 test_local_time_does_not_change_due_evaluation
 ~~~

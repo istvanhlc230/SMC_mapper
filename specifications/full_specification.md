@@ -1,7 +1,7 @@
 # SMC_Mapper Full Specification — Consolidated Current Architecture
 
 **Status:** Current consolidated architecture reference.
-**Purpose:** One clean cross-file reference for the approved market-data, structures, and monitor runtime model, including datasource, canonical UTC, and local-time handling.
+**Purpose:** One clean cross-file reference for the approved market-data, structures, monitor, and news runtime model, including datasource, canonical UTC, local-time, trading-session, and news-warning handling.
 
 **Normative ownership:**
 - `specifications/market_data_specification.md` owns the detailed Market Data implementation contract.
@@ -24,6 +24,14 @@ Trading-session awareness is a Monitor runtime concern. Named regional sessions 
 V1 session identities include Sydney, Tokyo, London, and New York. Exact local session hours are Monitor-owned operational policy and are not duplicated elsewhere.
 
 Economic-news acquisition is a separate external-data concern owned by `news_data.py`. The Monitor consumes normalized UTC news events and emits transient warning notifications. News warnings do not alter canonical SMC state, target/RR semantics, or order/position behavior.
+
+## Trading sessions and news
+
+Named regional trading sessions are Monitor runtime context. V1 knows Sydney, Tokyo, London, and New York using explicit IANA timezones; exact local session hours are one Monitor-owned operational configuration.
+
+Economic-news acquisition is separated from price Market Data and is owned by `news_data.py` / `specifications/news_data_specification.md`. The Monitor consumes normalized UTC news events from `news_events.json` and emits warning-only runtime notifications.
+
+News warnings do not alter canonical SMC state, POI lifecycle, target coordinates, RR calculation, mapper checkpoints, or order/position behavior.
 
 ## Time-domain contract
 
@@ -87,43 +95,3 @@ Final specification commit:
 **FINAL STATUS: PASS — SPECIFICATION RECONCILED WITH THE APPROVED TWO-FILE, PERSISTENT-MARKET-DATA RUNTIME MODEL**
 
 ---
-
-# FULL SPECIFICATION AUDIT + CURRENT-SNAPSHOT / PARALLEL-VOLUME REPAIR — COMPLETED
-
-## Repaired model
-
-- `<SYMBOL>_marketdata.json` stores all acquired timeframes for the symbol.
-- Each timeframe has completed candles plus an optional current in-progress snapshot.
-- current is never canonical structural input and never advances mapper checkpoints.
-- `market_data.py` supports 1..N requested timeframes through `--timeframes TF [TF ...]`.
-- `--live` refreshes current snapshots without forcing structural processing when no completed candle changed.
-- Provider total volume, OHLC-derived directional estimates, and genuine orderflow can coexist as separate volume branches.
-- No single candle-level volume method is used as provenance.
-- POI volume analytics can preserve OHLC and ORDERFLOW branches simultaneously.
-- Volume values have deterministic numeric validation.
-
-## Full audit result
-
-Re-audited the repaired `smc_mapper_specification.md` against the canonical `.agents/skills/smc/` Layer 1-8 files and the internal A-D specification structure.
-
-PASS — file-based market-data boundary; no in-process Market Data Layer or candle stdout transport.
-
-PASS — completed versus in-progress candle separation is explicit.
-
-PASS — multi-timeframe market-data acquisition is distinct from mapper one/two-timeframe semantics.
-
-PASS — current snapshot refresh is explicitly separate from completed-candle structural processing.
-
-PASS — raw total volume, OHLC estimate, and orderflow are parallel data, not mutually exclusive alternatives.
-
-PASS — runtime analytical-method selection is separate from persisted data availability/provenance.
-
-PASS — POI volume analytics supports parallel OHLC and ORDERFLOW branches.
-
-PASS — canonical Layer 1-8 ownership remains intact; no skill file was modified.
-
-PASS — IDM governance, retracement qualification, VALID_BOS gates, LTF Structural Glitch, Rule-of-Two, and downstream target/risk boundaries remain unchanged.
-
-PASS — no stale candle-level `volume_method` contract remains.
-
-**FINAL STATUS: PASS — SPECIFICATION RECONCILED WITH CURRENT-SNAPSHOT MARKET DATA, MULTI-TIMEFRAME CLI, AND PARALLEL VOLUME DATA MODEL**

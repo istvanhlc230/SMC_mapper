@@ -2795,3 +2795,26 @@ Multi-strategy audit:
 No implementation code was changed. Specification changes are pending implementation instruction.
 
 **STATUS: PASS — TRADING-SESSION AND NEWS-WARNING ARCHITECTURE AUDITED**
+
+
+# TRADING SESSION + NEWS WARNING SPECIFICATION MICRO-AUDIT — 2026-10-02
+
+Corrections after cross-file review:
+- Removed web citation markup from repository specifications.
+- Added an explicit TradingSession domain model.
+- Added an explicit news_data.py subprocess boundary; Monitor does not call a news provider directly.
+- Kept news_events.json shared rather than per-symbol to avoid event duplication across symbols.
+- Kept news warning semantics informational only; news cannot mutate canonical SMC, target/RR, checkpoint, or position state.
+- Kept session definitions in Monitor, not Mapper/Market Data.
+- Removed duplicate Monitor timezone test entries.
+- Removed redundant historical audit appendix from full_specification.md so it remains a current consolidated reference.
+
+Second-pass ownership/time audit:
+PASS — session timezone handling is Monitor-owned and DST-aware.
+PASS — datasource timezone handling remains Market Data/news-data-owned and canonical timestamps remain UTC.
+PASS — news event timestamps remain UTC at the normalized boundary.
+PASS — scheduler/completion decisions do not depend on local display time.
+PASS — news unavailability is distinguishable from an empty event set and does not suppress structural alerts.
+PASS — no persistent Monitor/news-warning state is mixed into canonical Structures JSON.
+
+**STATUS: PASS — SESSION/NEWS RECONCILIATION COMPLETE**
