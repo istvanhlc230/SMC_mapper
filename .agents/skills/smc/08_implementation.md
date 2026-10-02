@@ -172,32 +172,7 @@ StructuralBoundary
 
 If an implementation uses a technically shared field, the semantic restriction remains mandatory: `BROKEN` is valid only for `StructuralBoundary` entities. A liquidity entity must never be classified as `BROKEN`, and a structural boundary break must not be reduced to the liquidity-only state `SWEPT`.
 
-## 45.2 — Risk and scoring implementation mapping
-
-The mapper's concrete risk calculation is implementation-owned. The risk methodology document defines the semantic risk boundaries; this section records how the current engine represents those boundaries so documentation does not compete with executable behavior.
-
-### Risk calculation boundary
-
-The mapper does not define or expose a composite quality score, quality tier, weighted score, or penalty-based risk-quality score.
-
-Risk and execution policy consume canonical structural and execution state directly. Any future quantitative trading-policy metric must be explicitly defined as a separate implementation/trading-policy contract and must not be presented as canonical SMC quality.
-
-### Boundary
-
-```
-07_risk.md
-    → semantic risk policy
-
-08_implementation.md
-    → executable scoring representation
-
-the mapper implementation
-    → actual calculation
-```
-
-Therefore, a future change to the executable risk formula must first be classified as an implementation change and must not silently become a new methodology rule.
-
-## 45.3 — Intrabar Sequence Evidence
+## 45.2 — Intrabar Sequence Evidence
 
 INTRABAR_SEQUENCE_EVIDENCE is an implementation/data-model state. It does not redefine the Layer 1 methodology model.
 
@@ -577,7 +552,6 @@ A later candle may advance the lifecycle but may not retroactively rewrite the e
 24. A MAJOR_IDM wick causes Trading Range rollover.
 25. Genesis manufactures IDM or protected structure.
 26. A retracement below the canonical qualification floor must never produce VALID_BOS.
-27. Scoring creates structural validity.
 28. Historical liquidity remains active merely because it exists in history.
 29. One outside bar activates both directional branches.
 30. Inside bars remain governed by their mother-candle reference and are not treated as independent pullback references.
@@ -895,6 +869,15 @@ Required invariants:
 - no fabricated IDM;
 - no fabricated protected swing;
 - no fabricated BOS.
+
+### CLI contract
+- every documented CLI option is parsed and functionally applied;
+- every CLI exposes an English --help path that succeeds without other required arguments;
+- unsupported or incompatible option combinations fail explicitly;
+- mapper --volume-method accepts exactly NONE, OHLC, ORDERFLOW, BOTH, with default BOTH;
+- market-data --lastcandle is mutually exclusive with --starttime and --endtime;
+- monitor --rr is optional and has no default;
+- normal runtime remains user-silent except required errors; --debug diagnostics are emitted to stderr only.
 
 ## 49. State-Transition Coverage & Determinism
 
@@ -1258,4 +1241,4 @@ ACTIVE PULLBACK POINTER
 
 The structural engine may emit lifecycle events such as `TRADING_RANGE_ROLLED_OVER`, but the POI lifecycle subsystem owns POI state mutation.
 
-Configuration may alter parameters but cannot manufacture structural truth. Scoring evaluates validated structural state and cannot create or validate structure.
+Configuration may alter parameters but cannot manufacture structural truth.
