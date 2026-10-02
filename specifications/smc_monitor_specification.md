@@ -246,24 +246,6 @@ The current snapshot is never canonical structural input.
 
 Market Data JSON serialization remains owned by market_data.py.
 
-For each selected symbol, consume the derived symbol news view:
-
-~~~text
-<DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json
-~~~
-
-The view is produced by the News Data query command:
-
-~~~text
-python news_data.py --query SYMBOL
-~~~
-
-The query command first checks the shared cache inside `<DATA_ROOT>`. It refreshes FMP only when the cache gate requires it or --force is supplied, then filters explicit affected metadata and atomically materializes the symbol-specific file.
-
-The Monitor must not call FMP directly and must not issue one FMP refresh per symbol. Querying another symbol while the shared cache is fresh causes no provider request.
-
-The Monitor consumes the materialized file as external runtime context and performs final warning eligibility.
-
 ## 2.4 Read-only consumer model
 
 Use explicit read-only view models at the file boundary.
@@ -417,31 +399,6 @@ Compatible requests may be grouped for efficiency. Incompatible ranges must be i
 Function:
 
 ~~~python
-def plan_news_updates(
-    symbol: str,
-    analysis_views: list[StoredAnalysisView],
-    news_state: dict[str, Any],
-    now: datetime,
-) -> NewsDataUpdatePlan | None:
-    ...
-~~~
-
-Model:
-
-~~~python
-@dataclass(frozen=True)
-class NewsDataUpdatePlan:
-    symbol: str
-    start_time: datetime | None
-    end_time: datetime | None
-    live: bool
-    refresh_required: bool
-~~~
-
-The news update plan targets one shared cache, not one file per symbol. The Monitor may derive the required forward coverage from all selected analyses and issue one news-data CLI call; repeated per-symbol calls must reuse the same fresh cache rather than multiplying provider requests.
-
-The plan must request enough forward coverage to contain the maximum dynamic warning horizon required by the selected analyses. The actual warning window remains Monitor-owned; the shared cache uses News Data's independent 7-day forward coverage and 24-hour refresh policy.
-
 ## 4.4 No-new-candle path
 
 When no completed candle changed:
@@ -464,28 +421,6 @@ The Monitor must not invoke the Mapper once per missed candle unless an explicit
 ---
 
 # 5. PROCESS INVOCATION CONTRACT
-
-Signature:
-
-~~~python
-def invoke_news_data(
-    request: NewsDataUpdatePlan,
-    debug: bool = False,
-) -> ProcessResult:
-    ...
-~~~
-
-Launch:
-
-~~~text
-python news_data.py --symbol SYMBOL ...
-~~~
-
-The Monitor receives process status/diagnostics only. Normalized news events are read from `<NEWS_DATA_MODULE_DIR>/news_data.json`.
-
-The Monitor must never parse stdout as news-event data.
-
-A non-zero exit status means the warning feed is unavailable for that update. This does not suppress an otherwise eligible structural/target alert because news is warning-only.
 
 ## 5.2 invoke_market_data
 
@@ -1158,12 +1093,6 @@ Only smc_mapper.py writes:
 
 ~~~text
 <DATA_ROOT>/<SYMBOL>/<SYMBOL>_structures.json
-~~~
-
-Only news_data.py writes:
-
-~~~text
-<DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json
 ~~~
 
 ## 15.3 Monitor runtime state
