@@ -1,10 +1,8 @@
 # 07 — RISK
 
-**Role:** Risk, scoring, position sizing, trade management, and execution-lifecycle policy.
+**Role:** Risk, position sizing, trade management, and execution-lifecycle policy.
 
 **Authority boundary:** Risk is downstream from canonical structural validation. It consumes canonical structural/execution state and must never create, validate, reinterpret, or redefine structural truth.
-
-**Scoring boundary:** The methodology defines the risk concepts and gating semantics. The concrete risk_quality calculation and final weighted score are implementation behavior owned by the mapper implementation and documented in 08_implementation.md. This document must not invent a competing scoring formula.
 
 ## 5.1 Structural Stop-Loss Placement
 
@@ -108,7 +106,7 @@ STOP_PRICE = SL_ANCHOR ± P
 
 `P` must be explicitly supplied by the platform execution configuration. It must not be silently defaulted to an invented number. The True SMC knowledgebase does not define one universal pip/tick value for all instruments or modules.
 
-If `P` is unavailable, the setup may be analyzed and scored but an automatic broker order must not be submitted.
+If `P` is unavailable, the setup may be analyzed, but an automatic broker order must not be submitted.
 
 ### Tier-2 stop-out semantics
 
