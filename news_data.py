@@ -333,7 +333,7 @@ def update_news_events(request: NewsDataRequest, provider: NewsDataProvider,
                        existing: dict[str, Any], now: datetime | None = None) -> tuple[list[NewsEvent], datetime, datetime, bool]:
     now = now or datetime.now(timezone.utc)
     explicit_range = request.start_time is not None or request.end_time is not None
-    if not request.force and not explicit_range and not request.live and not cache_refresh_due(existing, now):
+    if not request.force and not explicit_range and not cache_refresh_due(existing, now):
         current = [_event_from_dict(e) if isinstance(e, dict) else e for e in existing.get("events", [])]
         end = _parse_doc_time(existing.get("available_end")) or now
         start = _parse_doc_time(existing.get("available_start")) or now

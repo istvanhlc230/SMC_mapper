@@ -2936,3 +2936,9 @@ FMP currently documents the Economic Calendar endpoint with a maximum 90-day dat
 
 ## Status
 IMPLEMENTED — SHARED GLOBAL NEWS CACHE WITH 7-DAY FORWARD COVERAGE, 24-HOUR DEFAULT REFRESH LIMIT, `--force` OVERRIDE, FMP-ONLY PROVIDER.
+
+## PHASE 16A — CACHE GATE CORRECTION
+
+Corrected the shared-cache live path so `--live` no longer bypasses the 24-hour cache gate. `--force` is the explicit bypass. Due normal refreshes may use the provider's current-state method, while repeated live calls reuse a fresh cache.
+
+CI run 415 on the initial shared-cache commit completed with failure, but the available GitHub job metadata did not expose the pytest failure text. A follow-up correction commit is being used to re-run the full suite.
