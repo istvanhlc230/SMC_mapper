@@ -2721,3 +2721,72 @@ PASS — scaffold/specification function signatures are aligned.
 PASS — legacy files remain extraction-only and are not runtime dependencies.
 
 **STATUS: PASS — MARKET_DATA.PY DESIGN FULLY RE-AUDITED FOR MODULARITY AND MQL4/MQL5 PORTABILITY**
+
+
+# SMC MAPPER SPECIFICATION FULL RE-AUDIT — 2026-10-02
+
+## Scope
+
+Re-audited the complete active smc_mapper_specification.md against the portable market_data.py design and the canonical .agents/skills/smc/ ownership boundaries.
+
+## Findings and corrections
+
+PASS — mapper consumes only the persisted <SYMBOL>_marketdata.json boundary; no provider-specific access is introduced.
+
+PASS — Market Data and mapper runtime ownership remains separated. The mapper does not import or runtime-call market_data.py or smc_monitor.py.
+
+PASS — mapper canonical input is completed candles[] only. The Market Data current snapshot is explicitly excluded from canonical processing and checkpoint advancement.
+
+PASS — completion_time remains the mapper's explicit end-time eligibility boundary; timestamp alone is not treated as completion proof.
+
+PASS — persisted volume compatibility is corrected. Candle-level volume branches are total, ohlc.buy/sell, and orderflow.buy/sell.
+
+PASS — source-level orderflow delta is not required or consumed. Delta is derived as buy - sell when needed.
+
+PASS — ORDERFLOW POI aggregation remains based on the available buy/sell source values, with aggregate_delta derived as aggregate_buy - aggregate_sell. OHLC and genuine orderflow branches remain independent.
+
+PASS — the market-data timeframe catalog remains owned by the Market Data contract. The mapper does not define a second hard-coded SUPPORTED_TIMEFRAMES catalog.
+
+PASS — existing-analysis incremental requests with an end-time earlier than last_processed_candle_time are now explicitly rejected instead of being interpreted as backward processing.
+
+PASS — persisted mapper checkpoint semantics are explicit: the checkpoint corresponds to the latest completed entry-timeframe candle successfully incorporated and cannot exceed the resolved analysis end boundary.
+
+PASS — monitor/orchestrator is explicitly the process launcher for Market Data and mapper updates; ambiguous generic "launcher" wording was removed.
+
+PASS — explicit mapper domain-state containers were added for MapperRequest, AnalysisIdentity, MarketDataCandleView, MarketDataSeries, AnalysisState and StructuresDocument without redefining canonical SMC ontology.
+
+PASS — mapper JSON persistence is a separate symbol-scoped atomic transaction and does not write the Market Data JSON.
+
+PASS — implementation contract now requires direct class/contract portability to MQL4/MQL5 and excludes Python-only architectural dependencies.
+
+PASS — implementation function boundaries and focused test requirements are defined without prescribing canonical layer-internal helper names.
+
+PASS — no canonical quality-scoring semantics, alternate POI lifecycle enum, or universal target-priority rule were introduced.
+
+## Cross-file compatibility correction
+
+Updated market_data_specification.md to formalize the serialized VolumeState JSON mapping used by the mapper boundary.
+
+The persistence contract now explicitly maps internal VolumeState to:
+
+    volume.total
+    volume.ohlc.buy / volume.ohlc.sell
+    volume.orderflow.buy / volume.orderflow.sell
+
+Source-level delta is derived and is not persisted.
+
+## Final audit result
+
+SPECIFICATION: PASS — IMPLEMENTATION-READY FOR smc_mapper.py.
+
+MARKET DATA COMPATIBILITY: PASS — mapper and Market Data specifications now share an explicit serialized JSON boundary.
+
+PORTABILITY: PASS — mapper domain-state architecture is directly reproducible at the class/contract level in Python, MQL4 and MQL5.
+
+CANONICAL AUTHORITY: PASS — .agents/skills/smc/ remains the sole authority for SMC semantics; mapper documentation defines orchestration and persistence boundaries only.
+
+## Remaining implementation policy note
+
+The exact V1 SUPPORTED_TIMEFRAMES / TIMEFRAME_SECONDS set and DEFAULT_CANDLE_RETENTION value remain explicitly owned by market_data.py and still require the separate operational decision already recorded in prior Market Data review history.
+
+**STATUS: PASS — SMC MAPPER SPECIFICATION FULLY RE-AUDITED**
