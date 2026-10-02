@@ -246,7 +246,7 @@ The current snapshot is never canonical structural input.
 
 Market Data JSON serialization remains owned by market_data.py.
 
-## 2.4 Read-only consumer model
+## 2.3 Read-only consumer model
 
 Use explicit read-only view models at the file boundary.
 
@@ -422,7 +422,7 @@ The Monitor must not invoke the Mapper once per missed candle unless an explicit
 
 # 5. PROCESS INVOCATION CONTRACT
 
-## 5.2 invoke_market_data
+## 5.1 invoke_market_data
 
 Signature:
 
