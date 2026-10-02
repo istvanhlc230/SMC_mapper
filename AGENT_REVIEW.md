@@ -2697,3 +2697,14 @@ PASS — legacy files remain extraction-only and are not runtime dependencies.
 Also removed redundant source-level `orderflow_delta` from the market-data/provider contract. Orderflow delta is derived as `buy - sell` when needed.
 
 **STATUS: PASS — CLASS CONTRACT IS MQL4/MQL5-PORTABLE**
+
+
+# FINAL PORTABILITY AUDIT — 2026-10-02
+
+PASS — provider base class and provider range interface are free of Python-specific Protocol/Iterable architecture.
+PASS — portable domain models now use explicit fields and arrays suitable for MQL4/MQL5 reproduction.
+PASS — VolumeState is explicit; orderflow delta is derived, not stored.
+PASS — scaffold and detailed specification are aligned on portable model structure.
+PASS — no legacy runtime dependency was introduced.
+
+**STATUS: PASS — MARKET_DATA.PY MQL4/MQL5 PORTABILITY AUDITED**

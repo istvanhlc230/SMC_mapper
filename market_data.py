@@ -42,7 +42,7 @@ DECIMAL_PERSISTENCE_PLACES = 18
 class MarketDataRequest:
     """Validated CLI request."""
     symbol: str
-    timeframes: tuple[str, ...]
+    timeframes: list[str]
     start_time: datetime | None
     end_time: datetime | None
     last_candle_only: bool
@@ -66,6 +66,19 @@ class ProviderCandle:
 
 
 @dataclass(frozen=True)
+class VolumeState:
+    """Explicit portable volume state; delta is derived as buy - sell."""
+    has_total: bool
+    total: Decimal | None
+    has_ohlc: bool
+    ohlc_buy: Decimal | None
+    ohlc_sell: Decimal | None
+    has_orderflow: bool
+    orderflow_buy: Decimal | None
+    orderflow_sell: Decimal | None
+
+
+@dataclass(frozen=True)
 class NormalizedCandle:
     """Provider-independent internal candle representation."""
     candle_id: str
@@ -75,23 +88,24 @@ class NormalizedCandle:
     high_price: Decimal
     low_price: Decimal
     close_price: Decimal
-    volume: dict[str, Any] | None
+    volume: VolumeState
 
 
 @dataclass
 class TimeframeState:
-    """In-memory representation of one persisted timeframe section."""
+    """Portable domain state for one timeframe."""
+    timeframe: str
     available_start: datetime | None
     available_end: datetime | None
-    candles: list[dict[str, Any]]
-    current: dict[str, Any] | None
+    candles: list[NormalizedCandle]
+    current: NormalizedCandle | None
 
 
 @dataclass
 class MarketDataDocument:
-    """In-memory representation of <SYMBOL>_marketdata.json."""
+    """Portable domain state for one symbol."""
     symbol: str
-    timeframes: dict[str, TimeframeState]
+    timeframes: list[TimeframeState]
 
 
 # ============================================================================
@@ -107,7 +121,7 @@ class MarketDataProvider:
         timeframe: str,
         start_time: datetime,
         end_time: datetime,
-    ) -> Iterable[ProviderCandle]:
+    ) -> list[ProviderCandle]:
         """Fetch a deterministic provider range."""
         raise NotImplementedError
 
@@ -137,7 +151,7 @@ class YahooChartsProvider:
         timeframe: str,
         start_time: datetime,
         end_time: datetime,
-    ) -> Iterable[ProviderCandle]:
+    ) -> list[ProviderCandle]:
         raise NotImplementedError
 
     def fetch_latest_completed(

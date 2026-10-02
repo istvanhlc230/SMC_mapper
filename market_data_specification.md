@@ -178,7 +178,7 @@ Recommended name:
 @dataclass(frozen=True)
 class MarketDataRequest:
     symbol: str
-    timeframes: tuple[str, ...]
+    timeframes: list[str]
     start_time: datetime | None
     end_time: datetime | None
     last_candle_only: bool
@@ -242,6 +242,16 @@ class NormalizedCandle:
 Internal normalization uses `Decimal`.
 
 Persisted JSON converts Decimal-backed values to the approved deterministic decimal-compatible string representation.
+
+class VolumeState:
+    has_total: bool
+    total: Decimal | None
+    has_ohlc: bool
+    ohlc_buy: Decimal | None
+    ohlc_sell: Decimal | None
+    has_orderflow: bool
+    orderflow_buy: Decimal | None
+    orderflow_sell: Decimal | None
 
 ## 3.4 Timeframe state
 
@@ -477,14 +487,14 @@ Use a small structural interface.
 Recommended:
 
 ```python
-class MarketDataProvider(base class):
+class MarketDataProvider:
     def fetch_range(
         self,
         symbol: str,
         timeframe: str,
         start_time: datetime,
         end_time: datetime,
-    ) -> Iterable[ProviderCandle]:
+    ) -> list[ProviderCandle]:
         ...
 
     def fetch_latest_completed(
