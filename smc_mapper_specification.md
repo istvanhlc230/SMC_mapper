@@ -224,7 +224,7 @@ The longer LTF history must not be truncated merely because the HTF history is s
 
 The absence of HTF data before its available start does not imply that HTF structure did not exist.
 
-Availability metadata may be read from `<SYMBOL>_marketdata.json` or obtained through the Market Data CLI availability operation. If the required range cannot be satisfied, the mapper must represent the resulting data/context unavailability explicitly and fail closed where canonical rules require unavailable context.
+Availability metadata is read from `<SYMBOL>_marketdata.json`. If the required range cannot be satisfied, the mapper must represent the resulting data/context unavailability explicitly and fail closed where canonical rules require unavailable context.
 
 The mapper does not perform provider-specific acquisition.
 
@@ -448,7 +448,7 @@ Each mapper analysis entry stores canonical structural analysis plus the minimal
 
 It may contain structural lifecycle/state, structural swings, protected structural extremes, dealing range, IDM state/provenance, retracement qualification, BOS, CHoCH, canonical L6 structural / POI results, canonical POI registry, retained closed Dealing Range history, and structural provenance/change metadata.
 
-The mapper must not persist dynamic monitoring or trade state such as current market price, active trade/order state, stop state, break-even state, trailing state, or target-hit state. Those are owned by the monitor.
+The mapper must not persist dynamic monitoring or trade state such as current market price, active trade/order state, stop state, break-even state, trailing state, target-hit state, or the monitor's transient POI selection state. Those are owned by the monitor.
 
 Each analysis entry contains its own `last_processed_candle_time` as mapper processing provenance/checkpoint metadata. It carries no canonical SMC meaning.
 
@@ -508,7 +508,7 @@ The Market Data CLI may internally use a bounded cache/buffer, but that is only 
 
 The mapper must never call a concrete provider, perform provider-specific API requests, depend on provider-specific response formats, request market data from the monitor, or import `market_data.py` for runtime data access.
 
-Future provider adapters may include Yahoo Charts, MetaTrader / MT4 / MT5, Pine Script data integration, broker feeds, and historical/replay sources.
+V1 uses a Yahoo Charts provider adapter as the initial concrete Market Data implementation. Future adapters may include MetaTrader / MT4 / MT5, Pine Script data integration, broker feeds, and historical/replay sources.
 
 Provider-specific API details remain outside the canonical SMC engine.
 
@@ -626,7 +626,7 @@ Layer 6 owns canonical POI lifecycle. Downstream monitor logic consumes that sta
 
 Target resolution is downstream policy. A resolved target must retain its provenance and must not be manufactured merely to satisfy an RR condition.
 
-Target clearance is downstream trading/alert policy. The clearance predicate must be deterministic and explicitly defined before it can authorize an alert. A missing or unresolved target, or an undefined clearance predicate, fails closed.
+Target clearance is downstream trading/alert policy. V1 target clearance is deterministic: a resolved target must exist, its price must be strictly beyond the current reference price in the intended direction, and it must not already have been reached at the evaluation time. A missing or unresolved target, missing current reference price, or failed clearance predicate fails closed.
 
 Minimum RR is optional monitor policy and is represented only by:
 
@@ -639,6 +639,16 @@ When `--rr` is absent, RR is not an alert-eligibility filter. When `--rr` is sup
 ```text
 Projected_RR >= --rr
 ```
+
+For V1:
+
+```text
+reward_distance = abs(resolved_target_price - entry_reference_price)
+risk_distance   = abs(stop_price - entry_reference_price)
+Projected_RR    = reward_distance / risk_distance
+```
+
+Projected_RR is unresolved when the resolved target, entry reference, or stop price is missing, or when risk_distance <= 0. An unresolved RR cannot pass an explicit --rr gate.
 
 There is no default minimum-RR value. `--rr` does not alter POI, BOS, CHoCH, IDM, Dealing Range, or target-coordinate semantics.
 
@@ -733,6 +743,126 @@ smc_mapper.py
 
 With `--debug`, only the relevant process's diagnostics become visible on the terminal. Debug information is never written into the market-data JSON and never becomes mapper or monitor input.
 
+## A19.2. CLI contracts and --help
+
+Every CLI option defined by this specification is a real implementation contract. Each documented option must be parsed, validated, functionally applied, and documented by the corresponding English --help output. Documentation-only, placeholder, or future CLI options are not permitted.
+
+--help must work without other required arguments, print the English option descriptions, and exit successfully.
+
+### smc_mapper.py
+
+```text
+Usage:
+  python smc_mapper.py --symbol SYMBOL [--htf TF] [--ltf TF]
+                       [--starttime ISO8601] [--endtime ISO8601]
+                       [--history-no N]
+                       [--volume-method {NONE,OHLC,ORDERFLOW,BOTH}]
+                       [--debug]
+                       [--help]
+
+Options:
+  --symbol SYMBOL
+      Required instrument symbol.
+
+  --htf TF
+      Optional Higher Timeframe. With --ltf, HTF must be strictly higher.
+
+  --ltf TF
+      Optional Lower/selected timeframe. With --htf, this is the entry timeframe.
+      At least one of --htf or --ltf must be supplied.
+
+  --starttime ISO8601
+      Optional analysis start boundary. When supplied, it selects the analysis
+      identity associated with that boundary.
+
+  --endtime ISO8601
+      Optional analysis end boundary. The latest completed candle whose
+      completion_time is <= this value is used.
+
+  --history-no N
+      Optional symbol-level closed Dealing Range history capacity. N must be >= 1.
+      Default when initializing a symbol structure file is 5000; an existing
+      stored value is preserved.
+
+  --volume-method {NONE,OHLC,ORDERFLOW,BOTH}
+      POI volume analytics method. Default: BOTH.
+      NONE disables volume analytics.
+      OHLC uses OHLC-derived directional volume estimates.
+      ORDERFLOW uses genuine orderflow only.
+      BOTH uses both available branches independently.
+
+  --debug
+      Enable diagnostic output on stderr.
+
+  --help
+      Show this help message and exit.
+```
+
+### market_data.py
+
+```text
+Usage:
+  python market_data.py --symbol SYMBOL --timeframes TF [TF ...]
+                        [--starttime ISO8601] [--endtime ISO8601]
+                        [--lastcandle] [--live] [--debug] [--help]
+
+Options:
+  --symbol SYMBOL
+      Required instrument symbol.
+
+  --timeframes TF [TF ...]
+      One or more supported timeframes to acquire/update in the symbol's
+      market-data JSON.
+
+  --starttime ISO8601
+      Optional historical acquisition start boundary.
+
+  --endtime ISO8601
+      Optional historical acquisition end boundary.
+
+  --lastcandle
+      Retrieve exactly the latest completed candle for each requested timeframe.
+      Mutually exclusive with --starttime and --endtime.
+
+  --live
+      Refresh the latest in-progress candle snapshot independently of completed
+      candle acquisition.
+
+  --debug
+      Enable diagnostic output on stderr.
+
+  --help
+      Show this help message and exit.
+```
+
+### smc_monitor.py
+
+```text
+Usage:
+  python smc_monitor.py --symbol SYMBOL [SYMBOL ...]
+                        [--rr DECIMAL] [--debug] [--help]
+
+Options:
+  --symbol SYMBOL [SYMBOL ...]
+      One or more symbols to monitor. The monitor loads all stored analyses
+      for each selected symbol.
+
+  --rr DECIMAL
+      Optional minimum projected Risk/Reward filter. No default.
+      When supplied, the monitor requires Projected_RR >= --rr after target
+      resolution and target clearance.
+
+  --debug
+      Enable diagnostic output on stderr.
+
+  --help
+      Show this help message and exit.
+```
+
+The monitor does not accept --htf or --ltf; it monitors the analyses already persisted in each symbol's structures JSON. Timeframe analysis configuration remains owned by smc_mapper.py.
+
+CLI options are independent of canonical SMC semantic authority. Invalid option combinations must fail explicitly rather than being silently corrected.
+
 # B. CANDLE / MARKET DATA NORMALIZATION
 
 
@@ -767,6 +897,7 @@ Each normalized completed candle must contain at minimum:
 
 - candle_id
 - timestamp
+- completion_time
 - open
 - high
 - low
@@ -834,7 +965,7 @@ The canonical engine receives an already ordered series.
 
 Only completed candles may enter canonical analysis.
 
-A candle is considered completed only after its canonical timeframe interval has closed and the normalized provider/completion contract confirms that closure.
+A candle is considered completed only after its canonical timeframe interval has closed and the normalized provider/completion contract confirms that closure. Every persisted normalized candle carries a UTC `completion_time` representing that canonical interval-close boundary. The mapper uses `completion_time` for explicit end-time eligibility; timestamp alone is not sufficient evidence of completion.
 
 The mapper must use the candle's canonical completion boundary when deciding whether it is eligible for an explicit analysis end time. The candle timestamp is not by itself sufficient evidence of completion.
 
@@ -963,7 +1094,7 @@ The canonical engine must not contain provider-specific conversion logic.
 
 ## B13. Data availability
 
-`market_data.py` persists the actual available temporal range of each timeframe in `<SYMBOL>_marketdata.json` and may expose it through an explicit CLI availability operation.
+`market_data.py` persists the actual available temporal range of each timeframe in `<SYMBOL>_marketdata.json`.
 
 At minimum, each timeframe section tracks:
 
@@ -1151,53 +1282,69 @@ It must not introduce a general HTF-parent/LTF-child semantic ontology.
 
 # C8. Canonical POI representation
 
-The mapper uses one unified POI naming model. POI type identifies what the POI is; POI role identifies its execution role; lifecycle identifies whether the POI remains canonically usable; and `targeted` identifies the POI currently selected for the setup.
+The mapper uses a unified storage representation for canonical POIs. It does not redefine the Layer 6 POI ontology or lifecycle.
 
-Canonical POI types are exactly:
+Canonical POI semantic types remain owned by Layer 6 and are represented in mapper storage as:
 
     ORDER_FLOW
     ORDER_BLOCK
 
-Execution role is represented separately and must never be encoded into the POI type name. Where the applicable Rule-of-Two context distinguishes them, the role may be:
+These storage values correspond to the canonical Layer 6 classes Valid Order Flow (OF_CONFIRMED) and Valid Order Block (VALID_OB). The storage names do not replace or redefine the canonical semantic classes.
+
+Execution role is represented separately:
 
     DECISIONAL
     EXTREME
     ORIGIN_RESERVE
 
-`ORIGIN_RESERVE` is a latent Order Block role and is not an additional active Rule-of-Two slot.
+ORIGIN_RESERVE is a latent Order Block role and is not an additional active Rule-of-Two slot.
 
-Canonical POI lifecycle is separate from targeting:
+Canonical POI lifecycle is consumed verbatim from Layer 6:
 
-    ACTIVE
-    MITIGATED
-    FAILED
+    POI_TOUCH
+    POI_INTERACTION
+    POI_MITIGATION
+    POI_FAILURE
+    POI_INVALIDATION
+
+The mapper must not introduce another lifecycle enum, rename these states, merge them, or reinterpret them.
+
+Dealing-Range rollover may additionally assign the Layer-6 historical disposition:
+
     EXPIRED_HISTORICAL
 
-The `targeted` field is a boolean selection flag:
+EXPIRED_HISTORICAL is a historical/reactive disposition after range rollover, not a replacement for the Layer-6 POI lifecycle enum.
 
-    targeted = true
-    → this POI is the POI currently selected for the active setup
+The targeted flag is downstream monitor selection state. It is not canonical POI lifecycle and is not persisted as mapper structural truth. The monitor may maintain at most one targeted=true POI within an active setup while multiple canonical POIs remain lifecycle-eligible under the Rule-of-Two constraints.
 
-    targeted = false
-    → this POI is not currently selected
-
-`targeted` does not mean mitigated, active, hit, filled, or traded. It is not a lifecycle state.
-
-Within one active setup, at most one canonical POI is `targeted = true`. Multiple canonical POIs may simultaneously have `lifecycle = ACTIVE`, subject to the Rule-of-Two execution constraint.
-
-Logical representation:
+Logical canonical POI representation:
 
 ```json
 {
   "poi_id": "POI-001",
   "poi_type": "ORDER_FLOW",
   "poi_role": "DECISIONAL",
-  "lifecycle": "ACTIVE",
+  "lifecycle": "POI_INTERACTION",
+  "provenance": {
+    "start_time": "...",
+    "end_time": "...",
+    "source_candles": ["CANDLE-101", "CANDLE-102", "CANDLE-103"]
+  }
+}
+```
+
+A runtime monitor selection view may derive:
+
+```json
+{
+  "poi_id": "POI-001",
   "targeted": true
 }
 ```
 
-The canonical semantic types remain owned by Layer 6. This mapper specification only defines their storage representation and keeps type, role, lifecycle, and targeting semantically separate.
+The selection view is downstream runtime state and must not alter the canonical POI lifecycle.
+
+The canonical semantic POI and lifecycle definitions remain owned by Layer 6. This mapper specification defines only the storage representation and downstream selection boundary.
 
 # D. POI VOLUME / DELTA ANALYTICS
 
@@ -1213,15 +1360,37 @@ The canonical POI ontology and Rule-of-Two remain owned by Layer 6.
 
 ## D2. POI volume provenance
 
-POI volume must be calculated from candles deterministically associated with the POI's canonical provenance.
+POI volume is calculated only from candles deterministically associated with the POI's canonical provenance. The mapper must not use an arbitrary fixed candle window.
 
-The mapper must not use an arbitrary fixed number of candles around the POI.
+V1 stores one POI-level aggregate per available volume branch. Additional formation-only or causal-displacement sub-aggregates are not persisted in V1.
 
-Volume analytics must be derived from the candles that form the POI's canonical provenance. The exact V1 aggregation scope—whether to persist only one POI-level aggregate or also distinct provenance components such as formation and causal-displacement aggregates—remains an open design decision and is intentionally not fixed here.
+For canonical Order Flow:
 
-For a multi-leg canonical Order Flow, the complete canonical opposing move must be represented where that move is the POI provenance; the implementation must not reduce it to an arbitrary final sub-leg.
+- the provenance is the complete canonical opposing move;
+- all candles belonging to that opposing move are included, including its internal legs;
+- the subsequent continuation/displacement is excluded.
 
-Historical POI outcome performance must not be used.
+For canonical Order Block:
+
+- the provenance is the defining Valid Order Block candle;
+- V1 aggregates exactly that one candle.
+
+The POI volume aggregate therefore includes only the candles that form the POI's canonical provenance. Post-formation displacement, reaction, mitigation, and target candles are excluded.
+
+For each available volume branch:
+
+```text
+aggregate_total = Σ total
+aggregate_buy   = Σ buy
+aggregate_sell  = Σ sell
+aggregate_delta = Σ delta
+
+delta_ratio = aggregate_delta / aggregate_total
+```
+
+The aggregate is calculated from sums. Candle-level `delta_ratio` values must never be averaged.
+
+The persisted POI provenance retains the source candle identities used for the aggregate. Historical POI outcome performance must not be used.
 
 ## D3. Volume method
 
@@ -1241,7 +1410,7 @@ BOTH uses both available OHLC-derived and genuine orderflow analytics in paralle
 
 NONE disables POI volume analytics.
 
-The selected analytical method is a runtime processing decision. It does not erase, overwrite, or relabel other available volume data.
+The selected method is a runtime processing decision. It does not erase, overwrite, or relabel other available volume data.
 
 If ORDERFLOW is explicitly requested and unavailable, the mapper must not silently downgrade to OHLC.
 
@@ -1251,11 +1420,13 @@ The concrete external provider is implementation-defined and is not part of cano
 
 An estimated buy/sell split must never be represented as observed orderflow data.
 
+Evidence provenance remains explicit: genuine orderflow is observed execution-volume data when supplied by the provider; OHLC-derived directional volume is an estimate. BOTH preserves both branches rather than combining their values.
+
 ## D4. Aggregate-OHLC calculation
 
-For each candle with total volume V and High > Low:
+For each candle with total volume V > 0 and High > Low:
 
-```
+```text
 buy_volume  = V * (Close - Low) / (High - Low)
 sell_volume = V * (High - Close) / (High - Low)
 delta       = buy_volume - sell_volume
@@ -1264,39 +1435,50 @@ delta_ratio = delta / V
 
 Therefore:
 
-```
+```text
 buy_volume + sell_volume = V
 delta = V * (2*Close - High - Low) / (High - Low)
 ```
 
-If High == Low:
+If High == Low and V > 0:
 
-```
+```text
 buy_volume  = V / 2
 sell_volume = V / 2
 delta       = 0
 delta_ratio = 0
 ```
 
-This is a directional volume estimate, not proof of historical bid/ask execution.
+If V == 0, no OHLC directional volume analytics are produced for that candle because there is no traded-volume basis for a directional estimate.
+
+OHLC directional volume is an estimate, not proof of historical bid/ask execution.
+
+All volume arithmetic uses `Decimal`. Intermediate calculations retain full Decimal precision. When a division result must be persisted as a finite decimal string, it is rounded to 18 decimal places using `ROUND_HALF_EVEN`. The same deterministic policy applies to persisted `delta_ratio` values. Persisted volume values use decimal-compatible string representation.
 
 ## D5. POI volume representation
 
 Volume analytics are stored on the canonical POI object, not as a general structural-point volume metric.
 
-The POI may contain parallel analytical branches where the corresponding source data is available:
+The V1 representation is one aggregate per available volume branch:
 
     volume.ohlc
     volume.orderflow
 
-The exact internal aggregation layout is intentionally left open for the V1 volume-design discussion. In particular, this specification does not yet mandate whether the persisted result should contain only a single POI-level aggregate or additional formation / causal-displacement aggregates.
+Each branch contains, where the required source data exists:
 
-Whatever aggregation is selected, it must:
+    total
+    buy
+    sell
+    delta
+    delta_ratio
 
-- remain scoped to the POI's canonical provenance;
-- preserve the distinction between OHLC-estimated and genuine orderflow evidence;
-- avoid arbitrary fixed candle windows;
-- never alter POI validity, lifecycle, type, or targeting.
+The aggregate is scoped exactly to the POI provenance defined in D2. The persisted provenance retains the source candle identities used for the aggregate.
+
+No formation-only or causal-displacement sub-aggregate is persisted in V1. No arbitrary fixed candle window is permitted.
+
+OHLC-estimated and genuine orderflow evidence remain separate. BOTH means both available branches are calculated independently; it does not create a third combined branch or average the two sources.
+
+Volume analytics never alter POI validity, lifecycle, type, role, or downstream monitor targeting.
 
 When no supported volume analytical path is available, no POI-derived volume analytics are calculated.
 
