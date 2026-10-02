@@ -2625,3 +2625,27 @@ The current `tests/test_smc_htf_ltf_monitor.py` CI failure is therefore a legacy
 Historical review entries that mention preserving the old integration are audit history only and are superseded by this current product-scope decision.
 
 **STATUS: PASS — LEGACY COMPONENTS EXCLUDED FROM FINISHED PRODUCT; REUSE IS OPTIONAL AND EXTRACTION-ONLY**
+
+
+# MARKET_DATA.PY IMPLEMENTATION SPECIFICATION — 2026-10-02
+
+Created `market_data_specification.md` as the detailed developer-agent contract for the standalone Market Data CLI.
+
+The document defines:
+
+- V1 internal module structure and implementation order;
+- typed internal request/candle/state models;
+- provider `Protocol` and V1 `YahooChartsProvider` boundary;
+- exact function and variable naming contract;
+- completion/current-candle separation;
+- normalization, validation, merge, deduplication and retention responsibilities;
+- atomic JSON persistence;
+- CLI behavior and error/debug contract;
+- future provider-extension and future module-split boundaries;
+- focused test names and acceptance criteria.
+
+The mapper specification remains the external/mapper-facing contract; `market_data_specification.md` owns the detailed `market_data.py` implementation structure.
+
+Legacy `smc_htf_ltf_monitor.py`, `smc_analyzer.py`, and old engine artifacts remain extraction-only source material and are not runtime dependencies.
+
+**STATUS: PASS — MARKET_DATA.PY IMPLEMENTATION CONTRACT CREATED**

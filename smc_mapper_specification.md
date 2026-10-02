@@ -106,6 +106,8 @@ Canonical SMC logic must consume only normalized candle data.
 
 Provider-specific API access, transport, retry, pagination, authentication, timestamp parsing, completion detection, and raw-field mapping belong to the Market Data CLI.
 
+The detailed internal structure, interfaces, function names, variable naming, implementation order, test boundaries, and extension points for `market_data.py` are defined in `market_data_specification.md`. This file is the mapper-facing boundary; the market-data implementation specification is the detailed owner for `market_data.py` internals.
+
 The concrete implementation resides initially in one standalone executable Python module, `market_data.py`. It may later be split internally without changing the persisted market-data schema or CLI contract.
 
 The Market Data CLI must support deterministic range retrieval and incremental update rather than requiring one provider request per candle.
