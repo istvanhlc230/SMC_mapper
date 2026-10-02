@@ -567,7 +567,7 @@ If omitted, use the latest completed entry-timeframe candle available in `<SYMBO
 
 If supplied, use the latest completed candle in `<SYMBOL>_marketdata.json` whose canonical completion boundary is less than or equal to the requested end time.
 
-The normalized candle `timestamp` alone must not be treated as proof that a candle has completed. Completion is determined by the normalized completion status/time contract in B6.
+The normalized candle `timestamp` alone must not be treated as proof that a candle has completed. Completion is determined by the normalized completion status/time contract in §1.5.
 
 An incomplete/current candle must never enter canonical analysis.
 
@@ -604,7 +604,7 @@ Market-data provider configuration belongs to the Market Data CLI and is not a m
 
 No mapper configuration file is to be introduced for timeframe selection, history retention or analysis window.
 
-Timeframe selection is controlled only by `--htf` and/or `--ltf` according to A4-A6.
+Timeframe selection is controlled only by `--htf` and/or `--ltf` according to the timeframe-relationship and synchronization contracts in this specification.
 
 Volume analysis is controlled by the optional mapper CLI parameter:
 
@@ -620,7 +620,6 @@ The selected method is an analysis-time processing decision. It is not persisted
 
 ## 2.11 CLI and --help contracts
 
-## A19.2. CLI contracts and --help
 
 Every CLI option defined by this specification is a real implementation contract. Each documented option must be parsed, validated, functionally applied, and documented by the corresponding English --help output. Documentation-only, placeholder, or future CLI options are not permitted.
 
@@ -758,7 +757,7 @@ H1_M5_2026-07-01T09:00:00Z
 M15_2026-06-10T12:00:00Z
 ```
 
-The persisted `requested_start` records the explicitly supplied start boundary when one was used. For a newly created analysis without `--starttime`, the persisted analysis boundary is the earliest available completed entry-timeframe candle selected by A7; `requested_start` may therefore be null/absent while the analysis key remains deterministic.
+The persisted `requested_start` records the explicitly supplied start boundary when one was used. For a newly created analysis without `--starttime`, the persisted analysis boundary is the earliest available completed entry-timeframe candle selected by §2.7; `requested_start` may therefore be null/absent while the analysis key remains deterministic.
 
 When `--starttime` is omitted, an existing analysis is selected by timeframe configuration only when that selection is unambiguous. If multiple analysis keys share the same timeframe configuration, `--starttime` is required.
 
@@ -854,7 +853,7 @@ The mapper must not use a latest-window shortcut that bypasses required structur
 
 The launcher invokes the Market Data CLI for the required bootstrap range in deterministic batch form and updates `<SYMBOL>_marketdata.json`. The mapper then reads the required bootstrap range from that file.
 
-For incremental execution after a valid persisted checkpoint, the launcher invokes the Market Data CLI for only the subsequently completed entry-timeframe range after the checkpoint, in chronological order, updates `<SYMBOL>_marketdata.json`, and then invokes the mapper against the resulting persisted range as defined by A18.
+For incremental execution after a valid persisted checkpoint, the launcher invokes the Market Data CLI for only the subsequently completed entry-timeframe range after the checkpoint, in chronological order, updates `<SYMBOL>_marketdata.json`, and then invokes the mapper against the resulting persisted range as defined by §10.1.
 
 The mapper does not obtain market data from the monitor and does not access a concrete provider.
 
@@ -1078,10 +1077,10 @@ A closed range identity is immutable once canonically closed. For an existing re
 
 `history_no` is stored once per symbol structures JSON, not per timeframe or analysis.
 
-- New symbol structures JSON + no `--history_no` -> initialize and persist `history_no = 5000`.
-- New symbol structures JSON + `--history_no=N` -> initialize and persist `history_no = N`.
-- Existing symbol structures JSON + no `--history_no` -> preserve the stored `history_no`.
-- Existing symbol structures JSON + `--history_no=N` -> ignore the CLI value and preserve the stored `history_no`.
+- New symbol structures JSON + no `--history-no` -> initialize and persist `history_no = 5000`.
+- New symbol structures JSON + `--history-no=N` -> initialize and persist `history_no = N`.
+- Existing symbol structures JSON + no `--history-no` -> preserve the stored `history_no`.
+- Existing symbol structures JSON + `--history-no=N` -> ignore the CLI value and preserve the stored `history_no`.
 - If an existing symbol structures JSON lacks `history_no`, initialize and persist `5000`.
 - `N` must be an integer >= 1 when supplied.
 
@@ -1321,7 +1320,7 @@ Each branch contains, where the required source data exists:
     delta
     delta_ratio
 
-The aggregate is scoped exactly to the POI provenance defined in D2. The persisted provenance retains the source candle identities used for the aggregate.
+The aggregate is scoped exactly to the POI provenance defined in §9.2. The persisted provenance retains the source candle identities used for the aggregate.
 
 No formation-only or causal-displacement sub-aggregate is persisted in V1. No arbitrary fixed candle window is permitted.
 

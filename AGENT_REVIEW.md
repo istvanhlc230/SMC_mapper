@@ -2603,3 +2603,13 @@ PASS — downstream setup eligibility no longer treats `ACTIVE` as a canonical P
 PASS — canonical skill ownership remains unchanged.
 
 **STATUS: PASS — DUPLICATION CLEANUP AND LIFECYCLE ENUM ALIGNMENT COMPLETE**
+
+# SPECIFICATION POST-AUDIT RE-NUMBERING CLEANUP — 2026-10-02
+
+PASS — removed stale internal references to superseded A/B/C/D section numbers.
+PASS — corrected the `--history-no` CLI spelling in the retention contract.
+PASS — restored heading hierarchy for the CLI and canonical POI sections after reordering.
+PASS — no canonical SMC semantic change.
+PASS — no skill files modified.
+
+**STATUS: PASS — SECTION REFERENCE AND HIERARCHY CLEANUP COMPLETE**
