@@ -154,7 +154,26 @@ Debug output must never be:
 
 Normal successful execution is silent except for actual runtime alerts/notifications.
 
-## 1.5 Request model
+## 1.5 Process result model
+
+Use an explicit subprocess result container:
+
+~~~python
+dataclass
+class ProcessResult:
+    exit_code: int
+    stdout: str
+    stderr: str
+~~~
+
+Rules:
+
+- stdout and stderr are diagnostics/process output, never candle-data transport;
+- the Monitor may retain them transiently for diagnostics/error reporting;
+- debug stderr may be shown on the terminal only;
+- no subprocess output is persisted as canonical state.
+
+## 1.6 Request model
 
 ~~~python
 @dataclass(frozen=True)
@@ -400,6 +419,7 @@ Signature:
 ~~~python
 def invoke_market_data(
     plan: MarketDataUpdatePlan,
+    debug: bool = False,
 ) -> ProcessResult:
     ...
 ~~~
@@ -410,7 +430,9 @@ Launch:
 python market_data.py ...
 ~~~
 
-The process result is exit status plus diagnostics. The machine-readable result is persisted market-data JSON.
+The process result contains exit status plus diagnostics. The machine-readable result is persisted market-data JSON.
+
+When debug is enabled, the Monitor may propagate --debug to market_data.py so provider/process diagnostics remain visible on stderr. It must never parse those diagnostics as data.
 
 The Monitor must never parse stdout as candle data.
 
@@ -424,6 +446,7 @@ Signature:
 def invoke_mapper(
     analysis: StoredAnalysisView,
     end_time: datetime,
+    debug: bool = False,
 ) -> ProcessResult:
     ...
 ~~~
@@ -444,6 +467,8 @@ The Monitor must not:
 - calculate BOS, CHoCH, IDM, retracement, or POI lifecycle.
 
 The machine-readable result is the persisted structures JSON.
+
+When debug is enabled, the Monitor may propagate --debug to smc_mapper.py so mapper diagnostics remain visible on stderr. It must never parse those diagnostics as data.
 
 A non-zero mapper exit status prevents downstream use of a newer structural state for that analysis. The last successfully persisted state remains authoritative.
 
@@ -1137,8 +1162,8 @@ validate_analysis_view(analysis)
 plan_market_data_updates(analysis_views, market_data, now)
 get_due_analyses(registry, now)
 
-invoke_market_data(plan)
-invoke_mapper(analysis, end_time)
+invoke_market_data(plan, debug)
+invoke_mapper(analysis, end_time, debug)
 
 refresh_current_market_view(symbol, timeframe)
 

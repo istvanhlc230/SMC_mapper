@@ -2673,3 +2673,19 @@ Cross-file compatibility was explicitly reconciled:
 - full_specification.md now references the Monitor ownership; detailed Monitor rules remain in the dedicated specification.
 
 **STATUS: PASS — MONITOR SPECIFICATION CREATED AND CROSS-FILE OWNERSHIP RECONCILED**
+
+
+# SMC_MONITOR.PY SPECIFICATION MICRO-AUDIT — 2026-10-02
+
+PASS — Monitor CLI is intentionally limited to symbol selection, optional downstream RR policy, and debug; HTF/LTF analysis configuration remains Mapper-owned.
+PASS — Market Data remains the sole writer of market-data JSON; Mapper remains the sole writer of structures JSON.
+PASS — Monitor checkpoint handling is read-only and remains Mapper-owned.
+PASS — current snapshot is used only for runtime current-price observation and never as canonical mapper input.
+PASS — target clearance precedes optional RR evaluation; RR never mutates canonical state.
+PASS — current product remains notification-only; no automatic order/position management.
+PASS — one active orchestration instance per symbol matches the existing atomic persistence contract.
+PASS — subprocess stdout/stderr are explicitly diagnostics only; persisted JSON remains the machine-readable boundary.
+PASS — debug propagation to child CLIs is explicitly optional/diagnostic-only and cannot affect canonical semantics.
+PASS — ProcessResult is now an explicit runtime model.
+
+**STATUS: PASS — MONITOR SPECIFICATION MICRO-AUDIT COMPLETE**
