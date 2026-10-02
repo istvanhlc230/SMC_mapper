@@ -104,6 +104,16 @@ def test_fmp_normalization():
     assert event.forecast == "3.2"
 
 
+
+
+def test_provider_id_is_preserved():
+    raw = dict(sample_event(), id="fmp-event-42")
+    event = news_data.normalize_source_event(
+        news_data.ProviderEvent(raw),
+        now=dt("2026-10-02T12:00:00Z"),
+    )
+    assert event.event_id == "fmp-event-42"
+
 def test_fallback_identity_ignores_mutable_fields():
     first = sample_event()
     second = dict(first, estimate=9, actual=3.4, impact="Low")
@@ -357,3 +367,24 @@ def test_update_mode_has_no_symbol():
     parser = news_data.build_argument_parser()
     args = parser.parse_args(["--update"])
     assert args.update is True
+
+
+def test_query_refreshes_when_start_is_outside_cache():
+    now = dt("2026-10-02T12:00:00Z")
+    document = {
+        "events": [],
+        "available_start": "2026-10-02T00:00:00Z",
+        "available_end": "2026-10-12T00:00:00Z",
+        "last_successful_update_utc": "2026-10-02T11:30:00Z",
+    }
+    request = news_data.NewsQueryRequest(
+        symbol="USDJPY",
+        start_time=dt("2026-09-30T00:00:00Z"),
+        end_time=dt("2026-10-03T00:00:00Z"),
+        impacts=(),
+        statuses=(),
+        limit=None,
+        force=False,
+        debug=False,
+    )
+    assert news_data.should_refresh_for_query(request, document, now)

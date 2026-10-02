@@ -2997,3 +2997,13 @@ Manual cache-only refresh remains:
 The module was rebuilt cleanly after audit of the prior incremental transition, removing stale CLI/runtime code. Tests were expanded for cache gating, force refresh, symbol matching, materialization, and CLI behavior.
 
 No .agents/skills/smc/ files modified.
+
+
+# PHASE 21 — NEWS QUERY AUDIT FIXES
+
+Corrected two implementation details found during final audit:
+
+1. Stable provider event IDs are now preserved from FMP during normalization. Fallback hashing is used only when FMP provides no stable ID.
+2. Cache refresh gating now validates both required coverage start and coverage end. An explicit historical query outside retained cache coverage therefore triggers an acquisition instead of silently returning incomplete results.
+
+No canonical SMC files modified.

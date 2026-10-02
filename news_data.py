@@ -308,7 +308,7 @@ def normalize_source_event(
     )
 
     return NewsEvent(
-        **{**normalized.__dict__, "event_id": build_event_id(normalized)}
+        **{**normalized.__dict__, "event_id": build_event_id(event)}
     )
 
 
@@ -596,16 +596,23 @@ def _parse_doc_time(value: Any) -> datetime | None:
 def cache_refresh_due(
     document: dict[str, Any],
     now: datetime,
+    required_start: datetime | None = None,
     required_end: datetime | None = None,
 ) -> bool:
     last = _parse_doc_time(document.get("last_successful_update_utc"))
+    available_start = _parse_doc_time(document.get("available_start"))
     available_end = _parse_doc_time(document.get("available_end"))
+    coverage_start = required_start or (
+        now - timedelta(days=NEWS_REFRESH_BACKFILL_DAYS)
+    )
     coverage_end = required_end or (
         now + timedelta(days=NEWS_FORWARD_DAYS)
     )
     return (
         last is None
         or now - last >= NEWS_REFRESH_INTERVAL
+        or available_start is None
+        or available_start > coverage_start
         or available_end is None
         or available_end < coverage_end
     )
@@ -694,6 +701,9 @@ def should_refresh_for_query(
     return request.force or cache_refresh_due(
         cache_document,
         now,
+        required_start=request.start_time or (
+            now - timedelta(days=NEWS_REFRESH_BACKFILL_DAYS)
+        ),
         required_end=required_end,
     )
 
