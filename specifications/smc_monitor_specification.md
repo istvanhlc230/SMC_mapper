@@ -1483,7 +1483,6 @@ resolve_target_plan(analysis_state, current_market_view)
 is_target_cleared(target_price, current_price, direction)
 calculate_projected_rr(target_price, entry_reference_price, stop_price)
 get_active_sessions(utc_time, session_definitions)
-plan_news_updates(symbol, news_state, now)
 evaluate_news_warnings(news_events, current_time, symbol)
 build_news_warning_key(event_id, warning_window)
 
