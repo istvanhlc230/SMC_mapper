@@ -2689,3 +2689,45 @@ PASS — debug propagation to child CLIs is explicitly optional/diagnostic-only 
 PASS — ProcessResult is now an explicit runtime model.
 
 **STATUS: PASS — MONITOR SPECIFICATION MICRO-AUDIT COMPLETE**
+
+
+# DEVELOPER-AGENT WORKFLOW CONTRACT — 2026-10-02
+
+From this point forward, developer-agent implementation instructions are generated from the active project specifications.
+
+## Permanent workflow
+
+- The assistant performs the audit.
+- The assistant determines required repairs and gives the developer agent the implementation instruction.
+- Developer-agent prompts must reference the relevant specification section(s) instead of restating the full architecture.
+- Developer-agent prompts must be concise and optimized for low execution cost.
+- When several related tests can be executed together, request one combined test run rather than multiple separate runs.
+- The developer agent may run tests and must report the result in this AGENT_REVIEW.md file.
+- The developer agent must not be treated as the audit authority; AGENT_REVIEW.md is the communication/result record, while the assistant performs the final audit.
+
+## Structural-change rule
+
+Whenever the program's structural/runtime behavior changes:
+
+1. identify the owning specification;
+2. update the relevant specification before or together with the implementation;
+3. audit the updated specification;
+4. audit cross-file compatibility with dependent specifications;
+5. perform additional audits using different perspectives/strategies when the change is structurally significant;
+6. only then instruct the developer agent to implement/repair;
+7. after implementation, require the developer agent to run the relevant combined tests;
+8. audit the developer-agent result recorded in AGENT_REVIEW.md.
+
+No structural implementation change is considered complete until the relevant specification and its cross-file compatibility have been audited.
+
+## Prompt optimization
+
+Developer-agent prompts should:
+
+- cite exact specification sections/requirements;
+- state only the required change, constraints, validation, and commit/push requirement;
+- avoid repeating information already defined by the referenced specification;
+- combine compatible implementation and test instructions into one prompt/run whenever practical;
+- require AGENT_REVIEW.md to be updated before commit so the review record is included in the same commit.
+
+**STATUS: ACTIVE WORKFLOW CONTRACT — SPECIFICATION-FIRST, ASSISTANT-AUDITED, DEVELOPER-EXECUTED**
