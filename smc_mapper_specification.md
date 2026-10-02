@@ -1137,29 +1137,7 @@ delta_ratio = 0
 
 This is a directional volume estimate, not proof of historical bid/ask execution.
 
-## D5. OHLC lower-timeframe refinement
-
-When `--volume-method OHLC` is selected, the mapper may refine a parent candle's directional-volume estimate from already-persisted completed lower-timeframe candles.
-
-The lower-timeframe source must already exist in `<SYMBOL>_marketdata.json`. The mapper must not call a provider, request an implicit timeframe, or create missing intrabars.
-
-When one or more suitable persisted lower-timeframe series are available, select the finest available timeframe whose completed candles fully partition and cover the parent candle's completed interval. Selection is deterministic. Directional volume is then calculated from the contained completed intrabars instead of directly splitting the parent candle.
-
-For each intrabar:
-
-```
-Close > Open → buy side
-Close < Open → sell side
-Close = Open → neutral; do not force a side
-```
-
-Parent-bar buy volume, sell volume and delta are the sums of the classified intrabar volumes. Neutral intrabars do not contribute to either directional side.
-
-If no suitable persisted lower-timeframe series fully partitions and covers the interval, the mapper falls back to the deterministic D4 aggregate-OHLC calculation for the parent candle. It must not fabricate or partially synthesize intrabar coverage.
-
-OHLC-derived directional volume is stored under `volume.ohlc`; genuine orderflow data is stored under `volume.orderflow`. The two branches may coexist for the same candle.
-
-## D6. POI JSON representation
+## D5. POI JSON representation
 
 Each canonical POI may contain parallel volume-analytics branches.
 
@@ -1183,7 +1161,7 @@ The runtime-selected analytical method does not delete or overwrite the other av
 
 When no supported volume analytical path is available, no volume-derived analytics or POI probability is calculated.
 
-## D7. Statistical POI probability
+## D6. Statistical POI probability
 
 The mapper may expose a **statistical probability** for an already canonical POI.
 
@@ -1232,7 +1210,7 @@ If no calibrated statistical model is available, probability must be absent/unde
 
 When method = NONE, no volume-derived statistical probability can be evaluated and the probability calculation branch must not run.
 
-## D8. Statistical model provenance
+## D7. Statistical model provenance
 
 Every POI probability record must retain sufficient provenance to identify and reproduce the probability estimate, including where applicable:
 
