@@ -19,10 +19,6 @@ The former historical FAIL findings that were embedded here have been removed fr
 
 Named regional trading sessions are Monitor runtime context. V1 knows Sydney, Tokyo, London, and New York using explicit IANA timezones; exact local session hours are one Monitor-owned operational configuration.
 
-Economic-news acquisition is separated from price Market Data and is owned by `news_data.py` / `specifications/news_data_specification.md`. The Monitor consumes normalized UTC news events from shared `<DATA_ROOT>/news_data.json` and emits warning-only runtime notifications.
-
-News warnings do not alter canonical SMC state, POI lifecycle, target coordinates, RR calculation, mapper checkpoints, or order/position behavior.
-
 ## Symbol output-directory contract
 
 The common data root contains one dedicated directory per normalized symbol:
