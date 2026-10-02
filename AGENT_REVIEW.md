@@ -2454,3 +2454,61 @@ PASS — readability takes precedence where an extremely short name would become
 
 ## Implementation-Readiness Result
 PASS for the requested decisions. The specification now exposes one unambiguous driving/entry timeframe concept and the requested MIXED volume mode. Remaining implementation work should proceed from the specification without introducing additional architecture.
+
+
+# FULL SPECIFICATION REPAIR — FINAL AUDIT — 2026-10-02
+
+## Scope
+Re-audited the active mapper specification together with canonical Layers 6-8 after the approved BOTH-volume decision.
+
+## Findings resolved
+1. Volume method:
+   - --volume-method is exactly {NONE,OHLC,ORDERFLOW,BOTH}.
+   - Default is BOTH.
+   - BOTH processes OHLC-derived and genuine orderflow branches in parallel without combining them.
+   - Legacy MIX/MIXED and ORDERFLOW -> OHLC -> NONE fallback were removed from the active mapper specification.
+
+2. POI volume provenance:
+   - ORDER_FLOW uses the complete canonical opposing move, including internal legs.
+   - Subsequent continuation/displacement, reaction, mitigation and target candles are excluded.
+   - ORDER_BLOCK uses the defining Valid Order Block candle only in V1.
+   - One aggregate is persisted per available volume branch.
+   - Aggregation uses sums of total/buy/sell/delta; candle delta ratios are never averaged.
+
+3. Canonical POI lifecycle:
+   - Mapper no longer defines an alternative lifecycle enum.
+   - Layer 6 lifecycle remains authoritative: POI_TOUCH, POI_INTERACTION, POI_MITIGATION, POI_FAILURE, POI_INVALIDATION.
+   - EXPIRED_HISTORICAL is treated only as the Layer-6 historical range-rollover disposition.
+   - targeted is downstream monitor selection state and is not canonical lifecycle or mapper structural truth.
+
+4. CLI contract:
+   - Mapper, Market Data and Monitor CLI option sets are explicitly documented.
+   - English --help behavior is specified.
+   - Every documented CLI option is an implementation requirement.
+   - Invalid combinations must fail explicitly.
+
+5. Data boundary:
+   - UTC completion_time is the normalized candle completion boundary used by mapper end-time eligibility.
+   - Market-data availability comes from persisted JSON metadata; no undocumented availability CLI operation remains.
+   - Yahoo Charts is explicitly the V1 concrete provider adapter; provider semantics remain outside canonical SMC.
+
+6. Target/RR:
+   - V1 target clearance is deterministic and downstream.
+   - Projected_RR is derived from resolved target, entry reference and stop price only; unresolved inputs fail closed.
+   - No universal target priority was introduced.
+
+7. Quality scoring:
+   - All active quality-scoring semantics were removed from canonical 07_risk.md and 08_implementation.md.
+   - Historical AGENT_REVIEW entries may mention prior scoring findings; those are audit history, not active specification.
+
+## Cross-layer result
+PASS — Layer 6 canonical POI lifecycle remains authoritative.
+PASS — Layer 7 remains downstream risk/target policy.
+PASS — Layer 8 remains implementation/state-machine authority without quality scoring.
+PASS — Mapper specification does not redefine canonical SMC semantics.
+
+## Test status
+Finished-product market_data.py, smc_mapper.py and smc_monitor.py are not present on main, so their future CLI/runtime cannot be executed yet. Existing legacy engine tests were not modified by this contract repair.
+
+## Final status
+PASS — ACTIVE SPECIFICATION AND CANONICAL CONTRACTS RECONCILED FOR IMPLEMENTATION.
