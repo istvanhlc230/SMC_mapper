@@ -1973,3 +1973,8 @@ The Monitor uses:
     python news_data.py --query SYMBOL
 
 The query command is the only normal symbol-level news interface. It checks/refreshes the shared FMP cache when due, filters the requested symbol, and atomically materializes <DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json. A fresh shared cache causes no FMP request. Multiple sequential symbol queries therefore reuse the same cache.
+
+
+# FINAL NEWS QUERY SEMANTICS
+
+Monitor invokes `python news_data.py --query SYMBOL`. Without start/end, this is cache-only and uses the complete currently retained shared cache. With start/end, it ensures/acquires the requested interval and then materializes `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json`. `--force` explicitly bypasses cache freshness/coverage optimization. The shared FMP cache is reused across symbols.

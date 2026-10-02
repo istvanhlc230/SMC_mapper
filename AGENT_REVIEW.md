@@ -3020,3 +3020,15 @@ Finalized News Data query behavior:
 - Shared FMP cache remains directly beside `news_data.py`.
 
 No canonical SMC skill files modified.
+
+# PHASE 23 — FINAL QUERY STORAGE SEMANTICS
+
+Finalized per product direction:
+
+- `--query SYMBOL` with no time bounds uses the complete retained shared cache and does not call FMP.
+- A time-bounded query ensures the requested interval is acquired, using cache coverage/freshness to avoid unnecessary requests; `--force` bypasses that optimization.
+- After query, relevant events are materialized to `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json` beside the symbol's Market Data and Structures JSON.
+- The provider cache remains directly beside `news_data.py` and is shared across symbols.
+- Explicit requested historical intervals are protected from normal retention for the acquisition/materialization operation.
+- Coverage intervals are tracked explicitly to prevent false continuous coverage across acquisition gaps.
+- No `.agents/skills/smc/` files modified.

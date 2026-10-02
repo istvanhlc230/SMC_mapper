@@ -678,8 +678,6 @@ def update_news_cache(
     merged = apply_news_retention(
         merge_news_events(current, incoming),
         now=now,
-        protected_start=request.start_time,
-        protected_end=request.end_time,
     )
 
     old_start = _parse_doc_time(existing.get("available_start"))
@@ -706,23 +704,21 @@ def should_refresh_for_query(
     cache_document: dict[str, Any],
     now: datetime,
 ) -> bool:
+    required_end = request.end_time or (
+        now + timedelta(days=NEWS_FORWARD_DAYS)
+    )
     explicit_range = (
         request.start_time is not None
         or request.end_time is not None
     )
     if not explicit_range:
         return request.force
-
-    required_start = request.start_time or (
-        now - timedelta(days=NEWS_REFRESH_BACKFILL_DAYS)
-    )
-    required_end = request.end_time or (
-        now + timedelta(days=NEWS_FORWARD_DAYS)
-    )
     return request.force or cache_refresh_due(
         cache_document,
         now,
-        required_start=required_start,
+        required_start=request.start_time or (
+            now - timedelta(days=NEWS_REFRESH_BACKFILL_DAYS)
+        ),
         required_end=required_end,
     )
 

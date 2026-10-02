@@ -33,6 +33,8 @@ The common data root contains one dedicated directory per normalized symbol:
 <DATA_ROOT>/<SYMBOL>/
     <SYMBOL>_marketdata.json
     <SYMBOL>_structures.json
+    <SYMBOL>_news_data.json
+<directory containing news_data.py>/
     news_data.json
 ```
 
@@ -127,3 +129,14 @@ For each symbol, the three runtime JSON files are co-located:
     <DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json
 
 The source FMP event cache is shared and stored directly beside news_data.py. The normal Monitor call is python news_data.py --query SYMBOL, which refreshes the shared cache only when required and then materializes the symbol-specific news view.
+
+
+# FINAL NEWS QUERY MODEL
+
+Shared source cache: `<directory containing news_data.py>/news_data.json`.
+
+Symbol query: `python news_data.py --query SYMBOL`.
+
+No time parameters: read the complete retained cache only; no FMP request.
+
+Time parameters: ensure/acquire the requested interval, then materialize the symbol-specific news JSON beside the symbol's Market Data and Structures files. `--force` bypasses cache freshness/coverage optimization.

@@ -1879,3 +1879,8 @@ Definition of done:
 ## FINAL V1 — NEWS FILE IS CONSUMER CONTEXT ONLY
 
 News Data materializes the symbol-specific <SYMBOL>_news_data.json beside Market Data and Structures. The Mapper does not consume it as canonical structural input. Canonical SMC calculation remains independent of external news.
+
+
+# FINAL NEWS BOUNDARY
+
+News Data produces symbol-specific runtime context; canonical Mapper processing remains independent of news.

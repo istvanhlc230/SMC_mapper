@@ -628,19 +628,18 @@ The News Data module has two operational layers.
             v
     smc_monitor.py
 
-The global cache is refreshed only when its refresh gate requires it, or when --force is supplied. A symbol query therefore does not imply a provider request.
-
 The normal Monitor interface is:
 
     python news_data.py --query USDJPY
 
 Query behavior:
 
-1. load the shared cache;
-2. refresh it from FMP when stale or insufficiently covered;
-3. filter only explicit affected instrument/currency metadata;
-4. atomically write <DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json;
-5. emit the same materialized document as machine-readable stdout.
+- with no --starttime/--endtime: use the complete currently retained shared cache; do not call FMP;
+- with --starttime and/or --endtime: ensure that requested interval is acquired; fetch from FMP when coverage is missing or freshness requires it;
+- --force: bypass the cache optimization and force acquisition;
+- filter relevant events by explicit affected instrument/currency metadata;
+- atomically write <DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json>;
+- emit the same symbol-view document as machine-readable stdout.
 
 The symbol-specific file is a derived view, not a second provider cache.
 
@@ -679,4 +678,11 @@ Manual cache-only refresh:
 
     python news_data.py --update
 
-The default query view covers one day backward and seven days forward. Explicit start/end overrides that view and also ensures shared-cache coverage through the requested end time.
+A no-time query has no artificial default time window and uses the complete retained cache. Explicit start/end defines the acquisition and query interval.
+
+
+# FINAL QUERY SEMANTICS
+
+`--query SYMBOL` without a time bound is a pure local query over the complete existing cache. It never performs a provider request because of cache age.
+
+`--query SYMBOL --starttime ... --endtime ...` is a time-bounded ensure/acquire operation: if the requested interval is not adequately covered, News Data acquires that interval from FMP and merges it into the shared cache; if it is covered and fresh, it reuses the cache. `--force` always reacquires.
