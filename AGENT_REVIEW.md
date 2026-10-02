@@ -2655,3 +2655,21 @@ CANONICAL AUTHORITY: PASS — .agents/skills/smc/ remains the sole authority for
 The exact V1 SUPPORTED_TIMEFRAMES / TIMEFRAME_SECONDS set and DEFAULT_CANDLE_RETENTION value remain explicitly owned by market_data.py and still require the separate operational decision already recorded in prior Market Data review history.
 
 **STATUS: PASS — SMC MAPPER SPECIFICATION FULLY RE-AUDITED**
+
+
+# SMC_MONITOR.PY SPECIFICATION — 2026-10-02
+
+Created specifications/smc_monitor_specification.md as the detailed Monitor runtime contract.
+
+Cross-file compatibility was explicitly reconciled:
+- Market Data remains the sole owner of <SYMBOL>_marketdata.json, provider access, completion, current snapshots, retention, and acquisition.
+- Mapper remains the sole owner of <SYMBOL>_structures.json, canonical structural processing, POI lifecycle, and last_processed_candle_time.
+- Monitor owns scheduling, subprocess orchestration, current-price observation, downstream target/RR evaluation, notifications, and transient runtime state.
+- Monitor does not invent analyses, canonical POI lifecycle states, target ontology, mapper checkpoints, or automatic order/position management.
+- Persisted JSON remains the machine-readable process boundary; stdout/stderr are not candle-data transport.
+- One active orchestration instance per symbol is retained as the concurrency contract.
+- Current-snapshot-only refresh does not trigger canonical mapper processing or checkpoint advancement.
+- Target clearance, optional --rr, alert deduplication, fail-closed behavior, and multi-symbol/multi-analysis isolation are explicitly defined.
+- full_specification.md now references the Monitor ownership; detailed Monitor rules remain in the dedicated specification.
+
+**STATUS: PASS — MONITOR SPECIFICATION CREATED AND CROSS-FILE OWNERSHIP RECONCILED**

@@ -1,11 +1,12 @@
 # SMC_Mapper Full Specification — Consolidated Current Architecture
 
 **Status:** Current consolidated architecture reference.
-**Purpose:** One clean cross-file reference for the approved two-file market-data / structures runtime model.
+**Purpose:** One clean cross-file reference for the approved market-data, structures, and monitor runtime model.
 
 **Normative ownership:**
 - `specifications/market_data_specification.md` owns the detailed Market Data implementation contract.
 - `specifications/smc_mapper_specification.md` owns the detailed Mapper implementation contract.
+- `specifications/smc_monitor_specification.md` owns the detailed Monitor implementation contract.
 - `.agents/skills/smc/` remains the sole authority for canonical SMC semantics.
 
 This document consolidates the approved architecture and final audit outcomes. It does not override a more specific owner document.
@@ -20,6 +21,7 @@ The former historical FAIL findings that were embedded here have been removed fr
 
 - One `<SYMBOL>_marketdata.json` stores normalized completed candles for all acquired timeframes of the symbol.
 - One `<SYMBOL>_structures.json` stores all distinct mapper analyses for the symbol.
+- `smc_monitor.py` owns runtime scheduling, process orchestration, current-price observation, downstream target/RR evaluation, and alerting; its runtime state is transient.
 - Analysis identity is deterministic from timeframe configuration plus requested start boundary.
 - Each analysis has its own `last_processed_candle_time` checkpoint.
 - A single symbol-level `history_no` value is stored once and applies independently to each analysis's applicable closed Dealing Range history.
