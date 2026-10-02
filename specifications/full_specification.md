@@ -117,3 +117,13 @@ The V1 cache maintains approximately 7 days forward coverage, refreshes at most 
 # NEWS DATA STORAGE MODEL
 
 News Data uses a shared provider cache plus a derived symbol view. The shared cache lives beside news_data.py. The symbol view lives beside the symbol's Market Data and Structures files. The normal Monitor call is: python news_data.py --query SYMBOL. The query refreshes the shared cache only when required, then materializes the symbol's relevant events. This keeps three symbol runtime JSON files co-located without multiplying FMP requests.
+
+## FINAL V1 — NEWS STORAGE
+
+For each symbol, the three runtime JSON files are co-located:
+
+    <DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json
+    <DATA_ROOT>/<SYMBOL>/<SYMBOL>_structures.json
+    <DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json
+
+The source FMP event cache is shared and stored directly beside news_data.py. The normal Monitor call is python news_data.py --query SYMBOL, which refreshes the shared cache only when required and then materializes the symbol-specific news view.

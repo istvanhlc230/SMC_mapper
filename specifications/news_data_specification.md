@@ -660,3 +660,23 @@ The three runtime JSON files for a symbol are co-located:
 The shared provider cache remains outside the symbol directory beside news_data.py.
 
 FMP Economic Calendar is date-range based and documents a maximum 90-day range and UTC timestamps.
+
+## FINAL V1 — QUERY-DRIVEN SYMBOL VIEW
+
+Primary Monitor operation:
+
+    python news_data.py --query USDJPY
+
+This operation checks the shared cache beside news_data.py, refreshes FMP only when the cache gate requires it or --force is supplied, filters relevant events by explicit currency/instrument metadata, and materializes:
+
+    <DATA_ROOT>/USDJPY/USDJPY_news_data.json
+
+The symbol file is a derived consumer view. The global cache remains:
+
+    <directory containing news_data.py>/news_data.json
+
+Manual cache-only refresh:
+
+    python news_data.py --update
+
+The default query view covers one day backward and seven days forward. Explicit start/end overrides that view and also ensures shared-cache coverage through the requested end time.

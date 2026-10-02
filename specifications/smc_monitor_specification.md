@@ -1964,3 +1964,12 @@ A `--force` request is reserved for manual immediate reconciliation and bypasses
 # SHARED NEWS CACHE ORCHESTRATION
 
 One invocation per symbol may use `python news_data.py --query SYMBOL`. The first query after cache expiry may refresh the shared FMP cache; subsequent symbol queries reuse it. `--force` is reserved for explicit immediate reconciliation. The symbol-specific news JSON is kept beside Market Data and Structures, while the provider cache remains beside news_data.py.
+
+
+## FINAL V1 — NEWS QUERY INTERFACE
+
+The Monitor uses:
+
+    python news_data.py --query SYMBOL
+
+The query command is the only normal symbol-level news interface. It checks/refreshes the shared FMP cache when due, filters the requested symbol, and atomically materializes <DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json. A fresh shared cache causes no FMP request. Multiple sequential symbol queries therefore reuse the same cache.

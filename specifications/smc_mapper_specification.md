@@ -1874,3 +1874,8 @@ Definition of done:
 - the code structure remains directly portable at the class/contract level to both MQL4 and MQL5.
 
 **STATUS: IMPLEMENTATION-READY CONTRACT — RE-AUDITED FOR MARKET-DATA COMPATIBILITY AND PORTABILITY**
+
+
+## FINAL V1 — NEWS FILE IS CONSUMER CONTEXT ONLY
+
+News Data materializes the symbol-specific <SYMBOL>_news_data.json beside Market Data and Structures. The Mapper does not consume it as canonical structural input. Canonical SMC calculation remains independent of external news.

@@ -2974,3 +2974,26 @@ Query behavior:
 `--update` remains available for manual global cache maintenance. No fallback provider was added. `.agents/skills/smc/` was not modified.
 
 The current FMP Economic Calendar documentation confirms the date-range endpoint, maximum 90-day range, UTC event times, and currency metadata used by this design.
+
+
+# PHASE 20 — FINAL QUERY-DRIVEN NEWS DESIGN
+
+Replaced the meaningless symbol parameter on update with a real symbol query workflow.
+
+Primary operation:
+    python news_data.py --query USDJPY
+
+Behavior:
+- inspect shared news_data.json beside news_data.py;
+- refresh FMP only when cache is stale/insufficient or --force is supplied;
+- filter USDJPY relevance from explicit currency/instrument metadata;
+- materialize data/USDJPY/USDJPY_news_data.json;
+- keep Market Data, Structures, and News JSON co-located in the symbol directory;
+- reuse one global provider cache across all symbols.
+
+Manual cache-only refresh remains:
+    python news_data.py --update
+
+The module was rebuilt cleanly after audit of the prior incremental transition, removing stale CLI/runtime code. Tests were expanded for cache gating, force refresh, symbol matching, materialization, and CLI behavior.
+
+No .agents/skills/smc/ files modified.
