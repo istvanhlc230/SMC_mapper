@@ -29,7 +29,7 @@ Economic-news acquisition is a separate external-data concern owned by `news_dat
 
 Named regional trading sessions are Monitor runtime context. V1 knows Sydney, Tokyo, London, and New York using explicit IANA timezones; exact local session hours are one Monitor-owned operational configuration.
 
-Economic-news acquisition is separated from price Market Data and is owned by `news_data.py` / `specifications/news_data_specification.md`. The Monitor consumes normalized UTC news events from `news_events.json` and emits warning-only runtime notifications.
+Economic-news acquisition is separated from price Market Data and is owned by `news_data.py` / `specifications/news_data_specification.md`. The Monitor consumes normalized UTC news events from `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json` and emits warning-only runtime notifications.
 
 News warnings do not alter canonical SMC state, POI lifecycle, target coordinates, RR calculation, mapper checkpoints, or order/position behavior.
 
@@ -47,8 +47,11 @@ Datasource timezone must never be guessed. Naive datasource wall-clock timestamp
 
 ## Final architecture
 
-- One `<SYMBOL>_marketdata.json` stores normalized completed candles for all acquired timeframes of the symbol.
-- One `<SYMBOL>_structures.json` stores all distinct mapper analyses for the symbol.
+- Every symbol has one dedicated output directory: `<DATA_ROOT>/<SYMBOL>/`.
+- `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json` stores normalized completed candles for all acquired timeframes of the symbol.
+- `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_structures.json` stores all distinct mapper analyses for the symbol.
+- `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json` stores normalized external news events for that symbol.
+- Each active product program automatically resolves the selected symbol directory and discovers its owned input/output files there.
 - `smc_monitor.py` owns runtime scheduling, process orchestration, current-price observation, downstream target/RR evaluation, and alerting; its runtime state is transient.
 - Analysis identity is deterministic from timeframe configuration plus requested start boundary.
 - Each analysis has its own `last_processed_candle_time` checkpoint.
@@ -69,7 +72,8 @@ Datasource timezone must never be guessed. Naive datasource wall-clock timestamp
 
 ## CLI/debug contract
 
-- Candle data is persisted to `<SYMBOL>_marketdata.json`; it is not transferred to the mapper through stdout.
+- Candle data is persisted to `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json`; it is not transferred to the mapper through stdout.
+- All symbol outputs are grouped under that symbol's directory; no cross-symbol flat output files are used.
 - Debug output is `stderr` only.
 - Debug `stderr` is terminal-only and must not be captured, parsed, forwarded, merged, persisted, or passed to mapper/monitor.
 - Normal runtime is user-silent.
@@ -89,9 +93,8 @@ Verified no remaining:
 
 Verified canonical ownership remains intact and no `.agents/skills/smc/` file was modified.
 
-Final specification commit:
-`2ae61dcbbff50f32d55a2b2e514634e9e7d30d1e`
+Final architecture revision: symbol-directory / symbol-news-store model.
 
-**FINAL STATUS: PASS — SPECIFICATION RECONCILED WITH THE APPROVED TWO-FILE, PERSISTENT-MARKET-DATA RUNTIME MODEL**
+**FINAL STATUS: PASS — SPECIFICATION RECONCILED WITH THE SYMBOL-DIRECTORY, THREE-PERSISTENT-STORE RUNTIME MODEL**
 
 ---
