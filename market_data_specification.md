@@ -69,7 +69,7 @@ Recommended source order:
 2. standard-library imports
 3. optional typing imports
 4. module constants
-5. data models / Protocols
+5. data models / base classs
 6. CLI argument construction
 7. input parsing + validation
 8. provider abstraction
@@ -124,7 +124,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
-from typing import Any, Iterable, Iterator, Protocol, Sequence
+from typing import Any, Iterable, Sequence
 ```
 
 The concrete provider adapter may add its explicitly required provider/client dependency.
@@ -214,7 +214,6 @@ close
 total_volume
 orderflow_buy
 orderflow_sell
-orderflow_delta
 completion_hint
 provider_metadata
 ```
@@ -282,6 +281,27 @@ class MarketDataDocument:
 The JSON document is symbol-scoped and contains all acquired timeframes.
 
 ---
+
+## 3.6 Cross-language class portability (MQL4/MQL5)
+
+The class/data-model contract is language-neutral and must be directly portable to both MQL4 and MQL5.
+
+Python may use `dataclass` for implementation convenience, but portability is defined by explicit fields and method semantics.
+
+Portable rules:
+
+- classes use explicit state fields;
+- public methods use simple values plus explicit output/reference parameters or output arrays conceptually;
+- correctness must not depend on Python-only typing, generators, tuples, properties, reflection, or dynamic attributes;
+- mutable state ownership is explicit;
+- public operations have an explicit success/failure result path;
+- UTC timestamps map naturally to MQL `datetime`;
+- field names and field meanings remain stable across Python, MQL4, and MQL5;
+- no implementation-critical behavior depends on Python object identity.
+
+Python may use `Decimal` internally for deterministic arithmetic. This is an implementation detail, not a portable interface requirement.
+
+The Python classes must therefore be straightforward to reproduce as MQL4/MQL5 classes without designing a second architecture.
 
 # 4. FUNCTION NAMING CONTRACT
 
@@ -450,14 +470,14 @@ Rules:
 
 # 6. PROVIDER ABSTRACTION
 
-## 6.1 MarketDataProvider Protocol
+## 6.1 MarketDataProvider base class
 
 Use a small structural interface.
 
 Recommended:
 
 ```python
-class MarketDataProvider(Protocol):
+class MarketDataProvider(base class):
     def fetch_range(
         self,
         symbol: str,
@@ -547,6 +567,24 @@ If Yahoo Charts requires multiple requests for one logical range:
 - provider request chunking must not change persisted logical results.
 
 ---
+
+## 6.5 Portable provider class contract
+
+The provider abstraction is a simple base-class contract that can be implemented in Python, MQL4, and MQL5.
+
+Conceptual methods:
+
+```text
+FetchRange(symbol, timeframe, start_time, end_time, out candles[]) -> success/failure
+FetchLatestCompleted(symbol, timeframe, out candle) -> success/failure
+FetchCurrent(symbol, timeframe, out candle) -> success/failure
+```
+
+Python V1 may use normal return values. An MQL4/MQL5 port should use virtual methods with explicit output references or arrays.
+
+The base class owns acquisition only. Concrete provider classes own transport, pagination, parsing, retries and provider-specific field mapping.
+
+The provider abstraction must not depend on JSON persistence, mapper state, monitor state, or canonical SMC logic.
 
 # 7. COMPLETION AND CURRENT-CANDLE LOGIC
 
@@ -1402,7 +1440,6 @@ close_price
 total_volume
 orderflow_buy
 orderflow_sell
-orderflow_delta
 ```
 
 Avoid single-letter financial variables such as `o`, `h`, `l`, `c` in implementation logic except in tightly scoped mathematical expressions.
@@ -1515,7 +1552,7 @@ Create:
 ```text
 constants
 data models
-Protocol
+base class
 main/run shell
 ```
 
