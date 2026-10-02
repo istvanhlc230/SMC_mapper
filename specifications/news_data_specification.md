@@ -20,7 +20,7 @@ Its responsibilities are:
 4. preserve relevant event metadata/provenance;
 5. merge/deduplicate events deterministically;
 6. maintain bounded operational retention;
-7. persist a normalized shared news-events JSON store;
+7. persist a normalized symbol-scoped news-data JSON store;
 8. expose no canonical SMC interpretation.
 
 It is not an SMC analyzer and does not decide whether a setup, POI, target, RR, or alert is valid.
@@ -84,6 +84,22 @@ The exact provider fields may vary, but the normalized contract must preserve at
 - affected currencies/instruments;
 - lifecycle/status;
 - source provenance.
+
+## 1.1a NewsDataRequest
+
+Conceptual explicit model:
+
+~~~python
+@dataclass(frozen=True)
+class NewsDataRequest:
+    symbol: str
+    start_time: datetime | None
+    end_time: datetime | None
+    live: bool
+    debug: bool
+~~~
+
+One `news_data.py` execution is symbol-scoped. The request symbol determines the symbol output directory and news-data file path.
 
 ## 1.2 Impact
 
@@ -169,17 +185,19 @@ No provider CLI option is required in V1 unless explicitly approved.
 
 ## 3.1 File
 
-Use one shared store:
+Use one symbol-scoped store per symbol:
 
 ~~~text
-news_events.json
+<DATA_ROOT>/<SYMBOL>/<SYMBOL>_news_data.json
 ~~~
 
-This is intentionally not per-symbol because the same economic event may affect multiple symbols.
+The same external economic event may therefore appear in multiple symbol stores. This duplication is intentional and provides filesystem-level symbol isolation. The normalized event record retains explicit affected currencies/instruments so the Monitor can evaluate relevance without title-text guessing.
 
 The file is not canonical SMC state.
 
 ## 3.2 Shape
+
+The persisted document is symbol-scoped and carries its symbol identity alongside its normalized events.
 
 ~~~json
 {
@@ -300,7 +318,7 @@ No separate lock file is required in V1 when one Monitor orchestrator owns news-
 V1 CLI contract:
 
 ~~~text
-python news_data.py
+python news_data.py --symbol SYMBOL
     [--starttime ISO8601]
     [--endtime ISO8601]
     [--live]
@@ -333,8 +351,10 @@ validate_news_event(event)
 merge_news_events(existing, incoming)
 sort_news_events(events)
 apply_news_retention(events)
-load_news_events(path)
-save_news_events_atomic(path, document)
+get_symbol_data_directory(symbol, data_directory)
+get_news_data_path(symbol, data_directory)
+load_news_data(path, symbol)
+save_news_data_atomic(path, document)
 resolve_news_range(request, existing)
 update_news_events(request, provider)
 run(request)
@@ -392,6 +412,8 @@ test_news_event_id_is_deterministic
 test_news_duplicate_events_merge
 test_news_conflicting_identity_is_rejected
 test_news_events_sort_by_utc_time
+test_news_data_path_is_symbol_scoped
+test_news_symbol_identity_matches_path
 test_news_retention_preserves_future_events
 test_news_atomic_save
 test_news_empty_result_is_distinct_from_provider_failure
@@ -411,6 +433,7 @@ Do not:
 - fabricate events;
 - guess source timezone;
 - make the Monitor depend on provider-specific news fields;
+- read or write another symbol's news-data file;
 - write alert state into the news store;
 - make news events mutate Mapper state.
 
