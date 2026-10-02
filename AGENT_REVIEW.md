@@ -2681,3 +2681,19 @@ Open implementation-policy decisions before functional implementation:
 These are operational implementation decisions, not canonical SMC semantics.
 
 **STATUS: PASS — STRUCTURAL CONTRACT CONSISTENT; TWO EXPLICIT OPERATIONAL POLICY VALUES REMAIN TO BE FIXED BEFORE FUNCTIONAL IMPLEMENTATION**
+
+
+# MQL4/MQL5 CLASS PORTABILITY UPDATE — 2026-10-02
+
+Updated the `market_data.py` implementation contract so its class architecture is portable to both MQL4 and MQL5.
+
+PASS — data-model classes are specified as explicit state containers rather than Python-specific architectural constructs.
+PASS — provider abstraction is a simple base-class contract with virtual-method semantics suitable for MQL4/MQL5.
+PASS — provider output semantics are defined as explicit results/output references or arrays for future ports.
+PASS — Python `Protocol` is no longer part of the architectural contract or scaffold.
+PASS — no runtime behavior depends on Python reflection, generators, tuples, properties, or dynamic attributes.
+PASS — legacy files remain extraction-only and are not runtime dependencies.
+
+Also removed redundant source-level `orderflow_delta` from the market-data/provider contract. Orderflow delta is derived as `buy - sell` when needed.
+
+**STATUS: PASS — CLASS CONTRACT IS MQL4/MQL5-PORTABLE**
