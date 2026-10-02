@@ -2731,3 +2731,18 @@ Developer-agent prompts should:
 - require AGENT_REVIEW.md to be updated before commit so the review record is included in the same commit.
 
 **STATUS: ACTIVE WORKFLOW CONTRACT — SPECIFICATION-FIRST, ASSISTANT-AUDITED, DEVELOPER-EXECUTED**
+
+
+# DEVELOPER-AGENT AUTHORITY / NON-OVERRIDE RULE — 2026-10-02
+
+The developer agent is an implementation executor, not an authority over the project specification or workflow.
+
+Priority is: user-approved requirements and decisions; assistant audit findings and explicit implementation instructions; active audited specifications; developer-agent implementation choices within those constraints.
+
+The developer agent must not independently override, weaken, reinterpret, remove, or replace user-approved architectural decisions, assistant audit conclusions, audited specification requirements, cross-file ownership boundaries, or the specification-first audit workflow.
+
+If implementation reality appears incompatible with a specification, the developer agent must report the conflict in AGENT_REVIEW.md rather than unilaterally changing the requirement. A specification change requires a new assistant audit and explicit direction before implementation proceeds.
+
+The developer agent may propose an implementation alternative, but it is not authorized to adopt that alternative when it conflicts with an approved requirement.
+
+**STATUS: ACTIVE — DEVELOPER AGENT CANNOT OVERRIDE APPROVED REQUIREMENTS OR AUDITED SPECIFICATIONS**
