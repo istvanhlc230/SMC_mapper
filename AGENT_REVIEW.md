@@ -2818,3 +2818,17 @@ PASS — news unavailability is distinguishable from an empty event set and does
 PASS — no persistent Monitor/news-warning state is mixed into canonical Structures JSON.
 
 **STATUS: PASS — SESSION/NEWS RECONCILIATION COMPLETE**
+
+
+# SESSION / NEWS SPECIFICATION SECOND-PASS AUDIT — 2026-10-02
+
+PASS — Monitor main runtime flow now explicitly includes news_data refresh before news-warning evaluation.
+PASS — NewsDataUpdatePlan makes the shared news refresh boundary explicit and avoids per-symbol provider duplication.
+PASS — session definitions remain Monitor-owned runtime context with named IANA timezones.
+PASS — news acquisition/normalization/persistence remains news_data-owned; warning evaluation remains Monitor-owned.
+PASS — canonical UTC remains authoritative across all three time domains.
+PASS — no new canonical SMC dependency on session or news context was introduced.
+PASS — repository specification files contain no web citation markup.
+PASS — session/news test requirements are grouped with the existing Monitor tests rather than requiring separate test runs.
+
+**STATUS: PASS — SESSION/NEWS SPECIFICATION LOGICALLY CLOSED AFTER SECOND-PASS AUDIT**

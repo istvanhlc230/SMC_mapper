@@ -325,19 +325,29 @@ For every monitored analysis:
 ~~~text
 discover/load stored analyses
         ↓
-identify analyses requiring update
-        ↓
 plan required Market Data ranges
         ↓
 invoke market_data.py
         ↓
 reload persisted market-data state
         ↓
+plan/update normalized news events
+        ↓
+invoke news_data.py when a news refresh is due
+        ↓
+reload persisted news state
+        ↓
+identify analyses requiring mapper update
+        ↓
 invoke affected mapper analyses
         ↓
 reload structures state
         ↓
 refresh current market reference
+        ↓
+evaluate session context
+        ↓
+evaluate news warnings
         ↓
 evaluate targets / RR / alerts
         ↓
@@ -390,6 +400,33 @@ Rules:
 - no provider-specific acquisition logic belongs here.
 
 Compatible requests may be grouped for efficiency. Incompatible ranges must be issued separately rather than being silently widened or narrowed.
+
+## 4.3.1 News-data planning
+
+Function:
+
+~~~python
+def plan_news_updates(
+    news_state: dict[str, Any],
+    now: datetime,
+) -> NewsDataUpdatePlan | None:
+    ...
+~~~
+
+Model:
+
+~~~python
+@dataclass(frozen=True)
+class NewsDataUpdatePlan:
+    start_time: datetime | None
+    end_time: datetime | None
+    live: bool
+    refresh_required: bool
+~~~
+
+The plan is shared across the Monitor's selected symbols because news_events.json is a shared normalized event store. Symbol relevance is evaluated after the event data is available.
+
+The plan must request enough forward coverage to contain the Monitor's configured warning horizon. Its exact refresh interval and forward/recent coverage are operational policy owned by the news-data/Monitor runtime boundary and must have one owner.
 
 ## 4.4 No-new-candle path
 
@@ -1631,6 +1668,17 @@ test_discover_analysis_views_preserves_all_analyses
 test_monitor_does_not_infer_analysis_from_market_data
 test_analysis_registry_is_symbol_isolated
 test_analysis_registry_is_checkpoint_isolated
+~~~
+
+### Session and news orchestration
+
+~~~text
+test_plan_news_updates_uses_warning_horizon
+test_invoke_news_data_uses_persisted_json_not_stdout
+test_news_warning_is_independent_of_market_data_update
+test_active_sessions_use_named_timezones
+test_session_dst_does_not_change_canonical_time
+test_news_warning_does_not_mutate_canonical_state
 ~~~
 
 ### Market Data orchestration

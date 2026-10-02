@@ -1,8 +1,8 @@
 # News Data Specification
 
-**Status:** Working implementation specification for future \`news_data.py\`.  
-**Scope:** External economic-news acquisition, normalization, update, persistence, and consumer contract for \`smc_monitor.py\`.  
-**Canonical authority:** \`.agents/skills/smc/\` remains the sole authority for canonical SMC semantics. News data is non-canonical external context.
+**Status:** Working implementation specification for future `news_data.py`.  
+**Scope:** External economic-news acquisition, normalization, update, persistence, and consumer contract for `smc_monitor.py`.  
+**Canonical authority:** `.agents/skills/smc/` remains the sole authority for canonical SMC semantics. News data is non-canonical external context.
 
 ---
 
@@ -10,7 +10,7 @@
 
 ## 0.1 Finished-product role
 
-\`news_data.py\` is a standalone normalized economic-news data process.
+`news_data.py` is a standalone normalized economic-news data process.
 
 Its responsibilities are:
 
@@ -98,7 +98,7 @@ UNKNOWN
 
 Provider-specific impact labels are normalized into this vocabulary.
 
-\`UNKNOWN\` must not be silently promoted to HIGH.
+`UNKNOWN` must not be silently promoted to HIGH.
 
 ## 1.3 Status
 
@@ -113,13 +113,13 @@ UNKNOWN
 
 A released event may carry actual data when the source provides it.
 
-The Monitor warning logic is primarily concerned with future \`SCHEDULED\` events.
+The Monitor warning logic is primarily concerned with future `SCHEDULED` events.
 
 ## 1.4 Time-domain contract
 
 Datasource-native event time is source/provenance data.
 
-Canonical \`event_time_utc\` is the only persisted time used for sorting, warning-window evaluation, and cross-module consumption.
+Canonical `event_time_utc` is the only persisted time used for sorting, warning-window evaluation, and cross-module consumption.
 
 Rules:
 
@@ -211,7 +211,7 @@ Source-time fields are provenance only.
 
 ## 3.3 Deterministic identity
 
-\`event_id\` must be stable across repeated provider downloads.
+`event_id` must be stable across repeated provider downloads.
 
 When the provider supplies a stable event ID, preserve it.
 
@@ -245,9 +245,9 @@ Do not retrieve an arbitrary unbounded history.
 
 Use deterministic range updates.
 
-Merge by \`event_id\`.
+Merge by `event_id`.
 
-Sort events chronologically by \`event_time_utc\`.
+Sort events chronologically by `event_time_utc`.
 
 Deduplicate repeated provider records.
 
