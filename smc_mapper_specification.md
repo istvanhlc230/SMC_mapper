@@ -309,7 +309,7 @@ The history record may contain, where applicable:
 - HTF CHoCH;
 - canonical HTF Layer-6 POIs;
 - associated LTF structural/entry-analysis records;
-- volume metadata associated with canonical structural points/POIs.
+- volume metadata associated with canonical POIs.
 
 There is no fixed maximum number of LTF structures within one HTF Dealing Range.
 
@@ -410,6 +410,7 @@ Logical shape:
       "requested_start": "2026-06-10T12:00:00Z",
       "last_processed_candle_time": "...",
       "current": {},
+      "canonical_pois": [],
       "history": []
     }
   }
@@ -445,7 +446,7 @@ There is no single multi-symbol mapper JSON file and no single multi-symbol mark
 
 Each mapper analysis entry stores canonical structural analysis plus the minimal mapper-processing metadata required for deterministic incremental execution.
 
-It may contain structural lifecycle/state, structural swings, protected structural extremes, dealing range, IDM state/provenance, retracement qualification, BOS, CHoCH, canonical L6 structural / POI results, retained closed Dealing Range history, and structural provenance/change metadata.
+It may contain structural lifecycle/state, structural swings, protected structural extremes, dealing range, IDM state/provenance, retracement qualification, BOS, CHoCH, canonical L6 structural / POI results, canonical POI registry, retained closed Dealing Range history, and structural provenance/change metadata.
 
 The mapper must not persist dynamic monitoring or trade state such as current market price, active trade/order state, stop state, break-even state, trailing state, or target-hit state. Those are owned by the monitor.
 
@@ -575,103 +576,27 @@ Each JSON update is performed as a complete read-modify-write operation using a 
 
 The monitor advances an analysis checkpoint only after the corresponding structural state has been successfully persisted.
 
-## A18a. Setup evidence snapshots and downstream eligibility
-
-The mapper may persist immutable setup evidence snapshots inside the relevant analysis entry of `<SYMBOL>_structures.json`.
-
-A setup snapshot is an append-only evidence record captured when canonical execution authorization is reached and the downstream monitor is preparing an alert. It is not live trade state and must not be rewritten by later market updates.
-
-A setup snapshot should reference, rather than duplicate unnecessarily, the canonical state that existed at snapshot time. At minimum it preserves:
-
-- symbol and analysis key;
-- snapshot time;
-- HTF/LTF context and applicable Dealing Range;
-- Protected Structural Extreme / Major IDM references where applicable;
-- canonical active POI and its canonical POI type;
-- canonical POI lifecycle state;
-- entry module / execution route;
-- canonical entry authorization state;
-- entry reference price;
-- stop anchor/reference;
-- resolved target and target provenance when available;
-- projected RR when available;
-- volume method/evidence provenance when available;
-- canonical event/provenance references needed to reconstruct the setup context.
-
-The snapshot must not contain or imply position-open, broker-fill, stop-moved, break-even, trailing, target-hit, or position-closed state. Those remain monitor/execution state.
-
-### Canonical POI lifecycle is the first eligibility gate
-
-Downstream entry/alert eligibility must evaluate the canonical POI lifecycle before target, RR, or execution-condition policy.
-
-Only a canonical POI whose lifecycle is currently eligible/active may be consumed for a new entry candidate.
-
-The downstream consumer must reject POIs that are:
-
-- expired/historical;
-- mitigated;
-- failed;
-- otherwise canonically inactive.
-
-A historical POI retained for audit is evidence only and cannot become active again merely because it remains present in JSON.
-
-Layer 6 remains the semantic owner of POI lifecycle. Layer 8 and downstream monitor/policy code consume the lifecycle state and must not invent a separate age-based freshness rule or independently decide canonical POI expiry.
-
-### Target-clearance gate
-
-After canonical execution authorization and resolution of the applicable target policy, a downstream target-clearance gate determines whether the resolved target remains eligible from the active canonical POI/setup context.
-
-The ordering is:
-
-```text
-CANONICAL POI LIFECYCLE
-        ↓
-CANONICAL EXECUTION AUTHORIZATION
-        ↓
-TARGET RESOLUTION
-        ↓
-TARGET CLEARANCE
-        ↓
-RR / TRADING POLICY
-        ↓
-ALERT ELIGIBILITY
-```
-
-Target clearance is downstream trading/alert policy. It must consume canonical structure, active POI lifecycle, resolved target provenance, and the applicable target policy. It must not redefine BOS, CHoCH, POI validity, or other canonical SMC structure.
-
-The target-clearance predicate must be deterministic and explicitly defined by the downstream target policy before it can authorize an alert. A missing or unresolved target, or an undefined clearance predicate, fails closed; the mapper must never manufacture a target or clearance result.
-
 ### RR / minimum-RR policy
 
 Minimum RR is a downstream trading-policy constraint, not a mapper/canonical-SMC parameter.
 
-Therefore `minRR` does **not** belong on `smc_mapper.py`.
+Therefore `--rr` does **not** belong to `smc_mapper.py`.
 
-If exposed as a CLI control, it belongs to `smc_monitor.py`, for example:
+If exposed as a CLI control, it belongs to `smc_monitor.py`:
 
 ```text
---min-rr DECIMAL
+--rr DECIMAL
 ```
 
-It is applied only after target resolution and target clearance. The value is policy, not structural truth, and must never alter canonical POI, BOS, CHoCH, IDM, Dealing Range, or target-coordinate semantics.
+The parameter is optional. If `--rr` is absent, RR is not used as an alert-eligibility filter. If `--rr` is supplied, the monitor applies the gate only after target resolution and target clearance:
 
-Because one monitor can manage multiple analyses, the implementation must not silently apply one global `min-rr` value where per-analysis policy is required. V1 may use one monitor-level default, but any per-analysis override must be explicit rather than inferred.
+```text
+Projected_RR >= --rr
+```
 
-### Conditional execution policy
+There is no default minimum-RR value. `--rr` is policy, not structural truth, and must never alter canonical POI, BOS, CHoCH, IDM, Dealing Range, or target-coordinate semantics.
 
-Execution-quality conditions are optional downstream policy inputs, not canonical SMC rules.
-
-Examples include:
-
-- spread;
-- expected slippage;
-- market/session availability;
-- broker/execution availability;
-- explicitly configured news/event filters.
-
-The monitor remains alert/notification-only in the current product and must not submit broker orders. These conditions may therefore be evaluated as alert-eligibility policy now, and later reused by an execution adapter such as an MT4/MT5 integration.
-
-No execution-condition failure may mutate canonical structure or POI lifecycle.
+An explicitly supplied `--rr` value applies only to the monitor invocation in which it is supplied.
 
 ## A19. Configuration
 
@@ -1064,7 +989,7 @@ When total traded volume is available from the provider, market_data.py preserve
 
 When genuine orderflow is available, it is preserved independently under volume.orderflow. When deterministic OHLC directional estimation is available, it may be preserved independently under volume.ohlc.
 
-The mapper must preserve the applicable volume information when storing structural-point references to source candles. Parallel volume types must not overwrite one another.
+The mapper must preserve the applicable POI volume information when storing POI references to source candles. Parallel volume types must not overwrite one another.
 
 Volume provenance is represented by the data branch that is actually present. A single exclusive volume source or volume method field is not required on the candle.
 
@@ -1178,13 +1103,63 @@ It must not introduce a general HTF-parent/LTF-child semantic ontology.
 
 ---
 
+# C8. Canonical POI representation
+
+The mapper uses one unified POI naming model. POI type identifies what the POI is; POI role identifies its execution role; lifecycle identifies whether the POI remains canonically usable; and `targeted` identifies the POI currently selected for the setup.
+
+Canonical POI types are exactly:
+
+    ORDER_FLOW
+    ORDER_BLOCK
+
+Execution role is represented separately and must never be encoded into the POI type name. Where the applicable Rule-of-Two context distinguishes them, the role may be:
+
+    DECISIONAL
+    EXTREME
+    ORIGIN_RESERVE
+
+`ORIGIN_RESERVE` is a latent Order Block role and is not an additional active Rule-of-Two slot.
+
+Canonical POI lifecycle is separate from targeting:
+
+    ACTIVE
+    MITIGATED
+    FAILED
+    EXPIRED_HISTORICAL
+
+The `targeted` field is a boolean selection flag:
+
+    targeted = true
+    → this POI is the POI currently selected for the active setup
+
+    targeted = false
+    → this POI is not currently selected
+
+`targeted` does not mean mitigated, active, hit, filled, or traded. It is not a lifecycle state.
+
+Within one active setup, at most one canonical POI is `targeted = true`. Multiple canonical POIs may simultaneously have `lifecycle = ACTIVE`, subject to the Rule-of-Two execution constraint.
+
+Logical representation:
+
+```json
+{
+  "poi_id": "POI-001",
+  "poi_type": "ORDER_FLOW",
+  "poi_role": "DECISIONAL",
+  "lifecycle": "ACTIVE",
+  "targeted": true
+}
+```
+
+The canonical semantic types remain owned by Layer 6. This mapper specification only defines their storage representation and keeps type, role, lifecycle, and targeting semantically separate.
+
 # D. POI VOLUME / DELTA ANALYTICS
 
 ## D1. Scope
 
 POI volume analytics is a non-canonical analytical extension of the canonical POI result.
 
-It may enrich an already canonical POI with total volume, buy volume, sell volume, volume delta, directional delta ratio, and a statistical probability value when a usable volume method and calibrated probability model are available.
+An already canonical POI may be enriched with POI-scoped volume analytics such as total volume, buy volume, sell volume, volume delta, and directional delta ratio when a usable volume method is available.
 
 Volume analytics must never create, remove, retype, or canonically invalidate a POI.
 
@@ -1196,9 +1171,9 @@ POI volume must be calculated from candles deterministically associated with the
 
 The mapper must not use an arbitrary fixed number of candles around the POI.
 
-Where available, the JSON should distinguish formation volume, causal displacement volume, and their aggregate.
+Volume analytics must be derived from the candles that form the POI's canonical provenance. The exact V1 aggregation scope—whether to persist only one POI-level aggregate or also distinct provenance components such as formation and causal-displacement aggregates—remains an open design decision and is intentionally not fixed here.
 
-For a multi-leg canonical OF, the complete canonical opposing move must be represented where that move is the POI provenance; the implementation must not reduce it to an arbitrary final sub-leg.
+For a multi-leg canonical Order Flow, the complete canonical opposing move must be represented where that move is the POI provenance; the implementation must not reduce it to an arbitrary final sub-leg.
 
 Historical POI outcome performance must not be used.
 
@@ -1261,101 +1236,25 @@ delta_ratio = 0
 
 This is a directional volume estimate, not proof of historical bid/ask execution.
 
-## D5. POI JSON representation
+## D5. POI volume representation
 
-Each canonical POI may contain parallel volume-analytics branches.
+Volume analytics are stored on the canonical POI object, not as a general structural-point volume metric.
 
-The logical representation is:
+The POI may contain parallel analytical branches where the corresponding source data is available:
 
     volume.ohlc
-        formation
-        causal_displacement
-        aggregate
-
     volume.orderflow
-        formation
-        causal_displacement
-        aggregate
 
-Each formation, causal_displacement, and aggregate object may contain total, buy, sell, delta, and delta_ratio.
+The exact internal aggregation layout is intentionally left open for the V1 volume-design discussion. In particular, this specification does not yet mandate whether the persisted result should contain only a single POI-level aggregate or additional formation / causal-displacement aggregates.
 
-The ohlc and orderflow branches may coexist for the same POI. Values are omitted or null only when the relevant provenance data is unavailable.
+Whatever aggregation is selected, it must:
 
-The runtime-selected analytical method does not delete or overwrite the other available branch.
+- remain scoped to the POI's canonical provenance;
+- preserve the distinction between OHLC-estimated and genuine orderflow evidence;
+- avoid arbitrary fixed candle windows;
+- never alter POI validity, lifecycle, type, or targeting.
 
-When no supported volume analytical path is available, no volume-derived analytics or POI probability is calculated.
-
-## D6. Statistical POI probability
-
-The mapper may expose a **statistical probability** for an already canonical POI.
-
-This value must represent an actual calibrated probability estimate, not a volume ratio, directional score, confidence score, or percentage derived directly from buy/sell volume.
-
-POI-linked volume and delta are model inputs/features. They may increase or decrease the estimated probability, but the mapper must not convert:
-
-```
-buy / total
-sell / total
-delta / total
-```
-
-directly into a probability.
-
-A valid probability requires an explicitly defined statistical model that has been trained/calibrated on labeled observations and whose output is interpretable as an estimated probability of the defined POI outcome.
-
-The mapper runtime uses the current canonical POI context and its available volume/orderflow features as model inputs. The mapper does not calculate historical POI success rates on the fly.
-
-**V1 probability contract:** the V1 runtime does not ship with a calibrated probability model. Probability is therefore absent/undefined in V1 unless an externally supplied calibrated model is explicitly integrated. Canonical POI processing and all volume analytics must operate correctly without probability.
-
-The outcome being predicted must be explicitly defined by the statistical model contract. The model must not use an undefined notion of "POI success".
-
-The stored value is a probability in normalized numeric form:
-
-```
-0.0 <= probability <= 1.0
-```
-
-not a percentage field.
-
-For human-readable output, the mapper/reporting layer may display the same value as a percentage (for example, `0.73` displayed as `73%`), but the JSON canonical numeric representation remains `0.73`.
-
-Recommended JSON representation:
-
-```json
-"probability": {
-  "value": 0.73,
-  "model": "MODEL_ID",
-  "model_version": "VERSION",
-  "calibrated": true
-}
-```
-
-If no calibrated statistical model is available, probability must be absent/undefined. The mapper must not fabricate a probability from delta or volume ratios.
-
-When method = NONE, no volume-derived statistical probability can be evaluated and the probability calculation branch must not run.
-
-## D7. Statistical model provenance
-
-Every POI probability record must retain sufficient provenance to identify and reproduce the probability estimate, including where applicable:
-
-- model identifier;
-- model version;
-- calibration status;
-- outcome definition/version;
-- input feature set/version;
-- volume method;
-- source candle IDs or canonical provenance references;
-- formation start/end;
-- causal displacement start/end.
-
-The statistical probability must never be used by downstream code as canonical POI validity.
-
-The probability must be visible for each canonical POI for which a calibrated model and required inputs are available. If the probability cannot be evaluated, it must be absent/undefined rather than replaced by a neutral value.
-
-When method = NONE, downstream code must treat volume analytics and probability as absent rather than as a zero/neutral weighting.
-
-A statistical probability model necessarily requires empirical observations for training/calibration. Those observations may be prepared and maintained outside the mapper runtime; the mapper only consumes the resulting calibrated model. Without such empirical calibration, a true statistical probability cannot be claimed.
-
+When no supported volume analytical path is available, no POI-derived volume analytics are calculated.
 
 # E. IMPLEMENTATION CODE STYLE
 
