@@ -598,6 +598,54 @@ There is no default minimum-RR value. `--rr` is policy, not structural truth, an
 
 An explicitly supplied `--rr` value applies only to the monitor invocation in which it is supplied.
 
+### A18a. Downstream setup and alert eligibility
+
+Downstream alert eligibility consumes canonical mapper state; it does not redefine canonical structure.
+
+The canonical POI lifecycle is the first eligibility gate for a new setup:
+
+```text
+CANONICAL POI LIFECYCLE
+        ↓
+CANONICAL EXECUTION AUTHORIZATION
+        ↓
+TARGET RESOLUTION
+        ↓
+TARGET CLEARANCE
+        ↓
+OPTIONAL RR POLICY
+        ↓
+ALERT ELIGIBILITY
+```
+
+Only a canonical POI with `lifecycle = ACTIVE` may be selected as the setup target. The `targeted` flag identifies that selected POI; `targeted` is selection state and is not a lifecycle state.
+
+The downstream consumer must reject POIs whose canonical lifecycle is `MITIGATED`, `FAILED`, or `EXPIRED_HISTORICAL`. A retained historical POI cannot become targetable again merely because it remains in the structures JSON.
+
+Layer 6 owns canonical POI lifecycle. Downstream monitor logic consumes that state and must not invent an age-based freshness rule or independently decide canonical POI expiry.
+
+Target resolution is downstream policy. A resolved target must retain its provenance and must not be manufactured merely to satisfy an RR condition.
+
+Target clearance is downstream trading/alert policy. The clearance predicate must be deterministic and explicitly defined before it can authorize an alert. A missing or unresolved target, or an undefined clearance predicate, fails closed.
+
+Minimum RR is optional monitor policy and is represented only by:
+
+```text
+--rr DECIMAL
+```
+
+When `--rr` is absent, RR is not an alert-eligibility filter. When `--rr` is supplied, the monitor requires:
+
+```text
+Projected_RR >= --rr
+```
+
+There is no default minimum-RR value. `--rr` does not alter POI, BOS, CHoCH, IDM, Dealing Range, or target-coordinate semantics.
+
+Execution-quality conditions such as spread, expected slippage, market/session availability, broker/execution availability, or explicitly configured event filters are downstream policy only. Failure of such a condition must not mutate canonical structure or POI lifecycle.
+
+The monitor is alert/notification-only in the current product. Alerts are runtime events and are not persisted as canonical structure, setup snapshots, or alert records in `<SYMBOL>_structures.json`.
+
 ## A19. Configuration
 
 No separate mapper configuration file is required.
