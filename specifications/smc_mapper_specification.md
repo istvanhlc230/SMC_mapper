@@ -108,7 +108,7 @@ All durable outputs for one symbol live under one directory beneath the common d
 
 The Mapper automatically resolves `<DATA_ROOT>/<SYMBOL>/` from its normalized symbol and reads `<SYMBOL>_marketdata.json` and `<SYMBOL>_structures.json` from that directory. Normal runtime does not require ad-hoc per-file path input from the Monitor or caller. The symbol directory is created by the component that owns a write when persistence is required.
 
-The Mapper must not search another symbol's directory and must reject a persisted document whose stored symbol identity does not match the requested symbol.
+The Mapper must not search another symbol's directory and must reject a persisted document whose stored symbol identity does not match the requested symbol. The existing common data root is unchanged; no data-path CLI option is introduced.
 
 ### Process-launch requirement
 
