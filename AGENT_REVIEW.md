@@ -2512,3 +2512,34 @@ Finished-product market_data.py, smc_mapper.py and smc_monitor.py are not presen
 
 ## Final status
 PASS — ACTIVE SPECIFICATION AND CANONICAL CONTRACTS RECONCILED FOR IMPLEMENTATION.
+
+
+# FINAL SPECIFICATION MICRO-AUDIT — 2026-10-02
+
+## Final verification after orderflow aggregate-total clarification
+
+### Active specification
+PASS — mapper volume method is exactly `NONE, OHLC, ORDERFLOW, BOTH`; default is `BOTH`.
+PASS — `BOTH` uses OHLC-derived and genuine orderflow branches independently; no combined volume branch exists.
+PASS — V1 ORDER_FLOW provenance is the complete canonical opposing move; subsequent displacement is excluded.
+PASS — V1 ORDER_BLOCK provenance is the defining Valid OB candle only.
+PASS — POI aggregation uses summed volume/buy/sell/delta; candle delta ratios are never averaged.
+PASS — ORDERFLOW aggregate total is explicitly the sum of its buy/sell volume; OHLC aggregate total is the sum of `volume.total`.
+PASS — zero-volume OHLC input produces no directional estimate.
+PASS — Decimal arithmetic and deterministic 18-decimal ROUND_HALF_EVEN persistence are explicit.
+PASS — canonical Layer-6 POI lifecycle remains authoritative and is not replaced by mapper-specific lifecycle states.
+PASS — `targeted` remains downstream monitor selection state.
+PASS — mapper, Market Data and monitor CLI contracts include English `--help`; every documented option is an implementation requirement.
+PASS — no `MIX`, `MIXED`, old volume fallback, quality scoring, `risk_quality`, or universal Primary Target wording remains in the active specification/canonical 07-08 files.
+PASS — no undocumented availability CLI operation remains.
+PASS — normalized `completion_time` is the canonical completion boundary used by mapper `--endtime`.
+PASS — target clearance and Projected_RR are explicitly downstream and fail closed when required inputs are unresolved.
+PASS — canonical Layer-6 semantic rules were not changed as part of the mapper simplification.
+
+### Repository test status
+FAIL — GitHub Actions run 358 for commit `7af595913f2187dcffe1c63c780a03cf54ff9f60` fails during pytest collection because `tests/test_smc_htf_ltf_monitor.py` imports missing module `smc_htf_ltf_monitor`.
+This is a repository/legacy-test integrity issue, not a failure of the specification changes above.
+
+### Final status
+SPECIFICATION: PASS — READY FOR IMPLEMENTATION.
+REPOSITORY TEST SUITE: FAIL — pre-existing missing legacy module must be resolved before the repository can report a green full test run.
