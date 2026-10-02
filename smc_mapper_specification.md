@@ -157,7 +157,7 @@ When only one timeframe is supplied, only that timeframe is analyzed.
 
 `--starttime` is optional.
 
-When supplied, it defines the requested start of the analysis window. It may be specified as:
+When supplied, it defines the requested start of the analysis window and selects the analysis identity associated with that requested boundary. It may be specified as:
 
 - a date, or
 - an exact datetime.
@@ -168,17 +168,19 @@ Examples:
 
 `--starttime 2026-09-01T09:30:00`
 
-When `--starttime` is omitted, the mapper resumes from the persisted analysis state in `<SYMBOL>_structures.json`:
+When `--starttime` is omitted:
 
-- for an existing deterministic analysis entry, processing resumes from that analysis's `last_processed_candle_time`;
-- the next eligible completed entry-timeframe candle after that checkpoint is the incremental processing start;
-- if no checkpoint exists for the requested analysis identity, the mapper uses the latest persisted completed entry-timeframe candle as the resume boundary and establishes the required bootstrap state from available canonical history.
+- if exactly one existing analysis matches the supplied timeframe configuration, the mapper resumes that analysis from its persisted `last_processed_candle_time`;
+- if multiple existing analyses match the supplied timeframe configuration but have different analysis start boundaries, the request is ambiguous and must fail explicitly; `--starttime` is required to select one;
+- if no existing analysis matches the supplied timeframe configuration, the mapper creates a new analysis using the earliest available completed entry-timeframe candle in `<SYMBOL>_marketdata.json` as its persisted initial analysis boundary. This boundary comes from actual persisted data and is not invented.
+
+For an existing analysis, the next eligible completed entry-timeframe candle after `last_processed_candle_time` is the incremental processing start.
+
+For a newly created analysis without `--starttime`, the mapper performs the required bootstrap/warm-up from the persisted available history beginning at the selected initial analysis boundary.
 
 The resume path is specifically intended to support restarting the program after a previous shutdown.
 
-The mapper must distinguish the explicitly requested `requested_start`, when supplied, from the computed `effective_start`.
-
-When a new analysis has no persisted state, the mapper must not invent a historical start. Required bootstrap/warm-up candles are obtained by ensuring the required range is present in `<SYMBOL>_marketdata.json` through the Market Data CLI, then reading the persisted normalized range.
+The mapper must distinguish the explicitly requested `requested_start`, when supplied, from the persisted analysis boundary and the computed `effective_start`.
 
 If required historical data is outside the retained market-data window, the Market Data CLI reacquires the missing range before mapper processing.
 
@@ -378,7 +380,7 @@ The available_start and available_end fields refer only to the persisted complet
 
 `<SYMBOL>_structures.json` is the canonical mapper structural-state file for that symbol.
 
-It contains all distinct mapper analyses for the symbol in one file. Each analysis is identified by a deterministic analysis key derived from its timeframe configuration and requested start boundary.
+It contains all distinct mapper analyses for the symbol in one file. Each analysis is identified by a deterministic analysis key derived from its timeframe configuration and persisted initial analysis boundary.
 
 Examples:
 
@@ -387,6 +389,10 @@ H4_M15_2026-06-10T12:00:00Z
 H1_M5_2026-07-01T09:00:00Z
 M15_2026-06-10T12:00:00Z
 ```
+
+The persisted `requested_start` records the explicitly supplied start boundary when one was used. For a newly created analysis without `--starttime`, the persisted analysis boundary is the earliest available completed entry-timeframe candle selected by A7; `requested_start` may therefore be null/absent while the analysis key remains deterministic.
+
+When `--starttime` is omitted, an existing analysis is selected by timeframe configuration only when that selection is unambiguous. If multiple analysis keys share the same timeframe configuration, `--starttime` is required.
 
 The analysis key is an implementation-level identifier only; it does not redefine canonical SMC ontology.
 
@@ -414,7 +420,7 @@ Logical shape:
 
 A Market Data CLI execution updates only `<SYMBOL>_marketdata.json`. A mapper execution updates only its relevant analysis entry inside `<SYMBOL>_structures.json`.
 
-The monitor identifies each stored analysis from its deterministic analysis key and validates the stored `analysis_mode`, `htf`, `ltf`, and `requested_start`.
+The monitor identifies each stored analysis from its deterministic analysis key and validates the stored `analysis_mode`, `htf`, `ltf`, and persisted analysis boundary. `requested_start` is validated when present; it may be null/absent for an analysis created without an explicit `--starttime`.
 
 ### Monitor multi-symbol / multi-analysis contract
 
@@ -568,6 +574,104 @@ To keep file coordination simple, the finished product supports one active `smc_
 Each JSON update is performed as a complete read-modify-write operation using a temporary file followed by atomic replacement. If a target file is temporarily unavailable for writing, the writer waits briefly and retries up to a finite timeout. No separate lock file is required.
 
 The monitor advances an analysis checkpoint only after the corresponding structural state has been successfully persisted.
+
+## A18a. Setup evidence snapshots and downstream eligibility
+
+The mapper may persist immutable setup evidence snapshots inside the relevant analysis entry of `<SYMBOL>_structures.json`.
+
+A setup snapshot is an append-only evidence record captured when canonical execution authorization is reached and the downstream monitor is preparing an alert. It is not live trade state and must not be rewritten by later market updates.
+
+A setup snapshot should reference, rather than duplicate unnecessarily, the canonical state that existed at snapshot time. At minimum it preserves:
+
+- symbol and analysis key;
+- snapshot time;
+- HTF/LTF context and applicable Dealing Range;
+- Protected Structural Extreme / Major IDM references where applicable;
+- canonical active POI and its canonical POI type;
+- canonical POI lifecycle state;
+- entry module / execution route;
+- canonical entry authorization state;
+- entry reference price;
+- stop anchor/reference;
+- resolved target and target provenance when available;
+- projected RR when available;
+- volume method/evidence provenance when available;
+- canonical event/provenance references needed to reconstruct the setup context.
+
+The snapshot must not contain or imply position-open, broker-fill, stop-moved, break-even, trailing, target-hit, or position-closed state. Those remain monitor/execution state.
+
+### Canonical POI lifecycle is the first eligibility gate
+
+Downstream entry/alert eligibility must evaluate the canonical POI lifecycle before target, RR, or execution-condition policy.
+
+Only a canonical POI whose lifecycle is currently eligible/active may be consumed for a new entry candidate.
+
+The downstream consumer must reject POIs that are:
+
+- expired/historical;
+- mitigated;
+- failed;
+- otherwise canonically inactive.
+
+A historical POI retained for audit is evidence only and cannot become active again merely because it remains present in JSON.
+
+Layer 6 remains the semantic owner of POI lifecycle. Layer 8 and downstream monitor/policy code consume the lifecycle state and must not invent a separate age-based freshness rule or independently decide canonical POI expiry.
+
+### Target-clearance gate
+
+After canonical execution authorization and resolution of the applicable target policy, a downstream target-clearance gate determines whether the resolved target remains eligible from the active canonical POI/setup context.
+
+The ordering is:
+
+```text
+CANONICAL POI LIFECYCLE
+        ↓
+CANONICAL EXECUTION AUTHORIZATION
+        ↓
+TARGET RESOLUTION
+        ↓
+TARGET CLEARANCE
+        ↓
+RR / TRADING POLICY
+        ↓
+ALERT ELIGIBILITY
+```
+
+Target clearance is downstream trading/alert policy. It must consume canonical structure, active POI lifecycle, resolved target provenance, and the applicable target policy. It must not redefine BOS, CHoCH, POI validity, or other canonical SMC structure.
+
+The target-clearance predicate must be deterministic and explicitly defined by the downstream target policy before it can authorize an alert. A missing or unresolved target, or an undefined clearance predicate, fails closed; the mapper must never manufacture a target or clearance result.
+
+### RR / minimum-RR policy
+
+Minimum RR is a downstream trading-policy constraint, not a mapper/canonical-SMC parameter.
+
+Therefore `minRR` does **not** belong on `smc_mapper.py`.
+
+If exposed as a CLI control, it belongs to `smc_monitor.py`, for example:
+
+```text
+--min-rr DECIMAL
+```
+
+It is applied only after target resolution and target clearance. The value is policy, not structural truth, and must never alter canonical POI, BOS, CHoCH, IDM, Dealing Range, or target-coordinate semantics.
+
+Because one monitor can manage multiple analyses, the implementation must not silently apply one global `min-rr` value where per-analysis policy is required. V1 may use one monitor-level default, but any per-analysis override must be explicit rather than inferred.
+
+### Conditional execution policy
+
+Execution-quality conditions are optional downstream policy inputs, not canonical SMC rules.
+
+Examples include:
+
+- spread;
+- expected slippage;
+- market/session availability;
+- broker/execution availability;
+- explicitly configured news/event filters.
+
+The monitor remains alert/notification-only in the current product and must not submit broker orders. These conditions may therefore be evaluated as alert-eligibility policy now, and later reused by an execution adapter such as an MT4/MT5 integration.
+
+No execution-condition failure may mutate canonical structure or POI lifecycle.
 
 ## A19. Configuration
 
