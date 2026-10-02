@@ -1380,10 +1380,11 @@ The POI volume aggregate therefore includes only the candles that form the POI's
 For each available volume branch:
 
 ```text
-aggregate_total = Σ total
-aggregate_buy   = Σ buy
-aggregate_sell  = Σ sell
-aggregate_delta = Σ delta
+OHLC aggregate_total      = Σ volume.total
+ORDERFLOW aggregate_total = Σ (volume.orderflow.buy + volume.orderflow.sell)
+aggregate_buy             = Σ buy
+aggregate_sell            = Σ sell
+aggregate_delta           = Σ delta
 
 delta_ratio = aggregate_delta / aggregate_total
 ```
