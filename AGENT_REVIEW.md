@@ -2832,3 +2832,16 @@ PASS — repository specification files contain no web citation markup.
 PASS — session/news test requirements are grouped with the existing Monitor tests rather than requiring separate test runs.
 
 **STATUS: PASS — SESSION/NEWS SPECIFICATION LOGICALLY CLOSED AFTER SECOND-PASS AUDIT**
+
+
+# FINAL SESSION / NEWS CROSS-FILE AUDIT — 2026-10-02
+
+PASS — full_specification.md has one authoritative Trading sessions and news section.
+PASS — Monitor owns named session runtime context and local-time presentation.
+PASS — news_data.py owns external news acquisition/normalization/persistence; Monitor owns warning evaluation.
+PASS — canonical UTC remains the shared time contract.
+PASS — news warning remains non-canonical and informational; it cannot change Mapper state, POI lifecycle, target/RR semantics, or order/position state.
+PASS — Market Data, Mapper, Monitor, and News Data do not share persistent ownership.
+PASS — session and news requirements are represented in focused combined Monitor/news tests.
+
+**STATUS: PASS — FINAL CROSS-FILE SESSION/NEWS AUDIT**
