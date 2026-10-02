@@ -348,7 +348,7 @@ At minimum, each timeframe section tracks:
 
 This is important because HTF and LTF may have different available history.
 
-The mapper distinguishes requested analysis range from available/retained market-data range and reads the required range from the corresponding timeframe section of `<SYMBOL>_marketdata.json`.
+The mapper distinguishes requested analysis range from available/retained market-data range and reads the required range from the corresponding timeframe section of `<SYMBOL>_marketdata.json`. The serialized candle/volume representation consumed here is the external Market Data contract; its JSON serialization owner is `market_data_specification.md`, not the mapper.
 
 If the requested range is outside the retained market-data window, the launcher triggers Market Data CLI reacquisition before mapper processing.
 
@@ -577,6 +577,10 @@ If omitted, use the latest completed entry-timeframe candle available in `<SYMBO
 
 If supplied, use the latest completed candle in `<SYMBOL>_marketdata.json` whose canonical completion boundary is less than or equal to the requested end time.
 
+For an existing analysis resumed from `last_processed_candle_time`, an end-time earlier than that checkpoint is an invalid incremental request. The mapper must fail explicitly rather than process the analysis backwards or silently create a second identity.
+
+When an explicit end-time limits processing, the persisted checkpoint must never advance beyond the resolved end-time boundary.
+
 The normalized candle `timestamp` alone must not be treated as proof that a candle has completed. Completion is determined by the normalized completion status/time contract in §1.5.
 
 An incomplete/current candle must never enter canonical analysis.
@@ -598,7 +602,7 @@ Before canonical analysis, the mapper validates the supplied configuration and n
 - OHLC integrity;
 - two-timeframe HTF/LTF mode requirements.
 
-Provider-specific availability checks, provider/API failures, and acquisition errors belong to the Market Data CLI process. The mapper sees only the normalized CLI result or an explicit acquisition/error result.
+Provider-specific availability checks, provider/API failures, and acquisition errors belong to the Market Data CLI process. The mapper sees only the normalized persisted JSON result after the monitor/orchestrator has completed the required Market Data update.
 
 Invalid mapper configuration or normalized candle data must fail explicitly.
 
@@ -614,7 +618,7 @@ Market-data provider configuration belongs to the Market Data CLI and is not a m
 
 No mapper configuration file is to be introduced for timeframe selection, history retention or analysis window.
 
-Timeframe selection is controlled only by `--htf` and/or `--ltf` according to the timeframe-relationship and synchronization contracts in this specification.
+Timeframe selection is controlled only by `--htf` and/or `--ltf` according to the timeframe-relationship and synchronization contracts in this specification. The supported-timeframe catalog and timeframe-duration ownership remain with the Market Data contract; the mapper must not introduce a second hard-coded `SUPPORTED_TIMEFRAMES` list. The mapper may validate timeframe syntax and HTF/LTF duration ordering, then fail with explicit data-availability/error status when the requested timeframe is not present in the persisted market-data document.
 
 Volume analysis is controlled by the optional mapper CLI parameter:
 
@@ -1583,12 +1587,22 @@ The following conceptual models are sufficient for the V1 mapper boundary:
         entry_timeframe
         analysis_start
 
+    MarketDataCandleView
+        candle_id
+        timestamp
+        completion_time
+        open
+        high
+        low
+        close
+        volume
+
     MarketDataSeries
         symbol
         timeframe
         available_start
         available_end
-        candles
+        candles: array of MarketDataCandleView
 
     AnalysisState
         identity
@@ -1625,6 +1639,16 @@ Required portability rules:
 Portability does not require reproducing Python's CLI or JSON library implementation details in MQL. It requires the same domain contracts and state transitions.
 
 ---
+
+## 14.5 Cross-file contract ownership
+
+The following contracts have one implementation owner:
+
+- Market Data acquisition, normalization, completion, availability, timeframe catalog, retention and market-data JSON serialization: market_data.py / market_data_specification.md.
+- Mapper analysis identity, canonical processing orchestration, structures state and structures JSON persistence: smc_mapper.py / this specification.
+- Monitor scheduling, process orchestration, current-price/target monitoring and alerting: smc_monitor.py / its implementation contract.
+
+Do not duplicate the Market Data timeframe catalog, provider semantics, candle completion logic, or JSON serialization rules inside the mapper. The mapper may validate and consume them at its boundary, but does not redefine them.
 
 # 15. MAPPER FUNCTION NAMING AND RESPONSIBILITY CONTRACT
 
@@ -1736,6 +1760,8 @@ No separate lock file is required for V1 because the monitor serializes active o
 The mapper must update last_processed_candle_time in the in-memory analysis state only as part of a successful processing result, and the persisted checkpoint is authoritative only after the complete structures document has been atomically persisted.
 
 A failure before persistence must not leave a falsely advanced checkpoint in durable state.
+
+The persisted checkpoint must correspond to the latest completed entry-timeframe candle actually incorporated by the successful processing transaction and must not be later than the resolved analysis end boundary.
 
 The checkpoint is implementation provenance only; it has no canonical SMC meaning.
 
