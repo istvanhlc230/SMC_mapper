@@ -17,6 +17,14 @@ The former historical FAIL findings that were embedded here have been removed fr
 
 # Final Approved Architecture
 
+## Trading sessions and news
+
+Trading-session awareness is a Monitor runtime concern. Named regional sessions use explicit IANA timezones and local session definitions so daylight-saving changes are handled correctly.
+
+V1 session identities include Sydney, Tokyo, London, and New York. Exact local session hours are Monitor-owned operational policy and are not duplicated elsewhere.
+
+Economic-news acquisition is a separate external-data concern owned by `news_data.py`. The Monitor consumes normalized UTC news events and emits transient warning notifications. News warnings do not alter canonical SMC state, target/RR semantics, or order/position behavior.
+
 ## Time-domain contract
 
 The system distinguishes three time domains:

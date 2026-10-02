@@ -544,6 +544,80 @@ Market Data range catch-up
 single chronological Mapper update
 ~~~
 
+## 6.5 Trading-session model
+
+Trading-session awareness is Monitor runtime context, not canonical SMC logic.
+
+The Monitor knows named regional sessions and determines their current status from canonical UTC using explicit IANA timezones and session-local definitions.
+
+V1 named sessions:
+
+~~~text
+Sydney  -> Australia/Sydney
+Tokyo   -> Asia/Tokyo
+London  -> Europe/London
+New York -> America/New_York
+~~~
+
+Session definitions are represented by one Monitor-owned configuration structure. Each session contains at minimum:
+
+- session name;
+- IANA timezone;
+- local start time;
+- local end time;
+- enabled flag.
+
+The implementation must convert canonical UTC to the session timezone and evaluate the local session interval there. It must not encode fixed UTC offsets because London, New York, and Sydney observe daylight-saving changes on different calendars, while Tokyo does not. This is why session definitions use named timezones rather than fixed offsets. citeturn923238search0turn923238search10
+
+Session status may be:
+
+~~~text
+OPEN
+CLOSED
+~~~
+
+The Monitor may additionally expose overlap information, for example London/New York overlap, as transient runtime context.
+
+Session state is never:
+
+- canonical SMC structure;
+- a POI lifecycle state;
+- a mapper checkpoint;
+- a reason to rewrite a historical candle.
+
+Session context may be used for:
+
+- runtime display;
+- diagnostics;
+- scheduling/reporting;
+- future explicitly approved downstream alert/execution policies.
+
+Session context must not alter canonical Mapper calculations.
+
+Function:
+
+~~~python
+def get_active_sessions(
+    utc_time: datetime,
+    session_definitions: list[TradingSession],
+) -> list[TradingSession]:
+    ...
+~~~
+
+The exact session hours are operational policy and have one Monitor-owned definition. They must not be duplicated in Mapper or Market Data specifications.
+
+
+
+A scheduler gap is recovered by range catch-up:
+
+~~~text
+scheduled analysis
+        ↓
+Market Data range catch-up
+        ↓
+single chronological Mapper update
+~~~
+
 ---
 
 # 7. CURRENT MARKET REFERENCE
@@ -820,7 +894,137 @@ No implicit minimum RR is applied when --rr is absent.
 
 ---
 
-# 12. ALERT ELIGIBILITY AND NOTIFICATION
+# 12. NEWS EVENT WARNING
+
+## 12.1 Ownership and architecture
+
+Economic-news acquisition is a separate external-data boundary from market candles.
+
+The active architecture is:
+
+~~~text
+News Provider(s)
+        ↓
+news_data.py
+        ↓
+news_events.json
+        ↓
+smc_monitor.py
+        ↓
+runtime warning
+~~~
+
+The Monitor does not call a news provider directly.
+
+Detailed acquisition, normalization, persistence, completion/update semantics, and provider abstraction belong to:
+
+~~~text
+news_data.py
+specifications/news_data_specification.md
+~~~
+
+The news store is not canonical SMC state and does not affect Mapper structural decisions.
+
+A structured economic calendar can provide event time, currency/region, impact, forecast/previous, and actual values; these are appropriate normalized fields for the news boundary. citeturn923238search1
+
+## 12.2 News event consumption
+
+The Monitor consumes normalized events with at least:
+
+~~~text
+event_id
+event_time_utc
+title
+impact
+affected_currencies
+affected_instruments (optional)
+status
+source
+~~~
+
+The event's canonical time is UTC.
+
+The Monitor may display local event time using the configured IANA timezone.
+
+## 12.3 Symbol/event relevance
+
+A news event is relevant to an analysis when the normalized event metadata explicitly identifies:
+
+- a tracked symbol/instrument; or
+- an affected currency that is part of the instrument's base/quote currency; or
+- another explicit provider/Monitor relevance mapping.
+
+The Monitor must not guess relevance from event title text alone.
+
+## 12.4 Warning window
+
+Use a single Monitor-owned operational configuration:
+
+~~~text
+NEWS_WARNING_WINDOWS_MINUTES
+~~~
+
+The exact V1 value(s) are an implementation-policy decision and must not be copied into Mapper or canonical SMC rules.
+
+For an event with:
+
+~~~text
+event_time_utc
+~~~
+
+a warning becomes eligible when the current canonical UTC time falls inside the configured pre-event window.
+
+V1 behavior is **warning-only**:
+
+- news warning does not block or authorize an alert;
+- news warning does not mutate canonical POI/structure state;
+- news warning does not alter target/RR calculation;
+- news warning does not create an order or position.
+
+A future explicit policy may choose to use news as an alert gate, but that is a separate specification change and requires re-audit.
+
+## 12.5 NewsWarningDecision
+
+~~~python
+@dataclass(frozen=True)
+class NewsWarningDecision:
+    warning: bool
+    event_id: str | None
+    minutes_to_event: Decimal | None
+    reason: str
+~~~
+
+The decision is transient.
+
+## 12.6 Warning deduplication
+
+Use a deterministic runtime identity:
+
+~~~text
+event_id
++ warning_window
+~~~
+
+The Monitor must not repeat the same warning continuously during one runtime session.
+
+Changing to a different warning window or receiving a materially updated event identity may produce a new warning.
+
+News-warning history is not persisted in canonical Structures JSON.
+
+## 12.7 News failure behavior
+
+If news data is unavailable or stale:
+
+- report the condition under debug/diagnostics;
+- do not fabricate events;
+- do not convert missing news into a canonical fact;
+- do not suppress an otherwise eligible structural/target alert solely because the warning feed is unavailable.
+
+News availability is separate from Market Data availability and canonical Mapper state.
+
+---
+
+# 13. ALERT ELIGIBILITY AND NOTIFICATION
 
 ## 12.1 Eligibility
 
@@ -1172,6 +1376,10 @@ refresh_current_market_view(symbol, timeframe)
 resolve_target_plan(analysis_state, current_market_view)
 is_target_cleared(target_price, current_price, direction)
 calculate_projected_rr(target_price, entry_reference_price, stop_price)
+get_active_sessions(utc_time, session_definitions)
+plan_news_updates(news_state, now)
+evaluate_news_warnings(news_events, current_time, symbols)
+build_news_warning_key(event_id, warning_window)
 
 build_alert_key(analysis, target)
 evaluate_alert_eligibility(analysis, target, current_market_view, min_rr)
@@ -1306,7 +1514,20 @@ calculate_projected_rr
 
 Do not redefine canonical target/POI semantics.
 
-## Phase 8 — alerting
+## Phase 8 — session/news context
+
+Implement:
+
+~~~text
+get_active_sessions
+plan_news_updates
+evaluate_news_warnings
+build_news_warning_key
+~~~
+
+Verify DST-aware sessions, event relevance, warning windows, deduplication, and non-interference with canonical/target state.
+
+## Phase 9 — alerting
 
 Implement:
 
@@ -1316,7 +1537,7 @@ evaluate_alert_eligibility
 emit_alert
 ~~~
 
-## Phase 9 — full runtime cycle
+## Phase 10 — full runtime cycle
 
 Implement:
 
@@ -1355,6 +1576,10 @@ test_monitor_accepts_multiple_symbols
 test_monitor_rr_optional
 test_monitor_rejects_invalid_rr
 test_monitor_debug_is_terminal_only
+test_monitor_accepts_timezone
+test_monitor_rejects_invalid_timezone
+test_local_time_conversion_is_dst_aware
+test_local_time_does_not_change_due_evaluation
 test_monitor_accepts_timezone
 test_monitor_rejects_invalid_timezone
 test_local_time_conversion_is_dst_aware
@@ -1420,11 +1645,25 @@ test_rr_failure_does_not_mutate_canonical_state
 test_no_rr_filter_when_option_absent
 ~~~
 
+### Sessions and news
+
+~~~text
+test_active_sessions_are_deterministic
+test_news_warning_identity_is_deterministic
+test_news_warning_does_not_change_target_or_rr
+
 ### Alerts
 
 ~~~text
 test_alert_eligibility_requires_target_clearance
 test_alert_eligibility_with_rr
+test_session_status_uses_named_timezone
+test_session_status_handles_dst_transition
+test_session_context_does_not_change_canonical_state
+test_news_relevance_uses_normalized_metadata
+test_news_warning_window
+test_news_warning_is_deduplicated
+test_news_unavailability_does_not_suppress_structural_alert
 test_alert_identity_is_deterministic
 test_unchanged_alert_is_not_repeated
 test_monitor_restart_resets_transient_alert_memory

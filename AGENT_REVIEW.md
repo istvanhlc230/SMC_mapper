@@ -2768,3 +2768,30 @@ Multi-strategy audit:
 No implementation code was changed. This is a specification change pending implementation instruction.
 
 **STATUS: PASS — DATASOURCE / CANONICAL UTC / LOCAL-TIME CONTRACT AUDITED**
+
+
+# TRADING SESSION + NEWS WARNING SPECIFICATION UPDATE — 2026-10-02
+
+Added runtime trading-session awareness and a separate economic-news data boundary.
+
+Architecture decision:
+- Named trading sessions belong to smc_monitor.py because session state is runtime context/scheduling/presentation, not canonical SMC state.
+- Session definitions use IANA timezones so DST is handled correctly; V1 named sessions are Sydney, Tokyo, London, and New York. Exact session hours remain one Monitor-owned operational policy.
+- Economic-news acquisition is separated into news_data.py / specifications/news_data_specification.md because news is an external data source distinct from market candles.
+- news_events.json is a shared normalized event store because the same economic event can affect multiple symbols.
+- Monitor consumes normalized UTC news events and emits warning-only runtime notifications.
+- News warnings do not block alerts, alter targets/RR, mutate POI/structure state, or submit/manage orders.
+- News unavailability does not suppress an otherwise eligible structural/target alert.
+- Datasource timestamps are resolved to canonical UTC in news_data.py; Monitor local time remains presentation-only.
+
+Multi-strategy audit:
+1. Ownership audit — sessions are Monitor-owned; news acquisition is news_data-owned; news warning consumption is Monitor-owned.
+2. Time/DST audit — named IANA zones prevent fixed-offset errors; canonical event times remain UTC.
+3. Cross-symbol audit — shared news events avoid per-symbol duplication.
+4. Canonical isolation audit — no news/session state changes canonical SMC semantics or Mapper checkpoints.
+5. Failure-mode audit — missing news is distinguishable from no events and cannot fabricate or suppress canonical/alert state.
+6. Runtime-cost audit — one shared news store and one Monitor orchestration boundary avoid duplicated provider calls across symbols.
+
+No implementation code was changed. Specification changes are pending implementation instruction.
+
+**STATUS: PASS — TRADING-SESSION AND NEWS-WARNING ARCHITECTURE AUDITED**
