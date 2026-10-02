@@ -350,7 +350,7 @@ This is important because HTF and LTF may have different available history.
 
 The mapper distinguishes requested analysis range from available/retained market-data range and reads the required range from the corresponding timeframe section of `<SYMBOL>_marketdata.json`. The serialized candle/volume representation consumed here is the external Market Data contract; its JSON serialization owner is `market_data_specification.md`, not the mapper.
 
-If the requested range is outside the retained market-data window, the launcher triggers Market Data CLI reacquisition before mapper processing.
+If the requested range is outside the retained market-data window, the monitor/orchestrator triggers Market Data CLI reacquisition before mapper processing.
 
 If the requested range cannot be supplied, the mapper must represent the resulting data/context unavailability explicitly and must fail closed where a canonical decision depends on unavailable information.
 
@@ -867,7 +867,7 @@ The mapper must not use a latest-window shortcut that bypasses required structur
 
 The launcher invokes the Market Data CLI for the required bootstrap range in deterministic batch form and updates `<SYMBOL>_marketdata.json`. The mapper then reads the required bootstrap range from that file.
 
-For incremental execution after a valid persisted checkpoint, the launcher invokes the Market Data CLI for only the subsequently completed entry-timeframe range after the checkpoint, in chronological order, updates `<SYMBOL>_marketdata.json`, and then invokes the mapper against the resulting persisted range as defined by §10.1.
+For incremental execution after a valid persisted checkpoint, the monitor/orchestrator invokes the Market Data CLI for only the subsequently completed entry-timeframe range after the checkpoint, in chronological order, updates `<SYMBOL>_marketdata.json`, and then invokes the mapper against the resulting persisted range as defined by §10.1.
 
 The mapper does not obtain market data from the monitor and does not access a concrete provider.
 
@@ -960,7 +960,7 @@ When an HTF and LTF are both supplied:
 
 1. the monitor/orchestrator ensures the required HTF range is present in `<SYMBOL>_marketdata.json`; the mapper reads it and establishes the current HTF canonical structural context first;
 2. the mapper determines the applicable HTF execution context and any LTF bootstrap/activation requirement;
-3. the launcher ensures the LTF range required by the applicable analysis state is present in `<SYMBOL>_marketdata.json`; the mapper reads that persisted range;
+3. the monitor/orchestrator ensures the LTF range required by the applicable analysis state is present in `<SYMBOL>_marketdata.json`; the mapper reads that persisted range;
 4. HTF and LTF candles are processed chronologically on the shared time axis;
 5. each LTF candle is evaluated using only HTF canonical context that already exists at that LTF evaluation time;
 6. a later HTF event must never reinterpret an earlier LTF event.
@@ -1011,7 +1011,7 @@ If an LTF lifecycle crosses an HTF range transition, the canonical LTF lifecycle
 
 ## 6.5 Canonical HTF-interaction routes
 
-Where a canonical LTF route explicitly requires HTF interaction, the mapper consumes the applicable HTF context from its structural state and reads any required additional LTF analysis range from `<SYMBOL>_marketdata.json`; the launcher ensures that range is present before mapper execution.
+Where a canonical LTF route explicitly requires HTF interaction, the mapper consumes the applicable HTF context from its structural state and reads any required additional LTF analysis range from `<SYMBOL>_marketdata.json`; the monitor/orchestrator ensures that range is present before mapper execution.
 
 This includes the canonical LTF Structural Glitch / CHoCH route after HTF POI interaction or HTF core-liquidity takeout, as defined by `05_CHOCH_mechanics.md`.
 
