@@ -61,7 +61,7 @@ Read the referenced documents in this order when the full methodology is require
 9. `08_implementation.md`
    - Implementation representation requirements
    - State-transition and validation requirements
-   - First-BOS bootstrap/process-state representation, `dynamic_retracement_extreme` lifecycle mapping, and explicit pre-BOS observation boundaries
+   - First-BOS bootstrap/process-state representation, `dynamic_retracement_extreme` lifecycle mapping, explicit pre-BOS observation boundaries, and mapping-origin `C0` invariants
    - Must consume canonical methodology; it must not redefine it
 
 10. `trading_policy.md`
@@ -157,7 +157,9 @@ COUNTERTREND SCENARIOS
     → countertrend_scenarios.md
 ```
 
-A rule must have one primary semantic owner. Other documents may reference that rule, but must not create a competing definition.
+A rule must have one primary semantic owner.
+
+Initial mapping boot is chronological and causal: the first eligible completed candle of the mapping domain is `C0`, the mapping-origin reference from which higher-layer state must be built bar-by-bar. Other documents may reference that rule, but must not create a competing definition.
 
 ## 7. Precedence rule
 

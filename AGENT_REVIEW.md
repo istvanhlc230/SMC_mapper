@@ -3753,3 +3753,41 @@ BLOCKED — Python/runtime conformance is intentionally not resolved in this pha
 ## Commit/test status
 
 This phase changes documentation only. No Python file is modified. No Python test run is claimed from this phase.
+
+# PHASE 44 — MAPPING-ORIGIN C0 AND SWING-PROMOTION ALIGNMENT — 2026-10-03
+
+Documentation-only. **No Python implementation file was modified.**
+
+The initial mapping boot now defines the first eligible completed candle of the mapping domain as `C0` / `MAPPING_ORIGIN_CANDLE`. It is the causal start of the mapping state machine and the bootstrap origin reference.
+
+The engine must process subsequent eligible candles strictly chronologically, bar-by-bar. It may not skip intermediate state transitions or manufacture higher-layer state before lower-layer evidence exists.
+
+The canonical promotion chain is:
+
+```text
+IDM_TAKEN
+    ↓
+SWING_CANDIDATE / PROVISIONAL_STRUCTURAL_EXTREME
+    ↓
+MACRO RETRACEMENT QUALIFICATION
+    ↓
+CONFIRMED_STRUCTURAL_SWING
+    ↓
+STRUCTURAL_SWING_BREAK
+    ↓
+VALID_BOS
+    ↓
+PROTECTED_STRUCTURAL_EXTREME
+    ↓
+NEW DEALING RANGE
+```
+
+This preserves the source-described swing-point acquisition at IDM takeout while keeping `CONFIRMED_STRUCTURAL_SWING` as the macro-qualified BOS reference.
+
+`BOOTSTRAP_ORIGIN_ANCHOR` is now directly tied to `C0` on initial boot. After CHoCH, the explicit active-impulse origin initializes the new mapped regime.
+
+Audit status: PASS — C0 origin, causal bar-by-bar construction, swing promotion, bootstrap isolation, and protected-lock sequencing are now explicit and mutually consistent.
+
+BLOCKED — Python/runtime conformance is intentionally unresolved because this phase changes documentation only.
+
+No Python files modified. No Python test run is claimed.

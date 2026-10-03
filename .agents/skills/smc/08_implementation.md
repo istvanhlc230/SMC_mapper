@@ -50,7 +50,7 @@ TRADING RANGE
 
 Functions equivalent to `finish_pullback()` must not promote a candle-level pullback directly to IDM.
 
-Functions equivalent to `detect_idm_sweep()` must operate on the active qualified IDM and emit the canonical `IDM_TAKEN` result when the IDM reference is physically taken. The structural lifecycle then consumes `IDM_TAKEN` to establish `CONFIRMED_STRUCTURAL_SWING`. The sweep detector must not itself declare `VALID_BOS` or `CHoCH_CONFIRMED`; those classifications remain subject to their complete downstream gates.
+Functions equivalent to `detect_idm_sweep()` must operate on the active qualified IDM and emit the canonical `IDM_TAKEN` result when the IDM reference is physically taken. The structural lifecycle then consumes `IDM_TAKEN` to establish the swing-point candidate / provisional structural extreme; macro retracement qualification promotes that candidate to `CONFIRMED_STRUCTURAL_SWING`. The sweep detector must not itself declare `VALID_BOS` or `CHoCH_CONFIRMED`; those classifications remain subject to their complete downstream gates.
 
 Functions equivalent to `detect_bos()` must require:
 
@@ -481,7 +481,7 @@ FIRST_POST_CHOCH_SVP ≠ FIRST_POST_CHOCH_MINOR_IDM
 Major IDM provenance ≠ Minor IDM provenance
 ```
 
-A qualifying sweep of the applicable IDM lineage unlocks the Confirmation Gate. IDM takeout establishes `IDM_TAKEN = TRUE`, which is the prerequisite for the canonical `CONFIRMED_STRUCTURAL_SWING` confirmation path; it does NOT by itself create a new Dealing Range, trend flip, `CHoCH_CONFIRMED`, `VALID_BOS`, or Trading Range rollover. `CONFIRMATION GATE UNLOCKED` is a process condition, not a new lifecycle state enum.
+A qualifying sweep of the applicable IDM lineage unlocks the Confirmation Gate. IDM takeout establishes `IDM_TAKEN = TRUE`, which creates the swing-point candidate / provisional structural extreme; macro retracement qualification is the promotion gate for the canonical `CONFIRMED_STRUCTURAL_SWING`; it does NOT by itself create a new Dealing Range, trend flip, `CHoCH_CONFIRMED`, `VALID_BOS`, or Trading Range rollover. `CONFIRMATION GATE UNLOCKED` is a process condition, not a new lifecycle state enum.
 
 ```text
 CONFIRMATION_LOCKED
@@ -1058,8 +1058,8 @@ The transition matrix is exhaustive and deterministic once the required canonica
 
 | Current State | NO_EVENT / INTERNAL_PB | MINOR_IDM_EVENT | EXT_CONT_BREAK | EXT_OPP_BREAK | MAJOR_IDM_EVENT | NEW_SVP_QUALIFIED |
 |---|---|---|---|---|---|---|
-| **BOOTSTRAP** | REMAIN; update provisional extremes/internal sequence | If the event physically takes the active IDM reference and thereby satisfies the L3 `IDM_TAKEN` condition: **IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING → CONFIRMATION_LOCKED**. Otherwise (minor IDM activity that does not constitute physical takeout of the active reference): REMAIN; no confirmed range | DISQUALIFIED; no confirmed swing, therefore no BOS | DISQUALIFIED; no protected boundary, therefore no CHoCH | NOT_APPLICABLE; no active Major IDM | SVP → Verified Extreme → Minor IDM; remain BOOTSTRAP until IDM_TAKEN |
-| **CONFIRMATION_LOCKED** | REMAIN; track active expansion/retrace state | **IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING**; remain `CONFIRMATION_LOCKED` while retracement/BOS prerequisites continue | While Gate is LOCKED: DISQUALIFIED; BOS prohibited. When Gate is UNLOCKED (via IDM_TAKEN): evaluate the transient `BOOTSTRAP_RANGE`; if `MAJOR_RETRACEMENT_QUALIFIED`: **FIRST BOS / VALID_BOS → POST_BOS**; else: **IMPULSE_EXTENSION → REMAIN** | CHoCH pipeline; qualifying break + all prerequisites → **POST_CHOCH**, otherwise REMAIN | REMAIN; Major IDM wick → `MAJOR_IDM_SWEEP`, Gate UNLOCKED, no automatic swing | FIRST_POST_CHOCH_SVP → Verified Extreme → FIRST_POST_CHOCH_MINOR_IDM; remain confirmation-locked until applicable sweep/gate prerequisites complete |
+| **BOOTSTRAP** | REMAIN; update provisional extremes/internal sequence | If the event physically takes the active IDM reference and thereby satisfies the L3 `IDM_TAKEN` condition: **IDM_TAKEN → SWING_CANDIDATE / PROVISIONAL_STRUCTURAL_EXTREME**; remain in the confirmation lifecycle until macro retracement qualification promotes it to **CONFIRMED_STRUCTURAL_SWING**. Otherwise (minor IDM activity that does not constitute physical takeout of the active reference): REMAIN; no confirmed range | DISQUALIFIED; no confirmed swing, therefore no BOS | DISQUALIFIED; no protected boundary, therefore no CHoCH | NOT_APPLICABLE; no active Major IDM | SVP → Verified Extreme → Minor IDM; remain BOOTSTRAP until IDM_TAKEN |
+| **CONFIRMATION_LOCKED** | REMAIN; track active expansion/retrace state | **IDM_TAKEN → SWING_CANDIDATE / PROVISIONAL_STRUCTURAL_EXTREME**; macro retracement qualification → **CONFIRMED_STRUCTURAL_SWING**; remain `CONFIRMATION_LOCKED` while BOS prerequisites continue | While Gate is LOCKED: DISQUALIFIED; BOS prohibited. When Gate is UNLOCKED (via IDM_TAKEN): evaluate the transient `BOOTSTRAP_RANGE`; if `MAJOR_RETRACEMENT_QUALIFIED`: **FIRST BOS / VALID_BOS → POST_BOS**; else: **IMPULSE_EXTENSION → REMAIN** | CHoCH pipeline; qualifying break + all prerequisites → **POST_CHOCH**, otherwise REMAIN | REMAIN; Major IDM wick → `MAJOR_IDM_SWEEP`, Gate UNLOCKED, no automatic swing | FIRST_POST_CHOCH_SVP → Verified Extreme → FIRST_POST_CHOCH_MINOR_IDM; remain confirmation-locked until applicable sweep/gate prerequisites complete |
 | **CONFIRMED_RANGE** | REMAIN; dynamic `dynamic_retracement_extreme` tracking | REMAIN; a later Minor IDM sweep updates the active IDM lifecycle; it does not retroactively alter an already confirmed swing | `IMPULSE_EXTENSION` → REMAIN; `VALID_BOS` → **POST_BOS** | `CHoCH_CONFIRMED` → **POST_CHOCH**; `MAJOR_IDM_SWEEP` → REMAIN; `NO_CHoCH_BREAK` → REMAIN | REMAIN; Major IDM wick → `MAJOR_IDM_SWEEP`, no CHoCH | REMAIN; new SVP supersedes the active pullback reference only when canonical IDM lifecycle requires it |
 | **POST_BOS** | REMAIN; new expansion tracked, closed-range POIs expire through POI lifecycle | REMAIN; a Minor IDM does not replace the prior Major IDM | DISQUALIFIED; another BOS is not interpreted until the new swing lifecycle is established | CHoCH classification pipeline; qualifying opposing break + all prerequisites → **POST_CHOCH**, otherwise REMAIN | REMAIN; Major IDM wick → `MAJOR_IDM_SWEEP`, Gate UNLOCKED | SVP → Verified Extreme → IDM qualification; if Major IDM qualifies, it supersedes the prior Major IDM → **CONFIRMED_RANGE** |
 | **POST_CHOCH** | remain in `CONFIRMATION_LOCKED` | first post-CHoCH Minor IDM pipeline; no automatic state promotion | While Gate is LOCKED: BOS prohibited. When Gate is UNLOCKED (via IDM_TAKEN): the runtime requires an explicit active-impulse origin candle to construct the transient `BOOTSTRAP_RANGE`; if origin evidence is missing, the process remains fail-closed. Otherwise, if `MAJOR_RETRACEMENT_QUALIFIED`: **FIRST BOS / VALID_BOS → POST_BOS**; else: **IMPULSE_EXTENSION → REMAIN** | body close → `CHoCH_ELIGIBLE` pending prerequisites; Major IDM wick → `MAJOR_IDM_SWEEP`; Major IDM body close enters CHoCH pipeline | Major IDM wick → `MAJOR_IDM_SWEEP`, Gate UNLOCKED, trend unchanged | FIRST_POST_CHOCH_SVP → Verified Extreme → FIRST_POST_CHOCH_MINOR_IDM; remain `CONFIRMATION_LOCKED` until applicable sweep/gate prerequisites complete |
@@ -1070,7 +1070,7 @@ The `POST_CHOCH` row is intentionally not a blanket `CONFIRMATION_LOCKED` transi
 
 The source corpus does not deterministically define the first-BOS retracement baseline. This remains a source-evidence gap, not an implementation default.
 
-The implementation contract therefore requires an isolated `BOOTSTRAP_ORIGIN_ANCHOR`.
+The implementation contract therefore requires an isolated `BOOTSTRAP_ORIGIN_ANCHOR` derived from `C0` on initial mapping boot.
 
 #### Bootstrap origin anchor
 
@@ -1088,7 +1088,7 @@ EXPLICIT_ACTIVE_IMPULSE_ORIGIN
 
 The chart-inception convention is deterministic initialization policy; it is not evidence that the first available candle is the historical impulse origin.
 
-After `CHoCH_CONFIRMED`, an explicit active-impulse origin is required. Missing origin provenance fails closed.
+After `CHoCH_CONFIRMED`, an explicit active-impulse origin is required and becomes the origin of the new mapped regime. Missing origin provenance fails closed.
 
 The anchor is never a `PROTECTED_STRUCTURAL_EXTREME`, governing Dealing Range boundary, or CHoCH boundary.
 
@@ -1133,7 +1133,7 @@ observed_through_candle_id
 
 For bullish structure, it is the lowest relevant completed-candle LOW observed in the active retracement. For bearish structure, it is the highest relevant completed-candle HIGH.
 
-The observation horizon is strict:
+The observation horizon is strict. The dynamic corrective state begins only after the macro-qualified `CONFIRMED_STRUCTURAL_SWING` exists:
 
 ```text
 CONFIRMED_SWING_CONFIRMATION
@@ -1199,8 +1199,10 @@ The source corpus still contains a genuine evidence gap: it does not determinist
 Once the required origin provenance exists, the first-BOS pipeline is deterministic:
 
 ```text
-BOOTSTRAP_ORIGIN_ANCHOR
+C0 / BOOTSTRAP_ORIGIN_ANCHOR
 → IDM_TAKEN
+→ SWING_CANDIDATE / PROVISIONAL_STRUCTURAL_EXTREME
+→ MACRO RETRACEMENT QUALIFICATION
 → CONFIRMED_STRUCTURAL_SWING
 → BOOTSTRAP_RANGE
 → RETRACEMENT QUALIFICATION
