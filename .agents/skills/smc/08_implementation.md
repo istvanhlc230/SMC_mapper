@@ -60,9 +60,9 @@ Functions equivalent to `detect_bos()` must require:
 4. `IDM_TAKEN == True`;
 5. continuation-BOS reference is not an IDM reference.
 
-A Major IDM wick penetration must terminate as `MAJOR_IDM_SWEEP`; that sweep is consumed as the IDM takeout (`IDM_TAKEN`) and therefore confirms the associated structural swing, but it is not BOS.
+A Major IDM wick penetration must terminate as `MAJOR_IDM_SWEEP`; that sweep is consumed as the IDM takeout (`IDM_TAKEN`) and therefore establishes the associated `SWING_CANDIDATE / PROVISIONAL_STRUCTURAL_EXTREME`. Macro retracement qualification is still required before `CONFIRMED_STRUCTURAL_SWING` exists; the sweep is not BOS.
 
-Functions equivalent to `detect_choch()` must use the governing opposing Protected Structural Extreme / Trading Range boundary and must enforce the complete CHoCH prerequisites. A body close beyond the boundary is not, by itself, sufficient to declare `CHoCH_CONFIRMED`.
+Functions equivalent to `detect_choch()` must implement the canonical CHoCH routes: (a) ordinary route using the governing opposing Protected Structural Extreme / Trading Range boundary; and (b) the source-defined LTF Structural Glitch route using the most recently formed valid LTF pullback / active LTF IDM reference while that context is active. Bootstrap anchor penetration is preclassified as `BOOTSTRAP_ANCHOR_BREAK → BOOTSTRAP_REVERSAL` whenever `ACTIVE_FIRST_BOS_BOOTSTRAP` is true for the same mapping domain and therefore never reaches either CHoCH route. A body close beyond an eligible CHoCH reference is still subject to all complete CHoCH prerequisites.
 
 ### 45.0 Order Flow / SMT implementation mapping
 
@@ -545,7 +545,7 @@ A later candle may advance the lifecycle but may not retroactively rewrite the e
 17. CHoCH-causing leg is ignored as the initial active impulse.
 18. Major IDM remains one canonical semantic class; its provenance may be pullback-derived or prior-protected-boundary-derived.
 19. Major IDM wick penetration becomes BOS or CHoCH.
-20. `MAJOR_IDM_SWEEP` must be handled as an IDM-takeout lifecycle event; it may confirm the relevant swing reference but does not itself create VALID_BOS, range rollover, or protected-extreme lock.
+20. `MAJOR_IDM_SWEEP` must be handled as an IDM-takeout lifecycle event; it establishes the relevant swing candidate/provisional extreme but does not itself create `CONFIRMED_STRUCTURAL_SWING`, `VALID_BOS`, range rollover, or protected-extreme lock.
 21. A body close beyond the opposing boundary is treated as CHoCH without all CHoCH prerequisites.
 22. A later candle retroactively rewrites an earlier `MAJOR_IDM_SWEEP` or BOS classification.
 23. A `VALID_BOS` is delayed pending a later body close when the wick-BOS path is already valid.
@@ -592,7 +592,7 @@ Regression tests must cover:
 
 ### IDM
 - Layer 2 establishes the Minor IDM from the verified extreme and pullback-derived liquidity reference of a Candle-Level Valid Pullback; Layer 3 consumes that Minor IDM for IDM_TAKEN and Major IDM governance;
-- structural retracement qualification is a later continuation-BOS gate after `CONFIRMED_STRUCTURAL_SWING`, not an initial IDM prerequisite;
+- structural retracement qualification is the promotion gate that follows `SWING_CANDIDATE / PROVISIONAL_STRUCTURAL_EXTREME` and precedes the BOS-eligible `CONFIRMED_STRUCTURAL_SWING`; it is not an initial Minor-IDM prerequisite;
 - newest valid pullback replaces the old active Minor IDM; Layer 3 consumes the resulting active Minor IDM for IDM_TAKEN and downstream Major IDM governance;
 - only one active minor IDM;
 - Major IDM provenance: post-BOS pullback-derived or prior-protected-boundary-derived;
@@ -612,7 +612,7 @@ Regression tests must cover:
 - `BROKEN` and `SWEPT` remain semantically distinct even if an implementation shares a technical field.
 
 ### Swing / Protected Extreme
-- qualified IDM sweep confirms the relevant `CONFIRMED_STRUCTURAL_SWING`;
+- qualified IDM sweep establishes the relevant `SWING_CANDIDATE / PROVISIONAL_STRUCTURAL_EXTREME`; later macro retracement qualification promotes it to `CONFIRMED_STRUCTURAL_SWING`;
 - retracement qualification is evaluated separately as the prerequisite for a subsequent continuation BOS;
 - dynamic absolute retracement extreme tracking;
 - `STANDARD_EQUILIBRIUM_THRESHOLD` standard qualification with the normal `NORMAL_RETRACEMENT_CANDLE_COUNT`-candle rule;

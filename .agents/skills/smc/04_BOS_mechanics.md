@@ -227,7 +227,7 @@ The sweep:
 - does not lock the Protected Structural Extreme;
 - **does satisfy `IDM_TAKEN` when the active Major IDM reference is physically penetrated**;
 - **the resulting `IDM_TAKEN` establishes the associated swing-point candidate / provisional structural extreme; macro retracement qualification is required before `CONFIRMED_STRUCTURAL_SWING` is established**;
-- does not require retracement qualification before the swing is confirmed. Retracement qualification is a later prerequisite for a continuation `VALID_BOS`.
+- does not promote the swing candidate to `CONFIRMED_STRUCTURAL_SWING` until the applicable macro retracement qualification succeeds. That qualification is then the stored prerequisite for continuation `VALID_BOS`.
 
 Major IDM remains a single canonical IDM class. It may be pullback-derived or the prior protected external boundary when only Minor IDM exists.
 ### 3.4.8 — Protected Structural Extreme Lock

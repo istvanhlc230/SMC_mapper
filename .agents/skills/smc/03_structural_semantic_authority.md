@@ -148,7 +148,7 @@ This is a **project-canonical initialization rule**, not a source-direct True SM
 
 ### Bootstrap Reversal — Dedicated Local Initialization Transition
 
-A **Bootstrap Reversal** is a project-canonical local initialization transition used only while the mapping is still in bootstrap and no canonical Dealing Range / Protected Structural Extreme exists.
+A **Bootstrap Reversal** is a project-canonical local initialization transition used while `ACTIVE_FIRST_BOS_BOOTSTRAP = TRUE` for the current mapping regime and no canonical Dealing Range / Protected Structural Extreme exists for that regime.
 
 The physical trigger is:
 
@@ -467,7 +467,7 @@ POST-BOS PRICE ACTION
 
 IDM_TAKEN = TRUE when price physically takes the active IDM reference according to the applicable directional level. Wick or body penetration is sufficient for IDM takeout; a candle close beyond IDM is not required.
 
-IDM takeout is the structural lifecycle event that confirms the relevant swing point. It does not by itself create VALID_BOS, roll the Trading Range, or lock the Protected Structural Extreme.
+IDM takeout is the structural lifecycle event that establishes/acquires the relevant swing-point candidate in the project state model. Source descriptions may call this a confirmed/acquired swing point, but the project-canonical candidate remains provisional until macro retracement qualification promotes it to `CONFIRMED_STRUCTURAL_SWING`. IDM takeout does not by itself create `VALID_BOS`, roll the Trading Range, or lock the Protected Structural Extreme.
 
 ~~~text
 ACTIVE IDM
@@ -476,9 +476,11 @@ PHYSICAL IDM TAKEOUT
     ↓
 IDM_TAKEN = TRUE
     ↓
-CONFIRMED_STRUCTURAL_SWING
+SWING_CANDIDATE / PROVISIONAL_STRUCTURAL_EXTREME
     ↓
-STRUCTURAL_RETRACEMENT_EVALUATION
+STRUCTURAL RETRACEMENT QUALIFICATION
+    ↓
+CONFIRMED_STRUCTURAL_SWING
 ~~~
 
 This section owns the IDM semantic object and lifecycle. BOS and CHoCH modules consume the resulting IDM state and takeout status; they must not redefine IDM.

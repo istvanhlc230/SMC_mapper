@@ -53,6 +53,13 @@ This is source reconciliation, not a new implementation heuristic.
 
 ## First-BOS bootstrap baseline — source gap and project-canonical resolution
 
+### Active first-BOS bootstrap process boundary
+
+For each newly initialized structural regime, including chart inception and the post-CHoCH regime, the first-BOS bootstrap process remains active until that regime's first `VALID_BOS`. It may coexist with runtime process states `BOOTSTRAP`, `CONFIRMATION_LOCKED`, and `POST_CHOCH`.
+
+While this process condition is active, `BOOTSTRAP_ORIGIN_ANCHOR` penetration has precedence over ordinary BOS/CHoCH classification and routes to `BOOTSTRAP_ANCHOR_BREAK → BOOTSTRAP_REVERSAL`.
+
+
 The indexed source corpus was reviewed for an explicit first-BOS retracement baseline. The reconciliation result is intentionally split into **source evidence** and **project-canonical policy**.
 
 ### Source-supported findings
@@ -131,7 +138,7 @@ The reconciliation boundary is strict:
 - `BOOTSTRAP_REVERSAL` is not `CHoCH_CONFIRMED`, `VALID_BOS`, `MAJOR_IDM_SWEEP`, or `PROTECTED_STRUCTURAL_EXTREME`.
 - The reversal candle is a real OHLC candle and becomes the explicit active-impulse origin for the new bootstrap lineage; no synthetic candle or historical rewind is permitted.
 - The new direction re-derives its `BOOTSTRAP_ORIGIN_ANCHOR` from that actual candle.
-- Pre-reversal bootstrap candidates/IDM/measurement state are retired forward-only without retroactive reclassification.
+- Pre-reversal bootstrap candidates, provisional/confirmed swing state, macro-qualification state, dynamic retracement state, active IDM/reference, and transient bootstrap measurement state are retired forward-only without retroactive reclassification.
 - Structural BOS/CHoCH pipelines remain unavailable until their independent canonical prerequisites are satisfied.
 ## Mapping-origin and swing-promotion reconciliation
 

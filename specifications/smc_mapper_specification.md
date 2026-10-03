@@ -960,10 +960,6 @@ The bootstrap contract is:
 - the actual trigger candle becomes the new explicit active-impulse origin and seeds the new direction-consistent bootstrap anchor; processing resumes strictly forward from that real candle;
 - the original `C0` remains the mapping-origin and is never redefined or replayed;
 - bootstrap reversal cannot emit `VALID_BOS`, `CHoCH_CONFIRMED`, `MAJOR_IDM_SWEEP`, `PROTECTED_STRUCTURAL_EXTREME`, or a governing Dealing Range.
-- while still in bootstrap and before the first canonical `VALID_BOS`, physical penetration of `BOOTSTRAP_ORIGIN_ANCHOR` is handled by the dedicated local `BOOTSTRAP_ANCHOR_BREAK → BOOTSTRAP_REVERSAL` transition, not by the BOS or CHoCH pipelines;
-- `BOOTSTRAP_REVERSAL` reverses the active mapping direction, retires the pre-reversal active bootstrap lineage, uses the real trigger candle as the new `EXPLICIT_ACTIVE_IMPULSE_ORIGIN`, derives a new direction-consistent `BOOTSTRAP_ORIGIN_ANCHOR` from that candle, and resumes Layer-1/Layer-2 construction strictly forward from that real candle;
-- the original `C0` remains the mapping-origin of the overall mapping domain and is never redefined or replayed;
-- bootstrap reversal cannot emit `VALID_BOS`, `CHoCH_CONFIRMED`, `MAJOR_IDM_SWEEP`, `PROTECTED_STRUCTURAL_EXTREME`, or a governing Dealing Range.
 - when first-BOS processing spans mapper invocations, required bootstrap/process state must be persisted or deterministically reconstructible from the same persisted canonical candle history; resume must not alter the bootstrap anchor or the pre-break dynamic observation boundary.
 
 The mapper's canonical processing boundary is the completion of each eligible completed candle within the resolved analysis interval.

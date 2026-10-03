@@ -3973,3 +3973,41 @@ BLOCKED — Python/runtime conformance requires the subsequent implementation au
 ## Commit/test status
 
 Documentation/specification only. No Python implementation file modified. No Python test run is claimed from this phase.
+
+
+# PHASE 49 — FINAL STALE-CONTRACT REMEDIATION AND RE-AUDIT — 2026-10-03
+
+The second post-Phase-48 sweep identified remaining stale summaries in Layer 3 IDM wording, Layer 4 qualification wording, and Layer 8 implementation/testing contracts, plus duplicate legacy bootstrap bullets in the mapper specification. These have now been corrected to the same canonical lifecycle.
+
+Final canonical structural lifecycle:
+```text
+IDM_TAKEN
+→ SWING_CANDIDATE / PROVISIONAL_STRUCTURAL_EXTREME
+→ applicable retracement baseline
+→ MACRO RETRACEMENT QUALIFICATION
+→ CONFIRMED_STRUCTURAL_SWING
+→ STRUCTURAL_SWING_BREAK
+→ VALID_BOS
+→ PROTECTED_STRUCTURAL_EXTREME
+→ DEALING RANGE
+```
+
+Final bootstrap reversal guard:
+```text
+ACTIVE_FIRST_BOS_BOOTSTRAP
++
+BOOTSTRAP_ORIGIN_ANCHOR physical penetration
+→ BOOTSTRAP_ANCHOR_BREAK
+→ BOOTSTRAP_REVERSAL
+→ retire all active pre-reversal bootstrap structural/process state
+→ actual trigger candle becomes new EXPLICIT_ACTIVE_IMPULSE_ORIGIN
+→ resume Layer 1 / Layer 2 strictly forward
+```
+
+PASS — active Layer 3/4/8 lifecycle terminology is aligned.
+PASS — no direct IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING project-canonical path remains.
+PASS — bootstrap anchor breaks cannot enter ordinary BOS or CHoCH classification while the active first-BOS bootstrap process is true.
+PASS — source reconciliation and mapper specification preserve the project-canonical/source-direct boundary.
+BLOCKED — Python/runtime conformance is a separate implementation audit and is not claimed by this documentation phase.
+
+Commit/test status: documentation/specification only; no Python files modified and no Python tests claimed.
