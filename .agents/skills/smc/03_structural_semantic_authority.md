@@ -486,20 +486,34 @@ The gates are hierarchical and mutually exclusive by depth. Gate 2 is the only q
 The absolute corrective extreme remains dynamically tracked until the structural event that produces `VALID_BOS`.
 
 ```text
-Retracement Sufficiency
+RETRACEMENT QUALIFICATION
         ↓
 dynamic_retracement_extreme
         ↓
+PRE-BREAK STRUCTURAL SWING BREAK
+        ↓
 VALID_BOS
         ↓
-PROTECTED_STRUCTURAL_EXTREME_LOCK (`dynamic_retracement_extreme` LOCKED)
+PROTECTED_STRUCTURAL_EXTREME_LOCK
 ```
 
-A valid wick BOS locks the current `dynamic_retracement_extreme` immediately. `dynamic_retracement_extreme` is the runtime state representing the live corrective extreme. No later body close is required.
+For bullish structure, `dynamic_retracement_extreme` is the lowest relevant completed-candle LOW observed during the active retracement. For bearish structure, it is the highest relevant completed-candle HIGH.
+
+Qualification does not freeze the state. A later valid retracement candle may replace the current corrective extreme until the physical structural break.
+
+The lock value is the dynamic extreme that exists **immediately before the structural break**. Under the aggregate completed-candle OHLC contract:
+
+```text
+BREAK_CANDLE ∉ PRE-BOS RETRACEMENT EXTREME WINDOW
+```
+
+The break candle may provide the physical wick/body break, but aggregate OHLC does not establish the intrabar ordering of that break and the candle's opposite extreme. The break candle therefore cannot retroactively redefine the pre-break corrective state.
+
+A valid wick BOS locks the current pre-break `dynamic_retracement_extreme` immediately. No later body close is required.
 
 If the penetrated external level carries Major IDM provenance, the wick event is instead `MAJOR_IDM_SWEEP`; it is not BOS and does not lock `dynamic_retracement_extreme`.
 
-Detailed BOS locking mechanics are owned by `04_BOS_mechanics.md`.
+Detailed BOS locking mechanics are owned by `04_BOS_mechanics.md`. The full structural ontology and bootstrap origin policy remain owned by this document.
 
 ### 3.3.4 — Dealing Range Rollover & New Cycle
 

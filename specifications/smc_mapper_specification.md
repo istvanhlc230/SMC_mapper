@@ -949,6 +949,7 @@ The bootstrap contract is:
 - the break/BOS candle is excluded from the pre-BOS retracement-extreme calculation under the aggregate OHLC observability contract;
 - after lock, bootstrap state is destroyed and the first canonical Dealing Range is established;
 - no bootstrap, dynamic, or structural state may be fabricated when required provenance is unavailable.
+- when first-BOS processing spans mapper invocations, required bootstrap/process state must be persisted or deterministically reconstructible from the same persisted canonical candle history; resume must not alter the bootstrap anchor or the pre-break dynamic observation boundary.
 
 The mapper's canonical processing boundary is the completion of each eligible completed candle within the resolved analysis interval.
 

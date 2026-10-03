@@ -3746,6 +3746,8 @@ PASS — bootstrap state is explicitly isolated from governing Dealing Range and
 
 PASS — source evidence and project-canonical policy are explicitly separated.
 
+PASS — checkpoint/resume wording now requires bootstrap and dynamic-state continuity rather than permitting silent reset or anchor substitution.
+
 BLOCKED — Python/runtime conformance is intentionally not resolved in this phase because this phase changes documentation only. The existing implementation must later be checked against the revised documentation contract.
 
 ## Commit/test status

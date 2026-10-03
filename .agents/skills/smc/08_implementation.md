@@ -1166,6 +1166,8 @@ The dynamic and protected representations must not coexist as simultaneously act
 
 Aggregate OHLC alone must not be used to infer intrabar ordering. Any stronger sequence claim requires independent observability evidence and must remain separate from methodology state.
 
+When the analysis is checkpointed before `VALID_BOS`, the bootstrap anchor, confirmation-boundary provenance, and current `dynamic_retracement_extreme` must either be persisted as explicit process state or be deterministically reconstructible from the same persisted canonical candle history. A resume operation must not silently reset the dynamic extreme, substitute a different bootstrap anchor, or move the observation boundary backward/forward.
+
 ### 49.4.3 Strict first-BOS lock boundary
 
 ```text
