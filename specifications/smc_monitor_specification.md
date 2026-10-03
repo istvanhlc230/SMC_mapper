@@ -527,15 +527,15 @@ A non-zero exit status blocks dependent mapper execution for the affected data p
 
 ## 5.2 Calendar invocation
 
-Use separate acquisition and local-query process boundaries.
+Use the unified positional Calendar CLI. The Monitor may request acquisition and evaluation in one process invocation or use a scope-bearing command followed by a cache-only symbol query when separation is useful.
 
-### Calendar acquisition
+### Calendar scope-bearing invocation
 
 ```python
-def invoke_calendar_acquisition(
+def invoke_calendar(
+    scope: str,
     symbol: str,
-    start_date: date,
-    end_date: date,
+    evaluation: str | None = None,
     debug: bool = False,
 ) -> ProcessResult:
     ...
@@ -544,23 +544,29 @@ def invoke_calendar_acquisition(
 Launch:
 
 ```text
-python calendar.py --query SYMBOL --range YYYY.MM.DD-YYYY.MM.DD [--debug]
+python calendar.py SCOPE SYMBOL
+python calendar.py SCOPE SYMBOL current
+python calendar.py SCOPE SYMBOL next
 ```
 
-Rules:
+The scope is derived from the dynamic News warning horizon. A scope-bearing invocation:
 
-- the Monitor never calls ForexFactory directly;
-- the date range is derived from the dynamic News warning horizon;
-- acquisition may update the single global `<DATA_ROOT>/calendar.json`;
-- a non-zero exit is a News acquisition failure for that cycle;
-- an acquisition failure does not block canonical Market Data/Mapper processing.
+1. resolves the requested UTC interval;
+2. ensures missing calendar coverage;
+3. uses the resulting global `<DATA_ROOT>/calendar.json`;
+4. filters the requested FX symbol;
+5. optionally evaluates `current` or `next`.
 
-### Calendar local query
+The Monitor never calls ForexFactory directly.
+
+A non-zero exit is a News acquisition/query failure for that cycle. An acquisition failure does not block canonical Market Data/Mapper processing.
+
+### Calendar cache-only invocation
 
 ```python
-def invoke_calendar_query(
+def invoke_calendar_local(
     symbol: str,
-    mode: str,
+    evaluation: str | None = None,
     debug: bool = False,
 ) -> ProcessResult:
     ...
@@ -569,20 +575,21 @@ def invoke_calendar_query(
 Launch:
 
 ```text
-python calendar.py --symbol SYMBOL --current [--debug]
-python calendar.py --symbol SYMBOL --next [--debug]
+python calendar.py SYMBOL
+python calendar.py SYMBOL current
+python calendar.py SYMBOL next
 ```
 
-The local query API is network-free and reads only the global `calendar.json`.
+This form is network-free and reads only the global `calendar.json`.
 
-For these Calendar query invocations:
+For all Calendar query invocations:
 
-- stdout is the machine-readable JSON result;
+- stdout is the machine-readable JSON result when a symbol is requested;
 - stderr remains diagnostics only;
 - the Monitor validates the returned schema before News warning evaluation;
 - `NO_CALENDAR_DATA` and `NO_RELEVANT_EVENT` are valid non-error query results.
 
-The Monitor decides whether it needs `--current`, `--next`, or both. Calendar performs only the requested time-based event search.
+The Monitor chooses the smallest scope and evaluation combination required by its News warning horizon.
 
 The Monitor never writes `calendar.json`.
 ## 5.3 invoke_mapper
@@ -2173,9 +2180,9 @@ for each due symbol
     ↓
     plan News acquisition horizon
     ↓
-    invoke calendar.py --query SYMBOL --range ... when coverage is required
+    invoke calendar.py SCOPE SYMBOL [current|next] when coverage is required
     ↓
-    invoke calendar.py --symbol SYMBOL --current / --next as needed
+    validate Calendar query result
     ↓
     validate Calendar query result
     ↓
