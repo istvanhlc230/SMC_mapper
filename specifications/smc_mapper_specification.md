@@ -741,67 +741,12 @@ Options:
       Show this help message and exit.
 ```
 
-### market_data.py
+The Market Data and Monitor CLIs are specified only in their owner documents:
 
-```text
-Usage:
-  python market_data.py --symbol SYMBOL --timeframes TF [TF ...]
-                        [--starttime ISO8601] [--endtime ISO8601]
-                        [--lastcandle] [--live] [--debug] [--help]
+- `market_data.py` → `specifications/market_data_specification.md` §5
+- `smc_monitor.py` → `specifications/smc_monitor_specification.md` §1
 
-Options:
-  --symbol SYMBOL
-      Required instrument symbol.
-
-  --timeframes TF [TF ...]
-      One or more supported timeframes to acquire/update in the symbol's
-      market-data JSON.
-
-  --starttime ISO8601
-      Optional historical acquisition start boundary.
-
-  --endtime ISO8601
-      Optional historical acquisition end boundary.
-
-  --lastcandle
-      Retrieve exactly the latest completed candle for each requested timeframe.
-      Mutually exclusive with --starttime and --endtime.
-
-  --live
-      Refresh the latest in-progress candle snapshot independently of completed
-      candle acquisition.
-
-  --debug
-      Enable diagnostic output on stderr.
-
-  --help
-      Show this help message and exit.
-```
-
-### smc_monitor.py
-
-```text
-Usage:
-  python smc_monitor.py --symbol SYMBOL [SYMBOL ...]
-                        [--rr DECIMAL] [--debug] [--help]
-
-Options:
-  --symbol SYMBOL [SYMBOL ...]
-      One or more symbols to monitor. The monitor loads all stored analyses
-      for each selected symbol.
-
-  --rr DECIMAL
-      Optional minimum projected Risk/Reward filter. No default.
-      When supplied, the monitor requires Projected_RR >= --rr after target
-      resolution and target clearance.
-
-  --debug
-      Enable diagnostic output on stderr.
-
-  --help
-      Show this help message and exit.
-```
-
+The Mapper must not duplicate those CLI contracts here.
 The monitor does not accept --htf or --ltf; it monitors the analyses already persisted in each symbol's structures JSON. Timeframe analysis configuration remains owned by smc_mapper.py.
 
 CLI options are independent of canonical SMC semantic authority. Invalid option combinations must fail explicitly rather than being silently corrected.
