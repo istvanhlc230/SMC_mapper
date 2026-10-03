@@ -733,9 +733,11 @@ Purpose:
 Rules:
 
 - return UTC;
-- use the approved timeframe duration map;
+- use the approved `TIMEFRAME_SECONDS` duration map;
+- for an interval-start timestamp, compute `completion_time = timestamp + TIMEFRAME_SECONDS[timeframe]`;
 - do not depend on local timezone;
-- do not use wall-clock time to alter historical completion boundaries.
+- do not use wall-clock time to alter historical completion boundaries;
+- the boundary is deterministic for a given normalized timestamp and timeframe.
 
 ## 7.3 Current snapshot separation
 
@@ -1066,7 +1068,8 @@ The function must be pure with respect to its inputs.
 2. retain every protected candle;
 3. from unprotected candles, retain the newest entries first until `retention_limit` is reached;
 4. if protected candles alone exceed `retention_limit`, retain all protected candles for this invocation;
-5. restore strict chronological ordering before returning;
+5. if no protected range exists, retain at most `retention_limit` completed candles;
+6. restore strict chronological ordering before returning;
 6. never mutate candle contents;
 7. never delete the current snapshot because of completed-candle retention.
 
@@ -1249,6 +1252,21 @@ The finished monitor architecture serializes active orchestration per symbol.
 
 ## 12.8 Deterministic JSON serialization
 
+Use one serialization helper for persisted Decimal values:
+
+```python
+def serialize_decimal(value: Decimal) -> str:
+    ...
+```
+
+Rules:
+
+- input must be finite;
+- quantize to `DECIMAL_PERSISTENCE_PLACES` using `ROUND_HALF_EVEN` when persistence precision is required;
+- serialize as a plain base-10 string, never scientific notation;
+- do not serialize Decimal values as JSON floating-point numbers;
+- parsing the persisted string back to Decimal must reproduce the persisted numeric value exactly.
+
 Use deterministic serialization:
 
 - stable key ordering;
@@ -1278,7 +1296,34 @@ The following serialized structure is the mapper-facing V1 market-data contract:
       }
     }
 
-Each completed candle contains candle_id, timestamp, completion_time, open, high, low, close and the volume object defined in Section 3.8. Timestamp and completion_time are UTC ISO-8601 values. Persisted numeric price and volume values use the deterministic decimal-compatible string representation.
+Each completed candle contains `candle_id`, `timestamp`, `completion_time`, `open`, `high`, `low`, `close`, and the volume object defined in Section 3.8. Timestamp and completion_time are UTC ISO-8601 values. Persisted numeric price and volume values use the deterministic decimal-compatible string representation.
+
+Exact logical candle example:
+
+```json
+{
+  "candle_id": "EURUSD_H4_2026-10-03T08:00:00Z",
+  "timestamp": "2026-10-03T08:00:00Z",
+  "completion_time": "2026-10-03T12:00:00Z",
+  "open": "1.17000",
+  "high": "1.17250",
+  "low": "1.16800",
+  "close": "1.17125",
+  "volume": {
+    "total": "12345",
+    "ohlc": {
+      "buy": "9000",
+      "sell": "3345"
+    },
+    "orderflow": {
+      "buy": "9100",
+      "sell": "3245"
+    }
+  }
+}
+```
+
+The example values are illustrative only; the field names, null/omission rules, time semantics, and numeric serialization are normative.
 
 The current field uses the same serialized candle shape when present, but it is an in-progress runtime snapshot. It does not contribute to available_start/available_end and is never a completed-candle substitute.
 
@@ -1411,13 +1456,16 @@ def fetch_completed_candles(
 
 Process:
 
-1. provider `fetch_range`;
-2. provider records normalized;
-3. completion filtered/validated;
-4. normalized candles validated;
-5. deterministic chronology returned.
+1. call provider `fetch_range`;
+2. normalize every provider record;
+3. reject malformed records and ambiguous timestamps;
+4. evaluate completion;
+5. keep only candles with `completion_time >= start_time` and `completion_time <= end_time`;
+6. exclude all incomplete/current candidates;
+7. validate normalized candles;
+8. return deterministic ascending chronology.
 
-The function returns only completed canonical market-data candles.
+The function returns only completed canonical market-data candles within the resolved canonical completion-time interval. Provider-native overfetch outside the interval is discarded before persistence.
 
 ## 14.2 fetch_latest_completed_candle
 
@@ -1434,6 +1482,8 @@ def fetch_latest_completed_candle(
 
 Must return exactly one latest completed candle when available.
 
+Selection is by greatest canonical `completion_time`; ties are a data-integrity error unless they refer to the same normalized candle identity.
+
 ## 14.3 fetch_current_candle
 
 Signature:
@@ -1448,6 +1498,8 @@ def fetch_current_candle(
 ```
 
 Must return the latest in-progress candle when the provider can supply it.
+
+Selection is by greatest canonical `timestamp` among incomplete provider records. If the provider returns only completed records, this function returns `None` and the completed branch handles them.
 
 If the returned candle is already completed by the time it is evaluated, route it through the completed-candle path rather than persisting it as current.
 
@@ -1666,18 +1718,6 @@ Rules:
 - failure must not partially persist the current symbol transaction;
 - debug output may include the category and concise cause, but never raw provider secrets or credentials.
 
-At minimum distinguish:
-
-```text
-CLI/input error
-provider acquisition error
-provider normalization error
-completion-state error
-data integrity error
-JSON persistence error
-atomic-write/retry failure
-```
-
 A failure must identify:
 
 - symbol;
@@ -1826,6 +1866,7 @@ Side effects must be concentrated in:
 provider methods
 load_market_data
 save_market_data_atomic
+clear_completed_current_snapshot
 update_timeframe
 update_market_data
 run
@@ -1877,6 +1918,21 @@ The current function ownership should make such a split possible without changin
 # 21. IMPLEMENTATION ORDER FOR THE DEVELOPER AGENT
 
 Implement in this exact dependency order:
+
+## Phase 0 — contract fixtures
+
+Before writing provider code, create deterministic in-memory fixtures for:
+
+- one completed candle;
+- one incomplete/current candle;
+- one empty timeframe state;
+- one conflicting duplicate candle;
+- one malformed candle;
+- one historical reacquisition range;
+- one current-only refresh;
+- one multi-timeframe transaction where one timeframe fails.
+
+Use these fixtures throughout unit tests so the contract is executable without network access.
 
 ## Phase 1 — skeleton
 
