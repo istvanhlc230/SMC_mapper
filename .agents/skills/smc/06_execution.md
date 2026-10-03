@@ -127,7 +127,7 @@ The Extreme POI must still be an `EXTREME_ORDER_FLOW` or `EXTREME_ORDER_BLOCK`. 
 
 An `ORIGIN_ORDER_BLOCK` is the furthest unmitigated, validated Order Block at the origin of the active dealing range. Its existence and validity are independent of whether its parent `ELIGIBLE_ORDER_FLOW` is mitigated.
 
-It remains a latent reserve rather than a third active Rule-of-Two POI. When the canonical execution fallback reaches the origin reserve after the applicable `EXTREME_ORDER_BLOCK` execution failure, an unmitigated valid `ORIGIN_ORDER_BLOCK` may become the next applicable execution location.
+It remains a latent reserve rather than a third active Rule-of-Two POI. Its **existence and validity** do not depend on whether the originating `ELIGIBLE_ORDER_FLOW` is mitigated. However, the source-defined **fallback relevance** of the Origin Order Block is reached only after the original Extreme Order Flow at the dealing-range origin has been mitigated and the applicable `EXTREME_ORDER_BLOCK` has failed. At that point, an unmitigated valid `ORIGIN_ORDER_BLOCK` may become the next applicable execution location.
 
 The execution failure of an `EXTREME_ORDER_BLOCK` is distinct from canonical `POI_FAILURE`: `POI_FAILURE` is a CHoCH-based execution lifecycle state defined separately below. Extreme Order Block execution failure must not manufacture CHoCH or any structural state.
 
