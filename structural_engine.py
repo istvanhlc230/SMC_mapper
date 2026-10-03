@@ -50,8 +50,6 @@ class StructuralResolution(str, Enum):
 
 
 @dataclass(frozen=True, slots=True)
-
-@dataclass(frozen=True, slots=True)
 class BootstrapProtectedLevel:
     """Bootstrap-only initialization anchor backed by an actual candle extreme."""
 
@@ -115,6 +113,7 @@ class ProtectedStructuralExtreme:
             if not isinstance(value, str) or not value:
                 raise QuarantineError(f"protected extreme requires {name}")
 
+@dataclass(frozen=True, slots=True)
 class ProtectedExternalBoundary:
     direction: PullbackDirection
     price: Decimal
