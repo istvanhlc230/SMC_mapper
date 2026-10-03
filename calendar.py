@@ -1,4 +1,5 @@
 import contextlib
+import html as html_module
 import json
 import os
 import re
@@ -7,6 +8,7 @@ import tempfile
 import urllib.request
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 DATA_ROOT = os.environ.get("SMC_DATA_ROOT", ".")
 CALENDAR_FILE = os.path.join(DATA_ROOT, "calendar.json")
@@ -633,10 +635,237 @@ def fetch_calendar_source(period_type: str, period_value: str) -> str:
         sys.exit(f"Error: Provider fetch failed: {exc}")
 
 
+def _html_text(fragment: str) -> str:
+    text = re.sub(r"<[^>]+>", " ", fragment)
+    text = html_module.unescape(text)
+    return re.sub(r"\\s+", " ", text).strip()
+
+
+def _html_cell_text(row_html: str, class_token: str) -> str:
+    pattern = (
+        r"<td\\b[^>]*class=[\\\"']"
+        r"[^\\\"']*\\b"
+        + re.escape(class_token)
+        + r"\\b[^\\\"']*[\\\"'][^>]*>(.*?)</td>"
+    )
+    match = re.search(pattern, row_html, re.DOTALL | re.IGNORECASE)
+    return _html_text(match.group(1)) if match else ""
+
+
+def _html_cell_inner(row_html: str, class_token: str) -> str:
+    pattern = (
+        r"<td\\b[^>]*class=[\\\"']"
+        r"[^\\\"']*\\b"
+        + re.escape(class_token)
+        + r"\\b[^\\\"']*[\\\"'][^>]*>(.*?)</td>"
+    )
+    match = re.search(pattern, row_html, re.DOTALL | re.IGNORECASE)
+    return match.group(1) if match else ""
+
+
+def _row_attribute(row_attributes: str, *names: str) -> Optional[str]:
+    for name in names:
+        match = re.search(
+            rf"\\b{re.escape(name)}\\s*=\\s*[\\\"']([^\\\"']+)[\\\"']",
+            row_attributes,
+            re.IGNORECASE,
+        )
+        if match:
+            return html_module.unescape(match.group(1)).strip()
+    return None
+
+
+def _infer_row_year(month: int, day: int, fetch_start: datetime, fetch_end: datetime) -> int:
+    candidates = []
+    for year in range(fetch_start.year - 1, fetch_end.year + 2):
+        try:
+            candidate = datetime(year, month, day, tzinfo=timezone.utc)
+        except ValueError:
+            continue
+        if fetch_start <= candidate < fetch_end:
+            candidates.append(year)
+    if candidates:
+        return min(candidates)
+    return fetch_start.year
+
+
+def _parse_provider_date(
+    value: str,
+    fetch_start: datetime,
+    fetch_end: datetime,
+    current_date: Optional[datetime],
+) -> Optional[datetime]:
+    if not value:
+        return current_date
+    normalized = re.sub(r"\\s+", " ", value).strip()
+    for fmt in ("%a %b %d", "%b %d"):
+        try:
+            parsed = datetime.strptime(normalized, fmt)
+            year = _infer_row_year(
+                parsed.month,
+                parsed.day,
+                fetch_start,
+                fetch_end,
+            )
+            return datetime(
+                year,
+                parsed.month,
+                parsed.day,
+                tzinfo=timezone.utc,
+            )
+        except ValueError:
+            continue
+    return current_date
+
+
+def _parse_provider_time(value: str) -> Tuple[int, int]:
+    normalized = value.strip().lower()
+    if not normalized or "all day" in normalized or normalized.startswith("day "):
+        return 0, 0
+    normalized = normalized.replace(" ", "")
+    for fmt in ("%I:%M%p", "%I%p"):
+        try:
+            parsed = datetime.strptime(normalized, fmt)
+            return parsed.hour, parsed.minute
+        except ValueError:
+            continue
+    sys.exit(f"Error: Invalid provider event time '{value}'.")
+
+
+def _parse_provider_impact(row_html: str) -> int:
+    impact_html = _html_cell_inner(row_html, "calendar__impact")
+    impact_match = re.search(
+        r"\\btitle=[\\\"]([^\\\"]*Impact[^\\\"]*)[\\\"]",
+        impact_html,
+        re.IGNORECASE,
+    )
+    title = impact_match.group(1).lower() if impact_match else ""
+    if "high" in title:
+        return 3
+    if "medium" in title:
+        return 2
+    if "low" in title:
+        return 1
+    if "holiday" in title or "non-economic" in title:
+        return 4
+    class_match = re.search(
+        r"calendar__impact--(high|medium|low|holiday)\\b",
+        impact_html,
+        re.IGNORECASE,
+    )
+    if class_match:
+        return {
+            "high": 3,
+            "medium": 2,
+            "low": 1,
+            "holiday": 4,
+        }[class_match.group(1).lower()]
+    return 0
+
+
+def parse_calendar_html(
+    html: str,
+    fetch_start: datetime,
+    fetch_end: datetime,
+) -> List[Dict[str, Any]]:
+    timezone_text = _html_text(html)
+    timezone_match = re.search(
+        r"Calendar Time Zone:\\s*([A-Za-z_]+(?:/[A-Za-z_]+)+|UTC)\\b",
+        timezone_text,
+        re.IGNORECASE,
+    )
+    if not timezone_match:
+        sys.exit("Error: Missing provider calendar timezone.")
+    provider_timezone = timezone_match.group(1)
+    try:
+        provider_tz = ZoneInfo(provider_timezone)
+    except ZoneInfoNotFoundError:
+        sys.exit(
+            f"Error: Unsupported provider calendar timezone '{provider_timezone}'."
+        )
+
+    row_matches = re.findall(
+        r"<tr\\b([^>]*)>(.*?)</tr>",
+        html,
+        re.DOTALL | re.IGNORECASE,
+    )
+    days: Dict[str, Dict[str, Any]] = {}
+    current_date: Optional[datetime] = None
+    event_count = 0
+
+    for row_attributes, row_html in row_matches:
+        row_class = _row_attribute(row_attributes, "class") or ""
+        if "calendar__row" not in row_class.split():
+            continue
+
+        event_id = _row_attribute(row_attributes, "data-eventid", "data-event-id")
+        if not event_id:
+            continue
+
+        date_text = _html_cell_text(row_html, "calendar__date")
+        parsed_date = _parse_provider_date(
+            date_text,
+            fetch_start,
+            fetch_end,
+            current_date,
+        )
+        if parsed_date is None:
+            sys.exit(
+                f"Error: Provider event {event_id} has no resolvable calendar date."
+            )
+        current_date = parsed_date
+
+        time_text = _html_cell_text(row_html, "calendar__time")
+        hour, minute = _parse_provider_time(time_text)
+
+        local_datetime = datetime(
+            parsed_date.year,
+            parsed_date.month,
+            parsed_date.day,
+            hour,
+            minute,
+            tzinfo=provider_tz,
+        )
+        event_timestamp = local_datetime.astimezone(timezone.utc)
+
+        currency = _html_cell_text(row_html, "calendar__currency").upper()
+        event_title = _html_cell_text(row_html, "calendar__event")
+        actual = _html_cell_text(row_html, "calendar__actual")
+        forecast = _html_cell_text(row_html, "calendar__forecast")
+        previous = _html_cell_text(row_html, "calendar__previous")
+
+        day_key = parsed_date.strftime("%Y-%m-%d")
+        day = days.setdefault(
+            day_key,
+            {"date": day_key, "events": []},
+        )
+        day["events"].append(
+            {
+                "id": event_id,
+                "dateline": int(event_timestamp.timestamp()),
+                "impact": _parse_provider_impact(row_html),
+                "country": currency,
+                "title": event_title,
+                "actual": actual or None,
+                "forecast": forecast or None,
+                "previous": previous or None,
+            }
+        )
+        event_count += 1
+
+    if event_count == 0:
+        sys.exit("Error: No calendar event rows found in provider response.")
+
+    return list(days.values())
+
+
 def extract_days_payload(html: str) -> str:
-    match = re.search(r"'days':\s*(\[.*\])\s*\}", html, re.DOTALL)
+    match = re.search(r"'days':\\s*(\\[.*\\])\\s*\\}", html, re.DOTALL)
     if not match:
-        sys.exit("Error: Missing days payload in provider response.")
+        sys.exit(
+            "Error: Provider response has no embedded days payload; "
+            "HTML calendar parser is required."
+        )
     return match.group(1)
 
 
@@ -885,16 +1114,19 @@ def run_acquisition(scope: str) -> None:
             provider_range = f"{first_day}-{last_day}"
 
             html = fetch_calendar_source("range", provider_range)
-            payload = extract_days_payload(html)
-            days_data = parse_calendar_days(payload)
-
-            expected_days = (fetch_end - fetch_start).days
-            if len(days_data) < expected_days:
-                sys.exit(
-                    "Error: Provider returned incomplete coverage. "
-                    f"Expected at least {expected_days} days, "
-                    f"got {len(days_data)}."
+            try:
+                payload = extract_days_payload(html)
+            except SystemExit:
+                days_data = parse_calendar_html(
+                    html,
+                    fetch_start,
+                    fetch_end,
                 )
+            else:
+                days_data = parse_calendar_days(payload)
+
+            if not days_data:
+                sys.exit("Error: Provider returned no calendar days.")
 
             new_events = normalize_calendar_events(days_data)
             document["events"] = merge_calendar_events(
