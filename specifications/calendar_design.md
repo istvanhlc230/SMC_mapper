@@ -19,7 +19,7 @@
 - Monitor execution policy does not belong in this module.
 
 ## 2. Boundaries and Dependencies
-- **Module Architecture:** calendar.py is the single calendar implementation/module containing both the CLI wrapper and the core execution engine.
+- **Module Architecture:** calendar.py is the single calendar implementation/module containing both the CLI wrapper and the core execution engine. The `--query` (acquisition) and `--symbol` (evaluation) operations are independent but composable stages within a single invocation pipeline.
 - **Inputs:** CLI arguments, ForexFactory HTML response, existing calendar.json.
 - **Outputs:** Console output (JSON format for local queries), updated calendar.json.
 - **Side effects:** Atomic update of calendar.json.
