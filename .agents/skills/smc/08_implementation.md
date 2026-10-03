@@ -62,7 +62,14 @@ Functions equivalent to `detect_bos()` must require:
 
 A Major IDM wick penetration must terminate as `MAJOR_IDM_SWEEP`; that sweep is consumed as the IDM takeout (`IDM_TAKEN`) and therefore establishes the associated `SWING_CANDIDATE / PROVISIONAL_STRUCTURAL_EXTREME`. Macro retracement qualification is still required before `CONFIRMED_STRUCTURAL_SWING` exists; the sweep is not BOS.
 
-Functions equivalent to `detect_choch()` must implement the canonical CHoCH routes: (a) ordinary route using the governing opposing Protected Structural Extreme / Trading Range boundary; and (b) the source-defined LTF Structural Glitch route using the most recently formed valid LTF pullback / active LTF IDM reference while that context is active. Bootstrap anchor penetration is preclassified as `BOOTSTRAP_ANCHOR_BREAK → BOOTSTRAP_REVERSAL` whenever `ACTIVE_FIRST_BOS_BOOTSTRAP` is true for the same mapping domain and therefore never reaches either CHoCH route. A body close beyond an eligible CHoCH reference is still subject to all complete CHoCH prerequisites.
+Functions equivalent to `detect_choch()` must implement the canonical CHoCH routes as a **classification contract**, not as a generic break detector:
+
+1. **Bootstrap preclassification has precedence.** If `ACTIVE_FIRST_BOS_BOOTSTRAP` is true for the same mapping domain and the candle physically penetrates `BOOTSTRAP_ORIGIN_ANCHOR` (wick or body), return the bootstrap-local `BOOTSTRAP_ANCHOR_BREAK → BOOTSTRAP_REVERSAL` route. Do not emit `EXT_OPP_BREAK`, `CHoCH_ELIGIBLE`, `CHoCH_CONFIRMED`, or `MAJOR_IDM_SWEEP` for that trigger.
+2. **Ordinary route.** Otherwise evaluate the governing opposing Protected Structural Extreme / Trading Range boundary. A physical wick/body penetration is only a physical break/classification input; it is not by itself `CHoCH_CONFIRMED`. Body close beyond an eligible opposing boundary may enter `CHoCH_ELIGIBLE`, subject to all complete CHoCH prerequisites. Wick breach is `CHoCH_ELIGIBLE` only when the tested level does not carry Major-IDM provenance; a Major-IDM wick is `MAJOR_IDM_SWEEP` / `IDM_TAKEN`, not CHoCH.
+3. **LTF Structural Glitch route.** When the source-defined LTF-CHoCH context is active after the required HTF POI/core-liquidity interaction, use the most recently formed valid LTF pullback / active LTF IDM reference as the temporary governing reference. The break mode remains IDM-provenance dependent: Major IDM may qualify through wick; Minor-IDM-only requires the applicable body-close path.
+4. **Confirmation is separate.** `CHoCH_ELIGIBLE` must not be returned as `CHoCH_CONFIRMED` until every canonical CHoCH prerequisite passes. Later candles may advance the lifecycle but may not retroactively reclassify the original break.
+
+The function must therefore preserve event provenance and return a semantically specific outcome; it must never infer CHoCH from wick/body geometry alone, and it must never promote the LTF reference into Major Structure.
 
 ### 45.0 Order Flow / SMT implementation mapping
 
@@ -1159,7 +1166,7 @@ Implementation requirements:
 
 - The trigger is a physical wick/body penetration of the active `BOOTSTRAP_ORIGIN_ANCHOR`; no candle-close requirement is added.
 - Do not emit `VALID_BOS`, `CHoCH_CONFIRMED`, `MAJOR_IDM_SWEEP`, or `PROTECTED_STRUCTURAL_EXTREME` from this trigger.
-- Retire the complete pre-reversal bootstrap structural/process lineage, including any active `SWING_CANDIDATE`, `PROVISIONAL_STRUCTURAL_EXTREME`, `CONFIRMED_STRUCTURAL_SWING`, macro-qualification result, `dynamic_retracement_extreme`, active IDM/reference, and transient `BOOTSTRAP_RANGE`, without deleting or rewriting historical events.
+- Retire the complete pre-reversal bootstrap structural/process lineage, including any active `SWING_CANDIDATE`, `PROVISIONAL_STRUCTURAL_EXTREME`, `CONFIRMED_STRUCTURAL_SWING`, macro-qualification result, `dynamic_retracement_extreme`, active IDM/reference, transient `BOOTSTRAP_RANGE`, and any pending first-BOS confirmation/gate bookkeeping. These objects become inactive historical provenance at the trigger boundary; they must not remain active inputs to the reversed lineage, while historical events remain immutable and are never deleted or retroactively rewritten.
 - Record the trigger candle as the new explicit active-impulse origin for the reversed bootstrap lineage.
 - Re-derive the new anchor from that actual candle: bullish direction → candle `LOW`; bearish direction → candle `HIGH`.
 - Treat the trigger candle as the new Layer-1 active reference and process all later candles strictly chronologically; do not rewind to `C0`.
