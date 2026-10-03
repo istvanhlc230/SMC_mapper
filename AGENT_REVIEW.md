@@ -3116,3 +3116,19 @@ The audit checked logical consistency, semantic ownership, duplicated rules, imp
 
 ## Test status
 This phase was specification-only. No runtime implementation files were changed and no local pytest suite was run.
+
+
+# PHASE 25A — FINAL SPECIFICATION OPTIMIZATION PASS — 2026-10-03
+
+Final cleanup after the Phase 25 audit:
+
+- removed duplicate Market Data / Monitor CLI contracts from the Mapper specification;
+- kept each CLI contract in its owner specification only;
+- tightened deterministic acquisition, retention, live-mode, alert, and analysis-identity wording;
+- aligned persisted `analysis_start` and Monitor Mapper invocation;
+- aligned SETUP_ELIGIBLE and TARGET_REACHED as independent notification paths;
+- removed remaining permissive “recommended/expected” wording where a developer-agent contract is required;
+- re-ran cross-file stale-term, duplicate-heading, and owner-boundary checks with PASS results.
+
+No canonical `.agents/skills/smc/` file was modified.
+No runtime implementation file was modified.
