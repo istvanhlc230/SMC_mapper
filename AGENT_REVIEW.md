@@ -3420,3 +3420,46 @@ PASS — Target terminology no longer treats FVG as a target or conflates target
 
 ## Test status
 Specification-only audit/correction. Runtime implementation and pytest were not run.
+
+
+# PHASE 33 — FULL OF/OB TERMINOLOGY NORMALIZATION — 2026-10-03
+
+## Scope
+Unified the complete Order Flow / Order Block terminology across the canonical execution skill, implementation mapping, Mapper specification, execution implementation, and execution tests.
+
+## Canonical terminology
+
+Order Flow:
+- ORDER_FLOW_CANDIDATE
+- ELIGIBLE_ORDER_FLOW
+- DECISIONAL_ORDER_FLOW
+- EXTREME_ORDER_FLOW
+
+Order Block:
+- ORDER_BLOCK_CANDIDATE
+- VALIDATED_ORDER_BLOCK
+- DECISIONAL_ORDER_BLOCK
+- EXTREME_ORDER_BLOCK
+- ORIGIN_ORDER_BLOCK
+
+REJECTION_BLOCK remains a separate PD-array / execution concept. FVG remains a validator/property and is not an OF/OB type, POI type, or target type.
+
+## Corrections applied
+- Removed cryptic OF_CONFIRMED naming in favor of ELIGIBLE_ORDER_FLOW.
+- Removed cryptic VALID_OB naming in favor of VALIDATED_ORDER_BLOCK.
+- Replaced OF_CANDIDATE with ORDER_FLOW_CANDIDATE.
+- Replaced DECISIONAL_OF / EXTREME_OF with DECISIONAL_ORDER_FLOW / EXTREME_ORDER_FLOW.
+- Replaced DECISIONAL_OB / EXTREME_OB with DECISIONAL_ORDER_BLOCK / EXTREME_ORDER_BLOCK.
+- Replaced ORIGIN_OB / ORIGIN_RESERVE with ORIGIN_ORDER_BLOCK.
+- Added ORDER_BLOCK_CANDIDATE to the implementation-side execution object taxonomy.
+- Renamed the implementation field origin_ob_latent to origin_order_block_latent.
+
+## Scope boundary
+Knowledgebase source/evidence files remain unchanged; source wording is evidence and is not treated as canonical implementation vocabulary.
+
+## Audit result
+PASS — active canonical skill and active specification/implementation/test vocabulary now use the descriptive OF/OB family consistently.
+PASS — no old OF/OB alias is intentionally retained in the active files changed by this phase.
+
+## Test status
+Terminology-only refactor. Local pytest was not run in this environment.

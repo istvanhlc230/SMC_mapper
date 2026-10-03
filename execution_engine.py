@@ -16,15 +16,16 @@ class ExecutionState(str, Enum):
     EXPIRED_HISTORICAL = "EXPIRED_HISTORICAL"
 
 class ExecutionObjectType(str, Enum):
-    OF_CANDIDATE = "OF_CANDIDATE"
+    ORDER_FLOW_CANDIDATE = "ORDER_FLOW_CANDIDATE"
     SMT_INDUCEMENT_TRAP = "SMT_INDUCEMENT_TRAP"
-    OF_CONFIRMED = "OF_CONFIRMED"
-    DECISIONAL_OF = "DECISIONAL_OF"
-    EXTREME_OF = "EXTREME_OF"
-    VALID_OB = "VALID_OB"
-    DECISIONAL_OB = "DECISIONAL_OB"
-    EXTREME_OB = "EXTREME_OB"
-    ORIGIN_OB = "ORIGIN_OB"
+    ELIGIBLE_ORDER_FLOW = "ELIGIBLE_ORDER_FLOW"
+    DECISIONAL_ORDER_FLOW = "DECISIONAL_ORDER_FLOW"
+    EXTREME_ORDER_FLOW = "EXTREME_ORDER_FLOW"
+    ORDER_BLOCK_CANDIDATE = "ORDER_BLOCK_CANDIDATE"
+    VALIDATED_ORDER_BLOCK = "VALIDATED_ORDER_BLOCK"
+    DECISIONAL_ORDER_BLOCK = "DECISIONAL_ORDER_BLOCK"
+    EXTREME_ORDER_BLOCK = "EXTREME_ORDER_BLOCK"
+    ORIGIN_ORDER_BLOCK = "ORIGIN_ORDER_BLOCK"
     REJECTION_BLOCK = "REJECTION_BLOCK"
     ENG_LQD_REFERENCE = "ENG_LQD_REFERENCE"
     DECISIONAL_POI = "DECISIONAL_POI"
@@ -61,7 +62,7 @@ class OBPillars:
 class POISet:
     decisional_poi: ExecutionObject | None
     extreme_poi: ExecutionObject | None
-    origin_ob_latent: ExecutionObject | None
+    origin_order_block_latent: ExecutionObject | None
     rejection_block: ExecutionObject | None
     
     def __post_init__(self):
@@ -69,8 +70,8 @@ class POISet:
             raise ValueError("decisional_poi must be DECISIONAL_POI")
         if self.extreme_poi and self.extreme_poi.object_type != ExecutionObjectType.EXTREME_POI:
             raise ValueError("extreme_poi must be EXTREME_POI")
-        if self.origin_ob_latent and self.origin_ob_latent.object_type != ExecutionObjectType.ORIGIN_OB:
-            raise ValueError("origin_ob_latent must be ORIGIN_OB")
+        if self.origin_order_block_latent and self.origin_order_block_latent.object_type != ExecutionObjectType.ORIGIN_ORDER_BLOCK:
+            raise ValueError("origin_order_block_latent must be ORIGIN_ORDER_BLOCK")
         if self.rejection_block and self.rejection_block.object_type != ExecutionObjectType.REJECTION_BLOCK:
             raise ValueError("rejection_block must be REJECTION_BLOCK")
 
@@ -178,7 +179,7 @@ def evaluate_execution_state(
     engineering_liquidity = None
     decisional_poi = None
     extreme_poi = None
-    origin_ob_latent = None
+    origin_order_block_latent = None
     rejection_block = None
 
     if not l2_result or not hasattr(l2_result, 'pullbacks') or not l2_result.pullbacks:
@@ -283,7 +284,7 @@ def evaluate_execution_state(
             else:
                 is_smt = True
                     
-            obj_type = ExecutionObjectType.SMT_INDUCEMENT_TRAP if is_smt else ExecutionObjectType.OF_CONFIRMED
+            obj_type = ExecutionObjectType.SMT_INDUCEMENT_TRAP if is_smt else ExecutionObjectType.ELIGIBLE_ORDER_FLOW
             
             state = ExecutionState.ACTIVE
             if is_mitigated(group):
@@ -301,7 +302,7 @@ def evaluate_execution_state(
             )
             order_flows.append(of)
             
-            if obj_type == ExecutionObjectType.OF_CONFIRMED:
+            if obj_type == ExecutionObjectType.ELIGIBLE_ORDER_FLOW:
                 valid_ofs.append(of)
 
     ext_of_obj = None
@@ -309,11 +310,11 @@ def evaluate_execution_state(
     
     if valid_ofs:
         # 3. Extreme OF ordering: explicit lineage, origin-side qualifying OF.
-        # The first valid OF chronologically is the furthest from the break!
+        # The first eligible Order Flow chronologically is the furthest from the break!
         # Unmitigated only.
         unmitigated_ofs = [of for of in valid_ofs if of.state == ExecutionState.ACTIVE]
         if unmitigated_ofs:
-            ext_of_obj = replace(unmitigated_ofs[0], object_type=ExecutionObjectType.EXTREME_OF)
+            ext_of_obj = replace(unmitigated_ofs[0], object_type=ExecutionObjectType.EXTREME_ORDER_FLOW)
 
         # 4. Decisional OF causality: must trace displacement exactly to the break candle.
         if valid_bos and break_candle_id:
@@ -337,7 +338,7 @@ def evaluate_execution_state(
                                     is_causal = False
                                     break
                         if is_causal:
-                            dec_of_obj = replace(of_cand, object_type=ExecutionObjectType.DECISIONAL_OF)
+                            dec_of_obj = replace(of_cand, object_type=ExecutionObjectType.DECISIONAL_ORDER_FLOW)
                             break
 
         if ext_of_obj:
@@ -353,7 +354,7 @@ def evaluate_execution_state(
             if of_cand in (ext_of_obj, dec_of_obj) and of_cand.state != ExecutionState.ACTIVE: continue
             
             # Find all candles inside the OF candidate bounds
-            # For 7. Extreme OB lineage: valid OBs in that lineage -> unmitigated -> furthest
+            # For 7. Extreme OB lineage: validated Order Blocks in that lineage -> unmitigated -> furthest
             s_idx = min(next((i for i,c in enumerate(candles_list) if c.candle_id == cid), float('inf')) for cid in of_cand.source_candle_ids)
             e_idx = max(next((i for i,c in enumerate(candles_list) if c.candle_id == cid), -1) for cid in of_cand.source_candle_ids)
             
@@ -395,9 +396,9 @@ def evaluate_execution_state(
                         if check_inside_bar(candles_list, i):
                             ob_top, ob_bottom = refine_ob_inside_bar(candles_list[i-1], candles_list[i], of_cand.direction)
                             
-                        ob_type = ExecutionObjectType.EXTREME_OB if of_cand == ext_of_obj else ExecutionObjectType.DECISIONAL_OB
+                        ob_type = ExecutionObjectType.EXTREME_ORDER_BLOCK if of_cand == ext_of_obj else ExecutionObjectType.DECISIONAL_ORDER_BLOCK
                         if of_cand == orig_ext_of and of_cand != ext_of_obj:
-                            ob_type = ExecutionObjectType.ORIGIN_OB # temporary
+                            ob_type = ExecutionObjectType.ORIGIN_ORDER_BLOCK # temporary
                         ob = ExecutionObject(
                             object_type=ob_type,
                             direction=of_cand.direction,
@@ -413,13 +414,13 @@ def evaluate_execution_state(
                         break # Furthest qualifying OB in the lineage!
 
         extreme_poi = replace(ext_of_obj, object_type=ExecutionObjectType.EXTREME_POI) if ext_of_obj else None
-        extreme_ob = next((ob for ob in order_blocks if ob.object_type == ExecutionObjectType.EXTREME_OB), None)
+        extreme_ob = next((ob for ob in order_blocks if ob.object_type == ExecutionObjectType.EXTREME_ORDER_BLOCK), None)
         if extreme_ob:
             extreme_poi = replace(extreme_ob, object_type=ExecutionObjectType.EXTREME_POI)
             
         if dec_of_obj:
             dec_poi_cand = replace(dec_of_obj, object_type=ExecutionObjectType.DECISIONAL_POI)
-            dec_ob = next((ob for ob in order_blocks if ob.object_type == ExecutionObjectType.DECISIONAL_OB), None)
+            dec_ob = next((ob for ob in order_blocks if ob.object_type == ExecutionObjectType.DECISIONAL_ORDER_BLOCK), None)
             if dec_ob:
                 dec_poi_cand = replace(dec_ob, object_type=ExecutionObjectType.DECISIONAL_POI)
             
@@ -429,7 +430,7 @@ def evaluate_execution_state(
                 if check_rule_of_two_discount_premium(dec_poi_cand.top, dec_poi_cand.bottom, dec_poi_cand.direction, r_high, r_low):
                     decisional_poi = dec_poi_cand
 
-        # 12. Engineering Liquidity: most recently formed VALID_PULLBACK immediately preceding active EXTREME_OF / EXTREME_OB.
+        # 12. Engineering Liquidity: most recently formed VALID_PULLBACK immediately preceding active EXTREME_ORDER_FLOW / EXTREME_ORDER_BLOCK.
         if extreme_poi:
             try:
                 ext_pb_idx = next(i for i, pb in enumerate(l2_result.pullbacks) if pb.reference_candle_id == extreme_poi.origin_pullback_id)
@@ -450,11 +451,11 @@ def evaluate_execution_state(
             except StopIteration:
                 pass
 
-        # 8. Origin OB: ONLY IF (EXTREME_OF is mitigated + EXTREME_OB is FAILED + NO CHoCH_CONFIRMED)
+        # 8. Origin Order Block: ONLY IF (EXTREME_ORDER_FLOW is mitigated + EXTREME_ORDER_BLOCK is FAILED + NO CHoCH_CONFIRMED)
         orig_ext_of = valid_ofs[0] if valid_ofs else None
         
         # The true original extreme OB that might have failed
-        orig_ext_ob = next((ob for ob in order_blocks if ob.object_type in (ExecutionObjectType.EXTREME_OB, ExecutionObjectType.ORIGIN_OB) and ob.origin_pullback_id == orig_ext_of.origin_pullback_id), None)
+        orig_ext_ob = next((ob for ob in order_blocks if ob.object_type in (ExecutionObjectType.EXTREME_ORDER_BLOCK, ExecutionObjectType.ORIGIN_ORDER_BLOCK) and ob.origin_pullback_id == orig_ext_of.origin_pullback_id), None)
         
         
         ext_ob_failed = False
@@ -469,7 +470,7 @@ def evaluate_execution_state(
                     break
                     
         if orig_ext_ob and orig_ext_of and orig_ext_of.state == ExecutionState.MITIGATED and ext_ob_failed and not choch_confirmed:
-            origin_ob_latent = replace(orig_ext_ob, object_type=ExecutionObjectType.ORIGIN_OB)
+            origin_order_block_latent = replace(orig_ext_ob, object_type=ExecutionObjectType.ORIGIN_ORDER_BLOCK)
 
         if orig_ext_ob and ext_ob_failed:
             rb_top, rb_bottom = refine_ob_wick(candle_map[orig_ext_ob.source_candle_ids[0]], orig_ext_ob.direction, Decimal("0"))
@@ -483,12 +484,12 @@ def evaluate_execution_state(
                 range_id=current_range_id
             )
             
-        order_blocks = [ob for ob in order_blocks if ob.object_type in (ExecutionObjectType.EXTREME_OB, ExecutionObjectType.DECISIONAL_OB)]
+        order_blocks = [ob for ob in order_blocks if ob.object_type in (ExecutionObjectType.EXTREME_ORDER_BLOCK, ExecutionObjectType.DECISIONAL_ORDER_BLOCK)]
 
     poi_set = POISet(
         decisional_poi=decisional_poi,
         extreme_poi=extreme_poi,
-        origin_ob_latent=origin_ob_latent,
+        origin_order_block_latent=origin_order_block_latent,
         rejection_block=rejection_block
     )
     
@@ -547,7 +548,7 @@ def fail_pois(pois: List[ExecutionObject], l5_result: Any) -> List[ExecutionObje
             # In a real implementation we would match the CHoCH break candle boundary to the POI bounds.
             # For now, any POI whose boundary is breached by the CHoCH break candle is failed.
             # Since CHoCH is a structural reversal, the EXTREME POI lineage is failed.
-            if poi.object_type in (ExecutionObjectType.EXTREME_POI, ExecutionObjectType.EXTREME_OB, ExecutionObjectType.EXTREME_OF):
+            if poi.object_type in (ExecutionObjectType.EXTREME_POI, ExecutionObjectType.EXTREME_ORDER_BLOCK, ExecutionObjectType.EXTREME_ORDER_FLOW):
                 result.append(replace(poi, state=ExecutionState.FAILED))
             else:
                 result.append(poi)

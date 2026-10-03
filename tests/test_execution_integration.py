@@ -50,7 +50,7 @@ def test_integration_full_of_lifecycle():
     # Sequence: 
     # c1-c2 (PB1 - before IDM) -> SMT
     # c3 = IDM takeout candle
-    # c4-c5 (PB2 - after IDM) -> OF_CONFIRMED, becomes DECISIONAL_OF because it causes BOS at c6
+    # c4-c5 (PB2 - after IDM) -> ELIGIBLE_ORDER_FLOW, becomes DECISIONAL_ORDER_FLOW because it causes BOS at c6
     # c7 = BOS candle
     
     pb1 = make_pb("c1", "c1", "c2", "c2", "10.0")
@@ -80,7 +80,7 @@ def test_integration_full_of_lifecycle():
     assert len(smt) == 1
     assert smt[0].origin_pullback_id == "c1" # PB1 completed before c3
     
-    dec_of = [of for of in res.order_flows if of.object_type == ExecutionObjectType.DECISIONAL_OF]
+    dec_of = [of for of in res.order_flows if of.object_type == ExecutionObjectType.DECISIONAL_ORDER_FLOW]
     assert len(dec_of) == 1
     assert dec_of[0].origin_pullback_id == "c4" # PB2 caused BOS at c7
 

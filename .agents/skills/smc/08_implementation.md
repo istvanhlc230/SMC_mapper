@@ -69,42 +69,42 @@ Functions equivalent to `detect_choch()` must use the governing opposing Protect
 The implementation must preserve the canonical distinction between Order Flow observations, eligible Order Flow, SMT exclusions, and POI selection.
 
 ```text
-OF_CANDIDATE
+ORDER_FLOW_CANDIDATE
     ↓
 ELIGIBILITY
     ├─ PRE-IDM → SMT / INDUCEMENT_TRAP
     ├─ MITIGATED → INVALID_FOR_EXECUTION
-    └─ ELIGIBLE + UNMITIGATED → OF_CONFIRMED
+    └─ ELIGIBLE + UNMITIGATED → ELIGIBLE_ORDER_FLOW
 ```
 
 Required representation:
 
-- `OF_CANDIDATE` stores the whole relevant opposing corrective move, including multiple internal legs while its protected endpoint remains intact;
-- `OF_CONFIRMED` requires canonical eligibility conditions and unmitigated status;
-- `SMT / INDUCEMENT_TRAP` is a non-tradable contextual exclusion and must not be emitted as a Valid OF;
+- `ORDER_FLOW_CANDIDATE` stores the whole relevant opposing corrective move, including multiple internal legs while its protected endpoint remains intact;
+- `ELIGIBLE_ORDER_FLOW` requires canonical eligibility conditions and unmitigated status;
+- `SMT / INDUCEMENT_TRAP` is a non-tradable contextual exclusion and must not be emitted as a Eligible Order Flow;
 - touching an OF does not mark it mitigated unless a canonical Valid Pullback confirms the mitigation;
-- `DECISIONAL_OF` is selected from the valid OF lineage associated with the displacement that causes `VALID_BOS`;
-- `EXTREME_OF` is the furthest unmitigated eligible OF at the origin of the active dealing range;
+- `DECISIONAL_ORDER_FLOW` is selected from the eligible Order Flow lineage associated with the displacement that causes `VALID_BOS`;
+- `EXTREME_ORDER_FLOW` is the furthest unmitigated eligible OF at the origin of the active dealing range;
 - when the current Extreme OF is mitigated, selection shifts to the next furthest eligible unmitigated OF;
 - a Decisional or Extreme OF remains a POI candidate only after the POI ontology and Rule-of-Two constraints are satisfied.
 
 Forbidden shortcuts:
 
 ```text
-PRE-IDM FORMATION → OF_CONFIRMED
+PRE-IDM FORMATION → ELIGIBLE_ORDER_FLOW
 OF TOUCH → OF_MITIGATED
-ARBITRARY LOCAL MOVE → OF_CONFIRMED
-OF_CONFIRMED → VALID_BOS
-OF_CONFIRMED → IDM
+ARBITRARY LOCAL MOVE → ELIGIBLE_ORDER_FLOW
+ELIGIBLE_ORDER_FLOW → VALID_BOS
+ELIGIBLE_ORDER_FLOW → IDM
 SMT → POI
 ```
 
 ### 45.0.1 Engineering Liquidity implementation mapping
 
-The implementation resolves Engineering Liquidity only for a canonical `EXTREME_OF` or `EXTREME_OB`.
+The implementation resolves Engineering Liquidity only for a canonical `EXTREME_ORDER_FLOW` or `EXTREME_ORDER_BLOCK`.
 
 ```text
-ACTIVE EXTREME_OF / EXTREME_OB
+ACTIVE EXTREME_ORDER_FLOW / EXTREME_ORDER_BLOCK
     ↓
 MOST RECENT VALID PULLBACK IMMEDIATELY BEFORE IT
     ↓
@@ -118,7 +118,7 @@ Required representation:
 - bearish: liquidity above the valid pullback high immediately preceding the active Extreme POI;
 - no valid pullback before the active Extreme POI -> no Engineering Liquidity reference;
 - invalid pullbacks, SMTs, arbitrary pivots, and generic equal highs/lows cannot manufacture ENG_LQD;
-- when the active Extreme POI changes between canonical `EXTREME_OF` and `EXTREME_OB` provenance, the Engineering Liquidity reference is recomputed for the new provenance;
+- when the active Extreme POI changes between canonical `EXTREME_ORDER_FLOW` and `EXTREME_ORDER_BLOCK` provenance, the Engineering Liquidity reference is recomputed for the new provenance;
 - historical ENG_LQD references remain immutable observations;
 - ENG_LQD sweep is distinct from IDM sweep, Extreme POI mitigation, BOS, and CHoCH;
 - if IDM and ENG_LQD occupy the same numeric price, preserve the distinct semantic roles rather than collapsing provenance.
@@ -812,9 +812,9 @@ The monitor must not emit `POSITION_CLOSED` unless an independent execution/acco
 ### Decisional / Extreme Order Block selection implementation mapping
 
 Required implementation behavior:
-- `DECISIONAL_OB` is the valid Order Block that actually causes the canonical `VALID_BOS` event; it is not selected solely because it is the first valid OB after inducement;
-- the earlier `first valid OB after inducement` shortcut is superseded;
-- `EXTREME_OB` is selected as the furthest unmitigated valid Order Block within the active `EXTREME_OF` lineage; it is not selected by a global search across all origin-side Order Blocks;
+- `DECISIONAL_ORDER_BLOCK` is the validated Order Block that actually causes the canonical `VALID_BOS` event; it is not selected solely because it is the first validated Order Block after inducement;
+- the earlier `first validated Order Block after inducement` shortcut is superseded;
+- `EXTREME_ORDER_BLOCK` is selected as the furthest unmitigated validated Order Block within the active `EXTREME_ORDER_FLOW` lineage; it is not selected by a global search across all origin-side Order Blocks;
 - OB validity is evaluated from the canonical OB validation pillars independently of parent Order Flow mitigation/failure state;
 - a valid Decisional OB may remain executable even while its associated Order Flow is unmitigated, subject to Rule-of-Two and all execution gates;
 - later OF mitigation/failure must not retroactively rewrite the causal Decisional OB identity.
@@ -847,14 +847,14 @@ Required invariants:
 - stop movement after entry belongs to a separate trade-management policy and must not rewrite the historical entry/SL anchor.
 
 ### POI / Entry
-- POI ontology accepts Valid OF and Valid OB;
+- POI ontology accepts Eligible Order Flow and Valid OB;
 - Rejection Block is a separately typed PD-array/execution concept; source examples may use POI as a broad execution-location term, but RB is not an OF/OB-equivalent POI class or an automatic Rule-of-Two slot;
 - Rule of Two limits canonical tradable POIs to Decisional POI and Extreme POI (Extreme OF / Extreme OB);
-- Origin OB is a latent reserve POI (mitigation transfer target when Extreme POI is mitigated), never a 3rd active POI;
+- Origin Order Block is a latent reserve POI (mitigation transfer target when Extreme POI is mitigated), never a 3rd active POI;
 - when an applicable Rule-of-Two dealing-range execution context exists, the active canonical tradable POI set has cardinality 1..2; if no valid canonical POI exists, execution fails closed with no executable POI / `NO_EVIDENCE`; no synthetic POI is created;
 - Decisional buy POI is in discount, and Decisional sell POI is in premium as a hard execution eligibility gate;
 - Decisional sell POI is in premium;
-- Origin OB remains independently valid after parent OF mitigation when its own pillars remain valid;
+- Origin Order Block remains independently valid after parent OF mitigation when its own pillars remain valid;
 - all three OB validation pillars are required;
 - standalone FVG never becomes POI;
 - standalone FVG never creates entry;

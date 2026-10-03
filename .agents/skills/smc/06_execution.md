@@ -18,10 +18,10 @@ POI, Order Flow, Order Block, Rejection Block, Engineering Liquidity, and entry 
 
 ## 36. POI ontology — canonical tradable POIs
 
-The project's canonical tradable POI ontology is the source-backed OF/OB execution-location model: **Valid Order Flow (OF_CONFIRMED)** and **Valid Order Block (Valid OB)**. A **Rejection Block is a separately identified PD-array/execution-location concept** that becomes relevant as the next PD array after the applicable Extreme Order Block fails. Source examples may refer to that execution location as a POI in ordinary usage; the canonical typed representation keeps its Rejection Block identity distinct from the OF/OB POI classes and from the Rule-of-Two POI slots. Any project representation must preserve that provenance rather than silently redefining RB as an OF/OB-equivalent POI class.
+The project's canonical tradable POI ontology is the source-backed OF/OB execution-location model: **Eligible Order Flow (ELIGIBLE_ORDER_FLOW)** and **Validated Order Block (VALIDATED_ORDER_BLOCK)**. A **Rejection Block is a separately identified PD-array/execution-location concept** that becomes relevant as the next PD array after the applicable Extreme Order Block fails. Source examples may refer to that execution location as a POI in ordinary usage; the canonical typed representation keeps its Rejection Block identity distinct from the OF/OB POI classes and from the Rule-of-Two POI slots. Any project representation must preserve that provenance rather than silently redefining RB as an OF/OB-equivalent POI class.
 
 ```text
-OF_CONFIRMED
+ELIGIBLE_ORDER_FLOW
 VALID ORDER BLOCK (OB)
         ↓
    CANONICAL POI
@@ -47,7 +47,7 @@ These concepts may exist as structural observations, validators, liquidity, or h
 
 When an applicable Rule-of-Two dealing-range execution context exists, the active canonical tradable POI set has cardinality **1 to 2**:
 1. **Decisional POI** (must reside in Discount for Buys, Premium for Sells)
-2. **Extreme POI** (Extreme OF / Extreme OB)
+2. **Extreme POI** (Extreme Order Flow / Extreme Order Block)
 
 If no valid canonical POI exists, the execution path fails closed with no executable POI / NO_EVIDENCE; no synthetic POI is created to satisfy the minimum.
 
@@ -57,11 +57,11 @@ DECISIONAL POI
  EXTREME POI
 ```
 
-No synthetic POI may be created merely to satisfy the Rule of Two. Origin OB remains a latent reserve rather than a third active slot, and Rejection Block remains separately typed rather than an automatic Rule-of-Two slot. Multiple arbitrary POIs must not be created merely because multiple zones are visually present. Any logic that permits three simultaneously active canonical POIs is strictly forbidden.
+No synthetic POI may be created merely to satisfy the Rule of Two. Origin Order Block remains a latent reserve rather than a third active slot, and Rejection Block remains separately typed rather than an automatic Rule-of-Two slot. Multiple arbitrary POIs must not be created merely because multiple zones are visually present. Any logic that permits three simultaneously active canonical POIs is strictly forbidden.
 
 ### Latent Origin Reserve and Rejection Block
 
-The **Origin OB** is a latent reserve within the POI/Rule-of-Two architecture. It is not a third active POI and may become the applicable Extreme POI only when its own canonical activation conditions are satisfied.
+The **Origin Order Block** is a latent reserve within the POI/Rule-of-Two architecture. It is not a third active POI and may become the applicable Extreme POI only when its own canonical activation conditions are satisfied.
 
 The **Rejection Block is a separately typed PD-array/execution location** at the extreme/origin area. Source examples may use POI as a broad execution-location term, but the canonical typed model keeps RB distinct from the OF/OB POI classes. It becomes relevant only after the applicable Extreme Order Block fails, according to the source-defined sequence. It does not occupy the Extreme POI slot merely by being identified.
 
@@ -84,7 +84,7 @@ A POI is a validated execution-location object. Its existence must never alter s
 The following invariants are mandatory:
 
 ```text
-POI ∈ {OF_CONFIRMED, VALID_OB}
+POI ∈ {ELIGIBLE_ORDER_FLOW, VALIDATED_ORDER_BLOCK}
 REJECTION_BLOCK → NOT_POI
 REJECTION_BLOCK → SEPARATE_PD_ARRAY_EXECUTION_ROLE
 STANDALONE_FVG → NOT_POI
@@ -121,11 +121,11 @@ A Decisional POI outside its required premium/discount side is not a valid Decis
 
 The Extreme POI is the secondary/fallback execution location of the same dealing-range framework. It is used when the Decisional POI is unavailable, fails its execution conditions, or is otherwise not the applicable module according to the canonical entry sequence.
 
-The Extreme POI must still be an `EXTREME_OF` or `EXTREME_OB`. A Rejection Block is a separate PD-array/execution concept and is not promoted into the Extreme POI ontology.
+The Extreme POI must still be an `EXTREME_ORDER_FLOW` or `EXTREME_ORDER_BLOCK`. A Rejection Block is a separate PD-array/execution concept and is not promoted into the Extreme POI ontology.
 
-### Origin OB (Latent POI)
+### Origin Order Block (Latent POI)
 
-An Origin OB is a canonical absolute range-origin Order Block acting as a latent reserve POI. It becomes actively tradable if and only if Extreme Order Flow was mitigated and Extreme Order Block fails, without price producing a CHoCH. It is not required to disappear merely because its parent Valid Order Flow has been mitigated. Its validity must be evaluated according to the OB validation rules rather than by inheritance from the current OF state.
+An Origin Order Block is a canonical absolute range-origin Order Block acting as a latent reserve POI. It becomes actively tradable if and only if Extreme Order Flow was mitigated and Extreme Order Block fails, without price producing a CHoCH. It is not required to disappear merely because its parent Eligible Order Flow has been mitigated. Its validity must be evaluated according to the OB validation rules rather than by inheritance from the current OF state.
 
 ## 37.5 Order Flow Identification and Selection
 
@@ -133,14 +133,14 @@ Order Flow is a canonical execution-location precursor. It is not synonymous wit
 
 ### Order Flow candidate
 
-An `OF_CANDIDATE` is the **last opposing move** that occurs before price continues or displaces in the dominant direction on the active impulsive leg.
+An `ORDER_FLOW_CANDIDATE` is the **last opposing move** that occurs before price continues or displaces in the dominant direction on the active impulsive leg.
 
 ```text
 OPPOSING MOVE
     ↓
 CONTINUATION / DISPLACEMENT
     ↓
-OF_CANDIDATE
+ORDER_FLOW_CANDIDATE
 ```
 
 When the corrective move contains multiple internal legs and its protected endpoint remains intact, the Order Flow represents the **whole corrective move**, not merely its final internal sub-leg.
@@ -150,10 +150,10 @@ When the corrective move contains multiple internal legs and its protected endpo
 An OF candidate is execution-eligible only when it remains unmitigated under the canonical pullback-based mitigation rule and it is not excluded by the active inducement boundary.
 
 ```text
-OF_CANDIDATE
+ORDER_FLOW_CANDIDATE
    ├─ MITIGATED → INVALID_FOR_EXECUTION
    ├─ BEFORE_ACTIVE_INDUCEMENT → SMT / INDUCEMENT_TRAP
-   └─ UNMITIGATED + ELIGIBLE → OF_CONFIRMED
+   └─ UNMITIGATED + ELIGIBLE → ELIGIBLE_ORDER_FLOW
 ```
 
 A physical touch or penetration alone does **not** confirm OF mitigation. The mitigation state is confirmed only through a canonical Valid Pullback interaction. If the interaction is not validated by a Valid Pullback, the OF remains unmitigated.
@@ -176,7 +176,7 @@ This exclusion preserves the source-defined distinction between liquidity delive
 
 ### Decisional Order Flow
 
-A `DECISIONAL_OF` is the canonical Order Flow associated with the structural continuation that produces `VALID_BOS`: it is the relevant last opposing move/corrective leg before the reversal displacement that causes the canonical BOS.
+A `DECISIONAL_ORDER_FLOW` is the canonical Order Flow associated with the structural continuation that produces `VALID_BOS`: it is the relevant last opposing move/corrective leg before the reversal displacement that causes the canonical BOS.
 
 ```text
 LAST OPPOSING OF
@@ -192,28 +192,28 @@ The Decisional Order Flow is selected from the already eligible/unmitigated OF l
 
 ### Extreme Order Flow
 
-An `EXTREME_OF` is the **furthest unmitigated eligible Order Flow at the origin of the active dealing range**.
+An `EXTREME_ORDER_FLOW` is the **furthest unmitigated eligible Order Flow at the origin of the active dealing range**.
 
-If the current origin OF becomes mitigated, the Extreme OF reference shifts to the next furthest unmitigated eligible OF in the same dealing-range lineage.
+If the current origin OF becomes mitigated, the Extreme Order Flow reference shifts to the next furthest unmitigated eligible OF in the same dealing-range lineage.
 
 ```text
 ORIGIN OF
-   ├─ UNMITIGATED → EXTREME_OF
+   ├─ UNMITIGATED → EXTREME_ORDER_FLOW
    └─ MITIGATED
           ↓
 NEXT FURTHEST ELIGIBLE UNMITIGATED OF
 ```
 
-An Extreme OF is not automatically valid merely because it is geometrically furthest; it must remain an eligible, unmitigated OF in the active lifecycle.
+An Extreme Order Flow is not automatically valid merely because it is geometrically furthest; it must remain an eligible, unmitigated OF in the active lifecycle.
 
 ### OF / SMT non-equivalences
 
 ```text
-OF_CANDIDATE ≠ VALID_OB
-OF_CONFIRMED ≠ IDM
-OF_CONFIRMED ≠ LIQUIDITY
-OF_CONFIRMED ≠ VALID_BOS
-SMT ≠ OF_CONFIRMED
+ORDER_FLOW_CANDIDATE ≠ VALIDATED_ORDER_BLOCK
+ELIGIBLE_ORDER_FLOW ≠ IDM
+ELIGIBLE_ORDER_FLOW ≠ LIQUIDITY
+ELIGIBLE_ORDER_FLOW ≠ VALID_BOS
+SMT ≠ ELIGIBLE_ORDER_FLOW
 PRE-IDM OF ≠ TRADABLE_POI
 OF TOUCH ≠ OF_MITIGATED
 ```
@@ -261,7 +261,7 @@ If no valid pullback immediately preceding the active Extreme POI exists, no Eng
 
 ### Extreme POI dependency
 
-The active Extreme POI resolves only to `EXTREME_OF` or `EXTREME_OB`. The source-defined Engineering Liquidity relationship is explicit for these Extreme POI types. A Rejection Block is not an Extreme POI, so it must not be used as an Extreme-POI dependency for Engineering Liquidity. Engineering Liquidity is therefore resolved from the valid-pullback-before-Extreme-OF/Extreme-OB relationship.
+The active Extreme POI resolves only to `EXTREME_ORDER_FLOW` or `EXTREME_ORDER_BLOCK`. The source-defined Engineering Liquidity relationship is explicit for these Extreme POI types. A Rejection Block is not an Extreme POI, so it must not be used as an Extreme-POI dependency for Engineering Liquidity. Engineering Liquidity is therefore resolved from the valid-pullback-before-Extreme-Order-Flow/Extreme-Order-Block relationship.
 
 When the active Extreme POI identity changes, the Engineering Liquidity reference must be recomputed from the corresponding valid-pullback-before-Extreme-POI relation. Historical references remain historical and are not silently rewritten.
 
@@ -293,7 +293,7 @@ NO_VALID_PULLBACK_BEFORE_EXTREME_POI → NO ENG_LQD
 ## 38. Order Block validation
 
 
-A candle/zone may be treated as a Valid Order Block only when the canonical three-pillar validation is satisfied.
+A candle/zone may be treated as a Validated Order Block only when the canonical three-pillar validation is satisfied.
 
 ```text
 PILLAR 1
@@ -314,7 +314,7 @@ All three pillars are required. A visually strong candle, displacement alone, or
 
 The structural BOS referenced by Pillar 1 must be independently canonical. An implementation must not manufacture BOS merely to validate an OB.
 
-### Valid Order Flow Lifecycle
+### Eligible Order Flow Lifecycle
 
 ```text
 PULLBACK_CANDIDATE
@@ -325,20 +325,20 @@ IDM_TAKEN
         ↓
 OF_ELIGIBLE
         ↓
-OF_CONFIRMED
+ELIGIBLE_ORDER_FLOW
 
-OF_CONFIRMED requires the canonical OF eligibility conditions defined above; no additional undefined implementation gate is introduced here.
+ELIGIBLE_ORDER_FLOW requires the canonical OF eligibility conditions defined above; no additional undefined implementation gate is introduced here.
 ```
 
-Valid OF (`OF_CONFIRMED`) is a canonical POI class distinct from OB. OF and OB must not be conflated into a single generic zone type merely for implementation convenience.
+Eligible Order Flow (`ELIGIBLE_ORDER_FLOW`) is a canonical POI class distinct from OB. OF and OB must not be conflated into a single generic zone type merely for implementation convenience.
 
 ### 38.1 Decisional / Extreme Order Block Selection Update
 
-The current source update supersedes the earlier shortcut that treated the first valid Order Block formed immediately after inducement as the Decisional Order Block.
+The current source update supersedes the earlier shortcut that treated the first validated Order Block formed immediately after inducement as the Decisional Order Block.
 
 #### Decisional Order Block
 
-A `DECISIONAL_OB` is the valid Order Block that **causes the canonical structural break / VALID_BOS**. It is selected from the impulse-side Order Block lineage associated with the canonical Decisional Order Flow and the displacement that actually produces the BOS.
+A `DECISIONAL_ORDER_BLOCK` is the validated Order Block that **causes the canonical structural break / VALID_BOS**. It is selected from the impulse-side Order Block lineage associated with the canonical Decisional Order Flow and the displacement that actually produces the BOS.
 
 ```text
 VALID ORDER BLOCK CANDIDATE
@@ -349,16 +349,16 @@ STRUCTURAL SWING BREAK
         ↓
 VALID_BOS
         ↓
-DECISIONAL_OB = OB THAT CAUSED THE BOS
+DECISIONAL_ORDER_BLOCK = ORDER BLOCK THAT CAUSED THE BOS
 ```
 
-The Decisional OB is therefore **not defined by temporal proximity to inducement alone**. The earlier rule "first valid OB after inducement" is superseded and must not be implemented as a canonical shortcut.
+The Decisional OB is therefore **not defined by temporal proximity to inducement alone**. The earlier rule "first validated Order Block after inducement" is superseded and must not be implemented as a canonical shortcut.
 
 Once canonicalized, the Decisional OB identity remains tied to the causal BOS event. A later mitigation or failure of another Order Flow does not retroactively change the Decisional OB identity.
 
 #### Extreme Order Block
 
-An `EXTREME_OB` is selected from the furthest unmitigated valid Order Block within the active `EXTREME_OF` lineage. It is not selected by a global search across all origin-side Order Blocks.
+An `EXTREME_ORDER_BLOCK` is selected from the furthest unmitigated validated Order Block within the active `EXTREME_ORDER_FLOW` lineage. It is not selected by a global search across all origin-side Order Blocks.
 
 #### Independent OB validity
 
@@ -402,7 +402,7 @@ RULE_OF_TWO → selects active tradable POIs
 ```
 ### OB mitigation
 
-Mitigation changes execution eligibility; it does not rewrite historical structural meaning. A mitigated OF does not automatically invalidate a separately valid Origin OB. A failed Decisional POI does not authorize arbitrary zone substitution; the canonical Extreme POI must be used when its own validity conditions are satisfied.
+Mitigation changes execution eligibility; it does not rewrite historical structural meaning. A mitigated OF does not automatically invalidate a separately valid Origin Order Block. A failed Decisional POI does not authorize arbitrary zone substitution; the canonical Extreme POI must be used when its own validity conditions are satisfied.
 
 ### OB refinement — Wick-Only and Inside-Bar bases
 
@@ -519,7 +519,7 @@ A Rejection Block is the rejection wick of the candle that takes the liquidity o
 
 A Rejection Block may be physically contained within an Order Block, but this is NOT guaranteed. It is independently identifiable. Do not require an FVG for Rejection Block identification (the FVG requirement belongs to OB validation). Identifying a Rejection Block does not create a new structural event and does not redefine IDM, BOS, CHoCH, swing, or Trading Range.
 
-### Extreme OB → Rejection Block Transition
+### Extreme Order Block → Rejection Block Transition
 
 A Rejection Block is a PD-array/execution-location concept associated with the extreme/origin area of the dealing range. It becomes relevant as the next PD-array only after the applicable Extreme Order Block fails, according to the source-defined sequence.
 
@@ -606,7 +606,7 @@ The IDM Sweep module requires a canonically active IDM and its qualifying liquid
 
 ### Module 2 — Decisional POI Mitigation
 
-The Decisional POI must be an OF_CONFIRMED or Valid OB, must occur after the active IDM has been taken out, must satisfy the directional premium/discount gate, and must meet the independent execution conditions of the module. POI mitigation does not create structural validity.
+The Decisional POI must be an ELIGIBLE_ORDER_FLOW or Validated Order Block, must occur after the active IDM has been taken out, must satisfy the directional premium/discount gate, and must meet the independent execution conditions of the module. POI mitigation does not create structural validity.
 
 ### Module 3 — Engineering Liquidity Sweep
 
@@ -674,7 +674,7 @@ REVERSAL / DIRECTIONAL CONFIRMATION
 ENTRY_AUTHORIZED
 ```
 
-The Decisional POI may be `OF_CONFIRMED` or `VALID_OB`. Mitigation without an independent execution confirmation does not create an entry. With direct candle confirmation, the `ENTRY_REFERENCE_PRICE` is the completed confirmation-candle close.
+The Decisional POI may be `ELIGIBLE_ORDER_FLOW` or `VALIDATED_ORDER_BLOCK`. Mitigation without an independent execution confirmation does not create an entry. With direct candle confirmation, the `ENTRY_REFERENCE_PRICE` is the completed confirmation-candle close.
 
 #### Module 3 — Engineering Liquidity Sweep entry
 
@@ -702,7 +702,7 @@ REVERSAL / DIRECTIONAL CONFIRMATION
 ENTRY_AUTHORIZED
 ```
 
-Extreme POI mitigation does not itself create an entry. The Extreme POI must remain canonical under the Rule-of-Two and its own `EXTREME_OF` or `EXTREME_OB` validity conditions. A Rejection Block follows its separate PD-array lifecycle and is not treated as an Extreme POI. With direct candle confirmation, the `ENTRY_REFERENCE_PRICE` is the completed confirmation-candle close.
+Extreme POI mitigation does not itself create an entry. The Extreme POI must remain canonical under the Rule-of-Two and its own `EXTREME_ORDER_FLOW` or `EXTREME_ORDER_BLOCK` validity conditions. A Rejection Block follows its separate PD-array lifecycle and is not treated as an Extreme POI. With direct candle confirmation, the `ENTRY_REFERENCE_PRICE` is the completed confirmation-candle close.
 
 #### Unfilled orders, cancellation, and re-entry
 
@@ -717,7 +717,7 @@ ORDER_FILLED ≠ POSITION_OPEN
 A later structural or execution event may invalidate a pending order according to the dedicated order-lifecycle policy; such invalidation must not rewrite the historical entry authorization event.
 ### Module 4 — Extreme POI Mitigation
 
-The Extreme POI module is the canonical fallback execution mechanism when the Decisional POI is not the applicable execution location. The Extreme POI must independently satisfy `EXTREME_OF` or `EXTREME_OB` validity; fallback execution does not relax POI validation. A Rejection Block follows its separate PD-array execution lifecycle and must retain its own type/provenance even when represented alongside POI execution data.
+The Extreme POI module is the canonical fallback execution mechanism when the Decisional POI is not the applicable execution location. The Extreme POI must independently satisfy `EXTREME_ORDER_FLOW` or `EXTREME_ORDER_BLOCK` validity; fallback execution does not relax POI validation. A Rejection Block follows its separate PD-array execution lifecycle and must retain its own type/provenance even when represented alongside POI execution data.
 
 ## 40.5. Candlestick Reversal Triggers
 
@@ -755,7 +755,7 @@ DIRECT ENTRY
 
 Eligible key areas are:
 
-- mitigation of a qualified **Decisional POI (OF_CONFIRMED / Valid OB) or Extreme POI (EXTREME_OF / EXTREME_OB)**;
+- mitigation of a qualified **Decisional POI (ELIGIBLE_ORDER_FLOW / Validated Order Block) or Extreme POI (EXTREME_ORDER_FLOW / EXTREME_ORDER_BLOCK)**;
 - a direct sweep of active **IDM** (`IDM_TAKEN = TRUE`);
 - a direct sweep of **Engineering Liquidity (ENG_LQD_CONFIRMED)**.
 
@@ -943,7 +943,7 @@ A failed execution condition must not be converted into a structural event. Like
 
 ### Order Flow failure / Extreme fallback
 
-Do not fail over from OF_CONFIRMED to Extreme OB solely because price wicked into or through the OF. The exact failure condition must be independently satisfied by the canonical execution module. A wick touch alone is insufficient to invent an execution-state transition.
+Do not fail over from ELIGIBLE_ORDER_FLOW to Extreme Order Block solely because price wicked into or through the OF. The exact failure condition must be independently satisfied by the canonical execution module. A wick touch alone is insufficient to invent an execution-state transition.
 
 ### Risk, Targets, and RR
 

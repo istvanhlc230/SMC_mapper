@@ -42,7 +42,7 @@ def make_pb(ref, start, comp, ext_c, ext_p):
         liquidity_reference=PullbackDerivedLiquidityReference(side=LiquiditySide.SELL_SIDE, price=Decimal(ext_p), source_candle_id=ext_c)
     )
 
-# 1. IDM_TAKEN but no real OF candidate -> no OF_CONFIRMED.
+# 1. IDM_TAKEN but no real OF candidate -> no ELIGIBLE_ORDER_FLOW.
 def test_idm_taken_but_smt():
     pb1 = make_pb("c1", "c1", "c2", "c2", "15.5")
     l2_result = type("L2Result", (), {"pullbacks": [pb1]})()
@@ -61,7 +61,7 @@ def test_complex_correction_groups_pullbacks():
         c("c3", "10.5", "11.5", "10", "10.5"), c("c4", "9", "10", "9.0", "9.5")
     )
     result = evaluate_execution_state(candles, l2_result, DummyL3(idm_taken=True, idm_price=Decimal("8.0")), None, None)
-    # They should form ONE OF_CONFIRMED!
+    # They should form ONE ELIGIBLE_ORDER_FLOW!
     assert len(result.order_flows) == 1
     assert result.order_flows[0].top == Decimal("12")
     assert result.order_flows[0].bottom == Decimal("9.0")
@@ -77,7 +77,7 @@ def test_geometric_overlap_without_valid_pullback_does_not_mitigate():
     result = evaluate_execution_state(candles, l2_result, DummyL3(idm_taken=True, idm_price=Decimal("15.0")), None, None)
     assert result.order_flows[0].state == ExecutionState.ACTIVE
 
-# 4. Closest OF but wrong causal lineage -> not DECISIONAL_OF.
+# 4. Closest OF but wrong causal lineage -> not DECISIONAL_ORDER_FLOW.
 def test_decisional_of_wrong_lineage():
     # OF1 and OF2. Break candle is c6. OF2 completes AFTER the break candle!
     pb1 = make_pb("c1", "c1", "c2", "c2", "9.0")
@@ -89,7 +89,7 @@ def test_decisional_of_wrong_lineage():
         c("c7", "11.1", "12", "11.1", "11.5"), c("c8", "11.2", "12", "11.1", "11.5")
     )
     res_valid = evaluate_execution_state(candles, l2_result, DummyL3(True, "15", "5", takeout_candle_id="c1"), DummyL4(True, True, "c6"), None)
-    dec_of = next((o for o in res_valid.order_flows if o.object_type == ExecutionObjectType.DECISIONAL_OF), None)
+    dec_of = next((o for o in res_valid.order_flows if o.object_type == ExecutionObjectType.DECISIONAL_ORDER_FLOW), None)
     assert dec_of is not None
     assert dec_of.origin_pullback_id == "c1" # PB1 is selected because PB2 is after the BOS!
 
@@ -105,7 +105,7 @@ def test_extreme_of_alone_no_pillar1():
     # Even though sweep and FVG exist, L4 valid_bos is FALSE, so Pillar 1 fails!
     assert len(res.order_blocks) == 0
 
-# 6. Valid sweep + FVG but non-causal candle -> no VALID_OB.
+# 6. Valid sweep + FVG but non-causal candle -> no VALIDATED_ORDER_BLOCK.
 def test_valid_ob_wrong_lineage_no_pillar1():
     pb1 = make_pb("c1", "c1", "c2", "c2", "9.0")
     l2_result = type("L2Result", (), {"pullbacks": [pb1]})()
@@ -117,7 +117,7 @@ def test_valid_ob_wrong_lineage_no_pillar1():
     res = evaluate_execution_state(candles, l2_result, DummyL3(True, takeout_candle_id="c1"), DummyL4(True, True, "c1"), None)
     assert len(res.order_blocks) == 0
 
-# 8. No failed Extreme OB -> no ORIGIN_OB.
+# 8. No failed Extreme OB -> no ORIGIN_ORDER_BLOCK.
 def test_no_failed_extreme_ob_no_origin_ob():
     pb1 = make_pb("c1", "c1", "c2", "c2", "9.0")
     l2_result = type("L2Result", (), {"pullbacks": [pb1]})()
@@ -125,13 +125,13 @@ def test_no_failed_extreme_ob_no_origin_ob():
         c("c1", "10", "11", "10", "10.5"), c("c2", "10", "12", "9", "11"), 
         c("c3", "11", "12", "10", "11.5"), c("c4", "12.5", "14", "12.5", "13")
     )
-    # Extreme OF is NOT mitigated, so Origin OB shouldn't activate.
+    # Extreme OF is NOT mitigated, so Origin Order Block shouldn't activate.
     res = evaluate_execution_state(candles, l2_result, DummyL3(True, takeout_candle_id="c1"), DummyL4(True, True, "c4"), None)
-    assert res.active_pois.origin_ob_latent is None
+    assert res.active_pois.origin_order_block_latent is None
 
 # 9. CHoCH alone -> no RB.
 def test_choch_alone_no_rb():
-    # If no EXTREME_OB exists or failed, CHoCH does not create an RB.
+    # If no EXTREME_ORDER_BLOCK exists or failed, CHoCH does not create an RB.
     l2_result = type("L2Result", (), {"pullbacks": []})()
     candles = (c("c1", "10", "11", "10", "10.5"),)
     res = evaluate_execution_state(candles, l2_result, DummyL3(True, takeout_candle_id="c1"), DummyL4(False, False), DummyL5(True))
@@ -160,9 +160,9 @@ def test_unrelated_choch_poi_remains_active():
 def test_invalid_poi_ontology_fails_closed():
     with pytest.raises(ValueError, match="decisional_poi must be DECISIONAL_POI"):
         poi = ExecutionObject(ExecutionObjectType.EXTREME_POI, PullbackDirection.BULLISH, Decimal("10"), Decimal("9"), ("c1",), ExecutionState.ACTIVE)
-        POISet(decisional_poi=poi, extreme_poi=None, origin_ob_latent=None, rejection_block=None)
+        POISet(decisional_poi=poi, extreme_poi=None, origin_order_block_latent=None, rejection_block=None)
 
-# Extra: Real failure -> RB and Origin OB activation
+# Extra: Real failure -> RB and Origin Order Block activation
 def test_real_failure_origin_ob_and_rb():
     pb1 = make_pb("c1", "c1", "c2", "c2", "9.0")
     pb2 = make_pb("c5", "c5", "c6", "c6", "8.0") # Mitigates pb1 later
@@ -174,7 +174,7 @@ def test_real_failure_origin_ob_and_rb():
         c("c7", "12", "14", "12", "13") # BOS candle
     )
     res = evaluate_execution_state(candles, l2_result, DummyL3(True, takeout_candle_id="c1"), DummyL4(True, True, "c7"), DummyL5(False))
-    assert res.active_pois.origin_ob_latent is not None
-    assert res.active_pois.origin_ob_latent.object_type == ExecutionObjectType.ORIGIN_OB
+    assert res.active_pois.origin_order_block_latent is not None
+    assert res.active_pois.origin_order_block_latent.object_type == ExecutionObjectType.ORIGIN_ORDER_BLOCK
     assert res.active_pois.rejection_block is not None
     assert res.active_pois.rejection_block.object_type == ExecutionObjectType.REJECTION_BLOCK

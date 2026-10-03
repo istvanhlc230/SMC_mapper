@@ -1151,18 +1151,33 @@ The mapper uses a unified storage representation for canonical POIs. It does not
 
 Canonical POI semantic types remain owned by Layer 6 and are represented in mapper storage using the canonical semantic identifiers:
 
-    OF_CONFIRMED
-    VALID_OB
+    ELIGIBLE_ORDER_FLOW
+    VALIDATED_ORDER_BLOCK
 
 Execution role is represented separately:
 
     DECISIONAL
     EXTREME
-    ORIGIN_OB
+    ORIGIN_ORDER_BLOCK
 
-ORIGIN_OB represents the canonical Origin OB latent reserve and is not an additional active Rule-of-Two slot.
+ORIGIN_ORDER_BLOCK represents the canonical Origin Order Block latent reserve and is not an additional active Rule-of-Two slot.
 
-The mapper must not introduce ORDER_FLOW, ORDER_BLOCK, or ORIGIN_RESERVE as parallel canonical POI terminology.
+The mapper must not use abbreviated or ambiguous POI type aliases.
+
+The complete canonical OF/OB semantic family is:
+
+    ORDER_FLOW_CANDIDATE
+    ELIGIBLE_ORDER_FLOW
+    DECISIONAL_ORDER_FLOW
+    EXTREME_ORDER_FLOW
+
+    ORDER_BLOCK_CANDIDATE
+    VALIDATED_ORDER_BLOCK
+    DECISIONAL_ORDER_BLOCK
+    EXTREME_ORDER_BLOCK
+    ORIGIN_ORDER_BLOCK
+
+These identifiers distinguish object identity, qualification, execution role, and the latent range-origin Order Block reserve.
 
 Canonical POI lifecycle is consumed verbatim from Layer 6:
 
@@ -1185,7 +1200,7 @@ Logical canonical POI representation:
 ```json
 {
   "poi_id": "POI-001",
-  "poi_type": "OF_CONFIRMED",
+  "poi_type": "ELIGIBLE_ORDER_FLOW",
   "poi_role": "DECISIONAL",
   "lifecycle": "POI_INTERACTION",
   "provenance": {
@@ -1224,7 +1239,7 @@ For canonical Order Flow:
 
 For canonical Order Block:
 
-- the provenance is the defining Valid Order Block candle;
+- the provenance is the defining Validated Order Block candle;
 - V1 aggregates exactly that one candle.
 
 The POI volume aggregate therefore includes only the candles that form the POI's canonical provenance. Post-formation displacement, reaction, mitigation, and target candles are excluded.
