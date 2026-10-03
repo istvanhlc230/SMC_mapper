@@ -62,7 +62,7 @@ market_data.py
 
 Keep the implementation internally modular by code sections and small single-purpose functions.
 
-Recommended source order:
+Implementation source order:
 
 ```text
 1. module docstring
@@ -190,7 +190,7 @@ Variable name: `request`.
 
 ## 3.2 Provider candle
 
-Recommended name: `ProviderCandle`.
+Use `ProviderCandle`.
 
 Provider-facing state may contain provider-specific types/metadata. Required conceptual fields are:
 
@@ -213,7 +213,7 @@ Provider-specific fields terminate at this boundary.
 
 ## 3.3 Volume state
 
-Recommended name:
+Use `VolumeState`:
 
 ```python
 @dataclass(frozen=True)
@@ -375,7 +375,7 @@ run
 main
 ```
 
-Every function should have one owner responsibility.
+Every function must have one owner responsibility.
 
 ---
 
@@ -548,7 +548,7 @@ The provider name is internal implementation policy in V1. Do not add a provider
 
 ## 6.3 YahooChartsProvider
 
-Recommended concrete class:
+Use concrete class:
 
 ```python
 class YahooChartsProvider:
@@ -570,7 +570,7 @@ The class must not:
 - perform canonical SMC logic;
 - decide POI or structural state.
 
-Recommended methods:
+Required provider methods:
 
 ```fetch_range
 fetch_latest_completed
@@ -1320,7 +1320,7 @@ Responsibilities:
 - merge completed candles;
 - update current snapshot;
 - clear a current snapshot when it becomes completed;
-- apply retention, protecting the explicitly requested historical range for this invocation when one exists;
+- apply retention, protecting `[request.start_time, request.end_time]` when an explicit historical start boundary exists for this invocation;
 - update availability bounds;
 - return whether persisted market-data state changed.
 
@@ -1429,7 +1429,7 @@ Never:
 - forward stderr to mapper;
 - use stdout as a machine-readable API.
 
-Normal successful execution should be user-silent.
+Normal successful execution must be user-silent.
 
 ## 16.3 Error categories
 
@@ -1469,7 +1469,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     ...
 ```
 
-Recommended execution:
+Execution order:
 
 ```text
 parse_market_data_request
@@ -1779,7 +1779,7 @@ Do not add SMC analysis logic.
 
 # 22. REQUIRED TEST STRUCTURE
 
-The developer agent should add focused tests around the module boundaries.
+The developer agent must add focused tests around the module boundaries.
 
 Recommended test names:
 
@@ -1814,7 +1814,7 @@ test_multitimeframe_update_does_not_cross_contaminate
 test_missing_range_can_be_reacquired
 ```
 
-Provider-dependent tests should use provider test doubles/mocks where practical. Core normalization, merge, retention and persistence tests must not require live provider access.
+Provider-dependent tests must use provider test doubles/mocks; core tests must not require live provider access. Core normalization, merge, retention and persistence tests must not require live provider access.
 
 ---
 
@@ -1883,7 +1883,7 @@ persist complete symbol document atomically
 exit
 ```
 
-For `--live`, current-snapshot refresh is independent of completed-candle acquisition. In live-only mode it may be the only state change; with `--lastcandle` it runs alongside the exact latest-completed-candle acquisition.
+For `--live`, current-snapshot refresh is independent of completed-candle acquisition. In live-only mode it is the current-data operation; with `--lastcandle` it runs alongside the exact latest-completed-candle acquisition.
 
 For `--lastcandle`, the completed-candle acquisition branch returns exactly one latest completed candle per requested timeframe.
 
