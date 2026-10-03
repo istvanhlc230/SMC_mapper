@@ -3552,3 +3552,9 @@ BLOCKED — the pre-existing first-BOS retracement-baseline ambiguity remains in
 
 ## Commit/test status
 Skill and platform contract corrections were committed directly to `main`. Runtime code was not changed by this phase; CI/test verification is expected to run from the pushed commits.
+
+# PHASE 38 — ORIGIN ORDER BLOCK SOURCE RECONCILIATION — 2026-10-03
+
+The Origin Order Block rule is now split into two explicit concepts: existence/validity versus fallback relevance. `ORIGIN_ORDER_BLOCK` is the furthest unmitigated validated Order Block at the dealing-range origin, regardless of parent Order Flow mitigation. Its fallback execution relevance is reached after the original Extreme Order Flow is mitigated and the applicable `EXTREME_ORDER_BLOCK` fails. This preserves the source passages without contradiction. Extreme Order Block execution failure remains distinct from `POI_FAILURE` / CHoCH and cannot manufacture structural state.
+
+Audit: PASS for Origin Order Block source reconciliation. BLOCKED remains only for the separate first-BOS retracement-baseline gap, which the source corpus does not deterministically define.
