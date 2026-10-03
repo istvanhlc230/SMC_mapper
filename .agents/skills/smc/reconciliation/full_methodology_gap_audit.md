@@ -45,7 +45,7 @@ A complete platform also requires non-SMC infrastructure specifications that are
 | Layer 1 candle semantics | Canonical | Covered |
 | Layer 2 pullback / verified extreme | Canonical | Covered |
 | IDM definition / lifecycle | Canonical | Covered |
-| Structural qualification | Canonical | Covered; IDM takeout confirms the swing, while retracement sufficiency qualifies the later BOS |
+| Structural qualification | Canonical | Covered; `IDM_TAKEN` establishes the candidate/provisional stage, and structural retracement qualification promotes it to `CONFIRMED_STRUCTURAL_SWING` before the later BOS gate |
 | BOS | Canonical | Covered |
 | CHoCH | Canonical | Covered, including the source-backed LTF context route |
 | POI ontology | Canonical | Covered; RB remains a separately typed PD-array |
