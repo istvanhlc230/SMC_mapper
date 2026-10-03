@@ -148,7 +148,7 @@ The canonical process is:
    - The current corrective extreme is tracked dynamically across the active retracement leg:
      - bullish: the lowest relevant low seen so far;
      - bearish: the highest relevant high seen so far.
-   - Mathematical notation: `E_retrace(t)`.
+   - Mathematical notation: `dynamic_retracement_extreme`.
    - Implementation-facing state name: `dynamic_retracement_extreme`.
    - `dynamic_retracement_extreme` remains dynamic until a valid continuation BOS actually occurs; qualification alone does not freeze it.
 
@@ -469,7 +469,7 @@ VALID_BOS
 PROTECTED_STRUCTURAL_EXTREME_LOCK (`dynamic_retracement_extreme` LOCKED)
 ```
 
-A valid wick BOS locks the current `dynamic_retracement_extreme` immediately. `E_retrace(t)` is the mathematical notation for that state. No later body close is required.
+A valid wick BOS locks the current `dynamic_retracement_extreme` immediately. `dynamic_retracement_extreme` is the runtime state representing the live corrective extreme. No later body close is required.
 
 If the penetrated external level carries Major IDM provenance, the wick event is instead `MAJOR_IDM_SWEEP`; it is not BOS and does not lock `dynamic_retracement_extreme`.
 

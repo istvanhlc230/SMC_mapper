@@ -232,13 +232,13 @@ The corrective extreme remains dynamic until `VALID_BOS`.
 Bullish:
 
 ```text
-E_retrace(t) = min(Low_k)
+dynamic_retracement_extreme = min(Low_k)
 ```
 
 Bearish:
 
 ```text
-E_retrace(t) = max(High_k)
+dynamic_retracement_extreme = max(High_k)
 ```
 
 After sufficient retracement and valid BOS:
@@ -246,7 +246,7 @@ After sufficient retracement and valid BOS:
 ```text
 VALID_BOS
     ↓
-E_retrace LOCKED
+dynamic_retracement_extreme LOCKED
     ↓
 PROTECTED STRUCTURAL EXTREME
 ```

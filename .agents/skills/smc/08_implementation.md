@@ -640,7 +640,7 @@ Regression tests must cover:
 
 ### BOS downstream lifecycle
 - `VALID_BOS` closes the previous Trading Range;
-- `VALID_BOS` locks the current `dynamic_retracement_extreme` as the Protected Structural Extreme when sufficiency is satisfied (`E_retrace(t)` is mathematical notation only);
+- `VALID_BOS` locks the current `dynamic_retracement_extreme` as the Protected Structural Extreme when sufficiency is satisfied (`dynamic_retracement_extreme` is the implementation-facing state);
 - `VALID_BOS` emits `TRADING_RANGE_ROLLED_OVER`;
 - previous-range POIs transition to `EXPIRED_HISTORICAL` through the **Layer-6 POI lifecycle subsystem** when a new Dealing Range is established by VALID_BOS;
 - expired historical POIs are non-tradable and may remain only as historical/reaction-zone records; Layer 8 consumes the Layer-6 state and does not independently create expiration decisions;
@@ -1093,7 +1093,7 @@ The runtime contract is:
 5. **Dynamic retracement extreme**
    - Track the current corrective extreme across the retracement window:
      bullish → lowest relevant low; bearish → highest relevant high.
-   - Mathematical notation: `E_retrace(t)`.
+   - Mathematical notation: `dynamic_retracement_extreme`.
    - Implementation-facing semantic name: `dynamic_retracement_extreme`.
    - This value remains dynamic until the actual `VALID_BOS` candle.
 

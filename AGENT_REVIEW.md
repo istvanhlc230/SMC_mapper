@@ -42,7 +42,7 @@ Every concept audited from `.agents/skills/smc/03_structural_semantic_authority.
 - **Classification:** **SOURCE-BACKED â€” ALREADY CANONICAL**
 
 ### 4. Protected Structural Extreme
-- **Canonical Definition (L3 Â§3.2.2, Â§3.3.3):** The origin of the impulsive expansion does not automatically constitute a Protected Structural Extreme. A Protected Structural Extreme is created and locked strictly through `VALID_BOS` (`E_retrace` locked).
+- **Canonical Definition (L3 Â§3.2.2, Â§3.3.3):** The origin of the impulsive expansion does not automatically constitute a Protected Structural Extreme. A Protected Structural Extreme is created and locked strictly through `VALID_BOS` (`dynamic_retracement_extreme` locked).
 - **2026 Source Evidence:** `truesmc2026.txt` (00:14:34, 00:18:00) and `market_structure_mapping_made_simple.txt` (00:18:07): A low/high is only validated as the protected structural swing of the dealing range once the opposing swing point has been broken with a valid break of structure.
 - **Classification:** **SOURCE-BACKED â€” ALREADY CANONICAL**
 
@@ -142,7 +142,7 @@ Result: `91 passed, 0 failed, 0 skipped/xfail`
 - **Layer 3 / Layer 4 Semantic Boundary:** Fully intact. L3 owns structural retracement qualification (Equilibrium 50%, HTF-conditional 38.2%, displacement outlier). L4 mechanically consumes the stored qualification result (`MAJOR_RETRACEMENT_QUALIFIED`) and does not recompute retracement criteria.
 - **Sequential Structural Pipeline:** `IDM_TAKEN â†’ CONFIRMED_STRUCTURAL_SWING â†’ retracement qualification â†’ STRUCTURAL_SWING_BREAK â†’ VALID_BOS` is correctly adhered to.
 - **Break Mechanics:** Wick breach correctly establishes `STRUCTURAL_SWING_BREAK`. Major IDM wick breach produces `MAJOR_IDM_SWEEP`, not `VALID_BOS`.
-- **Trading Range & Protected Extreme:** `VALID_BOS` alone rolls the Trading Range and locks the Protected Structural Extreme (`E_retrace`).
+- **Trading Range & Protected Extreme:** `VALID_BOS` alone rolls the Trading Range and locks the Protected Structural Extreme (`dynamic_retracement_extreme`).
 - **Insufficient Retracement Handling:** When a break occurs on insufficient retracement, the event correctly results in `IMPULSE_EXTENSION` without range rollover or extreme locking.
 
 ## 3. Discrepancy & Specification Correction Applied
@@ -234,8 +234,8 @@ Result: `91 passed, 0 failed, 0 skipped/xfail`
    - Deleted `IMPULSE_EXTENSION â‰  EVENT CLASS` from Â§49.5 invariants.
    - Â§49.1 and Â§49.3 already define `IMPULSE_EXTENSION` positively as a classification outcome of `EXT_CONT_BREAK`. Removing the redundant negative invariant eliminates semantic noise while preserving the positive classification model.
 2. **Corrected First-BOS Protected Extreme Wording (`03_structural_semantic_authority.md` Â§3.2.1A & `08_implementation.md` Â§49.4.1):**
-   - Corrected step 5 in Â§3.2.1A to state: `FIRST BOS / VALID_BOS â†’ E_retrace LOCKED â†’ PROTECTED_STRUCTURAL_EXTREME, establishing the first confirmed Dealing Range (CONFIRMED_RANGE)`.
-   - Removed any phrasing implying that the Protected Structural Extreme is the impulse origin itself, strictly preserving Â§3.3.3 where the Protected Structural Extreme is the dynamically tracked `E_retrace` locked by `VALID_BOS`.
+   - Corrected step 5 in Â§3.2.1A to state: `FIRST BOS / VALID_BOS â†’ dynamic_retracement_extreme LOCKED â†’ PROTECTED_STRUCTURAL_EXTREME, establishing the first confirmed Dealing Range (CONFIRMED_RANGE)`.
+   - Removed any phrasing implying that the Protected Structural Extreme is the impulse origin itself, strictly preserving Â§3.3.3 where the Protected Structural Extreme is the dynamically tracked `dynamic_retracement_extreme` locked by `VALID_BOS`.
 
 ### Confirmation of Genesis Baseline Ambiguity:
 - The Genesis / First-BOS retracement baseline ambiguity remains **OPEN, UNRESOLVED, and EXPLICITLY BOUNDED**.
@@ -243,7 +243,7 @@ Result: `91 passed, 0 failed, 0 skipped/xfail`
 - The specification strictly preserves that prior to `VALID_BOS`, no governing Dealing Range exists, and determining the initial retracement baseline remains an implementation/policy matter until canonically specified.
 
 ### Final Re-Audit Result (Chain: 03 Â§3.2.1A â†’ 03 Â§3.3.3 â†’ 08 Â§49.1/49.3/49.5):
-- `VALID_BOS` locks `E_retrace`; Protected Structural Extreme is not defined as impulse origin.
+- `VALID_BOS` locks `dynamic_retracement_extreme`; Protected Structural Extreme is not defined as impulse origin.
 - `IMPULSE_EXTENSION` is represented solely as a classification outcome.
 - Genesis first-BOS retracement baseline remains an explicitly documented canonical gap.
 - Clean, non-contradictory specification across all layers.
@@ -479,7 +479,7 @@ Result: `91 passed, 0 failed, 0 skipped/xfail`
 - **Classification:** **NO ISSUE**
 
 ### 11. Protected Structural Extreme Representation
-- **Finding:** Â§49.1, Â§49.3, and Â§49.4 preserve the canonical invariant: `dynamic E_retrace â†’ VALID_BOS â†’ E_retrace LOCKED â†’ PROTECTED_STRUCTURAL_EXTREME`. The protected extreme is never conflated with or defaulted to the impulse origin.
+- **Finding:** Â§49.1, Â§49.3, and Â§49.4 preserve the canonical invariant: `dynamic dynamic_retracement_extreme â†’ VALID_BOS â†’ dynamic_retracement_extreme LOCKED â†’ PROTECTED_STRUCTURAL_EXTREME`. The protected extreme is never conflated with or defaulted to the impulse origin.
 - **Classification:** **NO ISSUE**
 
 ### 12. Transition Matrix Determinism & Exhaustiveness
@@ -3610,12 +3610,12 @@ Phase 39 established that the indexed knowledgebase does not define a determinis
 - Existing Layer-3 50% and 38.2% qualification rules are reused unchanged against this transient measurement span.
 - Bootstrap state is not a governing Dealing Range, is not a Protected Structural Extreme, and cannot serve as a canonical CHoCH boundary.
 - On the first completed `VALID_BOS`, bootstrap state is destroyed.
-- The actual validated `E_retrace` becomes the first canonical `PROTECTED_STRUCTURAL_EXTREME`.
-- The first confirmed Dealing Range is established from the confirmed swing and that locked `E_retrace`.
+- The actual validated `dynamic_retracement_extreme` becomes the first canonical `PROTECTED_STRUCTURAL_EXTREME`.
+- The first confirmed Dealing Range is established from the confirmed swing and that locked `dynamic_retracement_extreme`.
 
 ## Implementation
 Changed:
-- `structural_engine.py`: bootstrap entities, isolated bootstrap measurement range, VALID_BOS finalization, full corrective-window E_retrace locking and first-range creation.
+- `structural_engine.py`: bootstrap entities, isolated bootstrap measurement range, VALID_BOS finalization, full corrective-window dynamic_retracement_extreme locking and first-range creation.
 - `smc_analyzer.py`: automatic chart-inception bootstrap initialization, explicit post-CHoCH origin contract, bootstrap-to-L3 wiring, and post-BOS bootstrap destruction.
 - `tests/test_structural_engine.py`: bootstrap creation, range isolation, qualification, finalization and contamination guards.
 - `specifications/smc_mapper_specification.md`: project-canonical initialization policy recorded without modifying canonical skill semantics.
@@ -3624,7 +3624,7 @@ Changed:
 PASS — bootstrap data is backed by actual market candles.
 PASS — bootstrap entities are prohibited from coexisting with a governing Dealing Range or locked Protected Structural Extreme.
 PASS — bootstrap is not promoted into canonical protected structure.
-PASS — actual `E_retrace` is the source of the first canonical Protected Structural Extreme.
+PASS — actual `dynamic_retracement_extreme` is the source of the first canonical Protected Structural Extreme.
 PASS — Layer-3 qualification logic remains centralized in `qualify_retracement()`.
 PASS — direct `determine_next_state()` calls with explicitly UNSPECIFIED first-BOS baseline remain fail-closed.
 PASS — GitHub Actions workflow for commit `c00976d72aa382ebdea79f0ab14f8ea2b27f3717` completed successfully: **103 passed**.
@@ -3633,13 +3633,13 @@ PASS — GitHub Actions workflow for commit `c00976d72aa382ebdea79f0ab14f8ea2b27
 No file under `.agents/skills/smc/` was modified. Knowledgebase source/evidence files were not modified.
 
 
-# PHASE 41 — IMPLEMENTATION TERMINOLOGY CORRECTION: E_retrace AS NOTATION ONLY — 2026-10-03
+# PHASE 41 — IMPLEMENTATION TERMINOLOGY CORRECTION: dynamic_retracement_extreme AS NOTATION ONLY — 2026-10-03
 
 ## Correction
 
 The implementation-facing name is **`dynamic_retracement_extreme`**.
 
-`E_retrace(t)` remains only the mathematical notation used to describe the same dynamic state. It is not the selected Python/runtime identifier.
+`dynamic_retracement_extreme` remains only the mathematical notation used to describe the same dynamic state. It is not the selected Python/runtime identifier.
 
 Correct lifecycle terminology:
 
@@ -3651,7 +3651,7 @@ VALID_BOS
 PROTECTED_STRUCTURAL_EXTREME
 ```
 
-No runtime field or implementation-facing contract should introduce `E_retrace` as an identifier.
+No runtime field or implementation-facing contract should introduce `dynamic_retracement_extreme` as an identifier.
 
 ## Audit status
 
