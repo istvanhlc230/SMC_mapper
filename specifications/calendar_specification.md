@@ -100,7 +100,7 @@ The following canonical scopes are resolved internally to UTC intervals:
 
 ForexFactory-specific date spelling and URL parameters remain internal provider concerns.
 
-The current provider parser reads the ForexFactory calendar HTML directly and the HTML row parser is the canonical acquisition path. It extracts the provider event ID from each calendar row, reads the provider-displayed calendar timezone, converts the row's local date/time to canonical UTC, and normalizes the event fields from the row's currency, impact, title, actual, forecast, and previous cells. The legacy embedded `days` JSON payload may still exist in the provider response, but it must not override the HTML parser or supply canonical event fields. Provider timezone resolution uses Python's standard `zoneinfo` IANA timezone database, with UTC/GMT fixed offsets also accepted; no hard-coded regional DST rule is used. On Windows, the runtime must have an available timezone database (for example the `tzdata` package) for IANA zones.
+The current provider parser uses ForexFactory's structured embedded `days` JSON payload as the canonical acquisition source. Each event record provides the provider event ID (`id`), canonical currency (`currency`), event title (`name`), numeric UTC epoch (`dateline`), impact (`impactName`, with `impactClass` as fallback), and source values (`actual`, `forecast`, `previous`). The provider's `country` field is not a canonical currency source and must never be used in place of `currency`. Provider-wide events may use `currency = ALL`. The HTML row parser remains available only as a compatibility parser and is not used for canonical persistence. Because the structured event `dateline` is already an epoch timestamp, no regional timezone conversion is required for canonical event timestamps.
 
 ## 1.3 Request policy
 
@@ -471,8 +471,8 @@ Date-range deletion includes both endpoint dates.
 
 - `fetch_calendar_source`
 - `parse_calendar_html`
-- `extract_days_payload` (legacy compatibility helper; not canonical acquisition)
-- `parse_calendar_days` (legacy compatibility helper; not canonical acquisition)
+- `extract_days_payload` — extract the structured embedded `days` JSON payload used by canonical acquisition.
+- `parse_calendar_days` — decode and validate the canonical structured provider days collection.
 - `normalize_provider_event`
 - `normalize_calendar_events`
 

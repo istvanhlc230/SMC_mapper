@@ -85,3 +85,44 @@ The guard is now tightened in calendar.py:
 The owning Calendar specification and design are synchronized with this behavior.
 
 Fresh local acquisition/query validation is still required before PASS. The live ForexFactory calendar currently exposes canonical three-letter currency labels and legitimate provider-wide All events, so allowing ALL is required rather than invented.
+
+## Provider Field Mapping Correction — 2026-10-03
+
+The supplied ForexFactory structured event payload exposed the exact provider fields needed by the canonical event contract. The previous normalization incorrectly read `country`, `title`, and numeric `impact`, even though the provider record supplies the canonical values in `currency`, `name`, and `impactName`.
+
+Correct mapping implemented in `calendar.py`:
+
+- `id` → `event_id`
+- `dateline` → UTC `datetime`
+- `currency` → canonical `currency`
+- `name` → canonical `event`
+- `impactName` (with `impactClass` fallback) → canonical `impact`
+- `actual`, `forecast`, `previous` → corresponding canonical values
+- `country` is deliberately not used for canonical currency.
+
+The structured `days` payload is now the canonical acquisition source. The HTML parser is compatibility-only.
+
+Fresh local validation is required: delete and reacquire the calendar, then verify canonical currencies, non-empty event names, and actual LOW/MEDIUM/HIGH/HOLIDAY impact values.
+
+
+## Superseding Provider Contract Finding — 2026-10-03
+
+The supplied raw ForexFactory event objects establish that the structured `days` payload is the correct canonical provider source. The earlier HTML-only correction was therefore incorrect and is superseded.
+
+The provider event object explicitly supplies:
+
+- `id`
+- `dateline`
+- `currency` (canonical three-letter code or provider-wide `ALL`)
+- `name` (event title)
+- `impactName` (for example `low`)
+- `impactClass` (fallback representation)
+- `actual`
+- `forecast`
+- `previous`
+
+The previous implementation incorrectly normalized `country` as currency, `title` as event name, and numeric `impact` as impact. This explains the observed `WW/AU/JN/US/... + UNKNOWN + empty event` output exactly.
+
+The correction now uses the structured `days` payload for canonical acquisition and maps the fields above directly. The HTML parser is compatibility-only.
+
+Acceptance remains BLOCKED until the developer runs the corrected version locally against a fresh acquisition and verifies the resulting `calendar.json`.

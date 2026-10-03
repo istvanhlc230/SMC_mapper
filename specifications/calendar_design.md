@@ -113,7 +113,7 @@ Concurrent writes are serialized using a Windows named mutex or POSIX directory-
 ## 9. Provider Boundary
 
 The provider is ForexFactory.
-The current implementation parses the ForexFactory calendar HTML response directly. The HTML row parser is the canonical acquisition path: it extracts provider event IDs, calendar rows, displayed provider timezone, event timestamps, impact, currency, title, actual, forecast, and previous values, then normalizes them before any persistent update. Currency normalization accepts only the supported three-letter FX currencies or the provider-wide `ALL` marker; provider-internal country codes are rejected. Empty event titles are rejected. Legacy embedded `days` JSON may be present in the response but must not override or substitute for the canonical HTML row fields.
+The current implementation parses ForexFactory's structured embedded `days` JSON as the canonical provider record. It normalizes `id`, `dateline`, `currency`, `name`, `impactName`/`impactClass`, `actual`, `forecast`, and `previous`. Provider-internal `country` codes are ignored for currency normalization. Currency values are restricted to supported three-letter FX currencies or `ALL`, and empty event names are rejected. The HTML row parser remains a compatibility parser only and must not override the structured payload.
 Provider fetch or payload validation failure terminates without replacing the existing calendar document.
 
 ## 10. Domain Functions
@@ -139,9 +139,9 @@ Scope resolution:
 Provider and normalization:
 
 - fetch_calendar_source — retrieve provider HTML.
-- parse_calendar_html — parse current ForexFactory calendar rows and provider timezone.
-- extract_days_payload — retain legacy embedded days JSON extraction for diagnostics/compatibility only; it is not the canonical acquisition source.
-- parse_calendar_days — decode legacy provider days for compatibility only; its result is not persisted by the canonical acquisition path.
+- parse_calendar_html — compatibility parser for ForexFactory calendar rows; not used for canonical writes.
+- extract_days_payload — extract the structured embedded `days` JSON payload used by canonical acquisition.
+- parse_calendar_days — decode and validate the canonical structured provider days collection.
 - normalize_provider_event — map one provider event to the canonical event model.
 - normalize_calendar_events — normalize a provider day collection.
 

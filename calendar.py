@@ -902,8 +902,7 @@ def extract_days_payload(html: str) -> str:
     )
     if not match:
         sys.exit(
-            "Error: Provider response has no embedded days payload; "
-            "HTML calendar parser is required."
+            "Error: Provider response has no structured days payload."
         )
     return match.group(1)
 
@@ -932,17 +931,35 @@ def normalize_provider_event(raw: Dict[str, Any]) -> Dict[str, Any]:
     except (TypeError, ValueError, OSError):
         sys.exit("Error: Invalid provider event dateline.")
 
+    raw_impact = str(raw.get("impactName", "")).strip().lower()
     impact = {
-        1: "LOW",
-        2: "MEDIUM",
-        3: "HIGH",
-        4: "HOLIDAY",
-    }.get(raw.get("impact"), "UNKNOWN")
-    currency = str(raw.get("country", "")).upper().strip()
+        "low": "LOW",
+        "medium": "MEDIUM",
+        "high": "HIGH",
+        "holiday": "HOLIDAY",
+    }.get(raw_impact)
+
+    if impact is None:
+        impact_class = str(raw.get("impactClass", "")).strip().lower()
+        impact = next(
+            (
+                level
+                for level, canonical in (
+                    ("high", "HIGH"),
+                    ("medium", "MEDIUM"),
+                    ("low", "LOW"),
+                    ("holiday", "HOLIDAY"),
+                )
+                if level in impact_class
+            ),
+            "UNKNOWN",
+        )
+
+    currency = str(raw.get("currency", "")).upper().strip()
     if currency not in SUPPORTED_CURRENCIES and currency != "ALL":
         sys.exit(f"Error: Unsupported provider event currency '{currency}'.")
 
-    event_title = str(raw.get("title", "")).strip()
+    event_title = str(raw.get("name", "")).strip()
     if not event_title:
         sys.exit("Error: Provider event has an empty title.")
 
@@ -1160,16 +1177,13 @@ def run_acquisition(scope: str) -> None:
 
             html = fetch_calendar_source("range", provider_range)
 
-            # The live ForexFactory HTML row parser is the canonical
-            # acquisition path. The embedded days payload is legacy provider
-            # data and must never override the canonical HTML fields because
-            # its country/title/impact representation is not the normalized
-            # event contract used by the rest of the application.
-            days_data = parse_calendar_html(
-                html,
-                fetch_start,
-                fetch_end,
-            )
+            # ForexFactory's structured days payload is the canonical
+            # provider record. It contains explicit canonical fields:
+            # currency, name, impactName, actual, forecast, previous, and
+            # event dateline. The HTML row parser remains available only as
+            # a compatibility parser and is not used for canonical writes.
+            payload = extract_days_payload(html)
+            days_data = parse_calendar_days(payload)
 
             if not days_data:
                 sys.exit("Error: Provider returned no calendar days.")
