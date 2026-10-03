@@ -202,7 +202,7 @@ Provider-facing state may contain provider-specific types/metadata. Required con
 - `completion_hint` is provider evidence only; it never overrides the canonical completion rules.
 - `provider_metadata` remains provider-local and must not cross into the persisted normalized JSON boundary.
 
-A provider adapter must either supply an unambiguous timezone with the timestamp or fail the record. It must never silently assume the machine-local timezone.
+A provider adapter must either supply an unambiguous timezone with the timestamp or fail the record. It must never silently assume the machine-local timezone. If the provider expresses a candle by interval-end time, the provider adapter must convert it to the canonical interval-start `timestamp` before the record reaches normalization.
 
 ```text
 source_timestamp
@@ -1387,7 +1387,9 @@ A persisted Market Data document is valid only when all of the following hold:
 - `completion_time > timestamp`;
 - persisted numeric values use the approved Decimal string representation;
 - availability bounds equal the first/last persisted completed candle timestamps, or both are null when `candles=[]`;
-- `current` never changes availability bounds.
+- `current` never changes availability bounds;
+- `available_start` and `available_end` are coverage bounds, not proof of gapless history;
+- missing candles inside the bounds are valid persisted state and must never be synthesized merely to fill a gap.
 
 A malformed persisted document must fail validation. The loader must never “repair” it by dropping unknown or invalid records.
 
