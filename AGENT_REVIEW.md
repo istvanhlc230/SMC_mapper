@@ -4148,3 +4148,21 @@ ormalize_provider_event.
 - **Coverage**: Includes CLI period validation, FF date conversion, days payload extraction, normalization, merge/deduplication, coverage union, missing event ID / dateline handling, missing calendar file response, all local query behaviors (current, next, nearest), dry-run delete, time-range deletes, and symbol relevance filtering.
 
 Status: IMPLEMENTATION READY. Awaiting independent external validation.
+
+# CALENDAR V1 - IMPLEMENTATION CORRECTION
+
+## Implementation Details
+1. **First-Acquisition Locking:** Refactored cquire_calendar_lock() to operate purely on an ephemeral .lock file utilizing O_TEMPORARY on Windows and unlink on POSIX. calendar.json is no longer created prior to valid JSON initialization.
+2. **Uncovered Interval Acquisition:** ind_uncovered_intervals precisely models partial coverage and triggers provider 
+ange fetches only for exact missing segments.
+3. **Strict CLI Validation:** Complete mutual exclusivity is enforced across Acquisition, Query, and Delete modes.
+4. **Data Normalization & Validation:** Symbol relevance enforces exact 2-currency extraction without assumptions. Document validation rigorously verifies schema properties, canonical timestamps, and stable identities without silently fixing malformed properties.
+5. **Delete Boundaries:** delete_coverage() computes proper interval clipping for all 7 modes (before, after, bounded, date, time, range), keeping events and coverage synchronized.
+6. **Provider Isolation:** Provider JSON is parsed cleanly without destructive regex or global string replacements.
+
+## Audit & Test Evidence
+- **Command:** python -m pytest test/test_calendar.py -v
+- **Result:** 13 passed in ~0.48s
+- **Coverage Highlights:** Uncovered interval calculation, malformed JSON integrity, deterministic querying/sorting (datetime then event_id), boundary deletion, and empty cache states. 
+
+Status: IMPLEMENTATION READY. Awaiting external validation.
