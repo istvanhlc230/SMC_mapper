@@ -3284,3 +3284,36 @@ PASS — `.agents/skills/smc/` remains untouched.
 
 ## Test status
 Specification-only changes. Runtime implementation and pytest suite were not run.
+
+
+# PHASE 29 — MONITOR NEWS EVENT STATUS OUTPUT — 2026-10-03
+
+## Scope
+Extended the Monitor News handling so runtime output distinguishes pre-event warning eligibility from event-status observation.
+
+## Final behavior
+- `NEWS_WARNING` remains strictly pre-event and uses dynamic entry-timeframe/impact scaling.
+- Monitor event status is transient and independent:
+  - `UPCOMING`
+  - `ONGOING`
+  - `ENDED`
+- Runtime observation window:
+  - `event_end_time = event_time + duration(entry_timeframe)`
+- First transition to `ONGOING` emits `NEWS_EVENT_STARTED`.
+- Transition from `ONGOING` to `ENDED` emits `NEWS_EVENT_ENDED`.
+- News-related alerts include `event_status = ONGOING` while the event is inside the runtime observation window.
+- Status-transition deduplication is transient and scoped by symbol + analysis + event + transition.
+- Event-status output never modifies Calendar, Structures, checkpoints, targets, RR, or canonical SMC state.
+- Calendar remains a timestamped fact provider and does not own event lifecycle semantics.
+
+## Audit
+PASS — warning and event-status concerns are separated.
+PASS — dynamic timeframe warning model remains unchanged.
+PASS — STARTED/ENDED output is informational only.
+PASS — ONGOING is explicitly exposed in News-related alert payloads.
+PASS — no persistent event-status state was introduced.
+PASS — missing Calendar data remains non-blocking.
+PASS — no canonical `.agents/skills/smc/` file was modified.
+
+## Test status
+Specification-only change. Runtime implementation and pytest suite were not run.
