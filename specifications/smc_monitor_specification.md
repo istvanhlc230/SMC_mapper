@@ -559,6 +559,8 @@ The Monitor starts the Calendar process without waiting for provider/network com
 
 The Monitor may read the currently committed Calendar snapshot after dispatch.
 
+The Monitor excludes any normalized event whose optional suppressed_for metadata contains the monitored canonical symbol.
+
 The Monitor never:
 
 - calls ForexFactory or Yahoo directly;
@@ -1615,8 +1617,8 @@ Side effects belong in:
 load_structures
 load_market_data
 invoke_market_data
-invoke_calendar_acquisition
-invoke_calendar_query
+request_calendar_update_async
+load_calendar_snapshot
 invoke_mapper
 refresh_current_market_view
 emit_alert
@@ -1685,8 +1687,8 @@ invoke_mapper(analysis, end_time, debug)
 
 refresh_current_market_view(symbol, timeframe)
 
-invoke_calendar_acquisition
-invoke_calendar_query
+request_calendar_update_async
+load_calendar_snapshot
 calculate_news_warning_window
 evaluate_news_warnings(analysis, news_events, now)
 build_news_warning_key(analysis_key, event_id)
@@ -1847,8 +1849,8 @@ Verify DST-aware session handling and non-interference with canonical state.
 Implement:
 
 ```text
-invoke_calendar_acquisition
-invoke_calendar_query
+request_calendar_update_async
+load_calendar_snapshot
 calculate_news_warning_window
 evaluate_news_warnings
 build_news_warning_key
@@ -1861,7 +1863,7 @@ calendar.json is the sole persistent News store
 dynamic warning horizon is derived from stored analysis entry timeframes
 HIGH/MEDIUM/LOW warning scaling is deterministic
 Calendar acquisition and local query are separate operations
-Calendar query stdout is the machine-readable News boundary
+the committed normalized calendar.json snapshot is the machine-readable News boundary
 missing calendar data does not block canonical processing
 UTC event timing
 impact policy
@@ -1962,7 +1964,7 @@ test_failed_mapper_does_not_advance_monitor_checkpoint
 ### Calendar / News warning
 
 ~~~
-test_calendar_cache_only_query_does_not_call_provider
+test_monitor_calendar_snapshot_read_does_not_call_provider
 test_calendar_bounded_query_ensures_requested_coverage
 test_calendar_empty_interval_is_valid
 test_calendar_provider_failure_is_not_empty_success

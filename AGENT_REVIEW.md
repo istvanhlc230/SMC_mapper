@@ -52,3 +52,8 @@ This follow-up also serializes Calendar acquisition/read-modify-write paths unde
 ## Deletion hardening
 
 ForexFactory shared events now carry optional symbol suppression metadata so symbol-scoped deletion is visible to both Calendar queries and the Monitor without globally deleting a shared currency fact. Successful provider reacquisition clears the relevant symbol suppression. Yahoo symbol-owned news remains physically deletable.
+
+
+## Monitor contract cleanup
+
+Removed remaining legacy Calendar function names and stdout-query boundary from the Monitor specification. The Monitor now uses request_calendar_update_async and the committed calendar.json snapshot, including suppressed_for visibility semantics.
