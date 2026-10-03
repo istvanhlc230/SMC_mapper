@@ -3355,3 +3355,25 @@ PASS — no `.agents/skills/smc/` file was modified.
 
 ## Test status
 Specification-only change. Runtime implementation and pytest suite were not run.
+
+
+# PHASE 31 — CANONICAL TARGET VOCABULARY AUDIT — 2026-10-03
+
+## Finding
+The previous Monitor alert JSON example incorrectly used `"target_type": "FVG"`.
+
+## Canonical correction
+- FVG is canonical execution-layer validation/property and is NOT a standalone tradable POI or target.
+- Monitor JSON must not introduce FVG as a target type.
+- `target_type` and `target_coordinate` must pass through the exact canonical/downstream definitions already supplied by the resolved target object.
+- Direct same-timeframe pro-trend target facts use the canonical confirmed external range extreme representation: bullish `Confirmed_Swing_High`, bearish `Confirmed_Swing_Low`.
+- LTF target-policy identifiers are `HTF_EXTERNAL_TARGET` or `LTF_STRUCTURAL_TARGET` only when the active downstream policy explicitly selects them.
+- Countertrend destination remains setup-specific; valid POI, IDM, Engineering Liquidity, or external liquidity may be the source-defined destination according to the active setup contract.
+- Non-structural policy targets remain explicitly identifiable as policy targets.
+
+## Audit result
+PASS — Monitor target JSON no longer invents a target taxonomy.
+PASS — FVG is explicitly prohibited as a target type.
+PASS — Target provenance is preserved through the resolved target object.
+PASS — No canonical skill file was modified.
+PASS — This change is specification-only; runtime code/tests were not run.
