@@ -652,6 +652,8 @@ The Monitor never calls a provider directly.
 
 The current reference price comes from persisted Market Data state.
 
+V1 target-reached observation uses this single current reference price only. It does not infer intrabar touch order, high/low microsequence, or broker execution from OHLC.
+
 Preferred source:
 
 ~~~text
@@ -968,7 +970,7 @@ class AlertDecision:
     projected_rr: Decimal | None
 ~~~
 
-Eligibility flow:
+SETUP_ELIGIBLE evaluation flow:
 
 ~~~text
 CANONICAL SETUP/ENTRY STATE
@@ -979,8 +981,10 @@ TARGET CLEARANCE
         ↓
 OPTIONAL RR
         ↓
-ALERT ELIGIBLE
+SETUP_ELIGIBLE
 ~~~
+
+`evaluate_alert_eligibility()` returns `alert_type = SETUP_ELIGIBLE` when eligible.
 
 ## 12.2 Alert content
 
@@ -1605,6 +1609,7 @@ test_unchanged_alert_is_not_repeated
 test_target_reached_is_directional
 test_target_reached_does_not_use_rr_gate
 test_resolve_target_plan_does_not_use_current_price
+test_mapper_invocation_passes_persisted_analysis_start
 test_monitor_restart_resets_transient_alert_memory
 test_alert_does_not_claim_position_open
 ~~~
