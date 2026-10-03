@@ -1,217 +1,97 @@
 # Calendar Implementation Design
 
-## 1. Purpose
+## 1. Runtime architecture
 
-calendar.py is the single Calendar V1 implementation.
-It acquires ForexFactory economic-calendar data, maintains a normalized global calendar.json, supports deterministic local symbol queries, and supports explicit calendar-data deletion.
-The module does not implement SMC logic and does not generate symbol-specific news JSON.
+    Calendar Update Engine
+        |             |
+        v             v
+    ForexFactory   Yahoo Finance
+        \             /
+          normalize
+              |
+        provider dedupe
+              |
+        calendar.json
+              |
+        local Monitor read
 
-## 2. Canonical CLI
+The engine runs in a process that may be detached from the Monitor.
 
-Public grammar:
+## 2. CLI
 
-    python calendar.py [scope] [symbol] [evaluation] [--cleartext]
+    python calendar.py SYMBOL YYYY.MM.DD
+    python calendar.py SYMBOL YYYY.MM.DD-YYYY.MM.DD
+    python calendar.py SYMBOL YYYY.MM.DD@HH:MM
+    python calendar.py SYMBOL YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM
+    python calendar.py SYMBOL current
 
-Delete grammar:
+User examples:
 
-    python calendar.py delete [scope]
-    python calendar.py delete
+    python calendar.py EURUSD 2026.10.01
+    python calendar.py EURUSD 2026.10.01-2026.10.31
+    python calendar.py EURUSD 2026.10.01@10:00-2026.10.31@22:00
+    python calendar.py EURUSD 2026.10.01@10:00
+    python calendar.py NVDA current
 
-Flag-style options are -h, --help, and --cleartext. `--cleartext` is query-output-only and requires a symbol.
+Old relative scopes and next evaluation are removed.
 
-## 3. Scope Vocabulary
+## 3. Symbol/provider resolution
 
-Relative scopes:
+    HUF    -> ForexFactory
+    EURHUF -> ForexFactory + Yahoo Finance
+    USDJPY -> ForexFactory + Yahoo Finance
+    NVDA   -> Yahoo Finance
 
-- today — current UTC calendar day
-- next_day — following UTC calendar day
-- week — current UTC calendar week
-- next_week — following UTC calendar week
-- month — current UTC calendar month
-- next_month — following UTC calendar month
+The canonical symbol is never replaced by a provider symbol.
 
-Datetime scopes:
+## 4. Update modes
 
-- today@HH:MM
-- YYYY.MM.DD@HH:MM
+Explicit ranges perform historical acquisition.
 
-Explicit date scopes:
+current uses per-provider/per-symbol watermarks.
 
-- YYYY.MM.DD
-- YYYY.MM.DD-YYYY.MM.DD
+No watermark means BOOTSTRAP_REQUIRED and no invented start time.
 
-The range is inclusive by calendar date and is represented internally as [start, end), with end at the following UTC midnight.
-An @HH:MM suffix sets the evaluation reference time while acquisition covers the containing UTC calendar day.
+## 5. Coverage
 
-## 4. Symbol Contract
+ForexFactory coverage may be COMPLETE for an acquired UTC interval.
 
-A Calendar symbol query accepts either a supported standalone currency code or a six-letter FX pair made from:
+Yahoo rolling news is not granted historical COMPLETE coverage without evidence.
 
-    USD EUR GBP JPY CHF AUD CAD NZD CNY HUF
+Coverage never comes from the mere presence of an event.
 
-Examples: HUF, USDHUF, EURHUF, EURUSD, USDJPY.
+## 6. Persistence
 
-Semantics:
-- standalone HUF matches HUF events only;
-- USDHUF matches USD and HUF events;
-- a standalone currency does not implicitly expand to a pair;
-- provider-wide ALL events are not implicitly injected into standalone currency results.
+Shared schema version is 2.
 
-Common separators /, - and _ are removed from FX-pair input and the result is upper-cased. Invalid or unsupported calendar symbols are rejected explicitly.
-Symbol-only execution never performs provider acquisition.
+Event envelope is:
 
-## 5. Evaluation Contract
+    event_id
+    symbol
+    asset_type
+    event_type
+    source
+    timestamp
+    title
+    details
 
-Supported evaluations:
+Watermarks are keyed by provider|canonical_symbol.
 
-- current — return events matching the reference date/hour/minute.
-- next — return the earliest event strictly after the reference timestamp.
+## 7. Failure isolation
 
-When evaluation is omitted, all symbol events inside the resolved scope are returned.
-For symbol-only queries, the reference timestamp is the current UTC time.
-For a scope with @HH:MM, the explicit timestamp is the reference.
-For a relative scope without @HH:MM, the current UTC timestamp is the reference.
+A failed provider:
+- leaves previous provider data intact;
+- is surfaced as ERROR;
+- does not erase another provider result.
 
-## 6. Execution Pipeline
+All-provider failure is UNAVAILABLE.
 
-The canonical pipeline is:
+## 8. Local consumer boundary
 
-    SCOPE -> ACQUISITION/COVERAGE -> SYMBOL FILTER -> OPTIONAL EVALUATION
+Monitor validates schema and reads committed JSON.
 
-Example:
+Monitor does not perform provider access or provider-specific parsing.
 
-    python calendar.py today USDHUF current
-    python calendar.py today HUF current
+## 9. Repository hygiene
 
-1. Resolve today's UTC interval.
-2. Ensure required coverage exists.
-3. Use the post-acquisition calendar document.
-4. Filter events to USD and HUF currencies.
-5. Apply current evaluation.
-
-Symbol-only example:
-
-    python calendar.py USDHUF current
-
-This reads the existing local calendar document only and never acquires network data.
-
-A scope-only command performs acquisition/coverage handling and does not emit symbol-evaluation JSON.
-
-## 7. Delete Contract
-
-Whole dataset:
-
-    python calendar.py delete
-
-Scoped deletion accepts every canonical scope, including date ranges and @HH:MM timestamps.
-A datetime delete removes the one-minute half-open interval beginning at the specified UTC minute.
-Delete accepts no symbol or evaluation token.
-
-## 8. Coverage and Persistence
-
-calendar.json contains schema_version, source, coverage, and events.
-Coverage intervals are half-open [start, end).
-Missing coverage is calculated before acquisition. Acquisition requests are expanded to full UTC calendar-day boundaries.
-Provider events are normalized, merged, and deduplicated by stable provider identity. Identity/time conflicts are fatal.
-
-Provider-displayed timezones are resolved with Python `zoneinfo` using IANA timezone names, with UTC/GMT fixed offsets accepted as well. The implementation does not hard-code regional UTC offsets, so daylight-saving transitions follow the timezone database. On Windows, an available timezone database (for example the `tzdata` package) is required when the runtime does not provide the requested IANA zone.
-Validated state is persisted atomically with os.replace.
-Concurrent writes are serialized using a Windows named mutex or POSIX directory-inode flock.
-
-## 9. Provider Boundary
-
-The provider is ForexFactory.
-The current implementation parses ForexFactory's structured embedded `days` JSON as the canonical provider record. It normalizes `id`, `dateline`, `currency`, `name`, `impactName`/`impactClass`, `actual`, `forecast`, and `previous`. Provider-internal `country` codes are ignored for currency normalization. Currency values are restricted to supported three-letter FX currencies or `ALL`, and empty event names are rejected. The HTML row parser remains a compatibility parser only and must not override the structured payload.
-Provider fetch or payload validation failure terminates without replacing the existing calendar document.
-
-## 10. Domain Functions
-
-CLI and parsing:
-
-- print_help — detailed user-facing CLI reference.
-- parse_calendar_request — classify positional tokens into operation, scope, symbol, and evaluation.
-- parse_scope_token — validate and decompose a scope.
-- is_scope — scope classifier.
-- normalize_symbol — canonicalize supported separators and case.
-- validate_symbol — validate a canonical FX pair.
-- is_symbol — symbol classifier.
-- is_evaluation — recognize current or next.
-- parse_date, parse_time, parse_date_range — validate explicit temporal syntax.
-
-Scope resolution:
-
-- resolve_scope_interval — map scope to a UTC half-open interval.
-- resolve_scope_reference — derive the evaluation reference timestamp.
-- resolve_delete_intervals — map delete scope to a deletion interval.
-
-Provider and normalization:
-
-- fetch_calendar_source — retrieve provider HTML.
-- parse_calendar_html — compatibility parser for ForexFactory calendar rows; not used for canonical writes.
-- extract_days_payload — locate the structured embedded `days` JSON payload and use JSON decoding to determine its complete array boundary.
-- parse_calendar_days — decode and validate the canonical structured provider days collection.
-- normalize_provider_event — map one provider event to the canonical event model.
-- normalize_calendar_events — normalize a provider day collection.
-- filter_events_for_interval — restrict newly normalized provider events to the exact acquired UTC coverage interval before persistence.
-
-Persistence and integrity:
-
-- build_empty_calendar_document
-- validate_calendar_document
-- load_calendar_document
-- save_calendar_atomic
-- acquire_calendar_lock
-
-Coverage and merge:
-
-- resolve_coverage
-- find_uncovered_intervals
-- merge_coverage
-- deduplicate_calendar_events
-- merge_calendar_events
-
-Query:
-
-- extract_symbol_currencies
-- filter_events_for_symbol
-- filter_events_for_interval
-- query_current_events
-- query_next_events
-- query_nearest_events
-- output_query_result
-- output_cleartext_result — render query results as human-readable event blocks without changing the underlying result set.
-
-Deletion and orchestration:
-
-- delete_events
-- delete_coverage
-- run_acquisition
-- run_query
-- run_delete
-- run
-- main
-
-Core business functions receive semantic values rather than legacy argparse namespaces or old flag-specific arguments.
-
-## 11. Provider Timezone Resolution
-
-`_resolve_provider_timezone` accepts `UTC`, `GMT`, `Z`, UTC/GMT fixed offsets, and IANA timezone names. Unsupported IANA names fail explicitly with an environment/dependency hint rather than silently applying an incorrect offset.
-
-## 12. Error Contract
-
-Reject:
-
-- missing command input;
-- malformed scopes, dates, times, or ranges;
-- invalid or unsupported FX symbols;
-- evaluations without a symbol;
-- unexpected extra positional tokens;
-- delete combined with non-delete tokens.
-
-User input errors must produce explicit CLI errors and must not fall through to raw Python exceptions.
-
-## 13. Repository Hygiene
-
-Temporary, intermediate, debug, downloaded, and generated development artifacts belong under dev_tmp/.
-Temporary development artifacts belong under `dev_tmp/`.
-The implementation is kept in `calendar.py`; temporary development artifacts belong under `dev_tmp/`.
+Development artifacts belong under dev_tmp/. The repository root must not receive ad-hoc downloads, caches, debug outputs, or experiments.
