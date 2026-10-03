@@ -14,7 +14,7 @@ Calendar implementation/specification corrections from the preceding commits rem
 
 ## Validation boundary
 
-No local Python runtime is available in this environment; GitHub reports no associated CI status for the commit.
+The committed GitHub working tree could not be materialized into the local runtime in this environment; GitHub reports no associated CI status for the commit.
 
 Required repository-side checks remain:
 
