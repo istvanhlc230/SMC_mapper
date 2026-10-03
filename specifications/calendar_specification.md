@@ -758,7 +758,7 @@ Calendar warning policy does not belong in this module.
 
 # 12. TEST CONTRACT
 
-The global developer-agent naming, portability, prompt-efficiency, and validation rules in `AGENTS.md` apply to Calendar. The Calendar validation contract is defined here; no dedicated repository test directory is prescribed.
+The global developer-agent naming, portability, prompt-efficiency, and validation rules in `AGENTS.md` apply to Calendar. The Calendar validation contract is defined here.
 
 Tests must not require a live ForexFactory request.
 
