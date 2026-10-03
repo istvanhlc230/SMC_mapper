@@ -196,5 +196,5 @@ User input errors must produce explicit CLI errors and must not fall through to 
 ## 12. Repository Hygiene
 
 Temporary, intermediate, debug, downloaded, and generated development artifacts belong under dev_tmp/.
-No test/ directory is required or maintained.
+Temporary development artifacts belong under `dev_tmp/`.
 The implementation is kept in `calendar.py`; temporary development artifacts belong under `dev_tmp/`.
