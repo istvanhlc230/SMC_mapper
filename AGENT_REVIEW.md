@@ -3167,3 +3167,62 @@ Expanded `specifications/market_data_specification.md` into a more executable de
 
 ## Test status
 Specification-only change. No runtime implementation files changed and no local pytest suite was run.
+
+
+# PHASE 27 — CALENDAR / NEWS WARNING SPECIFICATION REINTRODUCTION — 2026-10-03
+
+## Scope
+Reintroduced economic-news event monitoring as a dedicated external-data layer using `calendar.py`.
+
+## Architecture
+- `calendar.py` owns ForexFactory acquisition, parsing, UTC normalization, shared cache, symbol relevance filtering, and symbol News JSON materialization.
+- Shared cache: `<DATA_ROOT>/news_calendar.json`.
+- Symbol News view: `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_news.json`.
+- Each symbol directory now contains the three product JSON views:
+  - `<SYMBOL>_marketdata.json`
+  - `<SYMBOL>_structures.json`
+  - `<SYMBOL>_news.json`
+- `smc_monitor.py` remains read-only for persisted News data and owns News warning evaluation/deduplication.
+- The previous `news_data.py` / FMP architecture is not reintroduced.
+
+## ForexFactory parser basis
+The supplied working parser is the V1 source-parser baseline:
+- HTTP request to ForexFactory calendar;
+- extract the JavaScript `days: [...]` array;
+- parse the extracted array as JSON;
+- normalize event `dateline` to canonical UTC;
+- preserve stable provider `id`;
+- distinguish valid empty calendar data from provider/parser failure.
+
+## Query contract
+- `calendar.py --query SYMBOL` is cache-only and uses the complete retained shared calendar cache.
+- A time-bounded query requires `--starttime` and `--endtime`, validates the interval, acquires missing coverage, and materializes only relevant symbol events.
+- Provider failure never becomes successful empty coverage.
+- Symbol relevance for standard FX symbols is based on explicit currency matching.
+- Non-FX symbols do not receive guessed currency relevance.
+
+## Monitor warning contract
+- Dynamic News warning is a separate informational alert type: `NEWS_WARNING`.
+- Warning phases: `PRE_EVENT`, `EVENT_ACTIVE`, `POST_EVENT`.
+- Warning timing uses canonical UTC.
+- Warning policy values remain Monitor-owned:
+  - `NEWS_WARNING_MIN_IMPACT`
+  - `NEWS_WARNING_BEFORE_MINUTES`
+  - `NEWS_WARNING_AFTER_MINUTES`
+- Each eligible event is evaluated independently and receives a deterministic transient identity based on symbol + event ID + warning phase.
+- News never modifies canonical structure, POI lifecycle, checkpoints, target/RR, or order/position state.
+- Missing/invalid News does not suppress canonical setup/target evaluation.
+
+## Cross-file audit
+PASS — Calendar is the sole News persistence owner.
+PASS — Monitor owns News warning evaluation; Calendar does not contain warning-policy ownership.
+PASS — canonical UTC is preserved.
+PASS — News is outside canonical SMC semantics.
+PASS — symbol isolation is preserved.
+PASS — Market Data and Mapper ownership is unchanged.
+PASS — no `news_data.py` / FMP dependency remains in active specifications.
+PASS — `full_specification.md` remains a navigation index and now includes Calendar ownership.
+PASS — no `.agents/skills/smc/` file was modified.
+
+## Test status
+Specification-only change. Runtime implementation and test suite were not run.
