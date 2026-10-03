@@ -1,7 +1,37 @@
+import contextlib
 import json
-import
-HELP_TEXT = """
-Calendar V1 - economic calendar acquisition and local query
+import os
+import re
+import sys
+import tempfile
+import urllib.request
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List, Optional, Tuple
+
+DATA_ROOT = os.environ.get("SMC_DATA_ROOT", ".")
+CALENDAR_FILE = os.path.join(DATA_ROOT, "calendar.json")
+PROVIDER_URL = "https://www.forexfactory.com/calendar"
+USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
+)
+HTTP_TIMEOUT = 10.0
+
+SUPPORTED_CURRENCIES = {
+    "USD", "EUR", "GBP", "JPY", "CHF",
+    "AUD", "CAD", "NZD", "CNY", "HUF",
+}
+RELATIVE_SCOPES = {
+    "today",
+    "next_day",
+    "week",
+    "next_week",
+    "month",
+    "next_month",
+}
+EVALUATIONS = {"current", "next"}
+
+HELP_TEXT = """Calendar V1 - economic calendar acquisition and local query
 
 USAGE
   python calendar.py [scope] [symbol] [evaluation]
@@ -16,16 +46,18 @@ PIPELINE
   When scope and symbol are combined, evaluation uses the post-acquisition dataset.
 
 SCOPE
-  today       Current UTC calendar day
-  next_day    Following UTC calendar day
-  week        Current UTC calendar week
-  next_week   Following UTC calendar week
-  month       Current UTC calendar month
-  next_month  Following UTC calendar month
-  today@HH:MM  Current day with an explicit UTC reference time
-  YYYY.MM.DD  Explicit UTC calendar day
-  YYYY.MM.DD@HH:MM  Explicit date with UTC reference time
-  YYYY.MM.DD-YYYY.MM.DD  Inclusive UTC date range
+  today          Current UTC calendar day
+  next_day       Following UTC calendar day
+  week           Current UTC calendar week
+  next_week      Following UTC calendar week
+  month          Current UTC calendar month
+  next_month     Following UTC calendar month
+  today@HH:MM    Current day with an explicit UTC reference time
+  YYYY.MM.DD     Explicit UTC calendar day
+  YYYY.MM.DD@HH:MM
+                 Explicit date with UTC reference time
+  YYYY.MM.DD-YYYY.MM.DD
+                 Inclusive UTC date range
 
 SYMBOL
   Six-letter FX pair using supported currencies:
@@ -33,22 +65,27 @@ SYMBOL
   Common separators are normalized: EUR/HUF, USD-HUF, USD_HUF.
 
 EVALUATION
-  current     Events matching reference date/hour/minute
-  next        Earliest event strictly after the reference timestamp
-  No evaluation token returns all matching symbol events in the scope.
+  current        Events matching reference date/hour/minute
+  next           Earliest event strictly after the reference timestamp
+  No evaluation token returns all matching symbol events inside the scope.
 
 DELETE
-  python calendar.py delete              Delete the complete calendar dataset
-  python calendar.py delete today         Delete today's UTC interval
-  python calendar.py delete next_week     Delete the next UTC week
+  python calendar.py delete
+                 Delete the complete calendar dataset.
+  python calendar.py delete today
+                 Delete today's UTC interval.
+  python calendar.py delete next_week
+                 Delete the next UTC week.
   python calendar.py delete YYYY.MM.DD-YYYY.MM.DD
-                                          Delete an inclusive date range
+                 Delete the inclusive date range.
   python calendar.py delete YYYY.MM.DD@HH:MM
-                                          Delete the one-minute interval
+                 Delete the one-minute interval beginning at HH:MM.
 
 EXAMPLES
   python calendar.py today
+  python calendar.py today USDHUF
   python calendar.py today USDHUF current
+  python calendar.py today USDHUF next
   python calendar.py today@14:30 EURHUF current
   python calendar.py next_week USDHUF next
   python calendar.py next_month EURUSD
@@ -65,28 +102,14 @@ ERRORS
   Invalid dates, times, ranges, scopes, symbols, evaluations, and argument
   combinations are rejected explicitly. No old flag-based CLI is supported.
 """
- os
-import re
-import sys
-import tempfile
-import urllib.request
-import urllib.error
-import contextlib
-from datetime import datetime, timezone, timedelta
-from typing import Any, Dict, List, Optional, Tuple, Set
-
-DATA_ROOT = os.environ.get("SMC_DATA_ROOT", ".")
-CALENDAR_FILE = os.path.join(DATA_ROOT, "calendar.json")
-PROVIDER_URL = "https://www.forexfactory.com/calendar"
-USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
-HTTP_TIMEOUT = 10
-
-def normalize_symbol(symbol: str) -> str:
-    return re.sub(r"[^A-Za-z0-9]", "", symbol).upper()
 
 
 def print_help() -> None:
     print(HELP_TEXT)
+
+
+def normalize_symbol(symbol: str) -> str:
+    return re.sub(r"[/_-]", "", symbol).upper().strip()
 
 
 def validate_symbol(symbol: str) -> str:
@@ -102,6 +125,15 @@ def validate_symbol(symbol: str) -> str:
     return normalized
 
 
+def is_symbol(token: str) -> bool:
+    normalized = normalize_symbol(token)
+    return (
+        len(normalized) == 6
+        and normalized[:3] in SUPPORTED_CURRENCIES
+        and normalized[3:] in SUPPORTED_CURRENCIES
+    )
+
+
 def parse_time(time_str: str) -> Tuple[int, int]:
     if not re.fullmatch(r"\d{2}:\d{2}", time_str):
         sys.exit(f"Error: Invalid time format '{time_str}'. Expected HH:MM.")
@@ -113,7 +145,9 @@ def parse_time(time_str: str) -> Tuple[int, int]:
 
 def parse_date(date_str: str) -> datetime:
     if not re.fullmatch(r"\d{4}\.\d{2}\.\d{2}", date_str):
-        sys.exit(f"Error: Invalid date format '{date_str}'. Expected YYYY.MM.DD.")
+        sys.exit(
+            f"Error: Invalid date format '{date_str}'. Expected YYYY.MM.DD."
+        )
     try:
         year, month, day = (int(part) for part in date_str.split("."))
         return datetime(year, month, day, tzinfo=timezone.utc)
@@ -138,293 +172,851 @@ def parse_date_range(range_str: str) -> Tuple[datetime, datetime]:
 def parse_scope_token(scope_token: str) -> Tuple[str, Optional[Tuple[int, int]]]:
     if scope_token in RELATIVE_SCOPES:
         return scope_token, None
+
     if scope_token.startswith("today@"):
         base, time_token = scope_token.split("@", 1)
+        if base != "today":
+            sys.exit(f"Error: Invalid scope token '{scope_token}'.")
         return base, parse_time(time_token)
+
     datetime_match = re.fullmatch(
         r"(\d{4}\.\d{2}\.\d{2})@(\d{2}:\d{2})",
         scope_token,
     )
     if datetime_match:
         return datetime_match.group(1), parse_time(datetime_match.group(2))
+
     if re.fullmatch(r"\d{4}\.\d{2}\.\d{2}", scope_token):
+        parse_date(scope_token)
         return scope_token, None
+
     if re.fullmatch(
         r"\d{4}\.\d{2}\.\d{2}-\d{4}\.\d{2}\.\d{2}",
         scope_token,
     ):
         parse_date_range(scope_token)
         return scope_token, None
+
     sys.exit(f"Error: Invalid scope token '{scope_token}'.")
 
 
 def is_scope(token: str) -> bool:
     try:
         parse_scope_token(token)
-        return True
     except SystemExit:
         return False
-
-
-def is_symbol(token: str) -> bool:
-    return token == normalize_symbol(token) and len(token) == 6 and (
-        token[:3] in SUPPORTED_CURRENCIES and token[3:] in SUPPORTED_CURRENCIES
-    )
+    return True
 
 
 def is_evaluation(token: str) -> bool:
     return token in EVALUATIONS
+
+
+def parse_calendar_request(args_list: List[str]) -> Dict[str, Any]:
+    if not args_list:
+        sys.exit("Error: No arguments provided. Use --help for detailed usage.")
+
+    if len(args_list) == 1 and args_list[0] in ("-h", "--help"):
+        print_help()
+        raise SystemExit(0)
+
+    if any(arg in ("-h", "--help") for arg in args_list):
+        sys.exit("Error: --help cannot be combined with other arguments.")
+
+    if args_list[0] == "delete":
+        if len(args_list) > 2:
+            sys.exit("Error: delete accepts at most one scope.")
+        scope = args_list[1] if len(args_list) == 2 else None
+        if scope is not None:
+            parse_scope_token(scope)
+        return {
+            "operation": "DELETE",
+            "scope": scope,
+            "symbol": None,
+            "evaluation": None,
+        }
+
+    scope = None
+    symbol = None
+    evaluation = None
+    index = 0
+
+    if index < len(args_list) and is_scope(args_list[index]):
+        scope = args_list[index]
+        index += 1
+
+    if index < len(args_list) and is_symbol(args_list[index]):
+        symbol = validate_symbol(args_list[index])
+        index += 1
+
+    if index < len(args_list) and is_evaluation(args_list[index]):
+        evaluation = args_list[index]
+        index += 1
+
+    if index < len(args_list):
+        sys.exit(f"Error: Unexpected or invalid token '{args_list[index]}'.")
+
+    if scope is None and symbol is None:
+        sys.exit(
+            f"Error: Expected a scope or FX symbol, got '{args_list[0]}'. "
+            "Use --help for the canonical grammar."
+        )
+
+    if evaluation is not None and symbol is None:
+        sys.exit("Error: An evaluation requires a symbol.")
+
+    return {
+        "operation": "PIPELINE",
+        "scope": scope,
+        "symbol": symbol,
+        "evaluation": evaluation,
+    }
+
+
+def resolve_scope_interval(scope_token: str) -> Tuple[datetime, datetime]:
+    base, _ = parse_scope_token(scope_token)
+    now = datetime.now(timezone.utc)
+
+    if base == "today":
+        start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        end = start + timedelta(days=1)
+    elif base == "next_day":
+        start = (now + timedelta(days=1)).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+        end = start + timedelta(days=1)
+    elif base == "week":
+        days_since_sunday = (now.weekday() + 1) % 7
+        start = (now - timedelta(days=days_since_sunday)).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+        end = start + timedelta(days=7)
+    elif base == "next_week":
+        days_until_next_sunday = 7 - ((now.weekday() + 1) % 7)
+        start = (now + timedelta(days=days_until_next_sunday)).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+        end = start + timedelta(days=7)
+    elif base == "month":
+        start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        end = (start + timedelta(days=32)).replace(day=1)
+    elif base == "next_month":
+        start = (now.replace(day=1) + timedelta(days=32)).replace(
+            day=1, hour=0, minute=0, second=0, microsecond=0
+        )
+        end = (start + timedelta(days=32)).replace(day=1)
+    elif re.fullmatch(r"\d{4}\.\d{2}\.\d{2}", base):
+        start = parse_date(base)
+        end = start + timedelta(days=1)
+    elif re.fullmatch(
+        r"\d{4}\.\d{2}\.\d{2}-\d{4}\.\d{2}\.\d{2}",
+        base,
+    ):
+        start_date, end_date = parse_date_range(base)
+        return start_date, end_date + timedelta(days=1)
+    else:
+        sys.exit(f"Error: Unknown scope '{base}'.")
+
+    return start, end
+
+
+def resolve_scope_reference(scope_token: Optional[str]) -> datetime:
+    now = datetime.now(timezone.utc)
+    if scope_token is None:
+        return now
+
+    base, time_parts = parse_scope_token(scope_token)
+    if time_parts is None:
+        return now
+
+    hour, minute = time_parts
+    if base == "today":
+        return now.replace(
+            hour=hour, minute=minute, second=0, microsecond=0
+        )
+    return parse_date(base).replace(
+        hour=hour, minute=minute, second=0, microsecond=0
+    )
+
+
+def resolve_delete_intervals(
+    scope_token: Optional[str],
+) -> Tuple[Optional[datetime], Optional[datetime]]:
+    if scope_token is None:
+        return None, None
+
+    start, end = resolve_scope_interval(scope_token)
+    _, time_parts = parse_scope_token(scope_token)
+    if time_parts is not None:
+        reference = resolve_scope_reference(scope_token)
+        return reference, reference + timedelta(minutes=1)
+    return start, end
+
+
+def format_iso8601(value: datetime) -> str:
+    return value.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def parse_iso8601(value: str) -> datetime:
+    normalized = value[:-1] + "+00:00" if value.endswith("Z") else value
+    try:
+        parsed = datetime.fromisoformat(normalized)
+    except ValueError:
+        sys.exit(f"Error: Invalid UTC timestamp '{value}'.")
+    if parsed.tzinfo is None or parsed.utcoffset() != timedelta(0):
+        sys.exit(f"Error: Non-UTC timestamp '{value}'.")
+    return parsed
+
+
+def build_empty_calendar_document() -> Dict[str, Any]:
+    return {
+        "schema_version": 1,
+        "source": "forexfactory",
+        "coverage": [],
+        "events": [],
+    }
+
+
+def validate_calendar_document(doc: Dict[str, Any]) -> None:
+    if doc.get("schema_version") != 1:
+        sys.exit("Error: Invalid schema version.")
+    if doc.get("source") != "forexfactory":
+        sys.exit("Error: Invalid calendar source.")
+    if not isinstance(doc.get("coverage"), list):
+        sys.exit("Error: Invalid coverage collection.")
+    if not isinstance(doc.get("events"), list):
+        sys.exit("Error: Invalid events collection.")
+
+    previous_end: Optional[datetime] = None
+    for coverage in doc["coverage"]:
+        for field in ("start", "end", "fetched_at", "requested"):
+            if field not in coverage:
+                sys.exit(f"Error: Malformed coverage, missing '{field}'.")
+        requested = coverage["requested"]
+        if not isinstance(requested, dict):
+            sys.exit("Error: Malformed coverage.requested.")
+        if not isinstance(requested.get("type"), str) or not isinstance(
+            requested.get("value"), str
+        ):
+            sys.exit("Error: Malformed coverage.requested fields.")
+
+        start = parse_iso8601(coverage["start"])
+        end = parse_iso8601(coverage["end"])
+        parse_iso8601(coverage["fetched_at"])
+
+        if start >= end:
+            sys.exit("Error: Invalid coverage bounds.")
+        if previous_end is not None and start < previous_end:
+            sys.exit("Error: Overlapping or unsorted coverage intervals.")
+        previous_end = end
+
+    seen_ids = set()
+    for event in doc["events"]:
+        for field in (
+            "event_id",
+            "datetime",
+            "impact",
+            "currency",
+            "event",
+            "actual",
+            "forecast",
+            "previous",
+            "source",
+        ):
+            if field not in event:
+                sys.exit(f"Error: Corrupt event, missing '{field}'.")
+        if event["source"] != "forexfactory":
+            sys.exit("Error: Invalid event source.")
+        if event["impact"] not in {
+            "HIGH", "MEDIUM", "LOW", "HOLIDAY", "UNKNOWN"
+        }:
+            sys.exit("Error: Invalid event impact.")
+
+        event_id = event["event_id"]
+        if (
+            not isinstance(event_id, str)
+            or not event_id.startswith("forexfactory:")
+            or len(event_id) <= len("forexfactory:")
+        ):
+            sys.exit("Error: Invalid provider event identity.")
+        if event_id in seen_ids:
+            sys.exit("Error: Duplicate event ID.")
+        seen_ids.add(event_id)
+
+        timestamp = parse_iso8601(event["datetime"])
+        if event["datetime"] != format_iso8601(timestamp):
+            sys.exit("Error: Non-canonical event timestamp format.")
+
+
+def load_calendar_document() -> Dict[str, Any]:
+    if not os.path.exists(CALENDAR_FILE) or os.path.getsize(CALENDAR_FILE) == 0:
+        return build_empty_calendar_document()
+
+    try:
+        with open(CALENDAR_FILE, "r", encoding="utf-8") as handle:
+            document = json.load(handle)
+    except (OSError, json.JSONDecodeError) as exc:
+        sys.exit(f"Error: Calendar data integrity error: {exc}")
+
+    validate_calendar_document(document)
+    return document
+
+
+def save_calendar_atomic(doc: Dict[str, Any]) -> None:
+    directory = os.path.dirname(CALENDAR_FILE) or "."
+    fd, temporary_path = tempfile.mkstemp(dir=directory, suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            json.dump(doc, handle, indent=2)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary_path, CALENDAR_FILE)
+    except Exception as exc:
+        if os.path.exists(temporary_path):
+            os.remove(temporary_path)
+        sys.exit(f"Error: Atomic save failed: {exc}")
+
+
+@contextlib.contextmanager
+def acquire_calendar_lock():
+    if os.name == "nt":
+        import ctypes
+
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        mutex = kernel32.CreateMutexW(None, False, "SMC_Calendar_Lock")
+        if not mutex:
+            sys.exit(
+                "Error: Failed to create lock mutex, "
+                f"error {ctypes.get_last_error()}"
+            )
+
+        result = kernel32.WaitForSingleObject(mutex, 0xFFFFFFFF)
+        if result not in (0, 0x80):
+            sys.exit(
+                f"Error: Failed to acquire lock mutex, result {result}"
+            )
+
+        try:
+            yield
+        finally:
+            kernel32.ReleaseMutex(mutex)
+            kernel32.CloseHandle(mutex)
+    else:
+        import fcntl
+
+        lock_path = os.path.dirname(os.path.abspath(CALENDAR_FILE)) or "."
+        fd = os.open(lock_path, os.O_RDONLY)
+        fcntl.flock(fd, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(fd, fcntl.LOCK_UN)
+            os.close(fd)
+
+
+def resolve_coverage(
+    intervals: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    if not intervals:
+        return []
+
+    ordered = sorted(
+        intervals,
+        key=lambda item: parse_iso8601(item["start"]),
+    )
+    merged = [ordered[0].copy()]
+
+    for current in ordered[1:]:
+        previous = merged[-1]
+        previous_end = parse_iso8601(previous["end"])
+        current_start = parse_iso8601(current["start"])
+        current_end = parse_iso8601(current["end"])
+
+        if current_start <= previous_end:
+            previous["end"] = format_iso8601(
+                max(previous_end, current_end)
+            )
+            if parse_iso8601(current["fetched_at"]) > parse_iso8601(
+                previous["fetched_at"]
+            ):
+                previous["fetched_at"] = current["fetched_at"]
+                previous["requested"] = current["requested"]
+        else:
+            merged.append(current.copy())
+
+    return merged
+
+
+def find_uncovered_intervals(
+    request_start: datetime,
+    request_end: datetime,
+    coverage: List[Dict[str, Any]],
+) -> List[Tuple[datetime, datetime]]:
+    uncovered: List[Tuple[datetime, datetime]] = []
+    cursor = request_start
+
+    for entry in sorted(
+        coverage,
+        key=lambda item: parse_iso8601(item["start"]),
+    ):
+        coverage_start = parse_iso8601(entry["start"])
+        coverage_end = parse_iso8601(entry["end"])
+
+        if coverage_end <= cursor:
+            continue
+        if coverage_start > cursor:
+            if coverage_start >= request_end:
+                break
+            uncovered.append((cursor, min(coverage_start, request_end)))
+        cursor = max(cursor, coverage_end)
+        if cursor >= request_end:
+            break
+
+    if cursor < request_end:
+        uncovered.append((cursor, request_end))
+
+    return uncovered
+
+
+def merge_coverage(
+    old_coverage: List[Dict[str, Any]],
+    new_coverage: Dict[str, Any],
+) -> List[Dict[str, Any]]:
+    return resolve_coverage(old_coverage + [new_coverage])
+
+
+def deduplicate_calendar_events(
+    events: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    by_id: Dict[str, Dict[str, Any]] = {}
+
+    for event in events:
+        event_id = event["event_id"]
+        if event_id not in by_id:
+            by_id[event_id] = event
+            continue
+
+        if by_id[event_id]["datetime"] != event["datetime"]:
+            sys.exit(f"Error: Identity/time conflict for {event_id}.")
+        by_id[event_id] = event
+
+    result = list(by_id.values())
+    result.sort(
+        key=lambda item: (
+            parse_iso8601(item["datetime"]),
+            item["event_id"],
+        )
+    )
+    return result
+
+
+def merge_calendar_events(
+    old_events: List[Dict[str, Any]],
+    new_events: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    return deduplicate_calendar_events(old_events + new_events)
+
+
+def fetch_calendar_source(period_type: str, period_value: str) -> str:
+    request_url = f"{PROVIDER_URL}?{period_type}={period_value}"
+    request = urllib.request.Request(
+        request_url,
+        headers={"User-Agent": USER_AGENT},
+    )
+
+    try:
+        with urllib.request.urlopen(request, timeout=HTTP_TIMEOUT) as response:
+            if response.status != 200:
+                raise RuntimeError(f"HTTP {response.status}")
+            return response.read().decode("utf-8")
+    except Exception as exc:
+        sys.exit(f"Error: Provider fetch failed: {exc}")
+
+
+def extract_days_payload(html: str) -> str:
+    match = re.search(r"'days':\s*(\[.*\])\s*\}", html, re.DOTALL)
+    if not match:
+        sys.exit("Error: Missing days payload in provider response.")
+    return match.group(1)
+
+
+def parse_calendar_days(payload: str) -> List[Dict[str, Any]]:
+    try:
+        parsed = json.loads(payload)
+    except json.JSONDecodeError as exc:
+        sys.exit(f"Error: Malformed provider payload: {exc}")
+    if not isinstance(parsed, list):
+        sys.exit("Error: Provider days payload is not a list.")
+    return parsed
+
+
+def normalize_provider_event(raw: Dict[str, Any]) -> Dict[str, Any]:
+    if "id" not in raw or raw["id"] in (None, "", "None"):
+        sys.exit("Error: Missing or invalid provider event ID.")
+    if "dateline" not in raw:
+        sys.exit("Error: Missing required provider dateline.")
+
+    try:
+        event_timestamp = datetime.fromtimestamp(
+            int(raw["dateline"]),
+            timezone.utc,
+        )
+    except (TypeError, ValueError, OSError):
+        sys.exit("Error: Invalid provider event dateline.")
+
+    impact = {
+        1: "LOW",
+        2: "MEDIUM",
+        3: "HIGH",
+        4: "HOLIDAY",
+    }.get(raw.get("impact"), "UNKNOWN")
+    currency = str(raw.get("country", "")).upper().strip() or None
+
+    return {
+        "event_id": f"forexfactory:{raw['id']}",
+        "datetime": format_iso8601(event_timestamp),
+        "currency": currency,
+        "impact": impact,
+        "event": str(raw.get("title", "")),
+        "actual": (
+            str(raw["actual"])
+            if raw.get("actual") not in (None, "")
+            else None
+        ),
+        "forecast": (
+            str(raw["forecast"])
+            if raw.get("forecast") not in (None, "")
+            else None
+        ),
+        "previous": (
+            str(raw["previous"])
+            if raw.get("previous") not in (None, "")
+            else None
+        ),
+        "source": "forexfactory",
+    }
+
+
+def normalize_calendar_events(
+    days_data: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    normalized_events: List[Dict[str, Any]] = []
+    for day in days_data:
+        if not isinstance(day, dict):
+            sys.exit("Error: Malformed provider day record.")
+        for raw_event in day.get("events", []):
+            if not isinstance(raw_event, dict):
+                sys.exit("Error: Malformed provider event record.")
+            normalized_events.append(normalize_provider_event(raw_event))
+    return normalized_events
+
 
 def extract_symbol_currencies(symbol: str) -> List[str]:
     normalized = validate_symbol(symbol)
     return [normalized[:3], normalized[3:]]
 
 
-def filter_events_for_symbol(events: List[Dict[str, Any]], symbol: str) -> List[Dict[str, Any]]:
-
+def filter_events_for_symbol(
+    events: List[Dict[str, Any]],
+    symbol: str,
+) -> List[Dict[str, Any]]:
     currencies = extract_symbol_currencies(symbol)
+    return [
+        event
+        for event in events
+        if event.get("currency") in currencies
+    ]
 
-    if not currencies: return []
 
-    return [e for e in events if e.get("currency") in currencies]
+def filter_events_for_interval(
+    events: List[Dict[str, Any]],
+    start: datetime,
+    end: datetime,
+) -> List[Dict[str, Any]]:
+    return [
+        event
+        for event in events
+        if start <= parse_iso8601(event["datetime"]) < end
+    ]
 
-def parse_date(date_str: str) -> datetime:
 
-    try:
+def query_current_events(
+    events: List[Dict[str, Any]],
+    reference_datetime: datetime,
+) -> List[Dict[str, Any]]:
+    result = []
+    for event in events:
+        event_datetime = parse_iso8601(event["datetime"])
+        if (
+            event_datetime.date() == reference_datetime.date()
+            and event_datetime.hour == reference_datetime.hour
+            and event_datetime.minute == reference_datetime.minute
+        ):
+            result.append(event)
 
-        parts = date_str.split(".")
+    return sorted(
+        result,
+        key=lambda item: (
+            parse_iso8601(item["datetime"]),
+            item["event_id"],
+        ),
+    )
 
-        if len(date_str) != 10 or len(parts) != 3: raise ValueError
 
-        y, m, d = int(parts[0]), int(parts[1]), int(parts[2])
+def query_next_events(
+    events: List[Dict[str, Any]],
+    reference_datetime: datetime,
+) -> List[Dict[str, Any]]:
+    future = [
+        event
+        for event in events
+        if parse_iso8601(event["datetime"]) > reference_datetime
+    ]
+    if not future:
+        return []
 
-        if not (2000 <= y <= 2100): raise ValueError
+    future.sort(
+        key=lambda item: (
+            parse_iso8601(item["datetime"]),
+            item["event_id"],
+        )
+    )
+    first_datetime = future[0]["datetime"]
+    return [
+        event
+        for event in future
+        if event["datetime"] == first_datetime
+    ]
 
-        dt = datetime(y, m, d, tzinfo=timezone.utc)
 
-        if dt.year != y or dt.month != m or dt.day != d: raise ValueError
+def query_nearest_events(
+    events: List[Dict[str, Any]],
+    reference_datetime: datetime,
+) -> List[Dict[str, Any]]:
+    if not events:
+        return []
 
-        return dt
+    distances = [
+        (
+            event,
+            abs(
+                (
+                    parse_iso8601(event["datetime"])
+                    - reference_datetime
+                ).total_seconds()
+            ),
+        )
+        for event in events
+    ]
+    minimum = min(distance for _, distance in distances)
+    result = [event for event, distance in distances if distance == minimum]
+    return sorted(
+        result,
+        key=lambda item: (
+            parse_iso8601(item["datetime"]),
+            item["event_id"],
+        ),
+    )
 
-    except Exception:
 
-        sys.exit(f"Error: Invalid date format: {date_str}. Expected YYYY.MM.DD")
+def output_query_result(
+    status: str,
+    symbol: str,
+    events: List[Dict[str, Any]],
+) -> None:
+    print(
+        json.dumps(
+            {
+                "status": status,
+                "symbol": symbol,
+                "events": events,
+            }
+        )
+    )
 
-def normalize_calendar_events(days_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
-    events = []
+def run_acquisition(scope: str) -> None:
+    request_start, request_end = resolve_scope_interval(scope)
 
-    for day in days_data:
-
-        for evt in day.get("events", []):
-
-            events.append(normalize_provider_event(evt))
-
-    return events
-
-def find_uncovered_intervals(req_start: datetime, req_end: datetime, coverage: List[Dict[str, Any]]) -> List[Tuple[datetime, datetime]]:
-
-    uncovered = []
-
-    current = req_start
-
-    sorted_cov = sorted(coverage, key=lambda c: parse_iso8601(c["start"]))
-
-    for c in sorted_cov:
-
-        c_start = parse_iso8601(c["start"])
-
-        c_end = parse_iso8601(c["end"])
-
-        if c_end <= current: continue
-
-        if c_start > current:
-
-            if c_start >= req_end: break
-
-            uncovered.append((current, c_start))
-
-        current = max(current, c_end)
-
-        if current >= req_end: break
-
-    if current < req_end:
-
-        uncovered.append((current, req_end))
-
-    return uncovered
-
-@contextlib.contextmanager
-def acquire_calendar_lock():
-
-    if os.name == "nt":
-
-        import ctypes
-
-        kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
-
-        mutex = kernel32.CreateMutexW(None, False, "SMC_Calendar_Lock")
-
-        if not mutex:
-
-            sys.exit(f"Error: Failed to create lock mutex, error {ctypes.get_last_error()}")
-
-        res = kernel32.WaitForSingleObject(mutex, 0xFFFFFFFF)
-
-        if res not in (0, 0x80):
-
-            sys.exit(f"Error: Failed to acquire lock mutex, result {res}")
-
+    if (
+        os.path.exists(CALENDAR_FILE)
+        and os.path.getsize(CALENDAR_FILE) > 0
+    ):
         try:
-
-            yield
-
-        finally:
-
-            kernel32.ReleaseMutex(mutex)
-
-            kernel32.CloseHandle(mutex)
-
-    else:
-
-        import fcntl
-
-        lock_path = os.path.dirname(os.path.abspath(CALENDAR_FILE)) or "."
-
-        fd = os.open(lock_path, os.O_RDONLY)
-
-        fcntl.flock(fd, fcntl.LOCK_EX)
-
-        try:
-
-            yield
-
-        finally:
-
-            fcntl.flock(fd, fcntl.LOCK_UN)
-
-            os.close(fd)
-
-def delete_events(events: List[Dict[str, Any]], start: Optional[datetime], end: Optional[datetime]) -> List[Dict[str, Any]]:
-    if start is None and end is None: return []
-    kept = []
-    for e in events:
-        dt = parse_iso8601(e["datetime"])
-        if start <= dt < end:
-            pass
-        else:
-            kept.append(e)
-    return kept
-
-def delete_coverage(coverage: List[Dict[str, Any]], start: Optional[datetime], end: Optional[datetime]) -> List[Dict[str, Any]]:
-    if start is None and end is None: return []
-    current_cov = coverage
-    new_cov = []
-    for c in current_cov:
-        cs = parse_iso8601(c["start"])
-        ce = parse_iso8601(c["end"])
-        if start <= cs and end >= ce:
-            continue
-        elif start > cs and end < ce:
-            c1, c2 = c.copy(), c.copy()
-            c1["end"] = format_iso8601(start)
-            c2["start"] = format_iso8601(end)
-            new_cov.extend([c1, c2])
-            continue
-        elif start <= cs < end:
-            c["start"] = format_iso8601(end)
-        elif start < ce <= end:
-            c["end"] = format_iso8601(start)
-            
-        if parse_iso8601(c["start"]) < parse_iso8601(c["end"]):
-            new_cov.append(c)
-    return resolve_coverage(new_cov)
-
-def query_current_events(events: List[Dict[str, Any]], ref_dt: datetime) -> List[Dict[str, Any]]:
-    res = []
-    for e in events:
-        dt = parse_iso8601(e["datetime"])
-        if dt.date() == ref_dt.date() and dt.hour == ref_dt.hour and dt.minute == ref_dt.minute:
-            res.append(e)
-    res.sort(key=lambda x: (parse_iso8601(x["datetime"]), x["event_id"]))
-    return res
-
-def query_next_events(events: List[Dict[str, Any]], ref_dt: datetime) -> List[Dict[str, Any]]:
-    future = [e for e in events if parse_iso8601(e["datetime"]) > ref_dt]
-    if not future: return []
-    future.sort(key=lambda x: (parse_iso8601(x["datetime"]), x["event_id"]))
-    earliest = future[0]["datetime"]
-    return [e for e in future if e["datetime"] == earliest]
-
-def run_acquisition(scope: str):
-    start, end = resolve_scope_interval(scope)
-    
-    if os.path.exists(CALENDAR_FILE) and os.path.getsize(CALENDAR_FILE) > 0:
-        try:
-            with open(CALENDAR_FILE, "r", encoding="utf-8") as f: pre_doc = json.load(f)
-            if not find_uncovered_intervals(start, end, pre_doc.get("coverage", [])):
+            with open(CALENDAR_FILE, "r", encoding="utf-8") as handle:
+                pre_document = json.load(handle)
+            if not find_uncovered_intervals(
+                request_start,
+                request_end,
+                pre_document.get("coverage", []),
+            ):
                 return
-        except Exception: pass
-            
+        except Exception:
+            pass
+
     with acquire_calendar_lock():
-        doc = load_calendar_document()
-        uncovered = find_uncovered_intervals(start, end, doc["coverage"])
-        if not uncovered: pass
-        else:
-            now = datetime.now(timezone.utc)
-            for u_start, u_end in uncovered:
-                fetch_start = u_start.replace(hour=0, minute=0, second=0, microsecond=0)
-                fetch_end = u_end
-                if fetch_end.hour != 0 or fetch_end.minute != 0:
-                    fetch_end = (fetch_end + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-                
-                d1_str = fetch_start.strftime("%b%d.%Y").lower()
-                d2_str = (fetch_end - timedelta(days=1)).strftime("%b%d.%Y").lower()
-                pval = f"{d1_str}-{d2_str}"
-                
-                html = fetch_calendar_source("range", pval)
-                payload = extract_days_payload(html)
-                days_data = parse_calendar_days(payload)
-                expected_days = (fetch_end - fetch_start).days
-                if len(days_data) < expected_days:
-                    sys.exit(f"Error: Provider returned incomplete coverage. Expected {expected_days} days, got {len(days_data)}.")
-                new_events = normalize_calendar_events(days_data)
-                doc["events"] = merge_calendar_events(doc["events"], new_events)
-                doc["coverage"] = merge_coverage(doc["coverage"], {
+        document = load_calendar_document()
+        uncovered = find_uncovered_intervals(
+            request_start,
+            request_end,
+            document["coverage"],
+        )
+        if not uncovered:
+            return
+
+        fetched_at = datetime.now(timezone.utc)
+
+        for uncovered_start, uncovered_end in uncovered:
+            fetch_start = uncovered_start.replace(
+                hour=0, minute=0, second=0, microsecond=0
+            )
+            fetch_end = uncovered_end
+            if fetch_end.hour != 0 or fetch_end.minute != 0:
+                fetch_end = (
+                    fetch_end + timedelta(days=1)
+                ).replace(
+                    hour=0, minute=0, second=0, microsecond=0
+                )
+
+            first_day = fetch_start.strftime("%b%d.%Y").lower()
+            last_day = (
+                fetch_end - timedelta(days=1)
+            ).strftime("%b%d.%Y").lower()
+            provider_range = f"{first_day}-{last_day}"
+
+            html = fetch_calendar_source("range", provider_range)
+            payload = extract_days_payload(html)
+            days_data = parse_calendar_days(payload)
+
+            expected_days = (fetch_end - fetch_start).days
+            if len(days_data) < expected_days:
+                sys.exit(
+                    "Error: Provider returned incomplete coverage. "
+                    f"Expected at least {expected_days} days, "
+                    f"got {len(days_data)}."
+                )
+
+            new_events = normalize_calendar_events(days_data)
+            document["events"] = merge_calendar_events(
+                document["events"],
+                new_events,
+            )
+            document["coverage"] = merge_coverage(
+                document["coverage"],
+                {
                     "start": format_iso8601(fetch_start),
                     "end": format_iso8601(fetch_end),
-                    "requested": {"type": "range", "value": pval},
-                    "fetched_at": format_iso8601(now)
-                })
-            validate_calendar_document(doc)
-            save_calendar_atomic(doc)
+                    "requested": {
+                        "type": "range",
+                        "value": provider_range,
+                    },
+                    "fetched_at": format_iso8601(fetched_at),
+                },
+            )
 
-def run_query(symbol: str, scope: Optional[str], evaluation: Optional[str]):
-    symbol = normalize_symbol(symbol)
-    if not os.path.exists(CALENDAR_FILE) or os.path.getsize(CALENDAR_FILE) == 0:
-        output_query_result("NO_CALENDAR_DATA", symbol, [])
+        validate_calendar_document(document)
+        save_calendar_atomic(document)
+
+
+def run_query(
+    symbol: str,
+    scope: Optional[str],
+    evaluation: Optional[str],
+) -> None:
+    normalized_symbol = validate_symbol(symbol)
+
+    if (
+        not os.path.exists(CALENDAR_FILE)
+        or os.path.getsize(CALENDAR_FILE) == 0
+    ):
+        output_query_result(
+            "NO_CALENDAR_DATA",
+            normalized_symbol,
+            [],
+        )
         return
-    doc = load_calendar_document()
-    events = filter_events_for_symbol(doc["events"], symbol)
-    
-    if scope:
+
+    document = load_calendar_document()
+    events = filter_events_for_symbol(
+        document["events"],
+        normalized_symbol,
+    )
+
+    if scope is not None:
         start, end = resolve_scope_interval(scope)
-        events = [e for e in events if start <= parse_iso8601(e["datetime"]) < end]
-        
-    if not events:
-        output_query_result("NO_RELEVANT_EVENT", symbol, [])
-        return
-        
-    ref_dt = resolve_scope_reference(scope)
-    
+        events = filter_events_for_interval(events, start, end)
+
+    reference_datetime = resolve_scope_reference(scope)
+
     if evaluation == "current":
-        res = query_current_events(events, ref_dt)
+        result = query_current_events(events, reference_datetime)
     elif evaluation == "next":
-        res = query_next_events(events, ref_dt)
+        result = query_next_events(events, reference_datetime)
     else:
-        res = events
-        
-    output_query_result("OK" if res else "NO_RELEVANT_EVENT", symbol, res)
+        result = events
+
+    output_query_result(
+        "OK" if result else "NO_RELEVANT_EVENT",
+        normalized_symbol,
+        result,
+    )
+
+
+def delete_events(
+    events: List[Dict[str, Any]],
+    start: Optional[datetime],
+    end: Optional[datetime],
+) -> List[Dict[str, Any]]:
+    if start is None and end is None:
+        return []
+
+    result = []
+    for event in events:
+        event_datetime = parse_iso8601(event["datetime"])
+        if start <= event_datetime < end:
+            continue
+        result.append(event)
+    return result
+
+
+def delete_coverage(
+    coverage: List[Dict[str, Any]],
+    start: Optional[datetime],
+    end: Optional[datetime],
+) -> List[Dict[str, Any]]:
+    if start is None and end is None:
+        return []
+
+    remaining: List[Dict[str, Any]] = []
+
+    for entry in coverage:
+        coverage_start = parse_iso8601(entry["start"])
+        coverage_end = parse_iso8601(entry["end"])
+
+        if start <= coverage_start and end >= coverage_end:
+            continue
+
+        if start > coverage_start and end < coverage_end:
+            left = entry.copy()
+            right = entry.copy()
+            left["end"] = format_iso8601(start)
+            right["start"] = format_iso8601(end)
+            remaining.extend([left, right])
+            continue
+
+        adjusted = entry.copy()
+        if start <= coverage_start < end:
+            adjusted["start"] = format_iso8601(end)
+        elif start < coverage_end <= end:
+            adjusted["end"] = format_iso8601(start)
+
+        adjusted_start = parse_iso8601(adjusted["start"])
+        adjusted_end = parse_iso8601(adjusted["end"])
+        if adjusted_start < adjusted_end:
+            remaining.append(adjusted)
+
+    return resolve_coverage(remaining)
+
 
 def run_delete(scope: Optional[str]) -> None:
     if (
@@ -471,8 +1063,9 @@ def run() -> None:
         run_query(symbol, scope, evaluation)
 
 
-def main():
+def main() -> None:
     run()
+
 
 if __name__ == "__main__":
     main()
