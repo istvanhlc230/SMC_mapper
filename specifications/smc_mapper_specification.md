@@ -826,7 +826,11 @@ M15_2026-06-10T12:00:00Z
 
 The persisted `analysis_start` is required and is the stable boundary used by the analysis identity.
 
-- When `--starttime` is supplied, `analysis_start` equals the normalized requested start boundary.
+Persisted timeframe fields use this normalized shape:
+- `SINGLE_TIMEFRAME`: `entry_timeframe` is the selected timeframe; `htf` and `ltf` preserve supplied timeframe values or null when omitted.
+- `HTF_LTF`: both `htf` and `ltf` are present and `htf > ltf`; `entry_timeframe = ltf`.
+
+When `--starttime` is supplied, `analysis_start` equals the normalized requested start boundary.
 - When `--starttime` is omitted for a new analysis, `analysis_start` equals the earliest available completed entry-timeframe candle completion boundary selected by §2.7.
 - `requested_start` records the explicitly supplied boundary and may be null/absent for analyses created without `--starttime`.
 - `effective_start` is an execution-window value and is not part of analysis identity. It need not be persisted in V1.
