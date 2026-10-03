@@ -1037,17 +1037,29 @@ Unchanged state must not emit the same alert repeatedly during one Monitor runti
 
 Alert history is not persisted in structures JSON V1.
 
-On Monitor restart, runtime alert memory resets. A still-eligible canonical setup may therefore notify again after restart without changing canonical state.
+## 12.4 Target-reached evaluation
 
-## 12.4 Re-evaluation
+```python
+def evaluate_target_reached(
+    target: TargetPlan | None,
+    current_market_view: CurrentMarketView,
+) -> AlertDecision:
+    ...
+```
+
+Rules:
+- return `alert_type = TARGET_REACHED`;
+- return eligible only when a resolved target exists and `is_target_reached(...) == True`;
+- never apply target clearance or `--rr`;
+- never mutate canonical state.
+
+## 12.5 Re-evaluation
 
 The Monitor may re-evaluate downstream eligibility when current price or another downstream input changes.
 
 A new notification is emitted only for a new alert identity or changed alert identity.
 
 For `TARGET_REACHED`, the event is evaluated from the resolved target and current reference price. It does not require target clearance or the optional RR gate.
-
-On Monitor restart, the transient key set resets; repeated notification after restart is allowed.
 
 Canonical structure is never changed by re-evaluation.
 
@@ -1314,7 +1326,7 @@ invoke_mapper(analysis, end_time, debug)
 
 refresh_current_market_view(symbol, timeframe)
 
-resolve_target_plan(analysis_state, current_market_view)
+resolve_target_plan(canonical_state, current_market_view)
 is_target_cleared(target_price, current_price, direction)
 calculate_projected_rr(target_price, entry_reference_price, stop_price)
 get_active_sessions(utc_time, session_definitions)
