@@ -882,7 +882,14 @@ def parse_calendar_html(
 
 
 def extract_days_payload(html: str) -> str:
-    match = re.search(r"'days':\s*(\\[.*\\])\s*\\}", html, re.DOTALL)
+    # ForexFactory exposes the canonical payload as days: [...], time: "...".
+    # Support quoted or unquoted JavaScript keys and keep the capture bounded.
+    match = re.search(
+        r"[\"']?days[\"']?\s*:\s*(\[.*?\])\s*,\s*"
+        r"[\"']?time[\"']?\s*:\s*[\"']",
+        html,
+        re.DOTALL | re.IGNORECASE,
+    )
     if not match:
         sys.exit(
             "Error: Provider response has no embedded days payload; "
