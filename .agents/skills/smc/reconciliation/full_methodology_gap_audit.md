@@ -215,12 +215,13 @@ Classification: **CANONICALIZED AS PLATFORM AUDITABILITY POLICY**.
 
 The 2026 market-structure source was reconciled into the canonical Layer 3 lifecycle with the following explicit ordering:
 
-- `IDM_TAKEN` confirms the relevant structural swing point.
-- Retracement depth/candle-structure qualification is evaluated after swing confirmation and determines whether a later external break can qualify as `VALID_BOS`.
-- An insufficient retracement does not retroactively erase the historical IDM-takeout swing confirmation; it prevents the attempted continuation break from qualifying as BOS and shifts the active pullback/IDM reference for the next attempt.
-- The former ordering `IDM_TAKEN → provisional swing state → retracement qualification → CONFIRMED_STRUCTURAL_SWING` is no longer canonical.
+- The indexed source corpus may describe the IDM takeout as acquiring/confirming a swing point in source terminology.
+- In the project-canonical state machine, `IDM_TAKEN` establishes `SWING_CANDIDATE / PROVISIONAL_STRUCTURAL_EXTREME`; it does **not** directly establish `CONFIRMED_STRUCTURAL_SWING`.
+- The applicable structural retracement qualification is the promotion gate and is evaluated **after candidate establishment but before `CONFIRMED_STRUCTURAL_SWING`**.
+- An insufficient retracement leaves the historical IDM-takeout evidence intact but prevents promotion of that candidate to `CONFIRMED_STRUCTURAL_SWING`; the active pullback/IDM reference then advances according to the owning Layer-2/Layer-3 forward-only lifecycle.
+- The sequence `IDM_TAKEN → provisional swing state → retracement qualification → CONFIRMED_STRUCTURAL_SWING` is therefore **the current project-canonical ordering**.
 
-Classification: **RECONCILED — SOURCE-DIRECT 2026 MARKET-STRUCTURE RULE**.
+Classification: **RECONCILED — SOURCE-DIRECT LANGUAGE PRESERVED; PROJECT-CANONICAL PROMOTION LIFECYCLE FORMALIZED**.
 
 ## 3.12 Status update — Backtesting / replay / historical observability
 
@@ -409,7 +410,7 @@ The previous AUDIT PART 2 = COMPLETE disposition was superseded by a direct vali
 
 Current canonical disposition:
 
-1. **Layer-2 / Layer-3 IDM ordering — CLOSED / CANONICALIZED.** Candle-Level Valid Pullback → Verified Pullback Extreme → Pullback-Derived Liquidity Reference → Layer-3 IDM classification. Structural retracement qualification is a later continuation-BOS gate after CONFIRMED_STRUCTURAL_SWING.
+1. **Layer-2 / Layer-3 IDM ordering — CLOSED / CANONICALIZED.** Candle-Level Valid Pullback → Verified Pullback Extreme → Pullback-Derived Liquidity Reference → Layer-3 IDM classification → `IDM_TAKEN` → `SWING_CANDIDATE / PROVISIONAL_STRUCTURAL_EXTREME` → applicable structural retracement qualification → `CONFIRMED_STRUCTURAL_SWING`. The qualification gate is required for promotion to the confirmed swing and therefore precedes the confirmed state.
 2. **Premium/Discount hard gate — CLOSED / CANONICALIZED.** Decisional BUY requires Discount and SELL requires Premium. The gate is execution eligibility, not scoring; canonical Dealing Range provenance remains required and no lowest-low/highest-high or OTE/Fibonacci fallback is authorized.
 3. **OB/FVG validation — CLOSED / CANONICALIZED.** The required associated FVG/imbalance must exist and must not have been completely filled/consumed; complete non-mitigation is not required.
 4. **OB → next FVG candle shift — CLOSED / CANONICALIZED.** A candidate candle lacking the required FVG association is rejected and selection shifts to the next eligible source-defined candle; the new candle is independently re-evaluated against all OB pillars.
@@ -418,9 +419,20 @@ Current canonical disposition:
 7. **Rule-of-Two minimum-one — CLOSED / CANONICALIZED.** In an applicable Rule-of-Two execution context, active canonical tradable POIs have cardinality 1..2. No valid POI results in fail-closed NO_EVIDENCE; no synthetic POI is created. Origin OB is latent and Rejection Block is separately typed.
 8. **IMPULSE_EXTENSION — CLOSED / VERIFIED.** IMPULSE_EXTENSION remains a classification outcome of EXT_CONT_BREAK when continuation-BOS qualification is insufficient; it is not an event class.
 
-The canonical lifecycle is:
+The project-canonical lifecycle is:
 
-Candle-Level Valid Pullback → Verified Pullback Extreme → Pullback-Derived Liquidity Reference → IDM → IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING → Structural Retracement Qualification → Structural Swing Break → VALID_BOS.
+Candle-Level Valid Pullback
+→ Verified Pullback Extreme
+→ Pullback-Derived Liquidity Reference
+→ IDM
+→ IDM_TAKEN
+→ SWING_CANDIDATE / PROVISIONAL_STRUCTURAL_EXTREME
+→ applicable Structural Retracement Qualification
+→ CONFIRMED_STRUCTURAL_SWING
+→ Structural Swing Break
+→ VALID_BOS
+
+For first-BOS bootstrap, the transient `BOOTSTRAP_RANGE` is inserted between candidate establishment and structural retracement qualification.
 
 ### Knowledgebase evidence used
 
