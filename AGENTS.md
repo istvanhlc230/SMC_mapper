@@ -136,7 +136,7 @@ This includes, for example:
 
 Keep permanent source code, required design/specification files, and other intentional repository artifacts in their defined locations. Do not leave temporary artifacts scattered through the repository root or unrelated source directories.
 
-The `dev_tmp/` directory is development scratch space only and must not become a substitute for required source or documentation locations. There is no `test/` directory in this repository. Do not treat files under `dev_tmp/` as implementation deliverables unless the owning task explicitly promotes a file into a permanent repository location.
+The `dev_tmp/` directory is development scratch space only and must not become a substitute for required source or documentation locations. Do not treat files under `dev_tmp/` as implementation deliverables unless the owning task explicitly promotes a file into a permanent repository location.
 
 ## Canonical Order Flow / Order Block terminology
 
