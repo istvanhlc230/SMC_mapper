@@ -16,7 +16,7 @@ The intended finished product uses these active Python runtime components:
 - `smc_mapper.py` — canonical SMC mapper: structural analysis, HTF/LTF processing, and persistent structural state in `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_structures.json`.
 - `smc_monitor.py` — interactive runtime: scheduling, user interaction, runtime/target monitoring, alerts, and orchestration of Market Data CLI and mapper execution across multiple symbols and multiple stored analyses per symbol.
 
-The older `smc_htf_ltf_monitor.py`, `smc_analyzer.py`, and Layer-1-to-Layer-6 `*_engine.py` test/implementation artifacts are not components of the finished product architecture.
+The older `smc_htf_ltf_monitor.py`, `smc_analyzer.py`, and Layer-1-to-Layer-6 `*_engine.py` implementation artifacts are not components of the finished product architecture.
 
 These legacy artifacts are optional source material only. Reusable implementation patterns, algorithms, tests, or utility code may be extracted into the finished product when they are compatible with this specification and the canonical skill. The finished product must not retain a runtime, import, schema, or behavioral dependency on any legacy artifact.
 
