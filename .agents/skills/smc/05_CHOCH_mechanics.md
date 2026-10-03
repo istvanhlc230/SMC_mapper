@@ -55,7 +55,7 @@ CHoCH Physical-Break Gate
 
 A physical violation only opens the CHoCH classification gate; it does not itself establish `CHoCH_CONFIRMED`.
 
-**Bootstrap exclusion:** `BOOTSTRAP_ORIGIN_ANCHOR` is not an eligible CHoCH reference. A physical breach of that initialization anchor while no canonical Dealing Range / Protected Structural Extreme exists is classified as `BOOTSTRAP_ANCHOR_BREAK → BOOTSTRAP_REVERSAL`, not as `EXT_OPP_BREAK`, `CHoCH_ELIGIBLE`, or `CHoCH_CONFIRMED`. The bootstrap reversal only changes the active mapping lineage; it does not manufacture structural state.
+**Bootstrap exclusion and precedence:** `BOOTSTRAP_ORIGIN_ANCHOR` is not an eligible CHoCH reference. When `ACTIVE_FIRST_BOS_BOOTSTRAP = TRUE` for the current mapping domain, physical breach of that initialization anchor is classified first as `BOOTSTRAP_ANCHOR_BREAK → BOOTSTRAP_REVERSAL`, not as `EXT_OPP_BREAK`, `CHoCH_ELIGIBLE`, or `CHoCH_CONFIRMED`, regardless of whether the runtime state is `BOOTSTRAP`, `CONFIRMATION_LOCKED`, or `POST_CHOCH`. This bootstrap preclassification has precedence over the normal CHoCH classifier for that mapping domain. An independently scoped LTF Structural Glitch context remains governed by §3.5.3A in its own applicable mapping context, but it cannot reinterpret the bootstrap anchor itself as a CHoCH boundary. The bootstrap reversal only changes the active mapping lineage; it does not manufacture structural state.
 
 ### 3.5.2 — Opposing Boundary Break: Physical Threshold
 

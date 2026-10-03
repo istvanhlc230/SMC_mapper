@@ -84,7 +84,7 @@ The project resolves the gap with an isolated `BOOTSTRAP_ORIGIN_ANCHOR` and tran
 This policy is explicitly **not source-direct**:
 
 - `BOOTSTRAP_ORIGIN_ANCHOR` is a temporary initialization measurement anchor backed by an actual completed candle;
-- chart inception uses the first effective completed candle as a deterministic initialization convention, not as proof of historical impulse origin;
+- chart inception uses the first effective completed candle as `C0`, the causal mapping-origin candle of the mapping domain. The initial direction is then resolved by the explicit project-canonical bootstrap-direction rule above. This does not make a claim about market history outside the mapping domain;
 - post-CHoCH initialization requires explicit active-impulse origin provenance;
 - `BOOTSTRAP_RANGE` exists only for first-BOS retracement qualification;
 - the bootstrap anchor/range are never canonical Protected Structural Extreme or governing Dealing Range state;
@@ -104,6 +104,8 @@ TRACEABLE IMPLEMENTATION CONTRACT
 
 The bootstrap policy must never be described as if it were directly defined by the source corpus. Future source material may supersede the gap only through the normal reconciliation and human-approval workflow.
 ### Bootstrap reversal reconciliation
+
+The bootstrap-reversal rule applies throughout the active first-BOS process for a newly initialized regime, not only while the runtime state enum is `BOOTSTRAP`. Therefore anchor-break preclassification remains effective during `CONFIRMATION_LOCKED` and post-CHoCH first-BOS processing.
 
 The indexed source corpus does not define a deterministic first-BOS bootstrap-reversal state machine. It contains descriptive examples of directional/bias shifts, but no source-owned rule that turns a pre-structure bootstrap anchor break into a CHoCH or defines the required downstream restart semantics.
 
@@ -132,6 +134,19 @@ The reconciliation boundary is strict:
 - Pre-reversal bootstrap candidates/IDM/measurement state are retired forward-only without retroactive reclassification.
 - Structural BOS/CHoCH pipelines remain unavailable until their independent canonical prerequisites are satisfied.
 ## Mapping-origin and swing-promotion reconciliation
+
+### Initial bootstrap direction reconciliation
+
+The indexed source corpus does not define a deterministic chart-inception direction-selection rule for the first mapping candle. The project therefore makes the initialization rule explicit rather than implying it is source-direct:
+
+```text
+C0.Close > C0.Open → INITIAL_BOOTSTRAP_DIRECTION = BULLISH
+C0.Close < C0.Open → INITIAL_BOOTSTRAP_DIRECTION = BEARISH
+C0.Close = C0.Open → UNRESOLVED
+```
+
+A non-directional `C0` cannot justify a guessed direction. The first later eligible completed non-doji candle resolves the initialization direction, after which the anchor is still derived from the original `C0`. This is project-canonical startup policy only.
+
 
 The project-canonical mapping model treats the first eligible completed candle of an initial mapping domain as `C0`, the mapping-origin candle and causal state-machine anchor. This is not an arbitrary bootstrap placeholder: the mapping is defined to begin there and to construct higher-layer state chronologically from lower-layer evidence. A later `BOOTSTRAP_REVERSAL` does not redefine `C0`; it starts a new active lineage from the actual reversal candle while preserving the original mapping chronology.
 

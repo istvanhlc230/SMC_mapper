@@ -1088,6 +1088,19 @@ The implementation contract therefore requires an isolated `BOOTSTRAP_ORIGIN_ANC
 
 #### Bootstrap origin anchor
 
+#### Initial bootstrap direction contract
+
+At chart inception:
+
+```text
+C0.Close > C0.Open → BULLISH
+C0.Close < C0.Open → BEARISH
+C0.Close = C0.Open → UNRESOLVED
+```
+
+A doji/non-directional `C0` does not authorize a guessed direction. The first subsequent eligible completed non-doji candle resolves the initial direction; the bootstrap anchor remains derived from the original `C0`. Until direction is resolved, direction-dependent bootstrap processing fails closed.
+
+
 `BOOTSTRAP_ORIGIN_ANCHOR` is an initialization measurement anchor derived from an actual completed candle.
 
 Its provenance must distinguish:
@@ -1105,6 +1118,24 @@ The chart-inception convention makes `C0` the causal mapping-origin candle withi
 After `CHoCH_CONFIRMED`, an explicit active-impulse origin is required and becomes the origin of the new mapped regime. Missing origin provenance fails closed.
 
 The anchor is never a `PROTECTED_STRUCTURAL_EXTREME`, governing Dealing Range boundary, or CHoCH boundary.
+
+### Active first-BOS bootstrap process condition
+
+`ACTIVE_FIRST_BOS_BOOTSTRAP` is true for the currently initialized regime while:
+
+```text
+first VALID_BOS of the regime has NOT occurred
+AND
+no governing canonical Dealing Range exists for the regime
+AND
+valid bootstrap-origin provenance exists
+AND
+no PROTECTED_STRUCTURAL_EXTREME exists for the regime
+```
+
+This is a process condition, not a lifecycle-state enum. It may coexist with `BOOTSTRAP`, `CONFIRMATION_LOCKED`, or `POST_CHOCH`.
+
+When the condition is active, physical penetration of `BOOTSTRAP_ORIGIN_ANCHOR` is preclassified before normal structural event-classification and routes to `BOOTSTRAP_ANCHOR_BREAK → BOOTSTRAP_REVERSAL`. It must not reach the `EXT_OPP_BREAK` CHoCH cell.
 
 #### Bootstrap reversal implementation contract
 
@@ -1128,7 +1159,7 @@ Implementation requirements:
 
 - The trigger is a physical wick/body penetration of the active `BOOTSTRAP_ORIGIN_ANCHOR`; no candle-close requirement is added.
 - Do not emit `VALID_BOS`, `CHoCH_CONFIRMED`, `MAJOR_IDM_SWEEP`, or `PROTECTED_STRUCTURAL_EXTREME` from this trigger.
-- Retire the pre-reversal active bootstrap candidate/IDM/measurement lineage without deleting or rewriting historical events.
+- Retire the complete pre-reversal bootstrap structural/process lineage, including any active `SWING_CANDIDATE`, `PROVISIONAL_STRUCTURAL_EXTREME`, `CONFIRMED_STRUCTURAL_SWING`, macro-qualification result, `dynamic_retracement_extreme`, active IDM/reference, and transient `BOOTSTRAP_RANGE`, without deleting or rewriting historical events.
 - Record the trigger candle as the new explicit active-impulse origin for the reversed bootstrap lineage.
 - Re-derive the new anchor from that actual candle: bullish direction → candle `LOW`; bearish direction → candle `HIGH`.
 - Treat the trigger candle as the new Layer-1 active reference and process all later candles strictly chronologically; do not rewind to `C0`.
@@ -1251,13 +1282,14 @@ Once the required origin provenance exists, the first-BOS pipeline is determinis
 
 ```text
 C0 / BOOTSTRAP_ORIGIN_ANCHOR
+→ LAYER 1 / LAYER 2
+→ MINOR_IDM
 → IDM_TAKEN
 → SWING_CANDIDATE / PROVISIONAL_STRUCTURAL_EXTREME
+→ BOOTSTRAP_RANGE (first BOS only)
+→ dynamic_retracement_extreme
 → MACRO RETRACEMENT QUALIFICATION
 → CONFIRMED_STRUCTURAL_SWING
-→ BOOTSTRAP_RANGE
-→ RETRACEMENT QUALIFICATION
-→ dynamic_retracement_extreme
 → STRUCTURAL_SWING_BREAK
 → VALID_BOS
 → dynamic_retracement_extreme LOCKED

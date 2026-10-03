@@ -39,9 +39,11 @@ IDM GOVERNANCE / ACTIVE IDM HANDOFF
   ↓
 IDM LIQUIDITY TAKEOUT
   ↓
-CONFIRMED_STRUCTURAL_SWING
+SWING_CANDIDATE / PROVISIONAL_STRUCTURAL_EXTREME
   ↓
 STRUCTURAL RETRACEMENT QUALIFICATION FOR BOS
+  ↓
+CONFIRMED_STRUCTURAL_SWING
   ↓
 PHYSICAL EXTERNAL BREAK
   ↓
@@ -105,7 +107,7 @@ A governing Trading Range does not exist merely because an impulse has occurred.
 
 ### 3.2.1 — Genesis / Bootstrap
 
-Prior to the first confirmed IDM sweep, including chart inception or the initial active impulse following a valid CHoCH_CONFIRMED, the market resides in an unconfirmed expansion state such as `BOOTSTRAP_EXPANSION`.
+During each newly initialized structural regime — at chart inception or after `CHoCH_CONFIRMED` — the active mapping remains in an unconfirmed bootstrap process until that regime's first `VALID_BOS` establishes its first canonical Dealing Range. The process may therefore span `BOOTSTRAP`, `CONFIRMATION_LOCKED`, and `POST_CHOCH` runtime states. A prior/historical Dealing Range does not satisfy the first-BOS requirement of the newly initialized regime.
 
 In bootstrap:
 
@@ -130,6 +132,20 @@ For the mapping domain, `C0` is therefore the initial impulse-origin reference. 
 
 A later incremental invocation does not redefine `C0`; it resumes from persisted canonical state and continues the same chronology.
 
+### Initial bootstrap direction
+
+At chart inception, the initial bootstrap mapping direction is derived from the mapping-origin candle `C0` as a project-canonical initialization rule:
+
+```text
+C0.Close > C0.Open  → INITIAL_BOOTSTRAP_DIRECTION = BULLISH
+C0.Close < C0.Open  → INITIAL_BOOTSTRAP_DIRECTION = BEARISH
+C0.Close = C0.Open  → INITIAL_BOOTSTRAP_DIRECTION = UNRESOLVED
+```
+
+A doji/non-directional `C0` does not justify a guessed direction. While the direction is `UNRESOLVED`, no direction-dependent bootstrap anchor is activated and no directional BOS/CHoCH classification is emitted. The first subsequent eligible completed candle with a non-zero body resolves the initial bootstrap direction; the anchor then remains derived from the original `C0`. `C0` remains the immutable mapping-origin.
+
+This is a **project-canonical initialization rule**, not a source-direct True SMC rule. It exists only to make bootstrap startup deterministic without manufacturing a directional state from unavailable evidence.
+
 ### Bootstrap Reversal — Dedicated Local Initialization Transition
 
 A **Bootstrap Reversal** is a project-canonical local initialization transition used only while the mapping is still in bootstrap and no canonical Dealing Range / Protected Structural Extreme exists.
@@ -152,7 +168,7 @@ This event is **not** an external structural break. It must never be emitted as 
 The transition is deterministic:
 
 1. Record `BOOTSTRAP_ANCHOR_BREAK` as an immutable historical local event.
-2. Terminate the pre-reversal bootstrap lineage at the event time. Any pre-reversal `SWING_CANDIDATE`, provisional extreme, active IDM, or transient bootstrap measurement state is retired from the active lineage and is not retroactively promoted.
+2. Terminate the complete pre-reversal bootstrap structural/process lineage at the event time. Any pre-reversal `SWING_CANDIDATE`, `PROVISIONAL_STRUCTURAL_EXTREME`, `CONFIRMED_STRUCTURAL_SWING`, stored macro-qualification result, `dynamic_retracement_extreme`, active IDM/reference, or transient `BOOTSTRAP_RANGE` is retired from the active lineage and is not eligible for the new direction. Historical events remain immutable and are not retroactively reclassified.
 3. Reverse the active mapping direction.
 4. The actual reversal/break candle becomes the `EXPLICIT_ACTIVE_IMPULSE_ORIGIN` for the new bootstrap lineage; its provenance records `BOOTSTRAP_REVERSAL` as the reason for the new origin.
 5. Re-derive `BOOTSTRAP_ORIGIN_ANCHOR` from that actual reversal candle using the new direction: bullish → reversal-candle `LOW`; bearish → reversal-candle `HIGH`.
@@ -161,7 +177,7 @@ The transition is deterministic:
 
 The original `C0` remains the mapping-origin of the overall mapping domain. Bootstrap reversal changes the **active lineage**, not the historical origin or chronology.
 
-This transition is intentionally outside the normal BOS/CHoCH pipelines:
+While `ACTIVE_FIRST_BOS_BOOTSTRAP = TRUE`, this transition has precedence over the normal structural-event classifier for the active mapping domain and is intentionally outside the normal BOS/CHoCH pipelines:
 
 ```text
 BOOTSTRAP_ANCHOR_BREAK
@@ -181,7 +197,26 @@ NEW SWING CANDIDATE
 ...
 ```
 
-A bootstrap-origin break therefore never receives structural significance merely because it reverses the initial mapping direction. Structural BOS/CHoCH classification becomes available only after their independent canonical prerequisites exist.
+A bootstrap-origin break therefore never receives structural significance merely because it reverses the initial mapping direction. Structural BOS/CHoCH classification becomes available only after their independent canonical prerequisites exist.### Active first-BOS bootstrap process condition
+
+For the current structural mapping domain, `ACTIVE_FIRST_BOS_BOOTSTRAP = TRUE` exactly while the newly initialized regime has not yet produced its first `VALID_BOS`, no governing canonical Dealing Range exists for that regime, valid bootstrap-origin provenance exists, and no `PROTECTED_STRUCTURAL_EXTREME` exists for that regime.
+
+`ACTIVE_FIRST_BOS_BOOTSTRAP` is a **process condition**, not a new lifecycle-state enum. It may coexist with runtime states `BOOTSTRAP`, `CONFIRMATION_LOCKED`, and `POST_CHOCH`.
+
+While `ACTIVE_FIRST_BOS_BOOTSTRAP = TRUE`, physical penetration of the active `BOOTSTRAP_ORIGIN_ANCHOR` is preclassified before the normal structural event classifier:
+
+```text
+ACTIVE_FIRST_BOS_BOOTSTRAP
+        +
+BOOTSTRAP_ORIGIN_ANCHOR physical penetration
+        ↓
+BOOTSTRAP_ANCHOR_BREAK
+        ↓
+BOOTSTRAP_REVERSAL
+```
+
+An anchor break therefore cannot become `EXT_OPP_BREAK` merely because the runtime state has advanced to `CONFIRMATION_LOCKED` or `POST_CHOCH`.
+
 ### Bootstrap authority boundary
 
 The bootstrap policy is explicitly **project-canonical**, not source-direct:
@@ -454,26 +489,33 @@ This section owns the IDM semantic object and lifecycle. BOS and CHoCH modules c
 
 ### Structural Lifecycle State Machine
 
-The confirmation of a structural swing point and the qualification of the later continuation BOS are separate sequential decisions. The 2026 market-structure source treats IDM takeout as the event that confirms the swing point; retracement depth and candle structure then determine whether a later break of that swing can qualify as a valid BOS.
+The source describes IDM takeout as swing-point acquisition; the project-canonical state machine deliberately separates that acquired/provisional swing from the later BOS-eligible `CONFIRMED_STRUCTURAL_SWING` so that first-BOS measurement remains acyclic.
 
 1. **IDM_TAKEN:** Price physically takes the active IDM reference supplied by the applicable upstream IDM lifecycle. The reference may be the Layer-2 pullback-derived Minor IDM or the Layer-3 governed Major IDM.
 
-2. **CONFIRMED_STRUCTURAL_SWING:** The external extreme associated with the taken IDM is confirmed as the structural swing point for the active lifecycle.
+2. **SWING_CANDIDATE / PROVISIONAL_STRUCTURAL_EXTREME:** `IDM_TAKEN` establishes the external extreme associated with the taken IDM as the provisional structural swing candidate for the active lifecycle. This is not yet a BOS-eligible `CONFIRMED_STRUCTURAL_SWING`.
 
-3. **STRUCTURAL_RETRACEMENT_QUALIFICATION:** The subsequent retracement is evaluated for continuation-BOS sufficiency.
+3. **Retracement measurement baseline:**
+   - For the first BOS of a newly initialized regime, `BOOTSTRAP_RANGE` is activated from `BOOTSTRAP_ORIGIN_ANCHOR` to the swing candidate before macro qualification.
+   - For an already confirmed dealing-range lifecycle, the active canonical Dealing Range supplies the structural retracement baseline.
+
+4. **STRUCTURAL_RETRACEMENT_QUALIFICATION:** The subsequent retracement is evaluated against the applicable baseline.
 
    - **If QUALIFIED:**
      - `MAJOR_RETRACEMENT_QUALIFIED = TRUE`.
-     - The existing `CONFIRMED_STRUCTURAL_SWING` remains the eligible continuation-BOS reference.
+     - The `SWING_CANDIDATE / PROVISIONAL_STRUCTURAL_EXTREME` is promoted to `CONFIRMED_STRUCTURAL_SWING`.
+     - The confirmed swing becomes the eligible continuation-BOS reference.
      - The engine awaits `STRUCTURAL_SWING_BREAK`.
 
    - **If an attempted external break occurs before retracement qualification succeeds:**
      - the break is not `VALID_BOS`;
-     - the shallow retracement extreme becomes the newer active pullback/reference;
-     - the prior swing is no longer the current eligible BOS reference for that failed continuation attempt;
-     - the active IDM/pullback reference shifts accordingly.
+     - the shallow retracement extreme becomes the newer active pullback/reference under the existing Layer-2/Layer-3 forward-only lifecycle;
+     - the prior candidate/reference is no longer the current eligible BOS reference for that failed continuation attempt;
+     - the active IDM/pullback reference shifts according to its owning layer.
 
-This preserves the source distinction between swing confirmation after IDM takeout and later BOS qualification after sufficient retracement.
+5. **STRUCTURAL_SWING_BREAK → VALID_BOS:** A later physical break of the eligible confirmed structural swing can qualify as `VALID_BOS` only when all canonical BOS gates pass.
+
+IDM takeout therefore never directly creates `CONFIRMED_STRUCTURAL_SWING` in the project-canonical implementation lifecycle.
 
 ### Impulsive-leg structural scope
 

@@ -112,8 +112,10 @@ Qualification occurs *before* price returns to the BOS level. Layer 3 dynamicall
 
 ```text
 IDM_TAKEN
-→ CONFIRMED_STRUCTURAL_SWING
+→ SWING_CANDIDATE / PROVISIONAL_STRUCTURAL_EXTREME
+→ APPLICABLE RETRACEMENT BASELINE
 → LAYER 3 RETRACEMENT / STRUCTURAL QUALIFICATION
+→ CONFIRMED_STRUCTURAL_SWING
 → STORED QUALIFICATION RESULT
 ```
 
@@ -167,8 +169,8 @@ IDM takeout (`IDM_TAKEN = TRUE`) establishes the relevant swing-point candidate 
 3. `STRUCTURAL_SWING_BREAK` (physical wick breach or body close beyond CONFIRMED_STRUCTURAL_SWING)
 
 If IDM is taken out but Layer 3 has not yet produced `MAJOR_RETRACEMENT_QUALIFIED`:
-- The `CONFIRMED_STRUCTURAL_SWING` may already exist from the IDM takeout.
-- A later external break is not `VALID_BOS` until the stored retracement qualification is satisfied.
+- The IDM takeout leaves the external swing as `SWING_CANDIDATE / PROVISIONAL_STRUCTURAL_EXTREME` until Layer 3 completes macro retracement qualification.
+- The later external break cannot be `VALID_BOS` until `CONFIRMED_STRUCTURAL_SWING` and the stored retracement qualification both exist.
 - If an attempted break occurs on an insufficient retracement, the break is classified as `IMPULSE_EXTENSION` and the dealing range remains unexpanded. Layer 4 does not mutate or manufacture the upstream pullback/IDM reference; the Layer-2/Layer-3 lifecycle handles any subsequent reference shift according to its canonical ownership rules.
 
 Therefore:

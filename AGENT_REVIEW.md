@@ -3930,3 +3930,46 @@ BLOCKED — Python/runtime conformance remains unresolved because this phase cha
 ## Commit/test status
 
 Documentation-only commit. No Python files modified. No Python test run is claimed.
+
+
+# PHASE 48 — FULL ACTIVE-SKILL RE-AUDIT AND CANONICAL CONSISTENCY CORRECTION — 2026-10-03
+
+## Scope
+
+Re-audited the active Layer 1–8 semantic-owner chain, source reconciliation, and mapper specification after the Bootstrap Reversal addition. Indexed knowledgebase evidence was rechecked for first-BOS baseline, IDM takeout/swing acquisition, structural reversal, and CHoCH reference requirements.
+
+## Corrections applied
+
+- Removed active direct `IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING` lifecycle wording. The project-canonical promotion is now candidate → applicable retracement qualification → confirmed swing.
+- Extended the bootstrap process boundary across the complete newly initialized regime, including `CONFIRMATION_LOCKED` and post-CHoCH first-BOS processing.
+- Added deterministic chart-inception direction: `C0.Close > C0.Open` → bullish, `C0.Close < C0.Open` → bearish; doji `C0` remains unresolved until the first later completed non-doji candle.
+- Made `BOOTSTRAP_ANCHOR_BREAK → BOOTSTRAP_REVERSAL` a higher-precedence bootstrap-local transition before normal BOS/CHoCH classification for the active mapping domain.
+- Extended Bootstrap Reversal cleanup to retire any provisional/confirmed swing, qualification, dynamic retracement state, active IDM/reference, and transient bootstrap range from the new active lineage without altering immutable historical events.
+- Corrected the Layer-8 first-BOS causal ordering so `BOOTSTRAP_RANGE` precedes dynamic retracement tracking and macro qualification, and `CONFIRMED_STRUCTURAL_SWING` follows qualification.
+- Preserved the separate source-defined LTF Structural Glitch CHoCH route; the bootstrap anchor itself cannot be repurposed as a CHoCH reference.
+
+## Knowledgebase reconciliation
+
+The indexed source corpus provides source-backed evidence for IDM takeout/swing acquisition and for ordinary CHoCH being tied to an eligible opposing structural reference, but it does not define a first-BOS bootstrap baseline or a bootstrap-anchor reversal state machine. The bootstrap baseline and reversal behavior therefore remain explicitly project-canonical and are not presented as source quotations.
+
+## Final active-document checks
+
+PASS — Layer-1 candle breach validity remains independent of breach-candle color and aggregate-OHLC observability limitations remain explicit.
+PASS — Layer-2 valid pullback, Inside-Bar/mother-reference, Outside-Bar, verified extreme, and Minor IDM ownership remain intact.
+PASS — Layer-3 candidate → qualification → confirmed swing promotion is acyclic; bootstrap reversal is separated from structural ontology.
+PASS — Layer-4 continuation BOS remains gated by confirmed swing, IDM_TAKEN, stored macro qualification, and physical structural break.
+PASS — Layer-5 ordinary CHoCH and the LTF Structural Glitch route remain distinct; bootstrap anchor breaks are excluded from CHoCH classification.
+PASS — Layer-6 Order Block/POI semantics remain independent from structural validation and the strict Inside-Bar handling remains intact.
+PASS — Layer-7 risk/target policies remain downstream and do not manufacture structural truth.
+PASS — Layer-8 bootstrap process precedence, direction, cleanup, state ordering, and pre-BOS observation boundary are explicit.
+PASS — source reconciliation distinguishes source-direct rules from project-canonical bootstrap policy.
+PASS — mapper specification mirrors the same causal bootstrap/reversal lifecycle.
+
+## Audit disposition
+
+PASS — active documentation/specification is internally consistent after the corrections above.
+BLOCKED — Python/runtime conformance requires the subsequent implementation audit and is not implied by this documentation PASS.
+
+## Commit/test status
+
+Documentation/specification only. No Python implementation file modified. No Python test run is claimed from this phase.
