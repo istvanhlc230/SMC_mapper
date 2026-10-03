@@ -1975,7 +1975,7 @@ failure isolation
 
 # 22. REQUIRED TEST STRUCTURE
 
-The global developer-agent naming, portability, prompt-efficiency, and test-batching rules in `AGENTS.md` apply to the Monitor. Monitor test files are created and executed under the repository-root `test/` directory.
+The global developer-agent naming, portability, prompt-efficiency, and validation rules in `AGENTS.md` apply to the Monitor. Monitor validation scenarios are defined by the implementation contract; no dedicated repository test directory is prescribed.
 
 Focused tests must cover at minimum.
 
