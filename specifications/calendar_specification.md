@@ -1,8 +1,8 @@
 # Calendar Module Specification
 
-**Status:** Current implementation specification for V1 `calendar.py`.
-**Scope:** External economic-calendar acquisition, ForexFactory parsing, normalized event persistence, symbol-specific news materialization, cache handling, and the process boundary consumed by `smc_monitor.py`.
-**Canonical authority:** `.agents/skills/smc/` remains the sole authority for canonical SMC semantics. Calendar/news context is external runtime information and must never redefine canonical SMC rules.
+**Status:** Current V1 implementation specification for \`calendar.py\`.
+**Scope:** ForexFactory economic-calendar acquisition, parsing, normalized event persistence, local time-based query API, explicit deletion, coverage tracking, locking, atomic persistence, and the machine-readable contract consumed by \`smc_monitor.py\`.
+**Canonical authority:** \`.agents/skills/smc/\` remains the sole authority for canonical SMC semantics. Calendar/news data is external runtime context and must never redefine canonical SMC rules.
 
 ---
 
@@ -10,1114 +10,887 @@
 
 ## 0.1 Finished-product role
 
-`calendar.py` is the standalone economic-calendar data layer.
-
-Its responsibilities are:
-
-1. acquire economic-calendar data from the configured calendar source;
-2. parse the source response into validated calendar records;
-3. normalize event timestamps to canonical UTC;
-4. maintain a shared calendar cache;
-5. resolve symbol relevance from explicit currency/instrument metadata;
-6. materialize a symbol-scoped News JSON view;
-7. expose the News JSON through a file-based process boundary for `smc_monitor.py`;
-8. fail closed on malformed source data and never fabricate events.
-
-The Monitor consumes this layer as **warning context only**.
-
-## 0.2 Explicit non-responsibilities
-
-`calendar.py` must not:
-
-- calculate BOS, CHoCH, IDM, Dealing Range, retracement, POI lifecycle, target, RR, or entry authorization;
-- modify Market Data JSON;
-- modify Structures JSON;
-- place, modify, or close orders;
-- infer a trade because a news event exists;
-- suppress a canonical structural/target alert merely because News data is unavailable;
-- own Monitor alert deduplication;
-- decide whether a setup is canonically valid.
-
-## 0.3 Runtime dependency direction
-
-~~~text
-ForexFactory
-    |
-    v
-calendar.py
-    |
-    +--> <DATA_ROOT>/news_calendar.json
-    |
-    +--> <DATA_ROOT>/<SYMBOL>/<SYMBOL>_news.json
-                                      |
-                                      v
-                              smc_monitor.py
-~~~
-
-`calendar.py` owns both News persistence artifacts. `smc_monitor.py` is read-only with respect to them.
-
-A symbol directory therefore contains the three product JSON files:
-
-~~~text
-<DATA_ROOT>/<SYMBOL>/
-    <SYMBOL>_marketdata.json
-    <SYMBOL>_structures.json
-    <SYMBOL>_news.json
-~~~
-
-The shared `news_calendar.json` remains outside symbol directories because the same calendar event can affect multiple symbols.
-
-## 0.4 Machine-readable process boundary
-
-The persisted JSON files are the machine-readable boundary.
-
-stdout/stderr are diagnostics only.
-
-The Monitor must not parse HTML, provider response text, debug output, or the Python parser's stdout as News data.
-
----
-
-# 1. MODULE DESIGN
-
-## 1.1 V1 file
-
-V1 implementation file:
-
-~~~text
-calendar.py
-~~~
-
-Keep the implementation internally modular without introducing an unnecessary multi-module hierarchy.
-
-Recommended source order:
-
-~~~text
-1. module docstring
-2. imports
-3. constants
-4. domain/data models
-5. CLI
-6. source acquisition
-7. source parsing
-8. normalization/validation
-9. cache loading/coverage
-10. symbol relevance filtering
-11. symbol-view materialization
-12. atomic persistence
-13. orchestration
-14. main entrypoint
-~~~
-
-## 1.2 External source
-
-V1 source:
-
-~~~text
-ForexFactory economic calendar
-https://www.forexfactory.com/calendar
-~~~
-
-The supplied working parser is the starting implementation evidence.
-
-Baseline request headers:
-
-~~~python
-headers = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    "Accept-Language": "en-US,en;q=0.5",
-    "Connection": "keep-alive",
-}
-~~~
-
-The parser must use a bounded request timeout.
-
-The source implementation must remain behind one acquisition boundary so a future provider can replace it without changing Monitor behavior or the persisted symbol-view contract.
-
----
-
-# 2. CONSTANTS AND POLICY OWNERS
-
-Use one owner for each implementation policy.
-
-Required Calendar constants:
-
-~~~text
-CALENDAR_URL
-REQUEST_TIMEOUT_SECONDS
-CALENDAR_CACHE_PATH
-SYMBOL_NEWS_FILENAME_PATTERN
-CALENDAR_MAX_CACHE_AGE / refresh policy, if later approved
-~~~
-
-News warning policy is not owned by Calendar.
-
-The Monitor owns:
-
-~~~text
-NEWS_WARNING_MIN_IMPACT
-NEWS_WARNING_BEFORE_MINUTES
-NEWS_WARNING_AFTER_MINUTES
-~~~
-
-Calendar persistence must retain the source impact classification such as `low`, `medium`, or `high`, but must never filter events because of warning policy.
-
-The exact Monitor warning values are intentionally absent from this Calendar specification; they belong to the Monitor policy owner.
-
----
-
-# 3. CLI CONTRACT
-
-## 3.1 Approved CLI
-
-Primary operation:
-
-~~~text
-python calendar.py --query SYMBOL [--starttime ISO8601] [--endtime ISO8601] [--debug]
-~~~
-
-Required:
-
-~~~text
---query SYMBOL
-~~~
-
-Optional:
-
-~~~text
---starttime ISO8601
---endtime ISO8601
---debug
---help
-~~~
-
-No provider-specific API key option is exposed for V1.
-
-No SMC/Mapper/Market Data option is allowed.
-
-## 3.2 Query semantics
-
-### No time boundaries
-
-~~~text
---query SYMBOL
-~~~
-
-Behavior:
-
-1. load the existing shared `news_calendar.json`;
-2. do not request the provider solely because the query has no time boundary;
-3. use the complete currently retained cache;
-4. filter events relevant to the requested symbol;
-5. atomically materialize `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_news.json`;
-6. exit success when the cache is valid, even if the symbol has zero relevant events.
-
-This is intentionally cache-only.
-
-### Time-bounded query
-
-~~~text
---query SYMBOL --starttime START --endtime END
-~~~
-
-Behavior:
-
-1. validate `START <= END`;
-2. determine which requested interval is already covered by the shared cache;
-3. acquire only the missing interval(s) when coverage is incomplete;
-4. parse and normalize the newly acquired records;
-5. merge them into the shared cache;
-6. filter the resulting cache to the requested symbol and time interval;
-7. atomically materialize `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_news.json`;
-8. exit success only after the requested interval is either covered by validated cache data or the provider explicitly returned a valid empty result for that interval.
-
-A cache hit must not be required to trigger a provider request.
-
-The query must never silently return an incomplete historical interval.
-
-### Partial time boundaries
-
-V1 treats time-bounded querying as an explicit interval operation.
-
-Use both `--starttime` and `--endtime` together.
-
-Supplying only one boundary fails explicitly rather than inventing the missing boundary.
-
----
-
-# 4. DATA MODELS
-
-## 4.1 Provider source event
-
-Use a provider-local record containing the fields required to parse the supplied ForexFactory response.
-
-Conceptual fields:
-
-~~~text
-id
-ebaseId
-name
-prefixedName
-trimmedPrefixedName
-soloTitle
-soloTitleFull
-soloTitleShort
-notice
-dateline
-country
-currency
-hasLinkedThreads
-hasNotice
-hasDataValues
-hasGraph
-checkedIn
-isMasterList
-firstInDay
-showGridLine
-greyed
-upNext
-releaser
-checker
-impactName
-impactClass
-impactTitle
-timeLabel
-timeMasked
-hideHistory
-hideSoloPage
-actual
-previous
-revision
-forecast
-leaked
-actualBetterWorse
-revisionBetterWorse
-isSubscribable
-isSubscribed
-showDetails
-showGraph
-enableDetailComponent
-enableActualComponent
-showExpanded
-siteId
-editUrl
-date
-url
-soloUrl
-~~~
-
-The provider-local model may contain additional source fields when needed to preserve parsing compatibility.
-
-Provider-specific fields must not leak into the Monitor contract.
-
-## 4.2 Normalized CalendarEvent
-
-The normalized event is the stable cross-module representation.
-
-Required fields:
-
-~~~python
-@dataclass(frozen=True)
-class CalendarEvent:
-    event_id: str
-    source_ebase_id: str | None
-    name: str
-    prefixed_name: str | None
-    country: str | None
-    currency: str | None
-    event_time: datetime
-    impact: str | None
-    impact_title: str | None
-    actual: str | None
-    previous: str | None
-    revision: str | None
-    forecast: str | None
-    url: str | None
-    solo_url: str | None
-~~~
-
-Rules:
-
-- `event_id` is the stable provider event ID from `id`;
-- `source_ebase_id` preserves `ebaseId` when present;
-- `event_time` is canonical UTC;
-- `impact` uses the normalized lowercase source class such as `low`, `medium`, `high`;
-- empty source strings normalize to null;
-- display-only date/time labels are not canonical time fields;
-- mutable values such as actual/forecast do not change `event_id`.
-
-## 4.3 Cache document
-
-The shared cache is:
-
-~~~text
-<DATA_ROOT>/news_calendar.json
-~~~
-
-Logical shape:
-
-~~~json
-{
-  "schema_version": 1,
-  "source": "forexfactory",
-  "retrieved_at": "2026-10-03T10:00:00Z",
-  "coverage": {
-    "start": "2026-09-27T00:00:00Z",
-    "end": "2026-10-10T23:59:59Z"
-  },
-  "events": []
-}
-~~~
-
-Rules:
-
-- `retrieved_at` is metadata, not an event time;
-- `coverage` describes validated acquisition coverage;
-- an empty `events` array is valid when the provider returns a valid empty interval;
-- cache coverage must not be inferred merely from the first/last event timestamps;
-- a covered interval may contain zero events;
-- unrelated events remain in the shared cache because the cache is cross-symbol.
-
-## 4.4 Symbol News document
-
-The symbol materialized view is:
-
-~~~text
-<DATA_ROOT>/<SYMBOL>/<SYMBOL>_news.json
-~~~
-
-Logical shape:
-
-~~~json
-{
-  "schema_version": 1,
-  "symbol": "USDJPY",
-  "generated_at": "2026-10-03T10:00:00Z",
-  "source": "forexfactory",
-  "coverage": {
-    "start": "2026-09-27T00:00:00Z",
-    "end": "2026-10-10T23:59:59Z"
-  },
-  "events": []
-}
-~~~
-
-The `events` array contains only events relevant to the symbol.
-
-The file is a materialized view, not a second source of acquisition truth.
-
----
-
-# 5. FOREXFACTORY PARSER CONTRACT
-
-## 5.1 Request
-
-The starting parser performs:
-
-~~~python
-response = requests.get(
-    CALENDAR_URL,
-    headers=headers,
-    timeout=REQUEST_TIMEOUT_SECONDS,
-)
-~~~
-
-Failure handling:
-
-- HTTP 200: parse;
-- HTTP 403: provider-access failure;
-- other non-2xx: provider-access failure;
-- request exception/timeout: provider-access failure.
-
-No failure may be converted into an empty event set.
-
-## 5.2 Calendar payload extraction
-
-The supplied working parser extracts the JavaScript `days` array using:
-
-~~~python
-pattern = re.compile(
-    r'days:\s*(\[.*?\]),\s*time:\s*[\'"]',
-    re.DOTALL,
-)
-~~~
-
-This exact extraction approach is the current V1 parsing baseline.
-
-Rules:
-
-1. locate the `days` array;
-2. extract only the array payload;
-3. parse it with `json.loads()`;
-4. require a valid JSON array;
-5. reject the source if the marker is not found;
-6. reject the source if the extracted JSON is malformed;
-7. do not salvage a partial array;
-8. do not treat parser failure as a successful no-events response.
-
-The implementation may later replace the extraction mechanism if the source markup changes, but the normalized `CalendarEvent` contract must remain stable.
-
-## 5.3 Day records
-
-Each extracted day record has conceptually:
-
-~~~text
-date
-dateline
-add
-events[]
-~~~
-
-`events[]` may be empty.
-
-An empty day is valid provider data and must not be treated as an error.
-
-## 5.4 Event normalization
-
-For each provider event:
-
-- require a stable `id` or fail the event normalization;
-- require a valid `dateline` or fail the event normalization;
-- convert `dateline` from Unix epoch seconds to an aware UTC `datetime`;
-- normalize `impactName`;
-- normalize empty strings;
-- preserve actual/previous/revision/forecast text exactly as source values after empty-string normalization;
-- preserve provider URLs as source metadata;
-- do not invent missing forecasts, actuals, or revisions.
-
-An event with malformed identity/time must fail the acquisition transaction rather than silently disappear.
-
-## 5.5 Source event ordering
-
-Before persistence:
-
-1. normalize every event;
-2. deduplicate by `event_id`;
-3. detect conflicting same-ID records;
-4. sort deterministically by:
-   1. `event_time`
-   2. `event_id`
-
-Equivalent duplicate records are merged/ignored.
-
-Same `event_id` with conflicting canonical identity/time is a data-integrity failure.
-
-Mutable event fields may change on later refreshes without changing event identity.
-
----
-
-# 6. TIME CONTRACT
-
-## 6.1 Canonical time
-
-All normalized event times are UTC.
-
-No host-local timezone assumption is permitted.
-
-`dateline` is interpreted as a Unix epoch instant.
-
-## 6.2 Display fields
-
-The source fields:
-
-~~~text
-date
-timeLabel
-~~~
-
-are informational display values only.
-
-They must never be used as the canonical event time when `dateline` is available.
-
-## 6.3 Query boundaries
-
-`--starttime` and `--endtime` are parsed as timezone-aware datetimes and normalized to UTC.
-
-A query fails explicitly if:
-
-~~~text
-start > end
-~~~
-
-No naive timestamp may enter the normalized domain.
-
-## 6.4 Warning evaluation time
-
-The Monitor evaluates News warnings against canonical UTC `event_time` and canonical UTC current time.
-
-Local timezone conversion is presentation-only.
-
----
-
-# 7. CACHE OWNERSHIP AND COVERAGE
-
-## 7.1 Shared cache ownership
-
-Only `calendar.py` writes:
-
-~~~text
-<DATA_ROOT>/news_calendar.json
-~~~
-
-Monitor is read-only.
-
-## 7.2 Coverage semantics
-
-Coverage is an acquisition statement, not proof that every instant contains an event.
-
-A covered interval may contain no events.
-
-Coverage must never be synthesized from:
-
-- first event timestamp;
-- last event timestamp;
-- symbol Market Data availability;
-- Monitor wall-clock observations.
-
-## 7.3 Cache query without time
-
-For:
-
-~~~text
---query SYMBOL
-~~~
-
-the complete currently retained cache is the input.
-
-No provider request is made.
-
-## 7.4 Time-bounded coverage
-
-For:
-
-~~~text
---query SYMBOL --starttime START --endtime END
-~~~
-
-the query must establish validated coverage for the full interval.
-
-If the cache contains multiple disjoint coverage intervals, missing portions must be acquired explicitly.
-
-Do not falsely mark the union as continuous coverage.
-
-## 7.5 Empty provider result vs provider failure
-
-These are distinct:
-
-~~~text
-valid provider response + zero events
-    -> successful empty coverage
-
-HTTP/API/parser/network failure
-    -> acquisition failure
-~~~
-
-A successful empty interval may produce an empty symbol News view.
-
----
-
-# 8. SYMBOL RELEVANCE
-
-## 8.1 Forex symbol currency extraction
-
-For a standard six-letter FX symbol:
-
-~~~text
-USDJPY -> USD + JPY
-EURUSD -> EUR + USD
-GBPCHF -> GBP + CHF
-~~~
-
-The implementation should also normalize conventional separators where unambiguous.
-
-The extraction function must be deterministic:
-
-~~~python
-def extract_symbol_currencies(symbol: str) -> list[str]:
-    ...
-~~~
-
-If the symbol does not expose exactly two recognizable currency codes, the function returns an empty relevance set rather than guessing.
-
-## 8.2 Event relevance
-
-An event is relevant to an FX symbol when:
-
-~~~text
-event.currency in symbol currencies
-~~~
-
-No relevance may be inferred from:
-
-- event name text;
-- country-name text;
-- free-form description text;
-- impact class;
-- historical price behavior.
-
-## 8.3 Non-FX symbols
-
-V1 does not guess currency relevance for arbitrary non-FX symbols.
-
-The symbol News view may therefore be valid and empty for a non-FX symbol.
-
-The relevance function is an extension point for future explicit instrument mappings.
-
----
-
-# 9. SYMBOL VIEW MATERIALIZATION
-
-## 9.1 Materialization function
-
-Required boundary:
-
-~~~python
-def materialize_symbol_news(
-    symbol: str,
-    events: list[CalendarEvent],
-    coverage_start: datetime,
-    coverage_end: datetime,
-) -> bool:
-    ...
-~~~
+\`calendar.py\` is the standalone economic-calendar data layer.
 
 Responsibilities:
 
-- normalize and validate symbol;
-- select relevant events;
-- create the symbol News document;
-- persist it atomically;
-- never modify Market Data or Structures JSON.
+1. acquire economic-calendar data from ForexFactory;
+2. parse and normalize provider records;
+3. normalize event times to canonical UTC;
+4. maintain one global \`calendar.json\`;
+5. track validated acquisition coverage;
+6. provide a local time-based query API;
+7. provide explicit deterministic deletion;
+8. preserve last-known-good data on acquisition failure;
+9. expose machine-readable query results for Monitor and other consumers.
 
-## 9.2 Event filtering order
+## 0.2 Explicit non-responsibilities
 
-Use this deterministic sequence:
+\`calendar.py\` must not:
 
-~~~text
-load valid shared cache
-        ↓
-resolve symbol currencies
-        ↓
-filter by currency
-        ↓
-filter by requested time interval, if any
-        ↓
-sort by event_time + event_id
-        ↓
-serialize
-        ↓
-atomic write
-~~~
+- calculate BOS, CHoCH, IDM, Dealing Range, retracement, POI lifecycle, target, RR, or entry authorization;
+- modify Market Data or Structures JSON;
+- create symbol-specific News JSON files;
+- place, modify, or close orders;
+- decide whether a news event makes a setup valid;
+- own Monitor alert deduplication;
+- decide whether an event is "active" for trading purposes;
+- define SMC execution policy.
 
-Impact filtering does **not** happen in Calendar materialization. All relevant impact levels remain available to Monitor warning policy.
+The Monitor decides what queried News information means for runtime warning behavior.
 
-This prevents the Calendar layer from hiding a lower-impact event that a future Monitor policy may need.
+## 0.3 Single persistence artifact
 
-## 9.3 Empty symbol result
+V1 has exactly one persistent calendar data file:
 
-A valid symbol query with no relevant events writes:
+\`\`\`text
+<DATA_ROOT>/calendar.json
+\`\`\`
 
-~~~json
-"events": []
-~~~
+No symbol-specific News JSON, separate cache JSON, or persistent history JSON may be created.
 
-This is success, not failure.
+Temporary files used internally for atomic replacement are transient implementation artifacts and are not additional persisted data stores.
 
----
+## 0.4 Missing calendar data
 
-# 10. ATOMIC PERSISTENCE
+\`calendar.json\` is optional.
 
-## 10.1 Shared cache
+When it does not exist:
 
-The shared cache must be written atomically.
+- query operations return a valid empty result;
+- this is not an error condition;
+- no automatic download occurs merely because the file is missing;
+- the Monitor may continue normal canonical processing and record/report \`No calendar data\`;
+- a successful acquisition creates the file.
 
-Do not truncate the existing cache and then write the new document.
-
-On write failure, the previous valid cache remains intact.
-
-## 10.2 Symbol News JSON
-
-The symbol-specific file must also be written atomically.
-
-A failed symbol-view write must not partially overwrite the previous valid symbol News view.
-
-## 10.3 Cross-file transaction boundary
-
-The shared cache and symbol News view do not require a single cross-file transaction.
-
-Required order:
-
-~~~text
-validate/acquire
-    ↓
-atomically persist shared cache
-    ↓
-build symbol view from persisted/validated state
-    ↓
-atomically persist symbol News JSON
-~~~
-
-If symbol materialization fails after successful cache persistence, the cache remains valid and the command fails explicitly.
+A malformed existing \`calendar.json\` is a data-integrity error, not the same state as a missing file.
 
 ---
 
-# 11. ERROR CONTRACT
+# 1. SOURCE AND PROVIDER BOUNDARY
 
-Use explicit failure categories:
+## 1.1 V1 provider
 
-1. CLI/input validation;
-2. symbol validation;
-3. provider transport;
-4. provider HTTP/status;
-5. parser extraction;
-6. malformed source JSON;
-7. event identity/time normalization;
-8. conflicting duplicate event;
-9. cache load/schema;
-10. coverage resolution;
-11. symbol materialization;
-12. atomic-write failure.
+V1 uses:
+
+\`\`\`text
+ForexFactory economic calendar
+https://www.forexfactory.com/calendar
+\`\`\`
+
+The supplied working parser is the initial provider implementation baseline.
+
+The provider layer is isolated behind acquisition/parsing functions so a future provider can replace ForexFactory without changing the normalized event or query contract.
+
+## 1.2 Supported ForexFactory request forms
+
+CLI period selectors map to these provider requests:
+
+\`\`\`text
+--day today
+    -> ?day=today
+
+--day tomorrow
+    -> ?day=tomorrow
+
+--day YYYY.MM.DD
+    -> ?day=mmmD.YYYY
+
+--week this
+    -> ?week=this
+
+--week next
+    -> ?week=next
+
+--week YYYY.MM.DD
+    -> ?week=mmmD.YYYY
+
+--month this
+    -> ?month=this
+
+--month next
+    -> ?month=next
+
+--range YYYY.MM.DD-YYYY.MM.DD
+    -> ?range=mmmD.YYYY-mmmD.YYYY
+\`\`\`
+
+The CLI uses \`YYYY.MM.DD\`. ForexFactory-specific date spelling is an internal provider concern.
+
+For \`--week YYYY.MM.DD\`, the supplied date is forwarded as the requested week date. It is not silently normalized to a week-start/Sunday date.
+
+## 1.3 Request policy
+
+Use a bounded request timeout and the approved baseline browser headers.
+
+A provider transport/status/parsing failure must never be converted into successful empty data.
+
+HTTP success alone is not acquisition success; the response must parse and normalize successfully.
+
+---
+
+# 2. CLI CONTRACT
+
+## 2.1 Operation families
+
+The CLI has three mutually exclusive operation families.
+
+### Acquisition
+
+\`\`\`text
+python calendar.py --query SYMBOL
+python calendar.py --query SYMBOL --day VALUE
+python calendar.py --query SYMBOL --week VALUE
+python calendar.py --query SYMBOL --month VALUE
+python calendar.py --query SYMBOL --range VALUE
+\`\`\`
+
+Optional:
+
+\`\`\`text
+--debug
+\`\`\`
+
+Exactly one of \`--day\`, \`--week\`, \`--month\`, or \`--range\` may be supplied.
+
+If \`--query SYMBOL\` is supplied without a period selector:
+
+- use the existing full \`calendar.json\`;
+- do not perform an HTTP request;
+- return the currently stored relevant events for that symbol through the machine-readable query result;
+- existing data is used as-is.
+
+The symbol argument does not create a symbol-specific data store. Persisted acquisition data remains global so one provider download can serve multiple symbols.
+
+### Local query API
+
+\`\`\`text
+python calendar.py --symbol SYMBOL
+python calendar.py --symbol SYMBOL --current
+python calendar.py --symbol SYMBOL --next
+python calendar.py --symbol SYMBOL --date YYYY.MM.DD
+python calendar.py --symbol SYMBOL --time HH:MM
+python calendar.py --symbol SYMBOL --date YYYY.MM.DD --time HH:MM
+\`\`\`
+
+Optional:
+
+\`\`\`text
+--debug
+\`\`\`
+
+The local query API never performs network access and never changes \`calendar.json\`.
+
+### Delete
+
+\`\`\`text
+python calendar.py --delete --before YYYY.MM.DD
+python calendar.py --delete --after YYYY.MM.DD
+python calendar.py --delete --before YYYY.MM.DD --after YYYY.MM.DD
+python calendar.py --delete --range YYYY.MM.DD-YYYY.MM.DD
+python calendar.py --delete --date YYYY.MM.DD
+python calendar.py --delete --date YYYY.MM.DD --time HH:MM
+python calendar.py --delete --range YYYY.MM.DD-YYYY.MM.DD --time HH:MM-HH:MM
+\`\`\`
+
+Optional:
+
+\`\`\`text
+--dry-run
+--debug
+\`\`\`
+
+Delete never performs network access.
+
+## 2.2 CLI mutual exclusion
+
+A command must use exactly one operation family:
+
+- acquisition/query API;
+- local query API;
+- delete.
+
+Mixing \`--query\` with \`--symbol\` or \`--delete\` is invalid.
+
+Mixing period selectors is invalid.
+
+Delete allows one primary selector, except \`--before + --after\` may be combined to define a bounded interval.
+
+\`--range\` must not be combined with \`--before\`, \`--after\`, or \`--date\`.
+
+\`--date\` may be combined only with \`--time\`.
+
+\`--time\` without \`--date\` is valid only for the local query API and current-day query semantics; for delete it is invalid unless paired with \`--date\` or \`--range\`.
+
+Invalid or contradictory combinations fail explicitly without modifying the data file.
+
+## 2.3 Input formats
+
+\`\`\`text
+DATE  = YYYY.MM.DD
+TIME  = HH:MM
+TIME_RANGE = HH:MM-HH:MM
+RANGE = YYYY.MM.DD-YYYY.MM.DD
+\`\`\`
+
+All command-line query/delete boundaries are interpreted in canonical UTC.
+
+---
+
+# 3. LOCAL QUERY API SEMANTICS
+
+## 3.1 Common query result contract
+
+All local query modes return one machine-readable JSON object to stdout:
+
+\`\`\`json
+{
+  "status": "OK",
+  "symbol": "USDJPY",
+  "events": []
+}
+\`\`\`
+
+Valid statuses:
+
+\`\`\`text
+OK
+NO_CALENDAR_DATA
+NO_RELEVANT_EVENT
+\`\`\`
+
+No-result and missing-calendar states are successful query results, not CLI errors.
+
+Operational diagnostics belong on stderr.
+
+## 3.2 \`--symbol SYMBOL\`
+
+Reference time is the current canonical UTC time.
+
+If one or more relevant events are scheduled at the current minute, return those events.
+
+Otherwise return the next relevant event(s) strictly after the current time.
+
+If none exists, return:
+
+\`\`\`json
+{"status":"NO_RELEVANT_EVENT","symbol":"USDJPY","events":[]}
+\`\`\`
+
+## 3.3 \`--current\`
+
+Return relevant event(s) whose canonical \`datetime\` falls in the current UTC minute.
+
+No nearest-event behavior is used.
+
+If none exists, return \`NO_RELEVANT_EVENT\`.
+
+The Calendar layer does not assign a semantic duration to "active".
+
+## 3.4 \`--next\`
+
+Return the next relevant event(s) strictly after current canonical UTC time.
+
+Multiple events with the same earliest event time are returned together.
+
+## 3.5 \`--date\`
+
+Reference time is the supplied UTC calendar date combined with the current UTC time.
+
+Return the nearest relevant event(s) to that reference timestamp using absolute time distance.
+
+## 3.6 \`--time\`
+
+Reference time is the supplied UTC time on the current UTC date.
+
+Return the nearest relevant event(s).
+
+## 3.7 \`--date + --time\`
+
+Reference timestamp is the supplied UTC date and time.
+
+Return the nearest relevant event(s).
+
+If multiple events are equally near, return all equally near events.
+
+No maximum search distance is imposed by V1.
+
+## 3.8 Query ordering
+
+Returned events are deterministically sorted by:
+
+1. \`datetime\`;
+2. \`event_id\`.
+
+---
+
+# 4. NORMALIZED EVENT CONTRACT
+
+## 4.1 Persisted event schema
+
+Each event contains at minimum:
+
+\`\`\`json
+{
+  "event_id": "forexfactory:12345",
+  "datetime": "2026-10-28T13:30:00Z",
+  "currency": "USD",
+  "impact": "HIGH",
+  "event": "Example Event",
+  "actual": null,
+  "forecast": "150K",
+  "previous": "140K",
+  "source": "forexfactory"
+}
+\`\`\`
+
+Fields:
+
+- \`event_id\`: stable provider-derived identity;
+- \`datetime\`: canonical UTC event timestamp;
+- \`currency\`: normalized uppercase currency code when available;
+- \`impact\`: one of \`HIGH\`, \`MEDIUM\`, \`LOW\`, \`HOLIDAY\`, \`UNKNOWN\`;
+- \`event\`: normalized event name;
+- \`actual\`, \`forecast\`, \`previous\`: source values or null;
+- \`source\`: \`forexfactory\` for V1.
+
+Provider-specific fields do not enter this persisted cross-module contract.
+
+## 4.2 Stable identity
+
+For ForexFactory V1:
+
+\`\`\`text
+event_id = "forexfactory:" + provider_event_id
+\`\`\`
+
+The provider event ID must be stable across repeated downloads.
+
+Mutable values such as actual, forecast, and previous may change without changing \`event_id\`.
+
+A same-ID record with conflicting canonical \`datetime\` or provider identity is an acquisition data-integrity failure.
+
+## 4.3 Normalization
 
 Rules:
 
-- no provider failure becomes empty success;
-- no malformed source event is silently dropped;
-- no invalid persisted cache is silently replaced with an empty cache;
-- diagnostics are non-machine data;
-- finite provider retry policy may be used, but retries must be bounded and deterministic.
+- \`dateline\` is interpreted as Unix epoch seconds;
+- normalized \`datetime\` is an aware UTC timestamp;
+- empty source strings become null;
+- impact is mapped to the uppercase enum;
+- missing optional values are not fabricated;
+- malformed identity or time fails the acquisition transaction.
 
 ---
 
-# 12. MONITOR WARNING CONSUMPTION CONTRACT
+# 5. CALENDAR.JSON CONTRACT
 
-The Calendar layer provides data. The Monitor owns warning evaluation.
+## 5.1 Single global document
 
-## 12.1 Monitor input
+\`\`\`text
+<DATA_ROOT>/calendar.json
+\`\`\`
 
-Monitor reads:
+Logical shape:
 
-~~~text
-<DATA_ROOT>/<SYMBOL>/<SYMBOL>_news.json
-~~~
+\`\`\`json
+{
+  "schema_version": 1,
+  "source": "forexfactory",
+  "coverage": [
+    {
+      "start": "2026-10-26T00:00:00Z",
+      "end": "2026-11-02T00:00:00Z",
+      "requested": {
+        "type": "week",
+        "value": "2026.10.28"
+      },
+      "fetched_at": "2026-10-03T11:00:00Z"
+    }
+  ],
+  "events": []
+}
+\`\`\`
 
-It validates at least:
+Coverage intervals use a half-open UTC convention:
 
-- symbol identity;
-- schema version;
-- UTC event_time values;
-- event identity uniqueness;
-- event currency;
-- event impact;
-- event ordering;
-- coverage metadata.
+\`\`\`text
+[start, end)
+\`\`\`
 
-## 12.2 Dynamic warning concept
+This avoids end-of-day precision ambiguity.
 
-The warning is time-relative to each event.
+## 5.2 Multiple periods
 
-For an eligible event:
+The same \`calendar.json\` may contain events from arbitrarily many dates and acquisition requests.
 
-~~~text
-event_time - now
-~~~
+New acquisitions merge into the existing event set.
 
-determines the warning phase.
+They never overwrite unrelated historical or future events.
 
-The logical phases are:
+## 5.3 Coverage
 
-~~~text
-NO_WARNING
-PRE_EVENT
-EVENT_ACTIVE
-POST_EVENT
-~~~
+Coverage records describe successfully validated provider acquisition.
 
-A warning is emitted only when the current UTC time lies inside the configured pre/post windows.
+A covered interval may legitimately contain zero events.
 
-The exact window values are single-owner policy constants:
+Coverage is never inferred from first/last event timestamps.
 
-~~~text
-NEWS_WARNING_BEFORE_MINUTES
-NEWS_WARNING_AFTER_MINUTES
-~~~
+Coverage is represented as the minimal non-overlapping union of validated covered intervals.
 
-The Monitor must not embed duplicate window values in multiple functions.
+When overlapping/adjacent intervals are merged, the merged interval keeps the latest \`fetched_at\` and the retained request metadata needed for provenance.
 
-## 12.3 Impact policy
+A requested interval is covered only when the union of stored coverage intervals completely spans it.
 
-Monitor warning eligibility is policy-driven.
+If coverage is incomplete, \`calendar.py\` computes the uncovered subintervals and acquires only the missing portions where the provider interface permits.
 
-At minimum, the event impact is compared against:
+## 5.4 No retention policy
 
-~~~text
-NEWS_WARNING_MIN_IMPACT
-~~~
+V1 has no automatic retention and no automatic history deletion.
 
-The source impact is retained exactly enough for deterministic normalization, while the Monitor decides whether low/medium/high events are warning eligible.
+Old data remains indefinitely until the user explicitly invokes \`--delete\`.
 
-The Calendar layer does not remove events based on impact.
-
-## 12.4 Warning event identity
-
-Use a deterministic transient identity containing:
-
-~~~text
-NEWS_WARNING
-+ symbol
-+ event_id
-+ warning_phase
-~~~
-
-The Monitor records an emitted warning only after successful notification.
-
-A failed notification remains retryable.
-
-A later phase may produce a distinct warning for the same economic event.
-
-## 12.5 Warning payload
-
-At minimum:
-
-~~~text
-alert_type = NEWS_WARNING
-symbol
-event_id
-event_time
-event_name
-currency
-impact
-warning_phase
-minutes_to_event / minutes_since_event
-forecast
-previous
-actual
-evaluation_time
-~~~
-
-Local display time may be included as presentation metadata but never replaces UTC event/evaluation timestamps.
-
-## 12.6 News is informational only
-
-News warning must never:
-
-- mutate Structures JSON;
-- mutate Market Data JSON;
-- advance or reset Mapper checkpoints;
-- change canonical POI lifecycle;
-- change target coordinates;
-- alter projected RR calculation;
-- invalidate a structural setup;
-- submit/cancel/modify orders;
-- close/open positions;
-- suppress a canonical setup alert merely because News data is missing.
-
-When News JSON is unavailable or invalid, the Monitor reports the News warning path as unavailable and continues the canonical/target evaluation path independently.
+Coverage is never removed merely because it is old.
 
 ---
 
-# 13. MONITOR PROCESS ORCHESTRATION
+# 6. ACQUISITION AND MERGE
 
-The normal Monitor cycle becomes:
+## 6.1 Acquisition flow
 
-~~~text
-discover/load analyses
-        ↓
-plan Market Data updates
-        ↓
-invoke market_data.py
-        ↓
-reload Market Data
-        ↓
-invoke smc_mapper.py as required
-        ↓
-reload Structures
-        ↓
-refresh current market reference
-        ↓
-update session context
-        ↓
-invoke calendar.py --query SYMBOL
-        ↓
-reload SYMBOL News JSON
-        ↓
-evaluate News warning
-        ↓
-evaluate target / RR / canonical alerts
-        ↓
-schedule next cycle
-~~~
+\`\`\`text
+parse CLI
+  ↓
+resolve requested provider period
+  ↓
+acquire lock
+  ↓
+re-read calendar.json
+  ↓
+re-check coverage
+  ↓
+if fully covered: no provider request
+  ↓
+otherwise fetch uncovered period(s)
+  ↓
+parse
+  ↓
+normalize
+  ↓
+validate complete acquired set
+  ↓
+merge events + coverage
+  ↓
+validate complete document
+  ↓
+atomic commit
+  ↓
+release lock
+\`\`\`
 
-Calendar refresh/reload occurs before News warning evaluation.
+The second coverage check after lock acquisition is mandatory to prevent duplicate parallel downloads.
 
-News processing does not become a mapper prerequisite.
+## 6.2 Event merge
 
-A calendar acquisition failure must not block Market Data or Mapper processing already due for the cycle.
+Merge key is \`event_id\`.
 
-## 13.1 invoke_calendar
+For equivalent duplicates, retain one logical event.
 
-Monitor-side function:
+For an existing event whose mutable source values changed, update those mutable values from the newest successfully acquired source record.
 
-~~~python
-def invoke_calendar(
-    symbol: str,
-    start_time: datetime | None = None,
-    end_time: datetime | None = None,
-    debug: bool = False,
-) -> ProcessResult:
-    ...
-~~~
+Canonical identity/time conflicts fail the transaction.
 
-Launch:
+After merge:
 
-~~~text
-python calendar.py --query SYMBOL [--starttime ... --endtime ...] [--debug]
-~~~
+1. deduplicate by \`event_id\`;
+2. sort events by \`datetime\`, then \`event_id\`;
+3. update coverage;
+4. commit atomically.
 
-The Monitor does not call ForexFactory directly.
+## 6.3 Explicit history acquisition
 
-The Monitor does not parse calendar HTML or stdout.
+Historical requests use the same global event store.
 
-## 13.2 Query time used by Monitor
+The acquisition time is metadata only.
 
-The Monitor should request the minimum useful operational interval required for warning evaluation rather than an arbitrarily large historical interval.
+Historical events do not gain a special automatic retention period.
 
-The exact warning-horizon calculation is Monitor-owned and must cover:
-
-~~~text
-now - NEWS_WARNING_AFTER_MINUTES
-through
-now + NEWS_WARNING_BEFORE_MINUTES
-~~~
-
-when those values are configured.
-
-If the Monitor only needs currently relevant warnings, it should not repeatedly request the full historical cache.
-
-## 13.3 Missing News path
-
-If:
-
-- Calendar process fails;
-- symbol News JSON is unavailable;
-- News JSON is malformed;
-
-then:
-
-~~~text
-news_warning_state = UNAVAILABLE
-~~~
-
-and canonical/target evaluation continues.
-
-A valid empty symbol News JSON means:
-
-~~~text
-news_warning_state = NO_RELEVANT_EVENT
-~~~
-
-These states are not interchangeable.
+They remain until explicitly deleted.
 
 ---
 
-# 14. TEST CONTRACT
+# 7. CONCURRENCY, LOCKING, AND ATOMICITY
 
-Tests must not depend on a live ForexFactory request.
+## 7.1 Lock scope
 
-Provide deterministic fixtures for:
+There is one shared resource:
 
-1. supplied `days: [...] ` payload extraction;
-2. valid empty day;
-3. valid event normalization;
-4. malformed `days` payload;
-5. missing `days` marker;
-6. malformed event JSON;
+\`\`\`text
+<DATA_ROOT>/calendar.json
+\`\`\`
+
+Use an OS-level exclusive/advisory lock associated with \`calendar.json\`.
+
+Do not create a persistent \`.lock\` data file.
+
+## 7.2 Parallel execution
+
+If another process owns the calendar lock:
+
+- wait until it releases the lock;
+- do not retry with a retry limit;
+- do not use exponential backoff;
+- do not abort because of lock age;
+- after acquiring the lock, re-read the current \`calendar.json\` and re-check coverage.
+
+This guarantees that the second process does not redundantly fetch a period already acquired by the first process.
+
+## 7.3 Missing-file race
+
+When \`calendar.json\` does not exist, the implementation may establish the single file with an exclusive-create/open operation, initialize the valid empty document, and then apply the same lock protocol.
+
+No second persistent lock file is introduced.
+
+## 7.4 Atomic write
+
+Never truncate the existing \`calendar.json\` before the replacement document is fully serialized.
+
+Use:
+
+\`\`\`text
+write temporary file
+  ↓
+flush/sync as appropriate
+  ↓
+atomic replace calendar.json
+\`\`\`
+
+The temporary file is removed after successful replacement.
+
+A failed write leaves the previously committed \`calendar.json\` unchanged.
+
+---
+
+# 8. FAILURE AND LAST-KNOWN-GOOD CONTRACT
+
+## 8.1 Acquisition failure
+
+The following are failures:
+
+- network exception;
+- timeout;
+- non-success HTTP status;
+- missing/malformed \`days\` payload;
+- malformed provider JSON;
+- invalid event identity/time;
+- conflicting canonical duplicate;
+- incomplete validation;
+- atomic-write failure.
+
+On any acquisition failure:
+
+\`\`\`text
+previous calendar.json -> unchanged
+coverage -> unchanged
+events -> unchanged
+\`\`\`
+
+A provider failure must never be represented as successful empty coverage.
+
+## 8.2 Missing calendar.json
+
+Missing file is not an error.
+
+Query returns \`NO_CALENDAR_DATA\`.
+
+Monitor may continue all canonical processing.
+
+## 8.3 Corrupt calendar.json
+
+If an existing file is malformed or violates the schema:
+
+- report a calendar data-integrity error;
+- do not silently replace it with an empty document;
+- do not silently discard existing information;
+- Monitor treats the News path as unavailable for that cycle but continues canonical processing.
+
+---
+
+# 9. SYMBOL RELEVANCE
+
+## 9.1 Standard FX symbols
+
+For standard FX symbols:
+
+\`\`\`text
+USDJPY -> USD + JPY
+EURUSD -> EUR + USD
+GBPCHF -> GBP + CHF
+\`\`\`
+
+Normalize conventional separators when unambiguous.
+
+If exactly two recognizable currency codes cannot be determined, return an empty relevance set rather than guessing.
+
+## 9.2 Event relevance
+
+An event is relevant when:
+
+\`\`\`text
+event.currency in symbol currencies
+\`\`\`
+
+Do not infer relevance from event title, country text, impact, or price behavior.
+
+## 9.3 Non-FX symbols
+
+V1 does not guess currency relevance for arbitrary non-FX symbols.
+
+A valid query may therefore return no relevant events.
+
+---
+
+# 10. DELETE CONTRACT
+
+## 10.1 General rule
+
+Delete is explicit and user initiated.
+
+No automatic cleanup exists.
+
+Deletes are applied to both:
+
+- \`events\`;
+- coverage intervals.
+
+Coverage must be recalculated after event/coverage deletion so metadata remains consistent with stored data.
+
+## 10.2 \`--before DATE\`
+
+Delete events with:
+
+\`\`\`text
+event.datetime < DATE 00:00:00Z
+\`\`\`
+
+Coverage is clipped or removed accordingly.
+
+## 10.3 \`--after DATE\`
+
+Delete events with:
+
+\`\`\`text
+event.datetime >= (DATE + 1 day) 00:00:00Z
+\`\`\`
+
+Coverage is clipped or removed accordingly.
+
+This makes "after DATE" mean strictly after the complete UTC calendar day.
+
+## 10.4 \`--before + --after\`
+
+When both are supplied, \`after\` must define the lower boundary and \`before\` the upper boundary.
+
+The command deletes:
+
+\`\`\`text
+(after boundary, before boundary)
+\`\`\`
+
+Only a non-empty, non-contradictory interval is accepted.
+
+## 10.5 \`--range DATE-DATE\`
+
+Inclusive date range:
+
+\`\`\`text
+[START_DATE 00:00Z, END_DATE + 1 day 00:00Z)
+\`\`\`
+
+Both calendar dates are included.
+
+## 10.6 \`--date DATE\`
+
+Deletes all events on that UTC calendar date.
+
+## 10.7 \`--date DATE --time HH:MM\`
+
+Deletes all events whose UTC hour and minute equal the requested \`HH:MM\`.
+
+Delete never uses nearest-event semantics.
+
+## 10.8 \`--range ... --time HH:MM-HH:MM\`
+
+Deletes events whose UTC date is inside the date range and whose UTC time-of-day falls inside the inclusive requested time range.
+
+## 10.9 Dry-run
+
+\`\`\`text
+--dry-run
+\`\`\`
+
+performs all selector validation and selection logic but does not modify \`calendar.json\`.
+
+The result reports the matching event count and selected interval metadata.
+
+---
+
+# 11. MONITOR PROCESS BOUNDARY
+
+The Monitor consumes Calendar only as external News context.
+
+It must not parse ForexFactory HTML or provider response data.
+
+The preferred machine-readable boundary is the local query API:
+
+\`\`\`text
+calendar.py --symbol SYMBOL --current
+calendar.py --symbol SYMBOL --next
+\`\`\`
+
+The Monitor may also invoke the acquisition form when it must ensure future warning coverage.
+
+The Monitor never writes \`calendar.json\`.
+
+Calendar warning policy does not belong in this module.
+
+---
+
+# 12. TEST CONTRACT
+
+Tests must not require a live ForexFactory request.
+
+Required coverage:
+
+1. CLI period validation;
+2. ForexFactory date conversion;
+3. supplied \`days: [...]\` extraction;
+4. valid empty provider period;
+5. malformed provider payload;
+6. missing \`days\` marker;
 7. missing event ID;
-8. invalid Unix event time;
-9. duplicate equivalent event;
-10. conflicting same-ID event;
-11. UTC normalization;
-12. symbol currency filtering;
-13. USDJPY receiving USD and JPY events;
-14. unrelated currency exclusion;
-15. no-time query using cache only;
-16. time-bounded query acquiring missing coverage;
-17. valid empty provider interval;
-18. provider failure distinct from empty;
-19. shared-cache atomic persistence;
-20. symbol-News atomic persistence;
-21. malformed cache rejection;
-22. PRE_EVENT warning;
-23. EVENT_ACTIVE warning boundary;
-24. POST_EVENT warning;
-25. warning outside configured window;
-26. impact-policy filtering;
-27. repeated warning deduplication;
-28. failed notification remains retryable;
-29. News unavailable does not block canonical alert evaluation;
-30. malformed/non-FX symbol yields valid empty relevance without guessing.
-
-Provider parsing tests may use the exact supplied ForexFactory sample structure.
+8. invalid event dateline;
+9. UTC normalization;
+10. stable \`event_id\`;
+11. equivalent duplicate merge;
+12. conflicting duplicate rejection;
+13. multiple dates in one \`calendar.json\`;
+14. coverage union across overlapping intervals;
+15. uncovered interval acquisition;
+16. cache-only query without a period;
+17. local \`--current\` query;
+18. local \`--next\` query;
+19. nearest \`--date/--time\` query;
+20. missing \`calendar.json\` returns valid empty result;
+21. malformed \`calendar.json\` fails without replacement;
+22. acquisition failure preserves last-known-good file;
+23. concurrent acquisition waits on the lock;
+24. second process re-checks coverage after locking;
+25. atomic persistence;
+26. no automatic retention;
+27. delete \`--before\`;
+28. delete \`--after\`;
+29. delete bounded \`--before + --after\`;
+30. delete \`--range\`;
+31. delete \`--date\`;
+32. delete exact-minute selector;
+33. delete time-of-day range;
+34. delete dry-run does not mutate;
+35. coverage remains consistent after deletion;
+36. FX symbol currency extraction;
+37. unrelated currency exclusion.
 
 ---
 
-# 15. IMPLEMENTATION FUNCTION CONTRACT
+# 13. IMPLEMENTATION FUNCTION CONTRACT
 
-Required function names:
+Required function boundaries:
 
-~~~text
+\`\`\`text
 build_argument_parser
 parse_calendar_request
 normalize_symbol
-parse_iso8601
+parse_date
+parse_time
+parse_date_range
+
+resolve_provider_period
 fetch_calendar_source
 extract_days_payload
 parse_calendar_days
 normalize_provider_event
 normalize_calendar_events
+
+build_empty_calendar_document
+validate_calendar_document
+load_calendar_document
+save_calendar_atomic
+
+resolve_coverage
+find_uncovered_intervals
+merge_coverage
+
+merge_calendar_events
 deduplicate_calendar_events
-validate_calendar_cache
-load_calendar_cache
-save_calendar_cache_atomic
-resolve_calendar_coverage
+
 extract_symbol_currencies
 filter_events_for_symbol
-materialize_symbol_news
-save_symbol_news_atomic
+
+query_symbol_events
+query_current_events
+query_next_events
+query_nearest_events
+
+select_delete_interval
+delete_events
+delete_coverage
+dry_run_delete
+
+acquire_calendar_lock
+run_acquisition
 run_query
+run_delete
 run
 main
-~~~
+\`\`\`
+
+Each function owns one primary responsibility.
 
 Avoid vague names such as:
 
-~~~text
+\`\`\`text
 process_data
 handle_news
 run_news
+do_update
 helper
 util
-~~~
-
-Every function has one ownership responsibility.
+\`\`\`
 
 ---
 
-# 16. DEFINITION OF DONE
+# 14. DEFINITION OF DONE
 
 Calendar V1 is complete only when:
 
-1. `calendar.py --query SYMBOL` works from an existing valid cache without network access;
-2. time-bounded queries establish validated requested coverage;
-3. the supplied ForexFactory `days` parser is implemented behind the source boundary;
-4. canonical event times are UTC;
-5. source event identity is stable and deterministic;
-6. shared cache and symbol News JSON are atomic;
-7. symbol relevance is deterministic;
-8. every symbol directory contains Market Data, Structures and News JSON without cross-symbol leakage;
-9. Monitor consumes only the symbol News JSON boundary;
-10. News warning is transient/informational and cannot alter canonical SMC state;
-11. missing News never suppresses canonical setup/target evaluation;
-12. all deterministic Calendar and Monitor warning tests pass;
-13. no `.agents/skills/smc/` file is modified;
-14. provider details remain isolated from the Monitor.
-
+1. there is exactly one persistent \`<DATA_ROOT>/calendar.json\`;
+2. multiple historical and future periods can coexist in that file;
+3. no automatic retention/deletion exists;
+4. history is removed only through explicit \`--delete\`;
+5. acquisition CLI supports day/week/month/range selectors;
+6. \`--query SYMBOL\` without a period is cache-only;
+7. local query API is network-free and time-based;
+8. stable provider-derived event IDs are used;
+9. multiple acquisition intervals are tracked through coverage metadata;
+10. redundant downloads are prevented using coverage union checks;
+11. concurrent writers wait for the existing lock and re-check state after locking;
+12. acquisition failure preserves the last-known-good file;
+13. missing \`calendar.json\` is a valid no-data condition;
+14. corrupt existing data is not silently replaced;
+15. delete operations update events and coverage consistently;
+16. all event times are canonical UTC;
+17. Monitor receives only normalized event data and never provider HTML;
+18. Calendar never modifies canonical SMC state;
+19. no symbol-specific News JSON or separate cache JSON is created;
+20. all deterministic Calendar tests pass;
+21. no \`.agents/skills/smc/\` file is modified.
