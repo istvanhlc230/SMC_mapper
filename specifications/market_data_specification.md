@@ -964,7 +964,7 @@ If a later mapper analysis requires candles outside the retained window, the sur
 
 When an explicit historical acquisition range is requested, that requested range is protected during the current update so the just-reacquired candles remain available to the immediately following Mapper invocation. This protection is temporary and does not disable normal rolling retention for unrelated candles.
 
-The implementation must not assume retained storage is the only possible source of historical data.
+The resolved acquisition range, not merely the raw CLI fields, is the authoritative range for retention protection. The implementation must not assume retained storage is the only possible source of historical data.
 
 ---
 
@@ -1323,7 +1323,7 @@ Responsibilities:
 - merge completed candles;
 - update current snapshot;
 - clear a current snapshot when it becomes completed;
-- apply retention, protecting `[request.start_time, request.end_time]` when an explicit historical start boundary exists for this invocation;
+- apply retention, protecting the resolved historical acquisition range `(acquisition_start, acquisition_end)` for this invocation when the request is historical;
 - update availability bounds;
 - return whether persisted market-data state changed.
 
