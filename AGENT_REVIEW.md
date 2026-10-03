@@ -9,3 +9,5 @@ This file records review evidence only; implementation claims do not constitute 
 ## Structural Modifications
 - **Moved Artifact**: Moved `calendar_design.md` from the repository root to the `specifications/` directory as requested by the user. This keeps design documentation centralized alongside specifications.
 
+- **Moved Artifact**: Renamed `AGENTS.md` to `agent_directives.md` and moved it to the `specifications/` directory.
+
