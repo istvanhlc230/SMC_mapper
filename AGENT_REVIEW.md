@@ -2,61 +2,30 @@
 
 Status: BLOCKED_PENDING_LOCAL_RUNTIME_VALIDATION
 
-## Follow-up audit corrections
+## Follow-up audit correction
 
-Corrected in this iteration:
+Re-audit found a section-boundary regression in the previous Monitor rewrite: the 4.6/6.6 subsection replacement could consume the next top-level section header.
 
-1. provider/symbol coverage union preserves prior non-overlapping intervals;
-2. explicit ForexFactory acquisition reuses validated COMPLETE coverage and fetches only uncovered intervals;
-3. explicit provider fetches may use provider-required day boundaries, but returned events are restricted to the exact requested interval before persistence;
-4. the full pre-refactor Monitor specification is preserved outside the Calendar-related sections;
-5. the Yahoo Forex reference snapshot remains documented as non-closed.
+Corrected here by rebuilding the Monitor specification from the pre-refactor full document and terminating subsection replacements at the next same-or-higher-level heading.
 
-## Current contract
+Unrelated Monitor contracts are preserved, including target, RR, session, checkpoint, alert, persistence, portability, and validation sections.
 
-- old relative Calendar scopes removed;
-- next removed;
-- current is provider+canonical-symbol watermark based;
-- missing watermark -> BOOTSTRAP_REQUIRED;
-- no synthetic bootstrap timestamp;
-- symbol-first explicit date/datetime syntax;
-- HUF -> ForexFactory;
-- FX pair -> ForexFactory + Yahoo;
-- ticker such as NVDA -> Yahoo;
-- Yahoo -> news;
-- ForexFactory -> economic;
-- provider-specific identity/deduplication;
-- provider failures remain observable;
-- Yahoo historical completeness is never fabricated;
-- Monitor Calendar acquisition is asynchronous and non-blocking for canonical processing.
+Calendar implementation/specification corrections from the preceding commits remain intact: coverage reuse, non-overlapping coverage preservation, exact requested-interval filtering, explicit symbol-first CLI, watermark current semantics, and provider isolation.
 
-## Validation
+## Validation boundary
 
-Required deterministic checks:
+No local Python runtime is available in this environment; GitHub reports no associated CI status for the commit.
+
+Required repository-side checks remain:
 
     python -m py_compile calendar.py
     python calendar.py --help
-    python calendar.py EURUSD 2026.10.01
-    python calendar.py EURUSD 2026.10.01-2026.10.31
-    python calendar.py EURUSD 2026.10.01@10:00
-    python calendar.py EURUSD 2026.10.01@10:00-2026.10.31@22:00
     python calendar.py EURUSD current
     python calendar.py NVDA current
     python calendar.py HUF 2026.10.01
     python calendar.py delete
 
-Negative checks must reject:
-    python calendar.py today USDHUF
-    python calendar.py EURUSD next
-    python calendar.py EURUSD 2026.10.01..2026.10.31
 
-Behavioral checks must verify:
-- current without watermark -> BOOTSTRAP_REQUIRED;
-- cached COMPLETE ForexFactory coverage is not refetched;
-- non-overlapping coverage remains preserved;
-- datetime queries persist only events inside their requested interval;
-- one-provider failure plus one-provider success -> PARTIAL;
-- all-provider failure -> UNAVAILABLE;
-- Monitor Calendar dispatch is non-blocking.
+Negative CLI checks must reject old today/next_week/next_month forms, next evaluation, and `..` ranges.
 
-No PASS claim until local runtime validation confirms these conditions.
+No PASS claim until local runtime validation is complete.

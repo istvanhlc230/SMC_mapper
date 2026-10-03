@@ -464,6 +464,7 @@ max_news_horizon =
 The Monitor plans from the current UTC date through the UTC date containing now + max_news_horizon.
 
 The request uses only explicit Calendar date-range syntax:
+
 ~~~text
 python calendar.py SYMBOL YYYY.MM.DD-YYYY.MM.DD
 ~~~
@@ -471,6 +472,7 @@ python calendar.py SYMBOL YYYY.MM.DD-YYYY.MM.DD
 The Calendar Update Engine performs network acquisition in a separate asynchronous process. The Monitor does not wait for provider completion merely to continue Market Data/Mapper processing.
 
 Required planning function:
+
 ~~~python
 def plan_news_acquisition(
     symbol: str,
@@ -489,6 +491,8 @@ Rules:
 - News evaluation uses only validated normalized Calendar facts;
 - News context cannot change Mapper checkpoints or canonical SMC state;
 - acquisition is an availability step only; it is never a setup/target/RR gate.
+
+# 5. PROCESS INVOCATION CONTRACT
 
 ## 5.1 invoke_market_data
 
@@ -521,6 +525,7 @@ A non-zero exit status blocks dependent mapper execution for the affected data p
 Calendar is an asynchronous Update Engine boundary, not a blocking step in the Monitor candle-close path.
 
 Required helper:
+
 ~~~python
 def request_calendar_update_async(
     symbol: str,
@@ -531,6 +536,7 @@ def request_calendar_update_async(
 ~~~
 
 Allowed launches:
+
 ~~~text
 python calendar.py SYMBOL YYYY.MM.DD
 python calendar.py SYMBOL YYYY.MM.DD-YYYY.MM.DD
@@ -542,6 +548,7 @@ python calendar.py SYMBOL current
 For planned future News coverage, use an explicit date range.
 
 For incremental refresh, use:
+
 ~~~text
 python calendar.py SYMBOL current
 ~~~
@@ -757,6 +764,7 @@ single chronological Mapper update
 ## 6.6 Economic News warning and runtime event-status context
 
 The dynamic warning formula applies only to ForexFactory economic events:
+
 ~~~text
 HIGH   -> 2 × duration(entry_timeframe)
 MEDIUM -> 1 × duration(entry_timeframe)
@@ -769,11 +777,13 @@ Yahoo Finance news is complementary context. It has no normalized Calendar impac
 The Monitor must not infer Yahoo severity from publisher, headline, URL, category, or source.
 
 Pre-event eligibility remains:
+
 ~~~text
 0 < (event_time_utc - current_utc) <= warning_window
 ~~~
 
 Runtime event status remains:
+
 ~~~text
 UPCOMING
 ONGOING
@@ -781,6 +791,7 @@ ENDED
 ~~~
 
 For an economic event:
+
 ~~~text
 event_end_time = event_time + duration(analysis.entry_timeframe)
 ~~~
@@ -788,6 +799,8 @@ event_end_time = event_time + duration(analysis.entry_timeframe)
 Event-status transitions are transient Monitor observations only. They do not mutate canonical SMC state, POI lifecycle, Mapper checkpoint, or Calendar persistence.
 
 Adding Yahoo-news warning severity requires a separate explicit Monitor specification decision.
+
+# 7. CURRENT MARKET REFERENCE
 
 ## 7.1 Source
 
