@@ -69,3 +69,19 @@ Correction applied:
 The previously generated `calendar.json` containing malformed canonical fields must be discarded/rebuilt through a fresh scope-bearing acquisition after this correction. Existing coverage must not be treated as proof that the malformed event normalization is acceptable.
 
 Acceptance remains BLOCKED until a fresh local acquisition/query demonstrates canonical currency codes (for example `USD`, `HUF`, `EUR`, `JPY`, `AUD` where applicable), populated event titles, and non-default impact values where the provider supplies impact data.
+
+
+## Canonical Event Contract Guard — 2026-10-03
+
+Static re-audit of the preceding calendar parser correction found one remaining integrity gap: validate_calendar_document() still accepted provider-internal currency values such as US/AU and empty event titles if malformed records already existed or entered through another internal path.
+
+The guard is now tightened in calendar.py:
+
+- persisted currency must be one of USD, EUR, GBP, JPY, CHF, AUD, CAD, NZD, CNY, HUF, or the provider-wide ALL marker;
+- provider-internal country codes are rejected;
+- normalized provider event titles must be non-empty;
+- acquisition fails before persistence when the provider supplies an unsupported currency or empty title.
+
+The owning Calendar specification and design are synchronized with this behavior.
+
+Fresh local acquisition/query validation is still required before PASS. The live ForexFactory calendar currently exposes canonical three-letter currency labels and legitimate provider-wide All events, so allowing ALL is required rather than invented.

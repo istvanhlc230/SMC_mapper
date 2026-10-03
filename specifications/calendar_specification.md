@@ -343,6 +343,10 @@ event_id = "forexfactory:" + provider_event_id
 
 `datetime` is canonical UTC.
 
+`currency` is one of the supported three-letter FX currencies (`USD`, `EUR`, `GBP`, `JPY`, `CHF`, `AUD`, `CAD`, `NZD`, `CNY`, `HUF`) or `ALL` for a provider-wide event that is not assigned to one currency. Provider-internal country codes such as `US`, `JN`, or `AU` are invalid canonical values.
+
+`event` is a non-empty provider event title. Missing or empty titles are acquisition/validation errors; they are never normalized into an accepted canonical event.
+
 Optional source values are represented as null when absent; values are never fabricated.
 
 Impact is one of:

@@ -113,7 +113,7 @@ Concurrent writes are serialized using a Windows named mutex or POSIX directory-
 ## 9. Provider Boundary
 
 The provider is ForexFactory.
-The current implementation parses the ForexFactory calendar HTML response directly. The HTML row parser is the canonical acquisition path: it extracts provider event IDs, calendar rows, displayed provider timezone, event timestamps, impact, currency, title, actual, forecast, and previous values, then normalizes them before any persistent update. Legacy embedded `days` JSON may be present in the response but must not override or substitute for the canonical HTML row fields.
+The current implementation parses the ForexFactory calendar HTML response directly. The HTML row parser is the canonical acquisition path: it extracts provider event IDs, calendar rows, displayed provider timezone, event timestamps, impact, currency, title, actual, forecast, and previous values, then normalizes them before any persistent update. Currency normalization accepts only the supported three-letter FX currencies or the provider-wide `ALL` marker; provider-internal country codes are rejected. Empty event titles are rejected. Legacy embedded `days` JSON may be present in the response but must not override or substitute for the canonical HTML row fields.
 Provider fetch or payload validation failure terminates without replacing the existing calendar document.
 
 ## 10. Domain Functions

@@ -434,6 +434,16 @@ def validate_calendar_document(doc: Dict[str, Any]) -> None:
         }:
             sys.exit("Error: Invalid event impact.")
 
+        currency = event["currency"]
+        if (
+            not isinstance(currency, str)
+            or (currency not in SUPPORTED_CURRENCIES and currency != "ALL")
+        ):
+            sys.exit("Error: Invalid event currency.")
+
+        if not isinstance(event["event"], str) or not event["event"].strip():
+            sys.exit("Error: Event title must not be empty.")
+
         event_id = event["event_id"]
         if (
             not isinstance(event_id, str)
@@ -928,14 +938,20 @@ def normalize_provider_event(raw: Dict[str, Any]) -> Dict[str, Any]:
         3: "HIGH",
         4: "HOLIDAY",
     }.get(raw.get("impact"), "UNKNOWN")
-    currency = str(raw.get("country", "")).upper().strip() or None
+    currency = str(raw.get("country", "")).upper().strip()
+    if currency not in SUPPORTED_CURRENCIES and currency != "ALL":
+        sys.exit(f"Error: Unsupported provider event currency '{currency}'.")
+
+    event_title = str(raw.get("title", "")).strip()
+    if not event_title:
+        sys.exit("Error: Provider event has an empty title.")
 
     return {
         "event_id": f"forexfactory:{raw['id']}",
         "datetime": format_iso8601(event_timestamp),
         "currency": currency,
         "impact": impact,
-        "event": str(raw.get("title", "")),
+        "event": event_title,
         "actual": (
             str(raw["actual"])
             if raw.get("actual") not in (None, "")
