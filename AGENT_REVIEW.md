@@ -3496,3 +3496,10 @@ The current product architecture no longer includes smc_htf_ltf_monitor or the s
 ## Audit status before test run
 PASS — no intended legacy OF/OB canonical alias remains in the active files changed by this phase.
 PASS — canonical CHoCH spelling now matches between skill and runtime.
+
+
+# PHASE 36 — POST-CLEANUP RESIDUAL ALIAS FIX — 2026-10-03
+
+Removed the final residual `OB_VALID` implementation shorthand from `06_execution.md`; the validated Order Block outcome is represented as `VALIDATED_ORDER_BLOCK`.
+
+Audit status: PASS for the active Layer 6/7/8 terminology scope.

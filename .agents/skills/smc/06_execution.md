@@ -366,7 +366,7 @@ An `EXTREME_ORDER_BLOCK` is selected from the furthest unmitigated validated Ord
 Order Block validity is determined by its own canonical validation pillars. It is not automatically invalidated merely because the parent/containing Order Flow is unmitigated or because another Order Flow has failed.
 
 ```text
-ORDER_BLOCK_PILLARS_VALID → OB_VALID
+ORDER_BLOCK_PILLARS_VALID → VALIDATED_ORDER_BLOCK
 ORDER_FLOW_STATE_CHANGE ↛ AUTOMATIC OB INVALIDATION
 ORDER_FLOW_UNMITIGATED ↛ ORDER_BLOCK_INVALID
 ORDER_FLOW_FAILURE ↛ ORDER_BLOCK_INVALID
