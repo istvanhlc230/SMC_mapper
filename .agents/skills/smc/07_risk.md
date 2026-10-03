@@ -8,7 +8,7 @@
 
 ### Tier 1 — Structural / Zone Boundary Stop
 
-Conservative stop placement is beyond the furthest relevant boundary of the parent OF_CONFIRMED / Valid Order Block according to the applicable execution module.
+Conservative stop placement is beyond the furthest relevant boundary of the parent ELIGIBLE_ORDER_FLOW / Validated Order Block according to the applicable execution module.
 
 A stop placement or stop touch does not itself create structural truth:
 
@@ -317,7 +317,7 @@ RR gating is a configurable trading policy, not a universal structural requireme
 
 ### Counter-trend / pullback execution
 
-Counter-trend execution may use IDM/Engineering Liquidity sweep + valid POI + closed canonical reversal. Its expected structural destination may be an unmitigated parent Decisional POI / Extreme POI (OF_CONFIRMED / Valid OB), but no universal hard TP coordinate is canonicalized here.
+Counter-trend execution may use IDM/Engineering Liquidity sweep + valid POI + closed canonical reversal. Its expected structural destination may be an unmitigated parent Decisional POI / Extreme POI (ELIGIBLE_ORDER_FLOW / Validated Order Block), but no universal hard TP coordinate is canonicalized here.
 
 IRL is not a canonical TP category. Internal liquidity, Engineering Liquidity, internal OF/OB, and Minor IDM remain context/execution objects rather than mandatory TP coordinates.
 
@@ -355,7 +355,7 @@ PENDING_ORDER_CANCELLED
 
 CHoCH_ELIGIBLE alone does not automatically cancel pending orders. `CHoCH_CONFIRMED` produces cancellation only for pending orders dependent on the invalidated regime.
 
-A historical Origin OB (latent POI) may remain as a historical object after a parent OF lifecycle transition when its own validity remains canonical.
+A historical Origin Order Block (latent POI) may remain as a historical object after a parent OF lifecycle transition when its own validity remains canonical.
 
 ### 5.3.2 Zone Failure
 

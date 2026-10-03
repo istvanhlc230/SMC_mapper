@@ -85,14 +85,14 @@ Required representation:
 - touching an OF does not mark it mitigated unless a canonical Valid Pullback confirms the mitigation;
 - `DECISIONAL_ORDER_FLOW` is selected from the eligible Order Flow lineage associated with the displacement that causes `VALID_BOS`;
 - `EXTREME_ORDER_FLOW` is the furthest unmitigated eligible OF at the origin of the active dealing range;
-- when the current Extreme OF is mitigated, selection shifts to the next furthest eligible unmitigated OF;
-- a Decisional or Extreme OF remains a POI candidate only after the POI ontology and Rule-of-Two constraints are satisfied.
+- when the current Extreme Order Flow is mitigated, selection shifts to the next furthest eligible unmitigated OF;
+- a Decisional or Extreme Order Flow remains a POI candidate only after the POI ontology and Rule-of-Two constraints are satisfied.
 
 Forbidden shortcuts:
 
 ```text
 PRE-IDM FORMATION → ELIGIBLE_ORDER_FLOW
-OF TOUCH → OF_MITIGATED
+ORDER FLOW TOUCH → ORDER_FLOW_MITIGATED
 ARBITRARY LOCAL MOVE → ELIGIBLE_ORDER_FLOW
 ELIGIBLE_ORDER_FLOW → VALID_BOS
 ELIGIBLE_ORDER_FLOW → IDM
@@ -675,8 +675,6 @@ Regression tests must cover:
 The implementation must separate canonical entry authorization from broker/exchange order submission and fill state.
 
 ```text
-ENTRY_CONTEXT_VALID
-        ↓
 ENTRY_AUTHORIZED
         ↓
 ENTRY_REFERENCE_PRICE
@@ -702,7 +700,7 @@ Required mappings:
 Forbidden shortcuts:
 ```text
 ENTRY_AUTHORIZED → POSITION_OPEN
-ENTRY_CONTEXT_VALID → ORDER_FILLED
+ENTRY_AUTHORIZED → ORDER_FILLED
 POI_TOUCH → ENTRY_AUTHORIZED
 IDM_SWEEP → ENTRY_AUTHORIZED (without confirmation)
 ENG_LQD_SWEEP → ENTRY_AUTHORIZED (without confirmation)
@@ -820,8 +818,8 @@ Required implementation behavior:
 - the earlier `first validated Order Block after inducement` shortcut is superseded;
 - `EXTREME_ORDER_BLOCK` is selected as the furthest unmitigated validated Order Block within the active `EXTREME_ORDER_FLOW` lineage; it is not selected by a global search across all origin-side Order Blocks;
 - OB validity is evaluated from the canonical OB validation pillars independently of parent Order Flow mitigation/failure state;
-- a valid Decisional OB may remain executable even while its associated Order Flow is unmitigated, subject to Rule-of-Two and all execution gates;
-- later OF mitigation/failure must not retroactively rewrite the causal Decisional OB identity.
+- a valid Decisional Order Block may remain executable even while its associated Order Flow is unmitigated, subject to Rule-of-Two and all execution gates;
+- later OF mitigation/failure must not retroactively rewrite the causal Decisional Order Block identity.
 
 ### Stop Placement implementation mapping
 
@@ -851,9 +849,9 @@ Required invariants:
 - stop movement after entry belongs to a separate trade-management policy and must not rewrite the historical entry/SL anchor.
 
 ### POI / Entry
-- POI ontology accepts Eligible Order Flow and Valid OB;
+- POI ontology accepts Eligible Order Flow and Validated Order Block;
 - Rejection Block is a separately typed PD-array/execution concept; source examples may use POI as a broad execution-location term, but RB is not an OF/OB-equivalent POI class or an automatic Rule-of-Two slot;
-- Rule of Two limits canonical tradable POIs to Decisional POI and Extreme POI (Extreme OF / Extreme OB);
+- Rule of Two limits canonical tradable POIs to Decisional POI and Extreme POI (Extreme Order Flow / Extreme Order Block);
 - Origin Order Block is a latent reserve POI (mitigation transfer target when Extreme POI is mitigated), never a 3rd active POI;
 - when an applicable Rule-of-Two dealing-range execution context exists, the active canonical tradable POI set has cardinality 1..2; if no valid canonical POI exists, execution fails closed with no executable POI / `NO_EVIDENCE`; no synthetic POI is created;
 - Decisional buy POI is in discount, and Decisional sell POI is in premium as a hard execution eligibility gate;

@@ -58,7 +58,7 @@ Safety limits are strictly enforced:
 - Do not invent, generalize, or weaken True SMC structural rules.
 - Treat IDM as structurally derived from a valid pullback; do not substitute arbitrary local highs/lows as IDM.
 - Preserve candle-level sequencing and outside-bar inference rules defined by the canonical skill.
-- Preserve lifecycle/provenance of Minor IDM, Major IDM, fallback Major IDM, BOS, CHoCH, protected/weak structure, and Trading Range state.
+- Preserve lifecycle/provenance of Minor IDM, Major IDM, BOS, CHoCH, protected/weak structure, and Trading Range state.
 - When a source-code change appears to conflict with the canonical skill, stop and resolve the methodology conflict before implementation.
 - Prefer the smallest change that satisfies the requested methodology and preserves unrelated accepted behavior.
 
@@ -75,3 +75,23 @@ Before `IMPLEMENTATION_READY`, the implementation agent must:
 ## Repository hygiene
 
 Do not create compatibility layers, duplicate communication systems, orchestration databases, queues, session stores, or provider registries unless a future task explicitly requires them. Keep the mapper focused on market-structure computation and deterministic evidence production.
+
+
+## Canonical Order Flow / Order Block terminology
+
+Use these exact canonical semantic identifiers in active implementation and specifications:
+
+```
+ORDER_FLOW_CANDIDATE
+ELIGIBLE_ORDER_FLOW
+DECISIONAL_ORDER_FLOW
+EXTREME_ORDER_FLOW
+
+ORDER_BLOCK_CANDIDATE
+VALIDATED_ORDER_BLOCK
+DECISIONAL_ORDER_BLOCK
+EXTREME_ORDER_BLOCK
+ORIGIN_ORDER_BLOCK
+```
+
+Do not introduce abbreviated aliases such as OF_CONFIRMED, VALID_OB, OF_CANDIDATE, DECISIONAL_OF, EXTREME_OF, DECISIONAL_OB, EXTREME_OB, ORIGIN_OB, or ORIGIN_RESERVE. Rejection Block remains a separate execution/PD-array concept.

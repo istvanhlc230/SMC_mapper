@@ -26,8 +26,8 @@ class CHoCHResolution(str, Enum):
     NO_EVIDENCE = "NO_EVIDENCE"
     NO_BOUNDARY_BREAK = "NO_BOUNDARY_BREAK"
     MAJOR_IDM_SWEEP = "MAJOR_IDM_SWEEP"
-    CHOCH_ELIGIBLE = "CHOCH_ELIGIBLE"
-    CHOCH_CONFIRMED = "CHOCH_CONFIRMED"
+    CHoCH_ELIGIBLE = "CHoCH_ELIGIBLE"
+    CHoCH_CONFIRMED = "CHoCH_CONFIRMED"
 
 
 class CHoCHReferenceKind(str, Enum):
@@ -120,11 +120,11 @@ class CHoCHAnalysis:
             raise QuarantineError("invalid CHoCH resolution")
         if not isinstance(self.confirmed, bool) or not isinstance(self.confirmation_gate_open, bool):
             raise QuarantineError("CHoCH flags must be boolean")
-        if self.confirmed != (self.resolution is CHoCHResolution.CHOCH_CONFIRMED):
+        if self.confirmed != (self.resolution is CHoCHResolution.CHoCH_CONFIRMED):
             raise QuarantineError("CHoCH confirmation flag and resolution disagree")
         if self.resolution in {
-            CHoCHResolution.CHOCH_ELIGIBLE,
-            CHoCHResolution.CHOCH_CONFIRMED,
+            CHoCHResolution.CHoCH_ELIGIBLE,
+            CHoCHResolution.CHoCH_CONFIRMED,
         } and self.structural_break is None:
             raise QuarantineError("classified CHoCH outcome requires structural break")
         if self.confirmed and self.post_choch_regime is None:
@@ -170,7 +170,7 @@ def _physical_break(candle: Candle, reference: CHoCHReference) -> tuple[BreachMo
     side = Direction.DOWN if reference.direction is PullbackDirection.BULLISH else Direction.UP
     observation = classify_breach(
         candle,
-        ExtremeReference(reference.price, reference.source_candle_id, "CHOCH_REFERENCE"),
+        ExtremeReference(reference.price, reference.source_candle_id, "CHoCH_REFERENCE"),
         side,
     )
     if not observation.is_break:
@@ -268,7 +268,7 @@ def detect_choch(
         )
         if not confirmation_gate_open:
             return CHoCHAnalysis(
-                CHoCHResolution.CHOCH_ELIGIBLE,
+                CHoCHResolution.CHoCH_ELIGIBLE,
                 structural_break,
                 False,
                 False,
@@ -285,7 +285,7 @@ def detect_choch(
             ltf_context_cleared=True,
         )
         return CHoCHAnalysis(
-            CHoCHResolution.CHOCH_CONFIRMED,
+            CHoCHResolution.CHoCH_CONFIRMED,
             structural_break,
             True,
             True,

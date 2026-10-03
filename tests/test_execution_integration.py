@@ -40,7 +40,7 @@ class MockL4:
 
 class MockL5:
     def __init__(self):
-        self.resolution = type("Res", (), {"name": "CHOCH_ELIGIBLE"})()
+        self.resolution = type("Res", (), {"name": "CHoCH_ELIGIBLE"})()
 
 class MockL2:
     def __init__(self, pbs):

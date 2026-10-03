@@ -30,7 +30,7 @@ class DummyL4:
 
 class DummyL5:
     def __init__(self, confirmed=False):
-        self.resolution = type("Res", (), {"name": "CHOCH_CONFIRMED" if confirmed else "CHOCH_ELIGIBLE"})()
+        self.resolution = type("Res", (), {"name": "CHoCH_CONFIRMED" if confirmed else "CHoCH_ELIGIBLE"})()
 
 def make_pb(ref, start, comp, ext_c, ext_p):
     return CandleLevelValidPullback(

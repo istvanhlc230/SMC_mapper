@@ -3472,3 +3472,27 @@ Added explicit ORDER_BLOCK_CANDIDATE terminology to the canonical execution vali
 Audit result: PASS — candidate, qualification, role, and origin terms are now all explicit in the active canonical and implementation documents.
 
 Test status: terminology/documentation-only; local pytest not run.
+
+
+# PHASE 35 — FULL PROJECT TERMINOLOGY CLEANUP — 2026-10-03
+
+## Scope
+Re-audited canonical terminology across the active SMC skill, implementation contract, project contract, runtime execution/CHoCH engines, and related tests.
+
+## Corrections
+- Removed remaining OF/OB abbreviated canonical aliases from active Layer 6/7/8 documentation.
+- Standardized the full canonical Order Flow family:
+  ORDER_FLOW_CANDIDATE, ELIGIBLE_ORDER_FLOW, DECISIONAL_ORDER_FLOW, EXTREME_ORDER_FLOW.
+- Standardized the full canonical Order Block family:
+  ORDER_BLOCK_CANDIDATE, VALIDATED_ORDER_BLOCK, DECISIONAL_ORDER_BLOCK, EXTREME_ORDER_BLOCK, ORIGIN_ORDER_BLOCK.
+- Removed ENTRY_CONTEXT_VALID from the implementation contract; ENTRY_AUTHORIZED is the canonical authorization state and remains distinct from order submission, fill, and position state.
+- Standardized runtime CHoCH resolution identifiers to the canonical spelling CHoCH_ELIGIBLE / CHoCH_CONFIRMED.
+- Removed the obsolete fallback Major IDM terminology from the project contract; Major IDM remains one semantic class with provenance.
+- Preserved historical terminology in AGENT_REVIEW itself and source/evidence files.
+
+## Legacy test cleanup context
+The current product architecture no longer includes smc_htf_ltf_monitor or the superseded news_data test path. Legacy tests depending on those removed runtime interfaces are retired separately from canonical SMC semantics.
+
+## Audit status before test run
+PASS — no intended legacy OF/OB canonical alias remains in the active files changed by this phase.
+PASS — canonical CHoCH spelling now matches between skill and runtime.

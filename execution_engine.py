@@ -211,7 +211,7 @@ def evaluate_execution_state(
     # L5 Provenance
     choch_confirmed = False
     if l5_result and hasattr(l5_result, 'resolution'):
-        if getattr(l5_result.resolution, 'name', '') == 'CHOCH_CONFIRMED':
+        if getattr(l5_result.resolution, 'name', '') == 'CHoCH_CONFIRMED':
             choch_confirmed = True
 
     # --- 1. Order Flow Lifecycle ---
@@ -538,7 +538,7 @@ def expire_pois(pois: List[ExecutionObject], l4_result: Any, current_range_id: s
 
 def fail_pois(pois: List[ExecutionObject], l5_result: Any) -> List[ExecutionObject]:
     choch_confirmed = False
-    if l5_result and hasattr(l5_result, 'resolution') and getattr(l5_result.resolution, 'name', '') == 'CHOCH_CONFIRMED':
+    if l5_result and hasattr(l5_result, 'resolution') and getattr(l5_result.resolution, 'name', '') == 'CHoCH_CONFIRMED':
         choch_confirmed = True
             
     result = []

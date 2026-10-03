@@ -20,7 +20,7 @@ def test_body_close_opposing_boundary_is_eligible_not_confirmed_without_gate():
         confirmation_gate_open=False,
         ltf_context_active=True,
     )
-    assert result.resolution is choch_engine.CHoCHResolution.CHOCH_ELIGIBLE
+    assert result.resolution is choch_engine.CHoCHResolution.CHoCH_ELIGIBLE
     assert result.structural_break is not None
     assert result.structural_break.mode is BreachMode.CLOSE
 
@@ -34,7 +34,7 @@ def test_body_close_can_confirm_only_when_complete_gate_is_supplied():
         ref,
         confirmation_gate_open=True,
     )
-    assert result.resolution is choch_engine.CHoCHResolution.CHOCH_CONFIRMED
+    assert result.resolution is choch_engine.CHoCHResolution.CHoCH_CONFIRMED
     assert result.confirmed
     assert result.post_choch_regime is not None
     assert result.post_choch_regime.new_direction is PullbackDirection.BULLISH
@@ -52,7 +52,7 @@ def test_non_major_external_wick_can_enter_choch_gate():
         ref,
         confirmation_gate_open=True,
     )
-    assert result.resolution is choch_engine.CHoCHResolution.CHOCH_CONFIRMED
+    assert result.resolution is choch_engine.CHoCHResolution.CHoCH_CONFIRMED
     assert result.post_choch_regime is not None
     assert result.post_choch_regime.ltf_context_cleared
     assert result.structural_break is not None
@@ -93,7 +93,7 @@ def test_major_idm_ltf_glitch_wick_is_choch_eligible():
         confirmation_gate_open=True,
         ltf_context_active=True,
     )
-    assert result.resolution is choch_engine.CHoCHResolution.CHOCH_CONFIRMED
+    assert result.resolution is choch_engine.CHoCHResolution.CHoCH_CONFIRMED
     assert result.confirmed
 
 
@@ -114,7 +114,7 @@ def test_major_idm_body_close_enters_choch_gate():
         confirmation_gate_open=False,
         ltf_context_active=True,
     )
-    assert result.resolution is choch_engine.CHoCHResolution.CHOCH_ELIGIBLE
+    assert result.resolution is choch_engine.CHoCHResolution.CHoCH_ELIGIBLE
 
 
 def test_ltf_minor_idm_no_physical_break():
@@ -206,7 +206,7 @@ def test_ltf_minor_idm_body_close_is_choch_eligible():
         confirmation_gate_open=False,
         ltf_context_active=True,
     )
-    assert result.resolution is choch_engine.CHoCHResolution.CHOCH_ELIGIBLE
+    assert result.resolution is choch_engine.CHoCHResolution.CHoCH_ELIGIBLE
     assert result.structural_break is not None
     assert result.structural_break.mode is BreachMode.CLOSE
 

@@ -22,7 +22,7 @@ The project's canonical tradable POI ontology is the source-backed OF/OB executi
 
 ```text
 ELIGIBLE_ORDER_FLOW
-VALID ORDER BLOCK (OB)
+VALIDATED ORDER BLOCK (OB)
         ↓
    CANONICAL POI
 
@@ -94,7 +94,7 @@ POI → NOT_STRUCTURE
 POI → NOT_BOS
 POI → NOT_CHoCH
 POI → NOT_AUTOMATIC_ENTRY
-FVG → OB_VALIDATOR_ONLY
+FVG → ORDER_BLOCK_VALIDATOR_ONLY
 ```
 
 A code path that violates these invariants is non-canonical even if its output appears visually plausible.
@@ -215,7 +215,7 @@ ELIGIBLE_ORDER_FLOW ≠ LIQUIDITY
 ELIGIBLE_ORDER_FLOW ≠ VALID_BOS
 SMT ≠ ELIGIBLE_ORDER_FLOW
 PRE-IDM OF ≠ TRADABLE_POI
-OF TOUCH ≠ OF_MITIGATED
+OF TOUCH ≠ ORDER_FLOW_MITIGATED
 ```
 ## 37.6 Engineering Liquidity Identification and Lifecycle
 
@@ -306,7 +306,7 @@ Candle sweeps previous candle's extreme
 PILLAR 3
 Required associated FVG / imbalance exists, and the FVG has not been completely filled/consumed
         ↓
-VALID ORDER BLOCK
+VALIDATED ORDER BLOCK
         ↓
 POI ELIGIBILITY
 ```
@@ -324,7 +324,7 @@ VALID_PULLBACK
         ↓
 IDM_TAKEN
         ↓
-OF_ELIGIBLE
+ELIGIBLE_ORDER_FLOW
         ↓
 ELIGIBLE_ORDER_FLOW
 
@@ -342,7 +342,7 @@ The current source update supersedes the earlier shortcut that treated the first
 A `DECISIONAL_ORDER_BLOCK` is the validated Order Block that **causes the canonical structural break / VALID_BOS**. It is selected from the impulse-side Order Block lineage associated with the canonical Decisional Order Flow and the displacement that actually produces the BOS.
 
 ```text
-VALID ORDER BLOCK CANDIDATE
+VALIDATED ORDER BLOCK CANDIDATE
         ↓
 CAUSAL DISPLACEMENT
         ↓
@@ -353,9 +353,9 @@ VALID_BOS
 DECISIONAL_ORDER_BLOCK = ORDER BLOCK THAT CAUSED THE BOS
 ```
 
-The Decisional OB is therefore **not defined by temporal proximity to inducement alone**. The earlier rule "first validated Order Block after inducement" is superseded and must not be implemented as a canonical shortcut.
+The Decisional Order Block is therefore **not defined by temporal proximity to inducement alone**. The earlier rule "first validated Order Block after inducement" is superseded and must not be implemented as a canonical shortcut.
 
-Once canonicalized, the Decisional OB identity remains tied to the causal BOS event. A later mitigation or failure of another Order Flow does not retroactively change the Decisional OB identity.
+Once canonicalized, the Decisional Order Block identity remains tied to the causal BOS event. A later mitigation or failure of another Order Flow does not retroactively change the Decisional Order Block identity.
 
 #### Extreme Order Block
 
@@ -366,23 +366,23 @@ An `EXTREME_ORDER_BLOCK` is selected from the furthest unmitigated validated Ord
 Order Block validity is determined by its own canonical validation pillars. It is not automatically invalidated merely because the parent/containing Order Flow is unmitigated or because another Order Flow has failed.
 
 ```text
-OB_PILLARS_VALID → OB_VALID
-OF_STATE_CHANGE ↛ AUTOMATIC OB INVALIDATION
-OF_UNMITIGATED ↛ OB_INVALID
-OF_FAILURE ↛ OB_INVALID
+ORDER_BLOCK_PILLARS_VALID → OB_VALID
+ORDER_FLOW_STATE_CHANGE ↛ AUTOMATIC OB INVALIDATION
+ORDER_FLOW_UNMITIGATED ↛ ORDER_BLOCK_INVALID
+ORDER_FLOW_FAILURE ↛ ORDER_BLOCK_INVALID
 ```
 
-The source update explicitly permits use of a valid Decisional OB even while the associated Order Flow remains unmitigated. This does not remove the Rule-of-Two constraint or create additional active POIs.
+The source update explicitly permits use of a valid Decisional Order Block even while the associated Order Flow remains unmitigated. This does not remove the Rule-of-Two constraint or create additional active POIs.
 
 #### OB candidate → FVG selection shift
 
 When the source-defined OB selection process identifies a candidate candle that does not satisfy the required FVG association, do not attach a later FVG retrospectively to that candle. Shift selection to the next eligible candle in the relevant source-defined sequence and evaluate the FVG association again. The final selected candle must independently satisfy all applicable OB validation pillars.
 
 ```text
-CANDIDATE OB CANDLE
+ORDER BLOCK CANDIDATE CANDLE
         ↓
 REQUIRED FVG ASSOCIATION?
-   ├─ YES → ELIGIBLE SELECTED OB
+   ├─ YES → VALIDATED SELECTED ORDER BLOCK
    └─ NO
         ↓
 NEXT ELIGIBLE CANDLE IN SOURCE-DEFINED SEQUENCE
@@ -397,8 +397,8 @@ APPLY ALL OB VALIDATION PILLARS
 The source describes Order Flow as the primary selection context and Order Block as the secondary refinement/selection context, but this is **not** a validity dependency.
 
 ```text
-OF_PRIMARY_CONTEXT ≠ OB_INVALID_WHEN_OF_EXISTS
-OB_VALIDITY = INDEPENDENT
+ORDER_FLOW_PRIMARY_CONTEXT ≠ ORDER_BLOCK_INVALID_WHEN_ORDER_FLOW_EXISTS
+ORDER_BLOCK_VALIDITY = INDEPENDENT
 RULE_OF_TWO → selects active tradable POIs
 ```
 ### OB mitigation
@@ -935,8 +935,8 @@ Execution priority and structural validation are separate domains.
 
 ```text
 EXECUTION PRIORITY ≠ STRUCTURAL VALIDATION
-ORDER FLOW FAILED ≠ VALID_BOS
-ORDER FLOW FAILED ≠ CHoCH_CONFIRMED
+ORDER FLOW FAILURE ≠ VALID_BOS
+ORDER FLOW FAILURE ≠ CHoCH_CONFIRMED
 POI FAILURE ≠ STRUCTURAL FAILURE
 ```
 
