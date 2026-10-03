@@ -100,7 +100,7 @@ The following canonical scopes are resolved internally to UTC intervals:
 
 ForexFactory-specific date spelling and URL parameters remain internal provider concerns.
 
-The current provider parser reads the ForexFactory calendar HTML directly. It extracts the provider event ID from each calendar row, reads the provider-displayed calendar timezone, converts the row's local date/time to canonical UTC, and normalizes the event fields. Legacy embedded `days` JSON is accepted when present, but absence of that legacy payload is not itself an acquisition failure. Provider timezones are resolved through Python's standard `zoneinfo` IANA timezone database, with UTC/GMT fixed offsets also accepted; no hard-coded regional DST rule is used. On Windows, the runtime must have an available timezone database (for example the `tzdata` package) for IANA zones.
+The current provider parser reads the ForexFactory calendar HTML directly and the HTML row parser is the canonical acquisition path. It extracts the provider event ID from each calendar row, reads the provider-displayed calendar timezone, converts the row's local date/time to canonical UTC, and normalizes the event fields from the row's currency, impact, title, actual, forecast, and previous cells. The legacy embedded `days` JSON payload may still exist in the provider response, but it must not override the HTML parser or supply canonical event fields. Provider timezone resolution uses Python's standard `zoneinfo` IANA timezone database, with UTC/GMT fixed offsets also accepted; no hard-coded regional DST rule is used. On Windows, the runtime must have an available timezone database (for example the `tzdata` package) for IANA zones.
 
 ## 1.3 Request policy
 
@@ -467,8 +467,8 @@ Date-range deletion includes both endpoint dates.
 
 - `fetch_calendar_source`
 - `parse_calendar_html`
-- `extract_days_payload` (legacy embedded payload)
-- `parse_calendar_days` (legacy embedded payload)
+- `extract_days_payload` (legacy compatibility helper; not canonical acquisition)
+- `parse_calendar_days` (legacy compatibility helper; not canonical acquisition)
 - `normalize_provider_event`
 - `normalize_calendar_events`
 

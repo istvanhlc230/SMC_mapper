@@ -1143,16 +1143,17 @@ def run_acquisition(scope: str) -> None:
             provider_range = f"{first_day}-{last_day}"
 
             html = fetch_calendar_source("range", provider_range)
-            try:
-                payload = extract_days_payload(html)
-            except SystemExit:
-                days_data = parse_calendar_html(
-                    html,
-                    fetch_start,
-                    fetch_end,
-                )
-            else:
-                days_data = parse_calendar_days(payload)
+
+            # The live ForexFactory HTML row parser is the canonical
+            # acquisition path. The embedded days payload is legacy provider
+            # data and must never override the canonical HTML fields because
+            # its country/title/impact representation is not the normalized
+            # event contract used by the rest of the application.
+            days_data = parse_calendar_html(
+                html,
+                fetch_start,
+                fetch_end,
+            )
 
             if not days_data:
                 sys.exit("Error: Provider returned no calendar days.")

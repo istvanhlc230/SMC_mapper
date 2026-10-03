@@ -113,7 +113,7 @@ Concurrent writes are serialized using a Windows named mutex or POSIX directory-
 ## 9. Provider Boundary
 
 The provider is ForexFactory.
-The current implementation primarily parses the ForexFactory calendar HTML response directly. It extracts provider event IDs, calendar rows, displayed provider timezone, event timestamps, impact, currency, title, actual, forecast, and previous values, then normalizes them before any persistent update. Legacy embedded `days` JSON is still accepted when present.
+The current implementation parses the ForexFactory calendar HTML response directly. The HTML row parser is the canonical acquisition path: it extracts provider event IDs, calendar rows, displayed provider timezone, event timestamps, impact, currency, title, actual, forecast, and previous values, then normalizes them before any persistent update. Legacy embedded `days` JSON may be present in the response but must not override or substitute for the canonical HTML row fields.
 Provider fetch or payload validation failure terminates without replacing the existing calendar document.
 
 ## 10. Domain Functions
@@ -140,8 +140,8 @@ Provider and normalization:
 
 - fetch_calendar_source — retrieve provider HTML.
 - parse_calendar_html — parse current ForexFactory calendar rows and provider timezone.
-- extract_days_payload — extract legacy embedded days JSON when present.
-- parse_calendar_days — decode and validate legacy provider days.
+- extract_days_payload — retain legacy embedded days JSON extraction for diagnostics/compatibility only; it is not the canonical acquisition source.
+- parse_calendar_days — decode legacy provider days for compatibility only; its result is not persisted by the canonical acquisition path.
 - normalize_provider_event — map one provider event to the canonical event model.
 - normalize_calendar_events — normalize a provider day collection.
 

@@ -53,3 +53,19 @@ Invalid-input validation should include malformed dates/times/ranges, unsupporte
 ## Cross-Specification Synchronization
 
 The owning Calendar specification was migrated to the positional CLI contract. The Monitor specification was also updated so its Calendar process boundary uses `calendar.py SCOPE SYMBOL [current|next]` or the cache-only `calendar.py SYMBOL [current|next]` form.
+
+
+## Calendar Provider Parser Correction — 2026-10-03
+
+The prior implementation incorrectly selected the embedded ForexFactory `days` payload whenever it was present. That produced provider-internal country codes such as `AU`, `JN`, `US`, widespread `UNKNOWN` impact values, and empty event titles in the persisted canonical event model.
+
+Correction applied:
+
+- The live ForexFactory HTML row parser is now the sole canonical acquisition path.
+- Provider HTML currency, impact, title, actual, forecast, previous, and timezone fields are normalized from the calendar rows.
+- The embedded `days` payload is retained only as a legacy compatibility/diagnostic helper and cannot override canonical HTML data.
+- The owning Calendar design and specification were synchronized in the same commit.
+
+The previously generated `calendar.json` containing malformed canonical fields must be discarded/rebuilt through a fresh scope-bearing acquisition after this correction. Existing coverage must not be treated as proof that the malformed event normalization is acceptable.
+
+Acceptance remains BLOCKED until a fresh local acquisition/query demonstrates canonical currency codes (for example `USD`, `HUF`, `EUR`, `JPY`, `AUD` where applicable), populated event titles, and non-default impact values where the provider supplies impact data.
