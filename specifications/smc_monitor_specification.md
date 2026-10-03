@@ -1,6 +1,6 @@
 # SMC Monitor Specification
 
-**Status:** Working implementation specification.
+**Status:** Current implementation specification.
 **Scope:** Functional and implementation specification for the future smc_monitor.py.
 **Canonical authority:** .agents/skills/smc/ remains the sole authority for canonical SMC semantics. This document defines runtime orchestration, scheduling, target evaluation, alerting, and process boundaries only.
 
@@ -301,7 +301,7 @@ class MonitoredAnalysis:
     analysis_mode: str
     last_checkpoint: datetime | None
     next_due_time: datetime | None
-    last_alert_key: str | None
+    emitted_alert_keys: set[str]
 ~~~
 
 This registry is not persisted.
@@ -765,11 +765,11 @@ V1 resolves one target per active setup. Target allocation beyond one resolved t
 
 Preserve:
 
-- canonical target-priority semantics;
-- universal countertrend coordinate where required;
-- universal RR target where required;
-- target-plan as runtime architecture, not canonical SMC ontology;
-- explicit target provenance.
+- canonical target semantics from the applicable Layer-7 contract;
+- target provenance;
+- target-plan as runtime architecture, not a canonical SMC ontology.
+
+The Monitor must not assume a universal target-priority ordering, universal countertrend coordinate, or universal RR target. Those values are resolved only where the applicable canonical/downstream contract defines them.
 
 A target must never be manufactured solely to satisfy RR.
 
@@ -1661,6 +1661,6 @@ smc_monitor.py is implementation-complete when:
 - tests cover orchestration, target, RR, alert, isolation, and process boundaries;
 - domain contracts remain directly portable at the conceptual level to MQL4/MQL5.
 
-**STATUS: IMPLEMENTATION-READY CONTRACT — CROSS-FILE OWNERSHIP AND RUNTIME BOUNDARIES RECONCILED WITH MARKET DATA AND MAPPER SPECIFICATIONS.**
+**STATUS: CURRENT IMPLEMENTATION CONTRACT — CROSS-FILE OWNERSHIP RECONCILED**
 
 ---
