@@ -582,7 +582,7 @@ When supplied, it defines the requested start of the analysis window and selects
 Accepted forms:
 
 - timezone-aware ISO-8601 datetime; or
-- ISO calendar date, normalized deterministically to `00:00:00Z` .
+- ISO calendar date, normalized deterministically to `00:00:00Z`.
 
 Examples:
 
@@ -1200,8 +1200,6 @@ The mapper derives Dealing Range history boundaries strictly from the canonical 
 
 ---
 
----
-
 # 8. CANONICAL POI REPRESENTATION
 
 The mapper uses a unified storage representation for canonical POIs. It does not redefine the Layer 6 POI ontology or lifecycle.
@@ -1459,6 +1457,7 @@ The CLI interfaces must strictly separate persistent market data from user-visib
 - `stderr` must never be merged into a machine-readable data channel.
 - Without `--debug`, debug/trace output is suppressed.
 - With `--debug`, diagnostics are visible directly on the terminal.
+- A process wrapper may capture diagnostics transiently for error reporting, but must never parse or persist them as data.
 - Debug mode must never alter canonical calculations or normalized market-data semantics.
 - Normal runtime must produce no user-visible CLI output.
 
@@ -1760,7 +1759,8 @@ Tests must be able to execute canonical-processing logic from fixed persisted ca
 At minimum, the finished mapper implementation must have focused tests covering:
 
 - CLI option parsing, including equal HTF/LTF single-timeframe mode and invalid HTF<LTF combinations;
-- deterministic analysis-key creation and ambiguous existing-analysis selection;
+- deterministic analysis-key creation from normalized timeframe configuration + persisted analysis_start;
+- ambiguous existing-analysis selection;
 - UTC parsing and completion_time-based end-time eligibility;
 - rejection of current/in-progress candles as canonical input;
 - independent HTF/LTF ranges and HTF_CONTEXT_UNAVAILABLE behavior;
@@ -1784,6 +1784,7 @@ Definition of done:
 - Market Data current snapshot never enters canonical structural input;
 - no source-level orderflow delta field is required;
 - checkpoint advances only after successful atomic persistence;
+- analysis_start is persisted and is the sole analysis-identity boundary;
 - structures state is deterministic and incrementally resumable;
 - implementation contains no runtime dependency on legacy artifacts;
 - focused mapper tests pass without network access;
