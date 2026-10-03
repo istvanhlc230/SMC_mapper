@@ -59,3 +59,55 @@ The source corpus does not provide a deterministic first-BOS retracement baselin
 - Canonical implementation representation: `.agents/skills/smc/08_implementation.md`
 - Source evidence remains historical evidence only; the bootstrap process is a project-canonical resolution, not a transcript quotation.
 - Implementation-facing terminology: `E_retrace(t)` = `dynamic_retracement_extreme` until it is locked as `PROTECTED_STRUCTURAL_EXTREME` at the actual `VALID_BOS` candle.
+
+
+## 10. Project-canonical divergence ledger for future audits
+
+The following items are intentionally **not source-corpus rewrites**. They record project-canonical resolutions that differ from, refine, or formalize wording found in the indexed source material. During future audits, these must not be reported as unexplained knowledgebase-vs-skill contradictions.
+
+### IDM takeout vs. structural swing confirmation
+
+Some source transcripts use language such as “IDM takeout confirms/acquires the swing point.” This is retained as **source terminology**.
+
+The current project-canonical state machine deliberately represents the lifecycle as:
+
+```text
+IDM_TAKEN
+→ SWING_CANDIDATE / PROVISIONAL_STRUCTURAL_EXTREME
+→ applicable STRUCTURAL_RETRACEMENT_QUALIFICATION
+→ CONFIRMED_STRUCTURAL_SWING
+```
+
+Therefore, a source statement that uses “confirmed swing” immediately after IDM takeout must not be translated into a direct project-canonical `IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING` transition.
+
+### First-BOS bootstrap
+
+The source corpus does not deterministically define the first-BOS retracement baseline. `BOOTSTRAP_ORIGIN_ANCHOR` and the transient `BOOTSTRAP_RANGE` are **project-canonical resolutions**, not source quotations.
+
+The bootstrap anchor is initialization evidence only. It is not a Protected Structural Extreme, governing Dealing Range boundary, BOS reference, or ordinary CHoCH reference. The first canonical Protected Structural Extreme is locked from the live `dynamic_retracement_extreme` at `VALID_BOS`.
+
+### Order Block Inside-Bar exclusion
+
+The project has an explicit canonical rule that a strict `Inside Bar` is **excluded from Order Block candidate selection**. It cannot become an `ORDER_BLOCK_CANDIDATE`, `VALIDATED_ORDER_BLOCK`, Decisional OB, or Extreme OB, and mother-candle OB provenance is not transferred into it.
+
+This is a project-canonical selection rule. It must not be invented retroactively as a universal transcript quotation merely because source material discusses Inside Bars in other candle/pullback contexts.
+
+### Order Block FVG fallback
+
+Source wording may describe advancing to the “next eligible” candle when the required FVG association is missing. The project-canonical deterministic resolution is the **immediately next chronological candle**, followed by independent re-evaluation. No arbitrary forward skipping is permitted.
+
+### Audit precedence
+
+For future reconciliation:
+
+```text
+ORIGINAL SOURCE
+    ↓
+SOURCE EVIDENCE / REFERENCE NOTES
+    ↓
+PROJECT-CANONICAL RESOLUTION RECORDED HERE
+    ↓
+.agents/skills/smc/  ← implementation authority
+```
+
+When one of the above canonical resolutions is encountered, auditors should verify that the distinction is preserved rather than treating the canonical resolution itself as a contradiction to the unchanged source corpus.
