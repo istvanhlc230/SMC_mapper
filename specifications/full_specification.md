@@ -49,7 +49,7 @@ Primary ownership:
 
 ### Calendar — `calendar_specification.md`
 
-Detailed contract: sections **0–16**.
+Detailed contract: sections **0–14**.
 
 Primary ownership:
 - ForexFactory acquisition and parsing;
@@ -57,8 +57,9 @@ Primary ownership:
 - canonical UTC event time;
 - shared news-calendar cache;
 - symbol relevance filtering;
-- symbol News JSON materialization;
-- atomic News persistence;
+- local time-based query API;
+- explicit deletion and no automatic retention;
+- atomic Calendar persistence;
 - Calendar error/test contract.
 
 ### Monitor — `smc_monitor_specification.md`
