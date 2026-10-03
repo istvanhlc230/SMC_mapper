@@ -140,7 +140,7 @@ The source implementation must remain behind one acquisition boundary so a futur
 
 Use one owner for each implementation policy.
 
-Required constants:
+Required Calendar constants:
 
 ~~~text
 CALENDAR_URL
@@ -148,18 +148,21 @@ REQUEST_TIMEOUT_SECONDS
 CALENDAR_CACHE_PATH
 SYMBOL_NEWS_FILENAME_PATTERN
 CALENDAR_MAX_CACHE_AGE / refresh policy, if later approved
+~~~
+
+News warning policy is not owned by Calendar.
+
+The Monitor owns:
+
+~~~text
 NEWS_WARNING_MIN_IMPACT
 NEWS_WARNING_BEFORE_MINUTES
 NEWS_WARNING_AFTER_MINUTES
 ~~~
 
-The exact numeric News warning windows are a Monitor/Calendar product-policy decision, not provider semantics.
+Calendar persistence must retain the source impact classification such as `low`, `medium`, or `high`, but must never filter events because of warning policy.
 
-The current source record contains an `impactName` such as `low`, `medium`, or `high`. Calendar persistence must retain that source impact classification; Monitor warning policy decides which impact levels are warning-eligible.
-
-Do not hard-code the warning windows in multiple functions.
-
-The exact V1 values of `NEWS_WARNING_BEFORE_MINUTES`, `NEWS_WARNING_AFTER_MINUTES`, and minimum warning impact remain single-owner policy values. The structure of the dynamic warning contract is normative even when those policy values are changed.
+The exact Monitor warning values are intentionally absent from this Calendar specification; they belong to the Monitor policy owner.
 
 ---
 
