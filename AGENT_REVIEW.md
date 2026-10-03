@@ -3059,3 +3059,60 @@ Therefore each symbol directory still contains the three runtime JSON files: Mar
 - `volume.ohlc` and `volume.orderflow` source schemas contain only buy/sell at the Market Data boundary.
 - Derived delta analytics remain in the Mapper POI volume contract.
 - No `.agents/skills/smc/` file was modified.
+
+
+# PHASE 25 — SPECIFICATION CROSS-FILE RE-AUDIT / DEFRAGMENTATION — 2026-10-03
+
+## Scope
+Re-audited the active V1 specifications in order:
+1. `specifications/full_specification.md`
+2. `specifications/market_data_specification.md`
+3. `specifications/smc_mapper_specification.md`
+4. `specifications/smc_monitor_specification.md`
+
+The audit checked logical consistency, semantic ownership, duplicated rules, implementation ambiguity, persistence boundaries, process boundaries, time semantics, lifecycle naming, target/RR/alert behavior, and developer-agent implementation clarity against `.agents/skills/smc/` without modifying the canonical skill files.
+
+## Corrections
+
+### Full specification
+- Reduced `full_specification.md` to a pure navigation/index document.
+- Removed implementation/runtime rules from the index.
+- Added owner-section navigation so the developer agent can jump directly to the authoritative contract.
+
+### Market Data
+- Defined all acquisition modes explicitly: historical, live-only, last-candle, and unbounded incremental.
+- Defined deterministic end-only behavior.
+- Defined temporary retention protection for the active historical acquisition range.
+- Made multi-timeframe update atomic at the symbol-document level: a failed timeframe does not persist partial changes.
+- Clarified current snapshot vs completed candle handling in live modes.
+- Tightened required terminology and provider/test contracts.
+- Clarified diagnostics as non-data and never forwarded as machine input.
+
+### Mapper
+- Defined `SINGLE_TIMEFRAME` and `HTF_LTF` modes explicitly.
+- Made `analysis_start` a required persisted identity boundary.
+- Kept `requested_start` as provenance and `effective_start` as execution-window state only.
+- Made persisted timeframe/entry-timeframe representation explicit.
+- Removed redundant Monitor-selection state from Mapper storage.
+- Reduced downstream target/RR/alert content to ownership references.
+- Explicitly preserved the canonical first-BOS baseline ambiguity; no synthetic range/extreme may be invented.
+- Cleaned POI lifecycle terminology and persistence boundaries.
+- Preserved independent POI volume branches and derived delta analytics without source-level delta.
+
+### Monitor
+- Made `analysis_start` the boundary passed when selecting a stored Mapper analysis.
+- Removed `effective_start` from the persisted analysis consumer model.
+- Separated target resolution from current-price evaluation.
+- Defined V1 one-target resolution behavior when candidate selection is otherwise ambiguous.
+- Split `SETUP_ELIGIBLE` and `TARGET_REACHED` into separate alert types and evaluation paths.
+- Made alert deduplication retry-safe: keys are recorded only after successful notification.
+- Added explicit directional target-reached semantics using the current reference price only; no intrabar microsequence is inferred.
+- Clarified `--timezone` as presentation/reporting context only.
+
+## Verification
+- No active specification contains Probability, News, multi-leg Target Plan, stale POI lifecycle aliases, stale `last_alert_key`, or a structures-JSON `current` field.
+- `full_specification.md` contains navigation/ownership only.
+- No `.agents/skills/smc/` file was modified.
+
+## Test status
+This phase was specification-only. No runtime implementation files were changed and no local pytest suite was run.
