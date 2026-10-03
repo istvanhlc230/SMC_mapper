@@ -3463,3 +3463,12 @@ PASS — no old OF/OB alias is intentionally retained in the active files change
 
 ## Test status
 Terminology-only refactor. Local pytest was not run in this environment.
+
+
+# PHASE 34 — COMPLETE OB CANDIDATE TAXONOMY CLOSURE — 2026-10-03
+
+Added explicit ORDER_BLOCK_CANDIDATE terminology to the canonical execution validation section and the implementation mapping so the complete OF/OB taxonomy is represented consistently at both canonical and implementation-contract levels.
+
+Audit result: PASS — candidate, qualification, role, and origin terms are now all explicit in the active canonical and implementation documents.
+
+Test status: terminology/documentation-only; local pytest not run.

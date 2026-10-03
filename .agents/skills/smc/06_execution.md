@@ -292,6 +292,7 @@ NO_VALID_PULLBACK_BEFORE_EXTREME_POI → NO ENG_LQD
 ```
 ## 38. Order Block validation
 
+An `ORDER_BLOCK_CANDIDATE` is a candidate candle/zone evaluated against the canonical three-pillar validation. It becomes a `VALIDATED_ORDER_BLOCK` only when all three pillars pass.
 
 A candle/zone may be treated as a Validated Order Block only when the canonical three-pillar validation is satisfied.
 

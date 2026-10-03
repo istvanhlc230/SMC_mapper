@@ -809,6 +809,10 @@ Notification payload should preserve at minimum:
 
 The monitor must not emit `POSITION_CLOSED` unless an independent execution/account component verifies that outcome.
 
+### Order Block implementation mapping
+
+An `ORDER_BLOCK_CANDIDATE` is evaluated against the canonical three-pillar validation before it can become a `VALIDATED_ORDER_BLOCK`. A candidate that fails validation is not promoted to a validated Order Block.
+
 ### Decisional / Extreme Order Block selection implementation mapping
 
 Required implementation behavior:
