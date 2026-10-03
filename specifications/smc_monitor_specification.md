@@ -1232,6 +1232,7 @@ At minimum, the logical alert detail contains:
 - entry reference price when available;
 - stop-loss reference when available;
 - TP1, TP2 and TP3 when source-backed target levels are available;
+- current reference price when available;
 - resolved target price and target coordinate/type when a single resolved target exists;
 - projected RR when calculable;
 - News event identity/time/impact/status when the alert is News-related;
@@ -1300,6 +1301,8 @@ Recommended logical JSON shape:
 ```
 
 Field values that are unavailable or not applicable are `null`. The exact JSON numeric serialization follows the Monitor's approved deterministic numeric representation.
+
+For the current V1 single-target runtime, `target_price` is the resolved target. `tp1`, `tp2`, and `tp3` are optional presentation slots for source-backed downstream target levels; they must not cause the Monitor to invent, rank, or split targets.
 
 The JSON output is transient runtime output. It is never written to Calendar, Structures, Market Data, or Monitor persistent state.
 
@@ -2214,6 +2217,7 @@ smc_monitor.py is implementation-complete when:
 - TARGET_REACHED notification is separate from target clearance/RR;
 - there is no automatic order or position management;
 - alerts are runtime notifications with deterministic deduplication;
+- alert JSON exposes available entry, SL, TP1, TP2, TP3 and News status fields without changing target semantics;
 - Monitor state is not persisted into canonical Market Data, Structures, or Calendar JSON;
 - failures are isolated and finite-retry;
 - tests cover orchestration, target, RR, alert, isolation, and process boundaries;
