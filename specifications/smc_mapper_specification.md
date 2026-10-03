@@ -933,7 +933,7 @@ No mapper-level section may redefine those semantic rules.
 
 ## 5.3 Processing-order invariants
 
-The mapper must consume the Layer-3 `MAJOR_RETRACEMENT_QUALIFIED` result for continuation BOS. The first-BOS retracement-baseline ambiguity documented by the canonical Layer-3 authority must never be resolved by inventing a synthetic Dealing Range or Protected Structural Extreme. Until an approved initialization policy exists, an unresolved first-BOS baseline must remain explicitly unresolved and must not be promoted to `VALID_BOS`.
+The mapper must consume the Layer-3 `MAJOR_RETRACEMENT_QUALIFIED` result for continuation BOS. The canonical source corpus does not define the first-BOS measurement baseline; the project therefore resolves this source gap with an isolated bootstrap initialization policy. Before the first `VALID_BOS`, the mapper may create a bootstrap-only `BOOTSTRAP_PROTECTED_LEVEL` from an actual initial active-impulse candle extreme (chart inception defaults to the first effective completed candle; post-CHoCH callers provide the explicit initial active-impulse origin). After `IDM_TAKEN` confirms the `CONFIRMED_STRUCTURAL_SWING`, a transient `BOOTSTRAP_RANGE` is measured from the bootstrap level to that confirmed swing solely to run the existing Layer-3 50% / 38.2% qualification rules. This bootstrap range is not a governing Dealing Range, does not create a `PROTECTED_STRUCTURAL_EXTREME`, and cannot act as a canonical CHoCH boundary. On the first valid `VALID_BOS`, bootstrap state is destroyed and the actual validated `E_retrace` becomes the first canonical `PROTECTED_STRUCTURAL_EXTREME`; only then is the first confirmed Dealing Range established. If the actual bootstrap origin cannot be resolved, the mapper must fail closed rather than fabricate a level.
 
 The mapper's canonical processing boundary is the completion of each eligible completed candle within the resolved analysis interval.
 
@@ -1140,8 +1140,11 @@ The mapper derives Dealing Range history boundaries strictly from the canonical 
 - A currently open Dealing Range is runtime state, not history.
 - `VALID_BOS` is the canonical lifecycle event that establishes the next confirmed Dealing Range lifecycle; when a governing range already exists, it closes that previous range first. The first `VALID_BOS` establishes the first confirmed Dealing Range and therefore has no pre-existing governing range to close.
 - The mapper must not close or start a Dealing Range because of a physical break, IDM sweep, CHoCH-eligible break, insufficient-retracement `IMPULSE_EXTENSION`, mapper execution boundary, or retention operation.
-- Before the first canonical `VALID_BOS`, no governing Dealing Range may be fabricated for history or used as a substitute for the unresolved first-BOS canonical baseline.
-- The exact first-BOS retracement baseline remains the canonical/source gap documented by the SMC skill; the mapper must fail closed rather than invent a synthetic initialization rule.
+- Before the first canonical `VALID_BOS`, no governing Dealing Range is created from bootstrap state.
+- The project-canonical bootstrap measurement range is transient and exists only to apply the already-defined Layer-3 retracement qualification rules.
+- The bootstrap protected level is never promoted into canonical protected structure.
+- `VALID_BOS` destroys bootstrap state and locks the actual validated `E_retrace` as the first canonical `PROTECTED_STRUCTURAL_EXTREME`.
+- If the actual bootstrap origin is unavailable, the mapper fails closed rather than fabricating historical data or structural truth.
 
 ---
 

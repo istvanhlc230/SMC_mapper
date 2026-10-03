@@ -706,6 +706,7 @@ class SMCAnalyzer:
         first_bos_range_low: Decimal | None = None,
         first_bos_retracement_baseline_status: FirstBOSRetracementBaselineStatus =
         FirstBOSRetracementBaselineStatus.UNSPECIFIED_CANONICAL_INPUT,
+        bootstrap_origin_candle_id: str | None = None,
         htf_valid_pullback: bool = False,
         lifecycle: structural.IDMLifecycleContext | None = None,
         attempt_end_candle_id: str | None = None,
@@ -781,11 +782,6 @@ class SMCAnalyzer:
             first_bos_range_high is None or first_bos_range_low is None
         ):
             raise AnalyzerContractError("First-BOS baseline requires both high and low coordinates")
-        if first_bos_state and first_bos_retracement_baseline_status is FirstBOSRetracementBaselineStatus.AVAILABLE:
-            if first_bos_range_high is None or first_bos_range_low is None:
-                raise AnalyzerContractError(
-                    "AVAILABLE First-BOS baseline requires explicit implementation input coordinates"
-                )
         if first_bos_state and supplied_first_bos_baseline:
             if first_bos_retracement_baseline_status is not FirstBOSRetracementBaselineStatus.AVAILABLE:
                 raise AnalyzerContractError(
@@ -800,12 +796,29 @@ class SMCAnalyzer:
 
         effective_range_high = range_high
         effective_range_low = range_low
+        effective_first_bos_baseline_status = first_bos_retracement_baseline_status
+        bootstrap_protected_level = None
+
         if (
             first_bos_state
             and effective_range_high is None
             and effective_range_low is None
-            and first_bos_retracement_baseline_status is FirstBOSRetracementBaselineStatus.AVAILABLE
+            and not supplied_first_bos_baseline
         ):
+            if self.state is LifecycleState.POST_CHOCH and bootstrap_origin_candle_id is None:
+                raise AnalyzerContractError(
+                    "POST_CHOCH bootstrap requires explicit initial active-impulse origin candle ID"
+                )
+            bootstrap_protected_level = structural.bootstrap_protected_level_from_candles(
+                tuple(candles),
+                analysis_direction,
+                origin_candle_id=bootstrap_origin_candle_id,
+            )
+            effective_first_bos_baseline_status = (
+                FirstBOSRetracementBaselineStatus.AVAILABLE
+            )
+
+        if supplied_first_bos_baseline:
             effective_range_high = first_bos_range_high
             effective_range_low = first_bos_range_low
 
@@ -814,6 +827,7 @@ class SMCAnalyzer:
             l2_result,
             range_high=effective_range_high,
             range_low=effective_range_low,
+            bootstrap_protected_level=bootstrap_protected_level,
             htf_valid_pullback=htf_valid_pullback,
             lifecycle=lifecycle,
             attempt_end_candle_id=attempt_end_candle_id,
@@ -837,6 +851,17 @@ class SMCAnalyzer:
                     and l3_result.active_idm.takeout_candle_id is not None
                 ),
                 False,
+            )
+
+        if l4_result.valid_bos:
+            if l4_result.structural_break is None:
+                raise AnalyzerContractError(
+                    "VALID_BOS result requires structural-break provenance"
+                )
+            l3_result = structural.finalize_valid_bos(
+                candles,
+                l3_result,
+                break_candle_id=l4_result.structural_break.break_candle_id,
             )
 
         if choch_reference is not None:
@@ -887,7 +912,7 @@ class SMCAnalyzer:
             current_state=self.state,
             event=event,
             conditions=conditions,
-            first_bos_status=first_bos_retracement_baseline_status,
+            first_bos_status=effective_first_bos_baseline_status,
             major_retracement_qualified=major_retracement_qualified,
             is_choch_confirmed=is_choch_confirmed,
             is_major_idm_sweep=is_major_idm_sweep,
@@ -911,7 +936,7 @@ class SMCAnalyzer:
             l3_result=l3_result,
             l4_result=l4_result,
             l5_result=l5_result,
-            first_bos_retracement_baseline_status=first_bos_retracement_baseline_status,
+            first_bos_retracement_baseline_status=effective_first_bos_baseline_status,
             l6_result=execution_engine.evaluate_execution_state(candles, l2_result, l3_result, l4_result, l5_result),
             target_candidates=normalized_target_candidates,
             target_plan=target_plan,

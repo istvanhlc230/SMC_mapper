@@ -415,3 +415,167 @@ def test_layer3_does_not_export_bos_or_choch():
     assert not hasattr(structural, "CHoCH")
     assert not hasattr(structural, "POI")
     assert not hasattr(structural, "RR")
+
+
+def test_bootstrap_protected_level_uses_actual_initial_candle_extreme():
+    candles = (
+        c("origin", "5", "10", "4", "9"),
+        c("later", "9", "11", "8", "10"),
+    )
+    level = structural.bootstrap_protected_level_from_candles(
+        candles, minor.PullbackDirection.BULLISH
+    )
+    assert level.price == Decimal("4")
+    assert level.source_candle_id == "origin"
+
+    bearish = structural.bootstrap_protected_level_from_candles(
+        candles, minor.PullbackDirection.BEARISH, origin_candle_id="later"
+    )
+    assert bearish.price == Decimal("11")
+    assert bearish.source_candle_id == "later"
+
+
+def test_bootstrap_measurement_range_is_not_a_dealing_range():
+    level = structural.BootstrapProtectedLevel(
+        minor.PullbackDirection.BULLISH, Decimal("4"), "origin"
+    )
+    swing = structural.ConfirmedStructuralSwing(
+        minor.PullbackDirection.BULLISH,
+        Decimal("11"),
+        "swing",
+        "idm",
+        "sweep",
+    )
+    result = structural.StructuralAnalysis(
+        (), (swing,), None, None, structural.StructuralResolution.IDM_TAKEN,
+        bootstrap_protected_level=level,
+    )
+    bootstrap_range = structural._bootstrap_measurement_range(level, swing)
+    assert bootstrap_range.range_high == Decimal("11")
+    assert bootstrap_range.range_low == Decimal("4")
+    assert result.active_dealing_range is None
+    assert result.bootstrap_protected_level is level
+    assert result.bootstrap_range is None
+
+
+def test_bootstrap_retracement_uses_existing_layer3_qualification_rules():
+    candles = (
+        c("origin", "5", "10", "4", "9"),
+        c("sweep", "8", "9", "3", "8"),
+        c("confirm", "8", "11", "8", "10"),
+        c("idm_takeout", "10", "10.5", "2", "9"),
+        c("a", "9", "9.5", "9", "9.2"),
+        c("b", "9.2", "9.5", "8", "8.8"),
+        c("c", "8.8", "9", "7", "8.0"),
+    )
+    level = structural.bootstrap_protected_level_from_candles(
+        candles, minor.PullbackDirection.BULLISH
+    )
+    pb_extreme = minor.VerifiedPullbackExtreme(
+        minor.PullbackDirection.BULLISH, Decimal("3"), "sweep"
+    )
+    pb_liquidity = minor.PullbackDerivedLiquidityReference(
+        minor.LiquiditySide.SELL_SIDE, Decimal("3"), "sweep"
+    )
+    pb = minor.CandleLevelValidPullback(
+        minor.PullbackDirection.BULLISH, "origin", "sweep", "confirm",
+        pb_extreme, pb_liquidity
+    )
+    minor_result = minor.MinorStructureAnalysis(
+        (pb,), minor.ActivePullbackState(pb)
+    )
+    result = structural.analyze_layer3(
+        candles,
+        minor_result,
+        bootstrap_protected_level=level,
+        attempt_end_candle_id="c",
+    )
+    assert result.bootstrap_range is not None
+    assert result.bootstrap_range.range_low == Decimal("4")
+    assert result.bootstrap_range.range_high == Decimal("10")
+    assert result.retracement is not None
+    assert result.retracement.depth == Decimal("0.5")
+    assert result.retracement.qualified
+    assert result.retracement.reason == "STANDARD_EQUILIBRIUM"
+
+
+def test_valid_bos_destroys_bootstrap_and_locks_actual_retrace():
+    candles = (
+        c("sweep", "8", "9", "7", "8"),
+        c("confirm", "8", "10", "8", "9"),
+        c("r1", "9", "9.5", "7", "8"),
+        c("r2", "8", "8.5", "7", "7.5"),
+        c("r3", "7.5", "8", "7", "7.2"),
+        c("break", "7.2", "10.1", "7", "9"),
+    )
+    idm = structural.IDMEvent(
+        structural.IDMClass.MINOR_IDM,
+        structural.IDMOrigin.PULLBACK_DERIVED,
+        minor.PullbackDirection.BULLISH,
+        Decimal("7"),
+        "sweep",
+        "ref",
+        "pb",
+        "sweep",
+    )
+    swing = structural.ConfirmedStructuralSwing(
+        minor.PullbackDirection.BULLISH,
+        Decimal("10"),
+        "confirm",
+        "sweep",
+        "sweep",
+    )
+    q = structural.RetracementQualification(
+        True,
+        Decimal("0.60"),
+        3,
+        False,
+        False,
+        "STANDARD_EQUILIBRIUM",
+        "r3",
+    )
+    level = structural.BootstrapProtectedLevel(
+        minor.PullbackDirection.BULLISH, Decimal("5"), "origin"
+    )
+    bootstrap_range = structural.BootstrapMeasurementRange(
+        minor.PullbackDirection.BULLISH,
+        Decimal("10"),
+        Decimal("5"),
+        "origin",
+        "confirm",
+    )
+    structural_result = structural.StructuralAnalysis(
+        (idm,), (swing,), q, idm,
+        structural.StructuralResolution.RETRACEMENT_QUALIFIED,
+        bootstrap_protected_level=level,
+        bootstrap_range=bootstrap_range,
+    )
+    result = structural.finalize_valid_bos(
+        candles, structural_result, break_candle_id="break"
+    )
+    assert result.bootstrap_protected_level is None
+    assert result.bootstrap_range is None
+    assert result.protected_structural_extreme is not None
+    assert result.protected_structural_extreme.price == Decimal("7")
+    assert result.protected_structural_extreme.source_candle_id in {"r1", "r2", "r3"}
+    assert result.protected_structural_extreme.lock_candle_id == "break"
+    assert result.active_dealing_range is not None
+    assert result.active_dealing_range.range_high == Decimal("10")
+    assert result.active_dealing_range.range_low == Decimal("7")
+
+
+def test_bootstrap_state_cannot_coexist_with_governing_range_or_locked_extreme():
+    import pytest
+    level = structural.BootstrapProtectedLevel(
+        minor.PullbackDirection.BULLISH, Decimal("5"), "origin"
+    )
+    with pytest.raises(micro.QuarantineError):
+        structural.StructuralAnalysis(
+            (), (), None, None, structural.StructuralResolution.NO_EVIDENCE,
+            active_dealing_range=structural.CanonicalDealingRange(
+                "r", "origin", Decimal("5"),
+                minor.PullbackDirection.BULLISH, None, None,
+                Decimal("10"), Decimal("5"),
+            ),
+            bootstrap_protected_level=level,
+        )

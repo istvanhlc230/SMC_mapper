@@ -50,6 +50,71 @@ class StructuralResolution(str, Enum):
 
 
 @dataclass(frozen=True, slots=True)
+
+@dataclass(frozen=True, slots=True)
+class BootstrapProtectedLevel:
+    """Bootstrap-only initialization anchor backed by an actual candle extreme."""
+
+    direction: PullbackDirection
+    price: Decimal
+    source_candle_id: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.direction, PullbackDirection):
+            raise QuarantineError("invalid bootstrap direction")
+        if not isinstance(self.price, Decimal) or not self.price.is_finite():
+            raise QuarantineError("bootstrap price requires finite Decimal")
+        if not isinstance(self.source_candle_id, str) or not self.source_candle_id:
+            raise QuarantineError("bootstrap requires source candle ID")
+
+
+@dataclass(frozen=True, slots=True)
+class BootstrapMeasurementRange:
+    """Transient retracement-measurement span used only before first VALID_BOS."""
+
+    direction: PullbackDirection
+    range_high: Decimal
+    range_low: Decimal
+    bootstrap_source_candle_id: str
+    confirmed_swing_candle_id: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.direction, PullbackDirection):
+            raise QuarantineError("invalid bootstrap-range direction")
+        for value, name in ((self.range_high, "range_high"), (self.range_low, "range_low")):
+            if not isinstance(value, Decimal) or not value.is_finite():
+                raise QuarantineError(f"bootstrap {name} requires finite Decimal")
+        if self.range_high <= self.range_low:
+            raise QuarantineError("bootstrap measurement range must be non-empty")
+        for value, name in (
+            (self.bootstrap_source_candle_id, "bootstrap_source_candle_id"),
+            (self.confirmed_swing_candle_id, "confirmed_swing_candle_id"),
+        ):
+            if not isinstance(value, str) or not value:
+                raise QuarantineError(f"bootstrap range requires {name}")
+
+
+@dataclass(frozen=True, slots=True)
+class ProtectedStructuralExtreme:
+    """Canonical corrective extreme locked by a completed VALID_BOS."""
+
+    direction: PullbackDirection
+    price: Decimal
+    source_candle_id: str
+    lock_candle_id: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.direction, PullbackDirection):
+            raise QuarantineError("invalid protected-extreme direction")
+        if not isinstance(self.price, Decimal) or not self.price.is_finite():
+            raise QuarantineError("protected-extreme price requires finite Decimal")
+        for value, name in (
+            (self.source_candle_id, "source_candle_id"),
+            (self.lock_candle_id, "lock_candle_id"),
+        ):
+            if not isinstance(value, str) or not value:
+                raise QuarantineError(f"protected extreme requires {name}")
+
 class ProtectedExternalBoundary:
     direction: PullbackDirection
     price: Decimal
@@ -200,12 +265,27 @@ class StructuralAnalysis:
     active_idm: IDMEvent | None
     resolution: StructuralResolution
     active_dealing_range: CanonicalDealingRange | None = None
+    bootstrap_protected_level: BootstrapProtectedLevel | None = None
+    bootstrap_range: BootstrapMeasurementRange | None = None
+    protected_structural_extreme: ProtectedStructuralExtreme | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "idm_events", tuple(self.idm_events))
         object.__setattr__(self, "confirmed_swings", tuple(self.confirmed_swings))
         if self.active_idm is not None and self.active_idm not in self.idm_events:
             raise QuarantineError("active IDM must be historical IDM")
+        bootstrap_active = (
+            self.bootstrap_protected_level is not None
+            or self.bootstrap_range is not None
+        )
+        if self.bootstrap_range is not None and self.bootstrap_protected_level is None:
+            raise QuarantineError("bootstrap range requires bootstrap protected level")
+        if bootstrap_active and self.active_dealing_range is not None:
+            raise QuarantineError("bootstrap state cannot coexist with a governing Dealing Range")
+        if self.protected_structural_extreme is not None and bootstrap_active:
+            raise QuarantineError(
+                "bootstrap state must be destroyed before Protected Structural Extreme lock"
+            )
 
 
 def _validate_inputs(candles: tuple[Candle, ...], minor: MinorStructureAnalysis) -> None:
@@ -229,6 +309,57 @@ def _validate_inputs(candles: tuple[Candle, ...], minor: MinorStructureAnalysis)
 
 def _index(candles: tuple[Candle, ...]) -> dict[str, int]:
     return {c.candle_id: i for i, c in enumerate(candles)}
+
+
+
+def bootstrap_protected_level_from_candles(
+    candles: tuple[Candle, ...],
+    direction: PullbackDirection,
+    *,
+    origin_candle_id: str | None = None,
+) -> BootstrapProtectedLevel:
+    """Create bootstrap state only from an actual candle extreme.
+
+    At chart inception the deterministic default is the first effective
+    completed candle. Post-CHoCH callers should supply the explicit initial
+    active-impulse origin candle ID.
+    """
+    sequence = tuple(candles)
+    if any(not isinstance(c, Candle) for c in sequence):
+        raise QuarantineError("bootstrap accepts only Layer 1 Candle objects")
+    ids = [c.candle_id for c in sequence]
+    if len(ids) != len(set(ids)):
+        raise QuarantineError("duplicate candle IDs are not allowed")
+    if not sequence:
+        raise QuarantineError("bootstrap requires at least one completed candle")
+    if not isinstance(direction, PullbackDirection):
+        raise QuarantineError("invalid bootstrap direction")
+    selected_id = origin_candle_id or sequence[0].candle_id
+    by_id = {c.candle_id: c for c in sequence}
+    if selected_id not in by_id:
+        raise QuarantineError("bootstrap origin candle is absent from Layer-1 sequence")
+    candle = by_id[selected_id]
+    price = candle.low if direction is PullbackDirection.BULLISH else candle.high
+    return BootstrapProtectedLevel(direction, price, candle.candle_id)
+
+
+def _bootstrap_measurement_range(
+    level: BootstrapProtectedLevel,
+    swing: ConfirmedStructuralSwing,
+) -> BootstrapMeasurementRange:
+    if level.direction is not swing.direction:
+        raise QuarantineError("bootstrap and confirmed swing directions disagree")
+    if level.direction is PullbackDirection.BULLISH:
+        range_high, range_low = swing.price, level.price
+    else:
+        range_high, range_low = level.price, swing.price
+    return BootstrapMeasurementRange(
+        level.direction,
+        range_high,
+        range_low,
+        level.source_candle_id,
+        swing.source_candle_id,
+    )
 
 
 def _pullback_idm(pb: CandleLevelValidPullback, idm_class: IDMClass) -> IDMEvent:
@@ -473,21 +604,88 @@ def _outlier_condition(
     ) >= MIN_OUTLIER_EXTREMES_TAKEN
 
 
+
+def finalize_valid_bos(
+    candles: tuple[Candle, ...],
+    structural: StructuralAnalysis,
+    *,
+    break_candle_id: str,
+) -> StructuralAnalysis:
+    """Lock actual E_retrace after VALID_BOS and destroy bootstrap state."""
+    if not isinstance(structural, StructuralAnalysis):
+        raise QuarantineError("VALID_BOS finalization requires StructuralAnalysis")
+    if not structural.retracement or not structural.retracement.qualified:
+        raise QuarantineError("VALID_BOS finalization requires qualified retracement")
+    if structural.active_idm is None or structural.active_idm.takeout_candle_id is None:
+        raise QuarantineError("VALID_BOS finalization requires IDM_TAKEN")
+    if not isinstance(break_candle_id, str) or not break_candle_id:
+        raise QuarantineError("VALID_BOS requires break-candle provenance")
+    sequence=tuple(candles); positions=_index(sequence)
+    if break_candle_id not in positions:
+        raise QuarantineError("VALID_BOS break candle is absent")
+    active=structural.active_idm
+    swing=next((x for x in reversed(structural.confirmed_swings)
+                if x.confirmation_candle_id == active.takeout_candle_id),None)
+    if swing is None:
+        raise QuarantineError("VALID_BOS has no matching confirmed structural swing")
+    end_id=structural.retracement.qualification_end_candle_id
+    if end_id not in positions:
+        raise QuarantineError("retracement qualification endpoint is absent")
+    start,end,break_pos=positions[swing.confirmation_candle_id],positions[end_id],positions[break_candle_id]
+    if end<=start or break_pos<=end:
+        raise QuarantineError("VALID_BOS requires qualification before the break")
+    window=sequence[start+1:end+1]
+    if swing.direction is PullbackDirection.BULLISH:
+        price=min(c.low for c in window); source_id=next(c.candle_id for c in window if c.low==price)
+        range_high,range_low=swing.price,price
+    else:
+        price=max(c.high for c in window); source_id=next(c.candle_id for c in window if c.high==price)
+        range_high,range_low=price,swing.price
+    protected=ProtectedStructuralExtreme(swing.direction,price,source_id,break_candle_id)
+    dealing_range=CanonicalDealingRange(
+        range_id=f"range_after_bos:{break_candle_id}",
+        origin_candle_id=protected.source_candle_id,
+        origin_price=protected.price,
+        direction=swing.direction,
+        idm_candle_id=active.source_candle_id,
+        takeout_candle_id=active.takeout_candle_id,
+        range_high=range_high,
+        range_low=range_low,
+    )
+    return StructuralAnalysis(
+        structural.idm_events, structural.confirmed_swings, structural.retracement,
+        structural.active_idm, structural.resolution,
+        active_dealing_range=dealing_range,
+        bootstrap_protected_level=None,
+        bootstrap_range=None,
+        protected_structural_extreme=protected,
+    )
+
+
 def analyze_layer3(
     candles: list[Candle] | tuple[Candle, ...],
     minor: MinorStructureAnalysis,
     *,
     range_high: Decimal | None = None,
     range_low: Decimal | None = None,
+    bootstrap_protected_level: BootstrapProtectedLevel | None = None,
     htf_valid_pullback: bool = False,
     lifecycle: IDMLifecycleContext | None = None,
     attempt_end_candle_id: str | None = None,
 ) -> StructuralAnalysis:
     sequence = tuple(candles)
     _validate_inputs(sequence, minor)
+    if bootstrap_protected_level is not None:
+        if lifecycle is not None and lifecycle.after_valid_bos:
+            raise QuarantineError("bootstrap state is invalid after VALID_BOS")
+        if range_high is not None or range_low is not None:
+            raise QuarantineError(
+                "bootstrap state cannot be combined with an explicit governing range"
+            )
     idms = classify_idm(minor, candles=sequence, lifecycle=lifecycle)
     if not idms:
-        return StructuralAnalysis((), (), None, None, StructuralResolution.NO_EVIDENCE)
+        return StructuralAnalysis((), (), None, None, StructuralResolution.NO_EVIDENCE,
+                                  bootstrap_protected_level=bootstrap_protected_level)
 
     positions = _index(sequence)
     taken_events: list[IDMEvent] = []
@@ -537,11 +735,13 @@ def analyze_layer3(
         return StructuralAnalysis(
             tuple(taken_events), tuple(confirmed), None, active,
             StructuralResolution.IDM_ACTIVE,
+            bootstrap_protected_level=bootstrap_protected_level,
         )
     if active.takeout_candle_id is None:
         return StructuralAnalysis(
             tuple(taken_events), tuple(confirmed), None, active,
             StructuralResolution.IDM_ACTIVE,
+            bootstrap_protected_level=bootstrap_protected_level,
         )
 
     swing = next(
@@ -550,17 +750,30 @@ def analyze_layer3(
     )
     if swing is None:
         raise QuarantineError("IDM takeout has no confirmed structural swing")
-    if range_high is None or range_low is None:
+    bootstrap_range = (
+        _bootstrap_measurement_range(bootstrap_protected_level, swing)
+        if bootstrap_protected_level is not None
+        else None
+    )
+    effective_range_high = range_high
+    effective_range_low = range_low
+    if bootstrap_range is not None:
+        effective_range_high = bootstrap_range.range_high
+        effective_range_low = bootstrap_range.range_low
+
+    if effective_range_high is None or effective_range_low is None:
         return StructuralAnalysis(
             tuple(taken_events), tuple(confirmed), None, active,
             StructuralResolution.IDM_TAKEN,
+            bootstrap_protected_level=bootstrap_protected_level,
+            bootstrap_range=bootstrap_range,
         )
 
     qualification = qualify_retracement(
         sequence,
         swing,
-        range_high=range_high,
-        range_low=range_low,
+        range_high=effective_range_high,
+        range_low=effective_range_low,
         htf_valid_pullback=htf_valid_pullback,
         attempt_end_candle_id=attempt_end_candle_id,
     )
@@ -570,11 +783,15 @@ def analyze_layer3(
         else StructuralResolution.RETRACEMENT_INSUFFICIENT
     )
     return StructuralAnalysis(
-        tuple(taken_events), tuple(confirmed), qualification, active, resolution
+        tuple(taken_events), tuple(confirmed), qualification, active, resolution,
+        bootstrap_protected_level=bootstrap_protected_level,
+        bootstrap_range=bootstrap_range,
     )
 
 
 __all__ = [
+    "BootstrapMeasurementRange",
+    "BootstrapProtectedLevel",
     "ConfirmedStructuralSwing",
     "HTF_CONDITIONAL_THRESHOLD",
     "IDMClass",
@@ -586,11 +803,14 @@ __all__ = [
     "MIN_RETRACEMENT_CANDLE_COUNT",
     "NORMAL_RETRACEMENT_CANDLE_COUNT",
     "ProtectedExternalBoundary",
+    "ProtectedStructuralExtreme",
     "RetracementQualification",
     "STANDARD_EQUILIBRIUM_THRESHOLD",
     "StructuralAnalysis",
     "StructuralResolution",
     "analyze_layer3",
+    "bootstrap_protected_level_from_candles",
     "classify_idm",
+    "finalize_valid_bos",
     "qualify_retracement",
 ]

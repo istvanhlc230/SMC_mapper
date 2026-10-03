@@ -3595,3 +3595,39 @@ What remains absent is the mapping from **physical impulse origin + confirmed st
 PASS — the entire indexed source set was checked for a first-BOS baseline definition.
 PASS — no source passage was found that deterministically resolves the missing initialization baseline.
 BLOCKED — the first-BOS retracement baseline remains a genuine source gap. The canonical skill must not invent an initialization formula such as impulse-origin-to-confirmed-swing unless separately approved as a project canonical decision.
+
+# PHASE 40 — PROJECT-CANONICAL FIRST-BOS BOOTSTRAP INITIALIZATION — 2026-10-03
+
+## Decision
+Phase 39 established that the indexed knowledgebase does not define a deterministic first-BOS retracement baseline. The project-level implementation decision resolves that source gap with an isolated bootstrap initialization mechanism instead of fabricating a canonical Dealing Range or Protected Structural Extreme.
+
+## Bootstrap model
+- `BOOTSTRAP_PROTECTED_LEVEL` is derived only from an actual completed candle extreme at the initial active-impulse origin.
+- At chart inception, the deterministic default origin is the first effective completed candle.
+- Post-CHoCH bootstrap requires explicit initial active-impulse origin provenance.
+- `IDM_TAKEN` remains the Layer-3 event that confirms `CONFIRMED_STRUCTURAL_SWING`.
+- Only after that confirmation is the transient `BOOTSTRAP_RANGE` formed between the bootstrap level and the confirmed swing.
+- Existing Layer-3 50% and 38.2% qualification rules are reused unchanged against this transient measurement span.
+- Bootstrap state is not a governing Dealing Range, is not a Protected Structural Extreme, and cannot serve as a canonical CHoCH boundary.
+- On the first completed `VALID_BOS`, bootstrap state is destroyed.
+- The actual validated `E_retrace` becomes the first canonical `PROTECTED_STRUCTURAL_EXTREME`.
+- The first confirmed Dealing Range is established from the confirmed swing and that locked `E_retrace`.
+
+## Implementation
+Changed:
+- `structural_engine.py`: bootstrap entities, isolated bootstrap measurement range, VALID_BOS finalization, actual E_retrace locking and first-range creation.
+- `smc_analyzer.py`: automatic chart-inception bootstrap initialization, explicit post-CHoCH origin contract, bootstrap-to-L3 wiring, and post-BOS bootstrap destruction.
+- `tests/test_structural_engine.py`: bootstrap creation, range isolation, qualification, finalization and contamination guards.
+- `specifications/smc_mapper_specification.md`: project-canonical initialization policy recorded without modifying canonical skill semantics.
+
+## Audit status
+PASS — bootstrap data is backed by actual market candles.
+PASS — bootstrap entities are prohibited from coexisting with a governing Dealing Range or locked Protected Structural Extreme.
+PASS — bootstrap is not promoted into canonical protected structure.
+PASS — actual `E_retrace` is the source of the first canonical Protected Structural Extreme.
+PASS — Layer-3 qualification logic remains centralized in `qualify_retracement()`.
+PASS — direct `determine_next_state()` calls with explicitly UNSPECIFIED first-BOS baseline remain fail-closed.
+PENDING — repository CI and full pytest verification after push.
+
+## Canonical boundary
+No file under `.agents/skills/smc/` was modified. Knowledgebase source/evidence files were not modified.
