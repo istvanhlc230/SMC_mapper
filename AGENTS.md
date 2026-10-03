@@ -68,6 +68,22 @@ All development and regression test files belong in the repository-root `test/` 
 
 The `test/` directory is the shared working directory for test development throughout the project lifecycle.
 
+Test design must maximize information obtained from each run. Prefer parametrized tests, shared fixtures, scenario matrices, and grouped related cases over one-off test functions or repeated single-test invocations. A normal validation run must execute the complete relevant focused test set in one pytest invocation; do not run pytest separately for each test function and do not use fail-fast options such as `-x` or `--maxfail=1` when the goal is diagnosis.
+
+## Developer-agent coding and prompt discipline
+
+The active developer agent must use:
+
+- descriptive, semantically meaningful variable names;
+- descriptive interface, class, type, and function names that reveal their responsibility;
+- stable domain terminology consistent with the owning specification;
+- explicit state fields and explicit ownership rather than opaque dictionaries or positional tuples for domain state;
+- no cryptic abbreviations except universally conventional local names whose meaning is immediate.
+
+Python-specific convenience is allowed internally, but domain data structures and public contracts must remain directly portable to MQL4/MQL5-style statically structured code. Do not make correctness depend on Python-only reflection, generators, dynamic attributes, properties, metaclasses, or advanced container semantics that cannot be represented naturally in the target language.
+
+Developer-agent prompts are a scarce resource and must be optimized. The orchestrating/auditing agent must issue one consolidated prompt per implementation iteration whenever the issues are related. Each prompt should contain only the necessary context: exact scope, affected files/sections, concrete changes, acceptance criteria, and the required test command. Do not issue multiple overlapping prompts that restate the same context. New findings discovered during one audit iteration should be accumulated into the next single corrective prompt unless separation is required by independent ownership or safety boundaries.
+
 ## Testing and evidence
 
 Before `IMPLEMENTATION_READY`, the implementation agent must:

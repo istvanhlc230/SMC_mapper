@@ -2285,3 +2285,17 @@ The output of this process is only the normalized market-data JSON state. Canoni
 - explicit historical reacquisition remains retained through the current processing transaction;
 - `available_start/end` represent completed-candle bounds only;
 - provider errors, malformed records, and malformed persisted JSON remain distinguishable failure classes.
+
+
+## Developer-agent implementation discipline
+
+The developer agent must write implementation code for human and cross-language readability.
+
+### Naming
+Use descriptive, semantically meaningful names for variables, interfaces, classes, types, methods, and functions. Names must expose the concept and responsibility they represent. Avoid cryptic abbreviations, generic names such as `data`, `obj`, `tmp`, `process`, or `helper` when a domain-specific name is available. Conventional loop counters such as `i` are permitted only in small, obvious local loops.
+
+### Portability
+Domain data structures, interfaces, state containers, and public method contracts must be directly reproducible in MQL4/MQL5-style code. Prefer explicit fields, named records/classes, arrays, scalar values, and explicit success/failure paths. Python-only language features may be used as implementation conveniences only when they do not alter the domain contract.
+
+### Test execution
+Create tests only under repository-root `test/`. Prefer parametrization, fixtures, and grouped scenario coverage so one test function can validate multiple closely related cases. Execute the relevant focused suite in a single pytest invocation, then run the broader suite when required by the change. Do not launch pytest once per test case and do not intentionally fail fast before collecting the remaining results.

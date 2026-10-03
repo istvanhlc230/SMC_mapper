@@ -4052,3 +4052,18 @@ Python/runtime conformance is intentionally outside this skill-only phase.
 ## Commit note
 
 The GitHub repository write interface accepted the skill edits as sequential file commits rather than the attempted atomic multi-file tree commit. All four documentation updates are now on `main`; the review log is updated after the final cross-file audit.
+
+
+# PHASE 51 — DEVELOPER-AGENT QUALITY, PORTABILITY, PROMPT, AND TEST-WORKFLOW CONTRACT — 2026-10-03
+
+Documentation-only project hygiene update.
+
+The project contract now explicitly requires descriptive, semantically meaningful variable, interface, class, type, and function names across implementation work. Domain data structures and public contracts must remain directly reproducible in MQL4/MQL5-style statically structured code, avoiding Python-only correctness dependencies.
+
+Developer-agent prompt usage is now explicitly optimized: related implementation findings are consolidated into one prompt per iteration, with only necessary context, exact scope, acceptance criteria, and test command. Overlapping prompts and repeated context are prohibited unless separation is required.
+
+Test development is centralized in the repository-root `test/` directory. Focused validation must maximize information per run by using parametrization, shared fixtures, and grouped related scenarios. Pytest is run as a suite rather than once per individual test, and CI no longer uses a quiet/fail-fast invocation that unnecessarily suppresses diagnostic coverage.
+
+Audit status: PASS — the requested development naming, portability, prompt-efficiency, and test-batching rules are now explicit at project and component specification level.
+
+No production Python implementation was modified in this phase. No Python test result is claimed from this documentation-only change.
