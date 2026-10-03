@@ -49,3 +49,7 @@ Acceptance requires local execution of syntax, parser, cache-only, scoped-query,
     python calendar.py delete 2026.10.01-2026.10.31
 
 Invalid-input validation should include malformed dates/times/ranges, unsupported symbols, unexpected tokens, evaluation without a symbol, and invalid delete combinations.
+
+## Cross-Specification Synchronization
+
+The owning Calendar specification was migrated to the positional CLI contract. The Monitor specification was also updated so its Calendar process boundary uses `calendar.py SCOPE SYMBOL [current|next]` or the cache-only `calendar.py SYMBOL [current|next]` form.
