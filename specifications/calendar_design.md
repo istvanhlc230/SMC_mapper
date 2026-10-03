@@ -105,6 +105,8 @@ calendar.json contains schema_version, source, coverage, and events.
 Coverage intervals are half-open [start, end).
 Missing coverage is calculated before acquisition. Acquisition requests are expanded to full UTC calendar-day boundaries.
 Provider events are normalized, merged, and deduplicated by stable provider identity. Identity/time conflicts are fatal.
+
+Provider-displayed timezones are resolved with Python `zoneinfo` using IANA timezone names, with UTC/GMT fixed offsets accepted as well. The implementation does not hard-code regional UTC offsets, so daylight-saving transitions follow the timezone database. On Windows, an available timezone database (for example the `tzdata` package) is required when the runtime does not provide the requested IANA zone.
 Validated state is persisted atomically with os.replace.
 Concurrent writes are serialized using a Windows named mutex or POSIX directory-inode flock.
 
@@ -181,7 +183,11 @@ Deletion and orchestration:
 
 Core business functions receive semantic values rather than legacy argparse namespaces or old flag-specific arguments.
 
-## 11. Error Contract
+## 11. Provider Timezone Resolution
+
+`_resolve_provider_timezone` accepts `UTC`, `GMT`, `Z`, UTC/GMT fixed offsets, and IANA timezone names. Unsupported IANA names fail explicitly with an environment/dependency hint rather than silently applying an incorrect offset.
+
+## 12. Error Contract
 
 Reject:
 
@@ -194,7 +200,7 @@ Reject:
 
 User input errors must produce explicit CLI errors and must not fall through to raw Python exceptions.
 
-## 12. Repository Hygiene
+## 13. Repository Hygiene
 
 Temporary, intermediate, debug, downloaded, and generated development artifacts belong under dev_tmp/.
 Temporary development artifacts belong under `dev_tmp/`.

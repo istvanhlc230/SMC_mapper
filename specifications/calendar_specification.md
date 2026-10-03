@@ -100,7 +100,7 @@ The following canonical scopes are resolved internally to UTC intervals:
 
 ForexFactory-specific date spelling and URL parameters remain internal provider concerns.
 
-The current provider parser reads the ForexFactory calendar HTML directly. It extracts the provider event ID from each calendar row, reads the provider-displayed calendar timezone, converts the row's local date/time to canonical UTC, and normalizes the event fields. Legacy embedded `days` JSON is accepted when present, but absence of that legacy payload is not itself an acquisition failure.
+The current provider parser reads the ForexFactory calendar HTML directly. It extracts the provider event ID from each calendar row, reads the provider-displayed calendar timezone, converts the row's local date/time to canonical UTC, and normalizes the event fields. Legacy embedded `days` JSON is accepted when present, but absence of that legacy payload is not itself an acquisition failure. Provider timezones are resolved through Python's standard `zoneinfo` IANA timezone database, with UTC/GMT fixed offsets also accepted; no hard-coded regional DST rule is used. On Windows, the runtime must have an available timezone database (for example the `tzdata` package) for IANA zones.
 
 ## 1.3 Request policy
 
@@ -588,6 +588,5 @@ Calendar V1 is complete when:
 15. no automatic retention exists;
 16. no symbol-specific Calendar persistence is created;
 17. temporary development artifacts stay under `dev_tmp/`;
-18. temporary development artifacts stay under `dev_tmp/`;
 19. deterministic Calendar validation passes;
 20. no canonical SMC skill file is modified.

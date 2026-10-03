@@ -48,6 +48,22 @@ The design step must, at minimum:
 
 The design artifacts must be concise and implementation-oriented. Do not create diagrams or documentation merely for appearance; every artifact must help verify behavior, data ownership, interfaces, or state transitions before code is written.
 
+## Specification synchronization requirement
+
+Every implementation change that affects behavior, interfaces, data contracts, dependencies, CLI grammar, algorithms, validation rules, or operational behavior must be reflected in the owning specification/design documentation in the same implementation iteration.
+
+The developer agent must not treat code as the only deliverable. After identifying the affected production behavior, it must:
+
+1. identify the owning specification/design document and exact affected section(s);
+2. update those specification/design sections to describe the implemented canonical behavior;
+3. keep examples, CLI syntax, dependency requirements, validation rules, and implementation/design diagrams synchronized where applicable;
+4. verify that the specification does not contradict the implementation before committing;
+5. include the synchronized specification/design changes in the same commit/push as the implementation change.
+
+If no existing specification clearly owns the behavior, stop and identify the specification ownership gap before inventing a new rule. If the proposed implementation appears to require changing the canonical SMC methodology itself, do not silently change the skill; flag the methodology conflict for explicit resolution first.
+
+A behavior change is not considered implementation-complete while its owning specification/design documentation remains stale.
+
 ## Local/online repository synchronization
 
 The online GitHub repository is the authoritative shared repository state for development handoff.
