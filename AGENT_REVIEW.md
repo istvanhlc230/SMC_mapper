@@ -3226,3 +3226,61 @@ PASS — no `.agents/skills/smc/` file was modified.
 
 ## Test status
 Specification-only change. Runtime implementation and test suite were not run.
+
+
+# PHASE 28 — CALENDAR SINGLE-FILE / MONITOR DYNAMIC NEWS RECONCILIATION — 2026-10-03
+
+## Scope
+Re-audited the Calendar and Monitor specifications against the current agreed architecture and integrated the News warning contract using dynamic entry-timeframe scaling.
+
+## Final Calendar contract
+- Exactly one persistent `<DATA_ROOT>/calendar.json`.
+- No symbol-specific News JSON and no separate cache JSON.
+- No automatic retention or automatic history deletion.
+- History remains until explicit `--delete`.
+- Acquisition supports day/week/month/range selection; `--query SYMBOL` without a period is cache-only.
+- Local `--symbol` query API is network-free and time-based.
+- Stable provider-derived `event_id` is used.
+- Coverage is stored as a minimal non-overlapping UTC interval union.
+- Missing coverage is acquired only where possible.
+- Concurrent writers wait indefinitely on the calendar lock, then re-read and re-check coverage.
+- Acquisition failure preserves the last-known-good `calendar.json`.
+- Missing `calendar.json` is a valid no-data state.
+- Delete updates events and coverage consistently.
+
+## Final Monitor News contract
+- News is external warning context only.
+- Monitor does not parse ForexFactory HTML or provider responses.
+- Calendar acquisition is separate from the local Calendar query.
+- The Monitor uses the single global `calendar.json` contract.
+- Warning windows are derived dynamically from the stored analysis entry timeframe:
+  - HIGH: 2 × timeframe duration
+  - MEDIUM: 1 × timeframe duration
+  - LOW: 0.5 × timeframe duration
+  - UNKNOWN/HOLIDAY: no warning
+- Timeframe duration comes from the existing Market Data timeframe-duration contract; Monitor does not define a second timeframe table.
+- Acquisition planning uses the maximum possible dynamic warning horizon across selected analyses and rounds the request outward to whole UTC dates.
+- Warning eligibility is strictly pre-event: `0 < event_time_utc - current_utc <= warning_window`.
+- `PRE_EVENT` is the only News warning phase; Calendar does not define event lifecycle/active/post states.
+- Warning decisions are evaluated independently per analysis and per eligible event.
+- `NEWS_WARNING` is transient and independent from `SETUP_ELIGIBLE` and `TARGET_REACHED`.
+- Missing Calendar data does not block canonical Market Data/Mapper/target processing.
+- Calendar query stdout is machine-readable JSON; Market Data/Mapper stdout remain diagnostics only.
+- Monitor never writes Calendar JSON or canonical SMC JSON.
+
+## Cross-file audit
+PASS — Calendar persistence is single-file and global.
+PASS — no automatic retention remains in the Calendar contract.
+PASS — acquisition/query/delete responsibilities are separated.
+PASS — stable event identity and coverage-union semantics are defined.
+PASS — concurrency and last-known-good persistence are deterministic.
+PASS — Monitor News ownership is correctly separated from Calendar ownership.
+PASS — dynamic timeframe warning model is aligned with the established normative contract.
+PASS — no fixed News warning-minute constants remain.
+PASS — no symbol-specific News persistence artifact remains in active specifications.
+PASS — missing Calendar data remains non-blocking.
+PASS — News warning cannot alter canonical SMC state.
+PASS — `.agents/skills/smc/` remains untouched.
+
+## Test status
+Specification-only changes. Runtime implementation and pytest suite were not run.
