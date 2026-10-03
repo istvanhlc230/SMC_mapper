@@ -3132,3 +3132,38 @@ Final cleanup after the Phase 25 audit:
 
 No canonical `.agents/skills/smc/` file was modified.
 No runtime implementation file was modified.
+
+
+# PHASE 26 — MARKET DATA SPECIFICATION DEEP DETAIL — 2026-10-03
+
+Expanded `specifications/market_data_specification.md` into a more executable developer-agent contract.
+
+## Added / clarified
+- ProviderCandle field semantics and canonical interval-start timestamp rule.
+- Explicit `[timestamp, completion_time)` candle interval semantics.
+- CLI acquisition-mode decision table covering historical, live-only, last-candle, and incremental modes.
+- Provider result/error contract and provider outcome decision table.
+- Completion decision rules and precedence between canonical timeframe boundaries and provider hints.
+- Current-snapshot state machine, including replacement, completion, successful no-current clearing, and provider-failure preservation.
+- Normalization acceptance/rejection matrix.
+- Volume branch invariants and source-vs-derived semantics.
+- Deterministic merge/conflict decision table.
+- Explicit retention algorithm with temporary protected-range handling.
+- JSON validity invariants and exact serialized candle example.
+- Deterministic Decimal serialization contract.
+- Resolved acquisition-range contract.
+- Completion-time-based final candle inclusion for range fetches.
+- Timeframe-level transaction semantics and symbol-level all-or-nothing persistence flow.
+- Detailed failure categories and fail-closed behavior.
+- Phase-0 deterministic test-fixture preparation before provider integration.
+- Expanded test matrix for completion, current snapshots, merge conflicts, retention, persistence rollback, Decimal serialization, and acquisition boundaries.
+- Explicitly documented that availability bounds do not imply gapless history.
+
+## Verification
+- No duplicate headings.
+- No Probability, News, multi-leg Target Plan, stale lifecycle aliases, stale alert registry fields, or invalid Structures `current` field.
+- No canonical `.agents/skills/smc/` file modified.
+- Active Market Data specification is 2,283 lines and remains self-contained as the Market Data owner contract.
+
+## Test status
+Specification-only change. No runtime implementation files changed and no local pytest suite was run.
