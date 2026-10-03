@@ -69,6 +69,11 @@ def parse_calendar_request(args: argparse.Namespace) -> str:
             sys.exit("Error: --time requires --date or --range")
         if args.time and (args.before or args.after):
             sys.exit("Error: --time cannot be combined with --before or --after")
+        if args.time:
+            if args.date and "-" in args.time:
+                sys.exit("Error: --date requires a single --time HH:MM")
+            if args.range and "-" not in args.time:
+                sys.exit("Error: --range requires a time range --time HH:MM-HH:MM")
         if args.range and any([args.before, args.after, args.date]):
             sys.exit("Error: --range cannot be combined with --before, --after, or --date")
         if args.date and any([args.before, args.after, args.range]):
@@ -85,9 +90,7 @@ def parse_date(date_str: str) -> datetime:
         if len(date_str) != 10 or len(parts) != 3: raise ValueError
         y, m, d = int(parts[0]), int(parts[1]), int(parts[2])
         if not (2000 <= y <= 2100): raise ValueError
-        # strict conversion checking limits natively
         dt = datetime(y, m, d, tzinfo=timezone.utc)
-        # Check roundtrip formatting (to reject something weird like 2026.01.32 if it ever bypassed)
         if dt.year != y or dt.month != m or dt.day != d: raise ValueError
         return dt
     except Exception:
@@ -168,7 +171,7 @@ def normalize_provider_event(raw: Dict[str, Any]) -> Dict[str, Any]:
     
     impact_map = {1: "LOW", 2: "MEDIUM", 3: "HIGH", 4: "HOLIDAY"}
     impact = impact_map.get(raw.get("impact"), "UNKNOWN")
-    currency = raw.get("country", "").upper().strip() or None
+    currency = str(raw.get("country", "")).upper().strip() or None
     
     return {
         "event_id": event_id,
@@ -197,7 +200,10 @@ def build_empty_calendar_document() -> Dict[str, Any]:
 
 def parse_iso8601(ts: str) -> datetime:
     if ts.endswith("Z"): ts = ts[:-1] + "+00:00"
-    return datetime.fromisoformat(ts)
+    dt = datetime.fromisoformat(ts)
+    if dt.tzinfo is None or dt.tzinfo.utcoffset(dt) != timedelta(0):
+        sys.exit("Error: Non-UTC timestamp")
+    return dt
 
 def format_iso8601(dt: datetime) -> str:
     return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -211,7 +217,6 @@ def validate_calendar_document(doc: Dict[str, Any]) -> None:
         for field in ["start", "end", "fetched_at", "requested"]:
             if field not in c: sys.exit(f"Error: Malformed coverage, missing {field}")
         if not isinstance(c["requested"], dict): sys.exit("Error: Malformed coverage requested type")
-        if "type" not in c["requested"] or "value" not in c["requested"]: sys.exit("Error: Malformed coverage requested contents")
         if parse_iso8601(c["start"]) >= parse_iso8601(c["end"]): sys.exit("Error: Invalid coverage bounds")
         parse_iso8601(c["fetched_at"])
         
@@ -222,6 +227,7 @@ def validate_calendar_document(doc: Dict[str, Any]) -> None:
             if field not in e: sys.exit(f"Error: Corrupt event, missing {field}")
         if e["impact"] not in ["HIGH", "MEDIUM", "LOW", "HOLIDAY", "UNKNOWN"]: sys.exit("Error: Invalid impact")
         eid = e["event_id"]
+        if not eid.startswith("forexfactory:"): sys.exit("Error: Invalid provider identity")
         if eid in seen_ids: sys.exit("Error: Duplicate event ID")
         seen_ids.add(eid)
         parse_iso8601(e["datetime"])
@@ -280,11 +286,19 @@ def acquire_calendar_lock():
             try:
                 fd = os.open(lock_path, flags)
                 fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                break
+                stat_fd = os.fstat(fd)
+                try:
+                    stat_path = os.stat(lock_path)
+                    if stat_fd.st_ino == stat_path.st_ino and stat_fd.st_dev == stat_path.st_dev:
+                        break
+                except OSError:
+                    pass
+                fcntl.flock(fd, fcntl.LOCK_UN)
+                os.close(fd)
             except OSError:
                 try: os.close(fd)
                 except Exception: pass
-                import time; time.sleep(0.1)
+            import time; time.sleep(0.1)
         try:
             yield
         finally:
@@ -379,7 +393,11 @@ def get_interval_for_period(args: argparse.Namespace) -> Tuple[datetime, datetim
 # ---------------------------------------------------------
 def extract_symbol_currencies(symbol: str) -> Set[str]:
     s = normalize_symbol(symbol).replace("-", "").replace("/", "").replace("_", "")
-    if len(s) == 6 and s.isalpha(): return {s[:3], s[3:]}
+    if len(s) == 6 and s.isalpha():
+        c1, c2 = s[:3], s[3:]
+        valid_fx = {"AUD", "CAD", "CHF", "CNY", "EUR", "GBP", "JPY", "NZD", "USD"}
+        if c1 in valid_fx and c2 in valid_fx:
+            return {c1, c2}
     return set()
 
 def filter_events_for_symbol(events: List[Dict[str, Any]], symbol: str) -> List[Dict[str, Any]]:
@@ -514,7 +532,6 @@ def dry_run_delete(args: argparse.Namespace):
     new_events = delete_events(doc["events"], args)
     deleted_count = old_count - len(new_events)
     
-    # Extract metadata about deletion ranges
     ranges = get_deleted_ranges(args)
     bounds = [f"[{s.strftime('%Y-%m-%dT%H:%M:%SZ') if s else '-inf'}, {e.strftime('%Y-%m-%dT%H:%M:%SZ') if e else '+inf'})" for s, e in ranges]
     print(f"Dry run: {deleted_count} events match deletion selectors.", file=sys.stderr)
@@ -536,26 +553,45 @@ def run_acquisition(args: argparse.Namespace):
         return
         
     start, end = get_interval_for_period(args)
+    
+    # Pre-lock check
+    if os.path.exists(CALENDAR_FILE) and os.path.getsize(CALENDAR_FILE) > 0:
+        try:
+            with open(CALENDAR_FILE, "r", encoding="utf-8") as f:
+                pre_doc = json.load(f)
+            if not find_uncovered_intervals(start, end, pre_doc.get("coverage", [])):
+                sym_events = query_symbol_events(symbol, pre_doc)
+                output_query_result("OK" if sym_events else "NO_RELEVANT_EVENT", symbol, sym_events)
+                return
+        except Exception:
+            pass # fallback to lock
+            
     with acquire_calendar_lock():
         doc = load_calendar_document()
         uncovered = find_uncovered_intervals(start, end, doc["coverage"])
         if not uncovered:
-            pass # fully covered
+            pass # fully covered by another process
         else:
             now = datetime.now(timezone.utc)
             for u_start, u_end in uncovered:
-                # Use provider range to fetch exact uncovered interval
-                d1_str = u_start.strftime("%b%d.%Y").lower()
-                d2_str = (u_end - timedelta(days=1)).strftime("%b%d.%Y").lower()
+                # Ensure provider query covers full overlapping days
+                fetch_start = u_start.replace(hour=0, minute=0, second=0, microsecond=0)
+                fetch_end = u_end
+                if fetch_end.hour != 0 or fetch_end.minute != 0:
+                    fetch_end = (fetch_end + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+                
+                d1_str = fetch_start.strftime("%b%d.%Y").lower()
+                d2_str = (fetch_end - timedelta(days=1)).strftime("%b%d.%Y").lower()
                 pval = f"{d1_str}-{d2_str}"
+                
                 html = fetch_calendar_source("range", pval)
                 payload = extract_days_payload(html)
                 days_data = parse_calendar_days(payload)
                 new_events = normalize_calendar_events(days_data)
                 doc["events"] = merge_calendar_events(doc["events"], new_events)
                 doc["coverage"] = merge_coverage(doc["coverage"], {
-                    "start": format_iso8601(u_start),
-                    "end": format_iso8601(u_end),
+                    "start": format_iso8601(fetch_start),
+                    "end": format_iso8601(fetch_end),
                     "requested": {"type": "range", "value": pval},
                     "fetched_at": format_iso8601(now)
                 })
@@ -602,7 +638,6 @@ def run_delete(args: argparse.Namespace):
         return
     with acquire_calendar_lock():
         doc = load_calendar_document()
-        # Store serialized to accurately detect mutations (since deep copies can be slower)
         old_events = json.dumps(doc["events"], sort_keys=True)
         old_coverage = json.dumps(doc.get("coverage", []), sort_keys=True)
         
@@ -612,7 +647,6 @@ def run_delete(args: argparse.Namespace):
         new_events = json.dumps(doc["events"], sort_keys=True)
         new_coverage = json.dumps(doc["coverage"], sort_keys=True)
         
-        # Save if either modified
         if old_events != new_events or old_coverage != new_coverage:
             validate_calendar_document(doc)
             save_calendar_atomic(doc)
