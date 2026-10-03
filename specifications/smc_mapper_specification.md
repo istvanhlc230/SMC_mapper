@@ -1749,7 +1749,7 @@ Tests must be able to execute canonical-processing logic from fixed persisted ca
 
 # 18. REQUIRED TEST STRUCTURE AND DEFINITION OF DONE
 
-The global developer-agent naming, portability, prompt-efficiency, and validation rules in `AGENTS.md` apply to the Mapper. Mapper validation scenarios are defined by the implementation contract; no dedicated repository test directory is prescribed.
+The global developer-agent naming, portability, prompt-efficiency, and validation rules in `AGENTS.md` apply to the Mapper. Mapper validation scenarios are defined by the implementation contract.
 
 At minimum, the finished mapper implementation must have focused tests covering:
 
