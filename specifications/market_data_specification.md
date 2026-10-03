@@ -935,6 +935,8 @@ Signature:
 def apply_candle_retention(
     candles: Sequence[dict[str, Any]],
     retention_limit: int,
+    protected_start: datetime | None = None,
+    protected_end: datetime | None = None,
 ) -> list[dict[str, Any]]:
     ...
 ```
@@ -942,11 +944,15 @@ def apply_candle_retention(
 Rules:
 
 - retention is per timeframe;
-- newest candles are retained;
+- newest candles are retained when no protected range applies;
 - eviction is oldest-first;
 - completed candle chronology remains intact;
 - retention does not modify candle contents;
 - retention does not invalidate mapper structural history;
+- when `protected_start` is supplied, candles at or after that boundary are protected for the current requested processing range;
+- when `protected_end` is supplied, candles after that boundary are not protected by the requested range;
+- protected candles are retained even when this temporarily exceeds `retention_limit`;
+- once the protected range is no longer requested, normal rolling retention may evict old candles;
 - retention is operational storage policy only.
 
 The function must be pure with respect to its inputs.
@@ -954,6 +960,8 @@ The function must be pure with respect to its inputs.
 ## 11.2 Retention and reacquisition
 
 If a later mapper analysis requires candles outside the retained window, the surrounding launcher/orchestrator triggers reacquisition through `market_data.py`.
+
+When an explicit historical acquisition range is requested, that requested range is protected during the current update so the just-reacquired candles remain available to the immediately following Mapper invocation. This protection is temporary and does not disable normal rolling retention for unrelated candles.
 
 The implementation must not assume retained storage is the only possible source of historical data.
 
@@ -1024,8 +1032,8 @@ Rules:
 - resolves to `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json`;
 - uses `get_symbol_data_directory` as the single directory owner;
 - no timeframe-specific market-data file;
-- sanitize path components only as required for safe local file paths;
-- the resolved path must remain inside `<DATA_ROOT>/<SYMBOL>`.
+- reject unsafe symbol path components rather than sanitizing them into another instrument identity;
+- the resolved path must remain inside `<DATA_ROOT>/<SYMBOL>`;
 - do not silently rename a symbol into another instrument identity.
 
 ## 12.4 load_market_data
@@ -1327,7 +1335,7 @@ Execution order:
 
 1. resolve the symbol data directory and market-data path;
 2. load or create the symbol-scoped market-data document;
-3. for each requested timeframe, independently:
+3. apply the request to each requested timeframe in memory:
    - ensure timeframe state;
    - resolve acquisition;
    - acquire provider data;
@@ -1337,15 +1345,16 @@ Execution order:
    - current-snapshot handling;
    - retention;
    - availability bounds;
-4. save once if any state changed;
-5. return whether the document changed.
+4. if any requested timeframe fails, discard the entire in-memory update and do not persist a partial document;
+5. save the complete symbol document once if any state changed;
+6. return whether the document changed.
 
 Important:
 
 - all requested timeframes share one market-data JSON document;
 - timeframe updates remain logically independent;
-- a failure in one timeframe must not silently corrupt another timeframe;
-- do not persist a partially malformed document;
+- a failure in one timeframe fails the current invocation and does not persist any partial change from that invocation;
+- do not persist a partially updated document;
 - use one complete read-modify-write transaction for the symbol.
 
 ## 15.2 No-op behavior
@@ -1863,7 +1872,7 @@ persist complete symbol document atomically
 exit
 ```
 
-For `--live`, current-snapshot refresh is parallel to completed-candle acquisition at the timeframe level but remains persisted in the dedicated `current` field.
+For `--live`, current-snapshot refresh is independent of completed-candle acquisition. In live-only mode it may be the only state change; with `--lastcandle` it runs alongside the exact latest-completed-candle acquisition.
 
 For `--lastcandle`, the completed-candle acquisition branch returns exactly one latest completed candle per requested timeframe.
 
