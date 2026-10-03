@@ -4011,3 +4011,44 @@ PASS — source reconciliation and mapper specification preserve the project-can
 BLOCKED — Python/runtime conformance is a separate implementation audit and is not claimed by this documentation phase.
 
 Commit/test status: documentation/specification only; no Python files modified and no Python tests claimed.
+
+# PHASE 50 — SKILL-ONLY STALE CONTRACT REMEDIATION AND FULL RE-AUDIT — 2026-10-03
+
+## Scope
+
+Skill/documentation-only remediation. No Python implementation or test changes were made.
+
+The post-Phase-49 skill audit identified remaining documentation inconsistencies in Layer 2 lifecycle ordering, reconciliation summaries, and strict Inside-Bar OB handling.
+
+## Corrections
+
+- `.agents/skills/smc/02_minor_structure.md` now reflects `IDM_TAKEN → SWING_CANDIDATE / PROVISIONAL_STRUCTURAL_EXTREME → applicable structural retracement qualification → CONFIRMED_STRUCTURAL_SWING`, with the transient `BOOTSTRAP_RANGE` explicitly placed between candidate establishment and qualification only for first-BOS bootstrap.
+- `.agents/skills/smc/reconciliation/full_methodology_gap_audit.md` now distinguishes source-direct wording that IDM takeout may acquire/confirm a swing point from the project-canonical state-machine representation. The reconciliation lifecycle places structural retracement qualification before `CONFIRMED_STRUCTURAL_SWING`.
+- The reconciliation coverage table was also corrected so it no longer states that IDM takeout itself confirms the canonical swing.
+- `.agents/skills/smc/06_execution.md` now makes strict Inside-Bar handling an absolute OB-candidate exclusion. A strict Inside Bar cannot become `ORDER_BLOCK_CANDIDATE`, `VALIDATED_ORDER_BLOCK`, DECISIONAL OB, or EXTREME OB, and mother-candle OB provenance is never transferred.
+- The existing deterministic FVG fallback remains intact: missing required FVG → immediately next chronological candle → re-evaluate; the next candle is then subject to the strict Inside-Bar exclusion and all normal OB pillars.
+
+## Full `.agents/skills/smc/` cross-file re-audit
+
+PASS — no project-canonical direct `IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING` transition remains.
+PASS — candidate/provisional structural state precedes retracement qualification and qualification precedes confirmed structural swing across the active Layer-3/Layer-4/Layer-8 lifecycle.
+PASS — Layer-2 documentation no longer places structural qualification after `CONFIRMED_STRUCTURAL_SWING`.
+PASS — BOS remains gated by a qualified `CONFIRMED_STRUCTURAL_SWING` and stored structural qualification.
+PASS — CHoCH remains separate from bootstrap-anchor reversal and Major-IDM sweeps.
+PASS — `BOOTSTRAP_ORIGIN_ANCHOR` remains initialization-only and cannot become Protected Structural Extreme, governing Dealing Range boundary, BOS reference, or ordinary CHoCH reference.
+PASS — bootstrap reversal remains `BOOTSTRAP_ANCHOR_BREAK → BOOTSTRAP_REVERSAL` with forward-only lineage reset and no synthetic structural event.
+PASS — `IMPULSE_EXTENSION` remains a classification outcome of `EXT_CONT_BREAK`, not an event class.
+PASS — Order Block validity remains based on its canonical validation pillars; the deterministic immediate-next-candle FVG fallback remains preserved.
+PASS — strict Inside Bars are explicitly excluded from OB candidate selection and cannot independently qualify as OBs.
+PASS — Layer ownership boundaries remain consistent across Layers 1–8.
+PASS — source reconciliation preserves source evidence as evidence while project-canonical bootstrap and state-machine formalization remain explicit.
+
+## Audit disposition
+
+**SKILL PACKAGE: PASS**
+
+Python/runtime conformance is intentionally outside this skill-only phase.
+
+## Commit note
+
+The GitHub repository write interface accepted the skill edits as sequential file commits rather than the attempted atomic multi-file tree commit. All four documentation updates are now on `main`; the review log is updated after the final cross-file audit.
