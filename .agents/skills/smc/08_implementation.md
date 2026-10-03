@@ -640,7 +640,7 @@ Regression tests must cover:
 
 ### BOS downstream lifecycle
 - `VALID_BOS` closes the previous Trading Range;
-- `VALID_BOS` locks `E_retrace` as Protected Structural Extreme when sufficiency is satisfied;
+- `VALID_BOS` locks the current `dynamic_retracement_extreme` as the Protected Structural Extreme when sufficiency is satisfied (`E_retrace(t)` is mathematical notation only);
 - `VALID_BOS` emits `TRADING_RANGE_ROLLED_OVER`;
 - previous-range POIs transition to `EXPIRED_HISTORICAL` through the **Layer-6 POI lifecycle subsystem** when a new Dealing Range is established by VALID_BOS;
 - expired historical POIs are non-tradable and may remain only as historical/reaction-zone records; Layer 8 consumes the Layer-6 state and does not independently create expiration decisions;
@@ -1060,7 +1060,7 @@ The transition matrix is exhaustive and deterministic once the required canonica
 |---|---|---|---|---|---|---|
 | **BOOTSTRAP** | REMAIN; update provisional extremes/internal sequence | If the event physically takes the active IDM reference and thereby satisfies the L3 `IDM_TAKEN` condition: **IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING → CONFIRMATION_LOCKED**. Otherwise (minor IDM activity that does not constitute physical takeout of the active reference): REMAIN; no confirmed range | DISQUALIFIED; no confirmed swing, therefore no BOS | DISQUALIFIED; no protected boundary, therefore no CHoCH | NOT_APPLICABLE; no active Major IDM | SVP → Verified Extreme → Minor IDM; remain BOOTSTRAP until IDM_TAKEN |
 | **CONFIRMATION_LOCKED** | REMAIN; track active expansion/retrace state | **IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING**; remain `CONFIRMATION_LOCKED` while retracement/BOS prerequisites continue | While Gate is LOCKED: DISQUALIFIED; BOS prohibited. When Gate is UNLOCKED (via IDM_TAKEN): evaluate the transient `BOOTSTRAP_RANGE`; if `MAJOR_RETRACEMENT_QUALIFIED`: **FIRST BOS / VALID_BOS → POST_BOS**; else: **IMPULSE_EXTENSION → REMAIN** | CHoCH pipeline; qualifying break + all prerequisites → **POST_CHOCH**, otherwise REMAIN | REMAIN; Major IDM wick → `MAJOR_IDM_SWEEP`, Gate UNLOCKED, no automatic swing | FIRST_POST_CHOCH_SVP → Verified Extreme → FIRST_POST_CHOCH_MINOR_IDM; remain confirmation-locked until applicable sweep/gate prerequisites complete |
-| **CONFIRMED_RANGE** | REMAIN; dynamic `E_retrace` tracking | REMAIN; a later Minor IDM sweep updates the active IDM lifecycle; it does not retroactively alter an already confirmed swing | `IMPULSE_EXTENSION` → REMAIN; `VALID_BOS` → **POST_BOS** | `CHoCH_CONFIRMED` → **POST_CHOCH**; `MAJOR_IDM_SWEEP` → REMAIN; `NO_CHoCH_BREAK` → REMAIN | REMAIN; Major IDM wick → `MAJOR_IDM_SWEEP`, no CHoCH | REMAIN; new SVP supersedes the active pullback reference only when canonical IDM lifecycle requires it |
+| **CONFIRMED_RANGE** | REMAIN; dynamic `dynamic_retracement_extreme` tracking | REMAIN; a later Minor IDM sweep updates the active IDM lifecycle; it does not retroactively alter an already confirmed swing | `IMPULSE_EXTENSION` → REMAIN; `VALID_BOS` → **POST_BOS** | `CHoCH_CONFIRMED` → **POST_CHOCH**; `MAJOR_IDM_SWEEP` → REMAIN; `NO_CHoCH_BREAK` → REMAIN | REMAIN; Major IDM wick → `MAJOR_IDM_SWEEP`, no CHoCH | REMAIN; new SVP supersedes the active pullback reference only when canonical IDM lifecycle requires it |
 | **POST_BOS** | REMAIN; new expansion tracked, closed-range POIs expire through POI lifecycle | REMAIN; a Minor IDM does not replace the prior Major IDM | DISQUALIFIED; another BOS is not interpreted until the new swing lifecycle is established | CHoCH classification pipeline; qualifying opposing break + all prerequisites → **POST_CHOCH**, otherwise REMAIN | REMAIN; Major IDM wick → `MAJOR_IDM_SWEEP`, Gate UNLOCKED | SVP → Verified Extreme → IDM qualification; if Major IDM qualifies, it supersedes the prior Major IDM → **CONFIRMED_RANGE** |
 | **POST_CHOCH** | remain in `CONFIRMATION_LOCKED` | first post-CHoCH Minor IDM pipeline; no automatic state promotion | While Gate is LOCKED: BOS prohibited. When Gate is UNLOCKED (via IDM_TAKEN): the runtime requires an explicit active-impulse origin candle to construct the transient `BOOTSTRAP_RANGE`; if origin evidence is missing, the process remains fail-closed. Otherwise, if `MAJOR_RETRACEMENT_QUALIFIED`: **FIRST BOS / VALID_BOS → POST_BOS**; else: **IMPULSE_EXTENSION → REMAIN** | body close → `CHoCH_ELIGIBLE` pending prerequisites; Major IDM wick → `MAJOR_IDM_SWEEP`; Major IDM body close enters CHoCH pipeline | Major IDM wick → `MAJOR_IDM_SWEEP`, Gate UNLOCKED, trend unchanged | FIRST_POST_CHOCH_SVP → Verified Extreme → FIRST_POST_CHOCH_MINOR_IDM; remain `CONFIRMATION_LOCKED` until applicable sweep/gate prerequisites complete |
 
@@ -1118,7 +1118,7 @@ BOOTSTRAP_RANGE
     ≠ GOVERNING_DEALING_RANGE
 
 QUALIFICATION_TIME
-    ≠ E_retrace LOCK TIME
+    ≠ dynamic_retracement_extreme LOCK TIME
 
 MISSING ACTUAL ORIGIN
     → FAIL CLOSED
@@ -1153,7 +1153,7 @@ ACTUAL ORIGIN CANDLE
 → RETRACEMENT QUALIFICATION
 → STRUCTURAL_SWING_BREAK
 → VALID_BOS
-→ E_retrace(t) LOCKED
+→ dynamic_retracement_extreme LOCKED
 → PROTECTED_STRUCTURAL_EXTREME
 → FIRST CONFIRMED DEALING RANGE
 ```

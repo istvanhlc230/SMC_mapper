@@ -148,9 +148,9 @@ The canonical process is:
    - The current corrective extreme is tracked dynamically across the active retracement leg:
      - bullish: the lowest relevant low seen so far;
      - bearish: the highest relevant high seen so far.
-   - This mathematical quantity is written as `E_retrace(t)`.
-   - For implementation-facing terminology, prefer `dynamic_retracement_extreme`.
-   - `E_retrace(t)` is dynamic until a valid continuation BOS actually occurs; qualification alone does not freeze it.
+   - Mathematical notation: `E_retrace(t)`.
+   - Implementation-facing state name: `dynamic_retracement_extreme`.
+   - `dynamic_retracement_extreme` remains dynamic until a valid continuation BOS actually occurs; qualification alone does not freeze it.
 
 6. **First VALID_BOS transition**
    - A continuation break becomes `VALID_BOS` only when the existing canonical BOS gates all pass:
@@ -185,7 +185,7 @@ DYNAMIC RETRACEMENT
 STRUCTURAL_SWING_BREAK
   ├─ qualified → VALID_BOS
   │               ↓
-  │          E_retrace(t) LOCKED
+  │          dynamic_retracement_extreme LOCKED
   │               ↓
   │     PROTECTED_STRUCTURAL_EXTREME
   │               ↓
@@ -209,7 +209,7 @@ BOOTSTRAP_RANGE
     ≠ CHoCH_PROTECTED_BOUNDARY
 
 QUALIFICATION_TIME
-    ≠ E_retrace LOCK TIME
+    ≠ dynamic_retracement_extreme LOCK TIME
 
 VALID_BOS
     = the only first-BOS lock point for the first
@@ -462,16 +462,16 @@ The absolute corrective extreme remains dynamically tracked until the structural
 ```text
 Retracement Sufficiency
         ↓
-Dynamic E_retrace
+dynamic_retracement_extreme
         ↓
 VALID_BOS
         ↓
-PROTECTED_STRUCTURAL_EXTREME_LOCK (E_retrace LOCKED)
+PROTECTED_STRUCTURAL_EXTREME_LOCK (`dynamic_retracement_extreme` LOCKED)
 ```
 
-A valid wick BOS locks `E_retrace` immediately. No later body close is required.
+A valid wick BOS locks the current `dynamic_retracement_extreme` immediately. `E_retrace(t)` is the mathematical notation for that state. No later body close is required.
 
-If the penetrated external level carries Major IDM provenance, the wick event is instead `MAJOR_IDM_SWEEP`; it is not BOS and does not lock `E_retrace`.
+If the penetrated external level carries Major IDM provenance, the wick event is instead `MAJOR_IDM_SWEEP`; it is not BOS and does not lock `dynamic_retracement_extreme`.
 
 Detailed BOS locking mechanics are owned by `04_BOS_mechanics.md`.
 

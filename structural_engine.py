@@ -627,7 +627,7 @@ def finalize_valid_bos(
     *,
     break_candle_id: str,
 ) -> StructuralAnalysis:
-    """Lock actual E_retrace after VALID_BOS and destroy bootstrap state."""
+    """Lock dynamic_retracement_extreme after VALID_BOS and destroy bootstrap state."""
     if not isinstance(structural, StructuralAnalysis):
         raise QuarantineError("VALID_BOS finalization requires StructuralAnalysis")
     if not structural.retracement or not structural.retracement.qualified:
@@ -650,7 +650,7 @@ def finalize_valid_bos(
     start,end,break_pos=positions[swing.confirmation_candle_id],positions[end_id],positions[break_candle_id]
     if end<=start or break_pos<=end:
         raise QuarantineError("VALID_BOS requires qualification before the break")
-    # E_retrace remains dynamic after qualification and is locked only at BOS.
+    # dynamic_retracement_extreme remains dynamic after qualification and is locked only at BOS.
     window=sequence[start+1:break_pos]
     if not window:
         raise QuarantineError("VALID_BOS requires a non-empty corrective window")

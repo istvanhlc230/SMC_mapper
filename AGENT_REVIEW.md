@@ -3631,3 +3631,28 @@ PASS — GitHub Actions workflow for commit `c00976d72aa382ebdea79f0ab14f8ea2b27
 
 ## Canonical boundary
 No file under `.agents/skills/smc/` was modified. Knowledgebase source/evidence files were not modified.
+
+
+# PHASE 41 — IMPLEMENTATION TERMINOLOGY CORRECTION: E_retrace AS NOTATION ONLY — 2026-10-03
+
+## Correction
+
+The implementation-facing name is **`dynamic_retracement_extreme`**.
+
+`E_retrace(t)` remains only the mathematical notation used to describe the same dynamic state. It is not the selected Python/runtime identifier.
+
+Correct lifecycle terminology:
+
+```text
+dynamic_retracement_extreme
+        ↓
+VALID_BOS
+        ↓
+PROTECTED_STRUCTURAL_EXTREME
+```
+
+No runtime field or implementation-facing contract should introduce `E_retrace` as an identifier.
+
+## Audit status
+
+PASS — active implementation-facing terminology corrected to `dynamic_retracement_extreme`.
