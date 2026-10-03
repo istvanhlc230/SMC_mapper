@@ -1133,11 +1133,11 @@ observed_through_candle_id
 
 For bullish structure, it is the lowest relevant completed-candle LOW observed in the active retracement. For bearish structure, it is the highest relevant completed-candle HIGH.
 
-The observation horizon is strict. The dynamic corrective state begins only after the macro-qualified `CONFIRMED_STRUCTURAL_SWING` exists:
+The observation horizon is strict. The dynamic corrective state begins with the active retracement after the swing-point candidate / provisional structural extreme has been established:
 
 ```text
-CONFIRMED_SWING_CONFIRMATION
-        <
+SWING_CANDIDATE_ESTABLISHED
+        ≤
 OBSERVATION CANDLE
         <
 STRUCTURAL BREAK CANDLE
@@ -1233,7 +1233,7 @@ Additional invariants:
 NO_NEW_MAJOR_IDM → PRIOR_PROTECTED_BOUNDARY_REMAINS_MAJOR_IDM
 MINOR_IDM_SWEEP ≠ VALID_BOS
 MAJOR_IDM_SWEEP ≠ VALID_BOS
-IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING
+IDM_TAKEN → SWING_CANDIDATE / PROVISIONAL_STRUCTURAL_EXTREME → MACRO RETRACEMENT QUALIFICATION → CONFIRMED_STRUCTURAL_SWING
 NEW_SVP ≠ AUTOMATIC MAJOR_IDM
 EXT_CONT_BREAK ≠ AUTOMATIC VALID_BOS
 EXT_OPP_BREAK ≠ AUTOMATIC CHoCH_CONFIRMED

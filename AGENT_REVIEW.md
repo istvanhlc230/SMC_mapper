@@ -3791,3 +3791,46 @@ Audit status: PASS — C0 origin, causal bar-by-bar construction, swing promotio
 BLOCKED — Python/runtime conformance is intentionally unresolved because this phase changes documentation only.
 
 No Python files modified. No Python test run is claimed.
+# PHASE 45 — BOOTSTRAP MEASUREMENT ORDER / CANDIDATE PROMOTION CORRECTION — 2026-10-03
+
+Documentation-only. **No Python implementation file was modified.**
+
+The previous documentation introduced a circular ordering in which `BOOTSTRAP_RANGE` depended on an already macro-qualified `CONFIRMED_STRUCTURAL_SWING`, even though the range is needed to evaluate that qualification.
+
+The corrected canonical order is:
+
+```text
+C0 / MAPPING-ORIGIN
+    ↓
+Layer 1 / Layer 2 valid pullback
+    ↓
+MINOR_IDM
+    ↓
+IDM_TAKEN
+    ↓
+SWING_CANDIDATE / PROVISIONAL_STRUCTURAL_EXTREME
+    ↓
+BOOTSTRAP_RANGE
+    ↓
+DYNAMIC RETRACEMENT + MACRO QUALIFICATION
+    ↓
+CONFIRMED_STRUCTURAL_SWING
+    ↓
+STRUCTURAL_SWING_BREAK
+    ↓
+VALID_BOS
+    ↓
+PROTECTED_STRUCTURAL_EXTREME
+    ↓
+NEW DEALING RANGE
+```
+
+The bootstrap range is therefore a measurement object activated by candidate establishment. The dynamic retracement extreme is tracked through the qualification period. The candidate is promoted to `CONFIRMED_STRUCTURAL_SWING` only after the macro qualification gate succeeds.
+
+The source wording that calls the IDM-taken point a confirmed/acquired swing point remains preserved as source semantics; the project state model uses the explicit provisional stage so that BOS eligibility is not conflated with the earlier swing-point acquisition.
+
+Audit status: PASS — the first-BOS state machine is now acyclic and causally measurable.
+
+BLOCKED — Python/runtime conformance remains unresolved because this phase changes documentation only.
+
+No Python files modified. No Python test run is claimed.

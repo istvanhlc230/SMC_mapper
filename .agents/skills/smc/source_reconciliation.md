@@ -108,6 +108,7 @@ The bootstrap policy must never be described as if it were directly defined by t
 The project-canonical mapping model treats the first eligible completed candle of an initial mapping domain as `C0`, the mapping-origin candle and causal state-machine anchor. This is not an arbitrary bootstrap placeholder: the mapping is defined to begin there and to construct higher-layer state chronologically from lower-layer evidence.
 
 The indexed source evidence describes IDM takeout as acquiring/confirming a swing point and then separately evaluates retracement depth and the later swing break. The canonical state representation therefore distinguishes the source-described swing point from the BOS-eligible structural object: `IDM_TAKEN → SWING_CANDIDATE / PROVISIONAL_STRUCTURAL_EXTREME → MACRO RETRACEMENT QUALIFICATION → CONFIRMED_STRUCTURAL_SWING → STRUCTURAL_SWING_BREAK → VALID_BOS`.
+For the bootstrap case, the candidate must exist before macro qualification because its structural price is an endpoint of the first-BOS measurement baseline: `BOOTSTRAP_ORIGIN_ANCHOR → SWING_CANDIDATE → BOOTSTRAP_RANGE → MACRO RETRACEMENT QUALIFICATION → CONFIRMED_STRUCTURAL_SWING`.
 
 ## 3. Contracts under reconciliation
 

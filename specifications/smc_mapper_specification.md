@@ -941,8 +941,8 @@ The bootstrap contract is:
 - chart inception uses the first effective completed candle as `C0`, the deterministic **mapping-origin candle**. `C0` is the causal start of the mapping state machine because no earlier candle belongs to that mapping domain;
 - after `CHoCH_CONFIRMED`, an explicit active-impulse origin candle is required; missing origin provenance fails closed;
 - `IDM_TAKEN` creates the active swing-point candidate / provisional structural extreme;
-- macro retracement qualification promotes that candidate to `CONFIRMED_STRUCTURAL_SWING` before the transient `BOOTSTRAP_RANGE` can be activated;
-- the bootstrap range activation boundary is the macro-qualified swing **confirmation event/candle**, not the swing source candle;
+- the transient `BOOTSTRAP_RANGE` is activated from the `BOOTSTRAP_ORIGIN_ANCHOR` to the swing candidate so that macro retracement qualification has a deterministic measurement baseline; macro qualification then promotes the candidate to `CONFIRMED_STRUCTURAL_SWING`;
+- `BOOTSTRAP_RANGE` activation occurs at swing-candidate establishment; the candidate source candle identifies the provisional extreme, while macro qualification is the later promotion gate;
 - initial mapping boot begins at `C0` and all higher-layer state is constructed strictly forward, bar-by-bar;
 - `BOOTSTRAP_RANGE` is measurement-only and is not a governing Dealing Range, Protected Structural Extreme, Trading Range boundary, or CHoCH boundary;
 - bootstrap uses the existing Layer-3 50% / documented 38.2% qualification rules without introducing a new threshold or heuristic;

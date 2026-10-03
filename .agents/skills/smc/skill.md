@@ -159,7 +159,6 @@ COUNTERTREND SCENARIOS
 
 A rule must have one primary semantic owner.
 
-Initial mapping boot is chronological and causal: the first eligible completed candle of the mapping domain is `C0`, the mapping-origin reference from which higher-layer state must be built bar-by-bar. Other documents may reference that rule, but must not create a competing definition.
 
 ## 7. Precedence rule
 

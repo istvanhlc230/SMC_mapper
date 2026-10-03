@@ -232,7 +232,7 @@ WICK BREACH
 MAJOR_IDM_SWEEP
 ```
 
-A Major IDM wick sweep is not CHoCH_CONFIRMED, not VALID_BOS, and does not roll the Trading Range or lock the Protected Structural Extreme. The sweep satisfies the applicable IDM-takeout requirement (`IDM_TAKEN`) when the Major IDM reference is physically penetrated, and that `IDM_TAKEN` immediately confirms the associated `CONFIRMED_STRUCTURAL_SWING`. It does not require retracement qualification for swing confirmation, and it does not by itself create `VALID_BOS` or `CHoCH_CONFIRMED`.
+A Major IDM wick sweep is not CHoCH_CONFIRMED, not VALID_BOS, and does not roll the Trading Range or lock the Protected Structural Extreme. The sweep satisfies the applicable IDM-takeout requirement (`IDM_TAKEN`) when the Major IDM reference is physically penetrated, and that `IDM_TAKEN` establishes the associated swing-point candidate / provisional structural extreme. Macro retracement qualification is still required before the candidate becomes `CONFIRMED_STRUCTURAL_SWING` on the continuation-BOS path. The sweep does not by itself create `VALID_BOS` or `CHoCH_CONFIRMED`.
 
 #### B. Body Close Beyond Major IDM
 
