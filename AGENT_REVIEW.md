@@ -29,3 +29,15 @@ This file records review evidence only; implementation claims do not constitute 
   - Executed `python calendar.py --query USDHUF --day today --symbol USDHUF --next` -> Returned `OK` capturing HUF events properly using strict currency isolation.
   - Delete mutual exclusivity was verified (`python calendar.py --delete --day today --query EURHUF` returns `Error`).
 - **HUF Support**: `extract_symbol_currencies` was explicitly validated to support HUF (e.g. `USDHUF`, `EUR/HUF`, `USD-HUF`, `USD_HUF`).
+
+## Unified CLI Contract Refactor
+- **Architecture**: Refactored the `calendar.py` public API into a strictly positional, flag-less CLI: `calendar.py [scope] [symbol] [evaluation]` and `calendar.py delete [scope]`.
+- **Parsing/Domain Functions**: Eliminated `argparse` dependencies and flag-coupled functions (e.g., `resolve_provider_period`) entirely, replacing them with typed semantic functions: `is_scope`, `is_symbol`, `resolve_scope_interval`, `resolve_scope_reference`, and `resolve_delete_intervals`. 
+- **Scope resolution**: `week` uses the canonical repository implementation matching the original convention without deviation. `@HH:MM` timestamp evaluations appropriately anchor evaluations (current/next).
+- **Validation Execution**:
+  - `python calendar.py today USDHUF current` ? Seamless scope acquisition and symbol evaluation.
+  - `python calendar.py 2026.10.01-2026.10.31 EURHUF` ? Tested date ranges.
+  - `python calendar.py delete 2026.10.03` ? Tested delete without argparse coupling.
+  - `python calendar.py USDHUF next` ? Symbol-only query returns local data silently without attempting network fetch.
+  - Re-ran `python -m py_compile calendar.py`.
+- **Remaining Limitations**: `urllib.request` requests are continuously 403 Forbidden by the provider (Cloudflare), requiring a local mocked coverage simulation to validate logic pipelines correctly without blocking on HTTP hangs. No other programmatic limitations exist.

@@ -19,7 +19,19 @@
 - Monitor execution policy does not belong in this module.
 
 ## 2. Boundaries and Dependencies
-- **Module Architecture:** calendar.py is the single calendar implementation/module containing both the CLI wrapper and the core execution engine. The `--query` (acquisition) and `--symbol` (evaluation) operations are independent but composable stages within a single invocation pipeline.
+- **Module Architecture:** calendar.py is the single calendar implementation/module containing both the CLI wrapper and the core execution engine. - **CLI Grammar:** The CLI uses a strictly positional grammar without flag prefixes:
+  `python calendar.py [scope] [symbol] [evaluation]`
+  `python calendar.py delete [scope]`
+  `python calendar.py delete`
+- **Scope Vocabulary:**
+  - Relative tokens: `today`, `next_day`, `week`, `next_week`, `month`, `next_month`
+  - Explicit bounds: `YYYY.MM.DD`, `YYYY.MM.DD-YYYY.MM.DD`
+  - Reference timestamp combinations: `today@HH:MM`, `YYYY.MM.DD@HH:MM`
+- **Execution Pipeline:** `SCOPE -> ACQUISITION -> SYMBOL FILTER -> OPTIONAL EVALUATION`. 
+- **Symbol Semantics:** Enforces six-character canonical pairs (e.g. `USDHUF`) and never triggers network acquisition if a scope is omitted.
+- **Evaluation Semantics:** `current` evaluates the nearest minute reference, `next` returns strictly future events against the reference timestamp.
+- **Domain Variables:** Functions use resolved semantics such as `scope`, `symbol`, `evaluation`, `start`, `end`, and `ref_dt` instead of legacy argparse structures.
+
 - **Inputs:** CLI arguments, ForexFactory HTML response, existing calendar.json.
 - **Outputs:** Console output (JSON format for local queries), updated calendar.json.
 - **Side effects:** Atomic update of calendar.json.
