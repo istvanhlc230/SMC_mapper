@@ -515,25 +515,30 @@ def fetch_url(url: str) -> str:
 
 
 def fetch_forexfactory(start: datetime, end: datetime) -> List[Dict[str, Any]]:
-    provider_start = start.replace(hour=0, minute=0, second=0, microsecond=0)
-    provider_end = end.replace(hour=0, minute=0, second=0, microsecond=0)
+    request_start = start
+    request_end = end
+
+    provider_start = start.replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+    provider_end = end.replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
     if provider_end < end:
         provider_end += timedelta(days=1)
     last_day = provider_end - timedelta(days=1)
 
     start_token = provider_start.strftime("%b%d.%Y").lower()
     end_token = last_day.strftime("%b%d.%Y").lower()
-    query = urllib.parse.urlencode(
-        {"range": f"{start_token}-{end_token}"}
-    )
+    query = urllib.parse.urlencode({"range": f"{start_token}-{end_token}"})
     html = fetch_url(f"{FOREXFACTORY_URL}?{query}")
     days = parse_calendar_days(extract_days_payload(html))
     normalized = normalize_calendar_events(days)
+
     return [
         event for event in normalized
-        if provider_start <= parse_iso8601(event["timestamp"]) < provider_end
+        if request_start <= parse_iso8601(event["timestamp"]) < request_end
     ]
-
 
 def extract_days_payload(html: str) -> str:
     match = re.search(r"[\"']days[\"']\s*:\s*\[", html, re.IGNORECASE)
