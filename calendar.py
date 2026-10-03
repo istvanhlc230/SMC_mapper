@@ -718,22 +718,31 @@ def _parse_provider_date(
     return current_date
 
 
-def _resolve_provider_timezone(value: str) -> timezone:
+def _resolve_provider_timezone(value: str):
     normalized = value.strip()
-    if normalized.upper() == "UTC":
+    if normalized.upper() in {"UTC", "GMT", "Z"}:
         return timezone.utc
-    if normalized in {"Europe/Budapest", "Europe/Berlin", "Europe/Prague", "Europe/Vienna"}:
-        # ForexFactory currently exposes the Central European calendar timezone.
-        # The calendar date/time is later normalized to UTC.
-        return timezone(timedelta(hours=1))
-    offset_match = re.fullmatch(r"UTC\\s*([+-])\\s*(\\d{1,2})(?::(\\d{2}))?", normalized, re.IGNORECASE)
+
+    offset_match = re.fullmatch(
+        r"(?:UTC|GMT)\s*([+-])\s*(\d{1,2})(?::?(\d{2}))?",
+        normalized,
+        re.IGNORECASE,
+    )
     if offset_match:
         sign = 1 if offset_match.group(1) == "+" else -1
-        return timezone(sign * timedelta(
-            hours=int(offset_match.group(2)),
-            minutes=int(offset_match.group(3) or "0"),
-        ))
-    sys.exit(f"Error: Unsupported provider calendar timezone '{value}'.")
+        hours = int(offset_match.group(2))
+        minutes = int(offset_match.group(3) or "0")
+        if hours > 23 or minutes > 59:
+            sys.exit(f"Error: Invalid provider calendar timezone '{value}'.")
+        return timezone(sign * timedelta(hours=hours, minutes=minutes))
+
+    try:
+        return ZoneInfo(normalized)
+    except ZoneInfoNotFoundError:
+        sys.exit(
+            f"Error: Unsupported provider calendar timezone '{value}'. "
+            "Install the tzdata package or provide a valid UTC offset."
+        )
 
 
 def _parse_provider_time(value: str) -> Tuple[int, int]:
