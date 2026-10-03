@@ -3377,3 +3377,46 @@ PASS — FVG is explicitly prohibited as a target type.
 PASS — Target provenance is preserved through the resolved target object.
 PASS — No canonical skill file was modified.
 PASS — This change is specification-only; runtime code/tests were not run.
+
+
+# PHASE 32 — FULL SPECIFICATION ↔ CANONICAL TERMINOLOGY AUDIT — 2026-10-03
+
+## Scope
+Audited all current owner specifications against the canonical .agents/skills/smc/ terminology and ownership boundary:
+- specifications/full_specification.md
+- specifications/smc_mapper_specification.md
+- specifications/smc_monitor_specification.md
+- specifications/calendar_specification.md
+- specifications/market_data_specification.md
+
+## Corrections applied
+1. Full specification index:
+   - removed stale Calendar wording referring to a cache plus symbol-specific News JSON;
+   - aligned it with the single global calendar.json + coverage contract.
+2. Mapper:
+   - replaced unqualified structural storage wording with CONFIRMED_STRUCTURAL_SWING, STRUCTURAL_SWING_BREAK, VALID_BOS, MINOR_IDM, MAJOR_IDM, and canonical Protected Structural Extreme wording;
+   - canonicalized POI storage types to OF_CONFIRMED / VALID_OB;
+   - replaced ORIGIN_RESERVE with ORIGIN_OB role terminology;
+   - clarified that ORDER_FLOW, ORDER_BLOCK, and ORIGIN_RESERVE are not parallel canonical terms.
+3. Monitor:
+   - replaced unqualified structural swing with CONFIRMED_STRUCTURAL_SWING;
+   - replaced non-canonical ENTRY_CONTEXT_VALID with canonical ENTRY_AUTHORIZED distinction;
+   - corrected POI eligibility so POI_MITIGATION is not treated as failure/invalidation;
+   - aligned execution JSON direction with BUY/SELL;
+   - aligned RR field terminology with Projected_RR_to_Resolved_Target;
+   - clarified that target source/candidate, target policy, resolved target, and coordinate are distinct concepts;
+   - preserved FVG prohibition as a target type.
+
+## Intentional technical terminology retained
+- Market Data protected_start / protected_end / protected retention range are storage/retention mechanics, not canonical Protected Structural Extreme objects.
+- Calendar News lifecycle terms (UPCOMING, ONGOING, ENDED) are Monitor-owned runtime status, not SMC canonical lifecycle terms.
+- TP1 / TP2 / TP3 remain presentation fields requested for alert output and do not form a new canonical target ontology.
+
+## Audit result
+PASS — no known remaining canonical SMC terminology collision was found in the current four owner specifications.
+PASS — canonical skill files were not modified.
+PASS — Calendar-specific terminology remains outside SMC semantic ownership.
+PASS — Target terminology no longer treats FVG as a target or conflates target policy identifiers with target types.
+
+## Test status
+Specification-only audit/correction. Runtime implementation and pytest were not run.
