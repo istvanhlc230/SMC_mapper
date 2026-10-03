@@ -1,6 +1,6 @@
 # SMC Mapper Specification
 
-**Status:** Working specification. Sections are approved incrementally.
+**Status:** Current implementation specification.
 **Scope:** Functional and implementation specification for the future `smc_mapper.py`.
 **Canonical authority:** `.agents/skills/smc/` remains the sole authority for canonical SMC semantics. This document does not redefine those rules.
 
@@ -572,16 +572,20 @@ The mapper must never automatically select or invent a different HTF when only o
 
 `--starttime` is optional.
 
-When supplied, it defines the requested start of the analysis window and selects the analysis identity associated with that requested boundary. It may be specified as:
+When supplied, it defines the requested start of the analysis window and selects the analysis identity associated with that normalized boundary.
 
-- a date, or
-- an exact datetime.
+Accepted forms:
+
+- timezone-aware ISO-8601 datetime; or
+- ISO calendar date, normalized deterministically to `00:00:00Z` .
 
 Examples:
 
-`--starttime 2026-09-01`
+`--starttime 2026-09-01` → `2026-09-01T00:00:00Z`
 
-`--starttime 2026-09-01T09:30:00`
+`--starttime 2026-09-01T09:30:00+02:00` → canonical UTC before identity generation.
+
+Date-only input is a UTC calendar-date shorthand, not local time.
 
 When `--starttime` is omitted:
 
@@ -605,16 +609,18 @@ Missing historical data must never be fabricated.
 
 `--endtime` is optional.
 
-It may be specified as:
+Accepted forms:
 
-- a date, or
-- an exact datetime.
+- timezone-aware ISO-8601 datetime; or
+- ISO calendar date, normalized deterministically to the end of that UTC calendar day.
 
 Examples:
 
-`--endtime 2026-09-29`
+`--endtime 2026-09-29` → `2026-09-29T23:59:59.999999Z`
 
-`--endtime 2026-09-29T15:30:00`
+`--endtime 2026-09-29T15:30:00+02:00` → canonical UTC before candle eligibility.
+
+Date-only input is a UTC calendar-date shorthand, not local time.
 
 If omitted, use the latest completed entry-timeframe candle available in `<SYMBOL>_marketdata.json` after the required update.
 
@@ -832,7 +838,6 @@ Logical shape:
       "analysis_mode": "HTF_LTF",
       "requested_start": "2026-06-10T12:00:00Z",
       "last_processed_candle_time": "...",
-      "current": {},
       "canonical_pois": [],
       "history": []
     }
@@ -1447,86 +1452,28 @@ There is no single multi-symbol mapper JSON file and no single multi-symbol mark
 
 # 11. DOWNSTREAM TARGET, RR, AND ALERT ELIGIBILITY
 
-## 11.1 Minimum-RR policy
+The Mapper does not own downstream target selection, target clearance, RR policy, or alert eligibility.
 
-Minimum RR is a downstream trading-policy constraint, not a mapper/canonical-SMC parameter.
-
-Therefore `--rr` does **not** belong to `smc_mapper.py`.
-
-If exposed as a CLI control, it belongs to `smc_monitor.py`:
+After successful canonical structure persistence, downstream consumers may use the persisted Mapper state as follows:
 
 ```text
---rr DECIMAL
-```
-
-The parameter is optional. If `--rr` is absent, RR is not used as an alert-eligibility filter. If `--rr` is supplied, the monitor applies the gate only after target resolution and target clearance:
-
-```text
-Projected_RR >= --rr
-```
-
-There is no default minimum-RR value. `--rr` is policy, not structural truth, and must never alter canonical POI, BOS, CHoCH, IDM, Dealing Range, or target-coordinate semantics.
-
-An explicitly supplied `--rr` value applies only to the monitor invocation in which it is supplied.
-
-## 11.2 Setup and alert eligibility
-
-Downstream alert eligibility consumes canonical mapper state; it does not redefine canonical structure.
-
-The canonical POI lifecycle is the first eligibility gate for a new setup:
-
-```text
-CANONICAL POI LIFECYCLE
+canonical Mapper state
         ↓
-CANONICAL EXECUTION AUTHORIZATION
+Monitor target resolution
         ↓
-TARGET RESOLUTION
+target clearance
         ↓
-TARGET CLEARANCE
+optional --rr policy
         ↓
-OPTIONAL RR POLICY
-        ↓
-ALERT ELIGIBILITY
+alert eligibility
 ```
 
-Only a canonical POI that remains in the active tradable set under Layer-6 lifecycle rules may be selected as the setup target. The `targeted` flag identifies that selected POI; `targeted` is selection state and is not a lifecycle state.
+Ownership remains:
+- canonical target semantics: `.agents/skills/smc/` Layer 7;
+- implementation/observability boundary: `.agents/skills/smc/` Layer 8 where applicable;
+- runtime target evaluation, clearance, RR and alerts: `specifications/smc_monitor_specification.md`.
 
-The downstream consumer must reject POIs whose canonical lifecycle is `MITIGATED`, `FAILED`, or `EXPIRED_HISTORICAL`. A retained historical POI cannot become targetable again merely because it remains in the structures JSON.
-
-Layer 6 owns canonical POI lifecycle. Downstream monitor logic consumes that state and must not invent an age-based freshness rule or independently decide canonical POI expiry.
-
-Target resolution is downstream policy. A resolved target must retain its provenance and must not be manufactured merely to satisfy an RR condition.
-
-Target clearance is downstream trading/alert policy. V1 target clearance is deterministic: a resolved target must exist, its price must be strictly beyond the current reference price in the intended direction, and it must not already have been reached at the evaluation time. A missing or unresolved target, missing current reference price, or failed clearance predicate fails closed.
-
-Minimum RR is optional monitor policy and is represented only by:
-
-```text
---rr DECIMAL
-```
-
-When `--rr` is absent, RR is not an alert-eligibility filter. When `--rr` is supplied, the monitor requires:
-
-```text
-Projected_RR >= --rr
-```
-
-For V1:
-
-```text
-reward_distance = abs(resolved_target_price - entry_reference_price)
-risk_distance   = abs(stop_price - entry_reference_price)
-Projected_RR    = reward_distance / risk_distance
-```
-
-Projected_RR is unresolved when the resolved target, entry reference, or stop price is missing, or when risk_distance <= 0. An unresolved RR cannot pass an explicit --rr gate.
-
-There is no default minimum-RR value. `--rr` does not alter POI, BOS, CHoCH, IDM, Dealing Range, or target-coordinate semantics.
-
-Execution-quality conditions such as spread, expected slippage, market/session availability, broker/execution availability, or explicitly configured event filters are downstream policy only. Failure of such a condition must not mutate canonical structure or POI lifecycle.
-
-The monitor is alert/notification-only in the current product. Alerts are runtime events and are not persisted as canonical structure, setup snapshots, or alert records in `<SYMBOL>_structures.json`.
-
+The Mapper must not create a second target ontology, select a target for alerting, apply `--rr`, or mutate canonical state because of downstream eligibility.
 ---
 
 # 12. DIAGNOSTICS
@@ -1866,4 +1813,4 @@ Definition of done:
 - focused mapper tests pass without network access;
 - the code structure remains directly portable at the class/contract level to both MQL4 and MQL5.
 
-**STATUS: IMPLEMENTATION-READY CONTRACT — RE-AUDITED FOR MARKET-DATA COMPATIBILITY AND PORTABILITY**
+**STATUS: CURRENT IMPLEMENTATION CONTRACT — CROSS-FILE OWNERSHIP RECONCILED**
