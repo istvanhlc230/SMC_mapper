@@ -8,7 +8,6 @@ import tempfile
 import urllib.request
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 DATA_ROOT = os.environ.get("SMC_DATA_ROOT", ".")
 CALENDAR_FILE = os.path.join(DATA_ROOT, "calendar.json")
@@ -718,6 +717,24 @@ def _parse_provider_date(
     return current_date
 
 
+def _resolve_provider_timezone(value: str) -> timezone:
+    normalized = value.strip()
+    if normalized.upper() == "UTC":
+        return timezone.utc
+    if normalized in {"Europe/Budapest", "Europe/Berlin", "Europe/Prague", "Europe/Vienna"}:
+        # ForexFactory currently exposes the Central European calendar timezone.
+        # The calendar date/time is later normalized to UTC.
+        return timezone(timedelta(hours=1))
+    offset_match = re.fullmatch(r"UTC\\s*([+-])\\s*(\\d{1,2})(?::(\\d{2}))?", normalized, re.IGNORECASE)
+    if offset_match:
+        sign = 1 if offset_match.group(1) == "+" else -1
+        return timezone(sign * timedelta(
+            hours=int(offset_match.group(2)),
+            minutes=int(offset_match.group(3) or "0"),
+        ))
+    sys.exit(f"Error: Unsupported provider calendar timezone '{value}'.")
+
+
 def _parse_provider_time(value: str) -> Tuple[int, int]:
     normalized = value.strip().lower()
     if not normalized or "all day" in normalized or normalized.startswith("day "):
@@ -777,12 +794,7 @@ def parse_calendar_html(
     if not timezone_match:
         sys.exit("Error: Missing provider calendar timezone.")
     provider_timezone = timezone_match.group(1)
-    try:
-        provider_tz = ZoneInfo(provider_timezone)
-    except ZoneInfoNotFoundError:
-        sys.exit(
-            f"Error: Unsupported provider calendar timezone '{provider_timezone}'."
-        )
+    provider_tz = _resolve_provider_timezone(provider_timezone)
 
     row_matches = re.findall(
         r"<tr\b([^>]*)>(.*?)</tr>",
