@@ -1201,19 +1201,21 @@ Rules:
 ## 12.5 News warning evaluation
 
 ~~~python
-def evaluate_news_warning(
+def evaluate_news_warnings(
     symbol: str,
     news_events: list[dict[str, Any]],
     now: datetime,
-) -> NewsWarningDecision:
+) -> list[NewsWarningDecision]:
     ...
 ~~~
 
 Rules:
 
-- compare event_time against canonical UTC now;
+- evaluate every relevant event independently against canonical UTC now;
 - ignore events below NEWS_WARNING_MIN_IMPACT;
 - evaluate the configured pre/post windows;
+- return one decision per currently eligible event;
+- sort decisions deterministically by event_time then event_id;
 - do not infer intrabar event timing;
 - do not alter setup/target evaluation;
 - do not mutate canonical JSON.
@@ -1227,7 +1229,7 @@ NEWS_WARNING
 + warning_phase
 ~~~
 
-The identity is recorded only after successful notification. A failed notification remains retryable.
+Each eligible event may produce its own NEWS_WARNING notification. The identity is recorded only after successful notification. A failed notification remains retryable.
 
 ## 12.6 Re-evaluation
 
@@ -1429,7 +1431,7 @@ get_due_analyses
 is_target_cleared
 calculate_projected_rr
 extract_news_events
-evaluate_news_warning
+evaluate_news_warnings
 build_news_warning_key
 build_alert_key
 evaluate_alert_eligibility
@@ -1513,7 +1515,7 @@ refresh_current_market_view(symbol, timeframe)
 
 load_symbol_news(path, symbol)
 invoke_calendar(symbol, start_time, end_time, debug)
-evaluate_news_warning(symbol, news_events, now)
+evaluate_news_warnings(symbol, news_events, now)
 build_news_warning_key(symbol, event_id, warning_phase)
 
 resolve_target_plan(canonical_state)
@@ -1950,6 +1952,7 @@ smc_monitor.py is implementation-complete when:
 - mapper checkpoints are read-only from the Monitor;
 - current price is obtained through persisted Market Data current state;
 - Calendar is invoked only through its process boundary;
+- News warning decisions are evaluated independently per eligible event;
 - symbol News JSON is validated before warning evaluation;
 - NEWS_WARNING is separate from SETUP_ELIGIBLE and TARGET_REACHED;
 - missing News does not suppress canonical setup/target evaluation;
