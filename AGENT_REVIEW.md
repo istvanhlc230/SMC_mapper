@@ -3503,3 +3503,52 @@ PASS — canonical CHoCH spelling now matches between skill and runtime.
 Removed the final residual `OB_VALID` implementation shorthand from `06_execution.md`; the validated Order Block outcome is represented as `VALIDATED_ORDER_BLOCK`.
 
 Audit status: PASS for the active Layer 6/7/8 terminology scope.
+
+
+
+# PHASE 37 — SMC SKILL LOGIC RE-AUDIT AND CORRECTION — 2026-10-03
+
+## Scope
+Full re-audit of the active `.agents/skills/smc/` semantic-owner chain against the current source-reconciliation contracts and relevant `knowledgebase` evidence, with focused validation of Order Block selection, Origin Order Block lifecycle, target semantics, structural lifecycle, CHoCH, BOS, and entry authorization boundaries.
+
+## Findings and corrections
+1. **Order Block / Inside Bar**
+   - Removed the special Inside-Bar Order Block geometry from `06_execution.md`.
+   - A strict Inside Bar is not promoted as a special OB base/refinement.
+   - OB selection advances to the next eligible candle; that candle must independently satisfy the canonical three-pillar validation, including its own FVG/imbalance association.
+   - Mother-Bar handling remains owned by Layer 1/Layer 2 candle-level pullback semantics and does not create an Order Block.
+
+2. **Origin Order Block**
+   - Corrected `ORIGIN_ORDER_BLOCK` to represent the furthest unmitigated validated Order Block at the dealing-range origin.
+   - Removed the incorrect mandatory prerequisite that Extreme Order Flow must first be mitigated.
+   - Preserved Origin Order Block as latent reserve state rather than a third Rule-of-Two active slot.
+   - Explicitly separated `EXTREME_ORDER_BLOCK` execution failure from canonical `POI_FAILURE` / CHoCH. Execution failure must not manufacture structural state.
+
+3. **Target / platform boundary**
+   - Corrected `platform_execution.md` from mandatory `CANONICAL TARGET` to `RESOLVED TARGET`.
+   - Structural/liquidity target candidates, configured target policy, resolved target, and RR evaluation remain distinct.
+   - Fixed-R policy targets remain non-structural policy targets.
+
+## Full re-audit result
+- Layer 1 candle breach/protection and candle-trend semantics remain consistent; wick breach remains independent of breach-candle color.
+- Layer 2 valid pullback and mother-candle / Equal Extreme reference handling remain consistent.
+- Layer 3 remains the sole authority for confirmed swing, Major IDM, retracement qualification, Protected Structural Extreme lock, and the first-BOS baseline gap.
+- Layer 4 correctly requires IDM_TAKEN + MAJOR_RETRACEMENT_QUALIFIED + STRUCTURAL_SWING_BREAK for VALID_BOS and does not delay a valid wick-BOS pending a later body close.
+- Layer 5 preserves the ordinary CHoCH route and the source-defined LTF Structural Glitch route without creating a new lifecycle enum.
+- Layer 6 preserves Rule-of-Two, OF/OB separation, FVG-as-validator-only, independent OB validity, Rejection Block separation, and the corrected Origin OB lifecycle.
+- Layer 7 consumes structural/execution state and keeps RR downstream from target resolution.
+- Layer 8 preserves implementation boundaries: ENTRY_AUTHORIZED remains distinct from ORDER_SUBMITTED / ORDER_FILLED / POSITION_OPEN, and no implementation shortcut manufactures structural truth.
+- `methodology_parameters.md`, `trading_policy.md`, and `platform_execution.md` remain configuration/platform owners rather than competing SMC semantic authorities.
+- `source_reconciliation.md` still records the controlled first-BOS baseline gap; it is not silently resolved.
+- No raw `knowledgebase/` source file was modified.
+- No old special Inside-Bar OB geometry or the old mandatory Extreme-OF-mitigation Origin-OB condition remains in the active skill.
+- No active `CANONICAL TARGET` requirement remains in the platform submission contract; target resolution terminates in `RESOLVED TARGET`.
+
+## Audit status
+PASS — active SMC semantic rules are internally consistent after the corrections above.
+PASS — relevant source evidence supports the corrected Inside-Bar OB selection and Origin Order Block semantics.
+PASS — structural ownership boundaries remain intact.
+BLOCKED — the pre-existing first-BOS retracement-baseline ambiguity remains intentionally unresolved and must not be guessed.
+
+## Commit/test status
+Skill and platform contract corrections were committed directly to `main`. Runtime code was not changed by this phase; CI/test verification is expected to run from the pushed commits.
