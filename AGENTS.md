@@ -48,6 +48,21 @@ The design step must, at minimum:
 
 The design artifacts must be concise and implementation-oriented. Do not create diagrams or documentation merely for appearance; every artifact must help verify behavior, data ownership, interfaces, or state transitions before code is written.
 
+## Local/online repository synchronization
+
+The online GitHub repository is the authoritative shared repository state for development handoff.
+
+Before starting each implementation, correction, review-follow-up, or validation iteration, the developer agent must synchronize its local checkout with the current remote state so that it does not work from a stale snapshot.
+
+- First verify the working tree state and preserve any legitimate uncommitted work.
+- When the working tree is clean, pull the current target branch before beginning the iteration (prefer fast-forward-only synchronization).
+- When uncommitted work exists, do not discard it and do not blindly overwrite it; first reconcile the local state with the remote changes, then continue.
+- Any file modified externally in the online repository by the auditor/orchestrator must therefore be pulled into the local checkout before implementation continues.
+- Treat the following as the minimum handoff rule: **online change → commit on remote → developer pulls → local implementation continues**.
+- After implementation, the developer agent must commit and push the resulting synchronized snapshot, including `AGENT_REVIEW.md` when that file is part of the same iteration's deliverables.
+
+This rule exists to prevent divergence between the online repository audited by the auditor and the offline/local repository used by the developer agent.
+
 ## Required implementation loop
 
 ```text
