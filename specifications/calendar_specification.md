@@ -1,8 +1,8 @@
 # Calendar Module Specification
 
-**Status:** Current V1 implementation specification for \`calendar.py\`.
-**Scope:** ForexFactory economic-calendar acquisition, parsing, normalized event persistence, local time-based query API, explicit deletion, coverage tracking, locking, atomic persistence, and the machine-readable contract consumed by \`smc_monitor.py\`.
-**Canonical authority:** \`.agents/skills/smc/\` remains the sole authority for canonical SMC semantics. Calendar/news data is external runtime context and must never redefine canonical SMC rules.
+**Status:** Current V1 implementation specification for `calendar.py`.
+**Scope:** ForexFactory economic-calendar acquisition, parsing, normalized event persistence, local time-based query API, explicit deletion, coverage tracking, locking, atomic persistence, and the machine-readable contract consumed by the Monitor.
+**Canonical authority:** `.agents/skills/smc/` remains the sole authority for canonical SMC semantics. Calendar/news data is external runtime context and must never redefine canonical SMC rules.
 
 ---
 
@@ -10,14 +10,14 @@
 
 ## 0.1 Finished-product role
 
-\`calendar.py\` is the standalone economic-calendar data layer.
+`calendar.py` is the standalone economic-calendar data layer.
 
 Responsibilities:
 
 1. acquire economic-calendar data from ForexFactory;
 2. parse and normalize provider records;
 3. normalize event times to canonical UTC;
-4. maintain one global \`calendar.json\`;
+4. maintain one global `calendar.json`;
 5. track validated acquisition coverage;
 6. provide a local time-based query API;
 7. provide explicit deterministic deletion;
@@ -26,7 +26,7 @@ Responsibilities:
 
 ## 0.2 Explicit non-responsibilities
 
-\`calendar.py\` must not:
+`calendar.py` must not:
 
 - calculate BOS, CHoCH, IDM, Dealing Range, retracement, POI lifecycle, target, RR, or entry authorization;
 - modify Market Data or Structures JSON;
@@ -34,7 +34,7 @@ Responsibilities:
 - place, modify, or close orders;
 - decide whether a news event makes a setup valid;
 - own Monitor alert deduplication;
-- decide whether an event is "active" for trading purposes;
+- decide whether an event is active for trading purposes;
 - define SMC execution policy.
 
 The Monitor decides what queried News information means for runtime warning behavior.
@@ -43,27 +43,26 @@ The Monitor decides what queried News information means for runtime warning beha
 
 V1 has exactly one persistent calendar data file:
 
-\`\`\`text
+```text
 <DATA_ROOT>/calendar.json
-\`\`\`
+```
 
 No symbol-specific News JSON, separate cache JSON, or persistent history JSON may be created.
 
 Temporary files used internally for atomic replacement are transient implementation artifacts and are not additional persisted data stores.
 
-## 0.4 Missing calendar data
+## 0.4 Missing calendar.json
 
-\`calendar.json\` is optional.
+`calendar.json` is optional.
 
 When it does not exist:
 
-- query operations return a valid empty result;
-- this is not an error condition;
+- symbol-only query operations return a valid empty result;
 - no automatic download occurs merely because the file is missing;
-- the Monitor may continue normal canonical processing and record/report \`No calendar data\`;
-- a successful acquisition creates the file.
+- a scope-bearing command may create it after successful acquisition;
+- the Monitor may continue canonical processing and record/report no calendar data.
 
-A malformed existing \`calendar.json\` is a data-integrity error, not the same state as a missing file.
+A malformed existing `calendar.json` is a data-integrity error and is not replaced silently.
 
 ---
 
@@ -73,51 +72,33 @@ A malformed existing \`calendar.json\` is a data-integrity error, not the same s
 
 V1 uses:
 
-\`\`\`text
+```text
 ForexFactory economic calendar
 https://www.forexfactory.com/calendar
-\`\`\`
+```
 
-The supplied working parser is the initial provider implementation baseline.
+The provider implementation is isolated behind acquisition/parsing functions so a future provider can replace ForexFactory without changing the normalized event or query contract.
 
-The provider layer is isolated behind acquisition/parsing functions so a future provider can replace ForexFactory without changing the normalized event or query contract.
+## 1.2 Provider request mapping
 
-## 1.2 Supported ForexFactory request forms
+The public CLI does not expose provider-specific query flags.
 
-CLI period selectors map to these provider requests:
+The following canonical scopes are resolved internally to UTC intervals:
 
-\`\`\`text
---day today
-    -> ?day=today
+| CLI scope | Meaning |
+|---|---|
+| `today` | current UTC calendar day |
+| `next_day` | following UTC calendar day |
+| `week` | current UTC calendar week |
+| `next_week` | following UTC calendar week |
+| `month` | current UTC calendar month |
+| `next_month` | following UTC calendar month |
+| `YYYY.MM.DD` | explicit UTC calendar day |
+| `YYYY.MM.DD-YYYY.MM.DD` | inclusive UTC date range |
+| `today@HH:MM` | today plus reference time |
+| `YYYY.MM.DD@HH:MM` | explicit date plus reference time |
 
---day tomorrow
-    -> ?day=tomorrow
-
---day YYYY.MM.DD
-    -> ?day=mmmD.YYYY
-
---week this
-    -> ?week=this
-
---week next
-    -> ?week=next
-
---week YYYY.MM.DD
-    -> ?week=mmmD.YYYY
-
---month this
-    -> ?month=this
-
---month next
-    -> ?month=next
-
---range YYYY.MM.DD-YYYY.MM.DD
-    -> ?range=mmmD.YYYY-mmmD.YYYY
-\`\`\`
-
-The CLI uses \`YYYY.MM.DD\`. ForexFactory-specific date spelling is an internal provider concern.
-
-For \`--week YYYY.MM.DD\`, the supplied date is forwarded as the requested week date. It is not silently normalized to a week-start/Sunday date.
+ForexFactory-specific date spelling and URL parameters remain internal provider concerns.
 
 ## 1.3 Request policy
 
@@ -131,206 +112,214 @@ HTTP success alone is not acquisition success; the response must parse and norma
 
 # 2. CLI CONTRACT
 
-## 2.1 Operation families
+## 2.1 Canonical grammar
 
-The CLI has three mutually exclusive operation families.
+The CLI is strictly positional:
 
-### Acquisition
+```text
+python calendar.py [scope] [symbol] [evaluation]
+python calendar.py delete [scope]
+python calendar.py delete
+```
 
-\`\`\`text
-python calendar.py --query SYMBOL
-python calendar.py --query SYMBOL --day VALUE
-python calendar.py --query SYMBOL --week VALUE
-python calendar.py --query SYMBOL --month VALUE
-python calendar.py --query SYMBOL --range VALUE
-\`\`\`
+The only supported flag-style options are:
 
-Optional:
+```text
+-h
+--help
+```
 
-\`\`\`text
---debug
-\`\`\`
+There is no public compatibility mode for the former flag-based interface.
 
-Exactly one of \`--day\`, \`--week\`, \`--month\`, or \`--range\` may be supplied.
+## 2.2 Scope vocabulary
 
-If \`--query SYMBOL\` is supplied without a period selector:
+Valid scope values are:
 
-- use the existing full \`calendar.json\`;
-- do not perform an HTTP request;
-- return the currently stored relevant events for that symbol through the machine-readable query result;
-- existing data is used as-is.
+```text
+today
+next_day
+week
+next_week
+month
+next_month
+today@HH:MM
+YYYY.MM.DD
+YYYY.MM.DD@HH:MM
+YYYY.MM.DD-YYYY.MM.DD
+```
 
-The symbol argument does not create a symbol-specific data store. Persisted acquisition data remains global so one provider download can serve multiple symbols.
+The `@HH:MM` suffix supplies the evaluation reference time. It does not narrow acquisition below the containing calendar day.
 
-### Local query API
+All internal timestamps and scope boundaries are UTC.
 
-\`\`\`text
-python calendar.py --symbol SYMBOL
-python calendar.py --symbol SYMBOL --current
-python calendar.py --symbol SYMBOL --next
-python calendar.py --symbol SYMBOL --date YYYY.MM.DD
-python calendar.py --symbol SYMBOL --time HH:MM
-python calendar.py --symbol SYMBOL --date YYYY.MM.DD --time HH:MM
-\`\`\`
+## 2.3 Symbol
 
-Optional:
+A symbol is a six-letter FX pair built from:
 
-\`\`\`text
---debug
-\`\`\`
+```text
+USD EUR GBP JPY CHF AUD CAD NZD CNY HUF
+```
 
-The local query API never performs network access and never changes \`calendar.json\`.
+Examples:
 
-### Delete
+```text
+USDHUF
+EURHUF
+EURUSD
+USDJPY
+```
 
-\`\`\`text
-python calendar.py --delete --before YYYY.MM.DD
-python calendar.py --delete --after YYYY.MM.DD
-python calendar.py --delete --before YYYY.MM.DD --after YYYY.MM.DD
-python calendar.py --delete --range YYYY.MM.DD-YYYY.MM.DD
-python calendar.py --delete --date YYYY.MM.DD
-python calendar.py --delete --date YYYY.MM.DD --time HH:MM
-python calendar.py --delete --range YYYY.MM.DD-YYYY.MM.DD --time HH:MM-HH:MM
-\`\`\`
+Common `/`, `-`, and `_` separators are normalized before validation:
 
-Optional:
+```text
+EUR/HUF -> EURHUF
+USD-HUF -> USDHUF
+USD_HUF -> USDHUF
+```
 
-\`\`\`text
---dry-run
---debug
-\`\`\`
+Invalid or unsupported symbols are rejected explicitly.
 
-Delete never performs network access.
+## 2.4 Evaluation
 
-## 2.2 CLI mutual exclusion
+Supported evaluation tokens:
 
-A command must use exactly one operation family:
+```text
+current
+next
+```
 
-- acquisition/query API;
-- local query API;
-- delete.
+- `current` returns events whose canonical timestamp matches the reference date/hour/minute.
+- `next` returns the earliest event strictly after the reference timestamp.
+- with no evaluation token, all relevant symbol events inside the resolved scope are returned.
 
-Mixing \`--query\` with \`--symbol\` or \`--delete\` is invalid.
+## 2.5 Execution semantics
 
-Mixing period selectors is invalid.
+Scope-bearing query:
 
-Delete allows one primary selector, except \`--before + --after\` may be combined to define a bounded interval.
+```text
+python calendar.py today USDHUF current
+```
 
-\`--range\` must not be combined with \`--before\`, \`--after\`, or \`--date\`.
+executes:
 
-\`--date\` may be combined only with \`--time\`.
+```text
+SCOPE
+ -> ensure coverage
+ -> use resulting calendar.json
+ -> SYMBOL filter
+ -> EVALUATION
+```
 
-\`--time\` without \`--date\` is valid only for the local query API and current-day query semantics; for delete it is invalid unless paired with \`--date\` or \`--range\`.
+A symbol-only query:
 
-Invalid or contradictory combinations fail explicitly without modifying the data file.
+```text
+python calendar.py USDHUF current
+```
 
-## 2.3 Input formats
+is cache-only and must never perform network acquisition.
 
-\`\`\`text
-DATE  = YYYY.MM.DD
-TIME  = HH:MM
-TIME_RANGE = HH:MM-HH:MM
-RANGE = YYYY.MM.DD-YYYY.MM.DD
-\`\`\`
+A scope-only command:
 
-All command-line query/delete boundaries are interpreted in canonical UTC.
+```text
+python calendar.py today
+```
+
+performs acquisition/coverage handling and does not emit a symbol result because no symbol was requested.
+
+## 2.6 Delete
+
+```text
+python calendar.py delete
+python calendar.py delete today
+python calendar.py delete next_day
+python calendar.py delete week
+python calendar.py delete next_week
+python calendar.py delete month
+python calendar.py delete next_month
+python calendar.py delete YYYY.MM.DD
+python calendar.py delete YYYY.MM.DD@HH:MM
+python calendar.py delete YYYY.MM.DD-YYYY.MM.DD
+```
+
+The bare `delete` removes the complete calendar dataset.
+
+A date scope removes the complete UTC calendar day.
+
+A datetime scope removes the one-minute interval beginning at the given minute.
+
+A date range is inclusive by calendar date.
+
+Delete never performs network acquisition and cannot be combined with a symbol or evaluation.
 
 ---
 
 # 3. LOCAL QUERY API SEMANTICS
 
-## 3.1 Common query result contract
+## 3.1 Result contract
 
-All local query modes return one machine-readable JSON object to stdout:
+Symbol query output is one JSON object:
 
-\`\`\`json
+```json
 {
   "status": "OK",
   "symbol": "USDJPY",
   "events": []
 }
-\`\`\`
+```
 
 Valid statuses:
 
-\`\`\`text
+```text
 OK
 NO_CALENDAR_DATA
 NO_RELEVANT_EVENT
-\`\`\`
+```
 
-No-result and missing-calendar states are successful query results, not CLI errors.
+No-result and missing-data query states are valid query results, not data-integrity failures.
 
-Operational diagnostics belong on stderr.
+## 3.2 Reference time
 
-## 3.2 \`--symbol SYMBOL\`
+- Symbol-only query: current UTC time.
+- Relative scope without `@HH:MM`: current UTC time.
+- `today@HH:MM`: today at the specified UTC time.
+- `YYYY.MM.DD@HH:MM`: explicit UTC date/time.
+- An explicit date without `@HH:MM` uses the current UTC clock time as the evaluation reference, while the event set remains restricted to that explicit date.
+- An explicit date range without `@HH:MM` uses the current UTC time as the reference for `next`, while returned events remain restricted to the requested range.
 
-Reference time is the current canonical UTC time.
+## 3.3 current
 
-If one or more relevant events are scheduled at the current minute, return those events.
-
-Otherwise return the next relevant event(s) strictly after the current time.
-
-If none exists, return:
-
-\`\`\`json
-{"status":"NO_RELEVANT_EVENT","symbol":"USDJPY","events":[]}
-\`\`\`
-
-## 3.3 \`--current\`
-
-Return relevant event(s) whose canonical \`datetime\` falls in the current UTC minute.
+Return relevant events whose canonical UTC datetime matches the reference date/hour/minute.
 
 No nearest-event behavior is used.
 
-If none exists, return \`NO_RELEVANT_EVENT\`.
+## 3.4 next
 
-The Calendar layer does not assign a semantic duration to "active".
+Return the next relevant event strictly after the reference timestamp.
 
-## 3.4 \`--next\`
+Multiple events with the same earliest timestamp are returned together.
 
-Return the next relevant event(s) strictly after current canonical UTC time.
+When a scope is present, the event must also fall inside that resolved scope.
 
-Multiple events with the same earliest event time are returned together.
+## 3.5 No evaluation
 
-## 3.5 \`--date\`
+Return all relevant symbol events within the resolved scope.
 
-Reference time is the supplied UTC calendar date combined with the current UTC time.
+For symbol-only mode, return all matching stored symbol events.
 
-Return the nearest relevant event(s) to that reference timestamp using absolute time distance.
+## 3.6 Deterministic ordering
 
-## 3.6 \`--time\`
+Returned events are sorted by:
 
-Reference time is the supplied UTC time on the current UTC date.
-
-Return the nearest relevant event(s).
-
-## 3.7 \`--date + --time\`
-
-Reference timestamp is the supplied UTC date and time.
-
-Return the nearest relevant event(s).
-
-If multiple events are equally near, return all equally near events.
-
-No maximum search distance is imposed by V1.
-
-## 3.8 Query ordering
-
-Returned events are deterministically sorted by:
-
-1. \`datetime\`;
-2. \`event_id\`.
+1. `datetime`;
+2. `event_id`.
 
 ---
 
 # 4. NORMALIZED EVENT CONTRACT
 
-## 4.1 Persisted event schema
+Each persisted event contains:
 
-Each event contains at minimum:
-
-\`\`\`json
+```json
 {
   "event_id": "forexfactory:12345",
   "datetime": "2026-10-28T13:30:00Z",
@@ -342,559 +331,260 @@ Each event contains at minimum:
   "previous": "140K",
   "source": "forexfactory"
 }
-\`\`\`
+```
 
-Fields:
+Provider ID becomes:
 
-- \`event_id\`: stable provider-derived identity;
-- \`datetime\`: canonical UTC event timestamp;
-- \`currency\`: normalized uppercase currency code when available;
-- \`impact\`: one of \`HIGH\`, \`MEDIUM\`, \`LOW\`, \`HOLIDAY\`, \`UNKNOWN\`;
-- \`event\`: normalized event name;
-- \`actual\`, \`forecast\`, \`previous\`: source values or null;
-- \`source\`: \`forexfactory\` for V1.
-
-Provider-specific fields do not enter this persisted cross-module contract.
-
-## 4.2 Stable identity
-
-For ForexFactory V1:
-
-\`\`\`text
+```text
 event_id = "forexfactory:" + provider_event_id
-\`\`\`
+```
 
-The provider event ID must be stable across repeated downloads.
+`datetime` is canonical UTC.
 
-Mutable values such as actual, forecast, and previous may change without changing \`event_id\`.
+Optional source values are represented as null when absent; values are never fabricated.
 
-A same-ID record with conflicting canonical \`datetime\` or provider identity is an acquisition data-integrity failure.
+Impact is one of:
 
-## 4.3 Normalization
-
-Rules:
-
-- \`dateline\` is interpreted as Unix epoch seconds;
-- normalized \`datetime\` is an aware UTC timestamp;
-- empty source strings become null;
-- impact is mapped to the uppercase enum;
-- missing optional values are not fabricated;
-- malformed identity or time fails the acquisition transaction.
+```text
+HIGH
+MEDIUM
+LOW
+HOLIDAY
+UNKNOWN
+```
 
 ---
 
 # 5. CALENDAR.JSON CONTRACT
 
-## 5.1 Single global document
+## 5.1 Root document
 
-\`\`\`text
-<DATA_ROOT>/calendar.json
-\`\`\`
-
-Logical shape:
-
-\`\`\`json
+```json
 {
   "schema_version": 1,
   "source": "forexfactory",
-  "coverage": [
-    {
-      "start": "2026-10-26T00:00:00Z",
-      "end": "2026-11-02T00:00:00Z",
-      "requested": {
-        "type": "week",
-        "value": "2026.10.28"
-      },
-      "fetched_at": "2026-10-03T11:00:00Z"
-    }
-  ],
+  "coverage": [],
   "events": []
 }
-\`\`\`
+```
 
-Coverage intervals use a half-open UTC convention:
+Coverage intervals use:
 
-\`\`\`text
+```text
 [start, end)
-\`\`\`
+```
 
-This avoids end-of-day precision ambiguity.
+with UTC timestamps.
 
-## 5.2 Multiple periods
+## 5.2 Coverage meaning
 
-The same \`calendar.json\` may contain events from arbitrarily many dates and acquisition requests.
+Coverage means the provider response for that interval was successfully retrieved, parsed, normalized, and validated.
 
-New acquisitions merge into the existing event set.
+A covered interval may contain zero events.
 
-They never overwrite unrelated historical or future events.
+Coverage is never inferred from event timestamps.
 
-## 5.3 Coverage
+Coverage is maintained as a non-overlapping union.
 
-Coverage records describe successfully validated provider acquisition.
+## 5.3 Acquisition
 
-A covered interval may legitimately contain zero events.
+For a requested scope, calculate the uncovered portions of its resolved interval.
 
-Coverage is never inferred from first/last event timestamps.
+Provider requests are expanded to full UTC calendar-day boundaries when required by the provider interface.
 
-Coverage is represented as the minimal non-overlapping union of validated covered intervals.
+After successful acquisition:
 
-When overlapping/adjacent intervals are merged, the merged interval keeps the latest \`fetched_at\` and the retained request metadata needed for provenance.
-
-A requested interval is covered only when the union of stored coverage intervals completely spans it.
-
-If coverage is incomplete, \`calendar.py\` computes the uncovered subintervals and acquires only the missing portions where the provider interface permits.
-
-## 5.4 No retention policy
-
-V1 has no automatic retention and no automatic history deletion.
-
-Old data remains indefinitely until the user explicitly invokes \`--delete\`.
-
-Coverage is never removed merely because it is old.
+1. normalize provider records;
+2. deduplicate events by `event_id`;
+3. merge coverage;
+4. validate the complete document;
+5. atomically replace `calendar.json`.
 
 ---
 
-# 6. ACQUISITION AND MERGE
+# 6. CONCURRENCY AND ATOMICITY
 
-## 6.1 Acquisition flow
+Use the existing single-resource lock strategy for `calendar.json`:
 
-\`\`\`text
-parse CLI
-  ↓
-resolve requested provider period
-  ↓
-acquire lock
-  ↓
-re-read calendar.json
-  ↓
-re-check coverage
-  ↓
-if fully covered: no provider request
-  ↓
-otherwise fetch uncovered period(s)
-  ↓
-parse
-  ↓
-normalize
-  ↓
-validate complete acquired set
-  ↓
-merge events + coverage
-  ↓
-validate complete document
-  ↓
-atomic commit
-  ↓
-release lock
-\`\`\`
+- Windows named mutex;
+- POSIX directory-inode advisory lock.
 
-The second coverage check after lock acquisition is mandatory to prevent duplicate parallel downloads.
+Acquisition must re-read `calendar.json` after acquiring the lock and re-check coverage.
 
-## 6.2 Event merge
+Never truncate the committed file before the replacement content is ready.
 
-Merge key is \`event_id\`.
+Use temporary write + flush/sync + atomic replace.
 
-For equivalent duplicates, retain one logical event.
-
-For an existing event whose mutable source values changed, update those mutable values from the newest successfully acquired source record.
-
-Canonical identity/time conflicts fail the transaction.
-
-After merge:
-
-1. deduplicate by \`event_id\`;
-2. sort events by \`datetime\`, then \`event_id\`;
-3. update coverage;
-4. commit atomically.
-
-## 6.3 Explicit history acquisition
-
-Historical requests use the same global event store.
-
-The acquisition time is metadata only.
-
-Historical events do not gain a special automatic retention period.
-
-They remain until explicitly deleted.
+A provider or write failure must leave the previous committed document unchanged.
 
 ---
 
-# 7. CONCURRENCY, LOCKING, AND ATOMICITY
+# 7. DELETE BEHAVIOR
 
-## 7.1 Lock scope
+Delete updates both:
 
-There is one shared resource:
+- `events`;
+- `coverage`.
 
-\`\`\`text
-<DATA_ROOT>/calendar.json
-\`\`\`
+For a full delete, both collections become empty.
 
-Use an OS-level exclusive/advisory lock associated with \`calendar.json\`.
+For a scoped delete, event timestamps inside the deletion interval are removed and coverage intervals are clipped/split so they no longer claim deleted time as covered.
 
-Do not create a persistent \`.lock\` data file.
+Datetime deletion uses a one-minute half-open interval.
 
-## 7.2 Parallel execution
-
-If another process owns the calendar lock:
-
-- wait until it releases the lock;
-- do not retry with a retry limit;
-- do not use exponential backoff;
-- do not abort because of lock age;
-- after acquiring the lock, re-read the current \`calendar.json\` and re-check coverage.
-
-This guarantees that the second process does not redundantly fetch a period already acquired by the first process.
-
-## 7.3 Missing-file race
-
-When \`calendar.json\` does not exist, the implementation may establish the single file with an exclusive-create/open operation, initialize the valid empty document, and then apply the same lock protocol.
-
-No second persistent lock file is introduced.
-
-## 7.4 Atomic write
-
-Never truncate the existing \`calendar.json\` before the replacement document is fully serialized.
-
-Use:
-
-\`\`\`text
-write temporary file
-  ↓
-flush/sync as appropriate
-  ↓
-atomic replace calendar.json
-\`\`\`
-
-The temporary file is removed after successful replacement.
-
-A failed write leaves the previously committed \`calendar.json\` unchanged.
+Date-range deletion includes both endpoint dates.
 
 ---
 
-# 8. FAILURE AND LAST-KNOWN-GOOD CONTRACT
+# 8. CORE FUNCTION CONTRACT
 
-## 8.1 Acquisition failure
+### CLI / parsing
 
-The following are failures:
+- `print_help` — detailed canonical CLI reference.
+- `parse_calendar_request` — classify positional input into operation, scope, symbol, and evaluation.
+- `parse_scope_token` — validate/decompose scope syntax.
+- `is_scope` — scope classifier.
+- `normalize_symbol` — normalize supported separators/case.
+- `validate_symbol` — validate a six-letter supported FX pair.
+- `is_symbol` — symbol classifier.
+- `is_evaluation` — recognize `current` or `next`.
+- `parse_date`, `parse_time`, `parse_date_range` — explicit temporal validation.
 
-- network exception;
-- timeout;
-- non-success HTTP status;
-- missing/malformed \`days\` payload;
-- malformed provider JSON;
-- invalid event identity/time;
-- conflicting canonical duplicate;
-- incomplete validation;
-- atomic-write failure.
+### Scope / query resolution
 
-On any acquisition failure:
+- `resolve_scope_interval` — calculate UTC acquisition interval.
+- `resolve_scope_reference` — calculate evaluation reference timestamp.
+- `filter_events_for_interval` — restrict events to a half-open interval.
+- `filter_events_for_symbol` — restrict events to the two symbol currencies.
+- `query_current_events` — minute-matched events.
+- `query_next_events` — earliest future events.
+- `query_nearest_events` — retained internal helper for nearest-reference use where required.
+- `output_query_result` — emit machine-readable query output.
 
-\`\`\`text
-previous calendar.json -> unchanged
-coverage -> unchanged
-events -> unchanged
-\`\`\`
+### Provider / normalization
 
-A provider failure must never be represented as successful empty coverage.
+- `fetch_calendar_source`
+- `extract_days_payload`
+- `parse_calendar_days`
+- `normalize_provider_event`
+- `normalize_calendar_events`
 
-## 8.2 Missing calendar.json
+### Persistence / integrity
 
-Missing file is not an error.
+- `build_empty_calendar_document`
+- `validate_calendar_document`
+- `load_calendar_document`
+- `save_calendar_atomic`
+- `acquire_calendar_lock`
 
-Query returns \`NO_CALENDAR_DATA\`.
+### Coverage / merge
 
-Monitor may continue all canonical processing.
+- `resolve_coverage`
+- `find_uncovered_intervals`
+- `merge_coverage`
+- `deduplicate_calendar_events`
+- `merge_calendar_events`
 
-## 8.3 Corrupt calendar.json
+### Deletion / orchestration
 
-If an existing file is malformed or violates the schema:
+- `resolve_delete_intervals`
+- `delete_events`
+- `delete_coverage`
+- `run_acquisition`
+- `run_query`
+- `run_delete`
+- `run`
+- `main`
 
-- report a calendar data-integrity error;
-- do not silently replace it with an empty document;
-- do not silently discard existing information;
-- Monitor treats the News path as unavailable for that cycle but continues canonical processing.
-
----
-
-# 9. SYMBOL RELEVANCE
-
-## 9.1 Standard FX symbols
-
-For standard FX symbols:
-
-\`\`\`text
-USDJPY -> USD + JPY
-EURUSD -> EUR + USD
-GBPCHF -> GBP + CHF
-\`\`\`
-
-Normalize conventional separators when unambiguous.
-
-If exactly two recognizable currency codes cannot be determined, return an empty relevance set rather than guessing.
-
-## 9.2 Event relevance
-
-An event is relevant when:
-
-\`\`\`text
-event.currency in symbol currencies
-\`\`\`
-
-Do not infer relevance from event title, country text, impact, or price behavior.
-
-## 9.3 Non-FX symbols
-
-V1 does not guess currency relevance for arbitrary non-FX symbols.
-
-A valid query may therefore return no relevant events.
+Core business functions operate on semantic values and do not depend on legacy flag-specific argument objects.
 
 ---
 
-# 10. DELETE CONTRACT
+# 9. ERROR CONTRACT
 
-## 10.1 General rule
+Reject explicitly:
 
-Delete is explicit and user initiated.
+- no command;
+- malformed scope;
+- invalid date/time;
+- reversed date range;
+- invalid/unsupported FX symbol;
+- evaluation without symbol;
+- extra positional tokens;
+- delete combined with symbol/evaluation;
+- delete with more than one scope.
 
-No automatic cleanup exists.
-
-Deletes are applied to both:
-
-- \`events\`;
-- coverage intervals.
-
-Coverage must be recalculated after event/coverage deletion so metadata remains consistent with stored data.
-
-## 10.2 \`--before DATE\`
-
-Delete events with:
-
-\`\`\`text
-event.datetime < DATE 00:00:00Z
-\`\`\`
-
-Coverage is clipped or removed accordingly.
-
-## 10.3 \`--after DATE\`
-
-Delete events with:
-
-\`\`\`text
-event.datetime >= (DATE + 1 day) 00:00:00Z
-\`\`\`
-
-Coverage is clipped or removed accordingly.
-
-This makes "after DATE" mean strictly after the complete UTC calendar day.
-
-## 10.4 \`--before + --after\`
-
-When both are supplied, \`after\` must define the lower boundary and \`before\` the upper boundary.
-
-The command deletes:
-
-\`\`\`text
-(after boundary, before boundary)
-\`\`\`
-
-Only a non-empty, non-contradictory interval is accepted.
-
-## 10.5 \`--range DATE-DATE\`
-
-Inclusive date range:
-
-\`\`\`text
-[START_DATE 00:00Z, END_DATE + 1 day 00:00Z)
-\`\`\`
-
-Both calendar dates are included.
-
-## 10.6 \`--date DATE\`
-
-Deletes all events on that UTC calendar date.
-
-## 10.7 \`--date DATE --time HH:MM\`
-
-Deletes all events whose UTC hour and minute equal the requested \`HH:MM\`.
-
-Delete never uses nearest-event semantics.
-
-## 10.8 \`--range ... --time HH:MM-HH:MM\`
-
-Deletes events whose UTC date is inside the date range and whose UTC time-of-day falls inside the inclusive requested time range.
-
-## 10.9 Dry-run
-
-\`\`\`text
---dry-run
-\`\`\`
-
-performs all selector validation and selection logic but does not modify \`calendar.json\`.
-
-The result reports the matching event count and selected interval metadata.
+User input errors must not fall through to raw Python exceptions.
 
 ---
 
-# 11. MONITOR PROCESS BOUNDARY
+# 10. MONITOR BOUNDARY
 
-The Monitor consumes Calendar only as external News context.
+The Monitor consumes normalized Calendar query results only.
 
-It must not parse ForexFactory HTML or provider response data.
+The Monitor must not parse ForexFactory HTML or provider-specific payloads.
 
-The preferred machine-readable boundary is the local query API:
+Examples:
 
-\`\`\`text
-calendar.py --symbol SYMBOL --current
-calendar.py --symbol SYMBOL --next
-\`\`\`
+```text
+python calendar.py today USDHUF current
+python calendar.py today USDHUF next
+python calendar.py next_day EURUSD next
+```
 
-The Monitor may also invoke the acquisition form when it must ensure future warning coverage.
-
-The Monitor never writes \`calendar.json\`.
-
-Calendar warning policy does not belong in this module.
+Calendar acquisition and query semantics remain owned by this specification. News warning policy remains owned by the Monitor specification.
 
 ---
 
-# 12. TEST CONTRACT
+# 11. VALIDATION CONTRACT
 
-The global developer-agent naming, portability, prompt-efficiency, and validation rules in `AGENTS.md` apply to Calendar. The Calendar validation contract is defined here.
+Live provider availability must not be required for deterministic Calendar tests.
 
-Tests must not require a live ForexFactory request.
+Required validation includes:
 
-Required coverage:
-
-1. CLI period validation;
-2. ForexFactory date conversion;
-3. supplied \`days: [...]\` extraction;
-4. valid empty provider period;
-5. malformed provider payload;
-6. missing \`days\` marker;
-7. missing event ID;
-8. invalid event dateline;
-9. UTC normalization;
-10. stable \`event_id\`;
-11. equivalent duplicate merge;
-12. conflicting duplicate rejection;
-13. multiple dates in one \`calendar.json\`;
-14. coverage union across overlapping intervals;
-15. uncovered interval acquisition;
-16. cache-only query without a period;
-17. local \`--current\` query;
-18. local \`--next\` query;
-19. nearest \`--date/--time\` query;
-20. missing \`calendar.json\` returns valid empty result;
-21. malformed \`calendar.json\` fails without replacement;
-22. acquisition failure preserves last-known-good file;
-23. concurrent acquisition waits on the lock;
-24. second process re-checks coverage after locking;
-25. atomic persistence;
-26. no automatic retention;
-27. delete \`--before\`;
-28. delete \`--after\`;
-29. delete bounded \`--before + --after\`;
-30. delete \`--range\`;
-31. delete \`--date\`;
-32. delete exact-minute selector;
-33. delete time-of-day range;
-34. delete dry-run does not mutate;
-35. coverage remains consistent after deletion;
-36. FX symbol currency extraction;
-37. unrelated currency exclusion.
+1. detailed help output;
+2. syntax/compile validation;
+3. all relative scopes;
+4. explicit date and datetime scopes;
+5. inclusive date ranges;
+6. valid and invalid symbols;
+7. separator normalization;
+8. cache-only symbol queries;
+9. scope + symbol + evaluation pipeline;
+10. scope-only acquisition path;
+11. current and next evaluations;
+12. delete full dataset;
+13. delete scoped date/day/week/month/range/datetime selections;
+14. malformed-input rejection;
+15. provider payload parsing/normalization;
+16. coverage union and uncovered intervals;
+17. duplicate and conflict handling;
+18. atomic persistence;
+19. last-known-good preservation after acquisition failure.
 
 ---
 
-# 13. IMPLEMENTATION FUNCTION CONTRACT
+# 12. DEFINITION OF DONE
 
-The global developer-agent naming and portability rules are defined in `AGENTS.md`; this section defines Calendar-specific function ownership boundaries.
+Calendar V1 is complete when:
 
-Required function boundaries:
-
-\`\`\`text
-build_argument_parser
-parse_calendar_request
-normalize_symbol
-parse_date
-parse_time
-parse_date_range
-
-resolve_provider_period
-fetch_calendar_source
-extract_days_payload
-parse_calendar_days
-normalize_provider_event
-normalize_calendar_events
-
-build_empty_calendar_document
-validate_calendar_document
-load_calendar_document
-save_calendar_atomic
-
-resolve_coverage
-find_uncovered_intervals
-merge_coverage
-
-merge_calendar_events
-deduplicate_calendar_events
-
-extract_symbol_currencies
-filter_events_for_symbol
-
-query_symbol_events
-query_current_events
-query_next_events
-query_nearest_events
-
-select_delete_interval
-delete_events
-delete_coverage
-dry_run_delete
-
-acquire_calendar_lock
-run_acquisition
-run_query
-run_delete
-run
-main
-\`\`\`
-
-Each function owns one primary responsibility.
-
-Avoid vague names such as:
-
-\`\`\`text
-process_data
-handle_news
-run_news
-do_update
-helper
-util
-\`\`\`
-
----
-
-# 14. DEFINITION OF DONE
-
-Calendar V1 is complete only when:
-
-1. there is exactly one persistent \`<DATA_ROOT>/calendar.json\`;
-2. multiple historical and future periods can coexist in that file;
-3. no automatic retention/deletion exists;
-4. history is removed only through explicit \`--delete\`;
-5. acquisition CLI supports day/week/month/range selectors;
-6. \`--query SYMBOL\` without a period is cache-only;
-7. local query API is network-free and time-based;
-8. stable provider-derived event IDs are used;
-9. multiple acquisition intervals are tracked through coverage metadata;
-10. redundant downloads are prevented using coverage union checks;
-11. concurrent writers wait for the existing lock and re-check state after locking;
-12. acquisition failure preserves the last-known-good file;
-13. missing \`calendar.json\` is a valid no-data condition;
-14. corrupt existing data is not silently replaced;
-15. delete operations update events and coverage consistently;
-16. all event times are canonical UTC;
-17. Monitor receives only normalized event data and never provider HTML;
-18. Calendar never modifies canonical SMC state;
-19. no symbol-specific News JSON or separate cache JSON is created;
-20. all deterministic Calendar tests pass;
-21. no \`.agents/skills/smc/\` file is modified.
+1. exactly one persistent `<DATA_ROOT>/calendar.json` exists;
+2. historical and future calendar periods coexist in that document;
+3. the public CLI follows the positional grammar;
+4. symbol-only queries never acquire from the network;
+5. scope-bearing queries acquire only missing coverage;
+6. scope + symbol uses the resulting post-acquisition dataset;
+7. HUF and other supported currencies are normalized and filtered correctly;
+8. event identity is stable and duplicates are deterministic;
+9. coverage is explicit and non-overlapping;
+10. deletion updates both events and coverage;
+11. acquisition failure preserves last-known-good state;
+12. malformed input fails explicitly;
+13. detailed help documents the complete public interface;
+14. Monitor receives normalized Calendar data and not provider HTML;
+15. no automatic retention exists;
+16. no symbol-specific Calendar persistence is created;
+17. no `test/` directory is required;
+18. temporary development artifacts stay under `dev_tmp/`;
+19. deterministic Calendar validation passes;
+20. no canonical SMC skill file is modified.
