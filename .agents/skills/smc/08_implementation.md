@@ -1099,13 +1099,43 @@ ACTIVE_LINEAGE
   = canonical lineage identifier + active origin/provenance
 ```
 
-These are **orthogonal representations**, not additional lifecycle enums. In particular:
+These are **independently persisted dimensions with canonical compatibility constraints**, not additional lifecycle enums. In particular:
 
 - `ACTIVE_FIRST_BOS_BOOTSTRAP` controls whether the first-BOS bootstrap preclassification is active; it does not replace `RUNTIME_STATE`.
 - `STRUCTURAL_QUALIFICATION_PHASE` records the current structural promotion stage. `IDM_TAKEN` may advance it to `SWING_CANDIDATE`; macro qualification advances it to `CONFIRMED_STRUCTURAL_SWING`; a valid BOS lock establishes `PROTECTED_EXTREME_LOCKED`.
 - `ACTIVE_LINEAGE` identifies which causal structural/process lineage the current state belongs to. A `BOOTSTRAP_REVERSAL` retires the prior active lineage and creates a new active lineage from the actual reversal candle.
 - No event may implicitly reset another dimension. Each transition MUST specify the resulting runtime state, bootstrap flag, structural qualification phase, and active-lineage identity or provenance.
 - Historical/retired lineage remains immutable evidence and is never reused as an active input for the new lineage.
+
+Canonical compatibility invariants:
+
+```text
+ACTIVE_FIRST_BOS_BOOTSTRAP = TRUE
+  ↔ first VALID_BOS of the current regime has NOT occurred
+    AND no governing canonical Dealing Range exists
+    AND no PROTECTED_STRUCTURAL_EXTREME exists
+
+ACTIVE_FIRST_BOS_BOOTSTRAP = TRUE
+  → RUNTIME_STATE ∈ {BOOTSTRAP, CONFIRMATION_LOCKED, POST_CHOCH}
+
+RUNTIME_STATE ∈ {CONFIRMED_RANGE, POST_BOS}
+  → ACTIVE_FIRST_BOS_BOOTSTRAP = FALSE
+
+STRUCTURAL_QUALIFICATION_PHASE = PROTECTED_EXTREME_LOCKED
+  → PROTECTED_STRUCTURAL_EXTREME is active
+    AND ACTIVE_FIRST_BOS_BOOTSTRAP = FALSE
+
+STRUCTURAL_QUALIFICATION_PHASE = CONFIRMED_STRUCTURAL_SWING
+  → macro retracement qualification has passed
+    AND the corresponding structural break has not yet locked
+      that lifecycle's Protected Structural Extreme
+
+ACTIVE_LINEAGE
+  → exactly one lineage is active for the current mapping regime
+    AND its origin/provenance is present or the process is fail-closed
+```
+
+These compatibility constraints are evaluated before accepting a state-transition result. A tuple that violates them is invalid even if its individual fields are syntactically valid.
 
 Canonical bootstrap lifecycle composition:
 
