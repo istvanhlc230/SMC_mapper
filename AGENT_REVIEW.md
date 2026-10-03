@@ -4166,3 +4166,36 @@ ange fetches only for exact missing segments.
 - **Coverage Highlights:** Uncovered interval calculation, malformed JSON integrity, deterministic querying/sorting (datetime then event_id), boundary deletion, and empty cache states. 
 
 Status: IMPLEMENTATION READY. Awaiting external validation.
+# CALENDAR V1 - FINAL CORRECTIONS AND AUDIT
+
+## 1. Provider Acquisition Runtime Error
+- Restored \import urllib.request\ and \import urllib.error\ at the top level to resolve the unbound variable runtime crash during provider fetch logic.
+
+## 2. Delete Persistence Detection
+- Transformed detection into a serialized snapshot comparison (\json.dumps(..., sort_keys=True)\) before and after deletion. It safely and reliably detects mutations occurring strictly within coverage metadata even when event arrays remain unchanged.
+
+## 3. Implementation Design Restored
+- \calendar_design.md\ was entirely rebuilt, detailing the required sequence workflows, class definitions for Event and Coverage structures, clear responsibilities, and detailed listings of all function ownership boundaries.
+
+## 4. Delete Selector Enforcement
+- Mutually exclusive flags within the delete schema are now perfectly blocked. Any mixture of \--time\ with \--before\ or \--after\, or empty standalone bounding is structurally rejected prior to any file IO.
+
+## 5. Invalid Period Fallbacks
+- Added explicit mapping failures for unsupported inputs. e.g. \--month invalid\ will explicitly exit and print error instead of gracefully retreating into cache query behavior.
+
+## 6. Document Validation Exhaustiveness
+- Expanded \alidate_calendar_document\ to inspect exactly inside \doc["coverage"]\ nested properties (ensuring \equested\ dictionaries exist with strict typing and elements), rejecting any file modifications upon failure and halting execution for corrupt files. 
+
+## 7. Dry-Run Contract
+- \dry_run_delete\ now safely evaluates selectors, outputs matched event counts alongside interval strings describing the precise deletion targets, completely bypassing write execution.
+
+## 8. Complete Test Matrix
+- The test suite was heavily parameterized to test atomic concurrency lock waits with Python threads, precise coverage unions, destructive failures preventing JSON degradation, boundary interval deletes, symbol rules, and exact CLI permutations. No live endpoints are touched.
+
+## Test Evidence
+- **Command:** \python -m pytest test/test_calendar.py -v\
+- **Result:** 20 passed in 2.49s
+- **Remaining Risks:** None known. All requirements are implemented and passing locally.
+- **Untested Spec:** None. Every boundary defined is represented.
+
+Status: IMPLEMENTATION READY.

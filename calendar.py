@@ -4,9 +4,11 @@ import os
 import re
 import sys
 import tempfile
+import urllib.request
+import urllib.error
+import contextlib
 from datetime import datetime, timezone, timedelta
 from typing import Any, Dict, List, Optional, Tuple, Set
-import contextlib
 
 DATA_ROOT = os.environ.get("SMC_DATA_ROOT", ".")
 CALENDAR_FILE = os.path.join(DATA_ROOT, "calendar.json")
@@ -56,18 +58,21 @@ def parse_calendar_request(args: argparse.Namespace) -> str:
             sys.exit("Error: Invalid arguments mixed with local query")
         if args.current and args.next:
             sys.exit("Error: Cannot mix --current and --next")
-        if args.date and not args.time:
-            pass
+        if args.date and not args.time: pass
         return "LOCAL_QUERY"
     elif del_:
         if any([args.day, args.week, args.month, args.current, args.next]):
             sys.exit("Error: Invalid arguments mixed with delete")
+        if not any([args.before, args.after, args.range, args.date]):
+            sys.exit("Error: Delete requires a valid boundary selector")
+        if args.time and not (args.date or args.range):
+            sys.exit("Error: --time requires --date or --range")
+        if args.time and (args.before or args.after):
+            sys.exit("Error: --time cannot be combined with --before or --after")
         if args.range and any([args.before, args.after, args.date]):
             sys.exit("Error: --range cannot be combined with --before, --after, or --date")
         if args.date and any([args.before, args.after, args.range]):
             sys.exit("Error: --date cannot be combined with --before, --after, or --range")
-        if not any([args.before, args.after, args.range, args.date]):
-            sys.exit("Error: Delete requires a valid boundary selector")
         return "DELETE"
     return "UNKNOWN"
 
@@ -77,10 +82,14 @@ def normalize_symbol(symbol: str) -> str:
 def parse_date(date_str: str) -> datetime:
     try:
         parts = date_str.split(".")
-        if len(parts) != 3: raise ValueError
+        if len(date_str) != 10 or len(parts) != 3: raise ValueError
         y, m, d = int(parts[0]), int(parts[1]), int(parts[2])
         if not (2000 <= y <= 2100): raise ValueError
-        return datetime(y, m, d, tzinfo=timezone.utc)
+        # strict conversion checking limits natively
+        dt = datetime(y, m, d, tzinfo=timezone.utc)
+        # Check roundtrip formatting (to reject something weird like 2026.01.32 if it ever bypassed)
+        if dt.year != y or dt.month != m or dt.day != d: raise ValueError
+        return dt
     except Exception:
         sys.exit(f"Error: Invalid date format: {date_str}. Expected YYYY.MM.DD")
 
@@ -116,6 +125,7 @@ def resolve_provider_period(args: argparse.Namespace) -> Optional[Tuple[str, str
         return ("week", parse_date(args.week).strftime("%b%d.%Y").lower())
     elif args.month:
         if args.month in ("this", "next"): return ("month", args.month)
+        sys.exit("Error: Invalid month selector. Use 'this' or 'next'.")
     elif args.range:
         d1, d2 = parse_date_range(args.range)
         return ("range", f"{d1.strftime('%b%d.%Y').lower()}-{d2.strftime('%b%d.%Y').lower()}")
@@ -125,7 +135,6 @@ def fetch_calendar_source(period_type: str, period_value: str) -> str:
     url = f"{PROVIDER_URL}?{period_type}={period_value}"
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     try:
-        import urllib.request
         with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT) as response:
             if response.status != 200: raise Exception(f"HTTP {response.status}")
             return response.read().decode("utf-8")
@@ -197,14 +206,20 @@ def validate_calendar_document(doc: Dict[str, Any]) -> None:
     if doc.get("schema_version") != 1: sys.exit("Error: Invalid schema version")
     if doc.get("source") != "forexfactory": sys.exit("Error: Invalid source")
     if not isinstance(doc.get("coverage"), list): sys.exit("Error: Invalid coverage")
+    
     for c in doc["coverage"]:
-        if "start" not in c or "end" not in c or "fetched_at" not in c or "requested" not in c:
-            sys.exit("Error: Malformed coverage")
+        for field in ["start", "end", "fetched_at", "requested"]:
+            if field not in c: sys.exit(f"Error: Malformed coverage, missing {field}")
+        if not isinstance(c["requested"], dict): sys.exit("Error: Malformed coverage requested type")
+        if "type" not in c["requested"] or "value" not in c["requested"]: sys.exit("Error: Malformed coverage requested contents")
         if parse_iso8601(c["start"]) >= parse_iso8601(c["end"]): sys.exit("Error: Invalid coverage bounds")
+        parse_iso8601(c["fetched_at"])
+        
     if not isinstance(doc.get("events"), list): sys.exit("Error: Invalid events")
     seen_ids = set()
     for e in doc["events"]:
-        if "event_id" not in e or "datetime" not in e or "impact" not in e: sys.exit("Error: Corrupt event")
+        for field in ["event_id", "datetime", "impact", "currency", "event", "actual", "forecast", "previous", "source"]:
+            if field not in e: sys.exit(f"Error: Corrupt event, missing {field}")
         if e["impact"] not in ["HIGH", "MEDIUM", "LOW", "HOLIDAY", "UNKNOWN"]: sys.exit("Error: Invalid impact")
         eid = e["event_id"]
         if eid in seen_ids: sys.exit("Error: Duplicate event ID")
@@ -247,6 +262,8 @@ def acquire_calendar_lock():
                 msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
                 break
             except OSError:
+                try: os.close(fd)
+                except Exception: pass
                 import time; time.sleep(0.1)
         try:
             yield
@@ -265,6 +282,8 @@ def acquire_calendar_lock():
                 fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
                 break
             except OSError:
+                try: os.close(fd)
+                except Exception: pass
                 import time; time.sleep(0.1)
         try:
             yield
@@ -281,7 +300,7 @@ def acquire_calendar_lock():
 def resolve_coverage(intervals: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     if not intervals: return []
     intervals.sort(key=lambda x: parse_iso8601(x["start"]))
-    merged = [intervals[0]]
+    merged = [intervals[0].copy()]
     for current in intervals[1:]:
         prev = merged[-1]
         prev_end = parse_iso8601(prev["end"])
@@ -293,7 +312,7 @@ def resolve_coverage(intervals: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
                 merged[-1]["fetched_at"] = current["fetched_at"]
                 if "requested" in current: merged[-1]["requested"] = current["requested"]
         else:
-            merged.append(current)
+            merged.append(current.copy())
     return merged
 
 def find_uncovered_intervals(req_start: datetime, req_end: datetime, coverage: List[Dict[str, Any]]) -> List[Tuple[datetime, datetime]]:
@@ -494,7 +513,12 @@ def dry_run_delete(args: argparse.Namespace):
     old_count = len(doc["events"])
     new_events = delete_events(doc["events"], args)
     deleted_count = old_count - len(new_events)
+    
+    # Extract metadata about deletion ranges
+    ranges = get_deleted_ranges(args)
+    bounds = [f"[{s.strftime('%Y-%m-%dT%H:%M:%SZ') if s else '-inf'}, {e.strftime('%Y-%m-%dT%H:%M:%SZ') if e else '+inf'})" for s, e in ranges]
     print(f"Dry run: {deleted_count} events match deletion selectors.", file=sys.stderr)
+    print(f"Deletion intervals: {', '.join(bounds)}", file=sys.stderr)
 
 # ---------------------------------------------------------
 # Orchestration
@@ -578,10 +602,19 @@ def run_delete(args: argparse.Namespace):
         return
     with acquire_calendar_lock():
         doc = load_calendar_document()
-        old_count = len(doc["events"])
+        # Store serialized to accurately detect mutations (since deep copies can be slower)
+        old_events = json.dumps(doc["events"], sort_keys=True)
+        old_coverage = json.dumps(doc.get("coverage", []), sort_keys=True)
+        
         doc["events"] = delete_events(doc["events"], args)
         doc["coverage"] = delete_coverage(doc["coverage"], args)
-        if len(doc["events"]) != old_count or len(doc["coverage"]) != len(doc.get("coverage", [])):
+        
+        new_events = json.dumps(doc["events"], sort_keys=True)
+        new_coverage = json.dumps(doc["coverage"], sort_keys=True)
+        
+        # Save if either modified
+        if old_events != new_events or old_coverage != new_coverage:
+            validate_calendar_document(doc)
             save_calendar_atomic(doc)
 
 def run():
