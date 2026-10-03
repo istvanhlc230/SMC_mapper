@@ -73,8 +73,6 @@ smc_mapper.py
 
 calendar.py
         ↓
-<DATA_ROOT>/news_calendar.json
-        ↓
 <DATA_ROOT>/calendar.json
         ↓
 smc_monitor.py
@@ -142,13 +140,12 @@ Each symbol uses one dedicated data directory for Market Data and Structures:
 <DATA_ROOT>/<SYMBOL>/
     <SYMBOL>_marketdata.json
     <SYMBOL>_structures.json
-    calendar.json
 ~~~
 
-The shared Calendar cache is:
+The single global Calendar data file is:
 
 ~~~text
-<DATA_ROOT>/news_calendar.json
+<DATA_ROOT>/calendar.json
 ~~~
 
 The Monitor automatically resolves the symbol directory from the common data root. It does not expose per-file path CLI options.
@@ -366,7 +363,7 @@ refresh current market reference
         ↓
 evaluate session context
         ↓
-refresh/reload Calendar News data view through calendar.py
+ensure dynamic Calendar News coverage through calendar.py
         ↓
 evaluate News warning
         ↓
@@ -450,33 +447,42 @@ The Monitor must not invoke the Mapper once per missed candle unless an explicit
 
 News acquisition is independent of canonical Mapper processing.
 
-The Monitor derives the required future News acquisition horizon from the stored analyses' entry timeframes. It does not use a fixed minute-based warning horizon.
+The Monitor derives its future News acquisition horizon from the stored analyses' entry timeframes. It does not use a fixed minute-based warning horizon or a warning-window lookup table.
 
 For each analysis:
 
 ```text
 base_window = duration(entry_timeframe)
-```
 
-Dynamic warning window:
-
-```text
-HIGH   -> base_window × 2
-MEDIUM -> base_window
-LOW    -> base_window ÷ 2
+HIGH   -> warning_window = base_window × 2
+MEDIUM -> warning_window = base_window
+LOW    -> warning_window = base_window ÷ 2
 UNKNOWN / HOLIDAY -> no warning
 ```
 
-For acquisition planning, use the maximum possible warning horizon across the selected analyses:
+For acquisition planning, use the maximum possible eligible horizon across the selected analyses:
 
 ```text
 max_news_horizon =
     max(duration(entry_timeframe) × 2)
 ```
 
-The Monitor requests Calendar coverage from the current UTC date through the UTC date containing `now + max_news_horizon`.
+Request Calendar coverage from the current UTC date through the UTC date containing `now + max_news_horizon`.
 
-The timeframe duration must come from the existing Market Data timeframe-duration contract. The Monitor must not introduce a second hard-coded timeframe-duration table.
+The Calendar layer owns coverage validation and redundant-download avoidance.
+
+The exact timeframe duration comes from the existing Market Data timeframe-duration contract. The Monitor must not introduce a second hard-coded timeframe-duration table.
+
+Required planning function:
+
+```python
+def plan_news_acquisition(
+    symbol: str,
+    analysis_views: list[StoredAnalysisView],
+    now: datetime,
+) -> tuple[date, date] | None:
+    ...
+```
 
 Rules:
 
@@ -485,11 +491,10 @@ Rules:
 - Calendar acquisition failure does not block Market Data/Mapper processing;
 - missing `calendar.json` is a normal no-data condition;
 - valid empty Calendar query results are distinct from Calendar-unavailable errors;
-- News warning evaluation occurs only from validated Calendar query results;
+- News warning evaluation occurs only from validated normalized Calendar query results;
 - News context cannot advance or alter the Mapper checkpoint;
-- acquisition coverage exists only to support the dynamically calculated warning horizon; Calendar remains the owner of redundant-download avoidance.
-
-News is warning-only context. It never becomes a canonical setup/target/RR gate.
+- the acquisition date range is operationally rounded outward to whole UTC dates because the Calendar acquisition CLI uses date ranges;
+- News acquisition is only a data-availability step; it never becomes a canonical setup/target/RR gate.
 # 5. PROCESS INVOCATION CONTRACT
 
 ## 5.1 invoke_market_data
@@ -566,7 +571,7 @@ python calendar.py --symbol SYMBOL --current [--debug]
 python calendar.py --symbol SYMBOL --next [--debug]
 ```
 
-The local query API is network-free.
+The local query API is network-free and reads only the global `calendar.json`.
 
 For these Calendar query invocations:
 
@@ -1268,13 +1273,12 @@ def evaluate_news_warnings(
 Rules:
 
 - evaluate every candidate event independently;
-- first apply explicit Monitor impact policy, if configured;
 - calculate the warning window from the analysis entry timeframe and event impact;
 - an event is eligible only when `0 < event_time - now <= warning_window`;
 - return one decision per eligible event;
 - return decisions deterministically sorted by `event_time`, then `event_id`;
 - use `PRE_EVENT` only; there is no Calendar-defined EVENT_ACTIVE or POST_EVENT state;
-- do not infer intrabar event timing;
+- do not infer intrabar event timing, event duration, or trade impact;
 - do not alter setup/target/RR evaluation;
 - do not mutate canonical JSON.
 
@@ -1845,7 +1849,7 @@ test_calendar_provider_failure_is_not_empty_success
 test_calendar_symbol_filters_currency_events
 test_calendar_query_returns_machine_readable_json
 test_calendar_missing_data_does_not_block_canonical_alert
-test_plan_news_updates_uses_dynamic_warning_horizon
+test_plan_news_acquisition_uses_dynamic_warning_horizon
 test_news_warning_dynamic_pre_event
 test_news_warning_dynamic_window_boundary
 test_news_warning_impact_timeframe_scaling
@@ -1927,7 +1931,8 @@ Do not:
 - create a second target ontology;
 - create a second mapper checkpoint;
 - write directly to either JSON store;
-- parse stdout as candle data;
+- parse Market Data or Mapper stdout as candle data;
+- treat Calendar query stdout as diagnostics;
 - call provider APIs directly;
 - use current candles as canonical mapper input;
 - infer new mapper analyses;
@@ -2022,7 +2027,7 @@ smc_monitor.py is implementation-complete when:
 - News warning decisions are evaluated independently per eligible event;
 - Calendar query result is validated before warning evaluation;
 - NEWS_WARNING is separate from SETUP_ELIGIBLE and TARGET_REACHED;
-- missing News does not suppress canonical setup/target evaluation;
+- missing Calendar data does not suppress canonical setup/target evaluation;
 - current snapshots never enter canonical Mapper processing;
 - canonical SMC state is consumed rather than reimplemented;
 - target resolution consumes only one unambiguous target candidate or fails closed when selection policy is absent;
