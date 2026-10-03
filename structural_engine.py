@@ -279,11 +279,28 @@ class StructuralAnalysis:
         )
         if self.bootstrap_range is not None and self.bootstrap_protected_level is None:
             raise QuarantineError("bootstrap range requires bootstrap protected level")
+        if self.bootstrap_range is not None and self.bootstrap_protected_level is not None:
+            if self.bootstrap_range.direction is not self.bootstrap_protected_level.direction:
+                raise QuarantineError("bootstrap direction mismatch")
+            if (
+                self.bootstrap_range.direction is PullbackDirection.BULLISH
+                and self.bootstrap_range.range_low != self.bootstrap_protected_level.price
+            ):
+                raise QuarantineError("bullish bootstrap range must use bootstrap level as its low")
+            if (
+                self.bootstrap_range.direction is PullbackDirection.BEARISH
+                and self.bootstrap_range.range_high != self.bootstrap_protected_level.price
+            ):
+                raise QuarantineError("bearish bootstrap range must use bootstrap level as its high")
         if bootstrap_active and self.active_dealing_range is not None:
             raise QuarantineError("bootstrap state cannot coexist with a governing Dealing Range")
         if self.protected_structural_extreme is not None and bootstrap_active:
             raise QuarantineError(
                 "bootstrap state must be destroyed before Protected Structural Extreme lock"
+            )
+        if self.protected_structural_extreme is not None and self.active_dealing_range is None:
+            raise QuarantineError(
+                "Protected Structural Extreme lock requires a governing Dealing Range"
             )
 
 
@@ -633,7 +650,10 @@ def finalize_valid_bos(
     start,end,break_pos=positions[swing.confirmation_candle_id],positions[end_id],positions[break_candle_id]
     if end<=start or break_pos<=end:
         raise QuarantineError("VALID_BOS requires qualification before the break")
-    window=sequence[start+1:end+1]
+    # E_retrace remains dynamic after qualification and is locked only at BOS.
+    window=sequence[start+1:break_pos]
+    if not window:
+        raise QuarantineError("VALID_BOS requires a non-empty corrective window")
     if swing.direction is PullbackDirection.BULLISH:
         price=min(c.low for c in window); source_id=next(c.candle_id for c in window if c.low==price)
         range_high,range_low=swing.price,price

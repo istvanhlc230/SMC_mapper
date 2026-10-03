@@ -3615,7 +3615,7 @@ Phase 39 established that the indexed knowledgebase does not define a determinis
 
 ## Implementation
 Changed:
-- `structural_engine.py`: bootstrap entities, isolated bootstrap measurement range, VALID_BOS finalization, actual E_retrace locking and first-range creation.
+- `structural_engine.py`: bootstrap entities, isolated bootstrap measurement range, VALID_BOS finalization, full corrective-window E_retrace locking and first-range creation.
 - `smc_analyzer.py`: automatic chart-inception bootstrap initialization, explicit post-CHoCH origin contract, bootstrap-to-L3 wiring, and post-BOS bootstrap destruction.
 - `tests/test_structural_engine.py`: bootstrap creation, range isolation, qualification, finalization and contamination guards.
 - `specifications/smc_mapper_specification.md`: project-canonical initialization policy recorded without modifying canonical skill semantics.

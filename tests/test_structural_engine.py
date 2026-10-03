@@ -506,7 +506,8 @@ def test_valid_bos_destroys_bootstrap_and_locks_actual_retrace():
         c("r1", "9", "9.5", "7", "8"),
         c("r2", "8", "8.5", "7", "7.5"),
         c("r3", "7.5", "8", "7", "7.2"),
-        c("break", "7.2", "10.1", "7", "9"),
+        c("r4", "7.2", "7.8", "6.5", "7.0"),
+        c("break", "7.0", "10.1", "6.5", "9"),
     )
     idm = structural.IDMEvent(
         structural.IDMClass.MINOR_IDM,
@@ -556,12 +557,12 @@ def test_valid_bos_destroys_bootstrap_and_locks_actual_retrace():
     assert result.bootstrap_protected_level is None
     assert result.bootstrap_range is None
     assert result.protected_structural_extreme is not None
-    assert result.protected_structural_extreme.price == Decimal("7")
-    assert result.protected_structural_extreme.source_candle_id in {"r1", "r2", "r3"}
+    assert result.protected_structural_extreme.price == Decimal("6.5")
+    assert result.protected_structural_extreme.source_candle_id == "r4"
     assert result.protected_structural_extreme.lock_candle_id == "break"
     assert result.active_dealing_range is not None
     assert result.active_dealing_range.range_high == Decimal("10")
-    assert result.active_dealing_range.range_low == Decimal("7")
+    assert result.active_dealing_range.range_low == Decimal("6.5")
 
 
 def test_bootstrap_state_cannot_coexist_with_governing_range_or_locked_extreme():
