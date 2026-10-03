@@ -638,7 +638,7 @@ def fetch_calendar_source(period_type: str, period_value: str) -> str:
 def _html_text(fragment: str) -> str:
     text = re.sub(r"<[^>]+>", " ", fragment)
     text = html_module.unescape(text)
-    return re.sub(r"\\s+", " ", text).strip()
+    return re.sub(r"\s+", " ", text).strip()
 
 
 def _html_cell_text(row_html: str, class_token: str) -> str:
@@ -646,7 +646,7 @@ def _html_cell_text(row_html: str, class_token: str) -> str:
         r"<td\\b[^>]*class=[\\\"']"
         r"[^\\\"']*\\b"
         + re.escape(class_token)
-        + r"\\b[^\\\"']*[\\\"'][^>]*>(.*?)</td>"
+        + r"\b[^\\\"']*[\\\"'][^>]*>(.*?)</td>"
     )
     match = re.search(pattern, row_html, re.DOTALL | re.IGNORECASE)
     return _html_text(match.group(1)) if match else ""
@@ -657,7 +657,7 @@ def _html_cell_inner(row_html: str, class_token: str) -> str:
         r"<td\\b[^>]*class=[\\\"']"
         r"[^\\\"']*\\b"
         + re.escape(class_token)
-        + r"\\b[^\\\"']*[\\\"'][^>]*>(.*?)</td>"
+        + r"\b[^\\\"']*[\\\"'][^>]*>(.*?)</td>"
     )
     match = re.search(pattern, row_html, re.DOTALL | re.IGNORECASE)
     return match.group(1) if match else ""
@@ -697,7 +697,7 @@ def _parse_provider_date(
 ) -> Optional[datetime]:
     if not value:
         return current_date
-    normalized = re.sub(r"\\s+", " ", value).strip()
+    normalized = re.sub(r"\s+", " ", value).strip()
     for fmt in ("%a %b %d", "%b %d"):
         try:
             parsed = datetime.strptime(normalized, fmt)
@@ -735,7 +735,7 @@ def _parse_provider_time(value: str) -> Tuple[int, int]:
 def _parse_provider_impact(row_html: str) -> int:
     impact_html = _html_cell_inner(row_html, "calendar__impact")
     impact_match = re.search(
-        r"\\btitle=[\\\"]([^\\\"]*Impact[^\\\"]*)[\\\"]",
+        r"\btitle=[\\\"]([^\\\"]*Impact[^\\\"]*)[\\\"]",
         impact_html,
         re.IGNORECASE,
     )
