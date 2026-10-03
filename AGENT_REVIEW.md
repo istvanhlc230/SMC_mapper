@@ -135,3 +135,18 @@ Acceptance remains BLOCKED until the developer runs the corrected version locall
   - `python calendar.py week USDHUF` -> filtered properly, matching `USD` and `HUF` events perfectly against the live payload.
 - **Integrity**: `validate_calendar_document()` passes perfectly; no provider internal country codes (`US`, `AU`) or empty titles survive the validation checks. `impact` reflects the provider's supplied impact seamlessly.
 - **System dependencies**: Validated that `tzdata` is required on Windows for `zoneinfo` instantiation. `tzdata-2026.5` installed locally to support pipeline execution.
+
+
+## Remaining Calendar Integrity Corrections — 2026-10-03
+
+Follow-up audit identified two implementation hardening issues that did not change the canonical provider contract:
+
+1. extract_days_payload() previously used a non-greedy regex to determine the end of the JSON array. This could truncate a valid structured payload if nested JSON/string content contained a closing bracket. The field is now located by regex, but the complete array boundary is determined by json.JSONDecoder().raw_decode().
+
+2. Canonical acquisition previously normalized every provider event returned by the response before persistence without explicitly restricting new events to the exact acquired UTC interval. Normalized provider events are now filtered to [fetch_start, fetch_end) before merge/persistence. Events outside coverage cannot silently extend the cache.
+
+Additionally, impactName = non-economic is normalized to canonical HOLIDAY.
+
+The Calendar specification and design were synchronized with these corrections.
+
+Fresh local runtime validation remains required after this iteration.

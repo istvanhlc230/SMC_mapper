@@ -892,19 +892,29 @@ def parse_calendar_html(
 
 
 def extract_days_payload(html: str) -> str:
-    # ForexFactory exposes the canonical payload as days: [...], time: "...".
-    # Support quoted or unquoted JavaScript keys and keep the capture bounded.
+    # Locate the provider's structured days array, then let the JSON decoder
+    # determine the complete array boundary. Regex is used only for locating
+    # the field; it must not determine the nested JSON extent.
     match = re.search(
-        r"[\"']?days[\"']?\s*:\s*(\[.*?\])\s*,\s*"
-        r"[\"']?time[\"']?\s*:\s*[\"']",
+        r"[\"']?days[\"']?\s*:\s*\[",
         html,
-        re.DOTALL | re.IGNORECASE,
+        re.IGNORECASE,
     )
     if not match:
-        sys.exit(
-            "Error: Provider response has no structured days payload."
+        sys.exit("Error: Provider response has no structured days payload.")
+
+    payload_start = match.end() - 1
+    try:
+        decoded, end_offset = json.JSONDecoder().raw_decode(
+            html[payload_start:]
         )
-    return match.group(1)
+    except json.JSONDecodeError as exc:
+        sys.exit(f"Error: Malformed provider days payload: {exc}")
+
+    if not isinstance(decoded, list):
+        sys.exit("Error: Provider days payload is not a list.")
+
+    return html[payload_start:payload_start + end_offset]
 
 
 def parse_calendar_days(payload: str) -> List[Dict[str, Any]]:
@@ -937,6 +947,7 @@ def normalize_provider_event(raw: Dict[str, Any]) -> Dict[str, Any]:
         "medium": "MEDIUM",
         "high": "HIGH",
         "holiday": "HOLIDAY",
+        "non-economic": "HOLIDAY",
     }.get(raw_impact)
 
     if impact is None:
@@ -1189,6 +1200,11 @@ def run_acquisition(scope: str) -> None:
                 sys.exit("Error: Provider returned no calendar days.")
 
             new_events = normalize_calendar_events(days_data)
+            new_events = filter_events_for_interval(
+                new_events,
+                fetch_start,
+                fetch_end,
+            )
             document["events"] = merge_calendar_events(
                 document["events"],
                 new_events,

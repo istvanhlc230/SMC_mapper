@@ -140,10 +140,11 @@ Provider and normalization:
 
 - fetch_calendar_source — retrieve provider HTML.
 - parse_calendar_html — compatibility parser for ForexFactory calendar rows; not used for canonical writes.
-- extract_days_payload — extract the structured embedded `days` JSON payload used by canonical acquisition.
+- extract_days_payload — locate the structured embedded `days` JSON payload and use JSON decoding to determine its complete array boundary.
 - parse_calendar_days — decode and validate the canonical structured provider days collection.
 - normalize_provider_event — map one provider event to the canonical event model.
 - normalize_calendar_events — normalize a provider day collection.
+- filter_events_for_interval — restrict newly normalized provider events to the exact acquired UTC coverage interval before persistence.
 
 Persistence and integrity:
 

@@ -100,7 +100,7 @@ The following canonical scopes are resolved internally to UTC intervals:
 
 ForexFactory-specific date spelling and URL parameters remain internal provider concerns.
 
-The current provider parser uses ForexFactory's structured embedded `days` JSON payload as the canonical acquisition source. Each event record provides the provider event ID (`id`), canonical currency (`currency`), event title (`name`), numeric UTC epoch (`dateline`), impact (`impactName`, with `impactClass` as fallback), and source values (`actual`, `forecast`, `previous`). The provider's `country` field is not a canonical currency source and must never be used in place of `currency`. Provider-wide events may use `currency = ALL`. The HTML row parser remains available only as a compatibility parser and is not used for canonical persistence. Because the structured event `dateline` is already an epoch timestamp, no regional timezone conversion is required for canonical event timestamps.
+The current provider parser uses ForexFactory's structured embedded `days` JSON payload as the canonical acquisition source. The `days` array boundary is determined by JSON decoding rather than a regex-selected closing bracket, so nested JSON values cannot truncate the provider payload. Each event record provides the provider event ID (`id`), canonical currency (`currency`), event title (`name`), numeric UTC epoch (`dateline`), impact (`impactName`, with `impactClass` as fallback), and source values (`actual`, `forecast`, `previous`). The provider's `country` field is not a canonical currency source and must never be used in place of `currency`. Provider-wide events may use `currency = ALL`. The HTML row parser remains available only as a compatibility parser and is not used for canonical persistence. Because the structured event `dateline` is already an epoch timestamp, no regional timezone conversion is required for canonical event timestamps.
 
 ## 1.3 Request policy
 
@@ -387,6 +387,8 @@ with UTC timestamps.
 Coverage means the provider response for that interval was successfully retrieved, parsed, normalized, and validated.
 
 A covered interval may contain zero events.
+
+Provider events are persisted only when their canonical `datetime` falls inside the acquired coverage interval `[start, end)`. Provider records outside that interval are ignored and must never extend or implicitly create coverage.
 
 Coverage is never inferred from event timestamps.
 
