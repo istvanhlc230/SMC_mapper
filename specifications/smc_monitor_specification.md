@@ -1491,7 +1491,8 @@ build_market_data_update_plan
 get_due_analyses
 is_target_cleared
 calculate_projected_rr
-extract_news_events
+plan_news_acquisition
+calculate_news_warning_window
 evaluate_news_warnings
 build_news_warning_key
 build_alert_key
@@ -1504,7 +1505,8 @@ Side effects belong in:
 load_structures
 load_market_data
 invoke_market_data
-invoke_calendar
+invoke_calendar_acquisition
+invoke_calendar_query
 invoke_mapper
 refresh_current_market_view
 emit_alert
@@ -1933,7 +1935,6 @@ Do not:
 - create a second mapper checkpoint;
 - write directly to either JSON store;
 - parse Market Data or Mapper stdout as candle data;
-- treat Calendar query stdout as diagnostics;
 - call provider APIs directly;
 - use current candles as canonical mapper input;
 - infer new mapper analyses;
