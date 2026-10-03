@@ -10,7 +10,8 @@
 | `.agents/skills/smc/` | Canonical SMC semantics |
 | `specifications/market_data_specification.md` | Market Data implementation contract |
 | `specifications/smc_mapper_specification.md` | Mapper implementation and persistence contract |
-| `specifications/smc_monitor_specification.md` | Monitor orchestration, target/RR and alert contract |
+| `specifications/calendar_specification.md` | Economic calendar acquisition, parsing, cache and symbol News JSON contract |
+| `specifications/smc_monitor_specification.md` | Monitor orchestration, News warning, target/RR and alert contract |
 | `AGENT_REVIEW.md` | Historical audit/review record; not normative |
 
 The owning specification is authoritative for its component. This file must never become a second source of implementation truth.
@@ -46,6 +47,20 @@ Primary ownership:
 - structures JSON and checkpoint persistence;
 - Mapper tests and definition of done.
 
+### Calendar — `calendar_specification.md`
+
+Detailed contract: sections **0–16**.
+
+Primary ownership:
+- ForexFactory acquisition and parsing;
+- normalized CalendarEvent contract;
+- canonical UTC event time;
+- shared news-calendar cache;
+- symbol relevance filtering;
+- symbol News JSON materialization;
+- atomic News persistence;
+- Calendar error/test contract.
+
 ### Monitor — `smc_monitor_specification.md`
 
 Detailed contract: sections **0–25**.
@@ -54,6 +69,7 @@ Primary ownership:
 - Monitor CLI and scheduling;
 - persisted analysis discovery;
 - Market Data / Mapper orchestration;
+- Calendar subprocess orchestration and News warning evaluation;
 - current market reference;
 - canonical state consumption;
 - target representation, resolution and clearance;
