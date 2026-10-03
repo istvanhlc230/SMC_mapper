@@ -121,6 +121,31 @@ Before `IMPLEMENTATION_READY`, the implementation agent must:
 Do not create compatibility layers, duplicate communication systems, orchestration databases, queues, session stores, or provider registries unless a future task explicitly requires them. Keep the mapper focused on market-structure computation and deterministic evidence production.
 
 
+
+### Temporary development artifacts
+
+The repository root must not be used as scratch space.
+
+All temporary, intermediate, debug, generated, downloaded, or otherwise non-source development artifacts created during implementation or testing must be placed under:
+
+```text
+dev_tmp/
+```
+
+This includes, for example:
+
+- temporary JSON/HTML/XML payloads;
+- downloaded provider responses;
+- debug dumps and ad-hoc logs;
+- intermediate generated files;
+- scratch scripts or one-off helper files;
+- temporary patches or analysis outputs;
+- local test fixtures that are not part of the committed test suite.
+
+Keep permanent source code, tests, required design/specification files, and other intentional repository artifacts in their defined locations. Do not leave temporary artifacts scattered through the repository root or unrelated source directories.
+
+The `dev_tmp/` directory is development scratch space only and must not become a substitute for required source, test, or documentation locations. Do not treat files under `dev_tmp/` as implementation deliverables unless the owning task explicitly promotes a file into a permanent repository location.
+
 ## Canonical Order Flow / Order Block terminology
 
 Use these exact canonical semantic identifiers in active implementation and specifications:
