@@ -498,7 +498,8 @@ The source describes IDM takeout as swing-point acquisition; the project-canonic
 2. **SWING_CANDIDATE / PROVISIONAL_STRUCTURAL_EXTREME:** `IDM_TAKEN` establishes the external extreme associated with the taken IDM as the provisional structural swing candidate for the active lifecycle. This is not yet a BOS-eligible `CONFIRMED_STRUCTURAL_SWING`.
 
 3. **Retracement measurement baseline:**
-   - For the first BOS of a newly initialized regime, `BOOTSTRAP_RANGE` is activated from `BOOTSTRAP_ORIGIN_ANCHOR` to the swing candidate before macro qualification.
+   - For the first BOS of a newly initialized regime, `BOOTSTRAP_RANGE` is activated **only after** `SWING_CANDIDATE / PROVISIONAL_STRUCTURAL_EXTREME` exists, using `BOOTSTRAP_ORIGIN_ANCHOR` and that candidate as a measurement-only span.
+   - `BOOTSTRAP_RANGE` is not created from `IDM_TAKEN` alone, is not a provisional Dealing Range, and is never a substitute for a `PROTECTED_STRUCTURAL_EXTREME`.
    - For an already confirmed dealing-range lifecycle, the active canonical Dealing Range supplies the structural retracement baseline.
 
 4. **STRUCTURAL_RETRACEMENT_QUALIFICATION:** The subsequent retracement is evaluated against the applicable baseline.
@@ -518,6 +519,20 @@ The source describes IDM takeout as swing-point acquisition; the project-canonic
 5. **STRUCTURAL_SWING_BREAK → VALID_BOS:** A later physical break of the eligible confirmed structural swing can qualify as `VALID_BOS` only when all canonical BOS gates pass.
 
 IDM takeout therefore never directly creates `CONFIRMED_STRUCTURAL_SWING` in the project-canonical implementation lifecycle.
+
+**Hard transition invariant:**
+
+```text
+IDM_TAKEN
+    ↓
+SWING_CANDIDATE / PROVISIONAL_STRUCTURAL_EXTREME
+    ↓
+STRUCTURAL_RETRACEMENT_QUALIFICATION
+    ↓
+CONFIRMED_STRUCTURAL_SWING
+```
+
+There is **no direct** `IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING` transition, including in bootstrap, confirmation-locked, post-CHoCH, or any Major-IDM sweep route. `IDM_TAKEN` is evidence that establishes the candidate/provisional stage only; promotion to `CONFIRMED_STRUCTURAL_SWING` requires the canonical structural retracement qualification gate.
 
 ### Impulsive-leg structural scope
 
