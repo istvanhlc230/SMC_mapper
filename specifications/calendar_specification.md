@@ -758,6 +758,9 @@ Calendar warning policy does not belong in this module.
 
 # 12. TEST CONTRACT
 
+All Calendar test files must be created under the repository-root `test/` directory. The active developer agent must create and execute the focused Calendar tests there; no new test file belongs in the repository root or in a separate `tests/` directory.
+
+
 Tests must not require a live ForexFactory request.
 
 Required coverage:

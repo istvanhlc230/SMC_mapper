@@ -2110,6 +2110,9 @@ Do not add SMC analysis logic.
 
 # 22. REQUIRED TEST STRUCTURE
 
+All Market Data test files must be created under the repository-root `test/` directory. The active developer agent must create and execute the focused tests there; no new test file belongs in the repository root or in a separate `tests/` directory.
+
+
 The developer agent must add focused tests around the module boundaries.
 
 Test names:

@@ -26,8 +26,8 @@ jobs:
       - name: Run test suite when tests exist
         shell: bash
         run: |
-          if find tests -type f -name 'test_*.py' -print -quit 2>/dev/null | grep -q .; then
-            python -m pytest -q
+          if find test -type f -name 'test_*.py' -print -quit 2>/dev/null | grep -q .; then
+            python -m pytest -q test
           else
             echo "No pytest tests are present yet; skipping test execution."
           fi

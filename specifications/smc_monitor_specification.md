@@ -1973,6 +1973,9 @@ failure isolation
 
 # 22. REQUIRED TEST STRUCTURE
 
+All Monitor test files must be created under the repository-root `test/` directory. The active developer agent must create and execute the focused Monitor tests there; no new test file belongs in the repository root or in a separate `tests/` directory.
+
+
 Focused tests must cover at minimum.
 
 ### CLI

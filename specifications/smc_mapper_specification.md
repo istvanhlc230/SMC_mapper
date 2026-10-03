@@ -1749,6 +1749,9 @@ Tests must be able to execute canonical-processing logic from fixed persisted ca
 
 # 18. REQUIRED TEST STRUCTURE AND DEFINITION OF DONE
 
+All Mapper test files must be created under the repository-root `test/` directory. The active developer agent must create and execute the focused Mapper tests there; no new test file belongs in the repository root or in a separate `tests/` directory.
+
+
 At minimum, the finished mapper implementation must have focused tests covering:
 
 - CLI option parsing, including equal HTF/LTF single-timeframe mode and invalid HTF<LTF combinations;

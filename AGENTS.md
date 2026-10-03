@@ -62,6 +62,12 @@ Safety limits are strictly enforced:
 - When a source-code change appears to conflict with the canonical skill, stop and resolve the methodology conflict before implementation.
 - Prefer the smallest change that satisfies the requested methodology and preserves unrelated accepted behavior.
 
+## Test workspace
+
+All development and regression test files belong in the repository-root `test/` directory. The active developer agent must create new tests there and execute tests from that directory. Do not create new Python test files in the repository root or in another test directory unless the owning specification explicitly requires a different test artifact.
+
+The `test/` directory is the shared working directory for test development throughout the project lifecycle.
+
 ## Testing and evidence
 
 Before `IMPLEMENTATION_READY`, the implementation agent must:
