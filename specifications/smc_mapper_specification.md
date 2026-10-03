@@ -814,7 +814,7 @@ Downstream consumers identify each stored analysis from its deterministic analys
 
 Each mapper analysis entry stores canonical structural analysis plus the minimal mapper-processing metadata required for deterministic incremental execution.
 
-It may contain structural lifecycle/state, structural swings, protected structural extremes, dealing range, IDM state/provenance, retracement qualification, BOS, CHoCH, canonical L6 structural / POI results, canonical POI registry, retained closed Dealing Range history, and structural provenance/change metadata.
+It may contain Layer-3 structural lifecycle/state, CONFIRMED_STRUCTURAL_SWING, Protected Structural Extreme, Dealing Range state, IDM state/provenance (MINOR_IDM / MAJOR_IDM), retracement qualification, STRUCTURAL_SWING_BREAK / VALID_BOS, CHoCH lifecycle state, canonical Layer-6 POI results, canonical POI registry, retained closed Dealing Range history, and structural provenance/change metadata.
 
 The mapper must not persist dynamic monitoring or trade state such as current market price, active trade/order state, stop state, break-even state, trailing state, target-hit state, or the monitor's transient POI selection state. Those are owned by the monitor.
 
@@ -1117,12 +1117,12 @@ The LTF records stored under an HTF range are context-scoped execution analysis,
 The history record may contain, where applicable:
 
 - HTF structural direction/lifecycle state;
-- HTF structural swings;
-- HTF protected structural extremes;
-- HTF IDM provenance;
+- HTF CONFIRMED_STRUCTURAL_SWING state/records;
+- HTF Protected Structural Extreme state/records;
+- HTF IDM provenance (MINOR_IDM / MAJOR_IDM);
 - HTF retracement qualification;
-- HTF BOS;
-- HTF CHoCH;
+- HTF VALID_BOS outcomes;
+- HTF CHoCH lifecycle outcomes;
 - canonical HTF Layer-6 POIs;
 - associated LTF structural/entry-analysis records;
 - volume metadata associated with canonical POIs.
@@ -1149,20 +1149,20 @@ The mapper derives Dealing Range history boundaries strictly from the canonical 
 
 The mapper uses a unified storage representation for canonical POIs. It does not redefine the Layer 6 POI ontology or lifecycle.
 
-Canonical POI semantic types remain owned by Layer 6 and are represented in mapper storage as:
+Canonical POI semantic types remain owned by Layer 6 and are represented in mapper storage using the canonical semantic identifiers:
 
-    ORDER_FLOW
-    ORDER_BLOCK
-
-These storage values correspond to the canonical Layer 6 classes Valid Order Flow (OF_CONFIRMED) and Valid Order Block (VALID_OB). The storage names do not replace or redefine the canonical semantic classes.
+    OF_CONFIRMED
+    VALID_OB
 
 Execution role is represented separately:
 
     DECISIONAL
     EXTREME
-    ORIGIN_RESERVE
+    ORIGIN_OB
 
-ORIGIN_RESERVE is a latent Order Block role and is not an additional active Rule-of-Two slot.
+ORIGIN_OB represents the canonical Origin OB latent reserve and is not an additional active Rule-of-Two slot.
+
+The mapper must not introduce ORDER_FLOW, ORDER_BLOCK, or ORIGIN_RESERVE as parallel canonical POI terminology.
 
 Canonical POI lifecycle is consumed verbatim from Layer 6:
 
@@ -1185,7 +1185,7 @@ Logical canonical POI representation:
 ```json
 {
   "poi_id": "POI-001",
-  "poi_type": "ORDER_FLOW",
+  "poi_type": "OF_CONFIRMED",
   "poi_role": "DECISIONAL",
   "lifecycle": "POI_INTERACTION",
   "provenance": {
