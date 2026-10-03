@@ -1253,19 +1253,6 @@ Logical canonical POI representation:
 }
 ```
 
-A runtime monitor selection view may derive:
-
-```json
-{
-  "poi_id": "POI-001",
-  "targeted": true
-}
-```
-
-The selection view is downstream runtime state and must not alter the canonical POI lifecycle.
-
-The canonical semantic POI and lifecycle definitions remain owned by Layer 6. This mapper specification defines only the storage representation and downstream selection boundary.
-
 ---
 
 # 9. POI VOLUME / DELTA ANALYTICS
@@ -1426,24 +1413,11 @@ On invocation:
 
 The Mapper does not schedule itself, refresh current snapshots, resolve targets, apply RR, emit alerts, or manage positions.
 
-## 10.2 Multi-symbol / multi-analysis orchestration
+## 10.2 Multiple analyses in one Structures file
 
-The monitor is not limited to one symbol or one timeframe analysis.
+One symbol-scoped Structures JSON may contain multiple independent mapper analyses.
 
-- One monitor runtime may manage multiple symbols.
-- Each symbol retains its own `<SYMBOL>_marketdata.json` and `<SYMBOL>_structures.json`.
-- Within one symbol's structures JSON, multiple distinct mapper analyses may coexist.
-- Each analysis is identified and scheduled independently by its deterministic analysis key.
-- Multiple HTF/LTF analysis pairs may therefore coexist for the same symbol, for example `H4/M15`, `H1/M5`, and `M15/M1`, subject to the normal timeframe and data-availability contracts.
-- Single-timeframe analyses may coexist with HTF/LTF analyses for the same symbol.
-- A monitor update for one symbol/analysis must not overwrite, merge, or alter another symbol/analysis.
-- Entry-timeframe scheduling and mapper checkpoints remain independent for every stored analysis.
-- The monitor must maintain at most one active orchestration instance per symbol while allowing that instance to manage all configured analyses for the symbol.
-- A failure or temporary data unavailability affecting one symbol or one analysis must not corrupt or invalidate unrelated symbols or analyses.
-
-The monitor may schedule these analyses independently according to their entry timeframes while sharing the symbol-level market-data store.
-
-There is no single multi-symbol mapper JSON file and no single multi-symbol market-data JSON file.
+The Mapper updates only the selected analysis entry and must preserve all unrelated analysis entries. Scheduling, multi-symbol orchestration, and process serialization are Monitor-owned concerns.
 
 ---
 
