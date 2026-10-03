@@ -118,6 +118,7 @@ Approved options:
 --symbol SYMBOL [SYMBOL ...]
 --rr DECIMAL
 --timezone TZ
+--alert-json
 --debug
 --help
 ~~~
@@ -203,6 +204,7 @@ class MonitorRequest:
     symbols: list[str]
     min_rr: Decimal | None
     timezone: str | None
+    alert_json: bool
     debug: bool
 ~~~
 
@@ -1188,6 +1190,15 @@ class AlertDecision:
     reason: str
     target: TargetPlan | None
     projected_rr: Decimal | None
+    entry_reference_price: Decimal | None
+    stop_price: Decimal | None
+    tp1: Decimal | None
+    tp2: Decimal | None
+    tp3: Decimal | None
+    current_price: Decimal | None
+    event_id: str | None
+    event_time: datetime | None
+    event_status: str | None
 ~~~
 
 SETUP_ELIGIBLE evaluation flow:
@@ -1206,25 +1217,93 @@ SETUP_ELIGIBLE
 
 `evaluate_alert_eligibility()` returns `alert_type = SETUP_ELIGIBLE` when eligible.
 
-## 12.2 Alert content
+## 12.2 Alert content and JSON output
 
-Alert payloads must include the alert type.
+Every emitted alert has the same logical detail payload regardless of presentation format.
 
-At minimum:
+At minimum, the logical alert detail contains:
 
+- alert type;
 - symbol;
-- analysis key;
-- direction;
+- analysis key where applicable;
+- direction where applicable;
 - canonical setup/entry event reference where available;
 - source POI identity where applicable;
-- entry reference price;
-- stop reference when available;
-- resolved target price;
-- target coordinate/type;
+- entry reference price when available;
+- stop-loss reference when available;
+- TP1, TP2 and TP3 when source-backed target levels are available;
+- resolved target price and target coordinate/type when a single resolved target exists;
 - projected RR when calculable;
+- News event identity/time/impact/status when the alert is News-related;
 - evaluation time.
 
-The Monitor must not claim that an order was submitted, filled, or a position opened.
+TP1/TP2/TP3 are presentation fields only. They do not create or modify a target ontology. A level is populated only when the canonical/downstream state already provides a corresponding source-backed target level. Otherwise its value is `null`.
+
+For `SETUP_ELIGIBLE`, the payload may contain entry, SL and available TP levels.
+
+For `TARGET_REACHED`, the resolved target is populated and TP1/TP2/TP3 are populated only when independently source-backed.
+
+For `NEWS_WARNING`, trading levels are `null` unless a separate canonical alert context already provides them; the payload focuses on News details.
+
+The Monitor must never claim that an order was submitted, filled, or a position opened.
+
+### 12.2.1 `--alert-json`
+
+CLI option:
+
+```text
+--alert-json
+```
+
+When enabled, each emitted alert is written as exactly one complete JSON object to stdout.
+
+The JSON object is the machine-readable alert contract. Human-readable alert text is not mixed into stdout when `--alert-json` is enabled.
+
+Diagnostics, debug output, warnings, and errors remain on stderr.
+
+When `--alert-json` is absent, the existing human-readable alert/notification output is unchanged.
+
+The option changes output representation only. It must not change:
+
+- alert eligibility;
+- target resolution;
+- target clearance;
+- RR evaluation;
+- News warning evaluation;
+- event-status evaluation;
+- deduplication;
+- canonical SMC state;
+- persistence behavior.
+
+Recommended logical JSON shape:
+
+```json
+{
+  "alert_type": "SETUP_ELIGIBLE",
+  "symbol": "EURUSD",
+  "analysis_key": "EURUSD|H4|H1|...",
+  "direction": "BULLISH",
+  "entry": 1.17000,
+  "sl": 1.16500,
+  "tp1": 1.17500,
+  "tp2": 1.18000,
+  "tp3": null,
+  "target_price": 1.18000,
+  "target_type": "FVG",
+  "target_coordinate": "upper_boundary",
+  "projected_rr": 2.0,
+  "current_price": 1.16950,
+  "event_status": null,
+  "event": null,
+  "evaluation_time": "2026-10-03T12:30:00Z"
+}
+```
+
+Field values that are unavailable or not applicable are `null`. The exact JSON numeric serialization follows the Monitor's approved deterministic numeric representation.
+
+The JSON output is transient runtime output. It is never written to Calendar, Structures, Market Data, or Monitor persistent state.
+
+The JSON schema must remain stable for downstream automation and should be versioned when its structure changes.
 
 ## 12.3 Alert identity and deduplication
 
@@ -1561,6 +1640,7 @@ Prefer deterministic functions for:
 parse_monitor_request
 validate_monitor_request
 parse_decimal
+build_alert_output
 discover_analysis_views
 build_market_data_update_plan
 get_due_analyses
@@ -1661,10 +1741,12 @@ calculate_projected_rr(target_price, entry_reference_price, stop_price)
 get_active_sessions(utc_time, session_definitions)
 
 build_alert_key(analysis, target, alert_type)
+build_alert_output(decision)
 is_target_reached(target_price, current_price, direction)
 evaluate_target_reached(target, current_market_view)
 evaluate_alert_eligibility(analysis, target, current_market_view, min_rr)
-emit_alert(decision)
+build_alert_output(decision)
+emit_alert(decision, alert_json)
 
 run_monitor_cycle(request, registry, now)
 run(request)
@@ -2103,7 +2185,8 @@ A completed-candle update requires Mapper execution before downstream target/ale
 
 smc_monitor.py is implementation-complete when:
 
-- the documented CLI exactly matches implementation;
+- the documented CLI exactly matches implementation, including `--alert-json`;
+- `--alert-json` emits stable one-alert-per-JSON-object output to stdout;
 - selected symbols and all stored analyses are discovered correctly;
 - each selected symbol automatically resolves its Market Data and Structures files; News remains in the single global calendar.json;
 - Market Data and Mapper are invoked as independent processes;
