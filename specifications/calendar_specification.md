@@ -758,7 +758,7 @@ Calendar warning policy does not belong in this module.
 
 # 12. TEST CONTRACT
 
-The global developer-agent naming, portability, prompt-efficiency, and test-batching rules in `AGENTS.md` apply to Calendar. Calendar test files are created and executed under the repository-root `test/` directory.
+The global developer-agent naming, portability, prompt-efficiency, and validation rules in `AGENTS.md` apply to Calendar. The Calendar validation contract is defined here; no dedicated repository test directory is prescribed.
 
 Tests must not require a live ForexFactory request.
 
