@@ -950,7 +950,8 @@ Rules:
 - retention does not modify candle contents;
 - retention does not invalidate mapper structural history;
 - when `protected_start` is supplied, candles at or after that boundary are protected for the current requested processing range;
-- when `protected_end` is supplied, candles after that boundary are not protected by the requested range;
+- when `protected_end` is supplied, only candles at or before that boundary are protected by the requested range;
+- when `protected_start` is supplied and `protected_end` is absent, protection extends through the newest currently available completed candle;
 - protected candles are retained even when this temporarily exceeds `retention_limit`;
 - once the protected range is no longer requested, normal rolling retention may evict old candles;
 - retention is operational storage policy only.
@@ -1200,6 +1201,16 @@ When `start_time` and/or `end_time` are supplied:
 - honor requested boundaries;
 - do not invent candles outside requested scope.
 
+### Live-only current refresh
+
+When `live=True`, `last_candle_only=False`, and neither `start_time` nor `end_time` is supplied:
+
+- fetch the latest provider candle needed for the current snapshot for each requested timeframe;
+- persist it under the timeframe's `current` field while incomplete;
+- if it is already completed when evaluated, route it through the completed-candle path and clear the matching current snapshot;
+- do not fabricate or infer a historical acquisition range;
+- do not require a new completed candle for the invocation to be valid.
+
 ### Last-candle mode
 
 When `last_candle_only=True`:
@@ -1309,7 +1320,7 @@ Responsibilities:
 - merge completed candles;
 - update current snapshot;
 - clear a current snapshot when it becomes completed;
-- apply retention;
+- apply retention, protecting the explicitly requested historical range for this invocation when one exists;
 - update availability bounds;
 - return whether persisted market-data state changed.
 
