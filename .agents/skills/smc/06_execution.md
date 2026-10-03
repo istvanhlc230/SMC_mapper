@@ -125,7 +125,11 @@ The Extreme POI must still be an `EXTREME_ORDER_FLOW` or `EXTREME_ORDER_BLOCK`. 
 
 ### Origin Order Block (Latent POI)
 
-An Origin Order Block is a canonical absolute range-origin Order Block acting as a latent reserve POI. It becomes actively tradable if and only if Extreme Order Flow was mitigated and Extreme Order Block fails, without price producing a CHoCH. It is not required to disappear merely because its parent Eligible Order Flow has been mitigated. Its validity must be evaluated according to the OB validation rules rather than by inheritance from the current OF state.
+An `ORIGIN_ORDER_BLOCK` is the furthest unmitigated, validated Order Block at the origin of the active dealing range. Its existence and validity are independent of whether its parent `ELIGIBLE_ORDER_FLOW` is mitigated.
+
+It remains a latent reserve rather than a third active Rule-of-Two POI. When the canonical execution fallback reaches the origin reserve after the applicable `EXTREME_ORDER_BLOCK` execution failure, an unmitigated valid `ORIGIN_ORDER_BLOCK` may become the next applicable execution location.
+
+The execution failure of an `EXTREME_ORDER_BLOCK` is distinct from canonical `POI_FAILURE`: `POI_FAILURE` is a CHoCH-based execution lifecycle state defined separately below. Extreme Order Block execution failure must not manufacture CHoCH or any structural state.
 
 ## 37.5 Order Flow Identification and Selection
 
@@ -429,25 +433,17 @@ OB_bottom = min(Open_base, Close_base)
 
 This refinement does not create a sweep, IDM, BOS, CHoCH, or any other structural event.
 
-#### Inside-Bar base
+#### Inside-Bar candidate handling
 
-If the base candle is a strict inside bar, the **Mother Bar** performs the liquidity sweep. The inside bar does not independently sweep liquidity or create a structural extreme. The canonical refined geometry is:
+A strict **Inside Bar is not selected as a special Order Block base/refinement**.
 
-Bullish / Demand:
+When the OB selection process reaches an inside-bar candle:
+- do not promote the inside-bar candle to an `ORDER_BLOCK_CANDIDATE` solely on the basis of the mother-candle relationship;
+- do not transfer the mother's sweep into a special inside-bar OB geometry;
+- advance to the next eligible candle in the relevant source-defined sequence and evaluate the OB validation pillars again;
+- the ultimately selected candle must independently satisfy the canonical three-pillar validation, including its own required FVG/imbalance association.
 
-```text
-OB_bottom = Low_(t-1)   # Mother Bar Low
-OB_top    = Low_t       # Inside Bar Low
-```
-
-Bearish / Supply:
-
-```text
-OB_top    = High_(t-1)  # Mother Bar High
-OB_bottom = High_t      # Inside Bar High
-```
-
-No alternative geometry such as an unspecified “sweeping wick range” is permitted. The inside-bar refinement is an execution-coordinate refinement only.
+The Mother Bar remains the governing reference for Layer-1/Layer-2 candle-level pullback semantics. That mother-candle rule does not create an Order Block or alter Layer-6 OB validation.
 
 ## 38.4. Dealing-Range POI Expiration
 
