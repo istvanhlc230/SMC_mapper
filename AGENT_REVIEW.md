@@ -4113,3 +4113,17 @@ The project-level developer-agent prompt contract was refined after the Phase-52
 Audit status: PASS — the final developer-agent prompt contract minimizes redundant context while preserving implementation precision.
 
 No production Python implementation was modified. No Python test result is claimed from this documentation-only change.
+
+# PHASE 54 — REQUIRED PRE-IMPLEMENTATION SCRIPT DESIGN CONTRACT — 2026-10-03
+
+Added a project-level mandatory design gate for every new script and every substantial script modification.
+
+The developer agent must now design behavior before implementation, including responsibility/ownership, inputs/outputs, execution flow, state transitions, appropriate UML-style modeling, domain variables/interfaces/classes/functions, and concise documentation of each defined element.
+
+UML is required when it materially improves verification and the appropriate diagram type must match the problem (sequence, state, class/data model, or activity/flow). A concise textual design is allowed when a diagram would add no value.
+
+The design must remain synchronized with material implementation changes and is explicitly treated as an implementation-verification aid rather than decorative documentation.
+
+Audit status: PASS — the pre-implementation design, naming, portability, and documentation expectations are now explicit in the project-level developer contract.
+
+No production Python implementation was modified. No Python test result is claimed from this documentation-only phase.

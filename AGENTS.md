@@ -26,6 +26,28 @@ This repository is operated under the reusable `ai-dev-AG` Antigravity plugin.
 - Runtime communication between agents uses Antigravity-native agent collaboration mechanisms (`invoke_subagent`, `send_message`). Do not use Git commits, branches, PR comments, repository files, polling, or GitHub Actions as an inter-agent message bus.
 - Git/GitHub is source control and delivery infrastructure only.
 
+
+## Required script design before implementation
+
+For every new script and every substantial modification to an existing script, the developer agent must design the script's operation before writing the implementation.
+
+The design step must, at minimum:
+
+1. identify the script's responsibility, inputs, outputs, side effects, dependencies, and ownership boundaries;
+2. describe the main execution flow and important state transitions;
+3. create a compact UML-style design when it materially improves clarity. Use the appropriate diagram for the problem, such as:
+   - sequence diagram for process/API interaction;
+   - state diagram for lifecycle/state-machine behavior;
+   - class/data model diagram for domain structures;
+   - activity/flow diagram for algorithmic control flow.
+   A concise textual design is acceptable when a diagram would add no useful information, but the design must still be explicit and reviewable;
+4. define the domain variables, interfaces, classes/types, and functions that the implementation will use;
+5. document each defined variable, interface, class/type, and function briefly in clear language, including its responsibility and important inputs/outputs;
+6. verify naming, ownership, portability, and dependency direction against the owning specification before implementation starts;
+7. keep the design synchronized with the implementation. When implementation changes materially, update the affected design documentation rather than allowing the documented design to become stale.
+
+The design artifacts must be concise and implementation-oriented. Do not create diagrams or documentation merely for appearance; every artifact must help verify behavior, data ownership, interfaces, or state transitions before code is written.
+
 ## Required implementation loop
 
 ```text
