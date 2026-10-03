@@ -7,7 +7,7 @@
 - Maintain a single global calendar.json with tracking for coverage intervals.
 - Provide time-based local queries for FX symbols.
 - Provide explicit deterministic deletion with interval coverage update.
-- Ensure atomic, locked persistence of calendar.json using an OS-level lock on a temporary .lock file.
+- Ensure atomic, locked persistence of calendar.json using stable, persistent OS-level locking (directory lock on POSIX, Named Mutex on Windows).
 - Fail cleanly on acquisition failures, leaving the last-known-good file intact.
 - Correctly compute uncovered subintervals to minimize network requests.
 
@@ -19,155 +19,47 @@
 - Monitor execution policy does not belong in this module.
 
 ## 2. Boundaries and Dependencies
+- **Module Architecture:** To prevent stdlib collisions (import calendar), the CLI layer calendar.py acts as a thin wrapper mapping into the core engine located in calendar_layer.py.
 - **Inputs:** CLI arguments, ForexFactory HTML response, existing calendar.json.
 - **Outputs:** Console output (JSON format for local queries), updated calendar.json.
-- **Side effects:** Atomic update of calendar.json, locking mechanism via OS-level file lock (using cntl on POSIX and msvcrt.locking on Windows over a .lock file).
-- **Dependencies:** Standard library (json, datetime, urllib.request, rgparse, 	empfile, os, 
-e, sys).
-- **Dependency Direction:** Downstream dependencies only.
+- **Side effects:** Atomic update of calendar.json.
+- **Concurrency:** Indefinite waiting. POSIX utilizes fcntl.flock(LOCK_EX) on the parent directory inode. Windows utilizes CreateMutexW(WaitForSingleObject) for a non-file-backed stable identity SMC_Calendar_Lock. Both are intrinsically race-safe against the os.replace operation of calendar.json.
+- **Dependencies:** Standard library (json, datetime, urllib.request, argparse, tempfile, os, re, sys, ctypes, fcntl).
 
 ## 3. Main Execution Flows
 
 ### Acquisition Flow
-`mermaid
-sequenceDiagram
-    participant CLI
-    participant Lock
-    participant FF as ForexFactory
-    participant FS as FileSystem
-    
-    CLI->>Lock: Acquire exclusive OS lock (calendar.json.lock)
-    Lock-->>CLI: Lock acquired
-    CLI->>FS: Read existing calendar.json
-    CLI->>CLI: Re-check if requested interval is covered
-    alt Fully Covered
-        CLI->>CLI: No provider request
-    else Needs Data
-        CLI->>CLI: Compute uncovered subintervals
-        CLI->>FF: Request exact uncovered intervals via range
-        FF-->>CLI: HTML payload
-        CLI->>CLI: Parse, validate & normalize
-        CLI->>CLI: Merge events and coverage
-        CLI->>CLI: Validate complete document
-        CLI->>FS: Atomic write to temporary file & replace calendar.json
-    end
-    CLI->>Lock: Release lock
-    CLI->>CLI: Output JSON result
-`
+- **Pre-lock Evaluation:** Checks local file explicitly before blocking on locks.
+- **Lock Acquisition:** Indefinitely waits for exclusive mutex/directory lock.
+- **Post-lock Re-evaluation:** Re-reads calendar.json post-acquisition to verify if a preceding process fetched the required coverage gap.
+- **Acquisition Request:** Computes exact range queries aligned strictly to 00:00:00Z full-day boundaries to satisfy sub-interval gaps. Fully missing canonical queries (--week this) directly invoke the provider semantics.
+- **Provider Derivation:** Calculates the precise interval acquired by scraping the provider days length and aligns the fetched bounds appropriately. Validates payload to ensure incomplete queries reject atomic saves.
+- **Commit:** Merges normalized unique events and unions coverage. Triggers strict validate_calendar_document before os.replace.
 
 ### Local Query Flow
-`mermaid
-flowchart TD
-    Start[CLI Local Query] --> FS[Read calendar.json]
-    FS --> FilterSym[Filter by Symbol Relevance]
-    FilterSym --> TimeBound[Extract Current/Next/Nearest]
-    TimeBound --> Output[Format and Print JSON to stdout]
-`
+- Reads calendar.json -> Normalizes symbol -> Extracts exact ISO 4217 FX pairs -> Discards unrelated records -> Limits chronologically via --current, --next, or nearest timestamp logic -> Dumps string array.
 
 ### Delete Flow
-`mermaid
-flowchart TD
-    Start[CLI Delete] --> ValidateArgs[Enforce Strict Boundary Arguments]
-    ValidateArgs --> Lock[Acquire Lock & Read]
-    Lock --> DelEvents[Filter out events outside bounds]
-    DelEvents --> DelCov[Compute clipped coverage intervals]
-    DelCov --> DryRun{Is Dry Run?}
-    DryRun -- Yes --> Output[Print Stats/Metadata to stderr & Exit]
-    DryRun -- No --> ValidateDoc[Validate Document Integrity]
-    ValidateDoc --> Write[Atomic Save & Release Lock]
-`
+- Enforces strict mutual exclusion rules across delete bounding flags.
+- Re-reads post-lock.
+- Subtracts bounded events entirely.
+- Subtracts/clips intervals inside coverage (generating sub-ranges on partial intersections).
+- Validates data integrity of remaining sets before saving.
+- --dry-run performs interval math, suppresses file I/O, outputs metrics to stderr.
 
 ## 4. Domain Data Structures
 
-`mermaid
-classDiagram
-    class CalendarDocument {
-        +int schema_version
-        +string source
-        +List~Coverage~ coverage
-        +List~Event~ events
-    }
-    
-    class Coverage {
-        +string start
-        +string end
-        +dict requested
-        +string fetched_at
-    }
-    
-    class Event {
-        +string event_id
-        +string datetime
-        +string currency
-        +string impact
-        +string event
-        +string actual
-        +string forecast
-        +string previous
-        +string source
-    }
-    
-    CalendarDocument "1" *-- "many" Coverage
-    CalendarDocument "1" *-- "many" Event
-`
+- CalendarDocument: Root dict schema containing schema_version, source, coverage, events.
+- Coverage: Dict detailing start, end, fetched_at, and the requested criteria defining it.
+- Event: Normalized explicit dict detailing event_id, canonical UTC datetime, mapped FX currency, normalized impact, structural event labels, and mutable actual/forecast parameters.
 
 ## 5. Required Functions
 
-**CLI & Parsing:**
-- uild_argument_parser(): Defines args.
-- parse_calendar_request(): Resolves arguments, strict mutual exclusion, invalid combinations.
-- 
-ormalize_symbol(): Formatting.
-- parse_date(), parse_time(), parse_date_range(): Timestamp conversions, rigid formats.
-
-**Provider/Network:**
-- 
-esolve_provider_period(): Maps CLI intervals to provider URL params. Rejects invalid months explicitly.
-- etch_calendar_source(): HTTP GET.
-- extract_days_payload(): Regex extraction of days json payload.
-- parse_calendar_days(): Safely converts string to dict structure.
-
-**Normalization:**
-- 
-ormalize_provider_event(): Applies UTC normalization and structure.
-- 
-ormalize_calendar_events(): Normalizes a list of provider events.
-
-**Persistence:**
-- uild_empty_calendar_document(): Empty state structure.
-- alidate_calendar_document(): Complete structural and semantic integrity verification.
-- load_calendar_document(): File IO and triggering validation. Missing returns empty, corrupt fails.
-- save_calendar_atomic(): Writes via tmp file and replaces target.
-- cquire_calendar_lock(): Safe ephemeral .lock generation preventing race conditions.
-
-**Coverage & Merge:**
-- 
-esolve_coverage(): Consolidates/merges overlapping coverage ranges.
-- ind_uncovered_intervals(): Exact calculation of missing sub-intervals based on existing coverage bounds.
-- merge_coverage(): Aggregation.
-- deduplicate_calendar_events(): Deduplicates events based on event_id, updating mutable properties, and enforcing strict identity/time consistency.
-- merge_calendar_events(): Concatenates and deduplicates.
-
-**Queries & Filters:**
-- extract_symbol_currencies(): Exact 2-currency resolution.
-- ilter_events_for_symbol(): Relevance filtering.
-- query_symbol_events(): Aggregation of relevant events.
-- query_current_events(), query_next_events(), query_nearest_events(): Time boundaries.
-
-**Deletion:**
-- select_delete_interval(): Parses delete filters into limits.
-- get_deleted_ranges(): Turns complex ranges/times into specific boundaries.
-- delete_events(): Trims event list.
-- delete_coverage(): Intelligently clips/splits coverage lists.
-- dry_run_delete(): Evaluates impact and prints info without disk modification.
-
-**Orchestration:**
-- 
-un_acquisition(): Locking, uncovered search, fetching, merging, atomic save.
-- 
-un_query(): API extraction.
-- 
-un_delete(): Lock, delete logic, validation, atomic save.
-- 
-un(): Entry point.
-- main(): Script init.
+**CLI & Parsing:** build_argument_parser(), parse_calendar_request(), normalize_symbol(), parse_date(), parse_time(), parse_date_range()
+**Provider/Network:** resolve_provider_period(), fetch_calendar_source(), extract_days_payload(), parse_calendar_days()
+**Normalization:** normalize_provider_event(), normalize_calendar_events()
+**Persistence:** build_empty_calendar_document(), validate_calendar_document(), load_calendar_document(), save_calendar_atomic(), acquire_calendar_lock()
+**Coverage & Merge:** resolve_coverage(), find_uncovered_intervals(), merge_coverage(), deduplicate_calendar_events(), merge_calendar_events(), get_interval_for_period()
+**Queries & Filters:** extract_symbol_currencies(), filter_events_for_symbol(), query_symbol_events(), query_current_events(), query_next_events(), query_nearest_events(), output_query_result()
+**Deletion:** select_delete_interval(), get_deleted_ranges(), delete_events(), delete_coverage(), dry_run_delete()
+**Orchestration:** run_acquisition(), run_query(), run_delete(), run(), main()
