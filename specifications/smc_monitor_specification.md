@@ -776,9 +776,16 @@ single chronological Mapper update
 
 ---
 
-## 6.6 Economic News warning context
+## 6.6 Economic News warning and runtime event-status context
 
-News warning evaluation is per monitored analysis and per eligible event.
+News handling has two separate Monitor concerns:
+
+1. **NEWS_WARNING** — pre-event warning eligibility;
+2. **News event status display** — runtime observation of whether the event has started, is ongoing, or has ended.
+
+These are not the same state machine.
+
+### Dynamic pre-event warning
 
 For each candidate event:
 
@@ -797,37 +804,66 @@ Eligibility is strictly pre-event:
 0 < (event_time_utc - current_utc) <= warning_window
 ```
 
-There is no Calendar-defined "active" or "post-event" lifecycle. Calendar supplies timestamped facts; the Monitor decides whether the current/next event falls inside the dynamic warning window.
+The warning window is transient and is calculated independently per analysis/event.
 
-Required model:
+### Runtime event status
+
+The Monitor separately observes the event timestamp.
+
+For the Monitor runtime observation window:
+
+```text
+event_end_time = event_time + duration(analysis.entry_timeframe)
+
+UPCOMING: now < event_time
+ONGOING:  event_time <= now < event_end_time
+ENDED:    now >= event_end_time
+```
+
+The runtime observation window is a Monitor display convention, not a claim about the real-world duration of an economic release.
+
+On the first transition into `ONGOING`, write a human-readable `NEWS_EVENT_STARTED` terminal notification.
+
+When the status transitions from `ONGOING` to `ENDED`, write a human-readable `NEWS_EVENT_ENDED` terminal notification.
+
+When a News-related alert is emitted while the event is `ONGOING`, the alert payload must include:
+
+```text
+event_status = ONGOING
+```
+
+Event-status output is informational only and must never alter setup, target, RR, checkpoint, canonical SMC state, or Calendar persistence.
+
+Status-transition deduplication is transient and keyed by:
+
+```text
+symbol + analysis_key + event_id + status_transition
+```
+
+A Monitor restart resets transient display memory.
+
+### Required model
 
 ```python
 @dataclass(frozen=True)
-class NewsWarningDecision:
-    alert_type: str
-    eligible: bool
-    warning_phase: str
-    event_id: str | None
+class NewsEventStatus:
+    event_id: str
     symbol: str
     analysis_key: str
-    event_time: datetime | None
-    warning_window: timedelta | None
-    minutes_to_event: Decimal | None
-    reason: str
+    event_time: datetime
+    event_end_time: datetime
+    status: str
 ```
 
-`warning_phase` is `PRE_EVENT` for an eligible warning and `NO_WARNING` otherwise.
+Allowed status values:
 
-Rules:
+```text
+UPCOMING
+ONGOING
+ENDED
+```
 
-- evaluate each eligible event independently;
-- apply explicit Monitor impact policy before dynamic window calculation when configured;
-- use canonical UTC for event time and current time;
-- do not infer event duration, intrabar timing, or trade impact;
-- do not alter canonical setup/target/RR state;
-- do not mutate canonical JSON.
-
-The dynamic warning window is transient and is never persisted as canonical state.
+Calendar remains the timestamped fact provider. It does not own event lifecycle semantics.
 # 7. CURRENT MARKET REFERENCE
 
 ## 7.1 Source
@@ -1242,7 +1278,7 @@ Rules:
 - never apply target clearance or `--rr`;
 - never mutate canonical state.
 
-## 12.5 News warning evaluation
+## 12.5 News warning and event-status evaluation
 
 ```python
 def calculate_news_warning_window(
@@ -1274,11 +1310,10 @@ Rules:
 
 - evaluate every candidate event independently;
 - calculate the warning window from the analysis entry timeframe and event impact;
-- an event is eligible only when `0 < event_time - now <= warning_window`;
+- an event is warning-eligible only when `0 < event_time - now <= warning_window`;
 - return one decision per eligible event;
 - return decisions deterministically sorted by `event_time`, then `event_id`;
-- use `PRE_EVENT` only; there is no Calendar-defined EVENT_ACTIVE or POST_EVENT state;
-- do not infer intrabar event timing, event duration, or trade impact;
+- use `PRE_EVENT` only for NEWS_WARNING;
 - do not alter setup/target/RR evaluation;
 - do not mutate canonical JSON.
 
@@ -1291,7 +1326,47 @@ NEWS_WARNING
 + event_id
 ```
 
-Each successful notification records its transient identity in `emitted_alert_keys`. A failed notification remains retryable.
+Each successful warning notification records its transient identity in `emitted_alert_keys`. A failed notification remains retryable.
+
+### Event status
+
+```python
+def evaluate_news_event_status(
+    analysis: StoredAnalysisView,
+    event: dict[str, Any],
+    now: datetime,
+) -> NewsEventStatus:
+    ...
+```
+
+The runtime observation window is:
+
+```text
+event_end_time = event_time + duration(analysis.entry_timeframe)
+```
+
+Status:
+
+```text
+UPCOMING: now < event_time
+ONGOING:  event_time <= now < event_end_time
+ENDED:    now >= event_end_time
+```
+
+Output transitions:
+
+- first transition into `ONGOING` -> `NEWS_EVENT_STARTED`;
+- transition from `ONGOING` to `ENDED` -> `NEWS_EVENT_ENDED`.
+
+A News-related alert emitted during `ONGOING` must expose `event_status = ONGOING`.
+
+Event-status transition identity:
+
+```text
+symbol + analysis_key + event_id + status_transition
+```
+
+Event-status memory is transient only. It is not written to `calendar.json` or canonical Structures JSON.
 ## 12.6 Re-evaluation
 
 The Monitor may re-evaluate downstream eligibility when current price or another downstream input changes.
@@ -1494,6 +1569,7 @@ calculate_projected_rr
 plan_news_acquisition
 calculate_news_warning_window
 evaluate_news_warnings
+evaluate_news_event_status
 build_news_warning_key
 build_alert_key
 evaluate_alert_eligibility
@@ -1753,6 +1829,7 @@ missing calendar data does not block canonical processing
 UTC event timing
 impact policy
 per-analysis/per-event warning evaluation
+NEWS_EVENT_STARTED / ONGOING / NEWS_EVENT_ENDED transitions
 warning deduplication
 no canonical-state mutation
 ```
@@ -1858,6 +1935,10 @@ test_news_warning_dynamic_window_boundary
 test_news_warning_impact_timeframe_scaling
 test_news_warning_identity_is_deterministic_per_analysis
 test_news_warning_failed_notification_is_retryable
+test_news_event_started_output
+test_news_event_ongoing_status
+test_news_event_ended_output
+test_news_event_status_is_transient
 test_news_warning_does_not_mutate_canonical_state
 ~~~
 
