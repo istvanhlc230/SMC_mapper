@@ -1257,7 +1257,7 @@ CLI option:
 
 When enabled, each emitted alert is written as exactly one complete JSON object to stdout.
 
-The JSON object is the machine-readable alert contract. Human-readable alert text is not mixed into stdout when `--alert-json` is enabled.
+The JSON object is the machine-readable alert contract and contains `schema_version = 1` for V1. Human-readable alert text is not mixed into stdout when `--alert-json` is enabled.
 
 Diagnostics, debug output, warnings, and errors remain on stderr.
 
@@ -1745,7 +1745,6 @@ build_alert_output(decision)
 is_target_reached(target_price, current_price, direction)
 evaluate_target_reached(target, current_market_view)
 evaluate_alert_eligibility(analysis, target, current_market_view, min_rr)
-build_alert_output(decision)
 emit_alert(decision, alert_json)
 
 run_monitor_cycle(request, registry, now)
@@ -1824,7 +1823,7 @@ normalize_symbol
 parse_decimal
 ~~~
 
-Verify help, multiple symbols, RR validation, and debug behavior.
+Verify help, multiple symbols, RR validation, --alert-json output selection, and debug behavior.
 
 ## Phase 3 — persisted readers
 
@@ -1966,6 +1965,7 @@ test_monitor_uses_global_calendar_data
 test_monitor_rr_optional
 test_monitor_rejects_invalid_rr
 test_monitor_debug_is_terminal_only
+test_monitor_alert_json_flag_is_parsed
 test_monitor_accepts_timezone
 test_monitor_rejects_invalid_timezone
 test_local_time_conversion_is_dst_aware
@@ -2158,6 +2158,10 @@ for each due symbol
     evaluate News event status transitions
     ↓
     evaluate NEWS_WARNING
+    ↓
+    build alert output
+    ↓
+    emit human-readable or --alert-json representation
     ↓
     consume canonical setup/entry state
     ↓
