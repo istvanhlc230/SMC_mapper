@@ -197,3 +197,14 @@ Required local validation:
     python calendar.py USDHUF
 
 The owning Calendar specification and design were synchronized with the implementation in this iteration.
+
+
+## Yahoo Finance Forex Universe — 2026-10-04
+
+The Calendar specification was updated with the current Yahoo Finance Forex reference universe observed from Yahoo's regional Currencies pages.
+
+The reference includes direct six-letter Yahoo quote symbols and USD-base currency-code quote symbols such as `JPY=X`, `CHF=X`, and `CAD=X`. The application keeps a canonical six-letter FX pair separate from the provider symbol and resolves the provider representation explicitly.
+
+This is a provider reference snapshot, not a permanent closed whitelist. Yahoo's regional pages can expose additional instruments or alternate quote representations. Unknown instruments must fail explicitly.
+
+Yahoo Forex news remains complementary news data (`event_type=news`); ForexFactory remains the primary economic-calendar source.

@@ -102,6 +102,104 @@ ForexFactory-specific date spelling and URL parameters remain internal provider 
 
 The current provider parser uses ForexFactory's structured embedded `days` JSON payload as the canonical acquisition source. The `days` array boundary is determined by JSON decoding rather than a regex-selected closing bracket, so nested JSON values cannot truncate the provider payload. Each event record provides the provider event ID (`id`), canonical currency (`currency`), event title (`name`), numeric UTC epoch (`dateline`), impact (`impactName`, with `impactClass` as fallback), and source values (`actual`, `forecast`, `previous`). The provider's `country` field is not a canonical currency source and must never be used in place of `currency`. Provider-wide events may use `currency = ALL`. The HTML row parser remains available only as a compatibility parser and is not used for canonical persistence. Because the structured event `dateline` is already an epoch timestamp, no regional timezone conversion is required for canonical event timestamps.
 
+
+## 1.2.1 Yahoo Finance Forex universe
+
+Yahoo Finance is a complementary provider for Forex-pair news and, where the provider exposes the instrument, Forex quote metadata. ForexFactory remains the primary provider for economic-calendar events.
+
+The application's canonical Forex symbol is the six-letter currency pair, for example `EURUSD`. Yahoo's provider symbol is normalized separately and MUST NOT become the application's canonical symbol.
+
+The current Yahoo Finance Currencies pages expose the following reference instruments observed during this specification update. This is a provider reference snapshot, not a claim that Yahoo's public universe is immutable.
+
+### Direct six-letter Yahoo quote symbols
+
+```text
+EURUSD=X
+GBPUSD=X
+AUDUSD=X
+NZDUSD=X
+EURJPY=X
+GBPJPY=X
+EURGBP=X
+EURCAD=X
+EURSEK=X
+EURCHF=X
+EURHUF=X
+AUDGBP=X
+AUDJPY=X
+AUDNZD=X
+USDCNY=X
+USDHKD=X
+USDSGD=X
+USDINR=X
+USDMXN=X
+USDPHP=X
+USDIDR=X
+USDTHB=X
+USDMYR=X
+USDZAR=X
+USDRUB=X
+GBPAUD=X
+GBPBRL=X
+GBPCAD=X
+GBPCHF=X
+GBPCNY=X
+GBPINR=X
+GBPNOK=X
+GBPQAR=X
+GBPZAR=X
+```
+
+### Yahoo currency-code quote symbols
+
+Yahoo also exposes some USD-base pairs through the quote symbol of the non-USD currency:
+
+| Yahoo symbol | Canonical pair |
+|---|---|
+| `JPY=X` | `USDJPY` |
+| `CHF=X` | `USDCHF` |
+| `CAD=X` | `USDCAD` |
+| `CNY=X` | `USDCNY` |
+| `HKD=X` | `USDHKD` |
+| `SGD=X` | `USDSGD` |
+| `INR=X` | `USDINR` |
+| `MXN=X` | `USDMXN` |
+| `PHP=X` | `USDPHP` |
+| `IDR=X` | `USDIDR` |
+| `THB=X` | `USDTHB` |
+| `MYR=X` | `USDMYR` |
+| `ZAR=X` | `USDZAR` |
+| `RUB=X` | `USDRUB` |
+
+Yahoo regional Currencies pages can expose additional direct pair symbols or different quote representations for the same economic pair. Therefore this reference list MUST NOT be implemented as a permanently closed whitelist.
+
+### Canonical resolution rule
+
+The provider resolver MUST:
+
+1. accept the application's canonical six-letter pair;
+2. resolve it to the Yahoo quote symbol actually exposed for that pair;
+3. preserve the application's canonical symbol;
+4. distinguish a standalone currency code such as `HUF` from an FX pair such as `EURHUF`;
+5. reject an unknown instrument explicitly instead of treating every six-character token as Forex;
+6. support both direct Yahoo pair symbols such as `EURHUF=X` and Yahoo USD-base currency-code symbols such as `JPY=X`.
+
+Examples:
+
+```text
+EURUSD -> EURUSD=X
+EURHUF -> EURHUF=X
+USDJPY -> JPY=X
+USDCHF -> CHF=X
+USDCAD -> CAD=X
+USDCNY -> CNY=X
+USDHKD -> HKD=X
+```
+
+Yahoo Forex news, when available for a recognized pair, is normalized as `event_type = "news"`; it MUST NOT be classified as an economic-calendar event.
+
+The Yahoo universe is provider-resolved and may change over time. The implementation must therefore keep provider resolution separate from the canonical symbol contract.
+
 ## 1.3 Request policy
 
 Use a bounded request timeout and the approved baseline browser headers.
