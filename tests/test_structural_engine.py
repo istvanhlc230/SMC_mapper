@@ -464,7 +464,7 @@ def test_bootstrap_retracement_uses_existing_layer3_qualification_rules():
         c("sweep", "8", "9", "3", "8"),
         c("confirm", "8", "11", "8", "10"),
         c("idm_takeout", "10", "10.5", "2", "9"),
-        c("a", "9", "9.5", "9", "9.2"),
+        c("a", "9.5", "9.5", "9", "9.2"),
         c("b", "9.2", "9.5", "8", "8.8"),
         c("c", "8.8", "9", "7", "8.0"),
     )
