@@ -7,6 +7,7 @@ import sys
 import tempfile
 import urllib.request
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from typing import Any, Dict, List, Optional, Tuple
 
 DATA_ROOT = os.environ.get("SMC_DATA_ROOT", ".")
