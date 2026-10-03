@@ -46,7 +46,13 @@ smc_mapper.py
 specifications/smc_mapper_specification.md
 ~~~
 
-Monitor scheduling, process orchestration, current-price observation, target evaluation, RR policy, alerting, and transient runtime state:
+Economic calendar acquisition, normalization, shared cache, and symbol News JSON persistence:
+~~~text
+calendar.py
+specifications/calendar_specification.md
+~~~
+
+Monitor scheduling, process orchestration, current-price observation, session context, News warning evaluation, target evaluation, RR policy, alerting, and transient runtime state:
 ~~~text
 smc_monitor.py
 specifications/smc_monitor_specification.md
@@ -64,6 +70,12 @@ market_data.py
 smc_mapper.py
         ↓
 <DATA_ROOT>/<SYMBOL>/<SYMBOL>_structures.json
+
+calendar.py
+        ↓
+<DATA_ROOT>/news_calendar.json
+        ↓
+<DATA_ROOT>/<SYMBOL>/<SYMBOL>_news.json
         ↓
 smc_monitor.py
 ~~~
@@ -130,6 +142,13 @@ Each symbol uses one dedicated data directory for Market Data and Structures:
 <DATA_ROOT>/<SYMBOL>/
     <SYMBOL>_marketdata.json
     <SYMBOL>_structures.json
+    <SYMBOL>_news.json
+~~~
+
+The shared Calendar cache is:
+
+~~~text
+<DATA_ROOT>/news_calendar.json
 ~~~
 
 The Monitor automatically resolves the symbol directory from the common data root. It does not expose per-file path CLI options.
@@ -347,6 +366,10 @@ refresh current market reference
         ↓
 evaluate session context
         ↓
+refresh/reload symbol News view through calendar.py
+        ↓
+evaluate News warning
+        ↓
 evaluate targets / RR / alerts
         ↓
 schedule next cycle
@@ -423,6 +446,28 @@ The Monitor must not invoke the Mapper once per missed candle unless an explicit
 
 ---
 
+## 4.6 Calendar / News planning
+
+News acquisition is independent of canonical mapper processing.
+
+For each monitored symbol, request only the warning-horizon interval when the Monitor has a bounded warning policy:
+
+~~~text
+[now - NEWS_WARNING_AFTER_MINUTES,
+ now + NEWS_WARNING_BEFORE_MINUTES]
+~~~
+
+Rules:
+
+- no ForexFactory access from Monitor code;
+- no HTML or provider-response parsing in Monitor;
+- Calendar process failure does not block Market Data/Mapper processing;
+- valid empty News JSON is distinct from unavailable News JSON;
+- News warning evaluation occurs only after the symbol News JSON has been reloaded and validated;
+- News context cannot advance or alter the Mapper checkpoint.
+
+---
+
 # 5. PROCESS INVOCATION CONTRACT
 
 ## 5.1 invoke_market_data
@@ -450,6 +495,36 @@ When debug is enabled, the Monitor may propagate --debug to market_data.py so pr
 The Monitor must never parse stdout as candle data.
 
 A non-zero exit status blocks dependent mapper execution for the affected data path.
+
+## 5.2 invoke_calendar
+
+Signature:
+
+~~~python
+def invoke_calendar(
+    symbol: str,
+    start_time: datetime | None = None,
+    end_time: datetime | None = None,
+    debug: bool = False,
+) -> ProcessResult:
+    ...
+~~~
+
+Launch:
+
+~~~text
+python calendar.py --query SYMBOL [--starttime ... --endtime ...] [--debug]
+~~~
+
+Rules:
+
+- pass both time boundaries for a bounded warning query;
+- the Monitor does not call ForexFactory directly;
+- stdout/stderr remain diagnostics only;
+- a non-zero exit marks the News path unavailable for that cycle;
+- after success, reload and validate the symbol News JSON.
+
+---
 
 ## 5.3 invoke_mapper
 
@@ -641,6 +716,71 @@ Market Data range catch-up
         ↓
 single chronological Mapper update
 ~~~
+
+---
+
+## 6.6 Economic News warning context
+
+Use:
+
+~~~text
+<DATA_ROOT>/<SYMBOL>/<SYMBOL>_news.json
+~~~
+
+The Monitor owns warning evaluation; Calendar owns acquisition, normalization and persistence.
+
+Conceptual model:
+
+~~~python
+@dataclass(frozen=True)
+class NewsWarningDecision:
+    alert_type: str
+    eligible: bool
+    warning_phase: str
+    event_id: str | None
+    symbol: str
+    event_time: datetime | None
+    reason: str
+~~~
+
+Dynamic evaluation uses canonical UTC:
+
+~~~text
+event_time - now
+~~~
+
+Phases:
+
+~~~text
+NO_WARNING
+PRE_EVENT
+EVENT_ACTIVE
+POST_EVENT
+~~~
+
+Monitor-owned policy constants:
+
+~~~text
+NEWS_WARNING_MIN_IMPACT
+NEWS_WARNING_BEFORE_MINUTES
+NEWS_WARNING_AFTER_MINUTES
+~~~
+
+A warning is eligible only when the event is relevant, its impact meets the minimum policy, and the current UTC time is inside the configured pre/post window.
+
+Missing or invalid News data becomes:
+
+~~~text
+NEWS_UNAVAILABLE
+~~~
+
+Valid News data with no currently eligible event becomes:
+
+~~~text
+NO_RELEVANT_EVENT
+~~~
+
+Neither state changes canonical processing.
 
 ---
 
@@ -1015,6 +1155,7 @@ Alert types are explicitly separated:
 ~~~text
 SETUP_ELIGIBLE
 TARGET_REACHED
+NEWS_WARNING
 ~~~
 
 `SETUP_ELIGIBLE` is the existing entry/setup notification path and uses target clearance plus optional RR.
@@ -1057,7 +1198,38 @@ Rules:
 - never apply target clearance or `--rr`;
 - never mutate canonical state.
 
-## 12.5 Re-evaluation
+## 12.5 News warning evaluation
+
+~~~python
+def evaluate_news_warning(
+    symbol: str,
+    news_events: list[dict[str, Any]],
+    now: datetime,
+) -> NewsWarningDecision:
+    ...
+~~~
+
+Rules:
+
+- compare event_time against canonical UTC now;
+- ignore events below NEWS_WARNING_MIN_IMPACT;
+- evaluate the configured pre/post windows;
+- do not infer intrabar event timing;
+- do not alter setup/target evaluation;
+- do not mutate canonical JSON.
+
+NEWS_WARNING identity:
+
+~~~text
+NEWS_WARNING
++ symbol
++ event_id
++ warning_phase
+~~~
+
+The identity is recorded only after successful notification. A failed notification remains retryable.
+
+## 12.6 Re-evaluation
 
 The Monitor may re-evaluate downstream eligibility when current price or another downstream input changes.
 
@@ -1198,6 +1370,8 @@ target unresolved
 target not cleared
 RR unresolved
 RR policy rejected
+calendar/news acquisition error
+calendar/news JSON load/validation error
 notification error
 ~~~
 
@@ -1254,6 +1428,9 @@ build_market_data_update_plan
 get_due_analyses
 is_target_cleared
 calculate_projected_rr
+extract_news_events
+evaluate_news_warning
+build_news_warning_key
 build_alert_key
 evaluate_alert_eligibility
 ~~~
@@ -1263,7 +1440,9 @@ Side effects belong in:
 ~~~text
 load_structures
 load_market_data
+load_symbol_news
 invoke_market_data
+invoke_calendar
 invoke_mapper
 refresh_current_market_view
 emit_alert
@@ -1315,9 +1494,11 @@ parse_decimal(value)
 get_symbol_data_directory(symbol, data_directory)
 get_market_data_path(symbol, data_directory)
 get_structures_path(symbol, data_directory)
+get_news_path(symbol, data_directory)
 
 load_structures(path, symbol)
 load_market_data(path, symbol)
+load_symbol_news(path, symbol)
 
 discover_analysis_views(structures)
 validate_analysis_view(analysis)
@@ -1329,6 +1510,11 @@ invoke_market_data(plan, debug)
 invoke_mapper(analysis, end_time, debug)
 
 refresh_current_market_view(symbol, timeframe)
+
+load_symbol_news(path, symbol)
+invoke_calendar(symbol, start_time, end_time, debug)
+evaluate_news_warning(symbol, news_events, now)
+build_news_warning_key(symbol, event_id, warning_phase)
 
 resolve_target_plan(canonical_state)
 is_target_cleared(target_price, current_price, direction)
@@ -1480,7 +1666,20 @@ get_active_sessions
 
 Verify DST-aware session handling and non-interference with canonical state.
 
-## Phase 9 — alerting
+## Phase 9 — Calendar and News warning
+
+Implement:
+
+~~~text
+invoke_calendar
+load_symbol_news
+evaluate_news_warning
+build_news_warning_key
+~~~
+
+Verify cache-backed query orchestration, UTC event timing, impact filtering, warning windows, phase transitions, and non-interference with canonical state.
+
+## Phase 10 — alerting
 
 Implement:
 
@@ -1490,7 +1689,7 @@ evaluate_alert_eligibility
 emit_alert
 ~~~
 
-## Phase 10 — full runtime cycle
+## Phase 11 — full runtime cycle
 
 Implement:
 
@@ -1527,6 +1726,7 @@ Focused tests must cover at minimum.
 test_monitor_requires_symbol
 test_monitor_accepts_multiple_symbols
 test_monitor_resolves_symbol_output_directory
+test_monitor_resolves_symbol_news_path
 test_monitor_rr_optional
 test_monitor_rejects_invalid_rr
 test_monitor_debug_is_terminal_only
@@ -1563,6 +1763,26 @@ test_invoke_market_data_uses_json_not_stdout
 test_invoke_mapper_uses_persisted_structures_json
 test_failed_market_data_blocks_dependent_mapper
 test_failed_mapper_does_not_advance_monitor_checkpoint
+~~~
+
+### Calendar / News warning
+
+~~~
+test_calendar_cache_only_query_does_not_call_provider
+test_calendar_bounded_query_ensures_requested_coverage
+test_calendar_empty_interval_is_valid
+test_calendar_provider_failure_is_not_empty_success
+test_calendar_symbol_filters_currency_events
+test_calendar_reloads_symbol_news_after_success
+test_calendar_missing_news_does_not_block_canonical_alert
+test_news_warning_pre_event
+test_news_warning_event_active
+test_news_warning_post_event
+test_news_warning_outside_window
+test_news_warning_impact_policy
+test_news_warning_identity_is_deterministic
+test_news_warning_failed_notification_is_retryable
+test_news_warning_does_not_mutate_canonical_state
 ~~~
 
 ### Current market reference
@@ -1688,6 +1908,12 @@ for each due symbol
     ↓
     evaluate trading-session context
     ↓
+    invoke calendar.py --query SYMBOL
+    ↓
+    reload symbol News JSON
+    ↓
+    evaluate NEWS_WARNING
+    ↓
     consume canonical setup/entry state
     ↓
     resolve target
@@ -1716,13 +1942,17 @@ smc_monitor.py is implementation-complete when:
 
 - the documented CLI exactly matches implementation;
 - selected symbols and all stored analyses are discovered correctly;
-- each selected symbol automatically resolves one dedicated data directory containing its Market Data and Structures files;
+- each selected symbol automatically resolves one dedicated data directory containing Market Data, Structures and News JSON views;
 - Market Data and Mapper are invoked as independent processes;
 - persisted JSON is the machine-readable process boundary;
 - one active orchestration instance exists per symbol;
 - analyses remain independently scheduled and isolated;
 - mapper checkpoints are read-only from the Monitor;
 - current price is obtained through persisted Market Data current state;
+- Calendar is invoked only through its process boundary;
+- symbol News JSON is validated before warning evaluation;
+- NEWS_WARNING is separate from SETUP_ELIGIBLE and TARGET_REACHED;
+- missing News does not suppress canonical setup/target evaluation;
 - current snapshots never enter canonical Mapper processing;
 - canonical SMC state is consumed rather than reimplemented;
 - target resolution consumes only one unambiguous target candidate or fails closed when selection policy is absent;
