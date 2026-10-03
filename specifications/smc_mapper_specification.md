@@ -941,6 +941,7 @@ The bootstrap contract is:
 - chart inception uses the first effective completed candle as a deterministic **project initialization convention**, not as proof of the historical impulse origin;
 - after `CHoCH_CONFIRMED`, an explicit active-impulse origin candle is required; missing origin provenance fails closed;
 - `IDM_TAKEN` confirms `CONFIRMED_STRUCTURAL_SWING` before a transient `BOOTSTRAP_RANGE` can be formed;
+- the bootstrap range activation boundary is the swing **confirmation event/candle**, not the swing source candle;
 - `BOOTSTRAP_RANGE` is measurement-only and is not a governing Dealing Range, Protected Structural Extreme, Trading Range boundary, or CHoCH boundary;
 - bootstrap uses the existing Layer-3 50% / documented 38.2% qualification rules without introducing a new threshold or heuristic;
 - `dynamic_retracement_extreme` is the live corrective state and remains mutable until the physical structural break;

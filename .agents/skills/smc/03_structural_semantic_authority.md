@@ -147,6 +147,7 @@ The canonical process is:
 3. **Transient bootstrap measurement range**
    - Once the structural swing is confirmed, the runtime creates a transient `BOOTSTRAP_RANGE` between the bootstrap origin anchor and the confirmed structural swing price.
    - This range exists only to measure first-BOS retracement qualification.
+   - Its lower/upper structural endpoints are the bootstrap anchor and the confirmed swing price; its **activation provenance begins at the candle/event that confirms the structural swing**, not at the swing source candle.
    - It is **not** the governing Dealing Range, cannot be treated as an active Major / External range, cannot define CHoCH boundaries, and cannot be used as a historical Protected Structural Extreme.
    - The bootstrap range does not promote either endpoint into canonical structural protection.
 

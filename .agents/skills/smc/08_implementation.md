@@ -1116,6 +1116,8 @@ FIRST CONFIRMED DEALING RANGE
 
 `BOOTSTRAP_RANGE` is measurement-only. It introduces no new retracement threshold, candle-count rule, displacement rule, or heuristic.
 
+The bootstrap range's structural-swing endpoint provenance must use the **swing confirmation event/candle** as the range activation boundary. The swing's original `source_candle_id` identifies where the extreme originated; it must not be substituted for the later confirmation boundary when defining the retracement observation window.
+
 ### 49.4.2 `dynamic_retracement_extreme` implementation contract
 
 `dynamic_retracement_extreme` is the implementation-facing representation of the live corrective extreme.

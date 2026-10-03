@@ -3715,6 +3715,8 @@ The canonical implementation/observability contract explicitly excludes the brea
 
 This prevents same-candle intrabar ambiguity from contaminating the pre-break state.
 
+- Bootstrap range activation provenance is explicitly tied to the `CONFIRMED_STRUCTURAL_SWING` confirmation event/candle, not to the swing source candle.
+
 ### 7. Source-vs-project boundary
 
 The documentation explicitly separates:
