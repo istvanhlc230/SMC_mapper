@@ -790,6 +790,48 @@ When the current snapshot becomes the completed candle:
 - remove the matching current snapshot;
 - do not leave the same candle simultaneously as a completed candle and current snapshot.
 
+### Current-snapshot state transitions
+
+```text
+NO CURRENT
+   |
+   | fetch_current -> incomplete candle
+   v
+CURRENT(id=X)
+   |
+   | same id, newer provider data
+   v
+CURRENT(id=X) [replace snapshot]
+   |
+   | new id
+   v
+CURRENT(id=Y) [replace X]
+   |
+   | candle becomes complete
+   v
+COMPLETED(id=X) + CURRENT=null
+```
+
+Rules:
+
+- only one current snapshot exists per timeframe;
+- repeated live refresh replaces the previous snapshot rather than appending history;
+- a current snapshot may change OHLC/volume while its candle remains incomplete;
+- when the candle completes, the final completed record is merged into `candles[]` and the current snapshot is removed;
+- if completion occurs between fetch and persistence, the candle follows the completed path;
+- when a live refresh succeeds but the provider returns no current record, `current` is cleared to null so stale current price is not presented as live state;
+- when the provider operation fails, the whole symbol transaction fails and the previously persisted current snapshot remains untouched;
+- a current-only update is a valid Market Data state change but never a Mapper checkpoint change.
+
+Refresh decision table:
+
+| Refresh result | State action |
+|---|---|
+| current record + incomplete | replace current snapshot |
+| current record + completed | merge into completed series; set current null |
+| successful no-current result | set current null |
+| provider/API failure | fail transaction; preserve previous persisted state |
+
 ---
 
 # 8. NORMALIZATION LAYER
@@ -2104,6 +2146,32 @@ test_failed_timeframe_update_does_not_persist_partial_symbol_change
 test_historical_reacquisition_range_is_protected_from_immediate_eviction
 test_end_only_request_requires_existing_range
 test_empty_series_incremental_update_fetches_latest_completed
+test_completion_boundary_is_timezone_independent
+test_provider_completion_hint_cannot_override_canonical_boundary
+test_current_snapshot_replaces_same_candle_id
+test_new_current_candle_replaces_old_snapshot
+test_completed_current_candle_moves_to_completed_series
+test_current_snapshot_never_changes_available_bounds
+test_merge_preserves_existing_completed_candle
+test_conflicting_same_id_candle_fails
+test_retention_keeps_protected_range
+test_retention_does_not_count_current_snapshot
+test_load_market_data_rejects_malformed_document
+test_load_market_data_rejects_invalid_bounds
+test_save_failure_leaves_previous_json_intact
+test_provider_empty_result_is_not_provider_error
+test_provider_failure_is_not_empty_success
+test_incremental_range_starts_after_available_end
+test_explicit_end_boundary_is_completion_time_based
+test_fetch_completed_candles_filters_by_completion_time
+test_fetch_latest_completed_selects_max_completion_time
+test_fetch_current_ignores_completed_records
+test_successful_live_refresh_without_current_clears_stale_snapshot
+test_provider_failure_preserves_previous_persisted_state
+test_decimal_persistence_is_plain_string
+test_decimal_persistence_round_half_even
+test_json_bounds_match_completed_series
+test_timeframe_update_has_no_direct_file_side_effect
 ```
 
 Provider-dependent tests must use provider test doubles/mocks; core tests must not require live provider access. Core normalization, merge, retention and persistence tests must not require live provider access.
