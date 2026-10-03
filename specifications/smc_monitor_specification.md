@@ -962,6 +962,7 @@ Model:
 ~~~python
 @dataclass(frozen=True)
 class AlertDecision:
+    alert_type: str
     eligible: bool
     reason: str
     target: TargetPlan | None
@@ -983,6 +984,8 @@ ALERT ELIGIBLE
 ~~~
 
 ## 12.2 Alert content
+
+Alert payloads must include the alert type.
 
 At minimum:
 
@@ -1041,6 +1044,8 @@ On Monitor restart, runtime alert memory resets. A still-eligible canonical setu
 The Monitor may re-evaluate downstream eligibility when current price or another downstream input changes.
 
 A new notification is emitted only for a new alert identity or changed alert identity.
+
+For `TARGET_REACHED`, the event is evaluated from the resolved target and current reference price. It does not require target clearance or the optional RR gate.
 
 On Monitor restart, the transient key set resets; repeated notification after restart is allowed.
 
@@ -1316,6 +1321,7 @@ get_active_sessions(utc_time, session_definitions)
 
 build_alert_key(analysis, target, alert_type)
 is_target_reached(target_price, current_price, direction)
+evaluate_target_reached(target, current_market_view)
 evaluate_alert_eligibility(analysis, target, current_market_view, min_rr)
 emit_alert(decision)
 
@@ -1585,6 +1591,7 @@ test_alert_identity_is_deterministic
 test_failed_notification_is_retryable
 test_unchanged_alert_is_not_repeated
 test_target_reached_is_directional
+test_target_reached_does_not_use_rr_gate
 test_monitor_restart_resets_transient_alert_memory
 test_alert_does_not_claim_position_open
 ~~~
@@ -1667,13 +1674,14 @@ for each due symbol
     ↓
     resolve target
     ↓
-    target clearance
+    setup target clearance / optional RR
     ↓
-    optional RR gate
+    SETUP_ELIGIBLE notification
     ↓
-    alert eligibility
+    target-reached evaluation
     ↓
-    emit notification
+    TARGET_REACHED notification
+
  ↓
 schedule next evaluation
 ~~~
