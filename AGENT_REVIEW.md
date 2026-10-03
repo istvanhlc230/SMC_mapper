@@ -4067,3 +4067,35 @@ Test development is centralized in the repository-root `test/` directory. Focuse
 Audit status: PASS — the requested development naming, portability, prompt-efficiency, and test-batching rules are now explicit at project and component specification level.
 
 No production Python implementation was modified in this phase. No Python test result is claimed from this documentation-only change.
+
+
+# PHASE 52 — SPECIFICATION DEFRAGMENTATION AND FULL CROSS-FILE CONTRACT AUDIT — 2026-10-03
+
+Scope: full specification package cleanup across AGENTS.md, specifications/full_specification.md, market_data_specification.md, smc_mapper_specification.md, calendar_specification.md, and smc_monitor_specification.md.
+
+Corrections:
+- Removed the duplicated trailing developer-agent discipline blocks from all four owner specifications.
+- Kept the project-wide developer-agent naming, MQL4/MQL5 portability, prompt-efficiency, and test-batching rules in AGENTS.md as the single global owner.
+- Kept component-specific naming/portability/test-location details in the relevant native owner sections instead of duplicating a common block.
+- Standardized all Python test development on the repository-root test/ workspace; no active specification retains the obsolete tests/ path.
+- Reconciled Market Data timeframe wording with the project decision that CLI/boundary-supplied valid timeframe values are not invalidated merely because SUPPORTED_TIMEFRAMES is empty; known TIMEFRAME_SECONDS duration remains required where completion arithmetic needs it.
+- Preserved the non-normative role of full_specification.md as the navigation index.
+- Verified that canonical SMC semantics remain owned by .agents/skills/smc/ and were not modified in this phase.
+- Verified that Calendar retains a single global calendar.json contract and Monitor/Mapper do not redefine it.
+- Verified ownership boundaries remain single-owner for Market Data, Mapper, Calendar, and Monitor persistence/process responsibilities.
+- Verified no obsolete legacy-engine implementation is reintroduced into the active specification.
+
+Cross-file audit:
+PASS — no duplicate trailing developer-agent discipline section remains in owner specifications.
+PASS — no active specification references the obsolete tests/ workspace.
+PASS — global developer-agent naming and portability requirements have one project-level owner; component specs contain only necessary owner-specific reinforcement.
+PASS — test batching/diagnostic requirements have one global project-level owner and CI executes the complete test/ suite in one invocation without fail-fast behavior.
+PASS — Market Data, Mapper, Calendar, and Monitor test contracts all point to test/.
+PASS — full_specification.md remains index-only and does not duplicate owner rules.
+PASS — canonical SMC authority remains isolated from implementation specifications.
+PASS — cross-component persistence and process ownership remain consistent.
+PASS — no skill file was modified.
+
+Audit disposition: SPECIFICATION PACKAGE PASS
+
+No production Python implementation was modified. No Python test result is claimed from this documentation-only phase.

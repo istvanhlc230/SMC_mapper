@@ -758,8 +758,7 @@ Calendar warning policy does not belong in this module.
 
 # 12. TEST CONTRACT
 
-All Calendar test files must be created under the repository-root `test/` directory. The active developer agent must create and execute the focused Calendar tests there; no new test file belongs in the repository root or in a separate `tests/` directory.
-
+The global developer-agent naming, portability, prompt-efficiency, and test-batching rules in `AGENTS.md` apply to Calendar. Calendar test files are created and executed under the repository-root `test/` directory.
 
 Tests must not require a live ForexFactory request.
 
@@ -806,6 +805,8 @@ Required coverage:
 ---
 
 # 13. IMPLEMENTATION FUNCTION CONTRACT
+
+The global developer-agent naming and portability rules are defined in `AGENTS.md`; this section defines Calendar-specific function ownership boundaries.
 
 Required function boundaries:
 
@@ -897,17 +898,3 @@ Calendar V1 is complete only when:
 19. no symbol-specific News JSON or separate cache JSON is created;
 20. all deterministic Calendar tests pass;
 21. no \`.agents/skills/smc/\` file is modified.
-
-
-## Developer-agent implementation discipline
-
-The developer agent must write implementation code for human and cross-language readability.
-
-### Naming
-Use descriptive, semantically meaningful names for variables, interfaces, classes, types, methods, and functions. Names must expose the concept and responsibility they represent. Avoid cryptic abbreviations, generic names such as `data`, `obj`, `tmp`, `process`, or `helper` when a domain-specific name is available. Conventional loop counters such as `i` are permitted only in small, obvious local loops.
-
-### Portability
-Domain data structures, interfaces, state containers, and public method contracts must be directly reproducible in MQL4/MQL5-style code. Prefer explicit fields, named records/classes, arrays, scalar values, and explicit success/failure paths. Python-only language features may be used as implementation conveniences only when they do not alter the domain contract.
-
-### Test execution
-Create tests only under repository-root `test/`. Prefer parametrization, fixtures, and grouped scenario coverage so one test function can validate multiple closely related cases. Execute the relevant focused suite in a single pytest invocation, then run the broader suite when required by the change. Do not launch pytest once per test case and do not intentionally fail fast before collecting the remaining results.

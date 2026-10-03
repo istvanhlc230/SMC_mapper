@@ -473,7 +473,7 @@ Rules:
 
 - at least one timeframe is required;
 - duplicate timeframes must be rejected or deterministically normalized once;
-- unsupported timeframes must fail explicitly;
+- unsupported or non-normalizable timeframes must fail explicitly; a hardcoded timeframe catalog is not required when valid timeframe values are supplied through the CLI/boundary contract;
 - `--lastcandle` is mutually exclusive with `--starttime`;
 - `--lastcandle` is mutually exclusive with `--endtime`;
 - `--lastcandle --live` is valid;
@@ -525,8 +525,10 @@ def normalize_timeframe(timeframe: str) -> str:
 Rules:
 
 - normalize the accepted spelling/casing;
-- validate membership in `SUPPORTED_TIMEFRAMES`;
-- return one canonical timeframe string.
+- reject empty or structurally invalid timeframe values;
+- return one canonical timeframe string;
+- use `TIMEFRAME_SECONDS` only when completion arithmetic requires a known duration;
+- do not reject an otherwise valid boundary-supplied timeframe solely because `SUPPORTED_TIMEFRAMES` is empty.
 
 ## 5.5 parse_iso8601
 
@@ -1813,6 +1815,8 @@ This keeps the module importable for unit tests and future internal reuse withou
 
 # 18. VARIABLE NAMING CONTRACT
 
+The project-wide developer-agent naming and portability rules in `AGENTS.md` apply. This section defines Market Data-specific naming examples.
+
 Prefer names with semantic ownership.
 
 ## 18.1 CLI/runtime variables
@@ -2110,8 +2114,7 @@ Do not add SMC analysis logic.
 
 # 22. REQUIRED TEST STRUCTURE
 
-All Market Data test files must be created under the repository-root `test/` directory. The active developer agent must create and execute the focused tests there; no new test file belongs in the repository root or in a separate `tests/` directory.
-
+The global developer-agent naming, portability, prompt-efficiency, and test-batching rules in `AGENTS.md` apply to Market Data. Market Data test files are created and executed under the repository-root `test/` directory.
 
 The developer agent must add focused tests around the module boundaries.
 
@@ -2285,17 +2288,3 @@ The output of this process is only the normalized market-data JSON state. Canoni
 - explicit historical reacquisition remains retained through the current processing transaction;
 - `available_start/end` represent completed-candle bounds only;
 - provider errors, malformed records, and malformed persisted JSON remain distinguishable failure classes.
-
-
-## Developer-agent implementation discipline
-
-The developer agent must write implementation code for human and cross-language readability.
-
-### Naming
-Use descriptive, semantically meaningful names for variables, interfaces, classes, types, methods, and functions. Names must expose the concept and responsibility they represent. Avoid cryptic abbreviations, generic names such as `data`, `obj`, `tmp`, `process`, or `helper` when a domain-specific name is available. Conventional loop counters such as `i` are permitted only in small, obvious local loops.
-
-### Portability
-Domain data structures, interfaces, state containers, and public method contracts must be directly reproducible in MQL4/MQL5-style code. Prefer explicit fields, named records/classes, arrays, scalar values, and explicit success/failure paths. Python-only language features may be used as implementation conveniences only when they do not alter the domain contract.
-
-### Test execution
-Create tests only under repository-root `test/`. Prefer parametrization, fixtures, and grouped scenario coverage so one test function can validate multiple closely related cases. Execute the relevant focused suite in a single pytest invocation, then run the broader suite when required by the change. Do not launch pytest once per test case and do not intentionally fail fast before collecting the remaining results.

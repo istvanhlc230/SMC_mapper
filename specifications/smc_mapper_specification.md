@@ -1462,16 +1462,16 @@ Debug and diagnostic output is terminal-only. It is not a machine-readable mappe
 
 # 13. IMPLEMENTATION CODE STYLE
 
-Implementation code should be written for human readability and easy maintenance.
+Implementation code must be written for human readability, maintenance, and cross-language portability.
 
-- Prefer short, descriptive variable names that are immediately understandable from context.
-- Avoid cryptic abbreviations and unnecessary long names.
-- Use consistent naming conventions throughout the project: `snake_case` for variables and functions, `PascalCase` for classes/types, and `UPPER_SNAKE_CASE` for constants.
+- Use descriptive, semantically meaningful names for variables, interfaces, classes, types, methods, and functions. Names must expose the concept or responsibility they represent.
+- Avoid cryptic abbreviations and generic names when a domain-specific name is available.
+- Use consistent naming conventions throughout the project: `snake_case` for variables and functions, `PascalCase` for classes/types/interfaces, and `UPPER_SNAKE_CASE` for constants.
 - Keep functions and modules focused and reasonably short.
 - Prefer simple, direct control flow over unnecessary abstraction.
-- Use the same term for the same concept everywhere in the codebase.
-- Conventional short names such as `i`, `j`, or `x` are acceptable only where their meaning is obvious from immediate local context.
-- Readability takes priority over saving characters when a shorter name would make the code ambiguous.
+- Use the same canonical term for the same concept everywhere in the implementation.
+- Conventional local names such as `i` are acceptable only in a small, obvious loop where the meaning is immediate.
+- Readability and semantic clarity take priority over saving characters.
 
 # 14. IMPLEMENTATION ARCHITECTURE AND MODULE CONTRACT
 
@@ -1749,8 +1749,7 @@ Tests must be able to execute canonical-processing logic from fixed persisted ca
 
 # 18. REQUIRED TEST STRUCTURE AND DEFINITION OF DONE
 
-All Mapper test files must be created under the repository-root `test/` directory. The active developer agent must create and execute the focused Mapper tests there; no new test file belongs in the repository root or in a separate `tests/` directory.
-
+The global developer-agent naming, portability, prompt-efficiency, and test-batching rules in `AGENTS.md` apply to the Mapper. Mapper test files are created and executed under the repository-root `test/` directory.
 
 At minimum, the finished mapper implementation must have focused tests covering:
 
@@ -1787,17 +1786,3 @@ Definition of done:
 - the code structure remains directly portable at the class/contract level to both MQL4 and MQL5.
 
 **STATUS: CURRENT IMPLEMENTATION CONTRACT — CROSS-FILE OWNERSHIP RECONCILED**
-
-
-## Developer-agent implementation discipline
-
-The developer agent must write implementation code for human and cross-language readability.
-
-### Naming
-Use descriptive, semantically meaningful names for variables, interfaces, classes, types, methods, and functions. Names must expose the concept and responsibility they represent. Avoid cryptic abbreviations, generic names such as `data`, `obj`, `tmp`, `process`, or `helper` when a domain-specific name is available. Conventional loop counters such as `i` are permitted only in small, obvious local loops.
-
-### Portability
-Domain data structures, interfaces, state containers, and public method contracts must be directly reproducible in MQL4/MQL5-style code. Prefer explicit fields, named records/classes, arrays, scalar values, and explicit success/failure paths. Python-only language features may be used as implementation conveniences only when they do not alter the domain contract.
-
-### Test execution
-Create tests only under repository-root `test/`. Prefer parametrization, fixtures, and grouped scenario coverage so one test function can validate multiple closely related cases. Execute the relevant focused suite in a single pytest invocation, then run the broader suite when required by the change. Do not launch pytest once per test case and do not intentionally fail fast before collecting the remaining results.
