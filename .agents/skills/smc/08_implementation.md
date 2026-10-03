@@ -1126,8 +1126,6 @@ MISSING ACTUAL ORIGIN
 
 ### 49.5 Determinism invariants
 
-### 49.5 Determinism invariants
-
 The following are deterministic **once the required canonical inputs exist**:
 
 ```text

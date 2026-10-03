@@ -217,7 +217,6 @@ VALID_BOS
 ```
 
 ### 3.2.2 — Impulse Origin vs Protected Structural Extreme
-### 3.2.2 — Impulse Origin vs Protected Structural Extreme
 
 An impulse origin is the physical price/time anchor where an expansion began. It does not automatically constitute a Protected Structural Extreme.
 
