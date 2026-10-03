@@ -112,7 +112,7 @@ Prefer direct code over generic repositories, service containers, dependency inj
 
 Prefer only standard-library dependencies for V1 unless an external dependency is explicitly required by the selected provider implementation.
 
-Expected imports include:
+Baseline imports include:
 
 ```python
 import argparse
@@ -137,7 +137,7 @@ Use descriptive uppercase constants for immutable module policy values.
 
 `DEFAULT_DATA_DIRECTORY` denotes the common product data root under which every symbol gets its own output directory.
 
-Required/expected names:
+Required names:
 
 ```python
 DEFAULT_DATA_DIRECTORY
@@ -154,7 +154,7 @@ Rules:
 
 - constants must contain implementation policy only;
 - no canonical SMC thresholds belong here;
-- provider-specific constants should be grouped/namespaced with the provider adapter;
+- provider-specific constants must be grouped/namespaced with the provider adapter;
 - V1 exact retention capacity is an operational setting, not a mapper/canonical parameter and must not become a CLI SMC setting;
 - `DECIMAL_PERSISTENCE_PLACES = 18` and deterministic `ROUND_HALF_EVEN` persistence are fixed by the current approved contract.
 
@@ -495,9 +495,9 @@ Rules:
 
 ## 6.1 MarketDataProvider base class
 
-Use a small structural interface.
+Use the following small structural interface.
 
-Recommended:
+Required interface:
 
 ```python
 class MarketDataProvider:
@@ -1414,7 +1414,7 @@ Responsibilities:
 
 - instantiate the configured provider;
 - call `update_market_data`;
-- map expected failures to a non-zero exit status;
+- map defined runtime failures to a non-zero exit status;
 - emit diagnostics only when debug is enabled.
 
 ## 16.2 Debug
@@ -1429,8 +1429,8 @@ Never:
 
 - write debug to JSON;
 - print candle transport data to stdout;
-- forward stderr to mapper;
-- use stdout as a machine-readable API.
+- forward stderr to Mapper as data;
+- use stdout as a machine-readable data API.
 
 Normal successful execution must be user-silent.
 
@@ -1592,7 +1592,7 @@ These functions should not:
 - inspect global mutable state;
 - depend on wall-clock time unless explicitly passed a `now` argument.
 
-Side effects should be concentrated in:
+Side effects must be concentrated in:
 
 ```text
 provider methods
@@ -1784,7 +1784,7 @@ Do not add SMC analysis logic.
 
 The developer agent must add focused tests around the module boundaries.
 
-Recommended test names:
+Test names:
 
 ```text
 test_parse_market_data_request_lastcandle_conflicts
@@ -1815,6 +1815,11 @@ test_market_data_path_stays_within_symbol_directory
 test_rejects_unsafe_symbol_path_component
 test_multitimeframe_update_does_not_cross_contaminate
 test_missing_range_can_be_reacquired
+test_live_only_refresh_does_not_request_historical_range
+test_failed_timeframe_update_does_not_persist_partial_symbol_change
+test_historical_reacquisition_range_is_protected_from_immediate_eviction
+test_end_only_request_requires_existing_range
+test_empty_series_incremental_update_fetches_latest_completed
 ```
 
 Provider-dependent tests must use provider test doubles/mocks; core tests must not require live provider access. Core normalization, merge, retention and persistence tests must not require live provider access.
