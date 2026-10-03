@@ -930,10 +930,10 @@ It must not independently calculate or reclassify:
 
 - IDM;
 - IDM_TAKEN;
-- structural swing;
+- CONFIRMED_STRUCTURAL_SWING;
 - retracement qualification;
 - VALID_BOS;
-- CHoCH;
+- CHoCH lifecycle state;
 - Dealing Range lifecycle;
 - canonical POI lifecycle;
 - canonical entry authorization.
@@ -949,7 +949,9 @@ The Monitor must never convert:
 ~~~text
 ENTRY_AUTHORIZED -> POSITION_OPEN
 ENTRY_AUTHORIZED -> ORDER_FILLED
-ENTRY_CONTEXT_VALID -> ORDER_FILLED
+ENTRY_AUTHORIZED -> ORDER_FILLED
+
+The Monitor must preserve the canonical distinction ENTRY_AUTHORIZED != ORDER_SUBMITTED != ORDER_FILLED != POSITION_OPEN.
 ~~~
 
 Current product behavior remains alert/notification-only.
@@ -1012,16 +1014,15 @@ A target must never be manufactured solely to satisfy RR.
 
 Target selection is permitted only for POIs that remain eligible under canonical Layer-6 lifecycle.
 
-The Monitor must reject canonical terminal/historical POIs, including representations equivalent to:
+The Monitor must reject POIs that are not eligible active canonical execution-location objects under Layer 6, including terminal/historical states:
 
 ~~~text
-POI_MITIGATION
 POI_FAILURE
 POI_INVALIDATION
 EXPIRED_HISTORICAL
 ~~~
 
-The Monitor does not introduce an age-based freshness rule.
+POI_MITIGATION must not be reclassified by the Monitor as POI_FAILURE or POI_INVALIDATION; mitigation is a distinct canonical execution lifecycle state. The Monitor does not introduce an age-based freshness rule and must consume the canonical lifecycle result rather than define its own eligibility semantics.
 
 targeted is selection state, not lifecycle state, and is not written to structures JSON by the Monitor.
 
@@ -1285,15 +1286,15 @@ Recommended logical JSON shape:
   "symbol": "EURUSD",
   "analysis_key": "EURUSD|H4|H1|...",
   "direction": "BULLISH",
-  "entry": 1.17000,
-  "sl": 1.16500,
+  "entry_reference_price": 1.17000,
+  "stop_price": 1.16500,
   "tp1": 1.17500,
   "tp2": null,
   "tp3": null,
   "target_price": 1.17500,
   "target_type": "<exact canonical target-source type>",
   "target_coordinate": "<exact canonical target coordinate>",
-  "projected_rr": 1.0,
+  "projected_rr_to_resolved_target": 1.0,
   "current_price": 1.16950,
   "event_status": null,
   "event": null,
@@ -1305,18 +1306,18 @@ Field values that are unavailable or not applicable are `null`. The exact JSON n
 
 ### Canonical target vocabulary rule
 
-`target_type` and `target_coordinate` must use the exact canonical/downstream definitions already supplied by the resolved target object. The Monitor must not introduce a parallel target taxonomy.
+`target_type` and `target_coordinate` must be copied from the resolved target object exact canonical/downstream terminology. The Monitor must not define a second target taxonomy.
 
-The canonical ruleset establishes, among others:
+The target representation must preserve the distinction between:
 
-- direct same-timeframe pro-trend: the confirmed external range extreme / external liquidity candidate; the structural representation is `Confirmed_Swing_High` for bullish direction and `Confirmed_Swing_Low` for bearish direction;
-- LTF execution: the target-policy boundary may explicitly select `HTF_EXTERNAL_TARGET` or `LTF_STRUCTURAL_TARGET`;
-- countertrend: the destination is setup-specific and may be a next valid POI, IDM, Engineering Liquidity, or external liquidity according to the active setup contract;
-- non-structural policy targets must remain explicitly identifiable as policy targets.
+- a canonical target source/candidate;
+- a configured target policy;
+- the downstream resolved target;
+- the target exact coordinate.
 
-The Monitor must preserve target provenance rather than collapsing these source classes into a generic label.
+Canonical source/candidate terms such as the confirmed external range extreme / external liquidity, policy identifiers such as `HTF_EXTERNAL_TARGET` and `LTF_STRUCTURAL_TARGET`, and setup-specific countertrend destinations are not interchangeable and must not be collapsed into one Monitor-defined `target_type` enum.
 
-**FVG must never be emitted as `target_type` merely because an FVG exists.** The canonical ruleset defines FVG as an ontology distinct from target/POI and as an OB validation/property; a standalone FVG is not a tradable POI and does not become a target by itself.
+**FVG must never be emitted as `target_type` merely because an FVG exists.** FVG is a distinct canonical ontology and an OB validation/property; standalone FVG is not a tradable POI or target.
 
 For the current V1 single-target runtime, `target_price` is the resolved target. `tp1`, `tp2`, and `tp3` are optional presentation slots for already source-backed downstream target legs. They must not cause the Monitor to invent, rank, or split targets.
 
