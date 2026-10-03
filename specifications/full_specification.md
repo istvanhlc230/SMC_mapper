@@ -1,7 +1,7 @@
 # SMC_Mapper Full Specification — Index
 
 **Status:** Current specification index.  
-**Purpose:** Navigate the V1 product specification set. This file is an index only; it does not redefine implementation rules, canonical SMC semantics, runtime contracts, or policy.
+**Purpose:** Navigation only. This file does not define implementation rules, runtime behavior, canonical SMC semantics, or trading policy.
 
 ## 1. Authority hierarchy
 
@@ -13,90 +13,76 @@
 | `specifications/smc_monitor_specification.md` | Monitor orchestration, target/RR and alert contract |
 | `AGENT_REVIEW.md` | Historical audit/review record; not normative |
 
-A more specific owner document takes precedence over this index for implementation details.
+The owning specification is authoritative for its component. This file must never become a second source of implementation truth.
 
 ## 2. Specification map
 
 ### Market Data — `market_data_specification.md`
 
-Owns:
+Detailed contract: sections **0–25**.
 
+Primary ownership:
 - provider abstraction and acquisition;
-- timestamp normalization and canonical completion;
-- completed-candle/current-snapshot separation;
-- normalized OHLC and volume data;
-- `NONE | OHLC | ORDERFLOW | BOTH` volume-method source handling;
+- timestamp normalization and completion;
+- completed/current separation;
+- normalized OHLC and parallel volume branches;
 - merge, deduplication and retention;
-- symbol-scoped market-data JSON;
+- symbol-scoped Market Data JSON;
 - atomic persistence;
-- acquisition planning and incremental updates;
-- CLI, diagnostics, errors and Market Data tests.
-
-See sections **0–25** of the Market Data specification.
+- CLI, errors, diagnostics and tests.
 
 ### Mapper — `smc_mapper_specification.md`
 
-Owns:
+Detailed contract: sections **0–18**.
 
-- Mapper CLI and timeframe relationship;
-- analysis identity and requested/effective boundaries;
-- consumption of persisted Market Data;
-- candle eligibility and structural processing boundary;
+Primary ownership:
+- Mapper CLI and timeframe modes;
+- analysis identity and boundaries;
+- persisted Market Data consumption;
 - HTF/LTF synchronization and bootstrap;
-- Dealing Range history;
-- canonical POI storage representation;
-- POI volume/delta analytics;
-- Mapper/Monitor checkpoint boundary;
-- structures JSON and atomic checkpoint persistence;
-- Mapper implementation architecture, tests and completion criteria.
-
-See sections **0–18** of the Mapper specification.
+- canonical processing orchestration;
+- Dealing Range and POI structural state;
+- POI volume/delta enrichment;
+- structures JSON and checkpoint persistence;
+- Mapper tests and definition of done.
 
 ### Monitor — `smc_monitor_specification.md`
 
-Owns:
+Detailed contract: sections **0–25**.
 
+Primary ownership:
 - Monitor CLI and scheduling;
-- persisted input discovery;
-- Market Data/Mapper process orchestration;
+- persisted analysis discovery;
+- Market Data / Mapper orchestration;
 - current market reference;
 - canonical state consumption;
-- target representation and runtime target resolution;
-- target clearance;
-- optional `--rr` policy;
-- trading-session runtime context;
-- alert eligibility and deduplication;
+- target representation, resolution and clearance;
+- optional RR policy;
+- sessions;
+- alerts and deduplication;
 - symbol/analysis isolation;
-- checkpoint consumption;
-- fail-closed behavior;
-- Monitor implementation, tests and completion criteria.
+- fail-closed runtime behavior;
+- Monitor tests and definition of done.
 
-See sections **0–25** of the Monitor specification.
+## 3. Cross-file navigation
 
-## 3. Shared architecture references
+Use these owner sections when implementing cross-component behavior:
 
-Persistent files are symbol-scoped:
-
-```text
-<DATA_ROOT>/<SYMBOL>/
-    <SYMBOL>_marketdata.json
-    <SYMBOL>_structures.json
-```
-
-File ownership and the machine-readable process boundary are defined by the owner specifications:
-
-- Market Data → `*_marketdata.json`
-- Mapper → `*_structures.json`
-- Monitor → transient runtime state only
-
-The canonical time-domain rules are owned by the Market Data and Mapper specifications, with Monitor consuming canonical UTC for scheduling and runtime evaluation.
-
-The current-snapshot boundary is owned by Market Data and consumed by Monitor; the Mapper consumes completed candles only.
-
-Target, RR, alert, and execution-notification behavior is owned by the Monitor specification, subject to canonical downstream SMC authority in Layer 7/8.
+| Concern | Owner section |
+|---|---|
+| Market Data JSON schema | Market Data §12 |
+| Market Data acquisition/update flow | Market Data §§13–15 |
+| Mapper input/time boundaries | Mapper §2 |
+| Mapper analysis identity/state | Mapper §3 |
+| Mapper/Monitor handoff | Mapper §10 and Monitor §§4–5 |
+| Mapper checkpoint persistence | Mapper §16 and Monitor §14 |
+| Current market reference | Monitor §7 |
+| Canonical state consumption | Monitor §8 |
+| Target / RR / alert behavior | Monitor §§9–12 |
+| Runtime isolation / failure handling | Monitor §§13–16 |
 
 ## 4. Change rule
 
-When a new requirement belongs to one component, update that component's owner specification first. Update this file only when the specification map, authority hierarchy, or top-level architecture navigation changes.
+When a new requirement belongs to one component, change that component's owner specification first. Change this index only when the authority hierarchy, ownership map, or navigation changes.
 
 **This file is intentionally non-normative and index-oriented.**
