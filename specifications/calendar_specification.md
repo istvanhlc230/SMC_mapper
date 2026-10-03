@@ -100,6 +100,8 @@ The following canonical scopes are resolved internally to UTC intervals:
 
 ForexFactory-specific date spelling and URL parameters remain internal provider concerns.
 
+The current provider parser reads the ForexFactory calendar HTML directly. It extracts the provider event ID from each calendar row, reads the provider-displayed calendar timezone, converts the row's local date/time to canonical UTC, and normalizes the event fields. Legacy embedded `days` JSON is accepted when present, but absence of that legacy payload is not itself an acquisition failure.
+
 ## 1.3 Request policy
 
 Use a bounded request timeout and the approved baseline browser headers.
@@ -464,8 +466,9 @@ Date-range deletion includes both endpoint dates.
 ### Provider / normalization
 
 - `fetch_calendar_source`
-- `extract_days_payload`
-- `parse_calendar_days`
+- `parse_calendar_html`
+- `extract_days_payload` (legacy embedded payload)
+- `parse_calendar_days` (legacy embedded payload)
 - `normalize_provider_event`
 - `normalize_calendar_events`
 
