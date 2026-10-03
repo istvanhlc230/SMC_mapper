@@ -1,27 +1,21 @@
-# SMC_Mapper Full Specification — Consolidated Current Architecture
+# SMC_Mapper Full Specification — Architecture Index
 
-**Status:** Current consolidated architecture reference.
-**Purpose:** One clean cross-file reference for the approved market-data, structures, and monitor runtime model, including datasource, canonical UTC, local-time, and trading-session handling.
+**Status:** Current cross-file architecture index.
+**Purpose:** One navigation and boundary reference for the V1 product. Detailed implementation rules live in the owning specification; canonical SMC semantics live only in `.agents/skills/smc/`.
 
-**Normative ownership:**
-- `specifications/market_data_specification.md` owns the detailed Market Data implementation contract.
-- `specifications/smc_mapper_specification.md` owns the detailed Mapper implementation contract.
-- `specifications/smc_monitor_specification.md` owns the detailed Monitor implementation contract.
-- `.agents/skills/smc/` remains the sole authority for canonical SMC semantics.
+## 1. Normative ownership
 
-This document consolidates the approved architecture and final audit outcomes. It does not override a more specific owner document.
+| Concern | Owner |
+|---|---|
+| Canonical SMC semantics | `.agents/skills/smc/` |
+| Market Data acquisition, normalization, completion, retention, current snapshot, persistence | `specifications/market_data_specification.md` |
+| Mapper orchestration, canonical-state consumption, analysis identity/checkpoint, structural persistence | `specifications/smc_mapper_specification.md` |
+| Monitor scheduling, process orchestration, current-price observation, downstream target/RR evaluation, sessions, alerts | `specifications/smc_monitor_specification.md` |
+| Historical audit narrative | `AGENT_REVIEW.md` only |
 
-The former historical FAIL findings that were embedded here have been removed from the active specification body. They are preserved only by repository history, not presented as current requirements.
+This document does not duplicate or override the owner specifications.
 
----
-
-# Final Approved Architecture
-
-Named regional trading sessions are Monitor runtime context. V1 knows Sydney, Tokyo, London, and New York using explicit IANA timezones; exact local session hours are one Monitor-owned operational configuration.
-
-## Symbol output-directory contract
-
-The common data root contains one dedicated directory per normalized symbol:
+## 2. Persistent data boundary
 
 ```text
 <DATA_ROOT>/<SYMBOL>/
@@ -29,64 +23,92 @@ The common data root contains one dedicated directory per normalized symbol:
     <SYMBOL>_structures.json
 ```
 
-Market Data, Mapper, and Monitor automatically resolve their symbol directory from the requested symbol. No cross-symbol flat output store is used. The existing common data root is retained; this change only introduces the symbol directory boundary beneath it.
+- Market Data is the sole writer of `*_marketdata.json`.
+- Mapper is the sole writer of `*_structures.json`.
+- Monitor owns no persistent JSON schema.
+- The two JSON files are the machine-readable process boundary.
+- stdout/stderr are never used as candle or structure data transport.
 
-## Time-domain contract
+## 3. Time contract
 
-The system distinguishes three time domains:
+Three domains are distinguished:
+1. provider/source time at the Market Data boundary;
+2. canonical UTC for persisted timestamps, ordering, completion, checkpoints and structural processing;
+3. local time as a DST-aware presentation/input-conversion view.
 
-1. datasource time — provider-native source representation handled only at the Market Data boundary;
-2. canonical UTC — the authoritative domain for normalized timestamps, completion, ordering, persistence, Mapper structural processing, checkpoints, scheduling decisions, target identity, and alert evaluation;
-3. local time — a DST-aware runtime/presentation view derived from canonical UTC.
+Naive or ambiguous source timestamps are rejected. Local time must never alter canonical ordering, analysis identity, checkpointing or SMC calculations.
 
-Datasource timezone must never be guessed. Naive datasource wall-clock timestamps without a known timezone are rejected. Canonical JSON remains UTC-based. Local-time values are not added to canonical JSON solely for display.
+## 4. Analysis model
 
-## Final architecture
+- Mapper analyses are symbol-scoped and independently identifiable.
+- Identity is deterministic from timeframe configuration plus the normalized requested start boundary.
+- When no explicit start is supplied, the Mapper uses the deterministic existing-analysis resume path or, for a new analysis, the earliest available completed entry-timeframe candle as its initial persisted boundary.
+- `requested_start`, persisted analysis boundary, and computed `effective_start` remain distinct concepts.
+- Each analysis owns its own `last_processed_candle_time`.
+- Market Data retention is operational storage policy, not canonical SMC semantics.
 
-- Every symbol has one dedicated output directory: `<DATA_ROOT>/<SYMBOL>/`.
-- `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json` stores normalized completed candles for all acquired timeframes of the symbol.
-- `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_structures.json` stores all distinct mapper analyses for the symbol.
-- Each active product program automatically resolves the selected symbol directory and discovers its owned input/output files there.
-- `smc_monitor.py` owns runtime scheduling, process orchestration, current-price observation, downstream target/RR evaluation, and alerting; its runtime state is transient.
-- Analysis identity is deterministic from timeframe configuration plus requested start boundary.
-- Each analysis has its own `last_processed_candle_time` checkpoint.
-- A single symbol-level `history_no` value is stored once and applies independently to each analysis's applicable closed Dealing Range history.
-- Market-data retention is a bounded rolling operational policy per timeframe; it is not an SMC semantic rule.
-- When required history is outside the retained market-data window, the Market Data CLI reacquires it.
+## 5. Runtime update flow
 
-## Runtime update contract
+```text
+CLI
+ ↓
+Monitor validates request and discovers stored analyses
+ ↓
+Market Data acquires/normalizes required completed candles
+ ↓
+Market Data persists market-data JSON atomically
+ ↓
+Mapper consumes completed candles only
+ ↓
+Mapper persists canonical structures and advances its checkpoint atomically
+ ↓
+Monitor reloads persisted state
+ ↓
+Monitor refreshes current market reference when required
+ ↓
+Monitor resolves downstream target
+ ↓
+Target clearance
+ ↓
+Optional --rr policy
+ ↓
+Alert eligibility
+ ↓
+Notification only
+```
 
-- Initial/bootstrap execution acquires required historical completed candles into the market-data JSON, then the mapper reads them.
-- Normal monitor execution updates only newly completed candles.
-- One new completed candle is a normal update case.
-- Missed cycles are recovered as one chronological completed-candle range.
-- No new completed candle is a no-op.
-- Market-data and structure JSON updates are complete read-modify-write operations with temporary-file + atomic replacement.
-- If a file is temporarily unavailable for writing, the writer waits and retries up to a finite timeout.
-- One active monitor orchestration instance per symbol avoids multi-writer coordination complexity; multiple analyses run within that monitor.
+A current-snapshot-only refresh does not require Mapper execution. A completed-candle update requires successful Mapper persistence before downstream evaluation of the new structural state.
 
-## CLI/debug contract
+## 6. Current-state separation
 
-- Candle data is persisted to `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json`; it is not transferred to the mapper through stdout.
-- Market-data and structure outputs are grouped under each symbol's directory.
-- Debug output is `stderr` only.
-- Debug `stderr` is terminal-only and must not be captured, parsed, forwarded, merged, persisted, or passed to mapper/monitor.
-- Normal runtime is user-silent.
+- Market Data `current` is an in-progress market-data snapshot.
+- `current` never enters canonical Mapper processing.
+- Mapper structures JSON contains canonical structural state and mapper provenance/checkpoint metadata, not Monitor current price, trade state, stop/BE state, target-hit state or alert history.
+- Monitor runtime state is transient.
 
-## Full audit result
+## 7. Cross-file invariants
 
-Re-audited the repaired `smc_mapper_specification.md` against the canonical `.agents/skills/smc/` Layer 1-8 files and the internal A-D specification structure.
+- One symbol directory per normalized symbol.
+- One active Monitor orchestration instance per symbol.
+- Multiple analyses may coexist for one symbol.
+- Symbol and analysis state remain isolated.
+- Missing/unresolved required data fails closed.
+- No component may fabricate candles, canonical structure, targets or execution success.
+- Monitor is notification-only: no order submission, automatic buy/sell or position management.
+- Canonical SMC semantics are consumed from the skill; downstream policy must not redefine them.
+- Volume analytics are non-canonical enrichment and must not alter POI validity, lifecycle or type.
+- Probability and News are not part of the current product specification.
 
-Verified no remaining:
-- Market Data Layer/in-process service contract;
-- candle `stdout` pipe to mapper;
-- direct provider dependency in mapper;
-- single-analysis-only structures file model;
-- unspecified one-candle / missed-batch update path;
-- missing analysis identity/checkpoint separation;
-- missing file write safety contract.
+## 8. Downstream target/RR contract
 
-Verified canonical ownership remains intact and no `.agents/skills/smc/` file was modified.
-**FINAL STATUS: PASS — SPECIFICATION RECONCILED WITH THE SYMBOL-DIRECTORY, TWO-PERSISTENT-STORE RUNTIME MODEL**
+Target semantics are owned by the canonical downstream Layer-7 contract and consumed by Monitor.
 
----
+V1 Monitor resolves **one target per active setup**. Multi-target/multi-leg allocation is outside current product scope.
+
+Monitor target clearance, optional `--rr`, and alert eligibility are downstream runtime policy. They must not mutate canonical Mapper state.
+
+## 9. Versioning / audit rule
+
+Owner specifications are the normative implementation contracts. This index must remain concise and structural; detailed rules belong in exactly one owner document. Historical audit findings belong in `AGENT_REVIEW.md` and must not be treated as current requirements.
+
+**Current architecture state:** Cross-file ownership is intentionally defragmented; unresolved implementation-policy decisions remain only in their owning specification.
