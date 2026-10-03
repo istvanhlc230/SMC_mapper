@@ -2073,6 +2073,8 @@ for each due symbol
     ↓
     validate Calendar query result
     ↓
+    evaluate News event status transitions
+    ↓
     evaluate NEWS_WARNING
     ↓
     consume canonical setup/entry state
@@ -2111,7 +2113,9 @@ smc_monitor.py is implementation-complete when:
 - mapper checkpoints are read-only from the Monitor;
 - current price is obtained through persisted Market Data current state;
 - Calendar is invoked only through its process boundary and its query stdout is validated as the machine-readable News result;
-- News warning decisions are evaluated independently per eligible event;
+- News warning decisions and News event-status transitions are evaluated independently per analysis/event;
+- NEWS_EVENT_STARTED and NEWS_EVENT_ENDED are terminal informational outputs;
+- News-related alerts expose event_status=ONGOING when the event is inside its Monitor runtime observation window;
 - Calendar query result is validated before warning evaluation;
 - NEWS_WARNING is separate from SETUP_ELIGIBLE and TARGET_REACHED;
 - missing Calendar data does not suppress canonical setup/target evaluation;
