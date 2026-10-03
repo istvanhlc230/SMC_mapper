@@ -197,4 +197,4 @@ User input errors must produce explicit CLI errors and must not fall through to 
 
 Temporary, intermediate, debug, downloaded, and generated development artifacts belong under dev_tmp/.
 No test/ directory is required or maintained.
-The implementation is kept in calendar.py and the design is kept in specifications/calendar_design.md.
+The implementation is kept in `calendar.py`; temporary development artifacts belong under `dev_tmp/`.
