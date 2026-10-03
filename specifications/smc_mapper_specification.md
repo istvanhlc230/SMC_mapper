@@ -488,7 +488,12 @@ Example:
 
 ## 2.4 Timeframe relationship and analysis mode
 
-The mapper determines the analysis mode from the supplied timeframe parameters.
+The mapper uses exactly two analysis modes:
+
+- `SINGLE_TIMEFRAME`
+- `HTF_LTF`
+
+The mapper determines the mode from the supplied timeframe parameters.
 
 ### Single-timeframe analysis
 
@@ -498,7 +503,7 @@ Use single-timeframe analysis when:
 - only `--ltf` is supplied; or
 - both are supplied but they specify the **same timeframe**.
 
-In single-timeframe analysis, the selected timeframe is analyzed once.
+In single-timeframe analysis, the selected timeframe is analyzed once. The normalized identity is based only on the selected timeframe, so `--htf H1`, `--ltf H1`, and `--htf H1 --ltf H1` address the same single-timeframe analysis identity when the analysis boundary is the same.
 
 Internally, the analysis may represent:
 
@@ -692,7 +697,7 @@ Every CLI option defined by this specification is a real implementation contract
 ```text
 Usage:
   python smc_mapper.py --symbol SYMBOL [--htf TF] [--ltf TF]
-                       [--starttime ISO8601] [--endtime ISO8601]
+                       [--starttime TIME_BOUNDARY] [--endtime TIME_BOUNDARY]
                        [--history-no N]
                        [--volume-method {NONE,OHLC,ORDERFLOW,BOTH}]
                        [--debug]
@@ -809,7 +814,7 @@ CLI options are independent of canonical SMC semantic authority. Invalid option 
 
 `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_structures.json` is the canonical mapper structural-state file for that symbol.
 
-It contains all distinct mapper analyses for the symbol in one file. Each analysis is identified by a deterministic analysis key derived from its timeframe configuration and persisted initial analysis boundary.
+It contains all distinct mapper analyses for the symbol in one file. Each analysis is identified by a deterministic analysis key derived from its normalized timeframe configuration and persisted `analysis_start` boundary.
 
 Examples:
 
@@ -819,7 +824,12 @@ H1_M5_2026-07-01T09:00:00Z
 M15_2026-06-10T12:00:00Z
 ```
 
-The persisted `requested_start` records the explicitly supplied start boundary when one was used. For a newly created analysis without `--starttime`, the persisted analysis boundary is the earliest available completed entry-timeframe candle selected by §2.7; `requested_start` may therefore be null/absent while the analysis key remains deterministic.
+The persisted `analysis_start` is required and is the stable boundary used by the analysis identity.
+
+- When `--starttime` is supplied, `analysis_start` equals the normalized requested start boundary.
+- When `--starttime` is omitted for a new analysis, `analysis_start` equals the earliest available completed entry-timeframe candle completion boundary selected by §2.7.
+- `requested_start` records the explicitly supplied boundary and may be null/absent for analyses created without `--starttime`.
+- `effective_start` is an execution-window value and is not part of analysis identity. It need not be persisted in V1.
 
 When `--starttime` is omitted, an existing analysis is selected by timeframe configuration only when that selection is unambiguous. If multiple analysis keys share the same timeframe configuration, `--starttime` is required.
 
@@ -849,7 +859,7 @@ Logical shape:
 
 A Market Data CLI execution updates only `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json`. A mapper execution updates only its relevant analysis entry inside `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_structures.json`.
 
-The monitor identifies each stored analysis from its deterministic analysis key and validates the stored `analysis_mode`, `htf`, `ltf`, and persisted analysis boundary. `requested_start` is validated when present; it may be null/absent for an analysis created without an explicit `--starttime`.
+Downstream consumers identify each stored analysis from its deterministic analysis key and validate the stored `analysis_mode`, `htf`, `ltf`, `entry_timeframe`, and required `analysis_start`. `requested_start` is provenance metadata and may be null/absent for an analysis created without an explicit `--starttime`.
 
 ## 3.2 Stored mapper state
 
@@ -973,6 +983,8 @@ Canonical ownership remains:
 No mapper-level section may redefine those semantic rules.
 
 ## 5.3 Processing-order invariants
+
+The mapper must consume the Layer-3 `MAJOR_RETRACEMENT_QUALIFIED` result for continuation BOS. The first-BOS retracement-baseline ambiguity documented by the canonical Layer-3 authority must never be resolved by inventing a synthetic Dealing Range or Protected Structural Extreme. Until an approved initialization policy exists, an unresolved first-BOS baseline must remain explicitly unresolved and must not be promoted to `VALID_BOS`.
 
 The mapper's canonical processing boundary is the completion of each eligible completed candle within the resolved analysis interval.
 
@@ -1221,8 +1233,6 @@ Dealing-Range rollover may additionally assign the Layer-6 historical dispositio
 
 EXPIRED_HISTORICAL is a historical/reactive disposition after range rollover, not a replacement for the Layer-6 POI lifecycle enum.
 
-The targeted flag is downstream monitor selection state. It is not canonical POI lifecycle and is not persisted as mapper structural truth. The monitor may maintain at most one targeted=true POI within an active setup while multiple canonical POIs remain lifecycle-eligible under the Rule-of-Two constraints.
-
 Logical canonical POI representation:
 
 ```json
@@ -1397,37 +1407,20 @@ When no supported volume analytical path is available, no POI-derived volume ana
 
 # 10. MONITOR ORCHESTRATION AND CHECKPOINT PERSISTENCE
 
-## 10.1 Mapper/monitor boundary and update cycle
+## 10.1 Mapper persistence boundary
 
-The monitor owns interactive runtime control, scheduling, current-price/runtime monitoring, target monitoring, alerts/notifications, and orchestration of Market Data CLI and mapper execution.
+The Mapper is invoked by the Monitor as a separate process.
 
-The mapper and Market Data CLI are separate processes. `market_data.py` persists normalized candles to `<SYMBOL>_marketdata.json`; the mapper reads the required ranges from that file.
+On invocation:
 
-The monitor orchestrates each symbol update cycle in this order:
+1. read the symbol-scoped persisted Market Data JSON;
+2. resolve the requested analysis identity;
+3. process only eligible completed candles;
+4. persist the complete symbol-scoped Structures JSON atomically;
+5. advance `last_processed_candle_time` only within the same successful persistence transaction;
+6. return a process status.
 
-1. Determine which configured analysis entries need new completed entry-timeframe data.
-2. Invoke the Market Data CLI to update the required timeframe sections in `<SYMBOL>_marketdata.json`.
-3. Invoke each affected mapper analysis.
-4. The mapper reads the persisted ranges, processes new candles chronologically, and updates only its analysis entry.
-5. The completed mapper result is persisted in `<SYMBOL>_structures.json`.
-
-A normal monitor cycle may add exactly one newly completed candle to a timeframe. This is the normal incremental case.
-
-If the monitor was not running for multiple completed candles, the Market Data CLI adds the entire missing completed range in one update and the mapper processes those candles chronologically.
-
-The Market Data CLI may also refresh the current in-progress snapshot when live mode is requested, even when no new completed candle exists. A current-snapshot-only refresh must not trigger canonical structural processing or advance any mapper checkpoint.
-
-If neither a new completed candle nor a changed or newly available requested current snapshot exists, that Market Data update is a no-op.
-
-Each analysis entry has its own `last_processed_candle_time`. It identifies the latest completed entry-timeframe candle incorporated by that analysis.
-
-Multiple analyses for the same symbol may overlap in time and share the same `<SYMBOL>_marketdata.json`. Their structural state and checkpoints remain separate inside `<SYMBOL>_structures.json`.
-
-To keep file coordination simple, the finished product supports one active `smc_monitor.py` orchestration instance per symbol. Multiple analyses run inside that monitor instance.
-
-Each JSON update is performed as a complete read-modify-write operation using a temporary file followed by atomic replacement. If a target file is temporarily unavailable for writing, the writer waits briefly and retries up to a finite timeout. No separate lock file is required.
-
-The monitor advances an analysis checkpoint only after the corresponding structural state has been successfully persisted.
+The Mapper does not schedule itself, refresh current snapshots, resolve targets, apply RR, emit alerts, or manage positions.
 
 ## 10.2 Multi-symbol / multi-analysis orchestration
 
@@ -1657,7 +1650,7 @@ These functions validate mapper CLI semantics only. They must not execute canoni
     build_analysis_key(identity) -> string
     resolve_analysis_identity(request, structures, market_data) -> AnalysisIdentity
 
-Identity resolution must remain deterministic. Analysis key generation must not depend on current wall-clock time except when the actual effective analysis boundary has already been resolved from persisted completed data.
+Identity resolution must remain deterministic. `build_analysis_key` uses the normalized timeframe configuration plus persisted `analysis_start`. It must never use current wall-clock time. When no explicit start was supplied, `analysis_start` is first resolved from persisted completed data, then the key is built from that resolved boundary.
 
 ## 15.3 Market-data boundary
 
@@ -1669,6 +1662,11 @@ Identity resolution must remain deterministic. Analysis key generation must not 
     select_completed_candles(market_data, timeframe, start_time, end_time) -> candle array
 
 The mapper reader must validate the persisted Market Data contract without importing Market Data classes. It must accept the serialized timeframes object keyed by timeframe.
+
+For explicit analysis-window selection, a candle is eligible when:
+
+- `completion_time >= start boundary`; and
+- `completion_time <= end boundary`.
 
 At this boundary:
 
