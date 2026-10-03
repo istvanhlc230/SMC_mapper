@@ -1195,9 +1195,11 @@ Cases:
 
 ### Historical range
 
-When `start_time` and/or `end_time` are supplied:
+When explicit historical boundaries are supplied:
 
-- retrieve the required deterministic historical range;
+- `start_time + end_time`: acquire exactly the requested interval;
+- `start_time` only: acquire from `start_time` through the latest completed candle available at evaluation time;
+- `end_time` only: use the persisted `available_start` for the timeframe as the acquisition start; if no persisted completed range exists, fail explicitly and require `--starttime`;
 - honor requested boundaries;
 - do not invent candles outside requested scope.
 
@@ -1221,9 +1223,10 @@ When `last_candle_only=True`:
 
 ### Incremental mode
 
-When the caller supplies a range following a known persisted boundary:
+When neither historical boundaries nor `--lastcandle` apply and `live=False`:
 
-- retrieve the subsequently completed range;
+- if the timeframe has persisted completed candles, acquire only newly completed candles after the persisted `available_end`;
+- if the timeframe has no persisted completed candles, acquire exactly the latest completed candle;
 - preserve chronological order;
 - allow multiple newly completed candles when execution was missed.
 
