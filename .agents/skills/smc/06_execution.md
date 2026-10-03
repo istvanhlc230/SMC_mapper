@@ -380,16 +380,18 @@ The source update explicitly permits use of a valid Decisional Order Block even 
 
 #### OB candidate → FVG selection shift
 
-When the source-defined OB selection process identifies a candidate candle that does not satisfy the required FVG association, do not attach a later FVG retrospectively to that candle. Shift selection to the next eligible candle in the relevant source-defined sequence and evaluate the FVG association again. The final selected candle must independently satisfy all applicable OB validation pillars.
+When the canonical OB sweep/reference candle does not satisfy the required FVG association, do not attach a later FVG retrospectively to that candle and do not search arbitrarily farther forward. The fallback reference is **exactly the immediately next candle** in chronological order. That next candle is then evaluated independently against the canonical OB validation pillars, including its own required FVG/imbalance association.
+
+This fallback changes only the OB reference candidate. It does not transfer the preceding candle's sweep, FVG, or other provenance to the next candle.
 
 ```text
-ORDER BLOCK CANDIDATE CANDLE
+ORDER BLOCK SWEEP / REFERENCE CANDLE
         ↓
 REQUIRED FVG ASSOCIATION?
    ├─ YES → VALIDATED SELECTED ORDER BLOCK
    └─ NO
         ↓
-NEXT ELIGIBLE CANDLE IN SOURCE-DEFINED SEQUENCE
+IMMEDIATELY NEXT CANDLE
         ↓
 RE-EVALUATE FVG ASSOCIATION
         ↓
@@ -437,11 +439,13 @@ This refinement does not create a sweep, IDM, BOS, CHoCH, or any other structura
 
 A strict **Inside Bar is not selected as a special Order Block base/refinement**.
 
+Inside-bar handling must not override the deterministic OB fallback pointer. The inside-bar rule prevents the mother candle from manufacturing or transferring an OB geometry into the inside bar; it does not authorize an arbitrary forward search.
+
 When the OB selection process reaches an inside-bar candle:
 - do not promote the inside-bar candle to an `ORDER_BLOCK_CANDIDATE` solely on the basis of the mother-candle relationship;
 - do not transfer the mother's sweep into a special inside-bar OB geometry;
-- advance to the next eligible candle in the relevant source-defined sequence and evaluate the OB validation pillars again;
-- the ultimately selected candle must independently satisfy the canonical three-pillar validation, including its own required FVG/imbalance association.
+- preserve the canonical chronological selection pointer and evaluate the actual candidate required by the active OB selection path;
+- the selected candle must independently satisfy the canonical three-pillar validation, including its own required FVG/imbalance association.
 
 The Mother Bar remains the governing reference for Layer-1/Layer-2 candle-level pullback semantics. That mother-candle rule does not create an Order Block or alter Layer-6 OB validation.
 
