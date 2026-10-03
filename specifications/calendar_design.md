@@ -92,6 +92,27 @@ Monitor validates schema and reads committed JSON.
 
 Monitor does not perform provider access or provider-specific parsing.
 
-## 9. Repository hygiene
+## 9. Symbol-scoped deletion
+
+Public forms:
+
+    python calendar.py delete SYMBOL YYYY.MM.DD
+    python calendar.py delete SYMBOL YYYY.MM.DD-YYYY.MM.DD
+    python calendar.py delete SYMBOL YYYY.MM.DD@HH:MM
+    python calendar.py delete SYMBOL YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM
+
+Bare delete remains the full-cache reset.
+
+Deletion is performed without provider access and under the Calendar lock.
+
+For Yahoo Finance, matching symbol-owned news events are physically removed.
+For ForexFactory, economic events are shared facts and are retained; only the
+symbol/provider coverage is invalidated. This makes the deletion safe when the
+same economic event is consumed by multiple FX symbols.
+
+If deletion reaches the newest known event timestamp for a provider/symbol,
+that watermark is removed so current cannot silently skip the deleted tail.
+
+## 10. Repository hygiene
 
 Development artifacts belong under dev_tmp/. The repository root must not receive ad-hoc downloads, caches, debug outputs, or experiments.

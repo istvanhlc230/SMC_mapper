@@ -55,10 +55,10 @@ USAGE
   python calendar.py SYMBOL YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM
   python calendar.py SYMBOL current
   python calendar.py delete
-  python calendar.py delete YYYY.MM.DD
-  python calendar.py delete YYYY.MM.DD-YYYY.MM.DD
-  python calendar.py delete YYYY.MM.DD@HH:MM
-  python calendar.py delete YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM
+  python calendar.py delete SYMBOL YYYY.MM.DD
+  python calendar.py delete SYMBOL YYYY.MM.DD-YYYY.MM.DD
+  python calendar.py delete SYMBOL YYYY.MM.DD@HH:MM
+  python calendar.py delete SYMBOL YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM
   python calendar.py SYMBOL <scope> --cleartext
   python calendar.py --help
 
@@ -1038,59 +1038,108 @@ def run_query(symbol: str, scope: str, cleartext: bool = False) -> int:
     return 0
 
 
-def delete_interval(
+def delete_symbol_interval(
     document: Dict[str, Any],
-    start: Optional[datetime],
-    end: Optional[datetime],
+    symbol: str,
+    start: datetime,
+    end: datetime,
 ) -> None:
-    if start is None and end is None:
-        document["events"] = []
-        document["coverage"] = []
-        document["watermarks"] = {}
-        return
+    applicable_providers = set(resolve_applicable_providers(symbol))
 
-    document["events"] = [
-        event for event in document["events"]
-        if not (start <= parse_iso8601(event["timestamp"]) < end)
-    ]
-
-    remaining = []
-    for coverage in document["coverage"]:
-        cs = parse_iso8601(coverage["start"])
-        ce = parse_iso8601(coverage["end"])
-        if end <= cs or start >= ce:
-            remaining.append(coverage)
+    # ForexFactory economic events are shared provider facts. Deleting one
+    # canonical FX symbol must not erase the same currency event needed by
+    # another symbol. Its symbol-scoped provider coverage is invalidated below.
+    retained_events: List[Dict[str, Any]] = []
+    for event in document["events"]:
+        timestamp = parse_iso8601(event["timestamp"])
+        if timestamp < start or timestamp >= end:
+            retained_events.append(event)
             continue
-        if cs < start:
+
+        if (
+            event["source"] == "yahoo_finance"
+            and event["symbol"] == symbol
+            and "yahoo_finance" in applicable_providers
+        ):
+            continue
+
+        retained_events.append(event)
+
+    document["events"] = retained_events
+
+    retained_coverage: List[Dict[str, Any]] = []
+    for coverage in document["coverage"]:
+        if (
+            coverage["symbol"] != symbol
+            or coverage["provider"] not in applicable_providers
+        ):
+            retained_coverage.append(coverage)
+            continue
+
+        coverage_start = parse_iso8601(coverage["start"])
+        coverage_end = parse_iso8601(coverage["end"])
+        if end <= coverage_start or start >= coverage_end:
+            retained_coverage.append(coverage)
+            continue
+
+        if coverage_start < start:
             left = coverage.copy()
             left["end"] = format_iso8601(start)
-            remaining.append(left)
-        if end < ce:
+            retained_coverage.append(left)
+
+        if end < coverage_end:
             right = coverage.copy()
             right["start"] = format_iso8601(end)
-            remaining.append(right)
-    document["coverage"] = remaining
+            retained_coverage.append(right)
 
-    for key in list(document["watermarks"]):
-        value = document["watermarks"][key]
-        last_event = value.get("last_event_timestamp")
-        if last_event and start <= parse_iso8601(last_event) < end:
+    document["coverage"] = retained_coverage
+
+    # If the deleted interval contains the newest known event for a provider
+    # and symbol, invalidate that incremental cursor. Never invent a new one.
+    for provider in applicable_providers:
+        key = watermark_key(provider, symbol)
+        watermark = document["watermarks"].get(key)
+        if watermark is None:
+            continue
+        last_event_timestamp = watermark.get("last_event_timestamp")
+        if last_event_timestamp is None:
+            continue
+        last_event = parse_iso8601(last_event_timestamp)
+        if start <= last_event < end:
             del document["watermarks"][key]
 
 
-def run_delete(scope: Optional[str]) -> int:
+def run_delete(symbol: Optional[str], scope: Optional[str]) -> int:
     with acquire_calendar_lock():
         document = load_calendar_document()
-        if scope is None:
-            delete_interval(document, None, None)
+
+        if symbol is None and scope is None:
+            document["events"] = []
+            document["coverage"] = []
+            document["watermarks"] = {}
         else:
+            if symbol is None or scope is None:
+                raise CalendarInputError(
+                    "Scoped delete requires DELETE + SYMBOL + SCOPE. "
+                    "Use bare 'delete' only for full cache deletion."
+                )
+            if scope == "current":
+                raise CalendarInputError(
+                    "current cannot be used as a delete scope."
+                )
             start, end = resolve_scope_interval(scope)
-            delete_interval(document, start, end)
+            delete_symbol_interval(document, symbol, start, end)
+
         validate_calendar_document(document)
         save_calendar_atomic(document)
-    print(json.dumps({"status": "OK", "operation": "DELETE"}))
-    return 0
 
+    print(json.dumps({
+        "status": "OK",
+        "operation": "DELETE",
+        "symbol": symbol,
+        "scope": scope,
+    }))
+    return 0
 
 def parse_request(args: List[str]) -> Dict[str, Any]:
     if not args:
@@ -1116,19 +1165,31 @@ def parse_request(args: List[str]) -> Dict[str, Any]:
     if positional[0] == "delete":
         if cleartext:
             raise CalendarInputError("--cleartext is not valid for delete.")
-        if len(positional) > 2:
+
+        if len(positional) == 1:
+            return {
+                "operation": "DELETE",
+                "symbol": None,
+                "scope": None,
+                "cleartext": False,
+            }
+
+        if len(positional) != 3:
             raise CalendarInputError(
-                "delete accepts at most one scope."
+                "Scoped delete requires DELETE + SYMBOL + SCOPE."
             )
-        scope = positional[1] if len(positional) == 2 else None
-        if scope is not None:
-            parse_scope(scope)
+
+        symbol = validate_symbol(positional[1])
+        scope = parse_scope(positional[2])
+        if scope == "current":
+            raise CalendarInputError("current cannot be used as a delete scope.")
+
         return {
             "operation": "DELETE",
+            "symbol": symbol,
             "scope": scope,
             "cleartext": False,
         }
-
     if len(positional) != 2:
         raise CalendarInputError(
             "Expected exactly SYMBOL + SCOPE."
@@ -1148,7 +1209,7 @@ def run() -> int:
     try:
         request = parse_request(sys.argv[1:])
         if request["operation"] == "DELETE":
-            return run_delete(request["scope"])
+            return run_delete(request["symbol"], request["scope"])
         return run_query(
             request["symbol"],
             request["scope"],

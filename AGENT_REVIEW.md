@@ -28,4 +28,20 @@ Required repository-side checks remain:
 
 Negative CLI checks must reject old today/next_week/next_month forms, next evaluation, and `..` ranges.
 
+## Deletion contract added
+
+Supported scoped delete forms:
+
+    delete SYMBOL YYYY.MM.DD
+    delete SYMBOL YYYY.MM.DD-YYYY.MM.DD
+    delete SYMBOL YYYY.MM.DD@HH:MM
+    delete SYMBOL YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM
+
+Bare delete remains full-cache deletion; scoped deletion requires a symbol.
+current is rejected as a delete scope.
+
+ForexFactory economic events remain physically shared; symbol deletion
+invalidates only that symbol/provider coverage. Yahoo symbol-owned news is
+physically deleted. The newest affected watermark is removed when necessary.
+
 No PASS claim until local runtime validation is complete.

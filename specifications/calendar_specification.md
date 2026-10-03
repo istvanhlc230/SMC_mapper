@@ -103,10 +103,27 @@ Public query forms:
 Delete forms:
 
     python calendar.py delete
-    python calendar.py delete YYYY.MM.DD
-    python calendar.py delete YYYY.MM.DD-YYYY.MM.DD
-    python calendar.py delete YYYY.MM.DD@HH:MM
-    python calendar.py delete YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM
+    python calendar.py delete SYMBOL YYYY.MM.DD
+    python calendar.py delete SYMBOL YYYY.MM.DD-YYYY.MM.DD
+    python calendar.py delete SYMBOL YYYY.MM.DD@HH:MM
+    python calendar.py delete SYMBOL YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM
+
+Bare delete is the explicit full-cache reset.
+
+Scoped delete is always symbol-scoped. The scope must be a date, date range,
+datetime, or datetime range. current is not a delete scope.
+
+Yahoo Finance news is symbol-owned, so a symbol-scoped deletion removes only
+matching Yahoo events in the requested interval.
+
+ForexFactory economic events are shared currency facts. A symbol-scoped deletion
+therefore invalidates only the matching provider+canonical-symbol coverage in
+the requested interval and keeps the shared event record. This prevents
+deleting an EUR event from breaking EURGBP when deleting EURUSD.
+
+If the deleted interval contains the newest known event timestamp for a
+provider+canonical-symbol watermark, that watermark is removed. No synthetic
+watermark is created.
 
 Removed from the public grammar:
 - today
