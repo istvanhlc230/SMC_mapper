@@ -661,11 +661,11 @@ POI expiration is handled through the separate POI lifecycle; the structural eng
 6. Retracement sufficiency is mandatory before continuation BOS.
 7. A normal retracement must contain **at least 3 opposing closing candles** to enter the standard positive qualification path. A **2-candle retracement** is eligible only through the documented reduced-candle displacement exception, and a **1-candle displacement outlier is an explicit additional exception** when it takes `>= MIN_OUTLIER_EXTREMES_TAKEN` preceding bodies/extremes and all other canonical conditions pass.
 8. The standard equilibrium retracement threshold is 50%; the 38.2% threshold is conditional and may qualify only through the applicable immediate Higher Timeframe valid-pullback path.
-9. IDM takeout confirms the relevant `CONFIRMED_STRUCTURAL_SWING`. Retracement qualification determines whether a subsequent external break can be classified as `VALID_BOS`; it does not retrospectively create the swing point.
+9. IDM takeout establishes the relevant `SWING_CANDIDATE / PROVISIONAL_STRUCTURAL_EXTREME`. Structural retracement qualification is required to promote that candidate to `CONFIRMED_STRUCTURAL_SWING`; it does not retrospectively create the swing point.
 10. Physical external break does not automatically equal VALID_BOS or CHoCH_CONFIRMED.
 11. `MAJOR_IDM_SWEEP` is not VALID_BOS and not CHoCH_CONFIRMED.
 12. Major IDM may be pullback-derived or the prior protected external boundary when only Minor IDM exists; it is never arbitrary internal liquidity.
-13. A Major IDM takeout may confirm the corresponding swing reference, but it does not by itself create VALID_BOS, Trading Range rollover, or Protected Structural Extreme lock.
+13. A Major IDM takeout establishes the corresponding `SWING_CANDIDATE / PROVISIONAL_STRUCTURAL_EXTREME`; macro retracement qualification is still required to promote that candidate to `CONFIRMED_STRUCTURAL_SWING`. It does not by itself create `VALID_BOS`, Trading Range rollover, or Protected Structural Extreme lock.
 14. `NEW_SVP` does not automatically create Major IDM.
 15. Only `VALID_BOS` rolls the Trading Range and locks the Protected Structural Extreme.
 16. `CHoCH_CONFIRMED` initializes a new regime but does not itself create a new CONFIRMED_STRUCTURAL_SWING or VALID_BOS.
