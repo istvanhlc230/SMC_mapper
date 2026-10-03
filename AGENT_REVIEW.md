@@ -4099,3 +4099,17 @@ PASS — no skill file was modified.
 Audit disposition: SPECIFICATION PACKAGE PASS
 
 No production Python implementation was modified. No Python test result is claimed from this documentation-only phase.
+
+
+# PHASE 53 — DEFRAGMENTATION FOLLOW-UP: PROMPT COST DISCIPLINE — 2026-10-03
+
+The project-level developer-agent prompt contract was refined after the Phase-52 audit.
+
+- Developer-agent prompts are explicitly required to be in English.
+- Related findings remain consolidated into one prompt per implementation iteration.
+- Prompts must reference exact specification files/sections instead of copying large unchanged specification text.
+- The prompt must contain only the necessary scope, affected sections, concrete changes, acceptance criteria, and test command.
+
+Audit status: PASS — the final developer-agent prompt contract minimizes redundant context while preserving implementation precision.
+
+No production Python implementation was modified. No Python test result is claimed from this documentation-only change.
