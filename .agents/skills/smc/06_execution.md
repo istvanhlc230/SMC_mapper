@@ -435,19 +435,38 @@ OB_bottom = min(Open_base, Close_base)
 
 This refinement does not create a sweep, IDM, BOS, CHoCH, or any other structural event.
 
-#### Inside-Bar candidate handling
+#### Inside-Bar candidate exclusion
 
-A strict **Inside Bar is not selected as a special Order Block base/refinement**.
+A strict **Inside Bar is excluded from canonical Order Block candidate selection**. It is not merely a special refinement case: a strict Inside Bar is **not considered an eligible OB candidate at all**.
 
-Inside-bar handling must not override the deterministic OB fallback pointer. The inside-bar rule prevents the mother candle from manufacturing or transferring an OB geometry into the inside bar; it does not authorize an arbitrary forward search.
+When the active OB selection pointer encounters a strict Inside Bar:
+- reject the Inside Bar as an `ORDER_BLOCK_CANDIDATE`;
+- do not promote it to a `VALIDATED_ORDER_BLOCK`, DECISIONAL OB, or EXTREME OB;
+- do not transfer the mother candle's sweep, FVG association, geometry, or provenance into the Inside Bar;
+- do not allow the Inside Bar to qualify independently merely because it appears to satisfy the three OB validation pillars;
+- advance according to the deterministic chronological OB-selection process to the next applicable candle.
 
-When the OB selection process reaches an inside-bar candle:
-- do not promote the inside-bar candle to an `ORDER_BLOCK_CANDIDATE` solely on the basis of the mother-candle relationship;
-- do not transfer the mother's sweep into a special inside-bar OB geometry;
-- preserve the canonical chronological selection pointer and evaluate the actual candidate required by the active OB selection path;
-- the selected candle must independently satisfy the canonical three-pillar validation, including its own required FVG/imbalance association.
+This is an explicit candidate-exclusion rule, not an arbitrary forward search.
 
-The Mother Bar remains the governing reference for Layer-1/Layer-2 candle-level pullback semantics. That mother-candle rule does not create an Order Block or alter Layer-6 OB validation.
+The existing FVG fallback remains deterministic:
+
+```text
+CURRENT OB REFERENCE CANDLE
+        ↓
+REQUIRED FVG ASSOCIATION?
+   ├─ YES → continue canonical OB validation
+   └─ NO
+        ↓
+IMMEDIATELY NEXT CHRONOLOGICAL CANDLE
+        ↓
+APPLY INSIDE-BAR CANDIDATE EXCLUSION
+        ↓
+RE-EVALUATE THE NEXT APPLICABLE CANDIDATE AGAINST ALL OB PILLARS
+```
+
+Thus the immediately next chronological candle is always the next reference candidate after a missing required FVG; if that candle is a strict Inside Bar, it is deterministically ineligible and is not promoted or reinterpreted through its mother candle.
+
+The Mother Bar remains the governing reference for Layer-1/Layer-2 candle-level pullback semantics. That mother-candle rule does not create an Order Block, transfer OB provenance, or alter Layer-6 OB validation.
 
 ## 38.4. Dealing-Range POI Expiration
 
