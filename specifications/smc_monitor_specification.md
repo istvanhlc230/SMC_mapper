@@ -1574,8 +1574,8 @@ refresh_current_market_view(symbol, timeframe)
 invoke_calendar_acquisition
 invoke_calendar_query
 calculate_news_warning_window
-evaluate_news_warnings(symbol, news_events, now)
-build_news_warning_key(symbol, event_id, warning_phase)
+evaluate_news_warnings(analysis, news_events, now)
+build_news_warning_key(analysis_key, event_id)
 
 resolve_target_plan(canonical_state)
 is_target_cleared(target_price, current_price, direction)
@@ -1746,6 +1746,7 @@ calendar.json is the sole persistent News store
 dynamic warning horizon is derived from stored analysis entry timeframes
 HIGH/MEDIUM/LOW warning scaling is deterministic
 Calendar acquisition and local query are separate operations
+Calendar query stdout is the machine-readable News boundary
 missing calendar data does not block canonical processing
 UTC event timing
 impact policy
@@ -1800,7 +1801,7 @@ Focused tests must cover at minimum.
 test_monitor_requires_symbol
 test_monitor_accepts_multiple_symbols
 test_monitor_resolves_symbol_output_directory
-test_monitor_resolves_symbol_news_path
+test_monitor_uses_global_calendar_data
 test_monitor_rr_optional
 test_monitor_rejects_invalid_rr
 test_monitor_debug_is_terminal_only
@@ -1982,9 +1983,13 @@ for each due symbol
     ↓
     evaluate trading-session context
     ↓
-    invoke calendar.py --query SYMBOL
+    plan News acquisition horizon
     ↓
-    reload Calendar query result
+    invoke calendar.py --query SYMBOL --range ... when coverage is required
+    ↓
+    invoke calendar.py --symbol SYMBOL --current / --next as needed
+    ↓
+    validate Calendar query result
     ↓
     evaluate NEWS_WARNING
     ↓
