@@ -643,10 +643,10 @@ def _html_text(fragment: str) -> str:
 
 def _html_cell_text(row_html: str, class_token: str) -> str:
     pattern = (
-        r"<td\\b[^>]*class=[\\\"']"
-        r"[^\\\"']*\\b"
+        r"<td\b[^>]*class=[\"']"
+        r"[^\"']*\b"
         + re.escape(class_token)
-        + r"\b[^\\\"']*[\\\"'][^>]*>(.*?)</td>"
+        + r"\b[^\"']*[\"'][^>]*>(.*?)</td>"
     )
     match = re.search(pattern, row_html, re.DOTALL | re.IGNORECASE)
     return _html_text(match.group(1)) if match else ""
@@ -654,10 +654,10 @@ def _html_cell_text(row_html: str, class_token: str) -> str:
 
 def _html_cell_inner(row_html: str, class_token: str) -> str:
     pattern = (
-        r"<td\\b[^>]*class=[\\\"']"
-        r"[^\\\"']*\\b"
+        r"<td\b[^>]*class=[\"']"
+        r"[^\"']*\b"
         + re.escape(class_token)
-        + r"\b[^\\\"']*[\\\"'][^>]*>(.*?)</td>"
+        + r"\b[^\"']*[\"'][^>]*>(.*?)</td>"
     )
     match = re.search(pattern, row_html, re.DOTALL | re.IGNORECASE)
     return match.group(1) if match else ""
@@ -666,7 +666,7 @@ def _html_cell_inner(row_html: str, class_token: str) -> str:
 def _row_attribute(row_attributes: str, *names: str) -> Optional[str]:
     for name in names:
         match = re.search(
-            rf"\\b{re.escape(name)}\\s*=\\s*[\\\"']([^\\\"']+)[\\\"']",
+            rf"\b{re.escape(name)}\s*=\s*[\"']([^\"']+)[\"']",
             row_attributes,
             re.IGNORECASE,
         )
@@ -735,7 +735,7 @@ def _parse_provider_time(value: str) -> Tuple[int, int]:
 def _parse_provider_impact(row_html: str) -> int:
     impact_html = _html_cell_inner(row_html, "calendar__impact")
     impact_match = re.search(
-        r"\btitle=[\\\"]([^\\\"]*Impact[^\\\"]*)[\\\"]",
+        r"\btitle=[\"]([^\"]*Impact[^\"]*)[\"]",
         impact_html,
         re.IGNORECASE,
     )
@@ -749,7 +749,7 @@ def _parse_provider_impact(row_html: str) -> int:
     if "holiday" in title or "non-economic" in title:
         return 4
     class_match = re.search(
-        r"calendar__impact--(high|medium|low|holiday)\\b",
+        r"calendar__impact--(high|medium|low|holiday)\b",
         impact_html,
         re.IGNORECASE,
     )
@@ -770,7 +770,7 @@ def parse_calendar_html(
 ) -> List[Dict[str, Any]]:
     timezone_text = _html_text(html)
     timezone_match = re.search(
-        r"Calendar Time Zone:\\s*([A-Za-z_]+(?:/[A-Za-z_]+)+|UTC)\\b",
+        r"Calendar Time Zone:\s*([A-Za-z_]+(?:/[A-Za-z_]+)+|UTC)\b",
         timezone_text,
         re.IGNORECASE,
     )
@@ -785,7 +785,7 @@ def parse_calendar_html(
         )
 
     row_matches = re.findall(
-        r"<tr\\b([^>]*)>(.*?)</tr>",
+        r"<tr\b([^>]*)>(.*?)</tr>",
         html,
         re.DOTALL | re.IGNORECASE,
     )
@@ -860,7 +860,7 @@ def parse_calendar_html(
 
 
 def extract_days_payload(html: str) -> str:
-    match = re.search(r"'days':\\s*(\\[.*\\])\\s*\\}", html, re.DOTALL)
+    match = re.search(r"'days':\s*(\\[.*\\])\s*\\}", html, re.DOTALL)
     if not match:
         sys.exit(
             "Error: Provider response has no embedded days payload; "
