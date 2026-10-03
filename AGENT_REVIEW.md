@@ -2,58 +2,57 @@
 
 Status: BLOCKED_PENDING_LOCAL_RUNTIME_VALIDATION
 
-## Implementation changes
+## Follow-up audit corrections
 
-calendar.py was moved to Calendar V2.
+Corrected in this iteration:
 
-Applied:
-- removed today/next_day/week/next_week/month/next_month;
-- removed next evaluation;
-- symbol-first explicit date/datetime CLI;
-- current is provider+canonical-symbol watermark incremental update;
-- missing watermark is BOOTSTRAP_REQUIRED;
-- added ticker support such as NVDA;
-- automatic provider routing;
-- common normalized event envelope;
-- ForexFactory = economic;
-- Yahoo Finance = news;
-- provider-specific identity and dedupe;
-- provider/symbol coverage;
-- provider/symbol watermarks;
-- provider failure isolation;
-- atomic last-known-good persistence;
-- no false Yahoo historical completeness.
+1. provider/symbol coverage union preserves prior non-overlapping intervals;
+2. explicit ForexFactory acquisition reuses validated COMPLETE coverage and fetches only uncovered intervals;
+3. common event validation is stricter;
+4. the full pre-refactor Monitor specification is preserved outside the Calendar-related sections;
+5. the Yahoo Forex reference snapshot remains documented as non-closed.
 
-## Specification synchronization
+## Current contract
 
-The same commit updates:
-- specifications/calendar_specification.md
-- specifications/calendar_design.md
-- specifications/smc_monitor_specification.md
+- old relative Calendar scopes removed;
+- next removed;
+- current is provider+canonical-symbol watermark based;
+- missing watermark -> BOOTSTRAP_REQUIRED;
+- no synthetic bootstrap timestamp;
+- symbol-first explicit date/datetime syntax;
+- HUF -> ForexFactory;
+- FX pair -> ForexFactory + Yahoo;
+- ticker such as NVDA -> Yahoo;
+- Yahoo -> news;
+- ForexFactory -> economic;
+- provider-specific identity/deduplication;
+- provider failures remain observable;
+- Yahoo historical completeness is never fabricated;
+- Monitor Calendar acquisition is asynchronous and non-blocking for canonical processing.
 
-Monitor now launches Calendar work asynchronously and reads the committed local calendar.json without blocking canonical processing.
+## Validation
 
-## Required local validation
+Required deterministic checks:
 
     python -m py_compile calendar.py
     python calendar.py --help
-    python calendar.py EURUSD 2026.10.01
-    python calendar.py EURUSD 2026.10.01-2026.10.31
-    python calendar.py EURUSD 2026.10.01@10:00
-    python calendar.py EURUSD 2026.10.01@10:00-2026.10.31@22:00
     python calendar.py EURUSD current
     python calendar.py NVDA current
     python calendar.py HUF 2026.10.01
     python calendar.py delete
 
-Acceptance must verify:
-- old relative scopes are rejected;
-- next is rejected;
-- current without watermark returns BOOTSTRAP_REQUIRED;
-- explicit acquisition creates provider/symbol watermark state when successful;
-- Yahoo events are news;
-- ForexFactory events are economic;
-- partial provider failure is not empty success;
-- atomic write failure preserves the last committed file.
+Negative checks:
 
-No PASS claim is made until local runtime validation is performed.
+    python calendar.py today USDHUF
+    python calendar.py EURUSD next
+    python calendar.py EURUSD 2026.10.01..2026.10.31
+
+Acceptance assertions:
+- current without watermark -> BOOTSTRAP_REQUIRED;
+- non-overlapping coverage is preserved;
+- cached COMPLETE coverage is not refetched;
+- one-provider failure plus one-provider success -> PARTIAL;
+- all-provider failure -> UNAVAILABLE;
+- Monitor Calendar dispatch is non-blocking.
+
+No PASS claim until local runtime validation confirms these conditions.

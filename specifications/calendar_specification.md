@@ -69,6 +69,27 @@ Provider mappings include:
 
 The Yahoo instrument list observed from regional Currencies pages is a reference snapshot, not a closed whitelist. The resolver must stay provider-aware.
 
+Direct Yahoo Forex reference snapshot (not a closed whitelist):
+
+    EURUSD=X GBPUSD=X AUDUSD=X NZDUSD=X EURJPY=X GBPJPY=X EURGBP=X
+    EURCAD=X EURSEK=X EURCHF=X EURHUF=X AUDGBP=X AUDJPY=X AUDNZD=X
+    USDCNY=X USDHKD=X USDSGD=X USDINR=X USDMXN=X USDPHP=X USDIDR=X
+    USDTHB=X USDMYR=X USDZAR=X USDRUB=X GBPAUD=X GBPBRL=X GBPCAD=X
+    GBPCHF=X GBPCNY=X GBPINR=X GBPNOK=X GBPQAR=X GBPZAR=X
+
+Alternate USD-base representations:
+
+    JPY=X -> USDJPY   CHF=X -> USDCHF   CAD=X -> USDCAD
+    CNY=X -> USDCNY   HKD=X -> USDHKD   SGD=X -> USDSGD
+    INR=X -> USDINR   MXN=X -> USDMXN   PHP=X -> USDPHP
+    IDR=X -> USDIDR   THB=X -> USDTHB   MYR=X -> USDMYR
+    ZAR=X -> USDZAR   RUB=X -> USDRUB
+
+Additional regional observations include CADUSD=X, CADEUR=X, CADGBP=X, CADCNY=X,
+SGDMYR=X, SGDJPY=X, SGDHKD=X, SGDIDR=X, and SGDCNY=X.
+
+This is a provider reference snapshot, not a permanent whitelist.
+
 ## 3. Canonical CLI
 
 Public query forms:

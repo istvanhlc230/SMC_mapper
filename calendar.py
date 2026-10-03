@@ -295,6 +295,10 @@ def validate_calendar_document(document: Dict[str, Any]) -> None:
             raise DataIntegrityError("Invalid event_type.")
         if event["source"] not in {"forexfactory", "yahoo_finance"}:
             raise DataIntegrityError("Invalid event source.")
+        if event["asset_type"] not in {"forex", "ticker"}:
+            raise DataIntegrityError("Invalid asset_type.")
+        if not isinstance(event["symbol"], str) or not event["symbol"]:
+            raise DataIntegrityError("Invalid event symbol.")
         if not isinstance(event["title"], str) or not event["title"].strip():
             raise DataIntegrityError("Event title must not be empty.")
         if not isinstance(event["details"], dict):
@@ -443,26 +447,18 @@ def merge_events(document: Dict[str, Any], new_events: List[Dict[str, Any]]) -> 
 
 
 def merge_coverage(document: Dict[str, Any], item: Dict[str, Any]) -> None:
-    entries = [
-        coverage for coverage in document["coverage"]
-        if not (
-            coverage["provider"] == item["provider"]
-            and coverage["symbol"] == item["symbol"]
-        )
-    ]
-    entries.append(item)
-    entries.sort(
+    candidates = [coverage.copy() for coverage in document["coverage"]]
+    candidates.append(item.copy())
+    candidates.sort(
         key=lambda coverage: (
-            coverage["provider"],
-            coverage["symbol"],
+            coverage["provider"], coverage["symbol"],
             parse_iso8601(coverage["start"]),
         )
     )
-
     merged: List[Dict[str, Any]] = []
-    for current in entries:
+    for current in candidates:
         if not merged:
-            merged.append(current.copy())
+            merged.append(current)
             continue
         previous = merged[-1]
         same_scope = (
@@ -470,16 +466,14 @@ def merge_coverage(document: Dict[str, Any], item: Dict[str, Any]) -> None:
             and previous["symbol"] == current["symbol"]
         )
         if same_scope and parse_iso8601(current["start"]) <= parse_iso8601(previous["end"]):
-            previous["end"] = format_iso8601(
-                max(
-                    parse_iso8601(previous["end"]),
-                    parse_iso8601(current["end"]),
-                )
-            )
+            previous["end"] = format_iso8601(max(
+                parse_iso8601(previous["end"]),
+                parse_iso8601(current["end"]),
+            ))
             if current["status"] == "PARTIAL":
                 previous["status"] = "PARTIAL"
-        else:
-            merged.append(current.copy())
+            continue
+        merged.append(current)
     document["coverage"] = merged
 
 
@@ -803,66 +797,47 @@ def query_current_events(
 
 
 def acquire_explicit(
-    document: Dict[str, Any],
-    symbol: str,
-    start: datetime,
-    end: datetime,
+    document: Dict[str, Any], symbol: str, start: datetime, end: datetime,
 ) -> Dict[str, Any]:
     now = utc_now()
     provider_results: List[Dict[str, Any]] = []
     failures: List[Dict[str, str]] = []
-    successful = False
-
+    successful = 0
     for provider in resolve_applicable_providers(symbol):
         try:
             if provider == "forexfactory":
-                events = fetch_forexfactory(start, end)
-                merge_events(document, events)
-                merge_coverage(
-                    document,
-                    {
-                        "provider": provider,
-                        "symbol": symbol,
-                        "start": format_iso8601(start),
-                        "end": format_iso8601(end),
-                        "status": "COMPLETE",
-                        "updated_at": format_iso8601(now),
-                    },
-                )
-                update_watermark(document, provider, symbol, now, events)
-                provider_results.append({
-                    "provider": provider,
-                    "status": "OK",
-                    "events_acquired": len(events),
-                })
+                gaps = find_uncovered_intervals(document, provider, symbol, start, end)
+                events: List[Dict[str, Any]] = []
+                for gap_start, gap_end in gaps:
+                    events.extend(fetch_forexfactory(gap_start, gap_end))
+                if gaps:
+                    merge_events(document, events)
+                    for gap_start, gap_end in gaps:
+                        merge_coverage(document, {
+                            "provider": provider, "symbol": symbol,
+                            "start": format_iso8601(gap_start),
+                            "end": format_iso8601(gap_end),
+                            "status": "COMPLETE", "updated_at": format_iso8601(now),
+                        })
+                    update_watermark(document, provider, symbol, now, events)
+                    provider_results.append({"provider": provider, "status": "OK", "events_acquired": len(events), "coverage": "UPDATED"})
+                else:
+                    provider_results.append({"provider": provider, "status": "OK", "events_acquired": 0, "coverage": "CACHED"})
+                successful += 1
             else:
                 events = fetch_yahoo_news(symbol)
                 merge_events(document, events)
-                in_range = filter_events_for_interval(events, start, end)
                 update_watermark(document, provider, symbol, now, events)
-                provider_results.append({
-                    "provider": provider,
-                    "status": "PARTIAL",
-                    "events_acquired": len(in_range),
-                    "historical_coverage": "NOT_GUARANTEED",
-                })
-            successful = True
+                in_range = filter_events_for_interval(events, start, end)
+                provider_results.append({"provider": provider, "status": "PARTIAL", "events_acquired": len(in_range), "historical_coverage": "NOT_GUARANTEED"})
+                successful += 1
         except ProviderError as exc:
             failures.append({"provider": provider, "error": str(exc)})
-            provider_results.append({
-                "provider": provider,
-                "status": "ERROR",
-                "error": str(exc),
-            })
-
+            provider_results.append({"provider": provider, "status": "ERROR", "error": str(exc)})
     if successful:
         validate_calendar_document(document)
         save_calendar_atomic(document)
-
-    return {
-        "provider_results": provider_results,
-        "failures": failures,
-    }
+    return {"provider_results": provider_results, "failures": failures}
 
 
 def acquire_current(
@@ -1036,8 +1011,11 @@ def run_query(symbol: str, scope: str, cleartext: bool = False) -> int:
         start,
         end,
     )
-    if acquisition["failures"]:
-        status = "PARTIAL" if acquisition["provider_results"] else "UNAVAILABLE"
+    provider_statuses = [item["status"] for item in acquisition["provider_results"]]
+    if provider_statuses and all(status == "ERROR" for status in provider_statuses):
+        status = "UNAVAILABLE"
+    elif acquisition["failures"]:
+        status = "PARTIAL"
     else:
         status = "OK" if events else "NO_RELEVANT_EVENT"
         if any(
