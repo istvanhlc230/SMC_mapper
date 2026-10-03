@@ -584,7 +584,7 @@ Calendar V1 is complete when:
 14. Monitor receives normalized Calendar data and not provider HTML;
 15. no automatic retention exists;
 16. no symbol-specific Calendar persistence is created;
-17. no `test/` directory is required;
+17. temporary development artifacts stay under `dev_tmp/`;
 18. temporary development artifacts stay under `dev_tmp/`;
 19. deterministic Calendar validation passes;
 20. no canonical SMC skill file is modified.
