@@ -10,14 +10,14 @@ The module does not implement SMC logic and does not generate symbol-specific ne
 
 Public grammar:
 
-    python calendar.py [scope] [symbol] [evaluation]
+    python calendar.py [scope] [symbol] [evaluation] [--cleartext]
 
 Delete grammar:
 
     python calendar.py delete [scope]
     python calendar.py delete
 
-The only flag-style options are -h and --help.
+Flag-style options are -h, --help, and --cleartext. `--cleartext` is query-output-only and requires a symbol.
 
 ## 3. Scope Vocabulary
 
@@ -171,6 +171,7 @@ Query:
 - query_next_events
 - query_nearest_events
 - output_query_result
+- output_cleartext_result — render query results as human-readable event blocks without changing the underlying result set.
 
 Deletion and orchestration:
 

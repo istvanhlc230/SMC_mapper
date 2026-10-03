@@ -119,17 +119,20 @@ HTTP success alone is not acquisition success; the response must parse and norma
 The CLI is strictly positional:
 
 ```text
-python calendar.py [scope] [symbol] [evaluation]
+python calendar.py [scope] [symbol] [evaluation] [--cleartext]
 python calendar.py delete [scope]
 python calendar.py delete
 ```
 
-The only supported flag-style options are:
+The supported flag-style options are:
 
 ```text
 -h
 --help
+--cleartext
 ```
+
+`--cleartext` is valid only with a symbol query. It changes presentation only; the default output remains machine-readable JSON.
 
 There is no public compatibility mode for the former flag-based interface.
 
@@ -227,6 +230,20 @@ python calendar.py today
 ```
 
 performs acquisition/coverage handling and does not emit a symbol result because no symbol was requested.
+
+## 2.7 Output modes
+
+Default query output is compact JSON containing `status`, `symbol`, and `events`.
+
+With:
+
+```text
+python calendar.py next_week USDHUF --cleartext
+```
+
+the same query result is rendered as human-readable event blocks. Each block contains canonical UTC date/time, currency, impact, event title, actual, forecast, previous, and event ID.
+
+`--cleartext` does not change acquisition, filtering, evaluation, or persisted data. It is rejected for delete commands and for commands without a symbol.
 
 ## 2.6 Delete
 

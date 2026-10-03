@@ -150,3 +150,27 @@ Additionally, impactName = non-economic is normalized to canonical HOLIDAY.
 The Calendar specification and design were synchronized with these corrections.
 
 Fresh local runtime validation remains required after this iteration.
+
+
+## Cleartext Query Output — 2026-10-04
+
+Added the `--cleartext` query-output option without changing the machine-readable JSON contract.
+
+Behavior:
+
+- `--cleartext` may be combined with a scope, symbol, and optional evaluation token.
+- It is valid only when a symbol query is present.
+- It is rejected for `delete` commands and scope-only commands.
+- Default output remains unchanged JSON.
+- Cleartext output renders one human-readable block per event with UTC date/time, currency, impact, event title, actual, forecast, previous, and event ID.
+- Acquisition, filtering, evaluation, persistence, and coverage semantics are unchanged.
+
+Required local validation:
+
+    python -m py_compile calendar.py
+    python calendar.py next_week USDHUF --cleartext
+    python calendar.py next_week USDHUF
+    python calendar.py USDHUF --cleartext
+    python calendar.py delete --cleartext
+
+Expected: the first, third commands render event blocks; the second remains JSON; the delete form is explicitly rejected. No SMC methodology or canonical event contract is changed.

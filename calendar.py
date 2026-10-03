@@ -39,6 +39,7 @@ USAGE
   python calendar.py [scope] [symbol] [evaluation]
   python calendar.py delete [scope]
   python calendar.py delete
+  python calendar.py [scope] [symbol] [evaluation] --cleartext
   python calendar.py --help
 
 PIPELINE
@@ -70,6 +71,11 @@ EVALUATION
   current        Events matching reference date/hour/minute
   next           Earliest event strictly after the reference timestamp
   No evaluation token returns all matching symbol events inside the scope.
+
+OUTPUT
+  --cleartext    Human-readable block output instead of JSON.
+                 This is a query-output option and requires a symbol.
+                 Default output remains machine-readable JSON.
 
 DELETE
   python calendar.py delete
@@ -225,10 +231,18 @@ def parse_calendar_request(args_list: List[str]) -> Dict[str, Any]:
     if any(arg in ("-h", "--help") for arg in args_list):
         sys.exit("Error: --help cannot be combined with other arguments.")
 
-    if args_list[0] == "delete":
-        if len(args_list) > 2:
+    cleartext = "--cleartext" in args_list
+    positional_args = [arg for arg in args_list if arg != "--cleartext"]
+
+    if not positional_args:
+        sys.exit("Error: --cleartext requires a query with a symbol.")
+
+    if positional_args[0] == "delete":
+        if cleartext:
+            sys.exit("Error: --cleartext is valid only for symbol queries.")
+        if len(positional_args) > 2:
             sys.exit("Error: delete accepts at most one scope.")
-        scope = args_list[1] if len(args_list) == 2 else None
+        scope = positional_args[1] if len(positional_args) == 2 else None
         if scope is not None:
             parse_scope_token(scope)
         return {
@@ -236,6 +250,7 @@ def parse_calendar_request(args_list: List[str]) -> Dict[str, Any]:
             "scope": scope,
             "symbol": None,
             "evaluation": None,
+            "cleartext": False,
         }
 
     scope = None
@@ -243,35 +258,39 @@ def parse_calendar_request(args_list: List[str]) -> Dict[str, Any]:
     evaluation = None
     index = 0
 
-    if index < len(args_list) and is_scope(args_list[index]):
-        scope = args_list[index]
+    if index < len(positional_args) and is_scope(positional_args[index]):
+        scope = positional_args[index]
         index += 1
 
-    if index < len(args_list) and is_symbol(args_list[index]):
-        symbol = validate_symbol(args_list[index])
+    if index < len(positional_args) and is_symbol(positional_args[index]):
+        symbol = validate_symbol(positional_args[index])
         index += 1
 
-    if index < len(args_list) and is_evaluation(args_list[index]):
-        evaluation = args_list[index]
+    if index < len(positional_args) and is_evaluation(positional_args[index]):
+        evaluation = positional_args[index]
         index += 1
 
-    if index < len(args_list):
-        sys.exit(f"Error: Unexpected or invalid token '{args_list[index]}'.")
+    if index < len(positional_args):
+        sys.exit(f"Error: Unexpected or invalid token '{positional_args[index]}'.")
 
     if scope is None and symbol is None:
         sys.exit(
-            f"Error: Expected a scope or FX symbol, got '{args_list[0]}'. "
+            f"Error: Expected a scope or FX symbol, got '{positional_args[0]}'. "
             "Use --help for the canonical grammar."
         )
 
     if evaluation is not None and symbol is None:
         sys.exit("Error: An evaluation requires a symbol.")
 
+    if cleartext and symbol is None:
+        sys.exit("Error: --cleartext requires a symbol query.")
+
     return {
         "operation": "PIPELINE",
         "scope": scope,
         "symbol": symbol,
         "evaluation": evaluation,
+        "cleartext": cleartext,
     }
 
 
@@ -1125,7 +1144,12 @@ def output_query_result(
     status: str,
     symbol: str,
     events: List[Dict[str, Any]],
+    cleartext: bool = False,
 ) -> None:
+    if cleartext:
+        output_cleartext_result(status, symbol, events)
+        return
+
     print(
         json.dumps(
             {
@@ -1135,6 +1159,33 @@ def output_query_result(
             }
         )
     )
+
+
+def output_cleartext_result(
+    status: str,
+    symbol: str,
+    events: List[Dict[str, Any]],
+) -> None:
+    print(f"CALENDAR RESULT | {status} | {symbol}")
+
+    if not events:
+        print("No matching economic events.")
+        return
+
+    print()
+    for index, event in enumerate(events, start=1):
+        print(f"--- EVENT {index:02d} ------------------------------")
+        print(f"Date/Time : {event['datetime']}")
+        print(f"Currency  : {event['currency']}")
+        print(f"Impact    : {event['impact']}")
+        print(f"Event     : {event['event']}")
+        print(f"Actual    : {event['actual'] if event['actual'] is not None else '-'}")
+        print(f"Forecast  : {event['forecast'] if event['forecast'] is not None else '-'}")
+        print(f"Previous  : {event['previous'] if event['previous'] is not None else '-'}")
+        print(f"Event ID  : {event['event_id']}")
+        print("-----------------------------------------------")
+        if index < len(events):
+            print()
 
 
 def run_acquisition(scope: str) -> None:
@@ -1230,6 +1281,7 @@ def run_query(
     symbol: str,
     scope: Optional[str],
     evaluation: Optional[str],
+    cleartext: bool = False,
 ) -> None:
     normalized_symbol = validate_symbol(symbol)
 
@@ -1241,6 +1293,7 @@ def run_query(
             "NO_CALENDAR_DATA",
             normalized_symbol,
             [],
+            cleartext=cleartext,
         )
         return
 
@@ -1267,6 +1320,7 @@ def run_query(
         "OK" if result else "NO_RELEVANT_EVENT",
         normalized_symbol,
         result,
+        cleartext=cleartext,
     )
 
 
@@ -1363,12 +1417,13 @@ def run() -> None:
     scope = request["scope"]
     symbol = request["symbol"]
     evaluation = request["evaluation"]
+    cleartext = request["cleartext"]
 
     if scope is not None:
         run_acquisition(scope)
 
     if symbol is not None:
-        run_query(symbol, scope, evaluation)
+        run_query(symbol, scope, evaluation, cleartext=cleartext)
 
 
 def main() -> None:
