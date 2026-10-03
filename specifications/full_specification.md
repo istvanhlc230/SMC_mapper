@@ -95,15 +95,7 @@ The current-snapshot boundary is owned by Market Data and consumed by Monitor; t
 
 Target, RR, alert, and execution-notification behavior is owned by the Monitor specification, subject to canonical downstream SMC authority in Layer 7/8.
 
-## 4. Product-scope notes
-
-- V1 Monitor resolves one target per active setup.
-- Additional target allocation is outside current product scope.
-- Probability is not part of the current product specification.
-- News/event warning is not part of the current product specification.
-- Monitor is notification-only; there is no automatic order submission or position management.
-
-## 5. Change rule
+## 4. Change rule
 
 When a new requirement belongs to one component, update that component's owner specification first. Update this file only when the specification map, authority hierarchy, or top-level architecture navigation changes.
 
