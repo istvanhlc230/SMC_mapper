@@ -1190,7 +1190,7 @@ class AlertDecision:
     eligible: bool
     reason: str
     target: TargetPlan | None
-    projected_rr: Decimal | None
+    projected_rr_to_resolved_target: Decimal | None
     entry_reference_price: Decimal | None
     stop_price: Decimal | None
     tp1: Decimal | None
@@ -1235,7 +1235,7 @@ At minimum, the logical alert detail contains:
 - TP1, TP2 and TP3 when source-backed downstream target-leg levels are available;
 - current reference price when available;
 - resolved target price and its exact canonical/downstream target type and coordinate when resolved;
-- projected RR when calculable;
+- Projected_RR_to_Resolved_Target when calculable;
 - News event identity/time/impact/status when the alert is News-related;
 - evaluation time.
 
@@ -1285,7 +1285,7 @@ Recommended logical JSON shape:
   "alert_type": "SETUP_ELIGIBLE",
   "symbol": "EURUSD",
   "analysis_key": "EURUSD|H4|H1|...",
-  "direction": "BULLISH",
+  "direction": "BUY",
   "entry_reference_price": 1.17000,
   "stop_price": 1.16500,
   "tp1": 1.17500,
