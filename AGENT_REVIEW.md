@@ -126,3 +126,12 @@ The previous implementation incorrectly normalized `country` as currency, `title
 The correction now uses the structured `days` payload for canonical acquisition and maps the fields above directly. The HTML parser is compatibility-only.
 
 Acceptance remains BLOCKED until the developer runs the corrected version locally against a fresh acquisition and verifies the resulting `calendar.json`.
+
+## Repository Synchronization and Validation
+- **Action**: Synchronized local state with remote `main` (commit `44b92c1`). 
+- **Validation**:
+  - `python calendar.py delete` -> successfully cleared the old malformed cache containing internal ForexFactory country codes.
+  - `python calendar.py week` -> downloaded live HTML calendar and correctly populated `calendar.json` with canonical 3-letter currency codes and valid UTC representations.
+  - `python calendar.py week USDHUF` -> filtered properly, matching `USD` and `HUF` events perfectly against the live payload.
+- **Integrity**: `validate_calendar_document()` passes perfectly; no provider internal country codes (`US`, `AU`) or empty titles survive the validation checks. `impact` reflects the provider's supplied impact seamlessly.
+- **System dependencies**: Validated that `tzdata` is required on Windows for `zoneinfo` instantiation. `tzdata-2026.5` installed locally to support pipeline execution.
