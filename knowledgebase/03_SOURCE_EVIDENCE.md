@@ -77,3 +77,20 @@ This file is the compact evidence layer for the categorized knowledgebase. It re
 These anchors are evidence pointers, not a replacement for the original transcripts. Where a source example conflicts with or is less precise than the canonical `.agents/skills/smc/` specification, the skill remains authoritative for implementation.
 
 The categorized reference files should summarize and cross-link evidence; they must not silently convert an example into a universal deterministic rule.
+
+
+## 9. First-BOS retracement baseline gap
+
+### Source-level conclusion
+The indexed source corpus does not provide a single deterministic rule for the retracement baseline used before the first `VALID_BOS`. The audited material supports IDM takeout → confirmed swing → later BOS qualification, but it does not canonically define a normal Dealing Range before the first `VALID_BOS` or a mandatory first-BOS baseline formula.
+
+### Canonical project resolution
+The source gap is resolved outside the source corpus by the canonical skill through an isolated Bootstrap Initialization process:
+
+- an actual completed impulse-origin candle supplies `BOOTSTRAP_PROTECTED_LEVEL`;
+- after `IDM_TAKEN`, a transient `BOOTSTRAP_RANGE` measures first-BOS retracement only;
+- the bootstrap range is not a governing Dealing Range and is not a Protected Structural Extreme;
+- `E_retrace(t)` remains dynamic until the actual `VALID_BOS` candle, where it is locked as `PROTECTED_STRUCTURAL_EXTREME`;
+- missing actual origin evidence fails closed.
+
+This section records the source gap and its provenance. It does not turn the project-canonical bootstrap policy into source evidence.

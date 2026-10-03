@@ -18,6 +18,7 @@ This is the retrieval map for the knowledgebase. The four primary source familie
 | Countertrend | ✓ | ✓ | ✓ | Ch.2 | How_To_Trade_AGAINST_The_Trend; Learn My A+ Countertrend Setup |
 | Risk management | ✓ | ✓ | ✓ | Ch.3 | everything_behind_the_trading_system |
 | Stops / targets / RR | ✓ | ✓ | ✓ | Ch.3 | How to Know When a POI Has Failed |
+| First-BOS retracement baseline / bootstrap | source gap | source gap | source gap | source gap | market_structure_mapping_update; smc_trader_another_missing_piece |
 
 ## Primary-source pairing rule
 

@@ -29,3 +29,16 @@
 smc_trader_another_missing_piece.txt describes the 50% normal path and a 38.2% exception in the context of higher-timeframe valid pullback and lower-timeframe complete structure. advanced_market_structure_mapping.txt also discusses at least 38.2% in BOS qualification.
 
 These references document source history; they do not authorize downstream redefinition.
+
+
+## Project-canonical first-BOS bootstrap resolution
+
+The source corpus leaves the first-BOS retracement baseline under-specified. The canonical implementation resolves this with an isolated bootstrap process, documented authoritatively in `.agents/skills/smc/03_structural_semantic_authority.md` and represented in `.agents/skills/smc/08_implementation.md`.
+
+- `BOOTSTRAP_PROTECTED_LEVEL`: actual completed impulse-origin anchor; not a Protected Structural Extreme.
+- `BOOTSTRAP_RANGE`: transient measurement span from bootstrap anchor to confirmed structural swing; not a governing Dealing Range.
+- `E_retrace(t)`: dynamic corrective extreme during the active retracement; implementation-facing terminology: `dynamic_retracement_extreme`.
+- Only the actual `VALID_BOS` transition locks the current dynamic corrective extreme as the first `PROTECTED_STRUCTURAL_EXTREME` and establishes the first canonical Dealing Range.
+- Missing origin evidence fails closed.
+
+This is a project-canonical resolution, not a claim that the source transcripts explicitly define the bootstrap policy.

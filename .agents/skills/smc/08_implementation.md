@@ -1059,36 +1059,72 @@ The transition matrix is exhaustive and deterministic once the required canonica
 | Current State | NO_EVENT / INTERNAL_PB | MINOR_IDM_EVENT | EXT_CONT_BREAK | EXT_OPP_BREAK | MAJOR_IDM_EVENT | NEW_SVP_QUALIFIED |
 |---|---|---|---|---|---|---|
 | **BOOTSTRAP** | REMAIN; update provisional extremes/internal sequence | If the event physically takes the active IDM reference and thereby satisfies the L3 `IDM_TAKEN` condition: **IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING → CONFIRMATION_LOCKED**. Otherwise (minor IDM activity that does not constitute physical takeout of the active reference): REMAIN; no confirmed range | DISQUALIFIED; no confirmed swing, therefore no BOS | DISQUALIFIED; no protected boundary, therefore no CHoCH | NOT_APPLICABLE; no active Major IDM | SVP → Verified Extreme → Minor IDM; remain BOOTSTRAP until IDM_TAKEN |
-| **CONFIRMATION_LOCKED** | REMAIN; track active expansion/retrace state | **IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING**; remain `CONFIRMATION_LOCKED` while retracement/BOS prerequisites continue | While Gate is LOCKED: DISQUALIFIED; BOS prohibited. When Gate is UNLOCKED (via IDM_TAKEN): if FIRST_BOS_RETRACEMENT_BASELINE == UNSPECIFIED: required canonical input is missing → **NO VALID_BOS CLASSIFICATION → REMAIN**. Otherwise, if MAJOR_RETRACEMENT_QUALIFIED: **FIRST BOS / VALID_BOS → POST_BOS**; else: **IMPULSE_EXTENSION → REMAIN** | CHoCH pipeline; qualifying break + all prerequisites → **POST_CHOCH**, otherwise REMAIN | REMAIN; Major IDM wick → `MAJOR_IDM_SWEEP`, Gate UNLOCKED, no automatic swing | FIRST_POST_CHOCH_SVP → Verified Extreme → FIRST_POST_CHOCH_MINOR_IDM; remain confirmation-locked until applicable sweep/gate prerequisites complete |
+| **CONFIRMATION_LOCKED** | REMAIN; track active expansion/retrace state | **IDM_TAKEN → CONFIRMED_STRUCTURAL_SWING**; remain `CONFIRMATION_LOCKED` while retracement/BOS prerequisites continue | While Gate is LOCKED: DISQUALIFIED; BOS prohibited. When Gate is UNLOCKED (via IDM_TAKEN): evaluate the transient `BOOTSTRAP_RANGE`; if `MAJOR_RETRACEMENT_QUALIFIED`: **FIRST BOS / VALID_BOS → POST_BOS**; else: **IMPULSE_EXTENSION → REMAIN** | CHoCH pipeline; qualifying break + all prerequisites → **POST_CHOCH**, otherwise REMAIN | REMAIN; Major IDM wick → `MAJOR_IDM_SWEEP`, Gate UNLOCKED, no automatic swing | FIRST_POST_CHOCH_SVP → Verified Extreme → FIRST_POST_CHOCH_MINOR_IDM; remain confirmation-locked until applicable sweep/gate prerequisites complete |
 | **CONFIRMED_RANGE** | REMAIN; dynamic `E_retrace` tracking | REMAIN; a later Minor IDM sweep updates the active IDM lifecycle; it does not retroactively alter an already confirmed swing | `IMPULSE_EXTENSION` → REMAIN; `VALID_BOS` → **POST_BOS** | `CHoCH_CONFIRMED` → **POST_CHOCH**; `MAJOR_IDM_SWEEP` → REMAIN; `NO_CHoCH_BREAK` → REMAIN | REMAIN; Major IDM wick → `MAJOR_IDM_SWEEP`, no CHoCH | REMAIN; new SVP supersedes the active pullback reference only when canonical IDM lifecycle requires it |
 | **POST_BOS** | REMAIN; new expansion tracked, closed-range POIs expire through POI lifecycle | REMAIN; a Minor IDM does not replace the prior Major IDM | DISQUALIFIED; another BOS is not interpreted until the new swing lifecycle is established | CHoCH classification pipeline; qualifying opposing break + all prerequisites → **POST_CHOCH**, otherwise REMAIN | REMAIN; Major IDM wick → `MAJOR_IDM_SWEEP`, Gate UNLOCKED | SVP → Verified Extreme → IDM qualification; if Major IDM qualifies, it supersedes the prior Major IDM → **CONFIRMED_RANGE** |
-| **POST_CHOCH** | remain in `CONFIRMATION_LOCKED` | first post-CHoCH Minor IDM pipeline; no automatic state promotion | While Gate is LOCKED: BOS prohibited. When Gate is UNLOCKED (via IDM_TAKEN): if FIRST_BOS_RETRACEMENT_BASELINE == UNSPECIFIED: required canonical input is missing → **NO VALID_BOS CLASSIFICATION → REMAIN**. Otherwise, if MAJOR_RETRACEMENT_QUALIFIED: **FIRST BOS / VALID_BOS → POST_BOS**; else: **IMPULSE_EXTENSION → REMAIN** | body close → `CHoCH_ELIGIBLE` pending prerequisites; Major IDM wick → `MAJOR_IDM_SWEEP`; Major IDM body close enters CHoCH pipeline | Major IDM wick → `MAJOR_IDM_SWEEP`, Gate UNLOCKED, trend unchanged | FIRST_POST_CHOCH_SVP → Verified Extreme → FIRST_POST_CHOCH_MINOR_IDM; remain `CONFIRMATION_LOCKED` until applicable sweep/gate prerequisites complete |
+| **POST_CHOCH** | remain in `CONFIRMATION_LOCKED` | first post-CHoCH Minor IDM pipeline; no automatic state promotion | While Gate is LOCKED: BOS prohibited. When Gate is UNLOCKED (via IDM_TAKEN): the runtime requires an explicit active-impulse origin candle to construct the transient `BOOTSTRAP_RANGE`; if origin evidence is missing, the process remains fail-closed. Otherwise, if `MAJOR_RETRACEMENT_QUALIFIED`: **FIRST BOS / VALID_BOS → POST_BOS**; else: **IMPULSE_EXTENSION → REMAIN** | body close → `CHoCH_ELIGIBLE` pending prerequisites; Major IDM wick → `MAJOR_IDM_SWEEP`; Major IDM body close enters CHoCH pipeline | Major IDM wick → `MAJOR_IDM_SWEEP`, Gate UNLOCKED, trend unchanged | FIRST_POST_CHOCH_SVP → Verified Extreme → FIRST_POST_CHOCH_MINOR_IDM; remain `CONFIRMATION_LOCKED` until applicable sweep/gate prerequisites complete |
 
 The `POST_CHOCH` row is intentionally not a blanket `CONFIRMATION_LOCKED` transition for every event. The state remains `CONFIRMATION_LOCKED`, while the event-specific lineage and gate logic determine the next process step.
 
-### 49.4.1 Genesis & Post-CHoCH First BOS Specification Boundary
+### 49.4.1 Genesis & Post-CHoCH First BOS Bootstrap Lifecycle
 
-The transition from an unconfirmed initial expansion (`BOOTSTRAP` or post-`CHoCH_CONFIRMED` initial active impulse) to the first `VALID_BOS` operates as follows:
-- Physical takeout of the active Minor IDM establishes `IDM_TAKEN = TRUE`, confirms `CONFIRMED_STRUCTURAL_SWING`, and unlocks the Confirmation Gate (`CONFIRMATION GATE UNLOCKED` is a process condition within `CONFIRMATION_LOCKED`).
-- While the Confirmation Gate is unlocked, an `EXT_CONT_BREAK` is evaluated:
-  - If `FIRST_BOS_RETRACEMENT_BASELINE == UNAVAILABLE / UNSPECIFIED`: The required canonical input is missing. No structural classification outcome is emitted; lifecycle remains `REMAIN`. The implementation MUST NOT produce `VALID_BOS`, must not lock a `PROTECTED_STRUCTURAL_EXTREME`, and must not execute `TRADING_RANGE_ROLLOVER`.
-  - If the baseline is available and `MAJOR_RETRACEMENT_QUALIFIED == TRUE`: It produces `FIRST BOS / VALID_BOS → POST_BOS` (which produces E_retrace LOCKED → PROTECTED_STRUCTURAL_EXTREME, establishing the first confirmed Dealing Range).
-  - If the baseline is available and `MAJOR_RETRACEMENT_QUALIFIED == FALSE`: It produces `IMPULSE_EXTENSION → REMAIN`.
+The source corpus does not deterministically define the first-BOS retracement baseline. The project-canonical implementation resolves that gap with an isolated bootstrap process rather than fabricating a normal Dealing Range.
 
-**Specification Ambiguity / Retracement Baseline Gap:**
-Canonical True SMC strictly prohibits fabricating a governing Dealing Range or manufacturing a Protected Structural Extreme prior to `VALID_BOS`. Because `RetracementDepth` in established structure is evaluated against the active governing Dealing Range, and no confirmed Dealing Range exists prior to the first `VALID_BOS`:
-- The canonical source corpus does not explicitly specify whether `RetracementDepth` for the first BOS is evaluated across the provisional expansion span (from the physical impulse origin to the confirmed structural swing), or whether the initial regime requires an explicit initialization policy.
-- Implementations must treat this boundary as an explicitly documented specification ambiguity and must not fabricate synthetic structural boundaries or premature protected extremes to bypass it.
+The runtime contract is:
 
-**Implementation representation:**
-The implementation maintains an explicit state field:
-`first_bos_retracement_baseline_status`
-with an allowed unresolved value of `UNSPECIFIED_CANONICAL_INPUT`.
-This is an implementation representation of the missing canonical input, not a new methodology rule, event class, or structural outcome.
-The status is an input/process condition and MUST NOT be emitted as a structural outcome.
-`UNRESOLVED ≠ DISQUALIFIED`
-`UNRESOLVED ≠ IMPULSE_EXTENSION`
-`UNRESOLVED ≠ VALID_BOS`
+1. **Bootstrap anchor**
+   - `BOOTSTRAP_PROTECTED_LEVEL` is derived from an actual completed candle in the active impulse.
+   - At chart inception, use the first effective completed candle as the initial impulse-origin anchor.
+   - After `CHoCH_CONFIRMED`, an explicit active-impulse origin candle is required.
+   - Missing actual origin evidence → no bootstrap measurement range → fail closed.
+
+2. **Confirmation**
+   - `IDM_TAKEN` confirms `CONFIRMED_STRUCTURAL_SWING`.
+   - `CONFIRMATION GATE UNLOCKED` is a process condition, not a new state.
+
+3. **Transient measurement**
+   - Build `BOOTSTRAP_RANGE` from the bootstrap anchor to the confirmed structural swing.
+   - This range is measurement-only. It is not the governing Dealing Range, is not a Protected Structural Extreme, and cannot serve as a CHoCH boundary.
+
+4. **Retracement qualification**
+   - Reuse the canonical Layer-3 50% standard path and documented 38.2% exception.
+   - Bootstrap introduces no new retracement threshold or candle-count rule.
+
+5. **Dynamic retracement extreme**
+   - Track the current corrective extreme across the retracement window:
+     bullish → lowest relevant low; bearish → highest relevant high.
+   - Mathematical notation: `E_retrace(t)`.
+   - Implementation-facing semantic name: `dynamic_retracement_extreme`.
+   - This value remains dynamic until the actual `VALID_BOS` candle.
+
+6. **First VALID_BOS**
+   - Require the existing BOS gates:
+     `IDM_TAKEN + MAJOR_RETRACEMENT_QUALIFIED + STRUCTURAL_SWING_BREAK`.
+   - At the break candle, lock the current dynamic corrective extreme as `PROTECTED_STRUCTURAL_EXTREME`.
+   - Destroy the transient bootstrap objects.
+   - Establish the first canonical Dealing Range only after this lock.
+
+7. **Insufficient retracement**
+   - `EXT_CONT_BREAK + !MAJOR_RETRACEMENT_QUALIFIED` → `IMPULSE_EXTENSION → REMAIN`.
+   - No Protected Structural Extreme lock and no Dealing Range rollover occur.
+
+The following invariant is mandatory:
+
+```text
+BOOTSTRAP_PROTECTED_LEVEL
+    ≠ PROTECTED_STRUCTURAL_EXTREME
+
+BOOTSTRAP_RANGE
+    ≠ GOVERNING_DEALING_RANGE
+
+QUALIFICATION_TIME
+    ≠ E_retrace LOCK TIME
+
+MISSING ACTUAL ORIGIN
+    → FAIL CLOSED
+```
+
+### 49.5 Determinism invariants
 
 ### 49.5 Determinism invariants
 
@@ -1105,20 +1141,36 @@ STATE TRANSITION
 → exactly ONE next state for a defined Current State + Structural Outcome + all required canonical process/context conditions
 ```
 
-**First-BOS Specification Gap:**
-The first `VALID_BOS` retracement baseline remains an `OPEN SPECIFICATION AMBIGUITY / SOURCE GAP`. Initial qualification is not fully specified until that baseline is canonicalized. The implementation must not solve this by inventing a synthetic dealing range, provisional Protected Structural Extreme, new heuristic, or initialization rule.
+**First-BOS Bootstrap Determinism:**
+The source corpus still contains a genuine evidence gap: it does not deterministically specify the first-BOS retracement baseline. The project-canonical bootstrap policy supplies that missing process input without fabricating normal structural ontology.
+
+Once actual origin evidence exists, the first-BOS pipeline is deterministic:
 
 ```text
-DETERMINISTIC AFTER REQUIRED CANONICAL INPUTS EXIST
-≠
-ALL REQUIRED INPUTS ARE CURRENTLY CANONICALLY SPECIFIED
+ACTUAL ORIGIN CANDLE
+→ BOOTSTRAP_PROTECTED_LEVEL
+→ IDM_TAKEN
+→ CONFIRMED_STRUCTURAL_SWING
+→ BOOTSTRAP_RANGE
+→ RETRACEMENT QUALIFICATION
+→ STRUCTURAL_SWING_BREAK
+→ VALID_BOS
+→ E_retrace(t) LOCKED
+→ PROTECTED_STRUCTURAL_EXTREME
+→ FIRST CONFIRMED DEALING RANGE
 ```
+
+When actual origin evidence is missing:
+
 ```text
-REQUIRED CANONICAL INPUT MISSING
+MISSING ACTUAL ORIGIN
+→ NO BOOTSTRAP_RANGE
 → NO VALID_BOS CLASSIFICATION
 → NO RANGE ROLLOVER
 → NO PROTECTED EXTREME LOCK
 ```
+
+`first_bos_retracement_baseline_status` remains an implementation/process representation. A normal bootstrap path transitions it to `AVAILABLE` once a valid bootstrap anchor exists; `UNSPECIFIED_CANONICAL_INPUT` remains a fail-closed guard for callers that did not provide the required origin/baseline process input. It is never a structural outcome.
 
 Additional invariants:
 

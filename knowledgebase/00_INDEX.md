@@ -49,3 +49,13 @@ Every core topic should be compared across:
 **Define once at semantic owner → downstream reference → downstream consumption.**
 
 The categorized layer is a retrieval/evidence aid, not a second canonical specification. It must not introduce synthetic evidence, implementation-only state, or fallback rules that are absent from the canonical skill.
+
+
+## Project-canonical resolution of the First-BOS baseline gap
+
+The source corpus does not provide a deterministic first-BOS retracement baseline. The project therefore defines an isolated Bootstrap Initialization process to supply the required measurement context without fabricating a normal Dealing Range or Protected Structural Extreme.
+
+- Canonical semantic owner: `.agents/skills/smc/03_structural_semantic_authority.md`
+- Canonical implementation representation: `.agents/skills/smc/08_implementation.md`
+- Source evidence remains historical evidence only; the bootstrap process is a project-canonical resolution, not a transcript quotation.
+- Implementation-facing terminology: `E_retrace(t)` = `dynamic_retracement_extreme` until it is locked as `PROTECTED_STRUCTURAL_EXTREME` at the actual `VALID_BOS` candle.
