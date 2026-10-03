@@ -10,7 +10,7 @@
 | `.agents/skills/smc/` | Canonical SMC semantics |
 | `specifications/market_data_specification.md` | Market Data implementation contract |
 | `specifications/smc_mapper_specification.md` | Mapper implementation and persistence contract |
-| `specifications/calendar_specification.md` | Economic calendar acquisition, parsing, cache and symbol News JSON contract |
+| `specifications/calendar_specification.md` | Economic calendar acquisition, parsing, normalization, single global `calendar.json`, symbol relevance queries and explicit deletion contract |
 | `specifications/smc_monitor_specification.md` | Monitor orchestration, News warning, target/RR and alert contract |
 | `AGENT_REVIEW.md` | Historical audit/review record; not normative |
 
@@ -55,7 +55,7 @@ Primary ownership:
 - ForexFactory acquisition and parsing;
 - normalized CalendarEvent contract;
 - canonical UTC event time;
-- shared news-calendar cache;
+- single global `calendar.json` persistence and coverage;
 - symbol relevance filtering;
 - local time-based query API;
 - explicit deletion and no automatic retention;
