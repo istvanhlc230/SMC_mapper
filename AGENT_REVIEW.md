@@ -11,3 +11,5 @@ This file records review evidence only; implementation claims do not constitute 
 
 - **Moved Artifact**: Renamed `AGENTS.md` to `agent_directives.md` and moved it to the `specifications/` directory.
 
+- **Merged Module**: Merged `calendar_layer.py` back into `calendar.py` and removed `calendar_layer.py`, as explicitly requested by the user.
+
