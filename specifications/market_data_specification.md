@@ -2114,9 +2114,9 @@ Do not add SMC analysis logic.
 
 # 22. REQUIRED TEST STRUCTURE
 
-The global developer-agent naming, portability, prompt-efficiency, and test-batching rules in `AGENTS.md` apply to Market Data. Market Data test files are created and executed under the repository-root `test/` directory.
+The global developer-agent naming, portability, prompt-efficiency, and test-batching rules in the repository-wide agent contract apply to Market Data. This specification does not create or prescribe a repository-root `test/` directory.
 
-The developer agent must add focused tests around the module boundaries.
+The developer agent must add focused tests around the module boundaries using the repository's currently approved test-placement rules. Temporary fixtures, downloaded provider payloads, debug dumps, and other development-only test artifacts belong under `dev_tmp/`; they are not test deliverables.
 
 Test names:
 

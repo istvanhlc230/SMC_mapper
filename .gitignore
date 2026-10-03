@@ -1,3 +1,5 @@
 .env
 __pycache__/
 *.py[cod]
+dev_tmp/
+calendar.json
