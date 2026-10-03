@@ -26,7 +26,7 @@ Read the referenced documents in this order when the full methodology is require
    - Shared Layer 3 Major Structural Semantic Authority
    - Major Structure ontology and structural qualification
    - Confirmed Structural Swing / Protected Structural Extreme lifecycle
-   - First-BOS bootstrap initialization and post-CHoCH first-BOS lifecycle boundary
+   - First-BOS bootstrap initialization, dedicated bootstrap-reversal lifecycle, and post-CHoCH first-BOS lifecycle boundary
    - Shared lifecycle invariants
 
 4. `04_BOS_mechanics.md`
@@ -61,7 +61,7 @@ Read the referenced documents in this order when the full methodology is require
 9. `08_implementation.md`
    - Implementation representation requirements
    - State-transition and validation requirements
-   - First-BOS bootstrap/process-state representation, `dynamic_retracement_extreme` lifecycle mapping, explicit pre-BOS observation boundaries, and mapping-origin `C0` invariants
+   - First-BOS bootstrap/process-state representation, dedicated bootstrap-reversal event routing, `dynamic_retracement_extreme` lifecycle mapping, explicit pre-BOS observation boundaries, and mapping-origin `C0` invariants
    - Must consume canonical methodology; it must not redefine it
 
 10. `trading_policy.md`

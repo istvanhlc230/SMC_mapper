@@ -3862,3 +3862,71 @@ Audit status: PASS — Layer 3, Layer 4, Layer 5, Layer 8, source reconciliation
 BLOCKED — Python/runtime conformance remains unresolved because only documentation was modified.
 
 No Python files modified. No Python test run is claimed.
+
+# PHASE 47 — DEDICATED BOOTSTRAP REVERSAL LIFECYCLE — 2026-10-03
+
+## Scope
+
+Documentation-only. **No Python implementation file was modified.**
+
+The remaining bootstrap semantic gap identified after the C0 / first-BOS bootstrap work was the case where price reverses the initial mapping direction by physically breaking the `BOOTSTRAP_ORIGIN_ANCHOR` before any canonical Dealing Range, Protected Structural Extreme, or BOS/CHoCH reference exists.
+
+## Canonical resolution
+
+A dedicated, project-canonical local transition is now defined:
+
+```text
+BOOTSTRAP
+    +
+BOOTSTRAP_ORIGIN_ANCHOR physical penetration
+    ↓
+BOOTSTRAP_ANCHOR_BREAK
+    ↓
+BOOTSTRAP_REVERSAL
+    ↓
+NEW ACTIVE BOOTSTRAP LINEAGE
+```
+
+The reversal:
+
+- is not `VALID_BOS`;
+- is not `CHoCH_CONFIRMED`;
+- does not create `PROTECTED_STRUCTURAL_EXTREME`;
+- does not create or roll a Dealing Range;
+- does not manufacture Major IDM or other external structure;
+- retires the pre-reversal active bootstrap candidate/IDM/measurement lineage without retroactive event rewriting;
+- reverses the active mapping direction;
+- uses the actual trigger candle as the new explicit active-impulse origin;
+- derives the new bootstrap anchor from that actual candle's direction-consistent extreme;
+- resumes Layer-1 / Layer-2 construction strictly forward from the real reversal candle;
+- preserves the original `C0` as the mapping-origin of the overall mapping domain.
+
+This is an implementation/state-machine transition outcome, not a new Major-Structure event class.
+
+## Cross-document alignment
+
+Aligned:
+
+- `.agents/skills/smc/03_structural_semantic_authority.md`
+- `.agents/skills/smc/04_BOS_mechanics.md`
+- `.agents/skills/smc/05_CHOCH_mechanics.md`
+- `.agents/skills/smc/08_implementation.md`
+- `.agents/skills/smc/source_reconciliation.md`
+- `specifications/smc_mapper_specification.md`
+- `.agents/skills/smc/skill.md`
+
+Also corrected the stale Layer-3 lifecycle wording that represented `IDM_TAKEN` as direct `CONFIRMED_STRUCTURAL_SWING` promotion; it now matches the candidate → bootstrap range → macro qualification → confirmed swing lifecycle established in Phases 44–46.
+
+## Audit status
+
+PASS — bootstrap reversal is explicitly separated from BOS and CHoCH.
+PASS — no synthetic candle or historical rewind is introduced.
+PASS — active-lineage reversal and provenance are deterministic.
+PASS — original C0 mapping origin remains immutable.
+PASS — bootstrap reversal cannot manufacture Protected Structural Extreme, Dealing Range, Major IDM, BOS, or CHoCH.
+PASS — Layer 1 / Layer 2 reconstruction after reversal is forward-only.
+BLOCKED — Python/runtime conformance remains unresolved because this phase changes documentation only.
+
+## Commit/test status
+
+Documentation-only commit. No Python files modified. No Python test run is claimed.

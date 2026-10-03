@@ -103,9 +103,37 @@ TRACEABLE IMPLEMENTATION CONTRACT
 ```
 
 The bootstrap policy must never be described as if it were directly defined by the source corpus. Future source material may supersede the gap only through the normal reconciliation and human-approval workflow.
+### Bootstrap reversal reconciliation
+
+The indexed source corpus does not define a deterministic first-BOS bootstrap-reversal state machine. It contains descriptive examples of directional/bias shifts, but no source-owned rule that turns a pre-structure bootstrap anchor break into a CHoCH or defines the required downstream restart semantics.
+
+The project therefore resolves this separately and explicitly:
+
+```text
+BOOTSTRAP_ORIGIN_ANCHOR physical break
+        ↓
+BOOTSTRAP_ANCHOR_BREAK
+        ↓
+BOOTSTRAP_REVERSAL
+        ↓
+new active bootstrap lineage
+        ↓
+new Layer-1 / Layer-2 construction
+```
+
+This is project-canonical composition, not a source quotation.
+
+The reconciliation boundary is strict:
+
+- `BOOTSTRAP_ANCHOR_BREAK` is a physical initialization event, not an external structural break.
+- `BOOTSTRAP_REVERSAL` is not `CHoCH_CONFIRMED`, `VALID_BOS`, `MAJOR_IDM_SWEEP`, or `PROTECTED_STRUCTURAL_EXTREME`.
+- The reversal candle is a real OHLC candle and becomes the explicit active-impulse origin for the new bootstrap lineage; no synthetic candle or historical rewind is permitted.
+- The new direction re-derives its `BOOTSTRAP_ORIGIN_ANCHOR` from that actual candle.
+- Pre-reversal bootstrap candidates/IDM/measurement state are retired forward-only without retroactive reclassification.
+- Structural BOS/CHoCH pipelines remain unavailable until their independent canonical prerequisites are satisfied.
 ## Mapping-origin and swing-promotion reconciliation
 
-The project-canonical mapping model treats the first eligible completed candle of an initial mapping domain as `C0`, the mapping-origin candle and causal state-machine anchor. This is not an arbitrary bootstrap placeholder: the mapping is defined to begin there and to construct higher-layer state chronologically from lower-layer evidence.
+The project-canonical mapping model treats the first eligible completed candle of an initial mapping domain as `C0`, the mapping-origin candle and causal state-machine anchor. This is not an arbitrary bootstrap placeholder: the mapping is defined to begin there and to construct higher-layer state chronologically from lower-layer evidence. A later `BOOTSTRAP_REVERSAL` does not redefine `C0`; it starts a new active lineage from the actual reversal candle while preserving the original mapping chronology.
 
 The indexed source evidence describes IDM takeout as acquiring/confirming a swing point and then separately evaluates retracement depth and the later swing break. The canonical state representation therefore distinguishes the source-described swing point from the BOS-eligible structural object: `IDM_TAKEN → SWING_CANDIDATE / PROVISIONAL_STRUCTURAL_EXTREME → MACRO RETRACEMENT QUALIFICATION → CONFIRMED_STRUCTURAL_SWING → STRUCTURAL_SWING_BREAK → VALID_BOS`.
 For the bootstrap case, the candidate must exist before macro qualification because its structural price is an endpoint of the first-BOS measurement baseline: `BOOTSTRAP_ORIGIN_ANCHOR → SWING_CANDIDATE → BOOTSTRAP_RANGE → MACRO RETRACEMENT QUALIFICATION → CONFIRMED_STRUCTURAL_SWING`.

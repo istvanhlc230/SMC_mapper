@@ -38,6 +38,9 @@ PROTECTED_STRUCTURAL_EXTREME_LOCK + TRADING_RANGE_ROLLOVER
 
 ### 3.4.1 — BOS Reference Identity
 
+`BOOTSTRAP_ORIGIN_ANCHOR` and a bootstrap anchor break are never continuation-BOS references. While the mapper is still in bootstrap, an anchor penetration is routed to `BOOTSTRAP_ANCHOR_BREAK → BOOTSTRAP_REVERSAL` and is not evaluated by the BOS pipeline.
+
+
 The only legitimate continuation-BOS reference object is an eligible **CONFIRMED_STRUCTURAL_SWING** of the active lifecycle:
 
 - bullish lifecycle → Confirmed Swing High;
@@ -375,7 +378,7 @@ OPPOSING EXTERNAL BREAK
 CHoCH PIPELINE (CHoCH_CONFIRMED)
 ```
 
-A MAJOR_IDM event can produce `MAJOR_IDM_SWEEP`; it cannot be simultaneously classified as `VALID_BOS` or `CHoCH_CONFIRMED`.
+A MAJOR_IDM event can produce `MAJOR_IDM_SWEEP`; it cannot be simultaneously classified as `VALID_BOS` or `CHoCH_CONFIRMED`. A bootstrap anchor break is outside both structural pipelines and is classified only as `BOOTSTRAP_REVERSAL` while the mapping remains in bootstrap.
 
 ### 3.4.15 — Canonical Authority Hierarchy (MC-01)
 

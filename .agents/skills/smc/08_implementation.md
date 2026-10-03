@@ -1043,7 +1043,7 @@ POST_CHOCH
 
 `CONFIRMATION GATE UNLOCKED` is not a sixth state. It is a process condition within the applicable lifecycle state.
 
-The six detected event classes are:
+The six detected **normal structural event classes** are:
 
 ```text
 NO_EVENT / INTERNAL_PB
@@ -1054,7 +1054,21 @@ MAJOR_IDM_EVENT
 NEW_SVP_QUALIFIED
 ```
 
-The transition matrix is exhaustive and deterministic once the required canonical inputs and process/context conditions exist:
+Before those six normal event classes are evaluated, `BOOTSTRAP` has one dedicated local pre-classification:
+
+```text
+BOOTSTRAP
+    +
+BOOTSTRAP_ORIGIN_ANCHOR physical penetration (Wick OR Body)
+    ↓
+BOOTSTRAP_ANCHOR_BREAK
+    ↓
+BOOTSTRAP_REVERSAL
+```
+
+`BOOTSTRAP_ANCHOR_BREAK` is not an additional structural-event ontology class. It is a bootstrap-only initialization event routed before the normal structural event-class matrix. Its transition must reverse the active bootstrap direction, retire the pre-reversal active lineage, use the actual reversal candle as the new `EXPLICIT_ACTIVE_IMPULSE_ORIGIN`, re-derive the direction-consistent `BOOTSTRAP_ORIGIN_ANCHOR`, and resume Layer-1/Layer-2 construction strictly forward from that real candle.
+
+The transition matrix below is exhaustive for the **normal event-class domain after the bootstrap-local pre-classification gate** and is deterministic once the required canonical inputs and process/context conditions exist:
 
 | Current State | NO_EVENT / INTERNAL_PB | MINOR_IDM_EVENT | EXT_CONT_BREAK | EXT_OPP_BREAK | MAJOR_IDM_EVENT | NEW_SVP_QUALIFIED |
 |---|---|---|---|---|---|---|
@@ -1086,11 +1100,42 @@ EXPLICIT_ACTIVE_IMPULSE_ORIGIN
     = explicitly identified origin candle after CHoCH_CONFIRMED
 ```
 
-The chart-inception convention is deterministic initialization policy; it is not evidence that the first available candle is the historical impulse origin.
+The chart-inception convention makes `C0` the causal mapping-origin candle within the mapping domain. It does not make any claim about market history outside that mapping domain.
 
 After `CHoCH_CONFIRMED`, an explicit active-impulse origin is required and becomes the origin of the new mapped regime. Missing origin provenance fails closed.
 
 The anchor is never a `PROTECTED_STRUCTURAL_EXTREME`, governing Dealing Range boundary, or CHoCH boundary.
+
+#### Bootstrap reversal implementation contract
+
+```text
+physical anchor penetration
+        ↓
+BOOTSTRAP_ANCHOR_BREAK
+        ↓
+BOOTSTRAP_REVERSAL
+        ↓
+new active direction
+        ↓
+actual trigger candle = EXPLICIT_ACTIVE_IMPULSE_ORIGIN
+        ↓
+new BOOTSTRAP_ORIGIN_ANCHOR
+        ↓
+Layer-1 / Layer-2 construction resumes forward-only
+```
+
+Implementation requirements:
+
+- The trigger is a physical wick/body penetration of the active `BOOTSTRAP_ORIGIN_ANCHOR`; no candle-close requirement is added.
+- Do not emit `VALID_BOS`, `CHoCH_CONFIRMED`, `MAJOR_IDM_SWEEP`, or `PROTECTED_STRUCTURAL_EXTREME` from this trigger.
+- Retire the pre-reversal active bootstrap candidate/IDM/measurement lineage without deleting or rewriting historical events.
+- Record the trigger candle as the new explicit active-impulse origin for the reversed bootstrap lineage.
+- Re-derive the new anchor from that actual candle: bullish direction → candle `LOW`; bearish direction → candle `HIGH`.
+- Treat the trigger candle as the new Layer-1 active reference and process all later candles strictly chronologically; do not rewind to `C0`.
+- Rebuild the new direction's valid-pullback → verified-extreme → Minor IDM chain independently.
+- If required trigger/origin provenance is unavailable, fail closed rather than substituting a synthetic reference.
+
+`BOOTSTRAP_REVERSAL` is an implementation/state-machine transition outcome, not a new Major-Structure event class.
 
 #### Bootstrap measurement lifecycle
 

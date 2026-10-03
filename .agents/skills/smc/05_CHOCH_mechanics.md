@@ -55,6 +55,8 @@ CHoCH Physical-Break Gate
 
 A physical violation only opens the CHoCH classification gate; it does not itself establish `CHoCH_CONFIRMED`.
 
+**Bootstrap exclusion:** `BOOTSTRAP_ORIGIN_ANCHOR` is not an eligible CHoCH reference. A physical breach of that initialization anchor while no canonical Dealing Range / Protected Structural Extreme exists is classified as `BOOTSTRAP_ANCHOR_BREAK → BOOTSTRAP_REVERSAL`, not as `EXT_OPP_BREAK`, `CHoCH_ELIGIBLE`, or `CHoCH_CONFIRMED`. The bootstrap reversal only changes the active mapping lineage; it does not manufacture structural state.
+
 ### 3.5.2 — Opposing Boundary Break: Physical Threshold
 
 A Physical Opposing Boundary Break is the discrete OHLC event in which price physically penetrates the governing trend-protecting opposing boundary.
