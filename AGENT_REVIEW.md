@@ -3317,3 +3317,41 @@ PASS — no canonical `.agents/skills/smc/` file was modified.
 
 ## Test status
 Specification-only change. Runtime implementation and pytest suite were not run.
+
+
+# PHASE 30 — MONITOR STRUCTURED ALERT JSON OUTPUT — 2026-10-03
+
+## Scope
+Added a Monitor CLI output mode for machine-readable alert details.
+
+## Final contract
+- New flag: `--alert-json`.
+- The flag changes presentation only; alert eligibility, target resolution, target clearance, RR, News evaluation, deduplication and canonical state are unchanged.
+- Each emitted alert becomes one complete JSON object on stdout when `--alert-json` is enabled.
+- Diagnostics, debug output and errors remain on stderr.
+- JSON output is transient and never persisted.
+- V1 JSON includes, when available:
+  - symbol / analysis / direction;
+  - entry;
+  - SL;
+  - TP1 / TP2 / TP3;
+  - resolved target and target metadata;
+  - Projected_RR;
+  - current price;
+  - News event identity/time/status where applicable;
+  - evaluation time;
+  - schema_version.
+- `tp1/tp2/tp3` are presentation slots only and may be populated only from already source-backed downstream target levels. They do not create a second target ontology.
+- During an ongoing News event, News-related alert JSON includes `event_status = ONGOING`.
+
+## Audit
+PASS — CLI contract and MonitorRequest now include `--alert-json`.
+PASS — machine-readable stdout ownership is explicit.
+PASS — human/diagnostic output remains separated on stderr.
+PASS — alert JSON does not introduce new canonical or targeting semantics.
+PASS — entry/SL/TP1/TP2/TP3 output is explicitly represented with null for unavailable/not-applicable values.
+PASS — News STARTED/ONGOING/ENDED behavior remains unchanged.
+PASS — no `.agents/skills/smc/` file was modified.
+
+## Test status
+Specification-only change. Runtime implementation and pytest suite were not run.
