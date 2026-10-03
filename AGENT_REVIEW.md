@@ -3558,3 +3558,40 @@ Skill and platform contract corrections were committed directly to `main`. Runti
 The Origin Order Block rule is now split into two explicit concepts: existence/validity versus fallback relevance. `ORIGIN_ORDER_BLOCK` is the furthest unmitigated validated Order Block at the dealing-range origin, regardless of parent Order Flow mitigation. Its fallback execution relevance is reached after the original Extreme Order Flow is mitigated and the applicable `EXTREME_ORDER_BLOCK` fails. This preserves the source passages without contradiction. Extreme Order Block execution failure remains distinct from `POI_FAILURE` / CHoCH and cannot manufacture structural state.
 
 Audit: PASS for Origin Order Block source reconciliation. BLOCKED remains only for the separate first-BOS retracement-baseline gap, which the source corpus does not deterministically define.
+
+# PHASE 39 — EXHAUSTIVE INDEXED-SOURCE AUDIT OF FIRST-BOS RETRACEMENT BASELINE — 2026-10-03
+
+## Scope
+Re-reviewed all 20 indexed files under `knowledgebase/sources/` specifically for any explicit or implicit rule that defines the retracement-depth baseline for the first canonical VALID_BOS, including dealing/trading-range initialization, impulse-origin initialization, swing-point initialization, Fibonacci measurement anchors, and first-BOS wording.
+
+## Source-set conclusion
+The indexed source set does **not** provide a deterministic first-BOS retracement baseline.
+
+The recurring source sequence is:
+1. valid pullback / inducement forms;
+2. inducement is taken, confirming the swing point;
+3. retracement depth is evaluated against an already-existing dealing/trading range;
+4. the external swing is broken and VALID_BOS occurs;
+5. only then is the new dealing/trading range explicitly identified or re-established.
+
+Representative evidence:
+- `Become-a-TRUE-Forex-Trader-Become-a-TRUE-Forex-Trader_text_format.txt` states that retracement validity is measured as a percentage of **the dealing range** and that BOS requires inducement takeout plus the swing-point break, but does not define how the first dealing range is initialized.
+- `truesmc2026.txt` repeatedly identifies a new trading range after a valid BOS and then measures subsequent retracements against that range.
+- `advanced_market_structure_mapping.txt` explicitly measures the post-inducement retracement from the range low/high already present in the mapped structure; it does not define a pre-range initialization baseline.
+- `smc_trader_another_missing_piece.txt` explicitly discusses the 50%/38.2% exception using an already-existing dealing range and then establishes a new trading range after BOS.
+- `true_smc_21dayBootCamp.txt`, `market_structure_mapping_update.txt`, `true_smc123.txt`, `market_structure_mapping_made_simple.txt`, and the other indexed source files examined likewise operate on already-formed structural/dealing ranges and do not provide a first-BOS initialization rule.
+
+## Important distinction
+The source set does support the following canonical facts:
+- standard retracement depth is discussed relative to an identified dealing/trading range;
+- 38.2% is a source-supported minimum/conditional depth in the relevant exception path;
+- 50% is the standard equilibrium/deep-retracement reference in the later material;
+- IDM takeout confirms the relevant swing before the continuation break;
+- a new dealing/trading range is identified from the resulting structural extremes after VALID_BOS.
+
+What remains absent is the mapping from **physical impulse origin + confirmed structural swing** to an explicit initial dealing-range baseline before the first VALID_BOS.
+
+## Audit conclusion
+PASS — the entire indexed source set was checked for a first-BOS baseline definition.
+PASS — no source passage was found that deterministically resolves the missing initialization baseline.
+BLOCKED — the first-BOS retracement baseline remains a genuine source gap. The canonical skill must not invent an initialization formula such as impulse-origin-to-confirmed-swing unless separately approved as a project canonical decision.
