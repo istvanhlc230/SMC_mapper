@@ -194,6 +194,16 @@ Use `ProviderCandle`.
 
 Provider-facing state may contain provider-specific types/metadata. Required conceptual fields are:
 
+**Field semantics:**
+
+- `source_timestamp` is the provider-native timestamp before canonical normalization.
+- `source_timezone` is the authoritative source timezone when the provider supplies it separately.
+- `timestamp` is the normalized UTC candle identity timestamp and represents the candle interval start.
+- `completion_hint` is provider evidence only; it never overrides the canonical completion rules.
+- `provider_metadata` remains provider-local and must not cross into the persisted normalized JSON boundary.
+
+A provider adapter must either supply an unambiguous timezone with the timestamp or fail the record. It must never silently assume the machine-local timezone.
+
 ```text
 source_timestamp
 source_timezone
@@ -238,6 +248,16 @@ delta = buy - sell
 
 ## 3.4 Normalized candle
 
+A `NormalizedCandle` is the only candle representation allowed to cross from acquisition/normalization into persistence.
+
+The canonical interval is:
+
+```text
+[timestamp, completion_time)
+```
+
+where `timestamp` is the interval start and `completion_time` is the interval close boundary. A candle is eligible for `candles[]` only after its completion status is true.
+
 ```python
 @dataclass(frozen=True)
 class NormalizedCandle:
@@ -252,6 +272,16 @@ class NormalizedCandle:
 ```
 
 ## 3.5 Timeframe state
+
+The state contains exactly one completed series and at most one current snapshot for the timeframe.
+
+Invariants:
+
+- `candles[]` contains completed candles only;
+- `current` is either null or one in-progress candle;
+- the same candle identity must never exist simultaneously in both locations;
+- `available_start/end` are derived from `candles[]` only;
+- current-snapshot changes do not change completed-candle availability bounds.
 
 ```python
 @dataclass
@@ -294,7 +324,16 @@ Python may use `Decimal` internally for deterministic financial arithmetic; `Dec
 
 ## 3.8 Model vs. JSON representation boundary
 
-Core processing uses the explicit domain models above. Persistence helpers may use plain Python dictionaries/lists while translating to and from the approved JSON schema.
+Core processing uses the explicit domain models above.
+
+The persisted JSON contract has four deliberate boundaries:
+
+1. source/provider fields are gone;
+2. Decimal values are serialized as deterministic strings;
+3. completed candles and current snapshot are represented separately;
+4. optional volume branches are omitted when unavailable.
+
+The Mapper consumes only this serialized contract and must not need provider-specific reconstruction logic. Persistence helpers may use plain Python dictionaries/lists while translating to and from the approved JSON schema.
 
 No canonical SMC semantic meaning may depend on the JSON container type.
 
@@ -441,6 +480,22 @@ Rules:
 - `--starttime` and `--endtime` may be used together for historical range acquisition;
 - invalid temporal ordering must fail explicitly;
 - do not silently infer a different symbol or timeframe.
+
+### Request-mode decision table
+
+| Condition | Completed-candle operation | Current-snapshot operation |
+|---|---|---|
+| historical `start+end` | requested completed interval | only when `--live` |
+| historical `start` only | `start` through latest completed | only when `--live` |
+| historical `end` only | persisted `available_start` through `end`; fail if no existing range | only when `--live` |
+| no boundaries, no `--lastcandle`, `--live=false` | incremental after `available_end`; latest completed if empty | none |
+| no boundaries, no `--lastcandle`, `--live=true` | same incremental completed behavior | fetch latest current |
+| `--lastcandle`, `--live=false` | exactly one latest completed | none |
+| `--lastcandle`, `--live=true` | exactly one latest completed | fetch latest current |
+
+The `--live` flag is orthogonal to completed-candle acquisition. It adds current-snapshot refresh; it does not change the completed-candle range semantics.
+
+`--lastcandle` changes the completed-candle branch to exactly one latest completed candle and is mutually exclusive with explicit historical boundaries.
 
 ## 5.3 normalize_symbol
 
@@ -608,6 +663,32 @@ Python V1 may use normal return values. An MQL4/MQL5 port should use virtual met
 The base class owns acquisition only. Concrete provider classes own transport, pagination, parsing, retries and provider-specific field mapping.
 
 The provider abstraction must not depend on JSON persistence, mapper state, monitor state, or canonical SMC logic.
+
+### Provider result contract
+
+Provider methods must obey these rules:
+
+- `fetch_range()` returns provider candles whose logical records cover the requested provider range; it may overfetch minimal provider-boundary data needed to resolve completion correctly.
+- The caller, not the provider, owns final inclusion into the normalized completed series.
+- Provider pagination must be invisible to the caller.
+- Provider-level duplicate records are tolerated only when they normalize to the same candle identity and equivalent content.
+- A provider failure is an acquisition failure; it must not be represented as an empty successful result.
+- An empty successful provider response means “no provider records available for the requested operation” and must remain distinguishable from a transport/API error.
+- `fetch_latest_completed()` must return the newest record that is actually complete under the canonical completion check; the provider must not return an arbitrary latest in-progress record.
+- `fetch_current()` must return the latest current record when available; if the provider cannot expose current state, returning `None` is valid and must not be converted into a fabricated candle.
+
+### Provider boundary decision table
+
+| Provider outcome | Mapper-facing result |
+|---|---|
+| valid records | normalize and validate |
+| valid empty response | no incoming records; continue according to request mode |
+| malformed record | normalization/data-integrity failure |
+| ambiguous source time | normalization failure |
+| transport/API failure | provider acquisition failure |
+| timeout after retries | provider acquisition failure |
+| provider reports incomplete record | current candidate only |
+| provider reports completed record | completed candidate |
 
 # 7. COMPLETION AND CURRENT-CANDLE LOGIC
 
@@ -801,6 +882,27 @@ Validate:
 
 Do not repair invalid data silently.
 
+### Normalization acceptance/rejection matrix
+
+| Input condition | Action |
+|---|---|
+| valid timezone-aware timestamp | normalize to UTC |
+| naive/ambiguous timestamp | FAIL |
+| finite numeric OHLC | convert to Decimal |
+| non-numeric OHLC | FAIL |
+| `high < low` | FAIL |
+| open/close outside high-low range | FAIL |
+| negative total volume | FAIL |
+| negative buy/sell branch value | FAIL |
+| missing optional volume branch | omit/unavailable |
+| provider orderflow present | preserve as observed orderflow |
+| only OHLC data available | preserve only OHLC-derived branch |
+| provider-specific metadata | discard at normalized boundary |
+| duplicate record with same normalized identity/content | deduplicate |
+| duplicate record with same identity but conflicting content | FAIL |
+
+No normalization path may silently coerce malformed financial values into another valid value.
+
 ---
 
 # 9. VOLUME DATA NORMALIZATION
@@ -957,6 +1059,18 @@ Rules:
 - retention is operational storage policy only.
 
 The function must be pure with respect to its inputs.
+
+### Retention algorithm
+
+1. partition completed candles into protected and unprotected sets;
+2. retain every protected candle;
+3. from unprotected candles, retain the newest entries first until `retention_limit` is reached;
+4. if protected candles alone exceed `retention_limit`, retain all protected candles for this invocation;
+5. restore strict chronological ordering before returning;
+6. never mutate candle contents;
+7. never delete the current snapshot because of completed-candle retention.
+
+Retention therefore bounds ordinary storage while guaranteeing that an explicitly requested historical range survives long enough for the consuming Mapper invocation.
 
 ## 11.2 Retention and reacquisition
 
@@ -1170,6 +1284,26 @@ The current field uses the same serialized candle shape when present, but it is 
 
 The mapper may deserialize this schema into its own read-only view model. It must not import Market Data domain classes merely to read the JSON boundary.
 
+### JSON validity invariants
+
+A persisted Market Data document is valid only when all of the following hold:
+
+- top-level `symbol` is a non-empty string;
+- top-level `timeframes` is an object;
+- every timeframe key is canonical and unique;
+- every timeframe state contains `available_start`, `available_end`, `candles`, and `current`;
+- `candles` is an array of completed candle records;
+- `current` is null or one in-progress candle;
+- candle IDs are deterministic and unique within the timeframe;
+- candle timestamps are strictly ascending;
+- each candle has UTC `timestamp` and `completion_time`;
+- `completion_time > timestamp`;
+- persisted numeric values use the approved Decimal string representation;
+- availability bounds equal the first/last persisted completed candle timestamps, or both are null when `candles=[]`;
+- `current` never changes availability bounds.
+
+A malformed persisted document must fail validation. The loader must never “repair” it by dropping unknown or invalid records.
+
 ---
 
 # 13. ACQUISITION PLANNING
@@ -1231,6 +1365,22 @@ When neither historical boundaries nor `--lastcandle` apply and `live=False`:
 - allow multiple newly completed candles when execution was missed.
 
 This function plans provider acquisition only. It does not manipulate mapper checkpoints.
+
+### Resolved acquisition range contract
+
+`resolve_acquisition_range()` returns a logical canonical range after applying request mode, existing state, and current evaluation time.
+
+The returned range must satisfy:
+
+- start and end are timezone-aware UTC values when present;
+- start <= end;
+- the range never exceeds the explicit user-requested boundary;
+- when no explicit end exists, the end is the latest completed candle boundary resolved at evaluation time;
+- when incremental mode uses `available_end`, the next acquisition begins strictly after the persisted end candle;
+- acquisition logic must not use the current snapshot as a completed-candle boundary;
+- the function must be deterministic when `now` is supplied explicitly.
+
+The provider may fetch a slightly wider provider-native range when required by its API, but the normalized merge layer is responsible for final canonical inclusion.
 
 ## 13.2 Missing retained history
 
@@ -1329,6 +1479,26 @@ Responsibilities:
 
 It must not modify any other timeframe.
 
+### update_timeframe transaction semantics
+
+`update_timeframe()` operates only on the supplied in-memory timeframe state.
+
+It must:
+
+1. compute the resolved acquisition operation;
+2. fetch provider data;
+3. normalize/validate all incoming records;
+4. merge completed records;
+5. refresh/clear current snapshot as required;
+6. apply retention;
+7. recompute availability bounds;
+8. validate the resulting timeframe state;
+9. return `True` only when the resulting state differs from the original state.
+
+If any step fails, the caller receives a failure and the original symbol document remains unchanged because the top-level orchestration has not committed it.
+
+The function must not write the target JSON file directly.
+
 ---
 
 # 15. TOP-LEVEL ORCHESTRATION
@@ -1370,6 +1540,38 @@ Important:
 - a failure in one timeframe fails the current invocation and does not persist any partial change from that invocation;
 - do not persist a partially updated document;
 - use one complete read-modify-write transaction for the symbol.
+
+### Symbol-level transaction semantics
+
+The top-level operation behaves as:
+
+```text
+LOAD EXISTING DOCUMENT
+        ↓
+COPY IN-MEMORY WORKING STATE
+        ↓
+UPDATE TIMEFRAME 1
+        ↓
+UPDATE TIMEFRAME 2
+        ↓
+...
+        ↓
+VALIDATE COMPLETE WORKING DOCUMENT
+        ↓
+NO CHANGES? → RETURN False
+        ↓
+ATOMIC SAVE
+        ↓
+RETURN True
+```
+
+Commit rules:
+
+- no file write occurs before all requested timeframes succeed;
+- the existing on-disk document remains untouched if any timeframe fails;
+- only one atomic replacement is performed for a successful multi-timeframe update;
+- unrelated timeframe records remain byte/semantically intact except for deterministic serialization changes caused by a successful transaction;
+- a persistence failure means the update is unsuccessful even if in-memory processing succeeded.
 
 ## 15.2 No-op behavior
 
@@ -1437,6 +1639,32 @@ Normal successful execution must be user-silent.
 ## 16.3 Error categories
 
 Use explicit, readable error messages.
+
+Every failure must belong to exactly one primary category and must stop the affected operation. Categories are prioritized from boundary to persistence:
+
+1. CLI/input error
+2. symbol/path validation error
+3. provider configuration error
+4. provider acquisition error
+5. provider response/schema error
+6. timestamp/timezone error
+7. completion-state error
+8. normalization/OHLC error
+9. volume-data validation error
+10. data-integrity/merge conflict
+11. retention/state validation error
+12. JSON load/schema error
+13. JSON serialization error
+14. atomic-write/retry failure
+
+Rules:
+
+- no failure is converted to an empty successful result;
+- no malformed persisted document is silently replaced;
+- expected retryable I/O failures are retried only within the finite configured limit;
+- after retry exhaustion, the operation fails;
+- failure must not partially persist the current symbol transaction;
+- debug output may include the category and concise cause, but never raw provider secrets or credentials.
 
 At minimum distinguish:
 
@@ -1918,4 +2146,13 @@ The output of this process is only the normalized market-data JSON state. Canoni
 - debug output is stderr-only;
 - no legacy runtime dependency exists;
 - unit tests cover the module boundaries;
-- the resulting JSON is directly consumable by `smc_mapper.py` without adapter logic inside the mapper.
+- the resulting JSON is directly consumable by `smc_mapper.py` without adapter logic inside the mapper;
+- every acquisition mode follows the documented decision table;
+- no incomplete candle can enter `candles[]`;
+- no completed candle can coexist with the same candle ID in `current`;
+- a failed multi-timeframe update cannot leave a partially persisted symbol document;
+- repeated provider acquisition is idempotent;
+- completed candle conflicts fail closed;
+- explicit historical reacquisition remains retained through the current processing transaction;
+- `available_start/end` represent completed-candle bounds only;
+- provider errors, malformed records, and malformed persisted JSON remain distinguishable failure classes.
