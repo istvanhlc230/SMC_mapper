@@ -174,3 +174,26 @@ Required local validation:
     python calendar.py delete --cleartext
 
 Expected: the first, third commands render event blocks; the second remains JSON; the delete form is explicitly rejected. No SMC methodology or canonical event contract is changed.
+
+## Standalone Currency Calendar Queries — 2026-10-04
+
+Extended the Calendar symbol query contract to support standalone supported three-letter currency codes in addition to six-letter FX pairs.
+
+Behavior:
+
+- `HUF` is a valid query symbol and filters events whose canonical currency is exactly `HUF`.
+- `USDHUF` remains a pair query and filters `USD` plus `HUF` events.
+- Standalone currency queries do not implicitly become FX pairs.
+- Provider-wide `ALL` events are not implicitly injected into standalone currency results.
+- `--cleartext` remains presentation-only and works with both pair and standalone currency queries.
+
+Required local validation:
+
+    python -m py_compile calendar.py
+    python calendar.py next_week HUF next
+    python calendar.py next_week HUF next --cleartext
+    python calendar.py next_month HUF next --cleartext
+    python calendar.py HUF
+    python calendar.py USDHUF
+
+The owning Calendar specification and design were synchronized with the implementation in this iteration.

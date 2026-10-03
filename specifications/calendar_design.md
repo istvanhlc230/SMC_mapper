@@ -45,12 +45,19 @@ An @HH:MM suffix sets the evaluation reference time while acquisition covers the
 
 ## 4. Symbol Contract
 
-A symbol is a six-letter FX pair made from:
+A Calendar symbol query accepts either a supported standalone currency code or a six-letter FX pair made from:
 
     USD EUR GBP JPY CHF AUD CAD NZD CNY HUF
 
-Examples: USDHUF, EURHUF, EURUSD, USDJPY.
-Common separators /, - and _ are removed and the result is upper-cased. Invalid or unsupported symbols are rejected explicitly.
+Examples: HUF, USDHUF, EURHUF, EURUSD, USDJPY.
+
+Semantics:
+- standalone HUF matches HUF events only;
+- USDHUF matches USD and HUF events;
+- a standalone currency does not implicitly expand to a pair;
+- provider-wide ALL events are not implicitly injected into standalone currency results.
+
+Common separators /, - and _ are removed from FX-pair input and the result is upper-cased. Invalid or unsupported calendar symbols are rejected explicitly.
 Symbol-only execution never performs provider acquisition.
 
 ## 5. Evaluation Contract
@@ -74,11 +81,12 @@ The canonical pipeline is:
 Example:
 
     python calendar.py today USDHUF current
+    python calendar.py today HUF current
 
 1. Resolve today's UTC interval.
 2. Ensure required coverage exists.
 3. Use the post-acquisition calendar document.
-4. Filter events to USDHUF currencies.
+4. Filter events to USD and HUF currencies.
 5. Apply current evaluation.
 
 Symbol-only example:

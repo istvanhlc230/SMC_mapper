@@ -159,7 +159,9 @@ All internal timestamps and scope boundaries are UTC.
 
 ## 2.3 Symbol
 
-A symbol is a six-letter FX pair built from:
+A Calendar symbol query accepts either:
+- a supported standalone three-letter currency code; or
+- a six-letter FX pair built from:
 
 ```text
 USD EUR GBP JPY CHF AUD CAD NZD CNY HUF
@@ -168,13 +170,20 @@ USD EUR GBP JPY CHF AUD CAD NZD CNY HUF
 Examples:
 
 ```text
+HUF
 USDHUF
 EURHUF
 EURUSD
 USDJPY
 ```
 
-Common `/`, `-`, and `_` separators are normalized before validation:
+Semantics:
+- `HUF` matches events whose canonical `currency` is exactly `HUF`.
+- `USDHUF` matches events whose canonical `currency` is either `USD` or `HUF`.
+- A standalone currency query does not implicitly expand to a currency pair.
+- Provider-wide `ALL` events are not implicitly injected into standalone currency results.
+
+Common `/`, `-`, and `_` separators are normalized for FX pairs before validation:
 
 ```text
 EUR/HUF -> EURHUF
@@ -182,7 +191,7 @@ USD-HUF -> USDHUF
 USD_HUF -> USDHUF
 ```
 
-Invalid or unsupported symbols are rejected explicitly.
+Invalid or unsupported calendar symbols are rejected explicitly.
 
 ## 2.4 Evaluation
 
@@ -195,7 +204,7 @@ next
 
 - `current` returns events whose canonical timestamp matches the reference date/hour/minute.
 - `next` returns the earliest event strictly after the reference timestamp.
-- with no evaluation token, all relevant symbol events inside the resolved scope are returned.
+- with no evaluation token, all relevant currency/pair events inside the resolved scope are returned.
 
 ## 2.5 Execution semantics
 

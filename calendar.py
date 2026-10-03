@@ -63,9 +63,12 @@ SCOPE
                  Inclusive UTC date range
 
 SYMBOL
-  Six-letter FX pair using supported currencies:
-  USD EUR GBP JPY CHF AUD CAD NZD CNY HUF
-  Common separators are normalized: EUR/HUF, USD-HUF, USD_HUF.
+  Supported query forms:
+  - six-letter FX pair using:
+    USD EUR GBP JPY CHF AUD CAD NZD CNY HUF
+  - standalone supported three-letter currency code
+  Common separators are normalized for FX pairs: EUR/HUF, USD-HUF, USD_HUF.
+  Examples: USDHUF filters USD + HUF events; HUF filters HUF events only.
 
 EVALUATION
   current        Events matching reference date/hour/minute
@@ -92,8 +95,11 @@ DELETE
 EXAMPLES
   python calendar.py today
   python calendar.py today USDHUF
+  python calendar.py today HUF
   python calendar.py today USDHUF current
+  python calendar.py today HUF current
   python calendar.py today USDHUF next
+  python calendar.py today HUF next
   python calendar.py today@14:30 EURHUF current
   python calendar.py next_week USDHUF next
   python calendar.py next_month EURUSD
@@ -122,19 +128,30 @@ def normalize_symbol(symbol: str) -> str:
 
 def validate_symbol(symbol: str) -> str:
     normalized = normalize_symbol(symbol)
-    if len(normalized) != 6:
-        sys.exit(
-            f"Error: Invalid FX symbol '{symbol}'. "
-            "Expected a six-letter FX pair."
-        )
-    first, second = normalized[:3], normalized[3:]
-    if first not in SUPPORTED_CURRENCIES or second not in SUPPORTED_CURRENCIES:
-        sys.exit(f"Error: Unsupported FX symbol '{symbol}'.")
-    return normalized
+
+    if len(normalized) == 3:
+        if normalized not in SUPPORTED_CURRENCIES:
+            sys.exit(f"Error: Unsupported currency query '{symbol}'.")
+        return normalized
+
+    if len(normalized) == 6:
+        first, second = normalized[:3], normalized[3:]
+        if (
+            first in SUPPORTED_CURRENCIES
+            and second in SUPPORTED_CURRENCIES
+        ):
+            return normalized
+
+    sys.exit(
+        f"Error: Invalid calendar symbol '{symbol}'. "
+        "Expected a supported three-letter currency or six-letter FX pair."
+    )
 
 
 def is_symbol(token: str) -> bool:
     normalized = normalize_symbol(token)
+    if len(normalized) == 3:
+        return normalized in SUPPORTED_CURRENCIES
     return (
         len(normalized) == 6
         and normalized[:3] in SUPPORTED_CURRENCIES
@@ -1034,6 +1051,8 @@ def normalize_calendar_events(
 
 def extract_symbol_currencies(symbol: str) -> List[str]:
     normalized = validate_symbol(symbol)
+    if len(normalized) == 3:
+        return [normalized]
     return [normalized[:3], normalized[3:]]
 
 
