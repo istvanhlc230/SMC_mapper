@@ -35,9 +35,13 @@ MINOR_IDM
         ↓
 LAYER 3 IDM_TAKEN / MAJOR_IDM GOVERNANCE
         ↓
-CONFIRMED_STRUCTURAL_SWING
+SWING_CANDIDATE / PROVISIONAL_STRUCTURAL_EXTREME
+        ↓
+[LAYER 3 BOOTSTRAP_RANGE — first-BOS bootstrap only]
         ↓
 LAYER 3 STRUCTURAL RETRACEMENT QUALIFICATION
+        ↓
+CONFIRMED_STRUCTURAL_SWING
         ↓
 STRUCTURAL_SWING_BREAK
         ↓
@@ -165,7 +169,7 @@ VERIFIED PULLBACK EXTREME
 
 ## 5. Layer-2 pullback handoff and Layer-3 IDM input
 
-A completed Candle-Level Valid Pullback is sufficient for Layer 2 to verify its directional extreme and establish the corresponding Minor IDM from its pullback-derived liquidity reference. Layer 3 consumes the Minor IDM for IDM_TAKEN, Major IDM governance, and the external structural lifecycle. The later major structural retracement qualification is NOT an initial IDM prerequisite; it belongs to the continuation-BOS gate after CONFIRMED_STRUCTURAL_SWING.
+A completed Candle-Level Valid Pullback is sufficient for Layer 2 to verify its directional extreme and establish the corresponding Minor IDM from its pullback-derived liquidity reference. Layer 3 consumes the Minor IDM for IDM_TAKEN, Major IDM governance, and the external structural lifecycle. When the active IDM reference is taken, Layer 3 first establishes the `SWING_CANDIDATE / PROVISIONAL_STRUCTURAL_EXTREME`. The applicable structural retracement qualification then operates as the promotion gate to `CONFIRMED_STRUCTURAL_SWING`; it is therefore evaluated **before** confirmation, not after it. In the first-BOS bootstrap process, the transient `BOOTSTRAP_RANGE` is activated from the established candidate before the qualification measurement is performed.
 
 ~~~
 CANDLE-LEVEL VALID PULLBACK
