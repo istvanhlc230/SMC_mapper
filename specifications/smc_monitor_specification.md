@@ -1231,9 +1231,9 @@ At minimum, the logical alert detail contains:
 - source POI identity where applicable;
 - entry reference price when available;
 - stop-loss reference when available;
-- TP1, TP2 and TP3 when source-backed target levels are available;
+- TP1, TP2 and TP3 when source-backed downstream target-leg levels are available;
 - current reference price when available;
-- resolved target price and target coordinate/type when a single resolved target exists;
+- resolved target price and its exact canonical/downstream target type and coordinate when resolved;
 - projected RR when calculable;
 - News event identity/time/impact/status when the alert is News-related;
 - evaluation time.
@@ -1258,7 +1258,7 @@ CLI option:
 
 When enabled, each emitted alert is written as exactly one complete JSON object to stdout.
 
-The JSON object is the machine-readable alert contract and contains `schema_version = 1` for V1. Human-readable alert text is not mixed into stdout when `--alert-json` is enabled.
+The JSON object is the machine-readable alert contract and contains numeric `schema_version: 1` for V1. Human-readable alert text is not mixed into stdout when `--alert-json` is enabled.
 
 Diagnostics, debug output, warnings, and errors remain on stderr.
 
@@ -1280,6 +1280,7 @@ Recommended logical JSON shape:
 
 ```json
 {
+  "schema_version": 1,
   "alert_type": "SETUP_ELIGIBLE",
   "symbol": "EURUSD",
   "analysis_key": "EURUSD|H4|H1|...",
@@ -1287,12 +1288,12 @@ Recommended logical JSON shape:
   "entry": 1.17000,
   "sl": 1.16500,
   "tp1": 1.17500,
-  "tp2": 1.18000,
+  "tp2": null,
   "tp3": null,
-  "target_price": 1.18000,
-  "target_type": "FVG",
-  "target_coordinate": "upper_boundary",
-  "projected_rr": 2.0,
+  "target_price": 1.17500,
+  "target_type": "<exact canonical target-source type>",
+  "target_coordinate": "<exact canonical target coordinate>",
+  "projected_rr": 1.0,
   "current_price": 1.16950,
   "event_status": null,
   "event": null,
@@ -1302,7 +1303,22 @@ Recommended logical JSON shape:
 
 Field values that are unavailable or not applicable are `null`. The exact JSON numeric serialization follows the Monitor's approved deterministic numeric representation.
 
-For the current V1 single-target runtime, `target_price` is the resolved target. `tp1`, `tp2`, and `tp3` are optional presentation slots for source-backed downstream target levels; they must not cause the Monitor to invent, rank, or split targets.
+### Canonical target vocabulary rule
+
+`target_type` and `target_coordinate` must use the exact canonical/downstream definitions already supplied by the resolved target object. The Monitor must not introduce a parallel target taxonomy.
+
+The canonical ruleset establishes, among others:
+
+- direct same-timeframe pro-trend: the confirmed external range extreme / external liquidity candidate; the structural representation is `Confirmed_Swing_High` for bullish direction and `Confirmed_Swing_Low` for bearish direction;
+- LTF execution: the target-policy boundary may explicitly select `HTF_EXTERNAL_TARGET` or `LTF_STRUCTURAL_TARGET`;
+- countertrend: the destination is setup-specific and may be a next valid POI, IDM, Engineering Liquidity, or external liquidity according to the active setup contract;
+- non-structural policy targets must remain explicitly identifiable as policy targets.
+
+The Monitor must preserve target provenance rather than collapsing these source classes into a generic label.
+
+**FVG must never be emitted as `target_type` merely because an FVG exists.** The canonical ruleset defines FVG as an ontology distinct from target/POI and as an OB validation/property; a standalone FVG is not a tradable POI and does not become a target by itself.
+
+For the current V1 single-target runtime, `target_price` is the resolved target. `tp1`, `tp2`, and `tp3` are optional presentation slots for already source-backed downstream target legs. They must not cause the Monitor to invent, rank, or split targets.
 
 The JSON output is transient runtime output. It is never written to Calendar, Structures, Market Data, or Monitor persistent state.
 
