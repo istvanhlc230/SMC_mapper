@@ -116,7 +116,7 @@ Thus the source wording must not be interpreted as a direct canonical transition
 
 ### Bootstrap terminology and lifecycle
 
-The active project-canonical bootstrap terminology is `BOOTSTRAP_ORIGIN_ANCHOR`, not the superseded `BOOTSTRAP_PROTECTED_LEVEL` term.
+The active project-canonical bootstrap terminology is `BOOTSTRAP_ORIGIN_ANCHOR`.
 
 Bootstrap is a process condition and measurement context, not canonical protected structure. The transient `BOOTSTRAP_RANGE` exists only after a structural candidate exists and before structural retracement qualification. It does not create the governing Dealing Range or Protected Structural Extreme.
 
