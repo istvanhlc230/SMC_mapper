@@ -87,10 +87,55 @@ The indexed source corpus does not provide a single deterministic rule for the r
 ### Canonical project resolution
 The source gap is resolved outside the source corpus by the canonical skill through an isolated Bootstrap Initialization process:
 
-- an actual completed impulse-origin candle supplies `BOOTSTRAP_PROTECTED_LEVEL`;
-- after `IDM_TAKEN`, a transient `BOOTSTRAP_RANGE` measures first-BOS retracement only;
+- `BOOTSTRAP_ORIGIN_ANCHOR` is derived from actual initialization-origin candle evidence;
+- after `IDM_TAKEN`, the project-canonical state enters `SWING_CANDIDATE / PROVISIONAL_STRUCTURAL_EXTREME` and, for first-BOS bootstrap, a transient `BOOTSTRAP_RANGE` measures the retracement only;
 - the bootstrap range is not a governing Dealing Range and is not a Protected Structural Extreme;
 - `E_retrace(t)` remains dynamic until the actual `VALID_BOS` candle, where it is locked as `PROTECTED_STRUCTURAL_EXTREME`;
 - missing actual origin evidence fails closed.
 
 This section records the source gap and its provenance. It does not turn the project-canonical bootstrap policy into source evidence.
+
+## 10. Canonical reconciliation note — skill revision recorded 2026-10-03
+
+This section records the current project-canonical interpretation needed when the source evidence is compared with `.agents/skills/smc/`. The original transcripts remain unchanged.
+
+### IDM takeout wording
+
+The source anchors above may say that IDM takeout “confirms” or “acquires” the swing point. That wording is preserved as source evidence.
+
+The current skill formalizes the state machine more explicitly:
+
+```text
+IDM_TAKEN
+→ SWING_CANDIDATE / PROVISIONAL_STRUCTURAL_EXTREME
+→ STRUCTURAL_RETRACEMENT_QUALIFICATION
+→ CONFIRMED_STRUCTURAL_SWING
+```
+
+Thus the source wording must not be interpreted as a direct canonical transition from `IDM_TAKEN` to `CONFIRMED_STRUCTURAL_SWING`.
+
+### Bootstrap terminology and lifecycle
+
+The active project-canonical bootstrap terminology is `BOOTSTRAP_ORIGIN_ANCHOR`, not the superseded `BOOTSTRAP_PROTECTED_LEVEL` term.
+
+Bootstrap is a process condition and measurement context, not canonical protected structure. The transient `BOOTSTRAP_RANGE` exists only after a structural candidate exists and before structural retracement qualification. It does not create the governing Dealing Range or Protected Structural Extreme.
+
+### Inside-Bar OB rule
+
+Strict Inside Bars are a project-canonical Layer-6 candidate-selection exclusion. They are not eligible OB candidates and cannot independently become validated, Decisional, or Extreme OBs. This rule must not be misreported as a universal source-transcript statement.
+
+### OB/FVG fallback
+
+Where the source evidence says “next eligible candle,” the project resolves this deterministically to the **immediately next chronological candle**. The next candle is independently re-evaluated; no arbitrary forward search is canonical.
+
+### Authority
+
+```text
+SOURCE CORPUS
+    ↓
+THIS EVIDENCE INDEX
+    ↓
+.agents/skills/smc/  ← current canonical authority
+```
+
+The purpose of this note is to make the deliberate source-to-canonical distinctions auditable and prevent future audits from treating them as accidental contradictions.
