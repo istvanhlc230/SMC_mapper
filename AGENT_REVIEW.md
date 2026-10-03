@@ -4127,3 +4127,24 @@ The design must remain synchronized with material implementation changes and is 
 Audit status: PASS — the pre-implementation design, naming, portability, and documentation expectations are now explicit in the project-level developer contract.
 
 No production Python implementation was modified. No Python test result is claimed from this documentation-only phase.
+
+# CALENDAR V1 IMPLEMENTATION
+
+Implementation of the Calendar V1 module (calendar.py) compliant with specifications/calendar_specification.md.
+
+## Implementation Details
+1. **Design Gate Completed**: calendar_design.md was created prior to implementation, mapping out acquisition, local query, delete flows, concurrency, domain structures, and function ownership boundaries.
+2. **Provider Isolation**: ForexFactory payload extraction and parsing is completely isolated behind etch_calendar_source, extract_days_payload, and 
+ormalize_provider_event.
+3. **Data Integrity & Normalization**: All timestamps are canonical UTC YYYY-MM-DDTHH:MM:SSZ. Stable event_id is maintained using orexfactory:<id>. Conflicting canonical times or identities fail the transaction. Missing files return valid empty state; malformed files halt execution for data integrity.
+4. **Concurrency & Atomicity**: Utilizes OS-level lock on calendar.json.lock (with O_TEMPORARY on Windows to avoid persistent artifacts) or calendar.json (POSIX). Atomic persistence via temporary file ensures the file is never truncated or partially written. Last-known-good file is preserved on acquisition failure.
+5. **Coverage Union**: Explicit computation of coverage interval unions, retaining original requested parameters and etched_at metadata.
+6. **Query & Delete CLI**: Fully network-free query API for --current, --next, --date, --time. Delete supports precise deterministic removal of events and coverage with explicit bounds and --dry-run validation.
+7. **No Side-effects/Dependencies**: Calendar performs zero SMC evaluation, has no retention heuristics, does not evaluate "active" trading state, and relies strictly on deterministic Python standard libraries without external provider abstraction layers.
+
+## Audit & Test Evidence
+- **Command**: python -m pytest test/test_calendar.py -v
+- **Result**: 19 passed in 0.47s
+- **Coverage**: Includes CLI period validation, FF date conversion, days payload extraction, normalization, merge/deduplication, coverage union, missing event ID / dateline handling, missing calendar file response, all local query behaviors (current, next, nearest), dry-run delete, time-range deletes, and symbol relevance filtering.
+
+Status: IMPLEMENTATION READY. Awaiting independent external validation.
