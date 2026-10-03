@@ -1095,15 +1095,21 @@ The anchor is never a `PROTECTED_STRUCTURAL_EXTREME`, governing Dealing Range bo
 #### Bootstrap measurement lifecycle
 
 ```text
-BOOTSTRAP_ORIGIN_ANCHOR
+C0 / BOOTSTRAP_ORIGIN_ANCHOR
+        ↓
+LAYER 1 / LAYER 2
+        ↓
+MINOR_IDM
         ↓
 IDM_TAKEN
         ↓
-CONFIRMED_STRUCTURAL_SWING
+SWING_CANDIDATE / PROVISIONAL_STRUCTURAL_EXTREME
         ↓
 BOOTSTRAP_RANGE
         ↓
-MAJOR_RETRACEMENT_QUALIFIED
+DYNAMIC RETRACEMENT + MACRO QUALIFICATION
+        ↓
+CONFIRMED_STRUCTURAL_SWING
         ↓
 STRUCTURAL_SWING_BREAK
         ↓
@@ -1116,7 +1122,7 @@ FIRST CONFIRMED DEALING RANGE
 
 `BOOTSTRAP_RANGE` is measurement-only. It introduces no new retracement threshold, candle-count rule, displacement rule, or heuristic.
 
-The bootstrap range's structural-swing endpoint provenance must use the **swing confirmation event/candle** as the range activation boundary. The swing's original `source_candle_id` identifies where the extreme originated; it must not be substituted for the later confirmation boundary when defining the retracement observation window.
+The bootstrap range is activated at `SWING_CANDIDATE / PROVISIONAL_STRUCTURAL_EXTREME` establishment because that candidate supplies the structural endpoint required to measure first-BOS retracement depth. Its source candle remains separate provenance for the candidate itself.
 
 ### 49.4.2 `dynamic_retracement_extreme` implementation contract
 

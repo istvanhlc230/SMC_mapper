@@ -3834,3 +3834,31 @@ Audit status: PASS — the first-BOS state machine is now acyclic and causally m
 BLOCKED — Python/runtime conformance remains unresolved because this phase changes documentation only.
 
 No Python files modified. No Python test run is claimed.
+# PHASE 46 — BOOTSTRAP LIFECYCLE ORDER SYNCHRONIZATION — 2026-10-03
+
+Documentation-only correction.
+
+The Layer 8 bootstrap lifecycle table was synchronized with the Layer-3 canonical causal order. The previous wording placed `BOOTSTRAP_RANGE` after `CONFIRMED_STRUCTURAL_SWING`, which was circular because the range is required to evaluate macro retracement qualification.
+
+Correct order:
+
+```text
+C0 / BOOTSTRAP_ORIGIN_ANCHOR
+→ Layer 1 / Layer 2
+→ MINOR_IDM
+→ IDM_TAKEN
+→ SWING_CANDIDATE / PROVISIONAL_STRUCTURAL_EXTREME
+→ BOOTSTRAP_RANGE
+→ DYNAMIC RETRACEMENT + MACRO QUALIFICATION
+→ CONFIRMED_STRUCTURAL_SWING
+→ STRUCTURAL_SWING_BREAK
+→ VALID_BOS
+→ PROTECTED_STRUCTURAL_EXTREME
+→ NEW DEALING RANGE
+```
+
+Audit status: PASS — Layer 3, Layer 4, Layer 5, Layer 8, source reconciliation, and mapper specification now use the same causal promotion order.
+
+BLOCKED — Python/runtime conformance remains unresolved because only documentation was modified.
+
+No Python files modified. No Python test run is claimed.
