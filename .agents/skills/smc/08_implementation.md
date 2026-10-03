@@ -1075,14 +1075,89 @@ BOOTSTRAP_REVERSAL
 
 `BOOTSTRAP_ANCHOR_BREAK` is not an additional structural-event ontology class. It is a bootstrap-only initialization event routed before the normal structural event-class matrix. Its transition must reverse the active bootstrap direction, retire the pre-reversal active lineage, use the actual reversal candle as the new `EXPLICIT_ACTIVE_IMPULSE_ORIGIN`, re-derive the direction-consistent `BOOTSTRAP_ORIGIN_ANCHOR`, and resume Layer-1/Layer-2 construction strictly forward from that real candle.
 
+#### Independent bootstrap/state dimensions
+
+The runtime state is not sufficient by itself to represent first-BOS bootstrap progress. The implementation MUST preserve the following dimensions independently and evaluate the transition contract as their tuple:
+
+```text
+RUNTIME_STATE
+  ∈ {BOOTSTRAP, CONFIRMATION_LOCKED, CONFIRMED_RANGE, POST_BOS, POST_CHOCH}
+
+ACTIVE_FIRST_BOS_BOOTSTRAP
+  ∈ {TRUE, FALSE}
+
+STRUCTURAL_QUALIFICATION_PHASE
+  ∈ {
+       NONE,
+       SWING_CANDIDATE,
+       MACRO_RETRACEMENT_QUALIFIED,
+       CONFIRMED_STRUCTURAL_SWING,
+       PROTECTED_EXTREME_LOCKED
+     }
+
+ACTIVE_LINEAGE
+  = canonical lineage identifier + active origin/provenance
+```
+
+These are **orthogonal representations**, not additional lifecycle enums. In particular:
+
+- `ACTIVE_FIRST_BOS_BOOTSTRAP` controls whether the first-BOS bootstrap preclassification is active; it does not replace `RUNTIME_STATE`.
+- `STRUCTURAL_QUALIFICATION_PHASE` records the current structural promotion stage. `IDM_TAKEN` may advance it to `SWING_CANDIDATE`; macro qualification advances it to `CONFIRMED_STRUCTURAL_SWING`; a valid BOS lock establishes `PROTECTED_EXTREME_LOCKED`.
+- `ACTIVE_LINEAGE` identifies which causal structural/process lineage the current state belongs to. A `BOOTSTRAP_REVERSAL` retires the prior active lineage and creates a new active lineage from the actual reversal candle.
+- No event may implicitly reset another dimension. Each transition MUST specify the resulting runtime state, bootstrap flag, structural qualification phase, and active-lineage identity or provenance.
+- Historical/retired lineage remains immutable evidence and is never reused as an active input for the new lineage.
+
+Canonical bootstrap lifecycle composition:
+
+```text
+BOOTSTRAP / ACTIVE_FIRST_BOS_BOOTSTRAP=TRUE
+        + QUALIFICATION=NONE
+        ↓
+IDM_TAKEN
+        ↓
+QUALIFICATION=SWING_CANDIDATE
+        ↓
+MACRO_RETRACEMENT_QUALIFIED
+        ↓
+QUALIFICATION=CONFIRMED_STRUCTURAL_SWING
+        ↓
+STRUCTURAL_SWING_BREAK + IDM_TAKEN
+        ↓
+VALID_BOS
+        ↓
+RUNTIME_STATE=POST_BOS
+ACTIVE_FIRST_BOS_BOOTSTRAP=FALSE
+QUALIFICATION=PROTECTED_EXTREME_LOCKED
+```
+
+Post-CHoCH first-BOS composition is the same qualification lifecycle under a new runtime/process boundary:
+
+```text
+POST_CHOCH / ACTIVE_FIRST_BOS_BOOTSTRAP=TRUE
+        ↓
+FIRST_POST_CHOCH_MINOR_IDM lifecycle
+        ↓
+SWING_CANDIDATE
+        ↓
+MACRO_RETRACEMENT_QUALIFIED
+        ↓
+CONFIRMED_STRUCTURAL_SWING
+        ↓
+VALID_BOS
+        ↓
+POST_BOS / ACTIVE_FIRST_BOS_BOOTSTRAP=FALSE
+```
+
+The `SWING_CANDIDATE → MACRO_RETRACEMENT_QUALIFIED → CONFIRMED_STRUCTURAL_SWING` sequence is required regardless of whether the candidate was created by the first-bootstrap Major-IDM takeout or the post-CHoCH bootstrap lifecycle. A runtime-state change alone can never advance this qualification phase.
+
 The transition matrix below is exhaustive for the **normal event-class domain after the bootstrap-local pre-classification gate** and is deterministic once the required canonical inputs and process/context conditions exist:
 
 | Current State | NO_EVENT / INTERNAL_PB | MINOR_IDM_EVENT | EXT_CONT_BREAK | EXT_OPP_BREAK | MAJOR_IDM_EVENT | NEW_SVP_QUALIFIED |
 |---|---|---|---|---|---|---|
 | **BOOTSTRAP** | REMAIN; update provisional extremes/internal sequence | If the event physically takes the active IDM reference and thereby satisfies the L3 `IDM_TAKEN` condition: **IDM_TAKEN → SWING_CANDIDATE / PROVISIONAL_STRUCTURAL_EXTREME**; remain in the confirmation lifecycle until macro retracement qualification promotes it to **CONFIRMED_STRUCTURAL_SWING**. Otherwise (minor IDM activity that does not constitute physical takeout of the active reference): REMAIN; no confirmed range | DISQUALIFIED; no confirmed swing, therefore no BOS | DISQUALIFIED; no protected boundary, therefore no CHoCH | NOT_APPLICABLE; no active Major IDM | SVP → Verified Extreme → Minor IDM; remain BOOTSTRAP until IDM_TAKEN |
 | **CONFIRMATION_LOCKED** | REMAIN; track active expansion/retrace state | **IDM_TAKEN → SWING_CANDIDATE / PROVISIONAL_STRUCTURAL_EXTREME**; macro retracement qualification → **CONFIRMED_STRUCTURAL_SWING**; remain `CONFIRMATION_LOCKED` while BOS prerequisites continue | While Gate is LOCKED: DISQUALIFIED; BOS prohibited. When Gate is UNLOCKED (via IDM_TAKEN): evaluate the transient `BOOTSTRAP_RANGE`; if `MAJOR_RETRACEMENT_QUALIFIED`: **FIRST BOS / VALID_BOS → POST_BOS**; else: **IMPULSE_EXTENSION → REMAIN** | CHoCH pipeline; qualifying break + all prerequisites → **POST_CHOCH**, otherwise REMAIN | REMAIN; Major IDM wick → `MAJOR_IDM_SWEEP`, Gate UNLOCKED, no automatic swing | FIRST_POST_CHOCH_SVP → Verified Extreme → FIRST_POST_CHOCH_MINOR_IDM; remain confirmation-locked until applicable sweep/gate prerequisites complete |
-| **CONFIRMED_RANGE** | REMAIN; dynamic `dynamic_retracement_extreme` tracking | REMAIN; a later Minor IDM sweep updates the active IDM lifecycle; it does not retroactively alter an already confirmed swing | `IMPULSE_EXTENSION` → REMAIN; `VALID_BOS` → **POST_BOS** | `CHoCH_CONFIRMED` → **POST_CHOCH**; `MAJOR_IDM_SWEEP` → REMAIN; `NO_CHoCH_BREAK` → REMAIN | REMAIN; Major IDM wick → `MAJOR_IDM_SWEEP`, no CHoCH | REMAIN; new SVP supersedes the active pullback reference only when canonical IDM lifecycle requires it |
-| **POST_BOS** | REMAIN; new expansion tracked, closed-range POIs expire through POI lifecycle | REMAIN; a Minor IDM does not replace the prior Major IDM | DISQUALIFIED; another BOS is not interpreted until the new swing lifecycle is established | CHoCH classification pipeline; qualifying opposing break + all prerequisites → **POST_CHOCH**, otherwise REMAIN | REMAIN; Major IDM wick → `MAJOR_IDM_SWEEP`, Gate UNLOCKED | SVP → Verified Extreme → IDM qualification; if Major IDM qualifies, it supersedes the prior Major IDM → **CONFIRMED_RANGE** |
+| **CONFIRMED_RANGE** | REMAIN; dynamic `dynamic_retracement_extreme` tracking | REMAIN; a later Minor IDM sweep updates the active IDM lifecycle; it does not retroactively alter an already confirmed swing | `IMPULSE_EXTENSION` → REMAIN; `VALID_BOS` → **POST_BOS** | `CHoCH_CONFIRMED` → **POST_CHOCH**; `MAJOR_IDM_SWEEP` → REMAIN; `NO_CHoCH_BREAK` → REMAIN | Major IDM wick → `MAJOR_IDM_SWEEP` → consume as `IDM_TAKEN` → establish `SWING_CANDIDATE / PROVISIONAL_STRUCTURAL_EXTREME`; remain in the current runtime state while macro retracement qualification is pending | REMAIN; new SVP supersedes the active pullback reference only when canonical IDM lifecycle requires it |
+| **POST_BOS** | REMAIN; new expansion tracked, closed-range POIs expire through POI lifecycle | REMAIN; a Minor IDM does not replace the prior Major IDM | DISQUALIFIED; another BOS is not interpreted until the new swing lifecycle is established | CHoCH classification pipeline; qualifying opposing break + all prerequisites → **POST_CHOCH**, otherwise REMAIN | Major IDM wick → `MAJOR_IDM_SWEEP` → consume as `IDM_TAKEN` → establish `SWING_CANDIDATE / PROVISIONAL_STRUCTURAL_EXTREME`; Gate UNLOCKED and macro retracement qualification remains pending | SVP → Verified Extreme → IDM qualification; if Major IDM qualifies, it supersedes the prior Major IDM → **CONFIRMED_RANGE** |
 | **POST_CHOCH** | remain in `CONFIRMATION_LOCKED` | first post-CHoCH Minor IDM pipeline; no automatic state promotion | While Gate is LOCKED: BOS prohibited. When Gate is UNLOCKED (via IDM_TAKEN): the runtime requires an explicit active-impulse origin candle to construct the transient `BOOTSTRAP_RANGE`; if origin evidence is missing, the process remains fail-closed. Otherwise, if `MAJOR_RETRACEMENT_QUALIFIED`: **FIRST BOS / VALID_BOS → POST_BOS**; else: **IMPULSE_EXTENSION → REMAIN** | body close → `CHoCH_ELIGIBLE` pending prerequisites; Major IDM wick → `MAJOR_IDM_SWEEP`; Major IDM body close enters CHoCH pipeline | Major IDM wick → `MAJOR_IDM_SWEEP`, Gate UNLOCKED, trend unchanged | FIRST_POST_CHOCH_SVP → Verified Extreme → FIRST_POST_CHOCH_MINOR_IDM; remain `CONFIRMATION_LOCKED` until applicable sweep/gate prerequisites complete |
 
 The `POST_CHOCH` row is intentionally not a blanket `CONFIRMATION_LOCKED` transition for every event. The state remains `CONFIRMATION_LOCKED`, while the event-specific lineage and gate logic determine the next process step.
