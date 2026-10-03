@@ -87,7 +87,7 @@ All Mapper start/end boundaries must resolve to canonical UTC before analysis id
 
 The analysis key must use the resolved canonical UTC boundary, not the original local-time spelling.
 
-Timezone-aware ISO-8601 input is required at the Mapper contract boundary unless a higher-level UI layer has already converted an explicitly identified local-time input to canonical UTC.
+At the Mapper contract boundary, datetime input must be timezone-aware ISO-8601 and date-only input is accepted only as the deterministic UTC calendar-date shorthand defined in §§2.7–2.8. Explicit local-time input must be converted to canonical UTC before the Mapper contract is invoked.
 
 ## 0.4 Symbol data-directory and automatic file discovery
 
