@@ -45,3 +45,5 @@ invalidates only that symbol/provider coverage. Yahoo symbol-owned news is
 physically deleted. The newest affected watermark is removed when necessary.
 
 No PASS claim until local runtime validation is complete.
+
+This follow-up also serializes Calendar acquisition/read-modify-write paths under the Calendar lock to prevent concurrent writer loss.

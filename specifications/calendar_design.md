@@ -105,6 +105,8 @@ Bare delete remains the full-cache reset.
 
 Deletion is performed without provider access and under the Calendar lock.
 
+All Calendar read/modify/persist acquisition paths are also serialized by the same lock.
+
 For Yahoo Finance, matching symbol-owned news events are physically removed.
 For ForexFactory, economic events are shared facts and are retained; only the
 symbol/provider coverage is invalidated. This makes the deletion safe when the

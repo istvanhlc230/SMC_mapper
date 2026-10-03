@@ -991,52 +991,83 @@ def output_query_result(
     }, ensure_ascii=False))
 
 
-def run_query(symbol: str, scope: str, cleartext: bool = False) -> int:
-    document = load_calendar_document()
+def filter_query_events(
+    document: Dict[str, Any],
+    events: List[Dict[str, Any]],
+    symbol: str,
+    start: datetime,
+    end: datetime,
+) -> List[Dict[str, Any]]:
+    result: List[Dict[str, Any]] = []
+    ff_coverage_valid = not bool(
+        find_uncovered_intervals(
+            document,
+            "forexfactory",
+            symbol,
+            start,
+            end,
+        )
+    )
 
-    if scope == "current":
-        result = acquire_current(document, symbol)
-        events = filter_events_for_symbol(result["events"], symbol)
-        status = status_from_provider_results(result["provider_results"])
-        if status == "OK" and not events:
-            status = "NO_RELEVANT_EVENT"
+    for event in events:
+        if event["source"] == "forexfactory" and not ff_coverage_valid:
+            # ForexFactory records are shared facts. If this symbol's coverage
+            # was deleted or is unavailable, do not leak the shared record back
+            # into this symbol's query from another symbol's cache.
+            continue
+        result.append(event)
+    return result
+
+def run_query(symbol: str, scope: str, cleartext: bool = False) -> int:
+    with acquire_calendar_lock():
+        document = load_calendar_document()
+
+        if scope == "current":
+            result = acquire_current(document, symbol)
+            events = filter_events_for_symbol(result["events"], symbol)
+            status = status_from_provider_results(result["provider_results"])
+            if status == "OK" and not events:
+                status = "NO_RELEVANT_EVENT"
+            output_query_result(
+                status,
+                symbol,
+                events,
+                result["provider_results"],
+                cleartext,
+            )
+            return 0 if status != "UNAVAILABLE" else 2
+
+        start, end = resolve_scope_interval(scope)
+        acquisition = acquire_explicit(document, symbol, start, end)
+        events = filter_events_for_interval(
+            filter_events_for_symbol(document["events"], symbol),
+            start,
+            end,
+        )
+        events = filter_query_events(document, events, symbol, start, end)
+
+        provider_statuses = [
+            item["status"] for item in acquisition["provider_results"]
+        ]
+        if provider_statuses and all(status == "ERROR" for status in provider_statuses):
+            status = "UNAVAILABLE"
+        elif acquisition["failures"]:
+            status = "PARTIAL"
+        else:
+            status = "OK" if events else "NO_RELEVANT_EVENT"
+            if any(
+                result["status"] == "PARTIAL"
+                for result in acquisition["provider_results"]
+            ):
+                status = "PARTIAL"
         output_query_result(
             status,
             symbol,
             events,
-            result["provider_results"],
+            acquisition["provider_results"],
             cleartext,
         )
         return 0 if status != "UNAVAILABLE" else 2
-
-    start, end = resolve_scope_interval(scope)
-    acquisition = acquire_explicit(document, symbol, start, end)
-    events = filter_events_for_interval(
-        filter_events_for_symbol(document["events"], symbol),
-        start,
-        end,
-    )
-    provider_statuses = [item["status"] for item in acquisition["provider_results"]]
-    if provider_statuses and all(status == "ERROR" for status in provider_statuses):
-        status = "UNAVAILABLE"
-    elif acquisition["failures"]:
-        status = "PARTIAL"
-    else:
-        status = "OK" if events else "NO_RELEVANT_EVENT"
-        if any(
-            result["status"] == "PARTIAL"
-            for result in acquisition["provider_results"]
-        ):
-            status = "PARTIAL" if events else "PARTIAL"
-    output_query_result(
-        status,
-        symbol,
-        events,
-        acquisition["provider_results"],
-        cleartext,
-    )
-    return 0
-
 
 def delete_symbol_interval(
     document: Dict[str, Any],
