@@ -19,7 +19,7 @@
 - Monitor execution policy does not belong in this module.
 
 ## 2. Boundaries and Dependencies
-- **Module Architecture:** To prevent stdlib collisions (import calendar), the CLI layer calendar.py acts as a thin wrapper mapping into the core engine located in calendar_layer.py.
+- **Module Architecture:** calendar.py is the single calendar implementation/module containing both the CLI wrapper and the core execution engine.
 - **Inputs:** CLI arguments, ForexFactory HTML response, existing calendar.json.
 - **Outputs:** Console output (JSON format for local queries), updated calendar.json.
 - **Side effects:** Atomic update of calendar.json.
