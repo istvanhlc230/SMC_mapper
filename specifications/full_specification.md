@@ -97,13 +97,12 @@ A current-snapshot-only refresh does not require Mapper execution. A completed-c
 - Monitor is notification-only: no order submission, automatic buy/sell or position management.
 - Canonical SMC semantics are consumed from the skill; downstream policy must not redefine them.
 - Volume analytics are non-canonical enrichment and must not alter POI validity, lifecycle or type.
-- Probability and News are not part of the current product specification.
 
 ## 8. Downstream target/RR contract
 
 Target semantics are owned by the canonical downstream Layer-7 contract and consumed by Monitor.
 
-V1 Monitor resolves **one target per active setup**. Multi-target/multi-leg allocation is outside current product scope.
+V1 Monitor resolves **one target per active setup**. Additional target allocation is outside current product scope.
 
 Monitor target clearance, optional `--rr`, and alert eligibility are downstream runtime policy. They must not mutate canonical Mapper state.
 
