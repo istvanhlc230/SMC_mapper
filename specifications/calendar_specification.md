@@ -116,6 +116,10 @@ datetime, or datetime range. current is not a delete scope.
 Yahoo Finance news is symbol-owned, so a symbol-scoped deletion removes only
 matching Yahoo events in the requested interval.
 
+ForexFactory events may carry optional suppressed_for symbol metadata. A symbol
+query excludes an event when its canonical symbol is present in suppressed_for.
+Successful reacquisition clears that symbol's suppression for the returned facts.
+
 ForexFactory economic events are shared currency facts. A symbol-scoped deletion
 therefore invalidates only the matching provider+canonical-symbol coverage in
 the requested interval and keeps the shared event record. This prevents
@@ -215,6 +219,7 @@ Common envelope:
     timestamp
     title
     details
+    suppressed_for (optional symbol-scope visibility metadata)
 
 Allowed event_type values:
 

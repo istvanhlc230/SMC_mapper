@@ -299,6 +299,14 @@ def validate_calendar_document(document: Dict[str, Any]) -> None:
             raise DataIntegrityError("Invalid asset_type.")
         if not isinstance(event["symbol"], str) or not event["symbol"]:
             raise DataIntegrityError("Invalid event symbol.")
+        suppressed_for = event.get("suppressed_for", [])
+        if not isinstance(suppressed_for, list) or any(
+            not isinstance(item, str) or not item
+            for item in suppressed_for
+        ):
+            raise DataIntegrityError("Invalid suppressed_for metadata.")
+        if len(set(suppressed_for)) != len(suppressed_for):
+            raise DataIntegrityError("Duplicate suppressed_for symbol.")
         if not isinstance(event["title"], str) or not event["title"].strip():
             raise DataIntegrityError("Event title must not be empty.")
         if not isinstance(event["details"], dict):
@@ -427,7 +435,11 @@ def acquire_calendar_lock():
         os.close(fd)
 
 
-def merge_events(document: Dict[str, Any], new_events: List[Dict[str, Any]]) -> None:
+def merge_events(
+    document: Dict[str, Any],
+    new_events: List[Dict[str, Any]],
+    clear_suppressed_symbol: Optional[str] = None,
+) -> None:
     by_id = {event["event_id"]: event for event in document["events"]}
     for event in new_events:
         old = by_id.get(event["event_id"])
@@ -435,7 +447,19 @@ def merge_events(document: Dict[str, Any], new_events: List[Dict[str, Any]]) -> 
             raise DataIntegrityError(
                 f"Provider identity/time conflict for {event['event_id']}."
             )
-        by_id[event["event_id"]] = event
+
+        normalized = event.copy()
+        inherited = set(old.get("suppressed_for", [])) if old else set()
+        incoming = set(normalized.get("suppressed_for", []))
+        suppressed = inherited | incoming
+        if clear_suppressed_symbol is not None:
+            suppressed.discard(clear_suppressed_symbol)
+        if suppressed:
+            normalized["suppressed_for"] = sorted(suppressed)
+        else:
+            normalized.pop("suppressed_for", None)
+        by_id[event["event_id"]] = normalized
+
     document["events"] = sorted(
         by_id.values(),
         key=lambda item: (
@@ -444,7 +468,6 @@ def merge_events(document: Dict[str, Any], new_events: List[Dict[str, Any]]) -> 
             item["event_id"],
         ),
     )
-
 
 def merge_coverage(document: Dict[str, Any], item: Dict[str, Any]) -> None:
     candidates = [coverage.copy() for coverage in document["coverage"]]
@@ -721,11 +744,17 @@ def fetch_yahoo_news(symbol: str) -> List[Dict[str, Any]]:
 
 
 def filter_events_for_symbol(events: List[Dict[str, Any]], symbol: str) -> List[Dict[str, Any]]:
+    def visible(event: Dict[str, Any]) -> bool:
+        return symbol not in event.get("suppressed_for", [])
+
     if is_currency(symbol):
         return [
             event for event in events
-            if event["source"] == "forexfactory"
-            and event["details"].get("currency") == symbol
+            if (
+                event["source"] == "forexfactory"
+                and event["details"].get("currency") == symbol
+                and visible(event)
+            )
         ]
 
     if is_fx_pair(symbol):
@@ -735,19 +764,23 @@ def filter_events_for_symbol(events: List[Dict[str, Any]], symbol: str) -> List[
             if (
                 event["source"] == "forexfactory"
                 and event["details"].get("currency") in currencies
+                and visible(event)
             )
             or (
                 event["source"] == "yahoo_finance"
                 and event["symbol"] == symbol
+                and visible(event)
             )
         ]
 
     return [
         event for event in events
-        if event["source"] == "yahoo_finance"
-        and event["symbol"] == symbol
+        if (
+            event["source"] == "yahoo_finance"
+            and event["symbol"] == symbol
+            and visible(event)
+        )
     ]
-
 
 def filter_events_for_interval(
     events: List[Dict[str, Any]],
@@ -816,7 +849,7 @@ def acquire_explicit(
                 for gap_start, gap_end in gaps:
                     events.extend(fetch_forexfactory(gap_start, gap_end))
                 if gaps:
-                    merge_events(document, events)
+                    merge_events(document, events, clear_suppressed_symbol=symbol)
                     for gap_start, gap_end in gaps:
                         merge_coverage(document, {
                             "provider": provider, "symbol": symbol,
@@ -1076,10 +1109,9 @@ def delete_symbol_interval(
     end: datetime,
 ) -> None:
     applicable_providers = set(resolve_applicable_providers(symbol))
+    currencies = ({symbol} if is_currency(symbol) else
+                  {symbol[:3], symbol[3:]} if is_fx_pair(symbol) else set())
 
-    # ForexFactory economic events are shared provider facts. Deleting one
-    # canonical FX symbol must not erase the same currency event needed by
-    # another symbol. Its symbol-scoped provider coverage is invalidated below.
     retained_events: List[Dict[str, Any]] = []
     for event in document["events"]:
         timestamp = parse_iso8601(event["timestamp"])
@@ -1092,6 +1124,21 @@ def delete_symbol_interval(
             and event["symbol"] == symbol
             and "yahoo_finance" in applicable_providers
         ):
+            # Yahoo news is owned by one canonical symbol, so it can be deleted.
+            continue
+
+        if (
+            event["source"] == "forexfactory"
+            and "forexfactory" in applicable_providers
+            and event["details"].get("currency") in currencies
+        ):
+            # ForexFactory facts are shared. Record a symbol-level suppression
+            # instead of deleting the provider fact for every other FX symbol.
+            suppressed = set(event.get("suppressed_for", []))
+            suppressed.add(symbol)
+            updated = event.copy()
+            updated["suppressed_for"] = sorted(suppressed)
+            retained_events.append(updated)
             continue
 
         retained_events.append(event)
@@ -1125,8 +1172,6 @@ def delete_symbol_interval(
 
     document["coverage"] = retained_coverage
 
-    # If the deleted interval contains the newest known event for a provider
-    # and symbol, invalidate that incremental cursor. Never invent a new one.
     for provider in applicable_providers:
         key = watermark_key(provider, symbol)
         watermark = document["watermarks"].get(key)
@@ -1138,7 +1183,6 @@ def delete_symbol_interval(
         last_event = parse_iso8601(last_event_timestamp)
         if start <= last_event < end:
             del document["watermarks"][key]
-
 
 def run_delete(symbol: Optional[str], scope: Optional[str]) -> int:
     with acquire_calendar_lock():

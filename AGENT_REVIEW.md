@@ -47,3 +47,8 @@ physically deleted. The newest affected watermark is removed when necessary.
 No PASS claim until local runtime validation is complete.
 
 This follow-up also serializes Calendar acquisition/read-modify-write paths under the Calendar lock to prevent concurrent writer loss.
+
+
+## Deletion hardening
+
+ForexFactory shared events now carry optional symbol suppression metadata so symbol-scoped deletion is visible to both Calendar queries and the Monitor without globally deleting a shared currency fact. Successful provider reacquisition clears the relevant symbol suppression. Yahoo symbol-owned news remains physically deletable.
