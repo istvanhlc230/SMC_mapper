@@ -1815,7 +1815,7 @@ This keeps the module importable for unit tests and future internal reuse withou
 
 # 18. VARIABLE NAMING CONTRACT
 
-The project-wide developer-agent naming and portability rules in `AGENTS.md` apply. This section defines Market Data-specific naming examples.
+The project-wide developer-agent naming and portability rules in `specifications/agent_directives.md` apply. This section defines Market Data-specific naming examples.
 
 Prefer names with semantic ownership.
 
