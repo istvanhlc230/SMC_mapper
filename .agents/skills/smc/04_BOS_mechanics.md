@@ -229,34 +229,41 @@ Major IDM remains a single canonical IDM class. It may be pullback-derived or th
 
 The corrective extreme remains dynamic until `VALID_BOS`.
 
-Bullish:
+For the active retracement:
 
 ```text
-dynamic_retracement_extreme = min(Low_k)
+BULLISH
+→ dynamic_retracement_extreme = lowest relevant LOW observed so far
+
+BEARISH
+→ dynamic_retracement_extreme = highest relevant HIGH observed so far
 ```
 
-Bearish:
+The lock is point-in-time:
 
 ```text
-dynamic_retracement_extreme = max(High_k)
-```
-
-After sufficient retracement and valid BOS:
-
-```text
+CONFIRMED_STRUCTURAL_SWING
+        ↓
+completed retracement candles
+        ↓
+dynamic_retracement_extreme
+        ↓
+STRUCTURAL SWING BREAK
+        ↓
 VALID_BOS
-    ↓
-dynamic_retracement_extreme LOCKED
-    ↓
+        ↓
+LOCK CURRENT PRE-BREAK EXTREME
+        ↓
 PROTECTED STRUCTURAL EXTREME
 ```
 
-The completed `VALID_BOS` event locks the dynamic corrective extreme immediately. No later body close is required.
+The break/BOS candle itself is excluded from the pre-BOS corrective-extreme window under the aggregate OHLC contract. A wick may establish the physical break, but final OHLC does not establish the intrabar ordering of that break versus the candle's opposite extreme. The break candle therefore must not retroactively redefine the corrective state that existed immediately before the break.
 
-A MAJOR_IDM wick sweep does not lock the extreme.
+No later body close is required after a valid wick BOS.
 
-This module does not redefine the full CONFIRMED_STRUCTURAL_SWING / Protected Structural Extreme lifecycle; that ownership remains in `03_structural_semantic_authority.md` Section 3.3.
+A `MAJOR_IDM_SWEEP` does not lock the extreme because it is not a continuation `VALID_BOS`.
 
+This module does not redefine the full `CONFIRMED_STRUCTURAL_SWING` / Protected Structural Extreme lifecycle; ownership remains in `03_structural_semantic_authority.md` Section 3.3 and the bootstrap lifecycle in Section 3.2.1A.
 ### 3.4.9 — Trading Range Rollover
 
 Only `VALID_BOS` closes the previous governing Trading Range and starts the next structural lifecycle.

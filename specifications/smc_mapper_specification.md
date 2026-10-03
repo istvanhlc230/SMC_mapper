@@ -933,7 +933,21 @@ No mapper-level section may redefine those semantic rules.
 
 ## 5.3 Processing-order invariants
 
-The mapper must consume the Layer-3 `MAJOR_RETRACEMENT_QUALIFIED` result for continuation BOS. The canonical source corpus does not define the first-BOS measurement baseline; the project therefore resolves this source gap with an isolated bootstrap initialization policy. Before the first `VALID_BOS`, the mapper may create a bootstrap-only `BOOTSTRAP_PROTECTED_LEVEL` from an actual initial active-impulse candle extreme (chart inception defaults to the first effective completed candle; post-CHoCH callers provide the explicit initial active-impulse origin). After `IDM_TAKEN` confirms the `CONFIRMED_STRUCTURAL_SWING`, a transient `BOOTSTRAP_RANGE` is measured from the bootstrap level to that confirmed swing solely to run the existing Layer-3 50% / 38.2% qualification rules. This bootstrap range is not a governing Dealing Range, does not create a `PROTECTED_STRUCTURAL_EXTREME`, and cannot act as a canonical CHoCH boundary. On the first valid `VALID_BOS`, bootstrap state is destroyed and the current `dynamic_retracement_extreme` becomes the first canonical `PROTECTED_STRUCTURAL_EXTREME` (`dynamic_retracement_extreme` is the implementation-facing state); only then is the first confirmed Dealing Range established. If the actual bootstrap origin cannot be resolved, the mapper must fail closed rather than fabricate a level.
+The mapper must consume the Layer-3 `MAJOR_RETRACEMENT_QUALIFIED` result for continuation BOS. The canonical source corpus does not define the first-BOS measurement baseline; the project therefore resolves this source gap with the isolated `BOOTSTRAP_ORIGIN_ANCHOR` policy defined by the canonical skill.
+
+The bootstrap contract is:
+
+- `BOOTSTRAP_ORIGIN_ANCHOR` is a temporary initialization measurement anchor derived from an actual completed candle;
+- chart inception uses the first effective completed candle as a deterministic **project initialization convention**, not as proof of the historical impulse origin;
+- after `CHoCH_CONFIRMED`, an explicit active-impulse origin candle is required; missing origin provenance fails closed;
+- `IDM_TAKEN` confirms `CONFIRMED_STRUCTURAL_SWING` before a transient `BOOTSTRAP_RANGE` can be formed;
+- `BOOTSTRAP_RANGE` is measurement-only and is not a governing Dealing Range, Protected Structural Extreme, Trading Range boundary, or CHoCH boundary;
+- bootstrap uses the existing Layer-3 50% / documented 38.2% qualification rules without introducing a new threshold or heuristic;
+- `dynamic_retracement_extreme` is the live corrective state and remains mutable until the physical structural break;
+- the first `VALID_BOS` locks the **pre-break** `dynamic_retracement_extreme` as the first `PROTECTED_STRUCTURAL_EXTREME`;
+- the break/BOS candle is excluded from the pre-BOS retracement-extreme calculation under the aggregate OHLC observability contract;
+- after lock, bootstrap state is destroyed and the first canonical Dealing Range is established;
+- no bootstrap, dynamic, or structural state may be fabricated when required provenance is unavailable.
 
 The mapper's canonical processing boundary is the completion of each eligible completed candle within the resolved analysis interval.
 
@@ -1141,10 +1155,13 @@ The mapper derives Dealing Range history boundaries strictly from the canonical 
 - `VALID_BOS` is the canonical lifecycle event that establishes the next confirmed Dealing Range lifecycle; when a governing range already exists, it closes that previous range first. The first `VALID_BOS` establishes the first confirmed Dealing Range and therefore has no pre-existing governing range to close.
 - The mapper must not close or start a Dealing Range because of a physical break, IDM sweep, CHoCH-eligible break, insufficient-retracement `IMPULSE_EXTENSION`, mapper execution boundary, or retention operation.
 - Before the first canonical `VALID_BOS`, no governing Dealing Range is created from bootstrap state.
-- The project-canonical bootstrap measurement range is transient and exists only to apply the already-defined Layer-3 retracement qualification rules.
-- The bootstrap protected level is never promoted into canonical protected structure.
-- `VALID_BOS` destroys bootstrap state and locks the current `dynamic_retracement_extreme` as the first canonical `PROTECTED_STRUCTURAL_EXTREME`.
-- If the actual bootstrap origin is unavailable, the mapper fails closed rather than fabricating historical data or structural truth.
+- The project-canonical `BOOTSTRAP_RANGE` is transient and exists only to apply the already-defined Layer-3 retracement qualification rules.
+- `BOOTSTRAP_ORIGIN_ANCHOR` is never promoted into canonical protected structure.
+- `dynamic_retracement_extreme` is the live corrective state; the lock candidate is the value observed immediately before the physical structural break.
+- The break/BOS candle is excluded from that pre-BOS calculation under aggregate OHLC because intrabar order is not available from final OHLC alone.
+- `VALID_BOS` destroys bootstrap state and locks the pre-break `dynamic_retracement_extreme` as the first canonical `PROTECTED_STRUCTURAL_EXTREME`.
+- After lock, the dynamic state is inactive and the protected extreme is canonical.
+- If required bootstrap origin provenance is unavailable, the mapper fails closed rather than fabricating historical data or structural truth.
 
 ---
 

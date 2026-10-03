@@ -3633,15 +3633,13 @@ PASS — GitHub Actions workflow for commit `c00976d72aa382ebdea79f0ab14f8ea2b27
 No file under `.agents/skills/smc/` was modified. Knowledgebase source/evidence files were not modified.
 
 
-# PHASE 41 — IMPLEMENTATION TERMINOLOGY CORRECTION: dynamic_retracement_extreme AS NOTATION ONLY — 2026-10-03
+# PHASE 41 — IMPLEMENTATION TERMINOLOGY CORRECTION: `dynamic_retracement_extreme` — 2026-10-03
 
-## Correction
+The selected implementation-facing semantic name is **`dynamic_retracement_extreme`**.
 
-The implementation-facing name is **`dynamic_retracement_extreme`**.
+The previous Phase-41 wording incorrectly described this identifier as “notation only”. That wording is superseded.
 
-`dynamic_retracement_extreme` remains only the mathematical notation used to describe the same dynamic state. It is not the selected Python/runtime identifier.
-
-Correct lifecycle terminology:
+Correct active contract:
 
 ```text
 dynamic_retracement_extreme
@@ -3651,8 +3649,103 @@ VALID_BOS
 PROTECTED_STRUCTURAL_EXTREME
 ```
 
-No runtime field or implementation-facing contract should introduce `dynamic_retracement_extreme` as an identifier.
+The term names the live corrective state represented by the canonical lifecycle. It is not merely mathematical notation.
+
+# PHASE 42 — DEEP CANONICAL SKILL / SPECIFICATION RECONCILIATION — 2026-10-03
+
+## Scope
+
+This phase is documentation-only. **No Python implementation file was modified.**
+
+Audited and reconciled:
+
+- `.agents/skills/smc/skill.md`
+- `.agents/skills/smc/03_structural_semantic_authority.md`
+- `.agents/skills/smc/04_BOS_mechanics.md`
+- `.agents/skills/smc/08_implementation.md`
+- `.agents/skills/smc/05_CHOCH_mechanics.md` for post-CHoCH lineage compatibility
+- `.agents/skills/smc/source_reconciliation.md`
+- `specifications/smc_mapper_specification.md`
+
+Indexed-source evidence was cross-checked against the previously reviewed knowledgebase findings.
+
+## Canonical corrections
+
+### 1. Bootstrap semantic identity
+
+The active canonical term is `BOOTSTRAP_ORIGIN_ANCHOR`. `BOOTSTRAP_PROTECTED_LEVEL` is removed from the active skill/specification vocabulary.
+
+The anchor is explicitly an initialization measurement input, not protected structural truth.
+
+### 2. Bootstrap provenance
+
+Two distinct provenance modes are now explicit:
+
+```text
+CHART_INCEPTION_ANCHOR
+EXPLICIT_ACTIVE_IMPULSE_ORIGIN
+```
+
+The chart-inception choice is documented as project initialization policy, not historical proof.
+
+### 3. Bootstrap isolation
+
+`BOOTSTRAP_RANGE` is explicitly measurement-only and cannot become a governing Dealing Range, Protected Structural Extreme, or CHoCH boundary.
+
+### 4. Dynamic retracement extreme
+
+`dynamic_retracement_extreme` is explicitly the live corrective state, not notation-only.
+
+Its implementation provenance contract is:
+
+```text
+direction
+price
+source_candle_id
+observed_through_candle_id
+```
+
+### 5. Qualification vs lock
+
+Retracement qualification does not freeze the dynamic extreme. The lock occurs only at `VALID_BOS`.
+
+### 6. BOS candle boundary
+
+The canonical implementation/observability contract explicitly excludes the break/BOS candle from the pre-BOS retracement-extreme measurement under aggregate OHLC.
+
+This prevents same-candle intrabar ambiguity from contaminating the pre-break state.
+
+### 7. Source-vs-project boundary
+
+The documentation explicitly separates:
+
+```text
+SOURCE CORPUS
+    → does not deterministically define first-BOS baseline
+
+PROJECT CANONICAL POLICY
+    → BOOTSTRAP_ORIGIN_ANCHOR + transient BOOTSTRAP_RANGE
+
+IMPLEMENTATION CONTRACT
+    → explicit provenance + fail-closed behavior + pre-break dynamic lock
+```
 
 ## Audit status
 
-PASS — active implementation-facing terminology corrected to `dynamic_retracement_extreme`.
+PASS — active bootstrap terminology is internally consistent across Layer 3, Layer 4, Layer 8, and the mapper specification.
+
+PASS — `dynamic_retracement_extreme` has one unambiguous active meaning and is no longer described as “notation only”.
+
+PASS — qualification time and structural lock time are explicitly separated.
+
+PASS — the pre-BOS observation boundary is explicitly documented and aligned across canonical and implementation-contract documents.
+
+PASS — bootstrap state is explicitly isolated from governing Dealing Range and Protected Structural Extreme ontology.
+
+PASS — source evidence and project-canonical policy are explicitly separated.
+
+BLOCKED — Python/runtime conformance is intentionally not resolved in this phase because this phase changes documentation only. The existing implementation must later be checked against the revised documentation contract.
+
+## Commit/test status
+
+This phase changes documentation only. No Python file is modified. No Python test run is claimed from this phase.

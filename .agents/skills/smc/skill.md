@@ -61,7 +61,7 @@ Read the referenced documents in this order when the full methodology is require
 9. `08_implementation.md`
    - Implementation representation requirements
    - State-transition and validation requirements
-   - First-BOS bootstrap/process-state representation and `dynamic_retracement_extreme` lifecycle mapping 
+   - First-BOS bootstrap/process-state representation, `dynamic_retracement_extreme` lifecycle mapping, and explicit pre-BOS observation boundaries
    - Must consume canonical methodology; it must not redefine it
 
 10. `trading_policy.md`

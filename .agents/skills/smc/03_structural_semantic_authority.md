@@ -118,52 +118,71 @@ Bootstrap must remain distinguishable from organically confirmed structure.
 
 ### 3.2.1A — Canonical Bootstrap Initialization for the First BOS
 
-The source corpus does not provide a deterministic first-BOS retracement baseline. This source gap is resolved at the project-canonical layer by an isolated **Bootstrap Initialization** process. The bootstrap exists only to supply the missing first-BOS measurement context without fabricating normal Major / External Structure.
+The indexed source corpus does not provide a deterministic first-BOS retracement baseline. This is a genuine source gap. The project resolves that gap with an isolated **Bootstrap Initialization** process whose sole purpose is to provide a deterministic measurement anchor for first-BOS qualification without fabricating ordinary Major / External Structure.
+
+### Bootstrap authority boundary
+
+The bootstrap policy is explicitly **project-canonical**, not source-direct:
+
+- The source corpus supports retracement measurement against an already identified trading/dealing range.
+- The source corpus supports tracking the lowest/highest point reached by the active retracement as it progresses.
+- The source corpus does **not** define how the first such measurement range is initialized before the first `VALID_BOS`.
+- Therefore `BOOTSTRAP_ORIGIN_ANCHOR` is a temporary process object for initialization measurement, not a source-defined Protected Structural Extreme.
 
 The canonical process is:
 
 1. **Bootstrap origin anchoring**
-   - The implementation derives a `BOOTSTRAP_PROTECTED_LEVEL` from an actual completed candle in the active impulse.
-   - At chart inception, the canonical runtime uses the first effective completed candle as the initial impulse-origin anchor.
-   - After `CHoCH_CONFIRMED`, the new active impulse must provide an explicit origin candle; an absent origin fails closed.
-   - The bootstrap level is an input anchor only. It is **not** a `PROTECTED_STRUCTURAL_EXTREME`, is not a Trading Range boundary, and cannot govern CHoCH.
+   - `BOOTSTRAP_ORIGIN_ANCHOR` is an initialization measurement anchor derived from an actual completed candle.
+   - At chart inception, the project-canonical deterministic convention is the first effective completed candle. This is an initialization convention, **not proof that the first available candle is the historical impulse origin**.
+   - After `CHoCH_CONFIRMED`, the new active impulse must provide an explicit origin candle. Missing origin provenance fails closed.
+   - Two provenance modes are recognized: `CHART_INCEPTION_ANCHOR` and `EXPLICIT_ACTIVE_IMPULSE_ORIGIN`.
+   - The anchor price is taken from the actual candle extreme: bullish → source candle LOW; bearish → source candle HIGH.
+   - The anchor is **not** a `PROTECTED_STRUCTURAL_EXTREME`, Trading Range boundary, or CHoCH boundary.
 
-2. **Minor IDM → confirmed swing**
+2. **Minor IDM → confirmed structural swing**
    - Candle-level valid pullbacks and Minor IDM formation continue under Layer 1 / Layer 2 ownership.
    - Physical IDM takeout sets `IDM_TAKEN = TRUE` and establishes the `CONFIRMED_STRUCTURAL_SWING`.
    - `CONFIRMATION GATE UNLOCKED` remains a process condition inside `CONFIRMATION_LOCKED`; it is not a new structural state.
 
 3. **Transient bootstrap measurement range**
-   - Once the structural swing is confirmed, the runtime creates a transient `BOOTSTRAP_RANGE` between the bootstrap protected level and the confirmed structural swing price.
+   - Once the structural swing is confirmed, the runtime creates a transient `BOOTSTRAP_RANGE` between the bootstrap origin anchor and the confirmed structural swing price.
    - This range exists only to measure first-BOS retracement qualification.
    - It is **not** the governing Dealing Range, cannot be treated as an active Major / External range, cannot define CHoCH boundaries, and cannot be used as a historical Protected Structural Extreme.
+   - The bootstrap range does not promote either endpoint into canonical structural protection.
 
 4. **Existing retracement qualification rules remain unchanged**
    - The transient bootstrap range is evaluated with the same canonical Layer-3 retracement qualification rules used after a canonical range exists.
    - The normal 50% equilibrium path remains primary.
    - The documented 38.2% conditional exception remains subject to its existing canonical prerequisites.
-   - Reduced-candle qualification remains subject to the existing candle-count / displacement gates; bootstrap does not create a new threshold or heuristic.
+   - Reduced-candle qualification remains subject to the existing candle-count / displacement gates.
+   - Bootstrap introduces no new percentage, candle-count, displacement, or heuristic rule.
 
 5. **Dynamic corrective extreme before first BOS**
-   - The current corrective extreme is tracked dynamically across the active retracement leg:
-     - bullish: the lowest relevant low seen so far;
-     - bearish: the highest relevant high seen so far.
-   - Mathematical notation: `dynamic_retracement_extreme`.
-   - Implementation-facing state name: `dynamic_retracement_extreme`.
-   - `dynamic_retracement_extreme` remains dynamic until a valid continuation BOS actually occurs; qualification alone does not freeze it.
+   - `dynamic_retracement_extreme` is the live point-in-time corrective extreme of the active retracement.
+   - Bullish lifecycle: lowest relevant completed-candle LOW observed so far.
+   - Bearish lifecycle: highest relevant completed-candle HIGH observed so far.
+   - The state is dynamic until the physical structural break; qualification alone does not freeze it.
+   - Deterministic implementation provenance must retain the source candle and the latest completed-candle observation horizon.
 
-6. **First VALID_BOS transition**
+6. **Strict pre-BOS observation boundary**
+   - The dynamic extreme used for the `VALID_BOS` lock is the value that exists immediately before the physical structural break.
+   - Under the aggregate completed-candle OHLC contract, the break/BOS candle itself is excluded from the pre-BOS corrective-extreme calculation.
+   - Final OHLC does not establish whether the break wick occurred before or after the same candle's opposite extreme. Including the whole break candle would therefore permit future-within-candle contamination of the pre-break state.
+   - Independent intrabar sequence evidence may be recorded under the implementation observability contract, but it must never be inferred from candle color or final OHLC shape.
+
+7. **First `VALID_BOS` transition**
    - A continuation break becomes `VALID_BOS` only when the existing canonical BOS gates all pass:
      `IDM_TAKEN + MAJOR_RETRACEMENT_QUALIFIED + STRUCTURAL_SWING_BREAK`.
-   - At the actual `VALID_BOS` candle, the current `dynamic_retracement_extreme` is locked as the first `PROTECTED_STRUCTURAL_EXTREME`.
-   - The transient bootstrap objects are then destroyed.
+   - At the physical `VALID_BOS` event, the current pre-break `dynamic_retracement_extreme` is locked as the first `PROTECTED_STRUCTURAL_EXTREME`.
+   - The locked protected extreme retains the dynamic extreme's actual source-candle provenance.
+   - The transient bootstrap anchor and `BOOTSTRAP_RANGE` are then destroyed.
    - Only after this lock does the first canonical Dealing Range become established.
-   - The resulting protected extreme is therefore an actual observed corrective extreme from market data, not a synthetic level copied from the bootstrap anchor.
+   - The protected extreme is therefore an actual observed retracement extreme, never a copied bootstrap anchor.
 
-7. **Failure / extension**
-   - If the attempted continuation break occurs before retracement qualification, classify according to the canonical `IMPULSE_EXTENSION` path.
+8. **Failure / extension**
+   - If an attempted continuation break occurs before retracement qualification, classify according to the canonical `IMPULSE_EXTENSION` path.
    - `IMPULSE_EXTENSION` does not lock a Protected Structural Extreme and does not roll the Dealing Range.
-   - The bootstrap measurement context remains isolated from canonical post-BOS structure until a later valid transition occurs.
+   - The bootstrap process must remain isolated until a later valid structural transition occurs.
 
 The lifecycle boundary is therefore:
 
@@ -172,7 +191,7 @@ BOOTSTRAP
   ↓
 VALID PULLBACK
   ↓
-MINOR IDM
+MINOR_IDM
   ↓
 IDM_TAKEN
   ↓
@@ -180,16 +199,18 @@ CONFIRMED_STRUCTURAL_SWING
   ↓
 BOOTSTRAP_RANGE (transient measurement only)
   ↓
-DYNAMIC RETRACEMENT
+RETRACEMENT QUALIFICATION
+  ↓
+dynamic_retracement_extreme
   ↓
 STRUCTURAL_SWING_BREAK
   ├─ qualified → VALID_BOS
   │               ↓
-  │          dynamic_retracement_extreme LOCKED
+  │      lock current pre-break dynamic_retracement_extreme
   │               ↓
-  │     PROTECTED_STRUCTURAL_EXTREME
+  │      PROTECTED_STRUCTURAL_EXTREME
   │               ↓
-  │       FIRST CONFIRMED RANGE
+  │      FIRST CONFIRMED RANGE
   │
   └─ insufficient → IMPULSE_EXTENSION
                      ↓
@@ -197,10 +218,10 @@ STRUCTURAL_SWING_BREAK
                no protected lock
 ```
 
-**Non-contamination invariant:**
+**Non-contamination invariants:**
 
 ```text
-BOOTSTRAP_PROTECTED_LEVEL
+BOOTSTRAP_ORIGIN_ANCHOR
     ≠ PROTECTED_STRUCTURAL_EXTREME
     ≠ TRADING_RANGE_BOUNDARY
 
@@ -211,11 +232,15 @@ BOOTSTRAP_RANGE
 QUALIFICATION_TIME
     ≠ dynamic_retracement_extreme LOCK TIME
 
-VALID_BOS
-    = the only first-BOS lock point for the first
-      canonical PROTECTED_STRUCTURAL_EXTREME
-```
+BREAK_CANDLE
+    ∉ PRE-BOS RETRACEMENT EXTREME WINDOW
 
+VALID_BOS
+    = first-BOS structural lock point
+
+MISSING EXPLICIT POST-CHOCH ORIGIN
+    → FAIL CLOSED
+```
 ### 3.2.2 — Impulse Origin vs Protected Structural Extreme
 
 An impulse origin is the physical price/time anchor where an expansion began. It does not automatically constitute a Protected Structural Extreme.

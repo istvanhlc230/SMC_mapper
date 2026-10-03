@@ -51,6 +51,58 @@ Canonical consequence:
 
 This is source reconciliation, not a new implementation heuristic.
 
+## First-BOS bootstrap baseline — source gap and project-canonical resolution
+
+The indexed source corpus was reviewed for an explicit first-BOS retracement baseline. The reconciliation result is intentionally split into **source evidence** and **project-canonical policy**.
+
+### Source-supported findings
+
+The source material repeatedly supports the sequence:
+
+```text
+VALID PULLBACK
+    ↓
+IDM TAKEOUT
+    ↓
+CONFIRMED STRUCTURAL SWING
+    ↓
+RETRACEMENT MEASURED
+    ↓
+STRUCTURAL SWING BREAK
+    ↓
+VALID_BOS
+```
+
+The source material also supports that the relevant retracement extreme is the lowest/highest point reached by the active retracement as it progresses, and that the active pullback/extreme can shift when a continuation attempt is insufficient.
+
+The source corpus does **not** provide a deterministic first-BOS baseline before the first canonical Dealing Range exists.
+
+### Project-canonical resolution
+
+The project resolves the gap with an isolated `BOOTSTRAP_ORIGIN_ANCHOR` and transient `BOOTSTRAP_RANGE`.
+
+This policy is explicitly **not source-direct**:
+
+- `BOOTSTRAP_ORIGIN_ANCHOR` is a temporary initialization measurement anchor backed by an actual completed candle;
+- chart inception uses the first effective completed candle as a deterministic initialization convention, not as proof of historical impulse origin;
+- post-CHoCH initialization requires explicit active-impulse origin provenance;
+- `BOOTSTRAP_RANGE` exists only for first-BOS retracement qualification;
+- the bootstrap anchor/range are never canonical Protected Structural Extreme or governing Dealing Range state;
+- `dynamic_retracement_extreme` remains dynamic until the structural break and locks only when `VALID_BOS` occurs;
+- under aggregate OHLC, the break/BOS candle is excluded from the pre-break retracement-extreme observation window;
+- missing required provenance fails closed.
+
+### Reconciliation status
+
+```text
+SOURCE GAP
+    ↓
+EXPLICIT PROJECT-CANONICAL POLICY
+    ↓
+TRACEABLE IMPLEMENTATION CONTRACT
+```
+
+The bootstrap policy must never be described as if it were directly defined by the source corpus. Future source material may supersede the gap only through the normal reconciliation and human-approval workflow.
 ## 3. Contracts under reconciliation
 
 The reconciliation workflow tracks the following structural and execution contracts (C1–C15). They must not be silently closed by implementation:
