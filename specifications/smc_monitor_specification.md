@@ -114,6 +114,8 @@ Approved options:
 
 The parser performs no network access and no canonical analysis.
 
+`--timezone` is presentation/reporting timezone only. It must be a valid IANA timezone name. Canonical scheduling, comparisons, checkpoints and session evaluation remain based on canonical UTC; each named trading session continues to use its own configured IANA timezone.
+
 ## 1.2 --symbol
 
 At least one symbol is required.
@@ -163,7 +165,7 @@ Normal successful execution is silent except for actual runtime alerts/notificat
 Use an explicit subprocess result container:
 
 ~~~python
-dataclass
+@dataclass(frozen=True)
 class ProcessResult:
     exit_code: int
     stdout: str
@@ -210,7 +212,8 @@ Validate at minimum:
 - ltf;
 - analysis_mode;
 - entry_timeframe;
-- requested/effective analysis boundary where present;
+- required `analysis_start`;
+- requested_start provenance where present;
 - last_processed_candle_time;
 - canonical structural state required for downstream evaluation.
 
@@ -259,8 +262,8 @@ class StoredAnalysisView:
     ltf: str | None
     analysis_mode: str
     entry_timeframe: str
+    analysis_start: datetime
     requested_start: datetime | None
-    effective_start: datetime | None
     last_processed_candle_time: datetime | None
 ~~~
 
@@ -390,7 +393,7 @@ Rules:
 
 - entry-timeframe coverage extends through all missing completed candles after the durable checkpoint;
 - two-timeframe analyses may require HTF updates;
-- bootstrap uses the persisted analysis effective/required start boundary and canonical warm-up needs;
+- bootstrap uses the persisted `analysis_start` plus canonical warm-up needs;
 - current-price monitoring may request live current snapshots;
 - no provider-specific acquisition logic belongs here.
 
@@ -464,10 +467,13 @@ def invoke_mapper(
 Launch:
 
 ~~~text
-python smc_mapper.py ...
+python smc_mapper.py --symbol SYMBOL [--htf HTF] [--ltf LTF]
+                     --starttime ANALYSIS_START
+                     --endtime END_TIME
+                     [--volume-method ...] [--debug]
 ~~~
 
-The Monitor passes the stored analysis timeframe configuration and the required analysis boundary.
+The Monitor must pass the stored timeframe configuration, the persisted `analysis_start`, and the resolved operational `end_time`. It must always pass `--starttime analysis_start` so the intended stored analysis is selected deterministically when multiple analyses share the same timeframe configuration. The Monitor does not pass `effective_start` because that is an execution-window concept.
 
 The Monitor must not:
 
@@ -757,7 +763,7 @@ class TargetPlan:
 
 Exact canonical target types/coordinates are owned by the canonical downstream target contract.
 
-The Monitor may use transient candidate views, but not a second canonical target ontology.
+The Monitor may use a transient candidate envelope to carry source-backed target candidates, but this envelope is not a canonical target ontology.
 
 V1 resolves one target per active setup. Target allocation beyond one resolved target is out of scope for the current Monitor product and must not be introduced as an additional runtime target model.
 
@@ -769,7 +775,12 @@ Preserve:
 - target provenance;
 - target-plan as runtime architecture, not a canonical SMC ontology.
 
-The Monitor must not assume a universal target-priority ordering, universal countertrend coordinate, or universal RR target. Those values are resolved only where the applicable canonical/downstream contract defines them.
+The Monitor must not assume a universal target-priority ordering, universal countertrend coordinate, or universal RR target.
+
+V1 has no target-policy CLI and no second target configuration file. Therefore:
+- if the canonical/downstream state provides exactly one applicable resolved target candidate, the Monitor may use it;
+- if multiple applicable candidates exist and no explicit downstream policy resolves one, target resolution returns `None`;
+- no candidate may be promoted to the resolved target merely because it is first, nearest, highest-RR, or otherwise convenient.
 
 A target must never be manufactured solely to satisfy RR.
 
@@ -794,7 +805,7 @@ targeted is selection state, not lifecycle state, and is not written to structur
 
 ~~~python
 def resolve_target_plan(
-    analysis_state: dict[str, Any],
+    canonical_state: dict[str, Any],
     current_market_view: CurrentMarketView,
 ) -> TargetPlan | None:
     ...
@@ -851,7 +862,25 @@ Missing target or current price returns false.
 
 ## 10.3 Reached target
 
-A target already reached at evaluation time fails target clearance.
+Target clearance is an entry/setup-side predicate. Target reached is a separate downstream notification event.
+
+~~~python
+def is_target_reached(
+    target_price: Decimal | None,
+    current_price: Decimal | None,
+    direction: str,
+) -> bool:
+    ...
+~~~
+
+V1:
+
+~~~text
+Bullish: current_price >= target_price
+Bearish: current_price <= target_price
+~~~
+
+Missing target or current price returns false.
 
 The Monitor must not mutate canonical POI lifecycle because a target has been reached.
 
@@ -975,17 +1004,31 @@ The Monitor must not claim that an order was submitted, filled, or a position op
 
 Alerts are runtime notifications, not canonical state.
 
-Use a deterministic transient alert identity composed from stable setup/target identity, for example:
+Alert types are explicitly separated:
 
 ~~~text
-symbol
+SETUP_ELIGIBLE
+TARGET_REACHED
+~~~
+
+`SETUP_ELIGIBLE` is the existing entry/setup notification path and uses target clearance plus optional RR.
+
+`TARGET_REACHED` is a mechanical downstream notification when the resolved target is observed at the current reference price. It does not require target clearance and does not apply the RR gate.
+
+Use a deterministic transient alert identity composed from alert type plus stable setup/target identity, for example:
+
+~~~text
+alert_type
++ symbol
 + analysis_key
 + canonical_setup_or_entry_event_id
 + target_coordinate
 + target_price
 ~~~
 
-The Monitor keeps emitted alert identities in memory.
+The Monitor keeps emitted alert identities in `emitted_alert_keys`.
+
+A key is added only after the corresponding notification has been emitted successfully. A failed notification must remain retryable.
 
 Unchanged state must not emit the same alert repeatedly during one Monitor runtime.
 
@@ -998,6 +1041,8 @@ On Monitor restart, runtime alert memory resets. A still-eligible canonical setu
 The Monitor may re-evaluate downstream eligibility when current price or another downstream input changes.
 
 A new notification is emitted only for a new alert identity or changed alert identity.
+
+On Monitor restart, the transient key set resets; repeated notification after restart is allowed.
 
 Canonical structure is never changed by re-evaluation.
 
@@ -1269,7 +1314,8 @@ is_target_cleared(target_price, current_price, direction)
 calculate_projected_rr(target_price, entry_reference_price, stop_price)
 get_active_sessions(utc_time, session_definitions)
 
-build_alert_key(analysis, target)
+build_alert_key(analysis, target, alert_type)
+is_target_reached(target_price, current_price, direction)
 evaluate_alert_eligibility(analysis, target, current_market_view, min_rr)
 emit_alert(decision)
 
@@ -1536,7 +1582,9 @@ test_session_status_uses_named_timezone
 test_session_status_handles_dst_transition
 test_session_context_does_not_change_canonical_state
 test_alert_identity_is_deterministic
+test_failed_notification_is_retryable
 test_unchanged_alert_is_not_repeated
+test_target_reached_is_directional
 test_monitor_restart_resets_transient_alert_memory
 test_alert_does_not_claim_position_open
 ~~~
@@ -1546,7 +1594,7 @@ test_alert_does_not_claim_position_open
 ~~~text
 test_symbol_isolation
 test_analysis_isolation
-test_one_monitor_instance_per_symbol_orchestration
+test_monitor_serializes_symbol_orchestration
 test_monitor_does_not_write_structures_json
 test_monitor_does_not_write_market_data_json
 test_atomic_mapper_persistence_is_required_before_downstream_evaluation
@@ -1651,9 +1699,10 @@ smc_monitor.py is implementation-complete when:
 - current price is obtained through persisted Market Data current state;
 - current snapshots never enter canonical Mapper processing;
 - canonical SMC state is consumed rather than reimplemented;
-- target resolution preserves canonical provenance;
+- target resolution consumes only one unambiguous target candidate or fails closed when selection policy is absent;
 - target clearance is deterministic and fail-closed;
-- optional --rr is applied only after target resolution and clearance;
+- optional --rr is applied only to SETUP_ELIGIBLE evaluation, after target resolution and clearance;
+- TARGET_REACHED notification is separate from target clearance/RR;
 - there is no automatic order or position management;
 - alerts are runtime notifications with deterministic deduplication;
 - Monitor state is not persisted into canonical JSON;
