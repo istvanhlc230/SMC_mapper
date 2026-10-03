@@ -84,14 +84,6 @@ Safety limits are strictly enforced:
 - When a source-code change appears to conflict with the canonical skill, stop and resolve the methodology conflict before implementation.
 - Prefer the smallest change that satisfies the requested methodology and preserves unrelated accepted behavior.
 
-## Test workspace
-
-All development and regression test files belong in the repository-root `test/` directory. The active developer agent must create new tests there and execute tests from that directory. Do not create new Python test files in the repository root or in another test directory unless the owning specification explicitly requires a different test artifact.
-
-The `test/` directory is the shared working directory for test development throughout the project lifecycle.
-
-Test design must maximize information obtained from each run. Prefer parametrized tests, shared fixtures, scenario matrices, and grouped related cases over one-off test functions or repeated single-test invocations. A normal validation run must execute the complete relevant focused test set in one pytest invocation; do not run pytest separately for each test function and do not use fail-fast options such as `-x` or `--maxfail=1` when the goal is diagnosis.
-
 ## Developer-agent coding and prompt discipline
 
 The active developer agent must use:
@@ -110,11 +102,11 @@ Developer-agent prompts are a scarce resource and must be optimized. The orchest
 
 Before `IMPLEMENTATION_READY`, the implementation agent must:
 
-1. run the narrowest relevant test(s);
-2. run the regression suite when structural behavior is affected;
+1. run the narrowest relevant validation command;
+2. run the relevant regression/verification suite when one exists and the task requires it;
 3. report exact commands and pass/fail evidence;
-4. identify remaining risks or untested areas;
-5. avoid claiming tests were run when they were not.
+4. identify remaining risks or unverified areas;
+5. avoid claiming validation was performed when it was not.
 
 ## Repository hygiene
 
@@ -140,9 +132,9 @@ This includes, for example:
 - intermediate generated files;
 - scratch scripts or one-off helper files;
 - temporary patches or analysis outputs;
-- local test fixtures that are not part of the committed test suite.
+- temporary local fixtures used only during development.
 
-Keep permanent source code, tests, required design/specification files, and other intentional repository artifacts in their defined locations. Do not leave temporary artifacts scattered through the repository root or unrelated source directories.
+Keep permanent source code, required design/specification files, and other intentional repository artifacts in their defined locations. Do not leave temporary artifacts scattered through the repository root or unrelated source directories.
 
 The `dev_tmp/` directory is development scratch space only and must not become a substitute for required source, test, or documentation locations. Do not treat files under `dev_tmp/` as implementation deliverables unless the owning task explicitly promotes a file into a permanent repository location.
 
