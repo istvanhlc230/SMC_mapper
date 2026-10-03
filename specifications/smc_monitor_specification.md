@@ -806,7 +806,6 @@ targeted is selection state, not lifecycle state, and is not written to structur
 ~~~python
 def resolve_target_plan(
     canonical_state: dict[str, Any],
-    current_market_view: CurrentMarketView,
 ) -> TargetPlan | None:
     ...
 ~~~
@@ -1025,6 +1024,7 @@ alert_type
 + symbol
 + analysis_key
 + canonical_setup_or_entry_event_id
++ direction
 + target_coordinate
 + target_price
 ~~~
@@ -1326,7 +1326,7 @@ invoke_mapper(analysis, end_time, debug)
 
 refresh_current_market_view(symbol, timeframe)
 
-resolve_target_plan(canonical_state, current_market_view)
+resolve_target_plan(canonical_state)
 is_target_cleared(target_price, current_price, direction)
 calculate_projected_rr(target_price, entry_reference_price, stop_price)
 get_active_sessions(utc_time, session_definitions)
@@ -1604,6 +1604,7 @@ test_failed_notification_is_retryable
 test_unchanged_alert_is_not_repeated
 test_target_reached_is_directional
 test_target_reached_does_not_use_rr_gate
+test_resolve_target_plan_does_not_use_current_price
 test_monitor_restart_resets_transient_alert_memory
 test_alert_does_not_claim_position_open
 ~~~
@@ -1686,13 +1687,13 @@ for each due symbol
     ↓
     resolve target
     ↓
-    setup target clearance / optional RR
+    independently evaluate SETUP_ELIGIBLE
     ↓
-    SETUP_ELIGIBLE notification
+    optionally emit SETUP_ELIGIBLE
     ↓
-    target-reached evaluation
+    independently evaluate TARGET_REACHED
     ↓
-    TARGET_REACHED notification
+    optionally emit TARGET_REACHED
 
  ↓
 schedule next evaluation
