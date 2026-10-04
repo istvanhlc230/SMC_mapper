@@ -83,7 +83,7 @@ def acquire_explicit(
                     )
                 provider_results.append({
                     "provider": provider,
-                    "status": "PARTIAL",
+                    "status": "NO_MATCH" if not in_range else "PARTIAL",
                     "events_acquired": len(in_range),
                     "historical_coverage": "NOT_GUARANTEED",
                 })
@@ -191,7 +191,9 @@ def acquire_current(
                 "provider": provider,
                 "status": (
                     "PARTIAL"
-                    if provider == "yahoo_finance" or detail_failures
+                    if detail_failures
+                    else ("NO_MATCH" if not events else "OK")
+                    if provider == "yahoo_finance"
                     else "OK"
                 ),
                 "events_acquired": len(events),
@@ -452,7 +454,9 @@ def refresh_calendar_scope(
                 "provider": provider,
                 "status": (
                     "PARTIAL"
-                    if provider == "yahoo_finance" or detail_failures
+                    if detail_failures
+                    else ("NO_MATCH" if not selected else "OK")
+                    if provider == "yahoo_finance"
                     else "OK"
                 ),
                 "events_fetched": len(fetched),
