@@ -694,10 +694,26 @@ def find_uncovered_intervals(
         if coverage_end <= start or coverage_start >= end:
             continue
 
+        overlap_start = max(start, coverage_start)
+        overlap_end = min(end, coverage_end)
+
+        # Calendar 2.3.0 adds ForexFactory Detail specifications. A legacy
+        # cached FF event without details.specs is not fully enriched, so the
+        # covered interval must be reacquired once to obtain the provider Detail.
+        if provider == "forexfactory":
+            legacy_detail_needed = any(
+                event["source"] == "forexfactory"
+                and overlap_start <= parse_iso8601(event["timestamp"]) < overlap_end
+                and "specs" not in event["details"]
+                for event in document["events"]
+            )
+            if legacy_detail_needed:
+                continue
+
         complete_intervals.append(
             (
-                max(start, coverage_start),
-                min(end, coverage_end),
+                overlap_start,
+                overlap_end,
             )
         )
 
@@ -1946,8 +1962,8 @@ def status_from_provider_results(provider_results: List[Dict[str, Any]]) -> str:
 
 
 # Function: format_cleartext_details — renders normalized details for human-readable CLI output.
-# Variables: details=normalized event details.
-# Local variables: display=human-readable value; key=detail key; label=display label; ordered_keys=preferred key order; value=detail value.
+# Variables: details=normalized event details; source=event source.
+# Local variables: display=human-readable value; key=detail key; label=display label; ordered_keys=preferred key order; source=provider source; spec=detail specification; value=detail value.
 def _detail_html_to_text(value: str) -> str:
     text = re.sub(r"(?is)<br\s*/?>", "\n", value)
     text = re.sub(r"(?is)</(p|div|li|tr|table|h[1-6])\s*>", "\n", text)
@@ -1960,11 +1976,19 @@ def _detail_html_to_text(value: str) -> str:
 # Function: format_cleartext_details — renders normalized details for human-readable CLI output.
 # Variables: details=normalized event details.
 # Local variables: display=human-readable value; key=detail key; label=display label; ordered_keys=preferred key order; spec=detail specification; value=detail value.
-def format_cleartext_details(details: Dict[str, Any]) -> List[str]:
+def format_cleartext_details(
+    details: Dict[str, Any],
+    source: Optional[str] = None,
+) -> List[str]:
     """Render details without exposing the internal dictionary representation."""
     preferred_keys = ("currency", "impact", "actual", "forecast", "previous")
     ordered_keys = [key for key in preferred_keys if key in details]
-    extra_keys = [key for key in details if key not in ordered_keys and key != "specs"]
+    extra_keys = [
+        key for key in details
+        if key not in ordered_keys
+        and key != "specs"
+        and not (source == "forexfactory" and key == "url")
+    ]
     ordered_keys.extend(sorted(extra_keys))
 
     lines: List[str] = []
@@ -2011,7 +2035,10 @@ def output_query_result(
             print(f"Symbol    : {event['symbol']}")
             print(f"Title     : {event['title']}")
             print("Details   :")
-            for detail_line in format_cleartext_details(event["details"]):
+            for detail_line in format_cleartext_details(
+                event["details"],
+                source=event["source"],
+            ):
                 print(detail_line)
             print(f"Event ID  : {event['event_id']}")
             print()
