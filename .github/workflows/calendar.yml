@@ -35,6 +35,28 @@ jobs:
           assert calendar.validate_symbol("USDGBP") == "USDGBP"
           assert calendar.validate_symbol("HUF") == "HUF"
           assert calendar.validate_symbol("NVDA") == "NVDA"
+          assert calendar.__version__ == "2.1.0"
+          assert f"Calendar CLI v{calendar.__version__}" in calendar.HELP_TEXT
+
+          # Explicit bare delete must recover from an incompatible legacy cache.
+          original_root = calendar.DATA_ROOT
+          original_file = calendar.CALENDAR_FILE
+          try:
+              with tempfile.TemporaryDirectory() as tmp:
+                  calendar.DATA_ROOT = tmp
+                  calendar.CALENDAR_FILE = os.path.join(tmp, "calendar.json")
+                  with open(calendar.CALENDAR_FILE, "w", encoding="utf-8") as handle:
+                      json.dump({"schema_version": 1, "events": [], "coverage": [], "watermarks": {}}, handle)
+                  assert calendar.run_delete(None, None) == 0
+                  reset_document = calendar.load_calendar_document()
+                  assert reset_document["schema_version"] == calendar.SCHEMA_VERSION
+                  assert reset_document["events"] == []
+                  assert reset_document["coverage"] == []
+                  assert reset_document["watermarks"] == {}
+          finally:
+              calendar.DATA_ROOT = original_root
+              calendar.CALENDAR_FILE = original_file
+
           assert calendar.parse_request(["EURUSD", "next"])["scope"] == "next"
 
           next_doc = calendar.build_empty_calendar_document()
