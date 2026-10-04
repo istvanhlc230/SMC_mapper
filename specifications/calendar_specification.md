@@ -2,7 +2,7 @@
 
 Status: Current V2 specification.
 
-Calendar implementation baseline: 2.3.2.
+Calendar implementation baseline: 2.3.3.
 
 Scope:
 - unified economic-calendar and news acquisition;
@@ -362,9 +362,10 @@ cannot widen the persisted/result interval.
 
 The calendar-page Detail control is presentation/navigation UI, not a canonical event URL field. For
 each acquired ForexFactory event, Calendar fetches the provider Detail JSON response identified by
-the provider event ID. Its ordered `specs` collection is stored under `details.specs`, with provider
-HTML preserved so Source and Next Release links and future Detail fields are retained. No Detail URL
-is extracted, persisted, or synthesized.
+the provider event ID. Detail requests use bounded parallelism (maximum six concurrent requests) to avoid
+serial N-request latency while preserving the normalized event order in the persisted result. Its ordered
+`specs` collection is stored under `details.specs`, with provider HTML preserved so Source and Next
+Release links and future Detail fields are retained. No Detail URL is extracted, persisted, or synthesized.
 
 A complete coverage interval is not considered Detail-enriched when an existing ForexFactory event
 inside the requested interval has no `details.specs`. Such an interval is reacquired so the existing
