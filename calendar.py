@@ -916,6 +916,7 @@ def build_forexfactory_query(start: datetime, end: datetime) -> str:
 def fetch_forexfactory(
     start: datetime,
     end: datetime,
+    include_details: bool = True,
 ) -> List[Dict[str, Any]]:
     request_start = start
     request_end = end
@@ -944,27 +945,35 @@ def fetch_forexfactory(
         if request_start <= parse_iso8601(event["timestamp"]) < request_end
     ]
 
-    # ForexFactory Detail is provider data, not a canonical event URL.
-    # It is acquired separately by numeric provider event ID after the calendar
-    # event set is normalized and interval-filtered. Detail requests are
-    # intentionally bounded-parallel to avoid N sequential network round-trips;
-    # results are assigned back in normalized event order.
+# Function: _enrich_forexfactory_details — fetches Detail specs with bounded parallelism.
+# Variables: events=normalized ForexFactory events requiring Detail enrichment.
+def _enrich_forexfactory_details(
+    events: List[Dict[str, Any]],
+) -> None:
     def fetch_detail(event: Dict[str, Any]) -> List[Dict[str, Any]]:
         provider_event_id = event["event_id"].split(":", 1)[1]
         return fetch_forexfactory_event_detail(provider_event_id)
 
-    if normalized:
-        max_workers = min(6, len(normalized))
-        with ThreadPoolExecutor(
-            max_workers=max_workers,
-            thread_name_prefix="ff-detail",
-        ) as executor:
-            detail_specs = list(executor.map(fetch_detail, normalized))
+    if not events:
+        return
 
-        for event, specs in zip(normalized, detail_specs):
-            event["details"]["specs"] = specs
+    max_workers = min(6, len(events))
+    with ThreadPoolExecutor(
+        max_workers=max_workers,
+        thread_name_prefix="ff-detail",
+    ) as executor:
+        detail_specs = list(executor.map(fetch_detail, events))
 
-    return normalized
+    for event, specs in zip(events, detail_specs):
+        event["details"]["specs"] = specs
+
+
+    # ForexFactory Detail is provider data, not a canonical event URL.
+    # Detail enrichment can be disabled for discovery-only refresh acquisition.
+    if include_details:
+        _enrich_forexfactory_details(normalized)
+
+
 
 
 # Function: _normalize_forexfactory_impact_value — normalizes provider impact text to a canonical token.
@@ -2419,6 +2428,7 @@ def refresh_calendar_scope(
                 fetched = fetch_forexfactory(
                     refresh_window_start,
                     refresh_window_end,
+                    include_details=False,
                 )
             else:
                 fetched = fetch_yahoo_news(symbol)
@@ -2431,6 +2441,7 @@ def refresh_calendar_scope(
                     or event["event_id"] in existing_ids
                 )
             ]
+            _enrich_forexfactory_details(selected)
 
             refreshed_for_symbol.extend(selected)
             provider_results.append({
@@ -2479,7 +2490,9 @@ def refresh_calendar_scope(
         refreshed_for_symbol,
         symbol,
     )
-    if refreshed_for_symbol:
+    if refreshed_for_symbol and (
+        summary["added"] or summary["changed"]
+    ):
         validate_calendar_document(document)
         save_calendar_atomic(document)
         if debug:
