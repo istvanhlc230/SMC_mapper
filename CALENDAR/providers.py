@@ -14,7 +14,10 @@ from .config import (FOREXFACTORY_DETAIL_URL, FOREXFACTORY_URL, FX_CURRENCY_CODE
 from .domain import format_iso8601, is_currency, is_fx_pair, normalize_symbol, parse_iso8601
 from .parsing import extract_days_payload, parse_calendar_days, parse_forexfactory_html_events
 
+# Provider state is request-local: fetched payloads, normalized events, and Detail failures stay inside the active acquisition call.
+
 def _fetch_yahoo_search_payload(query_symbol: str) -> Dict[str, Any]:
+    """Internal helper: _fetch_yahoo_search_payload performs the focused fetch yahoo search payload step in the Calendar implementation."""
     params = {
         "q": query_symbol,
         "quotesCount": "20",
@@ -32,6 +35,7 @@ def _fetch_yahoo_search_payload(query_symbol: str) -> Dict[str, Any]:
     return data
 
 def _is_verified_yahoo_forex_quote(
+    """Internal helper: _is_verified_yahoo_forex_quote performs the focused is verified yahoo forex quote step in the Calendar implementation."""
     quote: Dict[str, Any],
     candidate_symbol: str,
 ) -> bool:
@@ -47,6 +51,7 @@ def _is_verified_yahoo_forex_quote(
     )
 
 def _resolve_yahoo_instrument(
+    """Internal helper: _resolve_yahoo_instrument performs the focused resolve yahoo instrument step in the Calendar implementation."""
     symbol: str,
 ) -> Tuple[str, Dict[str, Any]]:
     if not is_fx_pair(symbol):
@@ -90,6 +95,7 @@ def _resolve_yahoo_instrument(
     )
 
 def resolve_yahoo_symbol(symbol: str) -> Optional[str]:
+    """Calendar operation: resolve_yahoo_symbol performs the focused resolve yahoo symbol step in the Calendar implementation."""
     try:
         provider_symbol, _ = _resolve_yahoo_instrument(symbol)
     except YahooForexPairUnavailable:
@@ -97,6 +103,7 @@ def resolve_yahoo_symbol(symbol: str) -> Optional[str]:
     return provider_symbol
 
 def fetch_url(url: str) -> str:
+    """Calendar operation: fetch_url performs the focused fetch url step in the Calendar implementation."""
     request = urllib.request.Request(
         url,
         headers={
@@ -115,12 +122,14 @@ def fetch_url(url: str) -> str:
         raise ProviderError(str(exc)) from exc
 
 def _forexfactory_date_token(value: datetime) -> str:
+    """Internal helper: _forexfactory_date_token performs the focused forexfactory date token step in the Calendar implementation."""
     month = value.strftime("%b").lower()
     day = value.day
     year = value.year
     return f"{month}{day}.{year}"
 
 def build_forexfactory_query(start: datetime, end: datetime) -> str:
+    """Calendar operation: build_forexfactory_query performs the focused build forexfactory query step in the Calendar implementation."""
     if end <= start:
         raise CalendarInputError("ForexFactory query interval must have a positive duration.")
 
@@ -140,6 +149,7 @@ def build_forexfactory_query(start: datetime, end: datetime) -> str:
     return urllib.parse.urlencode(query)
 
 def fetch_forexfactory(
+    """Calendar operation: fetch_forexfactory performs the focused fetch forexfactory step in the Calendar implementation."""
     start: datetime,
     end: datetime,
     include_details: bool = True,
@@ -182,10 +192,12 @@ def fetch_forexfactory(
     return normalized
 
 def _enrich_forexfactory_details(
+    """Internal helper: _enrich_forexfactory_details performs the focused enrich forexfactory details step in the Calendar implementation."""
     events: List[Dict[str, Any]],
 ) -> List[str]:
     """Best-effort FF detail enrichment; return provider IDs that failed."""
     def fetch_detail(event: Dict[str, Any]) -> Tuple[str, List[Dict[str, Any]]]:
+        """Calendar operation: fetch_detail performs the focused fetch detail step in the Calendar implementation."""
         provider_event_id = event["event_id"].split(":", 1)[1]
         return provider_event_id, fetch_forexfactory_event_detail(provider_event_id)
 
@@ -218,6 +230,7 @@ def _enrich_forexfactory_details(
     return failures
 
 def fetch_forexfactory_event_detail(event_id: str) -> List[Dict[str, Any]]:
+    """Calendar operation: fetch_forexfactory_event_detail performs the focused fetch forexfactory event detail step in the Calendar implementation."""
     event_id = str(event_id).strip()
     if not re.fullmatch(r"\d+", event_id):
         raise ProviderError("ForexFactory event detail has an invalid provider ID.")
@@ -311,6 +324,7 @@ def _resolve_impact(raw: Dict[str, Any]) -> str:
     return "UNKNOWN"
 
 def normalize_provider_event(raw: Dict[str, Any]) -> Dict[str, Any]:
+    """Calendar operation: normalize_provider_event performs the focused normalize provider event step in the Calendar implementation."""
     if raw.get("id") in (None, "", "None"):
         raise ProviderError("ForexFactory event has no provider ID.")
     try:
@@ -357,6 +371,7 @@ def normalize_provider_event(raw: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 def normalize_calendar_events(days_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Calendar operation: normalize_calendar_events performs the focused normalize calendar events step in the Calendar implementation."""
     normalized: List[Dict[str, Any]] = []
     for day in days_data:
         if not isinstance(day, dict):
@@ -368,6 +383,7 @@ def normalize_calendar_events(days_data: List[Dict[str, Any]]) -> List[Dict[str,
     return normalized
 
 def fetch_yahoo_news(symbol: str) -> List[Dict[str, Any]]:
+    """Calendar operation: fetch_yahoo_news performs the focused fetch yahoo news step in the Calendar implementation."""
     provider_symbol, data = _resolve_yahoo_instrument(symbol)
 
     news = data.get("news")
