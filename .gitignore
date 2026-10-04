@@ -3,3 +3,5 @@ __pycache__/
 *.py[cod]
 dev_tmp/
 calendar.json
+CALENDAR/calendar.json
+CALENDAR/.calendar.lock
