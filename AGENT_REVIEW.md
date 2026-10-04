@@ -104,3 +104,17 @@ This commit corrects all four:
 
 The Calendar specification/design acceptance language was synchronized with these
 implementation rules. Runtime validation remains the only unperformed validation boundary.
+
+
+## Re-audit correction: missing coverage-gap function
+
+Static symbol inspection found that `find_uncovered_intervals()` was called by explicit
+Calendar acquisition and by the query visibility guard, but had no definition in the committed
+module. This would cause a runtime `NameError` on every explicit range acquisition.
+
+The function is now implemented according to the Calendar coverage contract: only matching
+provider+canonical-symbol intervals with status `COMPLETE` satisfy requested coverage;
+`PARTIAL` intervals remain gaps. Multiple complete intervals are clipped to the requested
+boundary and merged logically while calculating uncovered gaps.
+
+Runtime validation is still required before PASS.

@@ -530,6 +530,55 @@ def merge_coverage(document: Dict[str, Any], item: Dict[str, Any]) -> None:
     document["coverage"] = merged
 
 
+def find_uncovered_intervals(
+    document: Dict[str, Any],
+    provider: str,
+    symbol: str,
+    start: datetime,
+    end: datetime,
+) -> List[Tuple[datetime, datetime]]:
+    if end <= start:
+        raise CalendarInputError("Coverage interval must have end after start.")
+
+    complete_intervals = []
+    for coverage in document["coverage"]:
+        if (
+            coverage["provider"] != provider
+            or coverage["symbol"] != symbol
+            or coverage["status"] != "COMPLETE"
+        ):
+            continue
+
+        coverage_start = parse_iso8601(coverage["start"])
+        coverage_end = parse_iso8601(coverage["end"])
+        if coverage_end <= start or coverage_start >= end:
+            continue
+
+        complete_intervals.append(
+            (
+                max(start, coverage_start),
+                min(end, coverage_end),
+            )
+        )
+
+    complete_intervals.sort(key=lambda interval: interval[0])
+
+    gaps: List[Tuple[datetime, datetime]] = []
+    cursor = start
+    for coverage_start, coverage_end in complete_intervals:
+        if coverage_start > cursor:
+            gaps.append((cursor, coverage_start))
+        if coverage_end > cursor:
+            cursor = coverage_end
+        if cursor >= end:
+            break
+
+    if cursor < end:
+        gaps.append((cursor, end))
+
+    return gaps
+
+
 def watermark_key(provider: str, symbol: str) -> str:
     return f"{provider}|{symbol}"
 
