@@ -118,3 +118,11 @@ provider+canonical-symbol intervals with status `COMPLETE` satisfy requested cov
 boundary and merged logically while calculating uncovered gaps.
 
 Runtime validation is still required before PASS.
+
+
+## Debug CLI contract
+
+Calendar `--debug` is now explicit and diagnostic-only. It controls detailed exception
+traceback printing to stderr. Concise user-facing errors remain visible without debug.
+Debug state never changes stdout machine-readable output, Calendar data, provider routing,
+coverage, watermarks, or canonical semantics.

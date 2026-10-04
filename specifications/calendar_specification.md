@@ -101,6 +101,18 @@ SGDMYR=X, SGDJPY=X, SGDHKD=X, SGDIDR=X, and SGDCNY=X.
 This is a provider reference snapshot, not a permanent whitelist. The snapshot
 is descriptive only; provider verification is authoritative at runtime.
 
+## Debug contract
+
+`--debug` is an optional CLI diagnostic flag.
+
+- Without `--debug`, normal errors remain concise and are written to stderr; detailed
+  exception diagnostics and tracebacks are not printed.
+- With `--debug`, diagnostic exception information and tracebacks may be printed to
+  stderr only.
+- `--debug` never changes the machine-readable stdout contract, event data, coverage,
+  watermark semantics, or provider routing.
+- `--debug` is presentation/diagnostic state only and never enters canonical data.
+
 ## 3. Canonical CLI
 
 Public query forms:

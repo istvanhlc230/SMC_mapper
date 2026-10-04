@@ -5,6 +5,7 @@ import os
 import re
 import sys
 import tempfile
+import traceback
 import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta, timezone
@@ -85,7 +86,13 @@ USAGE
   python calendar.py delete SYMBOL YYYY.MM.DD@HH:MM
   python calendar.py delete SYMBOL YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM
   python calendar.py SYMBOL <scope> --cleartext
+  python calendar.py SYMBOL <scope> --debug
+  python calendar.py SYMBOL <scope> --cleartext --debug
   python calendar.py --help
+
+FLAGS
+  --cleartext  Human-readable presentation only; does not change data.
+  --debug      Emit diagnostic exception/traceback output to stderr only.
 
 SCOPE
   YYYY.MM.DD                         Exact UTC calendar day.
@@ -1206,7 +1213,12 @@ def filter_query_events(
         result.append(event)
     return result
 
-def run_query(symbol: str, scope: str, cleartext: bool = False) -> int:
+def run_query(
+    symbol: str,
+    scope: str,
+    cleartext: bool = False,
+    debug: bool = False,
+) -> int:
     with acquire_calendar_lock():
         document = load_calendar_document()
 
@@ -1339,7 +1351,11 @@ def delete_symbol_interval(
         if start <= last_event < end:
             del document["watermarks"][key]
 
-def run_delete(symbol: Optional[str], scope: Optional[str]) -> int:
+def run_delete(
+    symbol: Optional[str],
+    scope: Optional[str],
+    debug: bool = False,
+) -> int:
     with acquire_calendar_lock():
         document = load_calendar_document()
 
@@ -1385,7 +1401,11 @@ def parse_request(args: List[str]) -> Dict[str, Any]:
         )
 
     cleartext = "--cleartext" in args
-    positional = [item for item in args if item != "--cleartext"]
+    debug = "--debug" in args
+    positional = [
+        item for item in args
+        if item not in {"--cleartext", "--debug"}
+    ]
 
     if not positional:
         raise CalendarInputError(
@@ -1402,6 +1422,7 @@ def parse_request(args: List[str]) -> Dict[str, Any]:
                 "symbol": None,
                 "scope": None,
                 "cleartext": False,
+                "debug": debug,
             }
 
         if len(positional) != 3:
@@ -1419,6 +1440,7 @@ def parse_request(args: List[str]) -> Dict[str, Any]:
             "symbol": symbol,
             "scope": scope,
             "cleartext": False,
+            "debug": debug,
         }
     if len(positional) != 2:
         raise CalendarInputError(
@@ -1432,24 +1454,38 @@ def parse_request(args: List[str]) -> Dict[str, Any]:
         "symbol": symbol,
         "scope": scope,
         "cleartext": cleartext,
+        "debug": debug,
     }
 
 
 def run() -> int:
+    debug = "--debug" in sys.argv[1:]
     try:
         request = parse_request(sys.argv[1:])
+        debug = request["debug"]
         if request["operation"] == "DELETE":
-            return run_delete(request["symbol"], request["scope"])
+            return run_delete(
+                request["symbol"],
+                request["scope"],
+                debug=debug,
+            )
         return run_query(
             request["symbol"],
             request["scope"],
             request["cleartext"],
+            debug=debug,
         )
     except CalendarInputError as exc:
         print(f"Error: {exc}", file=sys.stderr)
+        if debug:
+            print("DEBUG | CalendarInputError traceback:", file=sys.stderr)
+            traceback.print_exc()
         return 2
     except DataIntegrityError as exc:
         print(f"Error: {exc}", file=sys.stderr)
+        if debug:
+            print("DEBUG | DataIntegrityError traceback:", file=sys.stderr)
+            traceback.print_exc()
         return 3
 
 

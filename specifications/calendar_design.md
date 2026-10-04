@@ -44,7 +44,14 @@ Old relative scopes and next evaluation are removed.
 
 The canonical symbol is never replaced by a provider symbol.
 
-## 4. Update modes
+## 4. Debug
+
+`--debug` controls diagnostic exception output only. Diagnostics and tracebacks are
+stderr-only and are never mixed into the machine-readable stdout result or persisted
+Calendar data. Without `--debug`, catch handlers emit only the concise user-facing
+error and return the documented error status.
+
+## 5. Update modes
 
 Explicit ranges perform historical acquisition.
 
@@ -52,7 +59,7 @@ current uses per-provider/per-symbol watermarks.
 
 No watermark means BOOTSTRAP_REQUIRED and no invented start time.
 
-## 5. Coverage
+## 6. Coverage
 
 ForexFactory coverage may be COMPLETE for an acquired UTC interval.
 
@@ -67,7 +74,7 @@ because their standalone currency is not a CLI-routable currency.
 
 Coverage never comes from the mere presence of an event.
 
-## 6. Persistence
+## 7. Persistence
 
 Shared schema version is 2.
 
@@ -84,7 +91,7 @@ Event envelope is:
 
 Watermarks are keyed by provider|canonical_symbol.
 
-## 7. Failure isolation
+## 8. Failure isolation
 
 A failed provider:
 - leaves previous provider data intact;
@@ -93,13 +100,13 @@ A failed provider:
 
 All-provider failure is UNAVAILABLE.
 
-## 8. Local consumer boundary
+## 9. Local consumer boundary
 
 Monitor validates schema and reads committed JSON.
 
 Monitor does not perform provider access or provider-specific parsing.
 
-## 9. Symbol-scoped deletion
+## 10. Symbol-scoped deletion
 
 Public forms:
 
@@ -122,6 +129,6 @@ same economic event is consumed by multiple FX symbols.
 If deletion reaches the newest known event timestamp for a provider/symbol,
 that watermark is removed so current cannot silently skip the deleted tail.
 
-## 10. Repository hygiene
+## 11. Repository hygiene
 
 Development artifacts belong under dev_tmp/. The repository root must not receive ad-hoc downloads, caches, debug outputs, or experiments.
