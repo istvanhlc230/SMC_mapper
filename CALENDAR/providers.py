@@ -10,7 +10,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
-from .config import FOREXFACTORY_DETAIL_URL, FOREXFACTORY_URL, FX_CURRENCY_CODES, HTTP_TIMEOUT, YAHOO_SEARCH_URL, USER_AGENT, ProviderError, YahooForexPairUnavailable
+from .config import (FOREXFACTORY_DETAIL_URL, FOREXFACTORY_URL, FX_CURRENCY_CODES, HTTP_TIMEOUT, YAHOO_SEARCH_URL, USER_AGENT, USD_BASE_YAHOO_SYMBOLS, CalendarInputError, ProviderError, YahooForexPairUnavailable)
 from .domain import format_iso8601, is_currency, is_fx_pair, normalize_symbol, parse_iso8601
 from .parsing import extract_days_payload, parse_calendar_days, parse_forexfactory_html_events
 
@@ -259,6 +259,37 @@ def fetch_forexfactory_event_detail(event_id: str) -> List[Dict[str, Any]]:
     # The provider response sequence is authoritative. The numeric order value
     # is metadata, not a local sorting key.
     return normalized
+
+def _resolve_impact(raw: Dict[str, Any]) -> str:
+    """Normalize explicit ForexFactory impact metadata without title inference."""
+    impact_text = ""
+    for field_name in ("impactTitle", "impactName", "impact"):
+        candidate = str(raw.get(field_name, "")).strip()
+        if candidate:
+            impact_text = candidate.lower()
+            break
+
+    normalized_text = re.sub(r"[^a-z]+", " ", impact_text).strip()
+    if re.search(r"\bhigh\b", normalized_text):
+        return "HIGH"
+    if re.search(r"\b(?:med|medium)\b", normalized_text):
+        return "MEDIUM"
+    if re.search(r"\blow\b", normalized_text):
+        return "LOW"
+    if "non economic" in normalized_text or "holiday" in normalized_text:
+        return "HOLIDAY"
+
+    impact_class = str(raw.get("impactClass", "")).strip().lower()
+    class_tokens = re.sub(r"[^a-z]+", " ", impact_class).strip()
+    if "red" in class_tokens or "high" in class_tokens:
+        return "HIGH"
+    if "orange" in class_tokens or re.search(r"\bora\b", class_tokens) or "medium" in class_tokens or re.search(r"\bmed\b", class_tokens):
+        return "MEDIUM"
+    if "yellow" in class_tokens or re.search(r"\byel\b", class_tokens) or "green" in class_tokens or re.search(r"\bgrn\b", class_tokens) or "low" in class_tokens:
+        return "LOW"
+    if "grey" in class_tokens or "gray" in class_tokens or re.search(r"\bgry\b", class_tokens) or re.search(r"\bgre\b", class_tokens) or "holiday" in class_tokens:
+        return "HOLIDAY"
+    return "UNKNOWN"
 
 def normalize_provider_event(raw: Dict[str, Any]) -> Dict[str, Any]:
     if raw.get("id") in (None, "", "None"):
