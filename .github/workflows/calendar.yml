@@ -81,7 +81,7 @@ jobs:
           assert ff_rows[0]["id"] == "1001"
           assert ff_rows[0]["currency"] == "EUR"
           assert ff_rows[0]["name"] == "ECB Test Event"
-          assert ff_rows[0]["impact"] == "High Impact Expected"
+          assert ff_rows[0]["impactName"] == "high"
           medium_html = """<html><body>
           <div>Calendar Time Zone: Europe/Budapest (GMT +2)</div>
           <tr class="calendar__row calendar_row" data-eventid="1003">
@@ -96,13 +96,13 @@ jobs:
               dt("2026-10-04T00:00:00Z"),
               dt("2026-10-06T00:00:00Z"),
           )
-          assert medium_rows[0]["impact"] == "Med Impact Expected"
+          assert medium_rows[0]["impactName"] == "medium"
 
           normalized_ff = calendar.normalize_provider_event(ff_rows[0])
           assert normalized_ff["timestamp"] == "2026-10-05T07:00:00Z"
           assert normalized_ff["details"]["impact"] == "HIGH"
 
-          assert calendar.__version__ == "2.2.5"
+          assert calendar.__version__ == "2.2.6"
           assert f"Calendar CLI v{calendar.__version__}" in calendar.HELP_TEXT
 
           # Explicit bare delete must recover from an incompatible legacy cache.

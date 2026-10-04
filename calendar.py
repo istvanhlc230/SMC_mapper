@@ -31,7 +31,7 @@ HTTP_TIMEOUT = 15.0
 # SCHEMA_VERSION — persistent calendar.json schema version.
 SCHEMA_VERSION = 2
 # __version__ — Calendar CLI implementation version, independent from SCHEMA_VERSION.
-__version__ = "2.2.5"
+__version__ = "2.2.6"
 
 # SUPPORTED_CURRENCIES — standalone currencies accepted by the CLI.
 SUPPORTED_CURRENCIES = {
@@ -891,20 +891,36 @@ def fetch_forexfactory(
     ]
 
 
+# Function: _normalize_forexfactory_impact_value — normalizes provider impact text to a canonical token.
+# Variables: value=provider impact text.
+# Local variables: lowered=lowercase provider text.
+def _normalize_forexfactory_impact_value(value: str) -> str:
+    lowered = value.strip().lower()
+    if "high" in lowered:
+        return "high"
+    if "medium" in lowered or lowered.startswith("med"):
+        return "medium"
+    if "low" in lowered:
+        return "low"
+    if "non-economic" in lowered or "holiday" in lowered:
+        return "holiday"
+    return ""
+
+
 # Function: _classify_forexfactory_impact — classifies FF impact from CSS classes.
 # Variables: classes=HTML element CSS classes.
-# Local variables: class_name=current CSS class; impact=canonical impact value.
+# Local variables: class_name=current CSS class.
 def _classify_forexfactory_impact(classes: set[str]) -> str:
     for class_name in classes:
         lowered = class_name.lower()
         if lowered.endswith("--high") or lowered in {"high", "icon--ff-impact-red"}:
-            return "High Impact Expected"
+            return "high"
         if lowered.endswith("--medium") or lowered in {"medium", "med", "icon--ff-impact-orange"}:
-            return "Med Impact Expected"
+            return "medium"
         if lowered.endswith("--low") or lowered in {"low", "icon--ff-impact-yellow", "icon--ff-impact-green"}:
-            return "Low Impact Expected"
+            return "low"
         if lowered in {"holiday", "non-economic", "icon--ff-impact-grey"}:
-            return "Non-Economic"
+            return "holiday"
     return ""
 
 
@@ -968,9 +984,11 @@ class ForexFactoryHTMLCalendarParser(HTMLParser):
             self.text_buffer = []
 
         if tag == "span" and self.current_cell and "calendar__impact" in self.current_cell:
-            impact_title = attributes.get("title")
+            impact_title = str(attributes.get("title") or "").strip()
             if impact_title:
-                self.current_row["impact"] = str(impact_title).strip()
+                normalized_title = _normalize_forexfactory_impact_value(impact_title)
+                if normalized_title:
+                    self.current_row["impact"] = normalized_title
             impact = _classify_forexfactory_impact(classes)
             if impact:
                 self.current_row["impact"] = impact

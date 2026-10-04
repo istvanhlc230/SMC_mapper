@@ -3,18 +3,19 @@
 Status: CI_PENDING_FINAL_RUN
 
 ## Change
-The live Windows query now demonstrates successful ForexFactory acquisition over the requested
-2026.10.04-2026.10.30 interval, with 152 ForexFactory events returned. The remaining data-quality defect
-was that all rendered HTML impact values were normalized to UNKNOWN.
+Live Windows smoke testing now successfully acquires ForexFactory events for the requested
+2026.10.04-2026.10.30 interval. The remaining defect was data normalization: the HTML parser captured
+known impact labels but passed strings such as `High Impact Expected` into the normalizer, whose accepted
+canonical tokens were `high/medium/low/holiday`. This caused all 152 observed FF events to appear as
+`impact=UNKNOWN`.
 
-The parser now resolves impact from ForexFactory's CSS classifications (`calendar__impact--high`,
-`calendar__impact--medium`, `calendar__impact--low`) and compatible icon/span forms, while retaining
-the existing title-based classification path.
+The parser now converts FF CSS/title/icon impact forms to canonical provider tokens before normalization.
+The existing event-ID, date/time, currency, and value parsing behavior is unchanged.
 
-Calendar implementation version: 2.2.5
+Calendar implementation version: 2.2.6
 Persistent schema: 2
 
 ## Validation
-A deterministic regression test was added for HIGH and MEDIUM rendered impact classifications.
-The implementation is pending a fresh CI run and another live Windows smoke query to verify that real
-ForexFactory events no longer appear as UNKNOWN.
+Regression tests cover HIGH and MEDIUM rendered impact classification. Final validation requires a fresh
+CI result against this implementation snapshot and a repeat of the Windows live query to confirm that
+real events carry HIGH/MEDIUM/LOW/HOLIDAY where supplied by ForexFactory.
