@@ -208,6 +208,18 @@ jobs:
           assert "  Forecast : 57.1\n" in rendered
           assert "  Previous : 57.8\n" in rendered
 
+          # Cleartext event blocks are separated by whitespace only; no closing rule is emitted.
+          second_cleartext_event = dict(cleartext_event)
+          second_cleartext_event["event_id"] = "forexfactory:cleartext-2"
+          cleartext_out = io.StringIO()
+          with contextlib.redirect_stdout(cleartext_out):
+              calendar.output_query_result(
+                  "OK", "EURUSD", [cleartext_event, second_cleartext_event], [], cleartext=True
+              )
+          rendered_blocks = cleartext_out.getvalue()
+          assert "-----------------------------------------------" not in rendered_blocks
+          assert "Event ID  : forexfactory:cleartext\n\n--- EVENT 02" in rendered_blocks
+
           # Explicit bare delete must recover from an incompatible legacy cache.
           original_root = calendar.DATA_ROOT
           original_file = calendar.CALENDAR_FILE
