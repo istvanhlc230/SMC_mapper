@@ -1,6 +1,6 @@
 # AGENT_REVIEW.md
 
-Status: IMPLEMENTED_PENDING_CI
+Status: CI_PENDING_FINAL_RUN
 
 ## Change
 ForexFactory provider query construction follows the native calendar query forms:
@@ -28,4 +28,4 @@ The CI run for commit 2a55c3e7cf9d957aa8ab9110a4c509f6c45f7767 failed in the HTM
 The fallback date conversion is now locale-free and avoids that namespace collision.
 A fresh CI run against this exact commit is required before validation can be marked complete.
 
-CI trigger snapshot: 2026-10-04T17:08Z.
+CI trigger snapshot: 2026-10-04T17:10Z.
