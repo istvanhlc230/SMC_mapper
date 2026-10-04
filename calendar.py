@@ -31,7 +31,7 @@ HTTP_TIMEOUT = 15.0
 # SCHEMA_VERSION — persistent calendar.json schema version.
 SCHEMA_VERSION = 2
 # __version__ — Calendar CLI implementation version, independent from SCHEMA_VERSION.
-__version__ = "2.2.4"
+__version__ = "2.2.5"
 
 # SUPPORTED_CURRENCIES — standalone currencies accepted by the CLI.
 SUPPORTED_CURRENCIES = {
@@ -891,6 +891,23 @@ def fetch_forexfactory(
     ]
 
 
+# Function: _classify_forexfactory_impact — classifies FF impact from CSS classes.
+# Variables: classes=HTML element CSS classes.
+# Local variables: class_name=current CSS class; impact=canonical impact value.
+def _classify_forexfactory_impact(classes: set[str]) -> str:
+    for class_name in classes:
+        lowered = class_name.lower()
+        if lowered.endswith("--high") or lowered in {"high", "icon--ff-impact-red"}:
+            return "High Impact Expected"
+        if lowered.endswith("--medium") or lowered in {"medium", "med", "icon--ff-impact-orange"}:
+            return "Med Impact Expected"
+        if lowered.endswith("--low") or lowered in {"low", "icon--ff-impact-yellow", "icon--ff-impact-green"}:
+            return "Low Impact Expected"
+        if lowered in {"holiday", "non-economic", "icon--ff-impact-grey"}:
+            return "Non-Economic"
+    return ""
+
+
 # Class: ForexFactoryHTMLCalendarParser — parses current rendered ForexFactory calendar rows.
 class ForexFactoryHTMLCalendarParser(HTMLParser):
     # Function: __init__ — initializes parser state.
@@ -939,6 +956,10 @@ class ForexFactoryHTMLCalendarParser(HTMLParser):
 
         if tag == "td":
             self.current_cell = " ".join(classes)
+            if "calendar__impact" in self.current_cell:
+                impact = _classify_forexfactory_impact(classes)
+                if impact:
+                    self.current_row["impact"] = impact
             self.text_buffer = []
             return
 
@@ -950,6 +971,9 @@ class ForexFactoryHTMLCalendarParser(HTMLParser):
             impact_title = attributes.get("title")
             if impact_title:
                 self.current_row["impact"] = str(impact_title).strip()
+            impact = _classify_forexfactory_impact(classes)
+            if impact:
+                self.current_row["impact"] = impact
 
     # Function: handle_endtag — finalizes cells and complete rows.
     # Variables: tag=HTML tag; no external arguments beyond parser state.

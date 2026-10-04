@@ -433,4 +433,5 @@ Acceptance requires:
 - single-day ForexFactory acquisition uses the native `day=` query form;
 - multi-day ForexFactory acquisition uses the native `range=` query form;
 - rendered ForexFactory helper rows without an event title do not fail the provider acquisition path;
+- rendered ForexFactory impact classification must not silently collapse known HIGH/MEDIUM/LOW events to UNKNOWN;
 - relative ForexFactory navigation aliases are documented but are not accepted as public Calendar CLI scopes.

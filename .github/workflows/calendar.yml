@@ -81,11 +81,28 @@ jobs:
           assert ff_rows[0]["id"] == "1001"
           assert ff_rows[0]["currency"] == "EUR"
           assert ff_rows[0]["name"] == "ECB Test Event"
+          assert ff_rows[0]["impact"] == "High Impact Expected"
+          medium_html = """<html><body>
+          <div>Calendar Time Zone: Europe/Budapest (GMT +2)</div>
+          <tr class="calendar__row calendar_row" data-eventid="1003">
+            <td class="calendar__cell calendar__date date">Mon Oct 5</td>
+            <td class="calendar__cell calendar__time time">11:00am</td>
+            <td class="calendar__cell calendar__currency currency">USD</td>
+            <td class="calendar__cell calendar__impact impact calendar__impact--medium"></td>
+            <td class="calendar__cell calendar__event event"><span class="calendar__event-title">Medium Test Event</span></td>
+          </tr></body></html>"""
+          medium_rows = calendar.parse_forexfactory_html_events(
+              medium_html,
+              dt("2026-10-04T00:00:00Z"),
+              dt("2026-10-06T00:00:00Z"),
+          )
+          assert medium_rows[0]["impact"] == "Med Impact Expected"
+
           normalized_ff = calendar.normalize_provider_event(ff_rows[0])
           assert normalized_ff["timestamp"] == "2026-10-05T07:00:00Z"
           assert normalized_ff["details"]["impact"] == "HIGH"
 
-          assert calendar.__version__ == "2.2.4"
+          assert calendar.__version__ == "2.2.5"
           assert f"Calendar CLI v{calendar.__version__}" in calendar.HELP_TEXT
 
           # Explicit bare delete must recover from an incompatible legacy cache.

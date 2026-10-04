@@ -1,23 +1,20 @@
 # AGENT_REVIEW.md
 
-Status: CI_TRIGGERED_FINAL_RUN
+Status: CI_PENDING_FINAL_RUN
 
 ## Change
-ForexFactory provider query construction follows the native calendar query forms:
-- one concrete provider calendar day -> `day=<monD.YYYY>`;
-- multi-day provider interval -> `range=<monD.YYYY>-<monD.YYYY>`.
+The live Windows query now demonstrates successful ForexFactory acquisition over the requested
+2026.10.04-2026.10.30 interval, with 152 ForexFactory events returned. The remaining data-quality defect
+was that all rendered HTML impact values were normalized to UNKNOWN.
 
-The rendered HTML fallback now ignores helper/calendar rows that do not contain an event title before
-requiring a provider event ID. Event rows remain strict: a titled economic event without a provider ID
-is still a provider-integrity failure. The parser accepts the established `data-eventid` and `data-event-id`
-forms and the additional equivalent `data-eid` attribute.
+The parser now resolves impact from ForexFactory's CSS classifications (`calendar__impact--high`,
+`calendar__impact--medium`, `calendar__impact--low`) and compatible icon/span forms, while retaining
+the existing title-based classification path.
 
-Calendar implementation version: 2.2.4
+Calendar implementation version: 2.2.5
 Persistent schema: 2
-No `test/` or `tests/` directory was added.
 
 ## Validation
-The previous CI failures were analyzed and corrected. A fresh CI run against the resulting snapshot is
-required before this review can be marked validated.
-
-CI trigger commit reflects parser-row handling fix from 8de2427847937ede8035c79e9d512079afde6a21.
+A deterministic regression test was added for HIGH and MEDIUM rendered impact classifications.
+The implementation is pending a fresh CI run and another live Windows smoke query to verify that real
+ForexFactory events no longer appear as UNKNOWN.
