@@ -1,6 +1,6 @@
 # AGENT_REVIEW.md
 
-Status: FIXED_HTML_ICON_CI_PENDING_LIVE_SMOKE
+Status: FIXED_CLEAR_TEXT_DETAILS_CI_PENDING_LIVE_SMOKE
 
 ## Change
 The Windows live smoke showed that ForexFactory acquisition succeeds, but most events persisted
@@ -32,3 +32,17 @@ intentionally does not refetch already complete coverage.
 
 Acceptance target: real ForexFactory events persist explicit HIGH/MEDIUM/LOW/HOLIDAY values instead
 of UNKNOWN whenever the provider supplies explicit impact metadata.
+
+
+## Latest presentation fix
+
+The `--cleartext` presentation previously serialized the complete normalized `details` dictionary on one line. This was machine-readable JSON embedded inside a human-readable mode and was therefore not an appropriate cleartext representation.
+
+Calendar implementation version: 2.2.10
+Persistent schema: 2
+
+The CLI now renders `Details` as deterministic individual fields, keeps the canonical details object unchanged, and displays null values as `N/A`. Default JSON output is unchanged.
+
+## Validation target
+
+CI must pass the new cleartext regression assertion. A fresh Windows live smoke should confirm the resulting presentation against the real ForexFactory events.

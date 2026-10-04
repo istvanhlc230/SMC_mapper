@@ -31,7 +31,7 @@ HTTP_TIMEOUT = 15.0
 # SCHEMA_VERSION — persistent calendar.json schema version.
 SCHEMA_VERSION = 2
 # __version__ — Calendar CLI implementation version, independent from SCHEMA_VERSION.
-__version__ = "2.2.9"
+__version__ = "2.2.10"
 
 # SUPPORTED_CURRENCIES — standalone currencies accepted by the CLI.
 SUPPORTED_CURRENCIES = {
@@ -1802,6 +1802,29 @@ def status_from_provider_results(provider_results: List[Dict[str, Any]]) -> str:
     return "OK"
 
 
+# Function: format_cleartext_details — renders normalized details for human-readable CLI output.
+# Variables: details=normalized event details.
+# Local variables: display=human-readable value; key=detail key; label=display label; ordered_keys=preferred key order; value=detail value.
+def format_cleartext_details(details: Dict[str, Any]) -> List[str]:
+    """Render details without exposing the internal dictionary representation."""
+    preferred_keys = ("currency", "impact", "actual", "forecast", "previous")
+    ordered_keys = [key for key in preferred_keys if key in details]
+    ordered_keys.extend(sorted(key for key in details if key not in ordered_keys))
+
+    lines: List[str] = []
+    for key in ordered_keys:
+        value = details[key]
+        if value is None:
+            display = "N/A"
+        elif isinstance(value, (dict, list)):
+            display = json.dumps(value, ensure_ascii=False)
+        else:
+            display = str(value)
+        label = key.replace("_", " ").title()
+        lines.append(f"  {label:<9}: {display}")
+    return lines
+
+
 # Function: output_query_result — renders query output.
 # Variables: status=local intermediate value; symbol=canonical symbol; events=event collection; provider_results=provider result collection; cleartext=human-readable output flag.
 # Local variables: event=normalized event; index=local intermediate value; provider=provider identifier.
@@ -1826,7 +1849,9 @@ def output_query_result(
             print(f"Type      : {event['event_type']}")
             print(f"Symbol    : {event['symbol']}")
             print(f"Title     : {event['title']}")
-            print(f"Details   : {json.dumps(event['details'], ensure_ascii=False)}")
+            print("Details   :")
+            for detail_line in format_cleartext_details(event["details"]):
+                print(detail_line)
             print(f"Event ID  : {event['event_id']}")
             print("-----------------------------------------------")
         return

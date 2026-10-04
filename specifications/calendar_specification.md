@@ -2,6 +2,8 @@
 
 Status: Current V2 specification.
 
+Calendar implementation baseline: 2.2.10.
+
 Scope:
 - unified economic-calendar and news acquisition;
 - automatic provider resolution;
@@ -326,6 +328,20 @@ routing, coverage, watermark, or atomic persistence semantics.
 Provider-query construction is deterministic from the requested interval. The requested interval is
 still filtered against canonical UTC event timestamps after acquisition, so provider query inclusivity
 cannot widen the persisted/result interval.
+## 7.6 Human-readable CLI presentation
+
+`--cleartext` is presentation-only and must not modify the canonical event data or persistent schema.
+
+The `Details` section in cleartext output must render the normalized `details` object as individual human-readable fields, not as a serialized JSON dictionary. ForexFactory details are presented in this order when present:
+
+    Currency
+    Impact
+    Actual
+    Forecast
+    Previous
+
+A null detail value is displayed as `N/A`. Additional future detail fields are rendered afterward in deterministic key order. The default machine-readable JSON output remains unchanged.
+
 ## 8. Persistent schema
 
 ### Software version
@@ -444,4 +460,5 @@ Acceptance requires:
 - rendered ForexFactory helper rows without an event title do not fail the provider acquisition path;
 - structured and rendered ForexFactory impact representations normalize known HIGH/MEDIUM/LOW/HOLIDAY values without silent UNKNOWN collapse;
 - rendered ForexFactory impact classification must not silently collapse known HIGH/MEDIUM/LOW events to UNKNOWN;
-- relative ForexFactory navigation aliases are documented but are not accepted as public Calendar CLI scopes.
+- relative ForexFactory navigation aliases are documented but are not accepted as public Calendar CLI scopes;
+- `--cleartext` renders normalized event details as human-readable fields rather than a raw JSON dictionary, without changing canonical data or machine-readable output.
