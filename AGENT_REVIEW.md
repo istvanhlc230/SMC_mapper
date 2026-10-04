@@ -253,3 +253,22 @@ Validation:
 - real Windows provider validation remains required before final PASS;
 - Windows validation must be run from the repository root with no SMC_DATA_ROOT override, and must verify
   the persisted file is C:\Users\Jaki\SMC_Mapper\calendar.json and contains ForexFactory details.specs.
+
+
+## CI result after rollback/reimplementation
+
+GitHub Actions workflow run 37229287467 completed successfully on commit
+5e9bb15a9d461d17a54d477196890c519e917a69.
+
+Validation:
+- Compile: PASS.
+- Calendar unit/runtime contract tests: PASS.
+- Final marker: CALENDAR_TESTS_OK.
+- The suite covers provider Detail parsing, negative/sparse/duplicate provider order values,
+  provider response order preservation, no ForexFactory URL persistence, Detail failure
+  propagation, cleartext rendering, and legacy schema-2 Detail enrichment.
+
+Final validation gate still pending:
+- real Windows execution from the repository root;
+- persisted path must resolve to C:\Users\Jaki\SMC_Mapper\calendar.json;
+- the resulting ForexFactory events must contain details.specs from live provider Detail JSON.
