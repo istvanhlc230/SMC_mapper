@@ -2440,7 +2440,8 @@ def refresh_calendar_scope(
                     or event["event_id"] in existing_ids
                 )
             ]
-            _enrich_forexfactory_details(selected)
+            if provider == "forexfactory":
+                _enrich_forexfactory_details(selected)
 
             refreshed_for_symbol.extend(selected)
             provider_results.append({
