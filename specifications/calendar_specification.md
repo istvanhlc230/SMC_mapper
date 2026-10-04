@@ -2,7 +2,7 @@
 
 Status: Current V2 specification.
 
-Calendar implementation baseline: 2.3.6.
+Calendar implementation baseline: 2.3.7.
 
 Scope:
 - unified economic-calendar and news acquisition;
