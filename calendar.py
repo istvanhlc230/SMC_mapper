@@ -35,7 +35,7 @@ HTTP_TIMEOUT = 15.0
 # SCHEMA_VERSION — persistent calendar.json schema version.
 SCHEMA_VERSION = 2
 # __version__ — Calendar CLI implementation version, independent from SCHEMA_VERSION.
-__version__ = "2.3.4"
+__version__ = "2.3.5"
 
 # SUPPORTED_CURRENCIES — standalone currencies accepted by the CLI.
 SUPPORTED_CURRENCIES = {
@@ -2054,7 +2054,7 @@ def format_cleartext_details(details: Dict[str, Any]) -> List[str]:
         lines.append(f"  {label:<9}: {display}")
 
     for spec in details.get("specs", []):
-        title = str(spec.get("title", "")).strip()
+        title = _detail_html_to_text(str(spec.get("title", "")))
         content = _detail_html_to_text(str(spec.get("html", "")))
         lines.append(f"  {title:<9}: {content or 'N/A'}")
     return lines
