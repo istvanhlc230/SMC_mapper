@@ -67,7 +67,7 @@ jobs:
           assert normalized_ff["timestamp"] == "2026-10-05T07:00:00Z"
           assert normalized_ff["details"]["impact"] == "HIGH"
 
-          assert calendar.__version__ == "2.2.2"
+          assert calendar.__version__ == "2.2.3"
           assert f"Calendar CLI v{calendar.__version__}" in calendar.HELP_TEXT
 
           # Explicit bare delete must recover from an incompatible legacy cache.
