@@ -25,24 +25,32 @@ def acquire_explicit(
                 gaps = domain.find_uncovered_intervals(document, provider, symbol, start, end)
                 events: List[Dict[str, Any]] = []
                 detail_failures: List[str] = []
+                gap_results: List[Tuple[datetime, datetime, List[str]]] = []
                 for gap_start, gap_end in gaps:
-                    events.extend(
-                        providers.fetch_forexfactory(
-                            gap_start,
-                            gap_end,
-                            detail_failures=detail_failures,
-                        )
+                    gap_detail_failures: List[str] = []
+                    gap_events = providers.fetch_forexfactory(
+                        gap_start,
+                        gap_end,
+                        detail_failures=gap_detail_failures,
                     )
+                    events.extend(gap_events)
+                    detail_failures.extend(gap_detail_failures)
+                    gap_results.append((gap_start, gap_end, gap_detail_failures))
                 if gaps:
                     domain.merge_events(document, events, clear_suppressed_symbol=symbol)
-                    for gap_start, gap_end in gaps:
+                    for gap_start, gap_end, gap_detail_failures in gap_results:
                         domain.merge_coverage(document, {
                             "provider": provider, "symbol": symbol,
                             "start": domain.format_iso8601(gap_start),
                             "end": domain.format_iso8601(gap_end),
-                            "status": "COMPLETE", "updated_at": domain.format_iso8601(now),
+                            "status": "PARTIAL" if gap_detail_failures else "COMPLETE",
+                            "updated_at": domain.format_iso8601(now),
                         })
-                    domain.update_watermark(document, provider, symbol, now, events)
+                    # A Detail-partial acquisition is not a fully successful
+                    # provider acquisition. Keep the existing watermark so
+                    # current-mode acquisition retries the incomplete window.
+                    if not detail_failures:
+                        domain.update_watermark(document, provider, symbol, now, events)
                     provider_results.append({
                         "provider": provider,
                         "status": "PARTIAL" if detail_failures else "OK",
@@ -139,7 +147,12 @@ def acquire_current(
                 fetch_end = (now + timedelta(days=1)).replace(
                     hour=0, minute=0, second=0, microsecond=0
                 )
-                events = providers.fetch_forexfactory(fetch_start, fetch_end)
+                detail_failures: List[str] = []
+                events = providers.fetch_forexfactory(
+                    fetch_start,
+                    fetch_end,
+                    detail_failures=detail_failures,
+                )
                 domain.merge_events(
                     document,
                     events,
@@ -163,15 +176,24 @@ def acquire_current(
                         "symbol": symbol,
                         "start": domain.format_iso8601(fetch_start),
                         "end": domain.format_iso8601(fetch_end),
-                        "status": "COMPLETE",
+                        "status": (
+                            "PARTIAL"
+                            if provider == "forexfactory" and detail_failures
+                            else "COMPLETE"
+                        ),
                         "updated_at": domain.format_iso8601(now),
                     },
                 )
 
-            domain.update_watermark(document, provider, symbol, now, events)
+            if provider != "forexfactory" or not detail_failures:
+                domain.update_watermark(document, provider, symbol, now, events)
             provider_results.append({
                 "provider": provider,
-                "status": "OK" if provider == "forexfactory" else "PARTIAL",
+                "status": (
+                    "PARTIAL"
+                    if provider == "yahoo_finance" or detail_failures
+                    else "OK"
+                ),
                 "events_acquired": len(events),
                 "events_returned": len(
                     domain.query_current_events(events, last_successful_at, now)
@@ -179,8 +201,9 @@ def acquire_current(
                 "historical_coverage": (
                     "NOT_GUARANTEED"
                     if provider == "yahoo_finance"
-                    else "COMPLETE"
+                    else ("PARTIAL" if detail_failures else "COMPLETE")
                 ),
+                **({"detail_failures": len(detail_failures)} if detail_failures else {}),
             })
         except YahooForexPairUnavailable as exc:
             if debug:
