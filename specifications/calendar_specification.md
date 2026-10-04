@@ -2,7 +2,7 @@
 
 Status: Current V2 specification.
 
-Calendar implementation baseline: 2.2.11.
+Calendar implementation baseline: 2.2.12.
 
 Scope:
 - unified economic-calendar and news acquisition;
@@ -480,5 +480,5 @@ Acceptance requires:
 - rendered ForexFactory impact classification must not silently collapse known HIGH/MEDIUM/LOW events to UNKNOWN;
 - relative ForexFactory navigation aliases are documented but are not accepted as public Calendar CLI scopes;
 - `latest` is read-only and returns `NO_LATEST_EVENT` when the committed snapshot contains no visible event at or before current UTC time;
-- ForexFactory normalized events include `details.url` when the provider exposes the event detail-page URL or event-base slug;
+- ForexFactory normalized events include `details.url` when the provider exposes the event detail-page URL or event-base slug; regression coverage must verify rendered event href preservation and normalized URL output;
 - `--cleartext` renders normalized event details as human-readable fields rather than a raw JSON dictionary, without changing canonical data or machine-readable output.

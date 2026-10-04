@@ -149,4 +149,4 @@ Development artifacts belong under dev_tmp/. The repository root must not receiv
 
 ## 11.1 Provider detail URLs
 
-ForexFactory normalized economic events expose `details.url` when the provider supplies the concrete calendar event detail-page URL in the structured payload or rendered calendar markup. The implementation captures the actual provider href or a provider-supplied event-base slug; it does not fabricate a detail URL from a calendar event-instance ID. Yahoo Finance news continues to use `details.url` for the provider article URL.
+ForexFactory normalized economic events expose `details.url` when the provider supplies the concrete calendar event detail-page URL in the structured payload or rendered calendar markup. The implementation captures the actual provider href or a provider-supplied event-base slug; it does not fabricate a detail URL from a calendar event-instance ID. Regression tests must preserve a rendered `/calendar/event/` href through parsing and normalization. Yahoo Finance news continues to use `details.url` for the provider article URL.

@@ -1,6 +1,6 @@
 # AGENT_REVIEW.md
 
-Status: FIXED_CLEAR_TEXT_EVENT_SEPARATOR_CI_PENDING_LIVE_SMOKE
+Status: FIXED_FF_URL_AND_LATEST_CI_PENDING
 
 ## Change
 The Windows live smoke showed that ForexFactory acquisition succeeds, but most events persisted
@@ -75,3 +75,22 @@ Source-level validation performed:
 - no test-directory restoration or root-level development artifact was introduced.
 
 Runtime/CI execution was not available in this tool session, so no live-test PASS is claimed.
+
+
+## Latest regression fix
+
+Calendar implementation version: 2.2.12
+Persistent schema: 2
+
+CI run #56 exposed two defects in the 2.2.11 snapshot: the workflow retained a stale 2.2.10 version assertion, and the ForexFactory detail-URL validator used an over-escaped regular expression that rejected valid `forexfactory.com/calendar/event/` URLs.
+
+The fix corrects the URL regex, updates the CI version assertion, and adds regression coverage for:
+- rendered ForexFactory event-detail href preservation;
+- normalized ForexFactory `details.url`;
+- provider-supplied structured event URL normalization;
+- direct `latest` selection;
+- `latest` CLI parsing and read-only runtime behavior.
+
+Specification and design baselines are synchronized to 2.2.12. No `test/` directory was introduced and no root-level development artifact was added.
+
+A new CI result is required before declaring PASS.

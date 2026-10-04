@@ -31,7 +31,7 @@ HTTP_TIMEOUT = 15.0
 # SCHEMA_VERSION — persistent calendar.json schema version.
 SCHEMA_VERSION = 2
 # __version__ — Calendar CLI implementation version, independent from SCHEMA_VERSION.
-__version__ = "2.2.11"
+__version__ = "2.2.12"
 
 # SUPPORTED_CURRENCIES — standalone currencies accepted by the CLI.
 SUPPORTED_CURRENCIES = {
@@ -1346,7 +1346,7 @@ def _resolve_forexfactory_event_url(raw: Dict[str, Any]) -> Optional[str]:
             "https://www.forexfactory.com/",
             candidate,
         )
-        if re.match(r"^https://(?:www\\.)?forexfactory\\.com/calendar/event/", resolved, re.IGNORECASE):
+        if re.match(r"^https://(?:www\.)?forexfactory\.com/calendar/event/", resolved, re.IGNORECASE):
             return resolved
 
     for field_name in ("ebaseSlug", "ebase_slug", "eventSlug", "event_slug"):
