@@ -1,3 +1,4 @@
+# (c) Istvan Jakab <istvanhlc230@gmail.com>
 """External Calendar providers and provider-specific normalization."""
 
 import hashlib
