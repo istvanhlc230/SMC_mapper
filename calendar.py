@@ -869,8 +869,6 @@ def fetch_forexfactory(
     provider_end = end.replace(hour=0, minute=0, second=0, microsecond=0)
     if provider_end < end:
         provider_end += timedelta(days=1)
-    last_day = provider_end - timedelta(days=1)
-
     query = build_forexfactory_query(provider_start, provider_end)
     html = fetch_url(f"{FOREXFACTORY_URL}?{query}")
     try:
