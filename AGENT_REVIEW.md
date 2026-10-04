@@ -306,3 +306,19 @@ Validation added:
 
 Calendar implementation version: 2.3.2; persistent schema remains 2.
 CI and a fresh Windows live smoke remain the final validation gates.
+## 2.3.3 ForexFactory Detail acquisition performance correction
+
+Root cause of slow fresh-calendar acquisition:
+- After the calendar page was fetched and parsed, every ForexFactory event triggered a separate Detail HTTP request.
+- The previous implementation executed those requests serially, so N events produced N sequential network round-trips.
+
+Correction:
+- Detail requests are now executed with bounded parallelism using at most six workers.
+- Results are collected and assigned back in the original normalized event order.
+- Provider errors still propagate through the same Detail acquisition path; no data is silently dropped.
+- The persistent contract and Detail HTML preservation are unchanged.
+
+Validation:
+- CI regression test verifies the bounded worker count and event-order preservation.
+- Calendar implementation version: 2.3.3; persistent schema remains 2.
+- CI/live performance validation remains pending.
