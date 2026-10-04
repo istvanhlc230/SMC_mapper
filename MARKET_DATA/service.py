@@ -85,6 +85,11 @@ def clear_completed_current_snapshot(timeframe_state,completed_candle_id):
 
 def update_timeframe(market_data,provider,request,timeframe):
     state=ensure_timeframe_state(market_data,timeframe); original=deepcopy(state)
+    if state.get("current") is not None:
+        current_completion = datetime.fromisoformat(state["current"]["completion_time"].replace("Z","+00:00"))
+        if current_completion <= datetime.now(timezone.utc):
+            state["candles"] = deduplicate_candles(state["candles"] + [state["current"]])
+            state["current"] = None
     acquisition_start,acquisition_end=resolve_acquisition_range(request,timeframe,state)
     if request.last_candle_only:
         latest=fetch_latest_completed_candle(provider,request.symbol,timeframe)
