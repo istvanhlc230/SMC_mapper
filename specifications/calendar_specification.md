@@ -2,7 +2,7 @@
 
 Status: Current V2 specification.
 
-Calendar implementation baseline: 2.3.8.
+Calendar implementation baseline: 2.3.9.
 
 Scope:
 - unified economic-calendar and news acquisition;
@@ -280,8 +280,10 @@ Refresh behavior:
 The comparison covers the complete normalized event record, including timestamp, title, core details
 (`actual`, `forecast`, `previous`, impact), and ForexFactory Detail specifications.
 
-Refresh output reports the number of added, changed, and unchanged records. `--cleartext` changes only
-presentation. Provider failures retain the normal isolated-provider semantics; if all applicable
+Refresh output is emitted as exactly one result document. Machine-readable output is one JSON document
+containing the refreshed events, provider results, and the `added`/`changed`/`unchanged` summary. In
+`--cleartext` mode, the human-readable event output is followed by one refresh summary line. `--cleartext`
+changes only presentation. Provider failures retain the normal isolated-provider semantics; if all applicable
 providers fail, the aggregate status is `UNAVAILABLE`.
 
 Yahoo Finance refresh follows the same compare-and-replace model over the provider's currently exposed
