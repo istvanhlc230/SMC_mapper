@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Tuple
 
 from .config import FOREXFACTORY_DETAIL_URL, FOREXFACTORY_URL, FX_CURRENCY_CODES, HTTP_TIMEOUT, YAHOO_SEARCH_URL, USER_AGENT, ProviderError, YahooForexPairUnavailable
-from .domain import format_iso8601, is_currency, is_fx_pair, normalize_symbol
+from .domain import format_iso8601, is_currency, is_fx_pair, normalize_symbol, parse_iso8601
 from .parsing import extract_days_payload, parse_calendar_days, parse_forexfactory_html_events
 
 def _fetch_yahoo_search_payload(query_symbol: str) -> Dict[str, Any]:
