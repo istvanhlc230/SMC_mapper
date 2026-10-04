@@ -392,3 +392,28 @@ replacement while preserving coverage/watermark state and CLI parsing.
 Calendar implementation version: 2.3.7; persistent schema remains 2.
 
 Final validation requires fresh CI and a Windows live smoke using a known ForexFactory event ID.
+
+## 2.3.8 Refresh semantics correction
+
+The 2.3.7 implementation initially modeled refresh as a single ForexFactory event-ID operation. That does
+not match the intended workflow, where a monitored release may be refreshed by the same date/time scopes
+used by normal Calendar queries.
+
+The implementation is now scope-based:
+
+    python calendar.py refresh SYMBOL YYYY.MM.DD
+    python calendar.py refresh SYMBOL YYYY.MM.DD-YYYY.MM.DD
+    python calendar.py refresh SYMBOL YYYY.MM.DD@HH:MM
+    python calendar.py refresh SYMBOL YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM
+
+Refresh deliberately bypasses existing coverage, compares fresh provider records with cached records by
+stable event identity, replaces changed records, adds newly discovered records, and preserves unchanged
+records. A provider timestamp change is accepted during refresh so a rescheduled event can be updated.
+Missing provider rows are not automatically deleted.
+
+Coverage and acquisition watermarks are preserved because refresh is a state correction operation, not
+coverage acquisition. The relevant Calendar specification is updated accordingly.
+
+Calendar implementation version: 2.3.8; persistent schema remains 2.
+
+Final validation requires fresh CI and Windows live-smoke validation using a known release interval.
