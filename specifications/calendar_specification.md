@@ -501,6 +501,26 @@ Cross-provider title similarity never causes deduplication.
 
 Identity/time conflicts are data-integrity failures.
 
+## 10.1 ForexFactory Detail failure and retry contract
+
+ForexFactory base-event acquisition is considered provider-successful only when the acquired interval
+also has successful Detail enrichment for every acquired event whose Detail was requested.
+
+If one or more Detail requests fail after the base calendar rows were acquired:
+
+- base events remain persisted;
+- the affected event may retain an empty `details.specs` list for that attempt;
+- the provider result is `PARTIAL` and reports the number of Detail failures;
+- the affected coverage interval is `PARTIAL`, never `COMPLETE`;
+- the ForexFactory watermark is not advanced;
+- subsequent explicit acquisition treats that interval as uncovered and retries it;
+- `current` retains the previous successful watermark and therefore retries the incomplete window;
+- a later acquisition that completes all Detail requests may promote the interval to `COMPLETE` and advance
+  the watermark.
+
+Coverage state, not the presence or absence of `details.specs`, is the authoritative retry indicator.
+A legitimately empty Detail response is not itself a failure.
+
 ## 10. Failure and atomicity
 
 Provider failure is not an empty success.
