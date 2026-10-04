@@ -417,3 +417,7 @@ coverage acquisition. The relevant Calendar specification is updated accordingly
 Calendar implementation version: 2.3.8; persistent schema remains 2.
 
 Final validation requires fresh CI and Windows live-smoke validation using a known release interval.
+Implementation refinements within 2.3.8:
+- Refresh Detail enrichment is limited to ForexFactory events; Yahoo refresh never calls the ForexFactory Detail endpoint.
+- Refresh machine-readable output is a single JSON document containing the refresh summary.
+- An unchanged refresh does not rewrite calendar.json.
