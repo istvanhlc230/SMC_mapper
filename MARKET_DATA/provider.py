@@ -1,7 +1,7 @@
 """Yahoo Charts provider adapter and bounded provider-response cache."""
 from __future__ import annotations
 import json, time, urllib.parse, urllib.request
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -89,7 +89,7 @@ class YahooChartsProvider(MarketDataProvider):
     def fetch_latest_completed(self, symbol, timeframe):
         now = datetime.now(timezone.utc)
         from .models import TIMEFRAME_SECONDS
-        start = self._window_start(timeframe, now) - __import__("datetime").timedelta(seconds=TIMEFRAME_SECONDS[timeframe] * 3)
+        start = self._window_start(timeframe, now) - timedelta(seconds=TIMEFRAME_SECONDS[timeframe] * 3)
         records = self.fetch_range(symbol, timeframe, start, now)
         if not records:
             return None
@@ -100,7 +100,7 @@ class YahooChartsProvider(MarketDataProvider):
     def fetch_current(self, symbol, timeframe):
         now = datetime.now(timezone.utc)
         start = self._window_start(timeframe, now)
-        records = self.fetch_range(symbol, timeframe, start, now + __import__("datetime").timedelta(seconds=1))
+        records = self.fetch_range(symbol, timeframe, start, now + timedelta(seconds=1))
         if not records:
             return None
         from .normalization import derive_completion_time
