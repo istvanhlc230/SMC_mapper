@@ -527,3 +527,20 @@ Correction:
 
 Implementation version: 2.4.2; persistent schema remains 2.
 Validation: fresh GitHub Actions Calendar workflow required before final PASS.
+
+
+## 2.4.2 Source activity documentation
+
+User-requested source-quality correction: add concise source comments/docstrings describing the activity of Calendar functions and meaningful state variables.
+
+Implementation:
+- documented Calendar functions across the implementation modules with concise activity descriptions;
+- documented the active Calendar storage variables PROJECT_ROOT, DATA_ROOT, and CALENDAR_FILE;
+- added module-level comments clarifying that domain/provider/parser/operation/presentation/CLI state is request/input/output-local rather than hidden persistent module state;
+- retained existing configuration variable comments;
+- root calendar.py remains the stable entrypoint and required no additional function documentation;
+- no runtime logic, persistent schema, status semantics, provider behavior, or CLI contract was changed.
+
+Validation required:
+- fresh Calendar GitHub Actions compile/runtime workflow after the documentation-only source changes;
+- source inspection confirming the comments/docstrings are present without generated comment noise.
