@@ -1,6 +1,6 @@
 # AGENT_REVIEW.md
 
-Status: CI_PENDING_FINAL_RUN
+Status: VALIDATED_CI_CONTRACT_SUITE
 
 ## Change
 ForexFactory provider query construction follows the native calendar query forms:
@@ -23,9 +23,13 @@ Relative provider navigation aliases remain documented only and are not added to
 - Canonical interval filtering remains in UTC after provider acquisition.
 
 ## Validation
-The CI run for commit 2a55c3e7cf9d957aa8ab9110a4c509f6c45f7767 failed in the HTML fallback test because
-`datetime.strptime()` loaded the local `calendar.py` instead of the standard-library `calendar` module.
-The fallback date conversion is now locale-free and avoids that namespace collision.
-A fresh CI run against this exact commit is required before validation can be marked complete.
+The failed intermediate CI runs were corrected: the range test now respects the half-open internal interval,
+and the fallback date conversion is locale-free and avoids the local `calendar.py` / standard-library module
+name collision.
+
+CI validation: SUCCESS
+- Workflow run: 37219439727
+- Validated implementation commit: c1850d29d2911e48d975dd7b7bd14c8c5d776f8f
+- Head review snapshot: this commit
 
 CI trigger snapshot: 2026-10-04T17:10Z.
