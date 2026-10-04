@@ -8,7 +8,10 @@ from typing import Any, Dict, List, Optional, Tuple
 from . import domain, providers, storage
 from .config import ProviderError, YahooForexPairUnavailable
 
+# Operation state is request-local: acquisition/refresh variables describe the current transaction and are persisted only through storage.
+
 def acquire_explicit(
+    """Calendar operation: acquire_explicit performs the focused acquire explicit step in the Calendar implementation."""
     document: Dict[str, Any],
     symbol: str,
     start: datetime,
@@ -119,6 +122,7 @@ def acquire_explicit(
     return {"provider_results": provider_results, "failures": failures}
 
 def acquire_current(
+    """Calendar operation: acquire_current performs the focused acquire current step in the Calendar implementation."""
     document: Dict[str, Any],
     symbol: str,
     debug: bool = False,
@@ -259,6 +263,7 @@ def acquire_current(
     }
 
 def delete_symbol_interval(
+    """Calendar operation: delete_symbol_interval performs the focused delete symbol interval step in the Calendar implementation."""
     document: Dict[str, Any],
     symbol: str,
     start: datetime,
@@ -341,6 +346,7 @@ def delete_symbol_interval(
             del document["watermarks"][key]
 
 def _refresh_provider_window(
+    """Internal helper: _refresh_provider_window performs the focused refresh provider window step in the Calendar implementation."""
     start: datetime,
     end: datetime,
 ) -> Tuple[datetime, datetime]:
@@ -359,6 +365,7 @@ def _refresh_provider_window(
 # normalized=merged record; refreshed_ids=stable IDs; unchanged=unchanged existing records.
 
 def _refresh_event_records(
+    """Internal helper: _refresh_event_records performs the focused refresh event records step in the Calendar implementation."""
     document: Dict[str, Any],
     refreshed_events: List[Dict[str, Any]],
     symbol: str,
@@ -409,6 +416,7 @@ def _refresh_event_records(
 # refresh_window_start=expanded start.
 
 def refresh_calendar_scope(
+    """Calendar operation: refresh_calendar_scope performs the focused refresh calendar scope step in the Calendar implementation."""
     document: Dict[str, Any],
     symbol: str,
     start: datetime,
