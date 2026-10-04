@@ -100,12 +100,25 @@ class YahooChartsProvider(MarketDataProvider):
     def fetch_current(self, symbol, timeframe):
         now = datetime.now(timezone.utc)
         start = self._window_start(timeframe, now)
+        if timeframe == "H4":
+            hourly = self._parse(self._request(symbol, "1h", start, now + timedelta(seconds=1)), symbol, "1h")
+            if not hourly:
+                return None
+            return ProviderCandle(
+                start, "UTC", start, hourly[0].open_price,
+                max(item.high_price for item in hourly),
+                min(item.low_price for item in hourly),
+                hourly[-1].close_price,
+                sum((Decimal(str(item.total_volume or 0)) for item in hourly), Decimal("0")),
+                provider_metadata={"provider":"yahoo_charts","aggregated_from":"1h","complete":False},
+            )
         records = self.fetch_range(symbol, timeframe, start, now + timedelta(seconds=1))
         if not records:
             return None
         from .normalization import derive_completion_time
         incomplete = [record for record in records if derive_completion_time(record.timestamp, timeframe) > now]
         return max(incomplete, key=lambda record: record.timestamp) if incomplete else None
+
 
 def create_provider(provider_name: str) -> MarketDataProvider:
     if provider_name != DEFAULT_PROVIDER_NAME: raise ValueError(f"unsupported provider: {provider_name}")
