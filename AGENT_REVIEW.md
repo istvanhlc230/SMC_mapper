@@ -557,3 +557,45 @@ Validation required:
 ### Source attribution
 - Added the requested attribution header to the Calendar Python source files: `(c) Istvan Jakab <istvanhlc230@gmail.com>`.
 - No runtime logic was changed.
+
+
+# Market Data implementation review
+
+**Status: PASS**
+
+## Scope completed
+- Added the Calendar-style modular MARKET_DATA/ implementation layout.
+- Kept market_data.py as the root executable entry point.
+- Added UML-style module relationships, variable naming and function ownership to specifications/market_data_specification.md.
+- Reconciled the former single-file V1 wording with the approved modular structure.
+- Implemented models, provider abstraction, Yahoo Charts acquisition, normalization, persistence, acquisition planning, merge/deduplication, retention, current-candle handling, timeframe orchestration, symbol-level transaction handling and CLI parsing.
+- Added MARKET_DATA/market_data_cache.json as the provider-cache location.
+- Preserved the canonical symbol-scoped mapper-facing JSON layout under <DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json.
+- Preserved volume.total; the requested removal of total volume was explicitly withdrawn.
+
+## Automatic audit corrections
+1. Added the missing CLI main delegation.
+2. Corrected incremental acquisition to begin after the persisted last completed candle.
+3. Corrected empty-state acquisition so the latest completed candle is obtained.
+4. Corrected latest-candle selection to use canonical completion time and a timeframe-aware window.
+5. Corrected completion-hint handling so a provider hint cannot mark a future canonical boundary complete.
+6. Corrected persisted availability validation to fail closed instead of silently repairing inconsistent bounds.
+7. Expanded persisted OHLC and volume integrity validation.
+8. Corrected stale current-snapshot promotion after its completion boundary.
+9. Corrected H4 current-state acquisition through hourly aggregation.
+
+## Structural audit
+- Dependency direction is acyclic: CLI -> service -> provider/normalization/persistence/models.
+- Provider-specific state terminates at the provider boundary.
+- Persistence does not perform SMC interpretation.
+- Current snapshots remain separate from completed candles.
+- Candle identity is deterministic.
+- Multi-timeframe updates are assembled in memory and atomically persisted only after all requested timeframes succeed.
+- No Market Data runtime dependency on mapper, monitor or legacy SMC engines was introduced.
+- No canonical SMC logic was introduced.
+
+## Runtime validation note
+The connected repository currently exposes no Python test runner or CI workflow for this module, and the execution environment cannot resolve the public GitHub host for a local checkout. No false claim of a live provider integration test is made. The final PASS is the result of the specification/code structural audit after the automatic correction loop.
+
+## Final result
+**PASS — Market Data specification structure and implementation audit complete.**
