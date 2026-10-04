@@ -1,3 +1,4 @@
+# (c) Istvan Jakab <istvanhlc230@gmail.com>
 """Human-readable and machine-readable Calendar output."""
 
 import json
