@@ -1,3 +1,4 @@
+# (c) Istvan Jakab <istvanhlc230@gmail.com>
 """ForexFactory rendered and structured parsing helpers."""
 
 import json
