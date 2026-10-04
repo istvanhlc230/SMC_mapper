@@ -354,3 +354,19 @@ Correction:
 Calendar implementation version: 2.3.5; persistent schema remains 2.
 
 Final validation requires a fresh CI result and a new Windows live smoke against the affected USD interval.
+
+
+## 2.3.6 ForexFactory Detail title presentation refinement
+
+The 2.3.5 correction correctly removed provider markup from Detail titles, but applying the content
+renderer to a title containing `<br>` would introduce a line break into the field label itself.
+
+Correction:
+- Detail titles are HTML-sanitized with the same parser;
+- title whitespace and line boundaries are then normalized to spaces, keeping the `<Title>:` label on one line;
+- Detail HTML content continues to convert `<br>` to readable line breaks;
+- canonical provider title/HTML values remain unchanged.
+
+Calendar implementation version: 2.3.6; persistent schema remains 2.
+
+Final validation requires fresh CI and the Windows live smoke for the affected USD interval.
