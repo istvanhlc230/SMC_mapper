@@ -121,12 +121,35 @@ jobs:
               }
               assert calendar.normalize_provider_event(structured_raw)["details"]["impact"] == expected_impact
 
+          for raw_title, expected_impact in (
+              ("High Impact Expected", "HIGH"),
+              ("Med Impact Expected", "MEDIUM"),
+              ("Low Impact Expected", "LOW"),
+              ("Non-Economic", "HOLIDAY"),
+          ):
+              structured_raw = {
+                  "id": f"title-{expected_impact}",
+                  "dateline": int(dt("2026-10-05T07:00:00Z").timestamp()),
+                  "currency": "USD",
+                  "name": "Structured Impact Title Test",
+                  "impactTitle": raw_title,
+                  "actual": None,
+                  "forecast": None,
+                  "previous": None,
+              }
+              assert calendar.normalize_provider_event(structured_raw)["details"]["impact"] == expected_impact
+
           for raw_class, expected_impact in (
               ("impact-red", "HIGH"),
+              ("icon--ff-impact-red", "HIGH"),
               ("impact-orange", "MEDIUM"),
+              ("icon--ff-impact-ora", "MEDIUM"),
               ("impact-yellow", "LOW"),
+              ("icon--ff-impact-yel", "LOW"),
               ("impact-green", "LOW"),
+              ("icon--ff-impact-grn", "LOW"),
               ("impact-grey", "HOLIDAY"),
+              ("icon--ff-impact-grey", "HOLIDAY"),
           ):
               structured_raw = {
                   "id": f"class-{expected_impact}",
@@ -140,7 +163,7 @@ jobs:
               }
               assert calendar.normalize_provider_event(structured_raw)["details"]["impact"] == expected_impact
 
-          assert calendar.__version__ == "2.2.7"
+          assert calendar.__version__ == "2.2.8"
           assert f"Calendar CLI v{calendar.__version__}" in calendar.HELP_TEXT
 
           # Explicit bare delete must recover from an incompatible legacy cache.
