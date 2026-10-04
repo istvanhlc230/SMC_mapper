@@ -35,8 +35,20 @@ jobs:
           assert calendar.validate_symbol("USDGBP") == "USDGBP"
           assert calendar.validate_symbol("HUF") == "HUF"
           assert calendar.validate_symbol("NVDA") == "NVDA"
+          assert calendar.parse_request(["EURUSD", "next"])["scope"] == "next"
 
-          for bad in ("today", "next_week", "next_month", "next", "2026.10.01..2026.10.31"):
+          next_doc = calendar.build_empty_calendar_document()
+          next_doc["events"] = [
+              {"event_id":"forexfactory:next-usd","symbol":"USD","asset_type":"forex","event_type":"economic","source":"forexfactory","timestamp":"2026-10-05T09:00:00Z","title":"Next USD","details":{"currency":"USD","impact":"HIGH","actual":None,"forecast":None,"previous":None}},
+              {"event_id":"forexfactory:later-usd","symbol":"USD","asset_type":"forex","event_type":"economic","source":"forexfactory","timestamp":"2026-10-06T09:00:00Z","title":"Later USD","details":{"currency":"USD","impact":"LOW","actual":None,"forecast":None,"previous":None}},
+              {"event_id":"yahoo:future-nvda","symbol":"NVDA","asset_type":"ticker","event_type":"news","source":"yahoo_finance","timestamp":"2026-10-05T10:00:00Z","title":"Future NVDA","details":{"provider_symbol":"NVDA"}},
+          ]
+          assert [e["event_id"] for e in calendar.query_next_event(next_doc["events"], "EURUSD", dt("2026-10-04T12:00:00Z"))] == ["forexfactory:next-usd"]
+          assert [e["event_id"] for e in calendar.query_next_event(next_doc["events"], "NVDA", dt("2026-10-04T12:00:00Z"))] == ["yahoo:future-nvda"]
+          assert calendar.query_next_event(next_doc["events"], "NVDA", dt("2026-10-05T10:00:00Z")) == []
+
+
+          for bad in ("today", "next_week", "next_month", "2026.10.01..2026.10.31"):
               try:
                   calendar.parse_request(["EURUSD", bad])
               except calendar.CalendarInputError:
