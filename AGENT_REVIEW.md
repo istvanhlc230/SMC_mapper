@@ -1,6 +1,6 @@
 # AGENT_REVIEW.md — Calendar/Monitor Update Engine Synchronization
 
-Status: VALIDATED_CI_CONTRACT_SUITE_PENDING_LIVE_PROVIDER_SMOKE
+Status: BLOCKED_PENDING_FINAL_CI_AFTER_LEGACY_RESET_AND_SOURCE-DOCUMENTATION
 
 ## Follow-up audit correction
 
@@ -266,3 +266,38 @@ Direct execution of the GitHub Actions runner could not be performed locally, bu
 
 **Final commit SHA:**
 (Available post-commit)
+
+
+## Correction and hardening — legacy cache reset, versioning, source documentation
+
+The previous review incorrectly treated the incompatible-cache handling as fully operational.
+The implementation has now been corrected.
+
+### Legacy schema reset
+- Bare `python calendar.py delete` no longer loads/validates the existing document first.
+- It atomically replaces the cache with a fresh current-schema document.
+- This means an obsolete `schema_version: 1` cache can be explicitly purged without manual file deletion.
+- Scoped delete remains schema-validated and is not changed.
+
+### Versioning
+- Calendar CLI software version: `2.1.0`.
+- Persistent JSON schema remains `SCHEMA_VERSION = 2`.
+- `python calendar.py --help` now displays both versions.
+
+### Source documentation
+- Added source comments for all module-level configuration variables.
+- Added function responsibility comments for all 53 top-level functions.
+- Added parameter/local-variable role comments to every top-level function.
+- Runtime behavior is unchanged by these comments.
+
+### Developer workflow
+- Added root `AGENT.md`.
+- It requires temporary files under `dev_tmp/`, forbids reintroducing `test/` or `tests/`, requires specification synchronization, and requires the final response to contain copy-pasteable Git synchronization commands.
+
+### Validation added
+The deterministic CI suite now checks:
+- Calendar version/help synchronization;
+- legacy schema bare-delete recovery;
+- existing `next` semantics.
+
+Final CI status is intentionally left pending until GitHub Actions validates this complete snapshot.
