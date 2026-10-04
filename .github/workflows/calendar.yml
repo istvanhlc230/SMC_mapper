@@ -74,15 +74,22 @@ jobs:
           assert [row["id"] for row in helper_rows] == ["1002"]
           assert helper_rows[0]["currency"] == "USD"
 
-          # Detail anchors are collected globally, independent of the row DOM.
-          global_anchor_html = """<html><body>
-          <a data-href="/calendar?day=oct5.2026&event=1005">Detached Detail</a>
-          <div data-eventid="1005">Event shell</div>
-          </body></html>"""
-          global_parser = calendar.ForexFactoryHTMLCalendarParser()
-          global_parser.feed(global_anchor_html)
-          global_parser.close()
-          assert global_parser.detail_urls["1005"] == "https://www.forexfactory.com/calendar?day=oct5.2026&event=1005"
+          original_detail_fetch = calendar.fetch_forexfactory_event_detail
+          calendar.fetch_forexfactory_event_detail = lambda _event_id: [
+              {"order": 1, "title": "Source", "html": "<a href='https://example.com/source'>Example Source</a>"},
+              {"order": 2, "title": "Measures", "html": "Percentage of the work force unemployed."},
+              {"order": 3, "title": "Usual Effect", "html": "Actual less than Forecast is good for currency."},
+          ]
+
+          detail_json = '{"data":{"specs":[{"order":2,"title":"Measures","html":"Measures text"},{"order":1,"title":"Source","html":"<a href=\"https://example.com\">Source text</a>"},{"order":3,"title":"Frequency","html":"Monthly"}]}}'
+          original_detail_url_fetch = calendar.fetch_url
+          try:
+              calendar.fetch_url = lambda _url: detail_json
+              detail_specs = calendar.fetch_forexfactory_event_detail("146900")
+              assert [spec["title"] for spec in detail_specs] == ["Source", "Measures", "Frequency"]
+              assert detail_specs[0]["html"].startswith("<a href=")
+          finally:
+              calendar.fetch_url = original_detail_url_fetch
 
           ff_rows = calendar.parse_forexfactory_html_events(
               html,
@@ -94,7 +101,6 @@ jobs:
           assert ff_rows[0]["currency"] == "EUR"
           assert ff_rows[0]["name"] == "ECB Test Event"
           assert ff_rows[0]["impactName"] == "high"
-          assert ff_rows[0]["url"] == "https://www.forexfactory.com/calendar?day=oct5.2026&event=1001"
           # Provider-row CSS classes are advisory: an event-ID-bearing row
           # must still be parsed and its native Detail href must be retained.
           id_only_html = """<html><body>
@@ -118,7 +124,6 @@ jobs:
           )
           assert len(id_only_rows) == 1
           assert id_only_rows[0]["id"] == "1004"
-          assert id_only_rows[0]["url"] == "https://www.forexfactory.com/calendar?day=oct5.2026&event=1004"
 
           medium_html = """<html><body>
           <div>Calendar Time Zone: Europe/Budapest (GMT +2)</div>
@@ -148,18 +153,9 @@ jobs:
           normalized_ff = calendar.normalize_provider_event(ff_rows[0])
           assert normalized_ff["timestamp"] == "2026-10-05T07:00:00Z"
           assert normalized_ff["details"]["impact"] == "HIGH"
-          assert normalized_ff["details"]["url"] == "https://www.forexfactory.com/calendar?day=oct5.2026&event=1001"
-          assert calendar._is_forexfactory_event_url(
-              "https://www.forexfactory.com/calendar?day=oct1.2026&event=146900"
-          )
-          assert calendar._is_forexfactory_event_url("/calendar/event/legacy-event")
-          assert calendar._is_forexfactory_event_url("/calendar/76-us-challenger-job-cuts-yy")
-          assert not calendar._is_forexfactory_event_url(
-              "https://www.forexfactory.com/calendar?day=oct1.2026"
-          )
-          assert not calendar._is_forexfactory_event_url(
-              "https://example.com/calendar?event=146900"
-          )
+          assert normalized_ff["details"]["specs"] == []
+          assert not hasattr(calendar, "_is_forexfactory_event_url")
+          assert not hasattr(calendar, "_resolve_forexfactory_event_url")
 
 
           original_fetch_url = calendar.fetch_url
@@ -192,7 +188,9 @@ jobs:
               )
               assert len(enriched) == 1
               assert enriched[0]["event_id"] == "forexfactory:146900"
-              assert enriched[0]["details"]["url"] == "https://www.forexfactory.com/calendar?day=oct1.2026&event=146900"
+              assert enriched[0]["details"]["specs"][0]["title"] == "Source"
+              assert enriched[0]["details"]["specs"][0]["html"].startswith("<a href=")
+              assert "url" not in enriched[0]["details"]
           finally:
               calendar.fetch_url = original_fetch_url
           original_fetch_url = calendar.fetch_url
@@ -209,9 +207,11 @@ jobs:
                   dt("2026-10-01T00:00:00Z"),
                   dt("2026-10-02T00:00:00Z"),
               )
-              assert detached[0]["details"]["url"] == "https://www.forexfactory.com/calendar?day=oct1.2026&event=146901"
+              assert detached[0]["details"]["specs"][0]["title"] == "Source"
+              assert "url" not in detached[0]["details"]
           finally:
               calendar.fetch_url = original_fetch_url
+              calendar.fetch_forexfactory_event_detail = original_detail_fetch
 
           for raw_impact, expected_impact in (
               ("High Impact Expected", "HIGH"),
@@ -225,7 +225,6 @@ jobs:
                   "dateline": int(dt("2026-10-05T07:00:00Z").timestamp()),
                   "currency": "USD",
                   "name": "Structured Impact Test",
-                  "url": "/calendar/event/structured-impact-test/",
                   "impactName": raw_impact,
                   "actual": None,
                   "forecast": None,
@@ -275,7 +274,7 @@ jobs:
               }
               assert calendar.normalize_provider_event(structured_raw)["details"]["impact"] == expected_impact
 
-          assert calendar.__version__ == "2.2.17"
+          assert calendar.__version__ == "2.3.0"
           assert f"Calendar CLI v{calendar.__version__}" in calendar.HELP_TEXT
 
           # Cleartext output must render normalized details as readable fields,
@@ -309,6 +308,23 @@ jobs:
           assert "  Actual   : N/A\n" in rendered
           assert "  Forecast : 57.1\n" in rendered
           assert "  Previous : 57.8\n" in rendered
+
+          detail_text_event = dict(cleartext_event)
+          detail_text_event["details"] = {
+              **cleartext_event["details"],
+              "specs": [
+                  {"order": 1, "title": "Source", "html": "<a href='https://example.com'>Example Source</a>"},
+                  {"order": 2, "title": "Why Traders Care", "html": "This matters.<br>It is useful."},
+              ],
+          }
+          detail_render_out = io.StringIO()
+          with contextlib.redirect_stdout(detail_render_out):
+              calendar.output_query_result(
+                  "OK", "USD", [detail_text_event], [], cleartext=True
+              )
+          detail_rendered = detail_render_out.getvalue()
+          assert "  Source   : Example Source\n" in detail_rendered
+          assert "  Why Traders Care : This matters.\nIt is useful.\n" in detail_rendered
 
           # Cleartext event blocks are separated by whitespace only; no closing rule is emitted.
           second_cleartext_event = dict(cleartext_event)
