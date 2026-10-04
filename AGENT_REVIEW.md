@@ -1,6 +1,6 @@
 # AGENT_REVIEW.md
 
-Status: FIXED_FF_GLOBAL_DETAIL_ANCHOR_COLLECTION_CI_PENDING_LIVE_SMOKE
+Status: PASS_2_2_17
 
 ## Change
 The Windows live smoke showed that ForexFactory acquisition succeeds, but most events persisted
