@@ -80,6 +80,7 @@ USAGE
   python calendar.py SYMBOL YYYY.MM.DD@HH:MM
   python calendar.py SYMBOL YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM
   python calendar.py SYMBOL current
+  python calendar.py SYMBOL next
   python calendar.py delete
   python calendar.py delete --debug
   python calendar.py delete SYMBOL YYYY.MM.DD
@@ -103,6 +104,8 @@ SCOPE
   current                             Incremental update from each
                                       provider+canonical-symbol watermark
                                       through current UTC time.
+  next                                Return the nearest future event for
+                                      SYMBOL from the committed calendar cache.
 
 SYMBOL
   Supported FX pair, standalone supported currency, or Yahoo ticker.
@@ -118,6 +121,14 @@ CURRENT
   incremental acquisition, normalizes/deduplicates, atomically persists,
   and returns events newer than the watermark through now.
   Missing watermark -> BOOTSTRAP_REQUIRED. No timestamp is fabricated.
+
+NEXT
+  next is a read-only nearest-future-event lookup.
+  It reads only the committed calendar.json snapshot, filters events visible
+  for SYMBOL, keeps only timestamps strictly later than current UTC time,
+  sorts chronologically, and returns the first event.
+  next never calls a provider, never changes coverage, and never changes
+  watermarks. No future event -> NO_NEXT_EVENT.
 
 OUTPUT
   Default output is JSON. --cleartext changes presentation only.
@@ -273,7 +284,7 @@ def resolve_scope_interval(scope: str) -> Tuple[datetime, datetime]:
 
 
 def parse_scope(scope: str) -> str:
-    if scope == "current":
+    if scope in {"current", "next"}:
         return scope
     resolve_scope_interval(scope)
     return scope
@@ -1008,6 +1019,30 @@ def query_current_events(
     ]
 
 
+def query_next_event(
+    events: List[Dict[str, Any]],
+    symbol: str,
+    now: datetime,
+) -> List[Dict[str, Any]]:
+    visible_future = [
+        event
+        for event in filter_events_for_symbol(events, symbol)
+        if parse_iso8601(event["timestamp"]) > now
+    ]
+    if not visible_future:
+        return []
+    return [
+        min(
+            visible_future,
+            key=lambda event: (
+                parse_iso8601(event["timestamp"]),
+                event["source"],
+                event["event_id"],
+            ),
+        )
+    ]
+
+
 def acquire_explicit(
     document: Dict[str, Any],
     symbol: str,
@@ -1322,6 +1357,12 @@ def run_query(
                 cleartext,
             )
             return 0 if status != "UNAVAILABLE" else 2
+
+        if scope == "next":
+            events = query_next_event(document["events"], symbol, utc_now())
+            status = "OK" if events else "NO_NEXT_EVENT"
+            output_query_result(status, symbol, events, [], cleartext)
+            return 0
 
         start, end = resolve_scope_interval(scope)
         acquisition = acquire_explicit(
