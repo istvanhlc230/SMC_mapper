@@ -1,3 +1,4 @@
+# (c) Istvan Jakab <istvanhlc230@gmail.com>
 """Calendar persistence and cross-process synchronization."""
 
 import contextlib
