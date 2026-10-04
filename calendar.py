@@ -31,7 +31,7 @@ HTTP_TIMEOUT = 15.0
 # SCHEMA_VERSION — persistent calendar.json schema version.
 SCHEMA_VERSION = 2
 # __version__ — Calendar CLI implementation version, independent from SCHEMA_VERSION.
-__version__ = "2.2.6"
+__version__ = "2.2.7"
 
 # SUPPORTED_CURRENCIES — standalone currencies accepted by the CLI.
 SUPPORTED_CURRENCIES = {
@@ -1241,25 +1241,44 @@ def parse_calendar_days(payload: str) -> List[Dict[str, Any]]:
 # Variables: raw=local intermediate value.
 # Local variables: direct=direct candidate; impact_class=normalized impact class; name=local intermediate value; needle=local intermediate value; value=input value.
 def _resolve_impact(raw: Dict[str, Any]) -> str:
+    # ForexFactory's structured payload may expose descriptive impactName
+    # labels and/or provider-specific impactClass color/icon tokens.
     name = str(raw.get("impactName", "")).strip().lower()
-    direct = {
-        "high": "HIGH",
-        "medium": "MEDIUM",
-        "low": "LOW",
-        "holiday": "HOLIDAY",
-        "non-economic": "HOLIDAY",
-    }
-    if name in direct:
-        return direct[name]
+    normalized_name = re.sub(r"[^a-z]+", " ", name).strip()
+    if re.search(r"\bhigh\b", normalized_name):
+        return "HIGH"
+    if re.search(r"\b(?:med|medium)\b", normalized_name):
+        return "MEDIUM"
+    if re.search(r"\blow\b", normalized_name):
+        return "LOW"
+    if "non economic" in normalized_name or "holiday" in normalized_name:
+        return "HOLIDAY"
+
     impact_class = str(raw.get("impactClass", "")).strip().lower()
-    for needle, value in (
-        ("high", "HIGH"),
-        ("medium", "MEDIUM"),
-        ("low", "LOW"),
-        ("holiday", "HOLIDAY"),
+    class_tokens = re.sub(r"[^a-z]+", " ", impact_class).strip()
+    if "red" in class_tokens or "high" in class_tokens:
+        return "HIGH"
+    if (
+        "orange" in class_tokens
+        or "medium" in class_tokens
+        or re.search(r"\bmed\b", class_tokens)
     ):
-        if needle in impact_class:
-            return value
+        return "MEDIUM"
+    if "yellow" in class_tokens or "green" in class_tokens or "low" in class_tokens:
+        return "LOW"
+    if "grey" in class_tokens or "gray" in class_tokens or "holiday" in class_tokens:
+        return "HOLIDAY"
+
+    direct = str(raw.get("impact", "")).strip().lower()
+    normalized_direct = re.sub(r"[^a-z]+", " ", direct).strip()
+    if re.search(r"\bhigh\b", normalized_direct):
+        return "HIGH"
+    if re.search(r"\b(?:med|medium)\b", normalized_direct):
+        return "MEDIUM"
+    if re.search(r"\blow\b", normalized_direct):
+        return "LOW"
+    if "non economic" in normalized_direct or "holiday" in normalized_direct:
+        return "HOLIDAY"
     return "UNKNOWN"
 
 
