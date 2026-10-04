@@ -49,9 +49,15 @@ The canonical symbol is never replaced by a provider symbol.
 `--debug` controls diagnostic exception output only. Diagnostics and tracebacks are
 stderr-only and are never mixed into the machine-readable stdout result or persisted
 Calendar data. Without `--debug`, catch handlers emit only the concise user-facing
-error and return the documented error status.
+error and return the documented error status, including the generic unexpected-
+exception boundary. With `--debug`, that boundary also prints the traceback to stderr.
 
 ## 5. Update modes
+
+For explicit Yahoo requests, a historical range must not move a pre-existing
+current cursor backward. A request intersecting the present may advance that
+cursor only through `min(requested_end, now)`; a future-only request does not
+bootstrap Yahoo current state.
 
 Explicit ranges perform historical acquisition.
 
@@ -65,7 +71,7 @@ ForexFactory coverage may be COMPLETE for an acquired UTC interval.
 
 Yahoo rolling news is not granted historical COMPLETE coverage without evidence.
 
-For FX pairs, Yahoo Search must return an exact matching Forex/Currency instrument before Yahoo news is acquired. No generic `PAIR=X` fallback is permitted. When no verified Yahoo Forex instrument exists, no Yahoo event, coverage interval, or watermark is persisted for that pair.
+For FX pairs, Yahoo Search must return an exact matching Forex/Currency instrument before Yahoo news is acquired. No generic `PAIR=X` fallback is permitted. For USD-base canonical pairs, the quote-currency `=X` form may be derived as a verification candidate, but it must still be returned exactly by Yahoo Search and classified as a Currency instrument. When no verified Yahoo Forex instrument exists, no Yahoo event, coverage interval, or watermark is persisted for that pair. Explicit Yahoo acquisition persists only the requested interval; its current cursor is capped at `min(requested_end, now)` and never regresses.
 
 FX-pair recognition uses the full currency-code universe, while the standalone CLI
 currency set may remain intentionally narrower. ForexFactory event validation uses
@@ -73,6 +79,9 @@ the same currency-code universe so valid pair components are not rejected merely
 because their standalone currency is not a CLI-routable currency.
 
 Coverage never comes from the mere presence of an event.
+
+For explicit Yahoo requests, rolling-feed records outside the requested interval are
+not persisted as part of that acquisition.
 
 ## 7. Persistence
 

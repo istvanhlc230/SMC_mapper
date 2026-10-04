@@ -81,6 +81,7 @@ USAGE
   python calendar.py SYMBOL YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM
   python calendar.py SYMBOL current
   python calendar.py delete
+  python calendar.py delete --debug
   python calendar.py delete SYMBOL YYYY.MM.DD
   python calendar.py delete SYMBOL YYYY.MM.DD-YYYY.MM.DD
   python calendar.py delete SYMBOL YYYY.MM.DD@HH:MM
@@ -311,6 +312,8 @@ def validate_calendar_document(document: Dict[str, Any]) -> None:
 
     ids = set()
     for event in document["events"]:
+        if not isinstance(event, dict):
+            raise DataIntegrityError("Invalid event record.")
         required = {
             "event_id", "symbol", "asset_type", "event_type",
             "source", "timestamp", "title", "details",
@@ -370,6 +373,8 @@ def validate_calendar_document(document: Dict[str, Any]) -> None:
 
     seen_coverage = set()
     for coverage in document["coverage"]:
+        if not isinstance(coverage, dict):
+            raise DataIntegrityError("Invalid coverage record.")
         for field in ("provider", "symbol", "start", "end", "status"):
             if field not in coverage:
                 raise DataIntegrityError(
@@ -394,13 +399,19 @@ def validate_calendar_document(document: Dict[str, Any]) -> None:
         seen_coverage.add(key)
 
     for key, watermark in document["watermarks"].items():
+        if not isinstance(watermark, dict):
+            raise DataIntegrityError("Invalid watermark record.")
         if "|" not in key:
             raise DataIntegrityError("Invalid watermark key.")
         provider, symbol = key.split("|", 1)
         if provider not in {"forexfactory", "yahoo_finance"} or not symbol:
             raise DataIntegrityError("Invalid watermark identity.")
         for field in ("last_successful_at", "last_event_timestamp"):
-            value = watermark.get(field)
+            if field not in watermark:
+                raise DataIntegrityError(
+                    f"Malformed watermark; missing '{field}'."
+                )
+            value = watermark[field]
             if value is not None:
                 parse_iso8601(value)
 
@@ -643,6 +654,14 @@ def _resolve_yahoo_instrument(
     if mapped:
         candidates.append(mapped)
 
+    # Yahoo commonly represents USD-base FX pairs as the quote currency's
+    # =X instrument (for example GBP=X for USDGBP). This is only a
+    # provider candidate; it must still be verified by Yahoo Search.
+    if symbol.startswith("USD") and len(symbol) == 6:
+        derived_usd_base = f"{symbol[3:]}=X"
+        if derived_usd_base not in candidates:
+            candidates.append(derived_usd_base)
+
     direct = f"{symbol}=X"
     if direct not in candidates:
         candidates.append(direct)
@@ -856,7 +875,12 @@ def fetch_yahoo_news(symbol: str) -> List[Dict[str, Any]]:
 
         link = str(item.get("link", "")).strip() or None
         publisher = str(item.get("publisher", "")).strip() or None
-        uuid = str(item.get("uuid", "")).strip()
+        uuid_raw = item.get("uuid")
+        uuid = (
+            str(uuid_raw).strip()
+            if uuid_raw not in (None, "")
+            else ""
+        )
         stable_id = uuid or hashlib.sha256(
             f"{provider_symbol}|{title}|{timestamp.isoformat()}|{link or ''}".encode(
                 "utf-8"
@@ -946,6 +970,12 @@ def update_watermark(
 ) -> None:
     key = watermark_key(provider, symbol)
     old = document["watermarks"].get(key, {})
+    old_successful_at = (
+        parse_iso8601(old["last_successful_at"])
+        if old.get("last_successful_at") else None
+    )
+    if old_successful_at is not None and successful_at < old_successful_at:
+        return
     old_event_ts = (
         parse_iso8601(old["last_event_timestamp"])
         if old.get("last_event_timestamp") else None
@@ -1007,11 +1037,31 @@ def acquire_explicit(
                     provider_results.append({"provider": provider, "status": "OK", "events_acquired": 0, "coverage": "CACHED"})
                 successful += 1
             else:
-                events = fetch_yahoo_news(symbol)
-                merge_events(document, events)
-                update_watermark(document, provider, symbol, now, events)
-                in_range = filter_events_for_interval(events, start, end)
-                provider_results.append({"provider": provider, "status": "PARTIAL", "events_acquired": len(in_range), "historical_coverage": "NOT_GUARANTEED"})
+                fetched_events = fetch_yahoo_news(symbol)
+                in_range = filter_events_for_interval(
+                    fetched_events,
+                    start,
+                    end,
+                )
+                # Explicit Yahoo acquisition persists only the requested
+                # interval. The current cursor is advanced only to the
+                # requested end (capped at now), never to the wall-clock
+                # acquisition time of an older historical request.
+                merge_events(document, in_range)
+                if start < now:
+                    update_watermark(
+                        document,
+                        provider,
+                        symbol,
+                        min(end, now),
+                        in_range,
+                    )
+                provider_results.append({
+                    "provider": provider,
+                    "status": "PARTIAL",
+                    "events_acquired": len(in_range),
+                    "historical_coverage": "NOT_GUARANTEED",
+                })
                 successful += 1
         except YahooForexPairUnavailable as exc:
             provider_results.append({
@@ -1192,6 +1242,7 @@ def filter_query_events(
     symbol: str,
     start: datetime,
     end: datetime,
+    yahoo_pair_available: bool = True,
 ) -> List[Dict[str, Any]]:
     result: List[Dict[str, Any]] = []
     ff_coverage_valid = not bool(
@@ -1205,6 +1256,14 @@ def filter_query_events(
     )
 
     for event in events:
+        if (
+            event["source"] == "yahoo_finance"
+            and is_fx_pair(symbol)
+            and not yahoo_pair_available
+        ):
+            # A pair that Yahoo explicitly reported as unavailable must not
+            # leak previously cached Yahoo news back into an explicit query.
+            continue
         if event["source"] == "forexfactory" and not ff_coverage_valid:
             # ForexFactory records are shared facts. If this symbol's coverage
             # was deleted or is unavailable, do not leak the shared record back
@@ -1217,7 +1276,6 @@ def run_query(
     symbol: str,
     scope: str,
     cleartext: bool = False,
-    debug: bool = False,
 ) -> int:
     with acquire_calendar_lock():
         document = load_calendar_document()
@@ -1244,7 +1302,19 @@ def run_query(
             start,
             end,
         )
-        events = filter_query_events(document, events, symbol, start, end)
+        yahoo_pair_available = not any(
+            item["provider"] == "yahoo_finance"
+            and item["status"] == "SKIPPED_NO_FOREX_PAIR"
+            for item in acquisition["provider_results"]
+        )
+        events = filter_query_events(
+            document,
+            events,
+            symbol,
+            start,
+            end,
+            yahoo_pair_available=yahoo_pair_available,
+        )
 
         provider_statuses = [
             item["status"] for item in acquisition["provider_results"]
@@ -1354,7 +1424,6 @@ def delete_symbol_interval(
 def run_delete(
     symbol: Optional[str],
     scope: Optional[str],
-    debug: bool = False,
 ) -> int:
     with acquire_calendar_lock():
         document = load_calendar_document()
@@ -1467,13 +1536,11 @@ def run() -> int:
             return run_delete(
                 request["symbol"],
                 request["scope"],
-                debug=debug,
             )
         return run_query(
             request["symbol"],
             request["scope"],
             request["cleartext"],
-            debug=debug,
         )
     except CalendarInputError as exc:
         print(f"Error: {exc}", file=sys.stderr)
@@ -1487,6 +1554,12 @@ def run() -> int:
             print("DEBUG | DataIntegrityError traceback:", file=sys.stderr)
             traceback.print_exc()
         return 3
+    except Exception as exc:
+        print(f"Error: Internal error: {exc}", file=sys.stderr)
+        if debug:
+            print("DEBUG | Unexpected exception traceback:", file=sys.stderr)
+            traceback.print_exc()
+        return 1
 
 
 def main() -> None:

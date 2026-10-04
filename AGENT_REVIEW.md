@@ -126,3 +126,38 @@ Calendar `--debug` is now explicit and diagnostic-only. It controls detailed exc
 traceback printing to stderr. Concise user-facing errors remain visible without debug.
 Debug state never changes stdout machine-readable output, Calendar data, provider routing,
 coverage, watermarks, or canonical semantics.
+
+
+## Re-audit and automatic correction
+
+The `--debug` change was re-audited together with the full Calendar acquisition,
+watermark, Yahoo-resolution, cache-visibility, and persistence paths.
+
+Four implementation defects were corrected in this snapshot:
+
+1. Yahoo explicit-range acquisition now filters the rolling feed to the requested
+   interval before merging, so out-of-range news is not persisted as a side effect.
+2. Yahoo explicit-range acquisition no longer advances the current cursor to the
+   wall-clock fetch time for an old range. Its cursor advances at most to
+   `min(requested_end, now)`, never regresses, and future-only requests do not
+   bootstrap Yahoo current state.
+3. When Yahoo explicitly reports that an FX pair has no verified Forex instrument,
+   previously cached Yahoo events for that pair are excluded from the explicit query
+   result; the unavailable provider state cannot be bypassed through cache.
+4. The previous `debug` parameters on `run_query()`/`run_delete()` were unused.
+   They were removed, and the CLI now also gates the unexpected-exception traceback
+   behind `--debug`.
+
+Additional robustness corrections were made to reject malformed event/coverage/
+watermark records as `DataIntegrityError` and to treat Yahoo UUID values of
+`None`/empty as missing, using the deterministic fallback ID instead.
+
+Yahoo USD-base resolution now also derives the quote-currency `=X` form as a
+verification candidate while retaining exact provider-side verification. No
+unverified provider symbol is fabricated.
+
+### Validation boundary
+
+Static/reasoned re-audit is complete for this snapshot. Local runtime execution and
+repository-side CI are still unavailable in this environment, so the status remains
+`BLOCKED_PENDING_LOCAL_RUNTIME_VALIDATION`; no PASS claim is made.

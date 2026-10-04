@@ -72,7 +72,10 @@ snapshot, not a closed whitelist. Runtime resolution is provider-verified: the
 resolver queries Yahoo Finance Search and accepts a candidate only when Yahoo
 returns the exact provider symbol as a Forex currency instrument
 (quoteType=CURRENCY or an explicit Currency type display). The resolver must
-never synthesize a missing Yahoo Forex symbol.
+never synthesize a missing Yahoo Forex symbol. For a USD-base canonical pair,
+the quote-currency =X form may be derived as a verification candidate
+(for example GBP=X for USDGBP), but it is never accepted without the same
+exact-symbol Forex/Currency verification.
 
 If Yahoo provides no verified Forex instrument for the requested canonical pair,
 the Calendar does not create Yahoo news events for that pair and does not advance
@@ -108,7 +111,7 @@ is descriptive only; provider verification is authoritative at runtime.
 - Without `--debug`, normal errors remain concise and are written to stderr; detailed
   exception diagnostics and tracebacks are not printed.
 - With `--debug`, diagnostic exception information and tracebacks may be printed to
-  stderr only.
+  stderr only, including unexpected exceptions that reach the CLI boundary.
 - `--debug` never changes the machine-readable stdout contract, event data, coverage,
   watermark semantics, or provider routing.
 - `--debug` is presentation/diagnostic state only and never enters canonical data.
@@ -210,7 +213,10 @@ For an explicit date/time range:
 5. filter timestamped records to the requested interval;
 6. merge provider identities;
 7. update provider/symbol coverage;
-8. advance provider/symbol watermark only after successful acquisition;
+8. advance provider/symbol watermark only after successful acquisition. For Yahoo
+   explicit ranges, only records inside the requested interval are persisted; the
+   current cursor advances at most to min(requested_end, now) and never moves
+   backward. A future-only Yahoo request does not create a bootstrap cursor;
 9. validate the whole document;
 10. atomically persist.
 
@@ -222,7 +228,10 @@ A successful provider update is preserved when another applicable provider fails
 
 Yahoo news is a rolling feed.
 
-The implementation may fetch the currently exposed rolling news collection and merge it.
+The implementation may fetch the currently exposed rolling news collection. For
+explicit-range acquisition, only events whose timestamps fall inside the requested
+interval are merged into Calendar. The fetched rolling collection must not advance
+a historical request current cursor to the wall-clock acquisition time.
 
 It must never infer complete historical coverage merely because the CLI request contains an old date.
 
@@ -354,6 +363,10 @@ Acceptance requires:
 - Yahoo FX news is persisted only after exact provider-side Forex instrument verification;
 - ForexFactory events are economic;
 - provider failures remain observable;
+- explicit Yahoo acquisition persists only the requested interval and does not
+  jump the current cursor past the requested boundary;
+- an unavailable Yahoo FX instrument cannot expose previously cached Yahoo events
+  through an explicit query;
 - Yahoo historical completeness is never falsely claimed;
 - a missing Yahoo Forex pair is reported as provider-unavailable for that pair and
   never converted into a fabricated `=X` instrument or persisted Yahoo coverage;
