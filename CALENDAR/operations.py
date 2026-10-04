@@ -139,6 +139,7 @@ def acquire_current(
             continue
 
         last_successful_at = domain.parse_iso8601(watermark["last_successful_at"])
+        detail_failures: List[str] = []
         try:
             if provider == "forexfactory":
                 fetch_start = (
@@ -147,7 +148,6 @@ def acquire_current(
                 fetch_end = (now + timedelta(days=1)).replace(
                     hour=0, minute=0, second=0, microsecond=0
                 )
-                detail_failures: List[str] = []
                 events = providers.fetch_forexfactory(
                     fetch_start,
                     fetch_end,
