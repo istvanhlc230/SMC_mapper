@@ -1,6 +1,6 @@
 # AGENT_REVIEW.md — Calendar/Monitor Update Engine Synchronization
 
-Status: BLOCKED_PENDING_LOCAL_RUNTIME_VALIDATION
+Status: VALIDATED_CI_CONTRACT_SUITE_PENDING_LIVE_PROVIDER_SMOKE
 
 ## Follow-up audit correction
 
@@ -200,3 +200,18 @@ workflow script. The Calendar implementation itself was not the source of that f
 
 This commit removes the duplicate test block and leaves one deterministic, network-free
 debug propagation/traceback test. No dedicated `test/` directory is introduced.
+
+
+## Final CI validation
+
+The final GitHub Actions Calendar runtime suite on commit `e719a93505fbf2d54cfdfc90c70d0f88becc262d` completed successfully.
+
+Validated:
+- `python -m py_compile calendar.py`: PASS
+- Calendar unit/runtime contract suite: PASS
+- debug propagation and stderr-only traceback contract: PASS
+- Yahoo candidate verification and cache visibility guards: PASS
+- explicit Yahoo interval filtering, future-only handling, and watermark non-regression: PASS
+
+The suite uses deterministic provider mocks for provider-dependent paths. No claim of live
+ForexFactory/Yahoo integration availability is made by this CI result.
