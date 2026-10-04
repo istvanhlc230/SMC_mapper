@@ -163,3 +163,10 @@ provider formatting without requiring the Calendar to invent an event URL.
 
 A malformed or unavailable Detail JSON response is a ForexFactory provider failure. No synthetic URL or
 placeholder Detail content is generated. Yahoo Finance continues to use `details.url` for article URLs.
+
+
+## 11.2 Legacy Detail enrichment
+
+A complete schema-2 ForexFactory coverage interval is considered incomplete when an existing ForexFactory
+event inside the requested overlap lacks details.specs. The interval is reacquired so the provider Detail
+specifications can be added. This is an enrichment rule within schema version 2, not schema migration.

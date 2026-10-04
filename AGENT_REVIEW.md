@@ -227,3 +227,29 @@ Validation status:
 ### Latest local-validation finding
 The user run confirmed that `SMC_DATA_ROOT` currently points to `dev_tmp/calendar_live_smoke`, so the persisted file is there rather than at repository root. The application reports that exact path with `--debug`.
 The same run exposed the need to refresh schema-2 legacy FF events that lack `details.specs`; the code now treats them as incomplete coverage and reacquires them. Legacy FF `details.url` is also hidden from cleartext output.
+
+## Calendar 2.3.0 rollback and Detail reimplementation
+
+The 2.3.0 Calendar implementation was rebuilt from the last known-good baseline commit
+33428c69b968e951b67ab3a604562614bdef6818. The first regression was introduced by
+174fa31d94a0efc00d9d840cb266c80301c3bcf9, which replaced the verified Detail-URL approach with a
+new Detail-spec parser plus an invented numeric ordering invariant.
+
+The live Windows failure "Non-deterministic ForexFactory detail spec order." was caused by that local
+ordering invariant rejecting valid provider Detail data before persistence. The rebuilt implementation
+does not sort Detail specifications and does not require monotonic numeric order.
+
+Implementation:
+- preserved the known-good 2.2.17 acquisition, coverage, watermark, persistence, and Yahoo behavior;
+- removed ForexFactory event URL extraction/synthesis;
+- added separate provider Detail JSON acquisition by event ID;
+- stores provider Detail records as {order,title,html};
+- preserves provider response sequence and HTML;
+- keeps Detail acquisition failure distinct from calendar HTML fallback;
+- enriches legacy schema-2 ForexFactory coverage that lacks details.specs.
+
+Validation:
+- CI after this commit is required;
+- real Windows provider validation remains required before final PASS;
+- Windows validation must be run from the repository root with no SMC_DATA_ROOT override, and must verify
+  the persisted file is C:\Users\Jaki\SMC_Mapper\calendar.json and contains ForexFactory details.specs.

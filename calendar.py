@@ -453,19 +453,17 @@ def validate_calendar_document(document: Dict[str, Any]) -> None:
             specs = event["details"].get("specs", [])
             if not isinstance(specs, list):
                 raise DataIntegrityError("Invalid ForexFactory specs.")
-            last_order = -1
             for spec in specs:
                 if not isinstance(spec, dict):
                     raise DataIntegrityError("Invalid ForexFactory detail spec.")
                 if set(spec) != {"order", "title", "html"}:
                     raise DataIntegrityError("Invalid ForexFactory detail spec fields.")
+                if isinstance(spec["order"], bool):
+                    raise DataIntegrityError("Invalid ForexFactory detail spec order.")
                 try:
-                    order = int(spec["order"])
+                    int(spec["order"])
                 except (TypeError, ValueError) as exc:
                     raise DataIntegrityError("Invalid ForexFactory detail spec order.") from exc
-                if order < 0 or order < last_order:
-                    raise DataIntegrityError("Non-deterministic ForexFactory detail spec order.")
-                last_order = order
                 if not isinstance(spec["title"], str) or not spec["title"].strip():
                     raise DataIntegrityError("ForexFactory detail spec title must not be empty.")
                 if not isinstance(spec["html"], str):
@@ -697,9 +695,8 @@ def find_uncovered_intervals(
         overlap_start = max(start, coverage_start)
         overlap_end = min(end, coverage_end)
 
-        # Calendar 2.3.0 adds ForexFactory Detail specifications. A legacy
-        # cached FF event without details.specs is not fully enriched, so the
-        # covered interval must be reacquired once to obtain the provider Detail.
+        # Existing 2.2.x ForexFactory events predate Detail specs. Treat the
+        # covered interval as incomplete until its events are Detail-enriched.
         if provider == "forexfactory":
             legacy_detail_needed = any(
                 event["source"] == "forexfactory"
@@ -939,8 +936,9 @@ def fetch_forexfactory(
         if request_start <= parse_iso8601(event["timestamp"]) < request_end
     ]
 
-    # Fetch provider Detail specifications only after the calendar event set has
-    # been acquired. A Detail provider error is not treated as HTML-parser fallback.
+    # ForexFactory Detail is provider data, not a canonical event URL.
+    # It is acquired separately by numeric provider event ID after the calendar
+    # event set is normalized and interval-filtered.
     for event in normalized:
         provider_event_id = event["event_id"].split(":", 1)[1]
         event["details"]["specs"] = fetch_forexfactory_event_detail(
@@ -1403,32 +1401,43 @@ def fetch_forexfactory_event_detail(event_id: str) -> List[Dict[str, Any]]:
     normalized: List[Dict[str, Any]] = []
     for spec in specs:
         if not isinstance(spec, dict):
-            continue
+            raise ProviderError(
+                f"Malformed ForexFactory detail specification for event {event_id}."
+            )
+        if "order" not in spec or "title" not in spec or "html" not in spec:
+            raise ProviderError(
+                f"Malformed ForexFactory detail specification for event {event_id}."
+            )
+        if isinstance(spec["order"], bool):
+            raise ProviderError(
+                f"Invalid ForexFactory detail spec order for event {event_id}."
+            )
         try:
-            order = int(spec.get("order", 0))
+            order = int(spec["order"])
         except (TypeError, ValueError) as exc:
             raise ProviderError(
                 f"Invalid ForexFactory detail spec order for event {event_id}."
             ) from exc
-        title = str(spec.get("title", "")).strip()
-        html_value = str(spec.get("html", ""))
-        if not title:
-            continue
+        title = str(spec["title"]).strip()
+        html_value = spec["html"]
+        if not title or not isinstance(html_value, str):
+            raise ProviderError(
+                f"Malformed ForexFactory detail specification for event {event_id}."
+            )
         normalized.append({
             "order": order,
             "title": title,
             "html": html_value,
         })
 
-    return sorted(
-        normalized,
-        key=lambda item: (item["order"], item["title"]),
-    )
+    # The provider response sequence is authoritative. The numeric order value
+    # is metadata, not a local sorting key.
+    return normalized
 
 
 # Function: normalize_provider_event — normalizes one provider event.
 # Variables: raw=local intermediate value.
-# Local variables: currency=currency code; exc=local intermediate value; timestamp=event timestamp; title=event title.
+# Local variables: currency=currency code; exc=local intermediate value; timestamp=event timestamp; title=event title; url=provider detail URL.
 def normalize_provider_event(raw: Dict[str, Any]) -> Dict[str, Any]:
     if raw.get("id") in (None, "", "None"):
         raise ProviderError("ForexFactory event has no provider ID.")
@@ -1806,11 +1815,6 @@ def acquire_explicit(
     if successful:
         validate_calendar_document(document)
         save_calendar_atomic(document)
-        if debug:
-            print(
-                f"DEBUG | Persisted Calendar file: {CALENDAR_FILE}",
-                file=sys.stderr,
-            )
     return {"provider_results": provider_results, "failures": failures}
 
 
@@ -1919,11 +1923,6 @@ def acquire_current(
     ):
         validate_calendar_document(document)
         save_calendar_atomic(document)
-        if debug:
-            print(
-                f"DEBUG | Persisted Calendar file: {CALENDAR_FILE}",
-                file=sys.stderr,
-            )
 
     unique = {
         event["event_id"]: event
@@ -1961,9 +1960,8 @@ def status_from_provider_results(provider_results: List[Dict[str, Any]]) -> str:
     return "OK"
 
 
-# Function: format_cleartext_details — renders normalized details for human-readable CLI output.
-# Variables: details=normalized event details; source=event source.
-# Local variables: display=human-readable value; key=detail key; label=display label; ordered_keys=preferred key order; source=provider source; spec=detail specification; value=detail value.
+# Function: _detail_html_to_text — strips provider HTML for cleartext presentation.
+# Variables: value=provider HTML fragment.
 def _detail_html_to_text(value: str) -> str:
     text = re.sub(r"(?is)<br\s*/?>", "\n", value)
     text = re.sub(r"(?is)</(p|div|li|tr|table|h[1-6])\s*>", "\n", text)
@@ -1976,30 +1974,20 @@ def _detail_html_to_text(value: str) -> str:
 # Function: format_cleartext_details — renders normalized details for human-readable CLI output.
 # Variables: details=normalized event details.
 # Local variables: display=human-readable value; key=detail key; label=display label; ordered_keys=preferred key order; spec=detail specification; value=detail value.
-def format_cleartext_details(
-    details: Dict[str, Any],
-    source: Optional[str] = None,
-) -> List[str]:
+def format_cleartext_details(details: Dict[str, Any]) -> List[str]:
     """Render details without exposing the internal dictionary representation."""
     preferred_keys = ("currency", "impact", "actual", "forecast", "previous")
     ordered_keys = [key for key in preferred_keys if key in details]
     extra_keys = [
         key for key in details
-        if key not in ordered_keys
-        and key != "specs"
-        and not (source == "forexfactory" and key == "url")
+        if key not in ordered_keys and key != "specs"
     ]
     ordered_keys.extend(sorted(extra_keys))
 
     lines: List[str] = []
     for key in ordered_keys:
         value = details[key]
-        if value is None:
-            display = "N/A"
-        elif isinstance(value, (dict, list)):
-            display = json.dumps(value, ensure_ascii=False)
-        else:
-            display = str(value)
+        display = "N/A" if value is None else str(value)
         label = key.replace("_", " ").title()
         lines.append(f"  {label:<9}: {display}")
 
@@ -2035,10 +2023,7 @@ def output_query_result(
             print(f"Symbol    : {event['symbol']}")
             print(f"Title     : {event['title']}")
             print("Details   :")
-            for detail_line in format_cleartext_details(
-                event["details"],
-                source=event["source"],
-            ):
+            for detail_line in format_cleartext_details(event["details"]):
                 print(detail_line)
             print(f"Event ID  : {event['event_id']}")
             print()
