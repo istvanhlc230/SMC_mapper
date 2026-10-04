@@ -34,7 +34,7 @@ HTTP_TIMEOUT = 15.0
 # SCHEMA_VERSION — persistent calendar.json schema version.
 SCHEMA_VERSION = 2
 # __version__ — Calendar CLI implementation version, independent from SCHEMA_VERSION.
-__version__ = "2.3.1"
+__version__ = "2.3.2"
 
 # SUPPORTED_CURRENCIES — standalone currencies accepted by the CLI.
 SUPPORTED_CURRENCIES = {
@@ -1974,10 +1974,16 @@ def status_from_provider_results(provider_results: List[Dict[str, Any]]) -> str:
 # Function: _detail_html_to_text — strips provider HTML for cleartext presentation.
 # Variables: value=provider HTML fragment.
 def _detail_html_to_text(value: str) -> str:
-    # ForexFactory may return Detail HTML with its markup character-escaped
-    # (for example &lt;br&gt; or &lt;img ...&gt;). Decode entities before removing
-    # provider markup so cleartext never exposes raw HTML tags.
-    text = unescape(value)
+    # ForexFactory may return Detail HTML with markup escaped one or more times
+    # (for example &lt;br&gt;, &amp;lt;br&amp;gt;, or escaped <img ...> markup).
+    # Decode repeatedly to a stable value before removing provider markup so
+    # cleartext never exposes raw HTML tags.
+    text = value
+    for _ in range(3):
+        decoded = unescape(text)
+        if decoded == text:
+            break
+        text = decoded
     text = re.sub(r"(?is)<br\s*/?>", "\n", text)
     text = re.sub(r"(?is)</(p|div|li|tr|table|h[1-6])\s*>", "\n", text)
     text = re.sub(r"(?is)<[^>]+>", "", text)
