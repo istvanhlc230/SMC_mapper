@@ -1,6 +1,6 @@
 # AGENT_REVIEW.md
 
-Status: FIXED_CLEAR_TEXT_DETAILS_CI_PENDING_LIVE_SMOKE
+Status: FIXED_CLEAR_TEXT_EVENT_SEPARATOR_CI_PENDING_LIVE_SMOKE
 
 ## Change
 The Windows live smoke showed that ForexFactory acquisition succeeds, but most events persisted
@@ -46,3 +46,10 @@ The CLI now renders `Details` as deterministic individual fields, keeps the cano
 ## Validation target
 
 CI must pass the new cleartext regression assertion. A fresh Windows live smoke should confirm the resulting presentation against the real ForexFactory events.
+
+
+## Latest cleartext presentation refinement
+
+The closing dashed separator after each cleartext event was removed because the next event header already provides the event boundary. Consecutive events are separated by one blank line only. The canonical event data and machine-readable JSON output are unchanged.
+
+Regression coverage asserts that the closing separator is absent and that adjacent cleartext event blocks use the blank-line separator.
