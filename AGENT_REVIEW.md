@@ -337,3 +337,20 @@ Correction:
 Regression coverage now includes the literal live-form `<img>` and `<br>` fragments in addition to escaped and multiply-escaped variants.
 Calendar implementation version: 2.3.4; persistent schema remains 2.
 Final validation requires a fresh Windows live smoke and CI result.
+
+## 2.3.5 ForexFactory Detail title sanitization correction
+
+The 2.3.4 live smoke proved that provider HTML was still leaking through the `details.specs[].title`
+field even though `details.specs[].html` was sanitized with HTMLParser. Examples included
+`Why Traders<br>Care` and `FF Notice <img ...>`.
+
+Correction:
+- cleartext presentation now runs the same HTML-aware sanitizer over both specification `title` and
+  specification `html`;
+- provider markup is therefore removed consistently from the complete `<Title>: <text>` rendering;
+- canonical provider HTML and title values remain unchanged in `calendar.json`;
+- regression coverage asserts that literal `<br>` markup in a Detail title becomes a readable line break.
+
+Calendar implementation version: 2.3.5; persistent schema remains 2.
+
+Final validation requires a fresh CI result and a new Windows live smoke against the affected USD interval.
