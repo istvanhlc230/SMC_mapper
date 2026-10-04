@@ -273,7 +273,12 @@ def parse_forexfactory_html_events(
         event_date = _parse_forexfactory_date(str(row.get("date") or ""), start, end)
         parsed_time = _parse_forexfactory_time(str(row.get("time") or ""))
         if parsed_time is None:
-            raise ProviderError(f"ForexFactory event '{event_id}' has no concrete clock time.")
+            # ForexFactory publishes legitimate all-day/tentative rows (for
+            # example bank holidays) without a concrete clock. The canonical
+            # Calendar event contract requires an exact timestamp, so these
+            # rows are intentionally excluded rather than synthesized at
+            # midnight or allowed to invalidate the whole provider response.
+            continue
         hour, minute = parsed_time
         local_datetime = event_date.replace(
             hour=hour,
