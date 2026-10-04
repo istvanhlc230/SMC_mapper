@@ -1384,6 +1384,8 @@ def _is_forexfactory_event_url(value: str) -> bool:
         return True
     if re.match(r"^/calendar/\d+-[^/?#]+$", parsed.path, re.IGNORECASE):
         return True
+    if re.match(r"^/calendar/details/1-\d+$", parsed.path, re.IGNORECASE):
+        return True
 
     if parsed.path.rstrip("/").lower() != "/calendar":
         return False
