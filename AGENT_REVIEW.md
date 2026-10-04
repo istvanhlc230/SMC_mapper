@@ -161,3 +161,19 @@ unverified provider symbol is fabricated.
 Static/reasoned re-audit is complete for this snapshot. Local runtime execution and
 repository-side CI are still unavailable in this environment, so the status remains
 `BLOCKED_PENDING_LOCAL_RUNTIME_VALIDATION`; no PASS claim is made.
+
+
+## Two-pass test/audit correction
+
+Initial runtime test on the automated Calendar suite:
+- `python -m py_compile calendar.py`: PASS.
+- Contract suite: FAIL at the debug subprocess assertion. The test invoked a live
+  provider path and incorrectly required stderr even when execution completed without
+  an exception. This was a test-design defect, not evidence of a Calendar runtime fault.
+
+Automatic audit correction:
+- Reworked debug validation to inject an unexpected exception and verify the
+  `--debug` traceback boundary without network access.
+- Added provider-level `ProviderError` debug checks.
+- Wired `debug` from the CLI query boundary into both provider acquisition paths.
+- Added future-only and watermark non-regression checks to the suite.

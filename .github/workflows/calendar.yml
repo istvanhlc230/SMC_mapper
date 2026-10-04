@@ -22,8 +22,7 @@ jobs:
           python - <<'PY'
           import json
           import os
-          import subprocess
-          import sys
+                    import sys
           import tempfile
           from datetime import datetime, timedelta, timezone
 
@@ -166,25 +165,100 @@ jobs:
               yahoo_pair_available=False,
           ) == []
 
-          with tempfile.TemporaryDirectory() as td:
-              env = dict(os.environ)
-              env["SMC_DATA_ROOT"] = td
-              p = subprocess.run(
-                  [sys.executable, "calendar.py", "EURUSD", "2026.10.01", "--debug"],
-                  env=env,
-                  capture_output=True,
-                  text=True,
+          original_parse = calendar.parse_request
+          try:
+              calendar.parse_request = lambda _args: (_ for _ in ()).throw(
+                  RuntimeError("synthetic debug test")
               )
-              assert p.returncode in (0, 2, 3)
-              assert "DEBUG |" in p.stderr or "Error:" in p.stderr
-              p2 = subprocess.run(
-                  [sys.executable, "calendar.py", "EURUSD", "bad_scope"],
-                  env=env,
-                  capture_output=True,
-                  text=True,
+              calendar.sys.argv = ["calendar.py", "EURUSD", "current", "--debug"]
+              import contextlib
+              import io
+              err = io.StringIO()
+              with contextlib.redirect_stderr(err):
+                  assert calendar.run() == 1
+              assert "DEBUG | Unexpected exception traceback:" in err.getvalue()
+
+              calendar.parse_request = lambda _args: (_ for _ in ()).throw(
+                  RuntimeError("synthetic no-debug test")
               )
-              assert p2.returncode == 2
-              assert "DEBUG |" not in p2.stderr
+              calendar.sys.argv = ["calendar.py", "EURUSD", "current"]
+              err = io.StringIO()
+              with contextlib.redirect_stderr(err):
+                  assert calendar.run() == 1
+              assert "DEBUG |" not in err.getvalue()
+          finally:
+              calendar.parse_request = original_parse
+
+          original_now = calendar.utc_now
+          original_fetch = calendar.fetch_yahoo_news
+          original_save = calendar.save_calendar_atomic
+          try:
+              calendar.utc_now = lambda: dt("2026-10-04T12:00:00Z")
+              calendar.fetch_yahoo_news = lambda symbol: []
+              calendar.save_calendar_atomic = lambda document: None
+
+              future_doc = calendar.build_empty_calendar_document()
+              future_result = calendar.acquire_explicit(
+                  future_doc,
+                  "NVDA",
+                  dt("2026-11-01T00:00:00Z"),
+                  dt("2026-11-02T00:00:00Z"),
+              )
+              assert future_result["failures"] == []
+              assert "yahoo_finance|NVDA" not in future_doc["watermarks"]
+
+              seeded = calendar.build_empty_calendar_document()
+              calendar.update_watermark(
+                  seeded,
+                  "yahoo_finance",
+                  "NVDA",
+                  dt("2026-10-04T10:00:00Z"),
+                  [],
+              )
+              calendar.acquire_explicit(
+                  seeded,
+                  "NVDA",
+                  dt("2026-10-01T00:00:00Z"),
+                  dt("2026-10-02T00:00:00Z"),
+              )
+              assert seeded["watermarks"]["yahoo_finance|NVDA"]["last_successful_at"] == "2026-10-04T10:00:00Z"
+          finally:
+              calendar.utc_now = original_now
+              calendar.fetch_yahoo_news = original_fetch
+              calendar.save_calendar_atomic = original_save
+
+          original_resolve = calendar.resolve_applicable_providers
+          original_fetch = calendar.fetch_yahoo_news
+          try:
+              calendar.resolve_applicable_providers = lambda _symbol: ["yahoo_finance"]
+              calendar.fetch_yahoo_news = lambda _symbol: (_ for _ in ()).throw(
+                  calendar.ProviderError("synthetic provider failure")
+              )
+              err = io.StringIO()
+              with contextlib.redirect_stderr(err):
+                  result = calendar.acquire_explicit(
+                      calendar.build_empty_calendar_document(),
+                      "NVDA",
+                      dt("2026-10-01T00:00:00Z"),
+                      dt("2026-10-02T00:00:00Z"),
+                      debug=True,
+                  )
+              assert result["failures"]
+              assert "DEBUG | yahoo_finance ProviderError traceback:" in err.getvalue()
+
+              err = io.StringIO()
+              with contextlib.redirect_stderr(err):
+                  calendar.acquire_explicit(
+                      calendar.build_empty_calendar_document(),
+                      "NVDA",
+                      dt("2026-10-01T00:00:00Z"),
+                      dt("2026-10-02T00:00:00Z"),
+                      debug=False,
+                  )
+              assert "DEBUG |" not in err.getvalue()
+          finally:
+              calendar.resolve_applicable_providers = original_resolve
+              calendar.fetch_yahoo_news = original_fetch
 
           print("CALENDAR_TESTS_OK")
           PY

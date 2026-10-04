@@ -1009,7 +1009,11 @@ def query_current_events(
 
 
 def acquire_explicit(
-    document: Dict[str, Any], symbol: str, start: datetime, end: datetime,
+    document: Dict[str, Any],
+    symbol: str,
+    start: datetime,
+    end: datetime,
+    debug: bool = False,
 ) -> Dict[str, Any]:
     now = utc_now()
     provider_results: List[Dict[str, Any]] = []
@@ -1064,12 +1068,23 @@ def acquire_explicit(
                 })
                 successful += 1
         except YahooForexPairUnavailable as exc:
+            if debug:
+                print(
+                    f"DEBUG | {provider} YahooForexPairUnavailable: {exc}",
+                    file=sys.stderr,
+                )
             provider_results.append({
                 "provider": provider,
                 "status": "SKIPPED_NO_FOREX_PAIR",
                 "reason": str(exc),
             })
         except ProviderError as exc:
+            if debug:
+                print(
+                    f"DEBUG | {provider} ProviderError traceback:",
+                    file=sys.stderr,
+                )
+                traceback.print_exc()
             failures.append({"provider": provider, "error": str(exc)})
             provider_results.append({"provider": provider, "status": "ERROR", "error": str(exc)})
     if successful:
@@ -1081,6 +1096,7 @@ def acquire_explicit(
 def acquire_current(
     document: Dict[str, Any],
     symbol: str,
+    debug: bool = False,
 ) -> Dict[str, Any]:
     now = utc_now()
     provider_results: List[Dict[str, Any]] = []
@@ -1150,12 +1166,23 @@ def acquire_current(
                 ),
             })
         except YahooForexPairUnavailable as exc:
+            if debug:
+                print(
+                    f"DEBUG | {provider} YahooForexPairUnavailable: {exc}",
+                    file=sys.stderr,
+                )
             provider_results.append({
                 "provider": provider,
                 "status": "SKIPPED_NO_FOREX_PAIR",
                 "reason": str(exc),
             })
         except ProviderError as exc:
+            if debug:
+                print(
+                    f"DEBUG | {provider} ProviderError traceback:",
+                    file=sys.stderr,
+                )
+                traceback.print_exc()
             provider_results.append({
                 "provider": provider,
                 "status": "ERROR",
@@ -1276,12 +1303,13 @@ def run_query(
     symbol: str,
     scope: str,
     cleartext: bool = False,
+    debug: bool = False,
 ) -> int:
     with acquire_calendar_lock():
         document = load_calendar_document()
 
         if scope == "current":
-            result = acquire_current(document, symbol)
+            result = acquire_current(document, symbol, debug=debug)
             events = filter_events_for_symbol(result["events"], symbol)
             status = status_from_provider_results(result["provider_results"])
             if status == "OK" and not events:
@@ -1296,7 +1324,13 @@ def run_query(
             return 0 if status != "UNAVAILABLE" else 2
 
         start, end = resolve_scope_interval(scope)
-        acquisition = acquire_explicit(document, symbol, start, end)
+        acquisition = acquire_explicit(
+            document,
+            symbol,
+            start,
+            end,
+            debug=debug,
+        )
         events = filter_events_for_interval(
             filter_events_for_symbol(document["events"], symbol),
             start,
