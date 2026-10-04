@@ -147,12 +147,20 @@ that watermark is removed so current cannot silently skip the deleted tail.
 Development artifacts belong under dev_tmp/. The repository root must not receive ad-hoc downloads, caches, debug outputs, or experiments.
 
 
-## 11.1 Provider detail URLs
+## 11.1 Provider Detail specifications
 
-Rendered-row recognition is event-ID-first: a rendered row carrying the provider event-instance ID must be parsed even when the current CSS row class is absent or renamed; the CSS row class is advisory only. The implementation must not synthesize an event-detail URL from the numeric instance ID.
+Rendered-row recognition is event-ID-first: a rendered row carrying the provider event-instance ID must be
+parsed even when the current CSS row class is absent or renamed; the CSS row class is advisory only.
 
-Provider-native concrete Detail URLs may use `/calendar?day=<provider-date>&event=<event-id>` as well as concrete `/calendar/...` event paths. The exact provider href is preserved; no URL is synthesized from the numeric instance ID.
+The calendar-page Detail control is a presentation/navigation element, not a canonical event URL field.
+For each acquired ForexFactory event, Calendar requests the provider Detail JSON using the numeric
+provider event ID and stores its ordered `specs` under `details.specs` as:
 
-The rendered-page anchor collector is independent of row structure: concrete Detail URLs are collected from provider anchor/data-URL attributes globally and mapped by the event ID carried in the URL when present. Row parsing remains available as a secondary association path. This avoids coupling URL extraction to a specific ForexFactory DOM row structure.
+    { "order": <integer>, "title": <string>, "html": <string> }
 
-ForexFactory normalized economic events expose `details.url` when a concrete provider detail URL is available. The implementation first accepts an explicit provider URL/event-base slug from structured data; for structured events without one, it parses the same response's rendered calendar-row anchors and assigns the exact `/calendar/...` href to the normalized event by provider event-instance ID. No URL is synthesized from the numeric instance ID. Regression tests cover explicit URLs and rendered-row enrichment. Yahoo Finance news continues to use `details.url` for the provider article URL.
+The provider `html` is preserved verbatim. This retains Source and Next Release hyperlinks and future
+provider formatting without requiring the Calendar to invent an event URL.
+
+A malformed or unavailable Detail JSON response is a ForexFactory provider failure. No synthetic URL or
+placeholder Detail content is generated. Yahoo Finance continues to use `details.url` for article URLs.
+
