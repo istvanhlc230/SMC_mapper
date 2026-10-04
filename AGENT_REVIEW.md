@@ -3,31 +3,33 @@
 Status: FIXED_CI_PENDING_LIVE_SMOKE
 
 ## Change
-The Windows live smoke showed ForexFactory events successfully acquired for
-2026.10.04-2026.10.30, but the persisted FF impact field remained UNKNOWN.
+The Windows live smoke showed that ForexFactory acquisition succeeds, but most events persisted
+with `impact=UNKNOWN`. After the first normalization fix, one real HIGH event was correctly
+classified, proving the normalizer was active.
 
-Root cause: the normal acquisition path uses the structured ForexFactory `days` payload.
-The previous normalizer expected exact canonical `impactName` tokens, while the provider can supply
-descriptive impactName labels such as `High Impact Expected` and `Med Impact Expected`, plus
-provider-specific impactClass color/icon representations.
+Root cause of the remaining issue: the actual structured ForexFactory event objects expose
+`impactTitle` (for example `High Impact Expected` / `Low Impact Expected`) and compact
+`impactClass` icon forms such as `icon--ff-impact-yel`. The implementation previously looked
+for `impactName` first and did not recognize these actual fields/forms.
 
-Calendar implementation version: 2.2.7
+Calendar implementation version: 2.2.8
 Persistent schema: 2
 
-The fix normalizes explicit ForexFactory `impactName`, `impactClass`, and direct `impact` values
-to HIGH/MEDIUM/LOW/HOLIDAY. Severity is never inferred from event titles or unrelated fields.
-
-The rendered HTML fallback remains separately covered.
+The fix:
+- reads explicit `impactTitle` first, with `impactName` and direct `impact` as compatibility forms;
+- recognizes explicit color/icon impactClass tokens, including the short provider forms;
+- never infers impact from event title or other unrelated data.
 
 ## Validation
-Deterministic regression tests now cover:
-- High/Med/Medium/Low/Non-Economic impactName forms;
-- red/orange/yellow/green/grey impactClass forms;
-- existing rendered HTML HIGH/MEDIUM impact parsing.
+Regression tests cover:
+- impactTitle: High, Med, Low, Non-Economic;
+- impactName compatibility forms;
+- impactClass color/icon forms, including `icon--ff-impact-yel`;
+- existing rendered HTML impact parsing.
 
-A fresh CI run is required. After CI succeeds, repeat the Windows live query against the same
-interval only after explicitly deleting/resetting the existing COMPLETE coverage, because cached
-coverage is intentionally not refetched automatically.
+A fresh CI result and a clean Windows live smoke remain required. The live smoke must explicitly
+remove the existing COMPLETE coverage before reacquiring the same interval, because Calendar
+intentionally does not refetch already complete coverage.
 
-Acceptance target: real ForexFactory events persist known HIGH/MEDIUM/LOW/HOLIDAY values rather than
-UNKNOWN whenever ForexFactory supplies explicit impact metadata.
+Acceptance target: real ForexFactory events persist explicit HIGH/MEDIUM/LOW/HOLIDAY values instead
+of UNKNOWN whenever the provider supplies explicit impact metadata.
