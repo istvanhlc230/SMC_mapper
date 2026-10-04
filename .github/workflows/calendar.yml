@@ -274,9 +274,15 @@ jobs:
               "Why Traders<br>Care: policy clues"
           )
           literal_lines = calendar.format_cleartext_details({
-              "specs": [{"order": 1, "title": "Provider Detail", "html": literal_html_detail}],
+              "specs": [{
+                  "order": 1,
+                  "title": "Why Traders<br>Care",
+                  "html": literal_html_detail,
+              }],
           })
           literal_rendered = "\n".join(literal_lines)
+          assert "Why Traders<br>Care" not in literal_rendered
+          assert "Why Traders\nCare" in literal_rendered
           assert "<img" not in literal_rendered
           assert "svg-img" not in literal_rendered
           assert "<br>" not in literal_rendered
@@ -428,7 +434,7 @@ jobs:
               }
               assert calendar.normalize_provider_event(structured_raw)["details"]["impact"] == expected_impact
 
-          assert calendar.__version__ == "2.3.4"
+          assert calendar.__version__ == "2.3.5"
           assert f"Calendar CLI v{calendar.__version__}" in calendar.HELP_TEXT
 
           # Cleartext output must render normalized details as readable fields,
