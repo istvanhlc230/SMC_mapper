@@ -5,6 +5,10 @@ import re
 from html.parser import HTMLParser
 from typing import Any, Dict, List, Optional, Tuple
 
+from html import unescape
+
+from .config import DataIntegrityError
+
 class _DetailTextParser(HTMLParser):
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
