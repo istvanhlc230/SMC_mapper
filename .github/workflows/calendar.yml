@@ -333,7 +333,7 @@ jobs:
               )
           detail_rendered = detail_render_out.getvalue()
           assert "  Source   : Example Source\n" in detail_rendered
-          assert "  Why Traders Care : This matters.\nIt is useful.\n" in detail_rendered
+          assert "  Why Traders Care: This matters.\nIt is useful.\n" in detail_rendered
 
           # Cleartext event blocks are separated by whitespace only; no closing rule is emitted.
           second_cleartext_event = dict(cleartext_event)
