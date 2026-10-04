@@ -434,3 +434,19 @@ Correction:
 - Calendar implementation version: 2.3.9; persistent schema remains 2.
 
 Fresh CI and Windows refresh smoke remain required before PASS.
+## 2.3.10 Refresh mutation-detection validation
+
+A Windows smoke raised a concern that a manually changed cached release value was not detected by refresh.
+Source inspection showed that the refresh comparator already compares complete event records, but the regression
+suite did not reproduce a locally mutated actual field. Therefore the behavior was insufficiently tested.
+
+Correction:
+- CI now explicitly changes cached actual to a synthetic wrong value and verifies refresh replaces it with
+  the fresh provider value and reports changed=1;
+- refresh --debug now prints the active calendar.json path before loading it, making an incorrect
+  SMC_DATA_ROOT immediately observable;
+- specification now explicitly requires local cache mutations to be detected and corrected.
+
+Calendar implementation version: 2.3.10; persistent schema remains 2.
+
+Fresh CI and a Windows refresh smoke using --debug remain required before PASS.
