@@ -22,6 +22,7 @@ from .parsing import (
 )
 from .presentation import *
 from .operations import *
+from .operations import _refresh_provider_window, _refresh_event_records
 from .storage import DATA_ROOT, CALENDAR_FILE, load_calendar_document, save_calendar_atomic, acquire_calendar_lock
 from .cli import run_query, run_refresh, run_delete, parse_request, run, main
 
