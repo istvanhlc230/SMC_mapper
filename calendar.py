@@ -31,7 +31,7 @@ HTTP_TIMEOUT = 15.0
 # SCHEMA_VERSION — persistent calendar.json schema version.
 SCHEMA_VERSION = 2
 # __version__ — Calendar CLI implementation version, independent from SCHEMA_VERSION.
-__version__ = "2.2.2"
+__version__ = "2.2.3"
 
 # SUPPORTED_CURRENCIES — standalone currencies accepted by the CLI.
 SUPPORTED_CURRENCIES = {
@@ -1051,13 +1051,24 @@ def _parse_forexfactory_date(
 
     month_text = match.group(1)
     day_text = match.group(2)
+    month_numbers = {
+        "Jan": 1, "Feb": 2, "Mar": 3, "Apr": 4,
+        "May": 5, "Jun": 6, "Jul": 7, "Aug": 8,
+        "Sep": 9, "Oct": 10, "Nov": 11, "Dec": 12,
+    }
+    month_number = month_numbers.get(month_text.title())
+    if month_number is None:
+        raise ProviderError(f"Invalid ForexFactory event month '{month_text}'.")
+    day_number = int(day_text)
     candidates: List[datetime] = []
     for year in range(reference_start.year - 1, reference_end.year + 2):
         try:
-            parsed = datetime.strptime(
-                f"{year} {month_text} {day_text}",
-                "%Y %b %d",
-            ).replace(tzinfo=timezone.utc)
+            parsed = datetime(
+                year,
+                month_number,
+                day_number,
+                tzinfo=timezone.utc,
+            )
         except ValueError:
             continue
         candidates.append(parsed)
