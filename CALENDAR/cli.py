@@ -8,7 +8,10 @@ from typing import Any, Dict, List, Optional
 from . import domain, operations, presentation, storage
 from .config import HELP_TEXT, CalendarInputError, DataIntegrityError
 
+# CLI state is request-local: parsed arguments determine one operation and its diagnostic/presentation flags.
+
 def run_query(
+    """Calendar operation: run_query performs the focused run query step in the Calendar implementation."""
     symbol: str,
     scope: str,
     cleartext: bool = False,
@@ -95,6 +98,7 @@ def run_query(
         return 0 if status != "UNAVAILABLE" else 2
 
 def run_refresh(
+    """Calendar operation: run_refresh performs the focused run refresh step in the Calendar implementation."""
     symbol: str,
     scope: str,
     cleartext: bool = False,
@@ -153,6 +157,7 @@ def run_refresh(
         return 0 if status != "UNAVAILABLE" else 2
 
 def run_delete(
+    """Calendar operation: run_delete performs the focused run delete step in the Calendar implementation."""
     symbol: Optional[str],
     scope: Optional[str],
 ) -> int:
@@ -186,6 +191,7 @@ def run_delete(
     return 0
 
 def parse_request(args: List[str]) -> Dict[str, Any]:
+    """Calendar operation: parse_request performs the focused parse request step in the Calendar implementation."""
     if not args:
         raise CalendarInputError("No arguments provided. Use --help.")
 
@@ -275,6 +281,7 @@ def parse_request(args: List[str]) -> Dict[str, Any]:
     }
 
 def run() -> int:
+    """Calendar operation: run performs the focused run step in the Calendar implementation."""
     debug = "--debug" in sys.argv[1:]
     try:
         request = parse_request(sys.argv[1:])
@@ -317,6 +324,7 @@ def run() -> int:
         return 1
 
 def main() -> None:
+    """Calendar operation: main performs the focused main step in the Calendar implementation."""
     raise SystemExit(run())
 
 if __name__ == "__main__":
