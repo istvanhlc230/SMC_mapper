@@ -1,3 +1,4 @@
+# (c) Istvan Jakab <istvanhlc230@gmail.com>
 """Calendar semantic/domain operations independent of provider I/O."""
 
 import re
