@@ -57,3 +57,22 @@ ForexFactory shared events now carry optional symbol suppression metadata so sym
 ## Monitor contract cleanup
 
 Removed remaining legacy Calendar function names and stdout-query boundary from the Monitor specification. The Monitor now uses request_calendar_update_async and the committed calendar.json snapshot, including suppressed_for visibility semantics.
+
+
+## Yahoo Forex resolution hardening
+
+The previous implementation incorrectly synthesized unknown FX provider symbols with a generic
+`PAIR=X` fallback. The Calendar now recognizes six-letter FX candidates from a currency-code
+universe, but Yahoo Finance remains authoritative for the concrete instrument.
+
+For FX pairs the Yahoo Search response must contain the exact candidate symbol and explicitly
+classify it as a currency instrument. Only then are Yahoo news events normalized and persisted.
+If no verified Yahoo Forex instrument exists, the provider result is
+`SKIPPED_NO_FOREX_PAIR`; no Yahoo event, coverage interval, or watermark is created or advanced.
+
+USD-base alternate symbols remain explicit candidates (for example `JPY=X` for `USDJPY`),
+and direct `PAIR=X` is tried only as a candidate that must still be independently verified by Yahoo.
+No provider symbol is fabricated from string concatenation.
+
+The Calendar specification/design were updated to make provider verification normative. Runtime
+validation is still required before PASS.

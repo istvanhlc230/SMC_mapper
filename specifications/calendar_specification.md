@@ -67,7 +67,17 @@ Provider mappings include:
     USDCAD -> CAD=X
     USDCNY -> CNY=X
 
-The Yahoo instrument list observed from regional Currencies pages is a reference snapshot, not a closed whitelist. The resolver must stay provider-aware.
+The Yahoo instrument list observed from regional Currencies pages is a reference
+snapshot, not a closed whitelist. Runtime resolution is provider-verified: the
+resolver queries Yahoo Finance Search and accepts a candidate only when Yahoo
+returns the exact provider symbol as a Forex currency instrument
+(quoteType=CURRENCY or an explicit Currency type display). The resolver must
+never synthesize a missing Yahoo Forex symbol.
+
+If Yahoo provides no verified Forex instrument for the requested canonical pair,
+the Calendar does not create Yahoo news events for that pair and does not advance
+Yahoo coverage or watermark for that request. This is a provider-availability
+state, not an empty successful acquisition.
 
 Direct Yahoo Forex reference snapshot (not a closed whitelist):
 
@@ -88,7 +98,8 @@ Alternate USD-base representations:
 Additional regional observations include CADUSD=X, CADEUR=X, CADGBP=X, CADCNY=X,
 SGDMYR=X, SGDJPY=X, SGDHKD=X, SGDIDR=X, and SGDCNY=X.
 
-This is a provider reference snapshot, not a permanent whitelist.
+This is a provider reference snapshot, not a permanent whitelist. The snapshot
+is descriptive only; provider verification is authoritative at runtime.
 
 ## 3. Canonical CLI
 
@@ -328,6 +339,9 @@ Acceptance requires:
 - HUF routes to ForexFactory;
 - USDJPY has independent ForexFactory and Yahoo watermarks;
 - Yahoo events are news;
+- Yahoo FX news is persisted only after exact provider-side Forex instrument verification;
 - ForexFactory events are economic;
 - provider failures remain observable;
-- Yahoo historical completeness is never falsely claimed.
+- Yahoo historical completeness is never falsely claimed;
+- a missing Yahoo Forex pair is reported as provider-unavailable for that pair and
+  never converted into a fabricated `=X` instrument or persisted Yahoo coverage.

@@ -58,6 +58,8 @@ ForexFactory coverage may be COMPLETE for an acquired UTC interval.
 
 Yahoo rolling news is not granted historical COMPLETE coverage without evidence.
 
+For FX pairs, Yahoo Search must return an exact matching Forex/Currency instrument before Yahoo news is acquired. No generic `PAIR=X` fallback is permitted. When no verified Yahoo Forex instrument exists, no Yahoo event, coverage interval, or watermark is persisted for that pair.
+
 Coverage never comes from the mere presence of an event.
 
 ## 6. Persistence

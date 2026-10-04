@@ -24,6 +24,31 @@ SCHEMA_VERSION = 2
 SUPPORTED_CURRENCIES = {
     "USD", "EUR", "GBP", "JPY", "CHF",
     "AUD", "CAD", "NZD", "CNY", "HUF",
+    "HKD", "SGD", "INR", "MXN", "PHP", "IDR", "THB", "MYR",
+    "ZAR", "RUB", "BRL", "NOK", "QAR",
+}
+
+# ISO 4217 alpha-3 currency codes are used to recognize a six-letter
+# candidate as an FX pair. Yahoo remains authoritative for whether the
+# concrete pair actually exists as a Forex instrument.
+FX_CURRENCY_CODES = {
+    "AED", "AFN", "ALL", "AMD", "ANG", "AOA", "ARS", "AUD", "AWG", "AZN",
+    "BAM", "BBD", "BDT", "BGN", "BHD", "BIF", "BMD", "BND", "BOB", "BOV",
+    "BRL", "BSD", "BTN", "BWP", "BYN", "BZD", "CAD", "CDF", "CHE", "CHF",
+    "CHW", "CLF", "CLP", "CNY", "COP", "COU", "CRC", "CUC", "CUP", "CVE",
+    "CZK", "DJF", "DKK", "DOP", "DZD", "EGP", "ERN", "ETB", "EUR", "FJD",
+    "FKP", "GBP", "GEL", "GHS", "GIP", "GMD", "GNF", "GTQ", "GYD", "HKD",
+    "HNL", "HTG", "HUF", "IDR", "ILS", "INR", "IQD", "IRR", "ISK", "JMD",
+    "JOD", "JPY", "KES", "KGS", "KHR", "KMF", "KPW", "KRW", "KWD", "KYD",
+    "KZT", "LAK", "LBP", "LKR", "LRD", "LSL", "LYD", "MAD", "MDL", "MGA",
+    "MKD", "MMK", "MNT", "MOP", "MRU", "MUR", "MVR", "MWK", "MXN", "MXV",
+    "MYR", "MZN", "NAD", "NGN", "NIO", "NOK", "NPR", "NZD", "OMR", "PAB",
+    "PEN", "PGK", "PHP", "PKR", "PLN", "PYG", "QAR", "RON", "RSD", "RUB",
+    "RWF", "SAR", "SBD", "SCR", "SDG", "SEK", "SGD", "SHP", "SLE", "SLL",
+    "SOS", "SRD", "SSP", "STN", "SVC", "SYP", "SZL", "THB", "TJS", "TMT",
+    "TND", "TOP", "TRY", "TTD", "TWD", "TZS", "UAH", "UGX", "USD", "USN",
+    "UYI", "UYU", "UYW", "UZS", "VED", "VES", "VND", "VUV", "WST", "XAF",
+    "XCD", "XOF", "XPF", "YER", "ZAR", "ZMW", "ZWG",
 }
 
 USD_BASE_YAHOO_SYMBOLS = {
@@ -99,6 +124,11 @@ class CalendarInputError(Exception):
 
 class ProviderError(Exception):
     pass
+
+
+class YahooForexPairUnavailable(Exception):
+    pass
+
 
 class DataIntegrityError(Exception):
     pass
@@ -319,7 +349,7 @@ def validate_calendar_document(document: Dict[str, Any]) -> None:
                     "ForexFactory events must use event_type=economic."
                 )
             currency = event["details"].get("currency")
-            if currency not in SUPPORTED_CURRENCIES and currency != "ALL":
+            if currency not in FX_CURRENCY_CODES and currency != "ALL":
                 raise DataIntegrityError("Invalid ForexFactory currency.")
             impact = event["details"].get("impact")
             if impact not in {"HIGH", "MEDIUM", "LOW", "HOLIDAY", "UNKNOWN"}:
@@ -512,12 +542,79 @@ def resolve_applicable_providers(symbol: str) -> List[str]:
     return ["yahoo_finance"]
 
 
-def resolve_yahoo_symbol(symbol: str) -> str:
+def _fetch_yahoo_search_payload(query_symbol: str) -> Dict[str, Any]:
+    params = {
+        "q": query_symbol,
+        "quotesCount": "20",
+        "newsCount": "100",
+        "enableFuzzyQuery": "false",
+    }
+    query = urllib.parse.urlencode(params)
+    payload = fetch_url(f"{YAHOO_SEARCH_URL}?{query}")
+    try:
+        data = json.loads(payload)
+    except json.JSONDecodeError as exc:
+        raise ProviderError(f"Malformed Yahoo Finance JSON: {exc}") from exc
+    if not isinstance(data, dict):
+        raise ProviderError("Yahoo Finance response is not an object.")
+    return data
+
+
+def _is_verified_yahoo_forex_quote(
+    quote: Dict[str, Any],
+    candidate_symbol: str,
+) -> bool:
+    returned_symbol = normalize_symbol(str(quote.get("symbol", "")))
+    quote_type = normalize_symbol(str(quote.get("quoteType", "")))
+    type_display = str(quote.get("typeDisp", "")).strip().lower()
+    return (
+        returned_symbol == normalize_symbol(candidate_symbol)
+        and (
+            quote_type == "CURRENCY"
+            or type_display == "currency"
+        )
+    )
+
+
+def _resolve_yahoo_instrument(
+    symbol: str,
+) -> Tuple[str, Dict[str, Any]]:
     if not is_fx_pair(symbol):
-        return symbol
-    if symbol in USD_BASE_YAHOO_SYMBOLS:
-        return USD_BASE_YAHOO_SYMBOLS[symbol]
-    return f"{symbol}=X"
+        return symbol, _fetch_yahoo_search_payload(symbol)
+
+    candidates: List[str] = []
+    mapped = USD_BASE_YAHOO_SYMBOLS.get(symbol)
+    if mapped:
+        candidates.append(mapped)
+
+    direct = f"{symbol}=X"
+    if direct not in candidates:
+        candidates.append(direct)
+
+    queried: set[str] = set()
+    for candidate in candidates:
+        for query_symbol in (candidate, symbol):
+            if query_symbol in queried:
+                continue
+            queried.add(query_symbol)
+            data = _fetch_yahoo_search_payload(query_symbol)
+            quotes = data.get("quotes", [])
+            if not isinstance(quotes, list):
+                continue
+            for quote in quotes:
+                if not isinstance(quote, dict):
+                    continue
+                if _is_verified_yahoo_forex_quote(quote, candidate):
+                    return candidate, data
+
+    raise YahooForexPairUnavailable(
+        f"Yahoo Finance has no verified Forex instrument for '{symbol}'."
+    )
+
+
+def resolve_yahoo_symbol(symbol: str) -> Optional[str]:
+    provider_symbol, _ = _resolve_yahoo_instrument(symbol)
+    return provider_symbol
 
 
 def fetch_url(url: str) -> str:
@@ -673,19 +770,7 @@ def normalize_calendar_events(days_data: List[Dict[str, Any]]) -> List[Dict[str,
 
 
 def fetch_yahoo_news(symbol: str) -> List[Dict[str, Any]]:
-    provider_symbol = resolve_yahoo_symbol(symbol)
-    params = {
-        "q": provider_symbol,
-        "quotesCount": "0",
-        "newsCount": "100",
-        "enableFuzzyQuery": "false",
-    }
-    query = urllib.parse.urlencode(params)
-    payload = fetch_url(f"{YAHOO_SEARCH_URL}?{query}")
-    try:
-        data = json.loads(payload)
-    except json.JSONDecodeError as exc:
-        raise ProviderError(f"Malformed Yahoo Finance JSON: {exc}") from exc
+    provider_symbol, data = _resolve_yahoo_instrument(symbol)
 
     news = data.get("news")
     if not isinstance(news, list):
@@ -869,6 +954,12 @@ def acquire_explicit(
                 in_range = filter_events_for_interval(events, start, end)
                 provider_results.append({"provider": provider, "status": "PARTIAL", "events_acquired": len(in_range), "historical_coverage": "NOT_GUARANTEED"})
                 successful += 1
+        except YahooForexPairUnavailable as exc:
+            provider_results.append({
+                "provider": provider,
+                "status": "SKIPPED_NO_FOREX_PAIR",
+                "reason": str(exc),
+            })
         except ProviderError as exc:
             failures.append({"provider": provider, "error": str(exc)})
             provider_results.append({"provider": provider, "status": "ERROR", "error": str(exc)})
@@ -945,6 +1036,12 @@ def acquire_current(
                     else "COMPLETE"
                 ),
             })
+        except YahooForexPairUnavailable as exc:
+            provider_results.append({
+                "provider": provider,
+                "status": "SKIPPED_NO_FOREX_PAIR",
+                "reason": str(exc),
+            })
         except ProviderError as exc:
             provider_results.append({
                 "provider": provider,
@@ -979,13 +1076,15 @@ def status_from_provider_results(provider_results: List[Dict[str, Any]]) -> str:
     statuses = [result["status"] for result in provider_results]
     if not statuses:
         return "UNAVAILABLE"
+    if all(status == "SKIPPED_NO_FOREX_PAIR" for status in statuses):
+        return "NO_FOREX_PAIR"
     if all(status == "BOOTSTRAP_REQUIRED" for status in statuses):
         return "BOOTSTRAP_REQUIRED"
     if all(status == "ERROR" for status in statuses):
         return "UNAVAILABLE"
     if any(status in {"ERROR", "BOOTSTRAP_REQUIRED"} for status in statuses):
         return "PARTIAL"
-    if any(status == "PARTIAL" for status in statuses):
+    if any(status in {"PARTIAL", "SKIPPED_NO_FOREX_PAIR"} for status in statuses):
         return "PARTIAL"
     return "OK"
 
@@ -1089,7 +1188,7 @@ def run_query(symbol: str, scope: str, cleartext: bool = False) -> int:
         else:
             status = "OK" if events else "NO_RELEVANT_EVENT"
             if any(
-                result["status"] == "PARTIAL"
+                result["status"] in {"PARTIAL", "SKIPPED_NO_FOREX_PAIR"}
                 for result in acquisition["provider_results"]
             ):
                 status = "PARTIAL"
