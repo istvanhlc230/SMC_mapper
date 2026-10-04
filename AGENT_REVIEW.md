@@ -552,3 +552,8 @@ Validation required:
 - Meaningful module-level state variables in storage are explicitly described; module-level comments clarify request/input/output-local state in the other implementation layers.
 - No functional code path was intentionally changed by the documentation pass.
 - CI status is not yet observable for the latest push from the available GitHub status interface, so this documentation change is not marked CI-PASS yet.
+
+
+### Source attribution
+- Added the requested attribution header to the Calendar Python source files: `(c) Istvan Jakab <istvanhlc230@gmail.com>`.
+- No runtime logic was changed.
