@@ -374,10 +374,12 @@ jobs:
           refreshed_event["details"]["actual"] = "197K"
           refreshed_event["details"]["specs"] = [{"order": 1, "title": "Source", "html": "Department of Labor (latest release)"}]
           original_refresh_fetch = calendar.fetch_forexfactory_event_refresh
+          original_refresh_load = calendar.load_calendar_document
           original_refresh_save = calendar.save_calendar_atomic
           saved_refresh_docs = []
           try:
               calendar.fetch_forexfactory_event_refresh = lambda event_id, reference_timestamp: refreshed_event
+              calendar.load_calendar_document = lambda: refresh_doc
               calendar.save_calendar_atomic = lambda document: saved_refresh_docs.append(document)
               assert calendar.run_refresh("forexfactory:147017", cleartext=False) == 0
               assert refresh_doc["events"][0]["details"]["actual"] == "197K"
@@ -387,6 +389,7 @@ jobs:
               assert len(saved_refresh_docs) == 1
           finally:
               calendar.fetch_forexfactory_event_refresh = original_refresh_fetch
+              calendar.load_calendar_document = original_refresh_load
               calendar.save_calendar_atomic = original_refresh_save
 
           assert calendar.parse_request(["refresh", "forexfactory:147017"])["operation"] == "REFRESH"
