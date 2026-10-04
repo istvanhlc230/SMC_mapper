@@ -387,10 +387,12 @@ jobs:
               },
           }
           original_refresh_fetch = calendar.fetch_forexfactory
+          original_refresh_detail_enrich = calendar._enrich_forexfactory_details
           original_refresh_save = calendar.save_calendar_atomic
           saved_refresh_docs = []
           try:
-              calendar.fetch_forexfactory = lambda start, end: [refreshed_event]
+              calendar.fetch_forexfactory = lambda start, end, include_details=True: [refreshed_event]
+              calendar._enrich_forexfactory_details = lambda events: None
               calendar.save_calendar_atomic = lambda document: saved_refresh_docs.append(document)
               summary = calendar.refresh_calendar_scope(
                   refresh_doc,
@@ -405,8 +407,16 @@ jobs:
               assert refresh_doc["watermarks"]["forexfactory|USD"]["last_successful_at"] == "2026-10-02T12:31:00Z"
               assert refresh_doc["coverage"][0]["status"] == "COMPLETE"
               assert len(saved_refresh_docs) == 1
+              refresh_result = calendar.filter_events_for_interval(
+                  calendar.filter_events_for_symbol(refresh_doc["events"], "USD"),
+                  dt("2026-10-01T12:30:00Z"),
+                  dt("2026-10-01T12:31:00Z"),
+              )
+              assert refresh_result == []
+              assert refresh_doc["events"][0]["event_id"] == "forexfactory:147017"
           finally:
               calendar.fetch_forexfactory = original_refresh_fetch
+              calendar._enrich_forexfactory_details = original_refresh_detail_enrich
               calendar.save_calendar_atomic = original_refresh_save
 
           assert calendar.parse_request(["refresh", "USD", "2026.10.01"])["operation"] == "REFRESH"
