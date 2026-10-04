@@ -254,6 +254,21 @@ jobs:
           assert "FF Notice : Event added to calendar 176 minutes before release time" in escaped_rendered
           assert "Why Traders\nCare:" in escaped_rendered
 
+          double_escaped_detail = (
+              "FF Notice &amp;lt;img class=&amp;quot;svg-img&amp;quot;&amp;gt;: Event added; "
+              "Why Traders&amp;lt;br&amp;gt;Care: policy clues"
+          )
+          double_escaped_lines = calendar.format_cleartext_details({
+              "specs": [{"order": 1, "title": "Provider Detail", "html": double_escaped_detail}],
+          })
+          double_escaped_rendered = "\n".join(double_escaped_lines)
+          assert "<img" not in double_escaped_rendered
+          assert "&lt;img" not in double_escaped_rendered
+          assert "<br>" not in double_escaped_rendered
+          assert "&lt;br&gt;" not in double_escaped_rendered
+          assert "FF Notice : Event added" in double_escaped_rendered
+          assert "Why Traders\nCare:" in double_escaped_rendered
+
           # Legacy schema-2 ForexFactory coverage without Detail specs is incomplete
           # for the requested overlap and must be reacquired.
           legacy_doc = calendar.build_empty_calendar_document()
@@ -352,7 +367,7 @@ jobs:
               }
               assert calendar.normalize_provider_event(structured_raw)["details"]["impact"] == expected_impact
 
-          assert calendar.__version__ == "2.3.1"
+          assert calendar.__version__ == "2.3.2"
           assert f"Calendar CLI v{calendar.__version__}" in calendar.HELP_TEXT
 
           # Cleartext output must render normalized details as readable fields,
