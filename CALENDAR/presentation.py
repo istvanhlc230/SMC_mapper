@@ -87,13 +87,13 @@ def format_cleartext_details(details: Dict[str, Any]) -> List[str]:
     return lines
 
 def output_query_result(
-    """Calendar operation: output_query_result performs the focused output query result step in the Calendar implementation."""
     status: str,
     symbol: str,
     events: List[Dict[str, Any]],
     provider_results: List[Dict[str, Any]],
     cleartext: bool = False,
 ) -> None:
+    """Calendar operation: output_query_result performs the focused output query result step in the Calendar implementation."""
     if cleartext:
         print(f"CALENDAR RESULT | {status} | {symbol}")
         for provider in provider_results:
