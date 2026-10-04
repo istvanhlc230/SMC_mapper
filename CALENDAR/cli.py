@@ -11,12 +11,12 @@ from .config import HELP_TEXT, CalendarInputError, DataIntegrityError
 # CLI state is request-local: parsed arguments determine one operation and its diagnostic/presentation flags.
 
 def run_query(
-    """Calendar operation: run_query performs the focused run query step in the Calendar implementation."""
     symbol: str,
     scope: str,
     cleartext: bool = False,
     debug: bool = False,
 ) -> int:
+    """Calendar operation: run_query performs the focused run query step in the Calendar implementation."""
     with storage.acquire_calendar_lock():
         document = storage.load_calendar_document()
 
@@ -98,12 +98,12 @@ def run_query(
         return 0 if status != "UNAVAILABLE" else 2
 
 def run_refresh(
-    """Calendar operation: run_refresh performs the focused run refresh step in the Calendar implementation."""
     symbol: str,
     scope: str,
     cleartext: bool = False,
     debug: bool = False,
 ) -> int:
+    """Calendar operation: run_refresh performs the focused run refresh step in the Calendar implementation."""
     if scope in {"latest", "next", "current"}:
         raise CalendarInputError(
             "refresh requires an explicit date, date range, datetime, or datetime range."
@@ -157,10 +157,10 @@ def run_refresh(
         return 0 if status != "UNAVAILABLE" else 2
 
 def run_delete(
-    """Calendar operation: run_delete performs the focused run delete step in the Calendar implementation."""
     symbol: Optional[str],
     scope: Optional[str],
 ) -> int:
+    """Calendar operation: run_delete performs the focused run delete step in the Calendar implementation."""
     # A bare DELETE is an explicit full-cache reset; it bypasses legacy-schema
     # validation so an incompatible calendar.json cannot block the reset.
     with storage.acquire_calendar_lock():
