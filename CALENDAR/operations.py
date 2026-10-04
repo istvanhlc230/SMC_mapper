@@ -31,9 +31,9 @@ def acquire_explicit(
                     for gap_start, gap_end in gaps:
                         domain.merge_coverage(document, {
                             "provider": provider, "symbol": symbol,
-                            "start": format_iso8601(gap_start),
-                            "end": format_iso8601(gap_end),
-                            "status": "COMPLETE", "updated_at": format_iso8601(now),
+                            "start": domain.format_iso8601(gap_start),
+                            "end": domain.format_iso8601(gap_end),
+                            "status": "COMPLETE", "updated_at": domain.format_iso8601(now),
                         })
                     domain.update_watermark(document, provider, symbol, now, events)
                     provider_results.append({"provider": provider, "status": "OK", "events_acquired": len(events), "coverage": "UPDATED"})
@@ -92,7 +92,7 @@ def acquire_explicit(
         storage.save_calendar_atomic(document)
         if debug:
             print(
-                f"DEBUG | Persisted Calendar file: {CALENDAR_FILE}",
+                f"DEBUG | Persisted Calendar file: {storage.CALENDAR_FILE}",
                 file=sys.stderr,
             )
     return {"provider_results": provider_results, "failures": failures}
@@ -148,10 +148,10 @@ def acquire_current(
                     {
                         "provider": provider,
                         "symbol": symbol,
-                        "start": format_iso8601(fetch_start),
-                        "end": format_iso8601(fetch_end),
+                        "start": domain.format_iso8601(fetch_start),
+                        "end": domain.format_iso8601(fetch_end),
                         "status": "COMPLETE",
-                        "updated_at": format_iso8601(now),
+                        "updated_at": domain.format_iso8601(now),
                     },
                 )
 
@@ -201,7 +201,7 @@ def acquire_current(
         storage.save_calendar_atomic(document)
         if debug:
             print(
-                f"DEBUG | Persisted Calendar file: {CALENDAR_FILE}",
+                f"DEBUG | Persisted Calendar file: {storage.CALENDAR_FILE}",
                 file=sys.stderr,
             )
 
@@ -280,12 +280,12 @@ def delete_symbol_interval(
 
         if coverage_start < start:
             left = coverage.copy()
-            left["end"] = format_iso8601(start)
+            left["end"] = domain.format_iso8601(start)
             retained_coverage.append(left)
 
         if end < coverage_end:
             right = coverage.copy()
-            right["start"] = format_iso8601(end)
+            right["start"] = domain.format_iso8601(end)
             retained_coverage.append(right)
 
     document["coverage"] = retained_coverage
@@ -464,7 +464,7 @@ def refresh_calendar_scope(
         storage.save_calendar_atomic(document)
         if debug:
             print(
-                f"DEBUG | Persisted Calendar file: {CALENDAR_FILE}",
+                f"DEBUG | Persisted Calendar file: {storage.CALENDAR_FILE}",
                 file=sys.stderr,
             )
 
