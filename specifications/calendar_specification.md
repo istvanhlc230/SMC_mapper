@@ -393,6 +393,9 @@ Acceptance requires:
 - Yahoo FX news is persisted only after exact provider-side Forex instrument verification;
 - ForexFactory events are economic;
 - provider failures remain observable;
+- bare `python calendar.py delete` can reset an incompatible legacy schema cache;
+- the CLI help exposes the Calendar software version and persistent schema version;
+- the source implementation documents function responsibilities and variable roles with comments;
 - explicit Yahoo acquisition persists only the requested interval and does not
   jump the current cursor past the requested boundary;
 - an unavailable Yahoo FX instrument cannot expose previously cached Yahoo events
