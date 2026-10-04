@@ -1,6 +1,6 @@
 # AGENT_REVIEW.md
 
-Status: FIXED_FF_NATIVE_DETAIL_QUERY_CI_PENDING_LIVE_SMOKE
+Status: FIXED_FF_GLOBAL_DETAIL_ANCHOR_COLLECTION_CI_PENDING_LIVE_SMOKE
 
 ## Change
 The Windows live smoke showed that ForexFactory acquisition succeeds, but most events persisted
@@ -156,4 +156,21 @@ The correction accepts and preserves the native query-form event URL in both ren
 Validation state:
 - prior CI #79 on 2.2.15: PASS;
 - 2.2.16 CI: pending after commit;
+- Windows live smoke with real provider data: required before PASS.
+
+
+## ForexFactory global Detail-anchor correction
+
+Calendar implementation version: 2.2.17
+Persistent schema: 2
+
+The 2.2.16 Windows live smoke still produced details.url = N/A for every real ForexFactory event. The remaining design weakness was that Detail URL association depended on the anchor being nested inside the parser's recognized row. That is not a safe contract for a dynamic provider page.
+
+The parser now collects concrete ForexFactory Detail targets globally from href/data-href/data-url attributes. For native calendar?day=...&event=<id> URLs and numeric event-path URLs, the event ID is extracted directly from the URL. fetch_forexfactory uses this global map first and row association only as a secondary path.
+
+Regression coverage includes a Detail anchor detached from any calendar row and verifies that the structured event still receives the exact provider URL.
+
+Validation state:
+- CI #81 on the 2.2.16 fixture: PASS;
+- 2.2.17 CI: pending after commit;
 - Windows live smoke with real provider data: required before PASS.

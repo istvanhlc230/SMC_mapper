@@ -153,4 +153,6 @@ Rendered-row recognition is event-ID-first: a rendered row carrying the provider
 
 Provider-native concrete Detail URLs may use `/calendar?day=<provider-date>&event=<event-id>` as well as concrete `/calendar/...` event paths. The exact provider href is preserved; no URL is synthesized from the numeric instance ID.
 
+The rendered-page anchor collector is independent of row structure: concrete Detail URLs are collected from provider anchor/data-URL attributes globally and mapped by the event ID carried in the URL when present. Row parsing remains available as a secondary association path. This avoids coupling URL extraction to a specific ForexFactory DOM row structure.
+
 ForexFactory normalized economic events expose `details.url` when a concrete provider detail URL is available. The implementation first accepts an explicit provider URL/event-base slug from structured data; for structured events without one, it parses the same response's rendered calendar-row anchors and assigns the exact `/calendar/...` href to the normalized event by provider event-instance ID. No URL is synthesized from the numeric instance ID. Regression tests cover explicit URLs and rendered-row enrichment. Yahoo Finance news continues to use `details.url` for the provider article URL.

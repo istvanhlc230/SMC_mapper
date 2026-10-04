@@ -31,7 +31,7 @@ HTTP_TIMEOUT = 15.0
 # SCHEMA_VERSION — persistent calendar.json schema version.
 SCHEMA_VERSION = 2
 # __version__ — Calendar CLI implementation version, independent from SCHEMA_VERSION.
-__version__ = "2.2.16"
+__version__ = "2.2.17"
 
 # SUPPORTED_CURRENCIES — standalone currencies accepted by the CLI.
 SUPPORTED_CURRENCIES = {
@@ -892,11 +892,12 @@ def fetch_forexfactory(
         parser = ForexFactoryHTMLCalendarParser()
         parser.feed(html)
         parser.close()
-        detail_urls = {
-            str(row.get("id")).strip(): str(row.get("url")).strip()
-            for row in parser.rows
-            if row.get("id") and row.get("url")
-        }
+        detail_urls = dict(parser.detail_urls)
+        for row in parser.rows:
+            row_id = str(row.get("id") or "").strip()
+            row_url = str(row.get("url") or "").strip()
+            if row_id and row_url:
+                detail_urls.setdefault(row_id, row_url)
         for event in normalized:
             provider_event_id = event["event_id"].split(":", 1)[1]
             detail_url = detail_urls.get(provider_event_id)
@@ -974,6 +975,7 @@ class ForexFactoryHTMLCalendarParser(HTMLParser):
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
         self.rows: List[Dict[str, Any]] = []
+        self.detail_urls: Dict[str, str] = {}
         self.current_row: Optional[Dict[str, Any]] = None
         self.current_cell: Optional[str] = None
         self.text_buffer: List[str] = []
@@ -1017,25 +1019,30 @@ class ForexFactoryHTMLCalendarParser(HTMLParser):
                 self.text_buffer = []
                 return
 
-        if self.current_row is None:
-            return
-
         if tag == "a":
-            href = str(attributes.get("href") or "").strip()
-            if (
-                href
-                and not self.current_row.get("url")
-                and _is_forexfactory_event_url(
-                    urllib.parse.urljoin(
-                        "https://www.forexfactory.com/",
-                        href,
-                    )
-                )
-            ):
-                self.current_row["url"] = urllib.parse.urljoin(
+            href = str(
+                attributes.get("href")
+                or attributes.get("data-href")
+                or attributes.get("data-url")
+                or ""
+            ).strip()
+            if href:
+                resolved_href = urllib.parse.urljoin(
                     "https://www.forexfactory.com/",
                     href,
                 )
+                if _is_forexfactory_event_url(resolved_href):
+                    event_id_from_url = _forexfactory_url_event_id(resolved_href)
+                    if event_id_from_url:
+                        self.detail_urls.setdefault(
+                            event_id_from_url,
+                            resolved_href,
+                        )
+                    if self.current_row is not None and not self.current_row.get("url"):
+                        self.current_row["url"] = resolved_href
+
+        if self.current_row is None:
+            return
 
         if tag == "td":
             self.current_cell = " ".join(classes)
@@ -1383,6 +1390,25 @@ def _is_forexfactory_event_url(value: str) -> bool:
     query = urllib.parse.parse_qs(parsed.query)
     event_values = [item.strip() for item in query.get("event", []) if item.strip()]
     return bool(event_values and all(re.fullmatch(r"\d+", item) for item in event_values))
+
+
+# Function: _forexfactory_url_event_id — extracts the provider event ID from a concrete Detail URL.
+# Variables: value=provider Detail URL.
+# Local variables: parsed=parsed URL; event_values=event query values; match=path-ID match.
+def _forexfactory_url_event_id(value: str) -> Optional[str]:
+    resolved = urllib.parse.urljoin(
+        "https://www.forexfactory.com/",
+        value.strip(),
+    )
+    parsed = urllib.parse.urlparse(resolved)
+    query = urllib.parse.parse_qs(parsed.query)
+    event_values = [item.strip() for item in query.get("event", []) if item.strip()]
+    if len(event_values) == 1 and re.fullmatch(r"\d+", event_values[0]):
+        return event_values[0]
+    match = re.match(r"^/calendar/(\d+)-[^/?#]+$", parsed.path, re.IGNORECASE)
+    if match:
+        return match.group(1)
+    return None
 
 
 # Function: _resolve_forexfactory_event_url — resolves an explicit provider detail-page URL.

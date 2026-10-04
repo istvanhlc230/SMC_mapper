@@ -2,7 +2,7 @@
 
 Status: Current V2 specification.
 
-Calendar implementation baseline: 2.2.16.
+Calendar implementation baseline: 2.2.17.
 
 Scope:
 - unified economic-calendar and news acquisition;
@@ -348,6 +348,8 @@ Provider-query construction is deterministic from the requested interval. The re
 still filtered against canonical UTC event timestamps after acquisition, so provider query inclusivity
 cannot widen the persisted/result interval.
 For rendered and structured ForexFactory Detail URLs, the native `/calendar?day=...&event=...` query form is a valid concrete provider URL and must be preserved verbatim. Concrete `/calendar/...` event paths are also valid. URL extraction must never synthesize a URL from the numeric event-instance ID.
+
+Concrete ForexFactory Detail URL extraction is DOM-structure-independent. The Calendar collects provider anchor/data-URL targets globally and may associate them to events by the numeric event query parameter or numeric event-path prefix. Extraction must not require the link to be nested inside a particular calendar-row element.
 
 ## 7.6 Human-readable CLI presentation
 
