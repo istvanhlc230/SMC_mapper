@@ -9,6 +9,7 @@ import traceback
 import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta, timezone
+from html import unescape
 from html.parser import HTMLParser
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from typing import Any, Dict, List, Optional, Tuple
@@ -33,7 +34,7 @@ HTTP_TIMEOUT = 15.0
 # SCHEMA_VERSION — persistent calendar.json schema version.
 SCHEMA_VERSION = 2
 # __version__ — Calendar CLI implementation version, independent from SCHEMA_VERSION.
-__version__ = "2.3.0"
+__version__ = "2.3.1"
 
 # SUPPORTED_CURRENCIES — standalone currencies accepted by the CLI.
 SUPPORTED_CURRENCIES = {
@@ -1973,7 +1974,11 @@ def status_from_provider_results(provider_results: List[Dict[str, Any]]) -> str:
 # Function: _detail_html_to_text — strips provider HTML for cleartext presentation.
 # Variables: value=provider HTML fragment.
 def _detail_html_to_text(value: str) -> str:
-    text = re.sub(r"(?is)<br\s*/?>", "\n", value)
+    # ForexFactory may return Detail HTML with its markup character-escaped
+    # (for example &lt;br&gt; or &lt;img ...&gt;). Decode entities before removing
+    # provider markup so cleartext never exposes raw HTML tags.
+    text = unescape(value)
+    text = re.sub(r"(?is)<br\s*/?>", "\n", text)
     text = re.sub(r"(?is)</(p|div|li|tr|table|h[1-6])\s*>", "\n", text)
     text = re.sub(r"(?is)<[^>]+>", "", text)
     text = re.sub(r"[ \t]+", " ", text)
