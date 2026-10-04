@@ -11,13 +11,13 @@ from .config import ProviderError, YahooForexPairUnavailable
 # Operation state is request-local: acquisition/refresh variables describe the current transaction and are persisted only through storage.
 
 def acquire_explicit(
-    """Calendar operation: acquire_explicit performs the focused acquire explicit step in the Calendar implementation."""
     document: Dict[str, Any],
     symbol: str,
     start: datetime,
     end: datetime,
     debug: bool = False,
 ) -> Dict[str, Any]:
+    """Calendar operation: acquire_explicit performs the focused acquire explicit step in the Calendar implementation."""
     now = domain.utc_now()
     provider_results: List[Dict[str, Any]] = []
     failures: List[Dict[str, str]] = []
@@ -122,11 +122,11 @@ def acquire_explicit(
     return {"provider_results": provider_results, "failures": failures}
 
 def acquire_current(
-    """Calendar operation: acquire_current performs the focused acquire current step in the Calendar implementation."""
     document: Dict[str, Any],
     symbol: str,
     debug: bool = False,
 ) -> Dict[str, Any]:
+    """Calendar operation: acquire_current performs the focused acquire current step in the Calendar implementation."""
     now = domain.utc_now()
     provider_results: List[Dict[str, Any]] = []
     incremental: List[Dict[str, Any]] = []
@@ -263,12 +263,12 @@ def acquire_current(
     }
 
 def delete_symbol_interval(
-    """Calendar operation: delete_symbol_interval performs the focused delete symbol interval step in the Calendar implementation."""
     document: Dict[str, Any],
     symbol: str,
     start: datetime,
     end: datetime,
 ) -> None:
+    """Calendar operation: delete_symbol_interval performs the focused delete symbol interval step in the Calendar implementation."""
     applicable_providers = set(domain.resolve_applicable_providers(symbol))
     currencies = ({symbol} if domain.is_currency(symbol) else
                   {symbol[:3], symbol[3:]} if domain.is_fx_pair(symbol) else set())
@@ -346,10 +346,10 @@ def delete_symbol_interval(
             del document["watermarks"][key]
 
 def _refresh_provider_window(
-    """Internal helper: _refresh_provider_window performs the focused refresh provider window step in the Calendar implementation."""
     start: datetime,
     end: datetime,
 ) -> Tuple[datetime, datetime]:
+    """Internal helper: _refresh_provider_window performs the focused refresh provider window step in the Calendar implementation."""
     expanded_start = (
         start.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=1)
     )
@@ -365,11 +365,11 @@ def _refresh_provider_window(
 # normalized=merged record; refreshed_ids=stable IDs; unchanged=unchanged existing records.
 
 def _refresh_event_records(
-    """Internal helper: _refresh_event_records performs the focused refresh event records step in the Calendar implementation."""
     document: Dict[str, Any],
     refreshed_events: List[Dict[str, Any]],
     symbol: str,
 ) -> Dict[str, int]:
+    """Internal helper: _refresh_event_records performs the focused refresh event records step in the Calendar implementation."""
     by_id = {event["event_id"]: event for event in document["events"]}
     changed = 0
     added = 0
@@ -416,13 +416,13 @@ def _refresh_event_records(
 # refresh_window_start=expanded start.
 
 def refresh_calendar_scope(
-    """Calendar operation: refresh_calendar_scope performs the focused refresh calendar scope step in the Calendar implementation."""
     document: Dict[str, Any],
     symbol: str,
     start: datetime,
     end: datetime,
     debug: bool = False,
 ) -> Dict[str, Any]:
+    """Calendar operation: refresh_calendar_scope performs the focused refresh calendar scope step in the Calendar implementation."""
     refresh_window_start, refresh_window_end = _refresh_provider_window(start, end)
     existing_events = domain.filter_events_for_interval(
         domain.filter_events_for_symbol(document["events"], symbol),
