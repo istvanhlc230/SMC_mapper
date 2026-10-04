@@ -35,10 +35,10 @@ def _fetch_yahoo_search_payload(query_symbol: str) -> Dict[str, Any]:
     return data
 
 def _is_verified_yahoo_forex_quote(
-    """Internal helper: _is_verified_yahoo_forex_quote performs the focused is verified yahoo forex quote step in the Calendar implementation."""
     quote: Dict[str, Any],
     candidate_symbol: str,
 ) -> bool:
+    """Internal helper: _is_verified_yahoo_forex_quote performs the focused is verified yahoo forex quote step in the Calendar implementation."""
     returned_symbol = normalize_symbol(str(quote.get("symbol", "")))
     quote_type = normalize_symbol(str(quote.get("quoteType", "")))
     type_display = str(quote.get("typeDisp", "")).strip().lower()
@@ -51,9 +51,9 @@ def _is_verified_yahoo_forex_quote(
     )
 
 def _resolve_yahoo_instrument(
-    """Internal helper: _resolve_yahoo_instrument performs the focused resolve yahoo instrument step in the Calendar implementation."""
     symbol: str,
 ) -> Tuple[str, Dict[str, Any]]:
+    """Internal helper: _resolve_yahoo_instrument performs the focused resolve yahoo instrument step in the Calendar implementation."""
     if not is_fx_pair(symbol):
         return symbol, _fetch_yahoo_search_payload(symbol)
 
@@ -149,12 +149,12 @@ def build_forexfactory_query(start: datetime, end: datetime) -> str:
     return urllib.parse.urlencode(query)
 
 def fetch_forexfactory(
-    """Calendar operation: fetch_forexfactory performs the focused fetch forexfactory step in the Calendar implementation."""
     start: datetime,
     end: datetime,
     include_details: bool = True,
     detail_failures: Optional[List[str]] = None,
 ) -> List[Dict[str, Any]]:
+    """Calendar operation: fetch_forexfactory performs the focused fetch forexfactory step in the Calendar implementation."""
     request_start = start
     request_end = end
     provider_start = start.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -192,7 +192,6 @@ def fetch_forexfactory(
     return normalized
 
 def _enrich_forexfactory_details(
-    """Internal helper: _enrich_forexfactory_details performs the focused enrich forexfactory details step in the Calendar implementation."""
     events: List[Dict[str, Any]],
 ) -> List[str]:
     """Best-effort FF detail enrichment; return provider IDs that failed."""
