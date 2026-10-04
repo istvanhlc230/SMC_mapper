@@ -52,40 +52,24 @@ Reusable code or algorithms may be extracted when they are compatible with this 
 
 # 1. MODULE DESIGN
 
-## 1.1 V1 single-file structure
+## 1.1 V1 implementation structure
 
-V1 is one executable file:
+The V1 executable entry point remains market_data.py in the repository root. Internal implementation is split into the MARKET_DATA directory by functional ownership, following the approved Calendar-style layout.
 
-```text
+Permanent source structure:
+
 market_data.py
-```
+MARKET_DATA/__init__.py
+MARKET_DATA/models.py
+MARKET_DATA/provider.py
+MARKET_DATA/normalization.py
+MARKET_DATA/persistence.py
+MARKET_DATA/service.py
+MARKET_DATA/cli.py
+MARKET_DATA/market_data_cache.json
 
-Keep the implementation internally modular by code sections and small single-purpose functions.
+The root file is only the executable entry point. Domain models, provider acquisition, normalization, persistence and orchestration are owned by the corresponding MARKET_DATA modules. The internal module boundaries are deliberately small and functional; do not split further without a real ownership boundary.
 
-Implementation source order:
-
-```text
-1. module docstring
-2. standard-library imports
-3. optional typing imports
-4. module constants
-5. data models / classes
-6. CLI argument construction
-7. input parsing + validation
-8. provider abstraction
-9. concrete provider adapter(s)
-10. timestamp/completion helpers
-11. normalization helpers
-12. candle validation helpers
-13. merge/deduplication helpers
-14. retention helpers
-15. JSON load/save helpers
-16. update orchestration
-17. CLI entrypoint
-18. __main__ guard
-```
-
-Do not split into multiple modules in V1 unless implementation complexity genuinely requires it. The internal boundaries must already make a later split mechanical.
 
 ## 1.2 Design principle
 
