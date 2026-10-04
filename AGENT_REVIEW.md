@@ -215,3 +215,19 @@ Validated:
 
 The suite uses deterministic provider mocks for provider-dependent paths. No claim of live
 ForexFactory/Yahoo integration availability is made by this CI result.
+
+
+## Next-event query
+
+Added the public `python calendar.py SYMBOL next` query.
+
+Contract:
+- `next` is read-only and uses only the committed `calendar.json` snapshot;
+- provider acquisition is not triggered;
+- events are filtered with the existing symbol visibility and `suppressed_for` rules;
+- only timestamps strictly later than current UTC time are eligible;
+- exactly the chronologically nearest event is returned;
+- no matching future event returns `NO_NEXT_EVENT`;
+- coverage and watermarks are never modified by `next`.
+
+The specification and deterministic CI contract suite were updated together with the implementation.
