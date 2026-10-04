@@ -3,7 +3,7 @@ from __future__ import annotations
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from typing import Any, Sequence
-from .models import DEFAULT_CANDLE_RETENTION, MarketDataRequest, NormalizedCandle, ProviderCandle
+from .models import DEFAULT_CANDLE_RETENTION, DEFAULT_DATA_DIRECTORY, TIMEFRAME_SECONDS, MarketDataRequest, NormalizedCandle
 from .normalization import is_candle_complete, normalize_provider_candle, normalize_provider_candles
 from .persistence import ensure_timeframe_state, get_market_data_path, load_market_data, save_market_data_atomic, update_available_bounds
 
@@ -106,7 +106,7 @@ def update_timeframe(market_data,provider,request,timeframe):
     return state != original
 
 def update_market_data(request,provider):
-    path=get_market_data_path(request.symbol, __import__("MARKET_DATA.models",fromlist=["DEFAULT_DATA_DIRECTORY"]).DEFAULT_DATA_DIRECTORY)
+    path=get_market_data_path(request.symbol, DEFAULT_DATA_DIRECTORY)
     market_data=load_market_data(path,request.symbol); working=deepcopy(market_data); changed=False
     for timeframe in request.timeframes: changed=update_timeframe(working,provider,request,timeframe) or changed
     if not changed: return False
