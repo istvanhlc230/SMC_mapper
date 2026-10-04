@@ -53,3 +53,8 @@ def run(request):
         if request.debug: print(f"ERROR: {exc}",file=__import__("sys").stderr)
         else: print(f"ERROR: {exc}",file=__import__("sys").stderr)
         return 1
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    request = parse_market_data_request(argv)
+    return run(request)
