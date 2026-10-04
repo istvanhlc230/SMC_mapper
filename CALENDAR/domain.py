@@ -551,7 +551,11 @@ def status_from_provider_results(provider_results: List[Dict[str, Any]]) -> str:
         return "UNAVAILABLE"
     if any(status in {"ERROR", "BOOTSTRAP_REQUIRED"} for status in statuses):
         return "PARTIAL"
-    if any(status in {"PARTIAL", "SKIPPED_NO_FOREX_PAIR"} for status in statuses):
+    if any(status == "PARTIAL" for status in statuses):
+        return "PARTIAL"
+    if all(status == "NO_MATCH" for status in statuses):
+        return "NO_RELEVANT_EVENT"
+    if any(status == "SKIPPED_NO_FOREX_PAIR" for status in statuses):
         return "PARTIAL"
     return "OK"
 
