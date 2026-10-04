@@ -1437,7 +1437,7 @@ def fetch_forexfactory_event_detail(event_id: str) -> List[Dict[str, Any]]:
 
 # Function: normalize_provider_event — normalizes one provider event.
 # Variables: raw=local intermediate value.
-# Local variables: currency=currency code; exc=local intermediate value; timestamp=event timestamp; title=event title; url=provider detail URL.
+# Local variables: currency=currency code; exc=local intermediate value; timestamp=event timestamp; title=event title;
 def normalize_provider_event(raw: Dict[str, Any]) -> Dict[str, Any]:
     if raw.get("id") in (None, "", "None"):
         raise ProviderError("ForexFactory event has no provider ID.")
@@ -1815,6 +1815,11 @@ def acquire_explicit(
     if successful:
         validate_calendar_document(document)
         save_calendar_atomic(document)
+        if debug:
+            print(
+                f"DEBUG | Persisted Calendar file: {CALENDAR_FILE}",
+                file=sys.stderr,
+            )
     return {"provider_results": provider_results, "failures": failures}
 
 
@@ -1923,6 +1928,11 @@ def acquire_current(
     ):
         validate_calendar_document(document)
         save_calendar_atomic(document)
+        if debug:
+            print(
+                f"DEBUG | Persisted Calendar file: {CALENDAR_FILE}",
+                file=sys.stderr,
+            )
 
     unique = {
         event["event_id"]: event

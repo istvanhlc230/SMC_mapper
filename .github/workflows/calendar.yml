@@ -20,30 +20,28 @@ jobs:
         shell: bash
         run: |
           python - <<'PY'
-          import contextlib
-          import io
           import json
-          from datetime import datetime
+          import os
+          import io
+          import contextlib
+          import sys
+          import tempfile
+          from datetime import datetime, timedelta, timezone
 
           import calendar
 
           def dt(value):
               return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
-          assert calendar.__version__ == "2.3.0"
-          assert calendar.SCHEMA_VERSION == 2
-
           assert calendar.validate_symbol("EURUSD") == "EURUSD"
           assert calendar.validate_symbol("USDGBP") == "USDGBP"
           assert calendar.validate_symbol("HUF") == "HUF"
           assert calendar.validate_symbol("NVDA") == "NVDA"
-
-          one_day = calendar.parse_date("2026.10.05")
-          next_day = calendar.parse_date("2026.10.06")
-          assert calendar.build_forexfactory_query(one_day, next_day) == "day=oct5.2026"
-          range_end = calendar.parse_date("2026.10.11")
-          assert calendar.build_forexfactory_query(one_day, range_end) == "range=oct5.2026-oct10.2026"
-
+          one_day = calendar.parse_date("2026.04.03")
+          two_day_end = calendar.parse_date("2026.04.04")
+          assert calendar.build_forexfactory_query(one_day, two_day_end) == "day=apr3.2026"
+          range_end = calendar.parse_date("2026.04.11")
+          assert calendar.build_forexfactory_query(one_day, range_end) == "range=apr3.2026-apr10.2026"
           html = """<html><body>
           <div>Calendar Time Zone: Europe/Budapest (GMT +2)</div>
           <table><tbody>
@@ -52,37 +50,93 @@ jobs:
             <td class="calendar__cell calendar__time time">9:00am</td>
             <td class="calendar__cell calendar__currency currency">EUR</td>
             <td class="calendar__cell calendar__impact impact"><span title="High Impact Expected" class="high"></span></td>
-            <td class="calendar__cell calendar__event event"><span class="calendar__event-title">ECB Test Event</span></td>
+            <td class="calendar__cell calendar__event event"><a href="/calendar?day=oct5.2026&event=1001"><span class="calendar__event-title">ECB Test Event</span></a></td>
             <td class="calendar__cell calendar__actual actual"></td>
             <td class="calendar__cell calendar__forecast forecast">1.2%</td>
             <td class="calendar__cell calendar__previous previous">1.0%</td>
           </tr>
           </tbody></table></body></html>"""
-          rows = calendar.parse_forexfactory_html_events(
+          helper_row_html = """<html><body>
+          <div>Calendar Time Zone: Europe/Budapest (GMT +2)</div>
+          <table><tbody>
+          <tr class="calendar__row calendar_row"><td class="calendar__cell calendar__date date">Mon Oct 5</td></tr>
+          <tr class="calendar__row calendar_row" data-event-id="1002">
+            <td class="calendar__cell calendar__date date">Mon Oct 5</td>
+            <td class="calendar__cell calendar__time time">10:00am</td>
+            <td class="calendar__cell calendar__currency currency">USD</td>
+            <td class="calendar__cell calendar__event event"><span class="calendar__event-title">US Test Event</span></td>
+          </tr></tbody></table></body></html>"""
+          helper_rows = calendar.parse_forexfactory_html_events(
+              helper_row_html,
+              dt("2026-10-04T00:00:00Z"),
+              dt("2026-10-06T00:00:00Z"),
+          )
+          assert [row["id"] for row in helper_rows] == ["1002"]
+          assert helper_rows[0]["currency"] == "USD"
+
+          ff_rows = calendar.parse_forexfactory_html_events(
               html,
               dt("2026-10-04T00:00:00Z"),
               dt("2026-10-06T00:00:00Z"),
           )
-          assert len(rows) == 1
-          assert rows[0]["id"] == "1001"
-          assert "url" not in rows[0]
+          assert len(ff_rows) == 1
+          assert ff_rows[0]["id"] == "1001"
+          assert ff_rows[0]["currency"] == "EUR"
+          assert ff_rows[0]["name"] == "ECB Test Event"
+          assert ff_rows[0]["impactName"] == "high"
+          assert "url" not in ff_rows[0]
 
+          # Provider-row CSS classes are advisory: an event-ID-bearing row
+          # must still be parsed without depending on its CSS row class.
           id_only_html = """<html><body>
           <div>Calendar Time Zone: Europe/Budapest (GMT +2)</div>
           <table><tbody>
-          <tr data-event-id="1002">
+          <tr data-event-id="1004">
             <td class="calendar__cell calendar__date date">Mon Oct 5</td>
-            <td class="calendar__cell calendar__time time">10:00am</td>
+            <td class="calendar__cell calendar__time time">12:00pm</td>
             <td class="calendar__cell calendar__currency currency">USD</td>
-            <td class="calendar__event event"><span class="calendar__event-title">ID Only Test</span></td>
+            <td class="calendar__cell calendar__event event">
+              <span class="calendar__event-title">ID Only Test Event</span>
+            </td>
           </tr>
           </tbody></table></body></html>"""
-          id_only = calendar.parse_forexfactory_html_events(
+          id_only_rows = calendar.parse_forexfactory_html_events(
               id_only_html,
               dt("2026-10-04T00:00:00Z"),
               dt("2026-10-06T00:00:00Z"),
           )
-          assert [row["id"] for row in id_only] == ["1002"]
+          assert len(id_only_rows) == 1
+          assert id_only_rows[0]["id"] == "1004"
+
+          medium_html = """<html><body>
+          <div>Calendar Time Zone: Europe/Budapest (GMT +2)</div>
+          <tr class="calendar__row calendar_row" data-eventid="1003">
+            <td class="calendar__cell calendar__date date">Mon Oct 5</td>
+            <td class="calendar__cell calendar__time time">11:00am</td>
+            <td class="calendar__cell calendar__currency currency">USD</td>
+            <td class="calendar__cell calendar__impact impact calendar__impact--medium"></td>
+            <td class="calendar__cell calendar__event event"><span class="calendar__event-title">Medium Test Event</span></td>
+          </tr></body></html>"""
+          medium_rows = calendar.parse_forexfactory_html_events(
+              medium_html,
+              dt("2026-10-04T00:00:00Z"),
+              dt("2026-10-06T00:00:00Z"),
+          )
+          assert medium_rows[0]["impactName"] == "medium"
+
+          for raw_class, expected_impact in (
+              ("icon--ff-impact-red", "high"),
+              ("icon--ff-impact-ora", "medium"),
+              ("icon--ff-impact-yel", "low"),
+              ("icon--ff-impact-grn", "low"),
+              ("icon--ff-impact-gry", "holiday"),
+          ):
+              assert calendar._classify_forexfactory_impact({raw_class}) == expected_impact
+
+          normalized_ff = calendar.normalize_provider_event(ff_rows[0])
+          assert normalized_ff["timestamp"] == "2026-10-05T07:00:00Z"
+          assert normalized_ff["details"]["impact"] == "HIGH"
+          assert "url" not in normalized_ff["details"]
 
           detail_json = json.dumps({
               "data": {
@@ -103,25 +157,16 @@ jobs:
           finally:
               calendar.fetch_url = original_fetch_url
 
-          normalized = calendar.normalize_provider_event({
-              "id": "146900",
-              "dateline": int(dt("2026-10-05T07:00:00Z").timestamp()),
-              "currency": "USD",
-              "name": "Detail Test",
-              "impactName": "Low Impact Expected",
-              "actual": None,
-              "forecast": None,
-              "previous": None,
-          })
-          normalized["details"]["specs"] = specs
-          assert "url" not in normalized["details"]
+          normalized_ff["details"]["specs"] = specs
           calendar.validate_calendar_document({
               "schema_version": 2,
-              "events": [normalized],
+              "events": [normalized_ff],
               "coverage": [],
               "watermarks": {},
           })
 
+          # fetch_forexfactory must obtain Detail after interval filtering and
+          # must not route a Detail failure through the calendar HTML fallback.
           original_fetch_url = calendar.fetch_url
           original_detail_fetch = calendar.fetch_forexfactory_event_detail
           calendar_detail_payload = """<html><body>
@@ -158,7 +203,6 @@ jobs:
               calendar.fetch_url = original_fetch_url
               calendar.fetch_forexfactory_event_detail = original_detail_fetch
 
-          detail_failure_original_fetch_url = calendar.fetch_url
           detail_failure_original_detail_fetch = calendar.fetch_forexfactory_event_detail
           try:
               calendar.fetch_url = lambda _url: calendar_detail_payload
@@ -174,25 +218,27 @@ jobs:
               except calendar.ProviderError as exc:
                   assert "synthetic detail failure" in str(exc)
           finally:
-              calendar.fetch_url = detail_failure_original_fetch_url
+              calendar.fetch_url = original_fetch_url
               calendar.fetch_forexfactory_event_detail = detail_failure_original_detail_fetch
 
-          cleartext = calendar.format_cleartext_details({
+          cleartext_specs = calendar.format_cleartext_details({
               "currency": "USD",
               "impact": "HIGH",
               "actual": None,
-              "forecast": "1.2%",
-              "previous": "1.0%",
+              "forecast": None,
+              "previous": None,
               "specs": [
                   {"order": -1, "title": "Source", "html": "<a href='https://example.com'>Example Source</a>"},
                   {"order": 1, "title": "Measures", "html": "Monthly data."},
               ],
           })
-          assert any("Source   : Example Source" in line for line in cleartext)
-          assert any("Measures : Monthly data." in line for line in cleartext)
+          assert any("Source   : Example Source" in line for line in cleartext_specs)
+          assert any("Measures : Monthly data." in line for line in cleartext_specs)
 
-          legacy = calendar.build_empty_calendar_document()
-          legacy["events"] = [{
+          # Legacy schema-2 ForexFactory coverage without Detail specs is incomplete
+          # for the requested overlap and must be reacquired.
+          legacy_doc = calendar.build_empty_calendar_document()
+          legacy_doc["events"] = [{
               "event_id": "forexfactory:legacy",
               "symbol": "USD",
               "asset_type": "forex",
@@ -209,7 +255,7 @@ jobs:
                   "url": None,
               },
           }]
-          legacy["coverage"] = [{
+          legacy_doc["coverage"] = [{
               "provider": "forexfactory",
               "symbol": "USD",
               "start": "2026-10-05T00:00:00Z",
@@ -218,12 +264,447 @@ jobs:
               "updated_at": "2026-10-05T00:00:00Z",
           }]
           assert calendar.find_uncovered_intervals(
-              legacy,
+              legacy_doc,
               "forexfactory",
               "USD",
               dt("2026-10-05T00:00:00Z"),
               dt("2026-10-06T00:00:00Z"),
           ) == [(dt("2026-10-05T00:00:00Z"), dt("2026-10-06T00:00:00Z"))]
+
+          for raw_impact, expected_impact in (
+              ("High Impact Expected", "HIGH"),
+              ("Med Impact Expected", "MEDIUM"),
+              ("Medium Impact Expected", "MEDIUM"),
+              ("Low Impact Expected", "LOW"),
+              ("Non-Economic", "HOLIDAY"),
+          ):
+              structured_raw = {
+                  "id": f"structured-{expected_impact}",
+                  "dateline": int(dt("2026-10-05T07:00:00Z").timestamp()),
+                  "currency": "USD",
+                  "name": "Structured Impact Test",
+                  "url": "/calendar/event/structured-impact-test/",
+                  "impactName": raw_impact,
+                  "actual": None,
+                  "forecast": None,
+                  "previous": None,
+              }
+              assert calendar.normalize_provider_event(structured_raw)["details"]["impact"] == expected_impact
+
+          for raw_title, expected_impact in (
+              ("High Impact Expected", "HIGH"),
+              ("Med Impact Expected", "MEDIUM"),
+              ("Low Impact Expected", "LOW"),
+              ("Non-Economic", "HOLIDAY"),
+          ):
+              structured_raw = {
+                  "id": f"title-{expected_impact}",
+                  "dateline": int(dt("2026-10-05T07:00:00Z").timestamp()),
+                  "currency": "USD",
+                  "name": "Structured Impact Title Test",
+                  "impactTitle": raw_title,
+                  "actual": None,
+                  "forecast": None,
+                  "previous": None,
+              }
+              assert calendar.normalize_provider_event(structured_raw)["details"]["impact"] == expected_impact
+
+          for raw_class, expected_impact in (
+              ("impact-red", "HIGH"),
+              ("icon--ff-impact-red", "HIGH"),
+              ("impact-orange", "MEDIUM"),
+              ("icon--ff-impact-ora", "MEDIUM"),
+              ("impact-yellow", "LOW"),
+              ("icon--ff-impact-yel", "LOW"),
+              ("impact-green", "LOW"),
+              ("icon--ff-impact-grn", "LOW"),
+              ("impact-grey", "HOLIDAY"),
+              ("icon--ff-impact-grey", "HOLIDAY"),
+          ):
+              structured_raw = {
+                  "id": f"class-{expected_impact}",
+                  "dateline": int(dt("2026-10-05T07:00:00Z").timestamp()),
+                  "currency": "USD",
+                  "name": "Structured Class Test",
+                  "impactClass": raw_class,
+                  "actual": None,
+                  "forecast": None,
+                  "previous": None,
+              }
+              assert calendar.normalize_provider_event(structured_raw)["details"]["impact"] == expected_impact
+
+          assert calendar.__version__ == "2.3.0"
+          assert f"Calendar CLI v{calendar.__version__}" in calendar.HELP_TEXT
+
+          # Cleartext output must render normalized details as readable fields,
+          # not as an internal JSON dictionary representation.
+          cleartext_event = {
+              "event_id": "forexfactory:cleartext",
+              "symbol": "EUR",
+              "asset_type": "forex",
+              "event_type": "economic",
+              "source": "forexfactory",
+              "timestamp": "2026-10-05T07:15:00Z",
+              "title": "Spanish Services PMI",
+              "details": {
+                  "currency": "EUR",
+                  "impact": "LOW",
+                  "actual": None,
+                  "forecast": "57.1",
+                  "previous": "57.8",
+              },
+          }
+          cleartext_out = io.StringIO()
+          with contextlib.redirect_stdout(cleartext_out):
+              calendar.output_query_result(
+                  "OK", "EURUSD", [cleartext_event], [], cleartext=True
+              )
+          rendered = cleartext_out.getvalue()
+          assert 'Details   : {"currency"' not in rendered
+          assert "Details   :\n" in rendered
+          assert "  Currency : EUR\n" in rendered
+          assert "  Impact   : LOW\n" in rendered
+          assert "  Actual   : N/A\n" in rendered
+          assert "  Forecast : 57.1\n" in rendered
+          assert "  Previous : 57.8\n" in rendered
+
+          # Cleartext event blocks are separated by whitespace only; no closing rule is emitted.
+          second_cleartext_event = dict(cleartext_event)
+          second_cleartext_event["event_id"] = "forexfactory:cleartext-2"
+          cleartext_out = io.StringIO()
+          with contextlib.redirect_stdout(cleartext_out):
+              calendar.output_query_result(
+                  "OK", "EURUSD", [cleartext_event, second_cleartext_event], [], cleartext=True
+              )
+          rendered_blocks = cleartext_out.getvalue()
+          assert "-----------------------------------------------" not in rendered_blocks
+          assert "Event ID  : forexfactory:cleartext\n\n--- EVENT 02" in rendered_blocks
+
+          # Explicit bare delete must recover from an incompatible legacy cache.
+          original_root = calendar.DATA_ROOT
+          original_file = calendar.CALENDAR_FILE
+          try:
+              with tempfile.TemporaryDirectory() as tmp:
+                  calendar.DATA_ROOT = tmp
+                  calendar.CALENDAR_FILE = os.path.join(tmp, "calendar.json")
+                  with open(calendar.CALENDAR_FILE, "w", encoding="utf-8") as handle:
+                      json.dump({"schema_version": 1, "events": [], "coverage": [], "watermarks": {}}, handle)
+                  assert calendar.run_delete(None, None) == 0
+                  reset_document = calendar.load_calendar_document()
+                  assert reset_document["schema_version"] == calendar.SCHEMA_VERSION
+                  assert reset_document["events"] == []
+                  assert reset_document["coverage"] == []
+                  assert reset_document["watermarks"] == {}
+          finally:
+              calendar.DATA_ROOT = original_root
+              calendar.CALENDAR_FILE = original_file
+
+          assert calendar.parse_request(["EURUSD", "next"])["scope"] == "next"
+          assert calendar.parse_request(["EURUSD", "latest"])["scope"] == "latest"
+
+          next_doc = calendar.build_empty_calendar_document()
+          next_doc["events"] = [
+              {"event_id":"forexfactory:past-usd","symbol":"USD","asset_type":"forex","event_type":"economic","source":"forexfactory","timestamp":"2026-10-03T09:00:00Z","title":"Past USD","details":{"currency":"USD","impact":"HIGH"}},
+              {"event_id":"forexfactory:now-usd","symbol":"USD","asset_type":"forex","event_type":"economic","source":"forexfactory","timestamp":"2026-10-04T12:00:00Z","title":"Now USD","details":{"currency":"USD","impact":"HIGH"}},
+              {"event_id":"forexfactory:next-usd","symbol":"USD","asset_type":"forex","event_type":"economic","source":"forexfactory","timestamp":"2026-10-05T09:00:00Z","title":"Next USD","details":{"currency":"USD","impact":"HIGH"}},
+              {"event_id":"forexfactory:suppressed-usd","symbol":"USD","asset_type":"forex","event_type":"economic","source":"forexfactory","timestamp":"2026-10-05T08:00:00Z","title":"Suppressed USD","details":{"currency":"USD","impact":"HIGH"},"suppressed_for":["EURUSD"]},
+              {"event_id":"forexfactory:later-usd","symbol":"USD","asset_type":"forex","event_type":"economic","source":"forexfactory","timestamp":"2026-10-06T09:00:00Z","title":"Later USD","details":{"currency":"USD","impact":"LOW"}},
+              {"event_id":"yahoo:future-nvda","symbol":"NVDA","asset_type":"ticker","event_type":"news","source":"yahoo_finance","timestamp":"2026-10-05T10:00:00Z","title":"Future NVDA","details":{"provider_symbol":"NVDA"}},
+          ]
+          
+          # test next queries
+          events_eurusd = calendar.query_next_event(next_doc["events"], "EURUSD", dt("2026-10-04T12:00:00Z"))
+          assert [e["event_id"] for e in events_eurusd] == ["forexfactory:next-usd"] # 4. earlier ignored, 5. later ignored, 6. exactly now ignored, 8. suppressed_for prevents return, 9. pair visibility works
+          assert [e["event_id"] for e in calendar.query_next_event(next_doc["events"], "NVDA", dt("2026-10-04T12:00:00Z"))] == ["yahoo:future-nvda"]
+          assert [e["event_id"] for e in calendar.query_latest_event(next_doc["events"], "EURUSD", dt("2026-10-04T12:00:00Z"))] == ["forexfactory:now-usd"] # 10. NVDA works
+          assert calendar.query_next_event(next_doc["events"], "NVDA", dt("2026-10-05T10:00:00Z")) == [] # 7. NO_NEXT_EVENT when no future exists
+          
+          # test integration behavior without network
+          original_load = calendar.load_calendar_document
+          original_acquire = calendar.acquire_explicit
+          original_save = calendar.save_calendar_atomic
+          try:
+              calendar.load_calendar_document = lambda: next_doc.copy()
+              acquired_calls = []
+              def fake_acquire(*args, **kwargs):
+                  acquired_calls.append(True)
+                  return {"failures": []}
+              calendar.acquire_explicit = fake_acquire
+              saved_docs = []
+              calendar.save_calendar_atomic = lambda doc: saved_docs.append(doc)
+              
+              import contextlib, io
+              out = io.StringIO()
+              with contextlib.redirect_stdout(out):
+                  assert calendar.run_query("EURUSD", "next", cleartext=True) == 0 # 14. cleartext produces output
+              assert "Next USD" in out.getvalue()
+              assert not acquired_calls # 13. next does not trigger acquisition
+
+              out = io.StringIO()
+              with contextlib.redirect_stdout(out):
+                  calendar.utc_now = lambda: dt("2026-10-04T12:00:00Z")
+                  assert calendar.run_query("EURUSD", "latest", cleartext=True) == 0
+              assert "Now USD" in out.getvalue()
+              assert not acquired_calls # latest must not trigger acquisition
+              assert not saved_docs # latest must not alter persistent state
+              assert not saved_docs # 11. next does not alter watermarks, 12. next does not alter coverage
+              
+              # check NO_NEXT_EVENT status
+              out = io.StringIO()
+              with contextlib.redirect_stdout(out):
+                  calendar.utc_now = lambda: dt("2026-11-01T00:00:00Z") # in the far future
+                  assert calendar.run_query("EURUSD", "next", cleartext=False) == 0
+              assert json.loads(out.getvalue())["status"] == "NO_NEXT_EVENT" # 7. returns NO_NEXT_EVENT output
+          finally:
+              calendar.load_calendar_document = original_load
+              calendar.acquire_explicit = original_acquire
+              calendar.save_calendar_atomic = original_save
+              calendar.utc_now = lambda: dt("2026-10-04T12:00:00Z")
+
+
+          for bad in ("today", "next_week", "next_month", "2026.10.01..2026.10.31"):
+              try:
+                  calendar.parse_request(["EURUSD", bad])
+              except calendar.CalendarInputError:
+                  pass
+              else:
+                  raise AssertionError(f"legacy scope accepted: {bad}")
+
+          start = calendar.parse_date("2026.10.01")
+          end = calendar.parse_date("2026.10.03")
+          doc = calendar.build_empty_calendar_document()
+          assert calendar.find_uncovered_intervals(doc, "forexfactory", "EURUSD", start, end) == [(start, end)]
+
+          event = {
+              "event_id": "forexfactory:1",
+              "symbol": "USD",
+              "asset_type": "forex",
+              "event_type": "economic",
+              "source": "forexfactory",
+              "timestamp": "2026-10-01T10:00:00Z",
+              "title": "Test",
+              "details": {"currency": "USD", "impact": "HIGH", "actual": None, "forecast": None, "previous": None},
+          }
+          calendar.merge_events(doc, [event], clear_suppressed_symbol="EURUSD")
+          event2 = dict(event)
+          event2["suppressed_for"] = ["EURUSD"]
+          calendar.merge_events(doc, [event2])
+          assert "EURUSD" in doc["events"][0]["suppressed_for"]
+          calendar.merge_events(doc, [event], clear_suppressed_symbol="EURUSD")
+          assert "suppressed_for" not in doc["events"][0]
+
+          calendar.update_watermark(doc, "yahoo_finance", "EURGBP", dt("2026-10-04T12:00:00Z"), [])
+          calendar.update_watermark(doc, "yahoo_finance", "EURGBP", dt("2026-10-03T12:00:00Z"), [])
+          assert doc["watermarks"]["yahoo_finance|EURGBP"]["last_successful_at"] == "2026-10-04T12:00:00Z"
+
+          original_search = calendar._fetch_yahoo_search_payload
+          try:
+              calls = []
+              def fake_search(query_symbol):
+                  calls.append(query_symbol)
+                  if query_symbol == "GBP=X":
+                      return {"quotes": [{"symbol": "GBP=X", "quoteType": "CURRENCY"}], "news": []}
+                  return {"quotes": [], "news": []}
+              calendar._fetch_yahoo_search_payload = fake_search
+              provider_symbol, _ = calendar._resolve_yahoo_instrument("USDGBP")
+              assert provider_symbol == "GBP=X"
+              assert "GBP=X" in calls
+          finally:
+              calendar._fetch_yahoo_search_payload = original_search
+
+          try:
+              def fake_missing(query_symbol):
+                  return {"quotes": [], "news": []}
+              calendar._fetch_yahoo_search_payload = fake_missing
+              try:
+                  calendar._resolve_yahoo_instrument("USDGBP")
+              except calendar.YahooForexPairUnavailable:
+                  pass
+              else:
+                  raise AssertionError("unverified Yahoo FX pair accepted")
+          finally:
+              calendar._fetch_yahoo_search_payload = original_search
+
+          now = dt("2026-10-04T12:00:00Z")
+          original_now = calendar.utc_now
+          original_fetch = calendar.fetch_yahoo_news
+          try:
+              calendar.utc_now = lambda: now
+              calendar.fetch_yahoo_news = lambda symbol: [
+                  {
+                      "event_id": "yahoo:old",
+                      "symbol": symbol,
+                      "asset_type": "ticker",
+                      "event_type": "news",
+                      "source": "yahoo_finance",
+                      "timestamp": "2026-10-01T12:00:00Z",
+                      "title": "Old",
+                      "details": {"provider_symbol": symbol},
+                  },
+                  {
+                      "event_id": "yahoo:in",
+                      "symbol": symbol,
+                      "asset_type": "ticker",
+                      "event_type": "news",
+                      "source": "yahoo_finance",
+                      "timestamp": "2026-10-03T12:00:00Z",
+                      "title": "In",
+                      "details": {"provider_symbol": symbol},
+                  },
+                  {
+                      "event_id": "yahoo:new",
+                      "symbol": symbol,
+                      "asset_type": "ticker",
+                      "event_type": "news",
+                      "source": "yahoo_finance",
+                      "timestamp": "2026-10-05T12:00:00Z",
+                      "title": "Future",
+                      "details": {"provider_symbol": symbol},
+                  },
+              ]
+              qdoc = calendar.build_empty_calendar_document()
+              result = calendar.acquire_explicit(qdoc, "NVDA", dt("2026-10-02T00:00:00Z"), dt("2026-10-04T00:00:00Z"))
+              ids = {e["event_id"] for e in qdoc["events"]}
+              assert ids == {"yahoo:in"}
+              wm = qdoc["watermarks"]["yahoo_finance|NVDA"]
+              assert wm["last_successful_at"] == "2026-10-04T00:00:00Z"
+          finally:
+              calendar.utc_now = original_now
+              calendar.fetch_yahoo_news = original_fetch
+
+          cached = [{
+              "event_id": "yahoo:cached",
+              "symbol": "USDGBP",
+              "asset_type": "forex",
+              "event_type": "news",
+              "source": "yahoo_finance",
+              "timestamp": "2026-10-03T12:00:00Z",
+              "title": "Cached",
+              "details": {},
+          }]
+          assert calendar.filter_query_events(
+              calendar.build_empty_calendar_document(),
+              cached,
+              "USDGBP",
+              dt("2026-10-03T00:00:00Z"),
+              dt("2026-10-04T00:00:00Z"),
+              yahoo_pair_available=False,
+          ) == []
+
+          original_parse = calendar.parse_request
+          original_run_query = calendar.run_query
+          try:
+              captured = {}
+              calendar.parse_request = lambda _args: {
+                  "operation": "QUERY",
+                  "symbol": "EURUSD",
+                  "scope": "current",
+                  "cleartext": False,
+                  "debug": True,
+              }
+              calendar.run_query = lambda symbol, scope, cleartext=False, debug=False: (
+                  captured.update({
+                      "symbol": symbol,
+                      "scope": scope,
+                      "cleartext": cleartext,
+                      "debug": debug,
+                  }) or 0
+              )
+              calendar.sys.argv = ["calendar.py", "EURUSD", "current", "--debug"]
+              assert calendar.run() == 0
+              assert captured["debug"] is True
+
+              calendar.parse_request = lambda _args: (_ for _ in ()).throw(
+                  RuntimeError("synthetic debug test")
+              )
+              calendar.sys.argv = ["calendar.py", "EURUSD", "current", "--debug"]
+              err = io.StringIO()
+              with contextlib.redirect_stderr(err):
+                  assert calendar.run() == 1
+              assert "DEBUG | Unexpected exception traceback:" in err.getvalue()
+
+              calendar.parse_request = lambda _args: (_ for _ in ()).throw(
+                  RuntimeError("synthetic no-debug test")
+              )
+              calendar.sys.argv = ["calendar.py", "EURUSD", "current"]
+              err = io.StringIO()
+              with contextlib.redirect_stderr(err):
+                  assert calendar.run() == 1
+              assert "DEBUG |" not in err.getvalue()
+          finally:
+              calendar.parse_request = original_parse
+              calendar.run_query = original_run_query
+
+          original_now = calendar.utc_now
+          original_fetch = calendar.fetch_yahoo_news
+          original_save = calendar.save_calendar_atomic
+          try:
+              calendar.utc_now = lambda: dt("2026-10-04T12:00:00Z")
+              calendar.fetch_yahoo_news = lambda symbol: []
+              calendar.save_calendar_atomic = lambda document: None
+
+              future_doc = calendar.build_empty_calendar_document()
+              future_result = calendar.acquire_explicit(
+                  future_doc,
+                  "NVDA",
+                  dt("2026-11-01T00:00:00Z"),
+                  dt("2026-11-02T00:00:00Z"),
+              )
+              assert future_result["failures"] == []
+              assert "yahoo_finance|NVDA" not in future_doc["watermarks"]
+
+              seeded = calendar.build_empty_calendar_document()
+              calendar.update_watermark(
+                  seeded,
+                  "yahoo_finance",
+                  "NVDA",
+                  dt("2026-10-04T10:00:00Z"),
+                  [],
+              )
+              calendar.acquire_explicit(
+                  seeded,
+                  "NVDA",
+                  dt("2026-10-01T00:00:00Z"),
+                  dt("2026-10-02T00:00:00Z"),
+              )
+              assert seeded["watermarks"]["yahoo_finance|NVDA"]["last_successful_at"] == "2026-10-04T10:00:00Z"
+          finally:
+              calendar.utc_now = original_now
+              calendar.fetch_yahoo_news = original_fetch
+              calendar.save_calendar_atomic = original_save
+
+          original_resolve = calendar.resolve_applicable_providers
+          original_fetch = calendar.fetch_yahoo_news
+          try:
+              calendar.resolve_applicable_providers = lambda _symbol: ["yahoo_finance"]
+              calendar.fetch_yahoo_news = lambda _symbol: (_ for _ in ()).throw(
+                  calendar.ProviderError("synthetic provider failure")
+              )
+              err = io.StringIO()
+              with contextlib.redirect_stderr(err):
+                  result = calendar.acquire_explicit(
+                      calendar.build_empty_calendar_document(),
+                      "NVDA",
+                      dt("2026-10-01T00:00:00Z"),
+                      dt("2026-10-02T00:00:00Z"),
+                      debug=True,
+                  )
+              assert result["failures"]
+              assert "DEBUG | yahoo_finance ProviderError traceback:" in err.getvalue()
+
+              err = io.StringIO()
+              with contextlib.redirect_stderr(err):
+                  calendar.acquire_explicit(
+                      calendar.build_empty_calendar_document(),
+                      "NVDA",
+                      dt("2026-10-01T00:00:00Z"),
+                      dt("2026-10-02T00:00:00Z"),
+                      debug=False,
+                  )
+              assert "DEBUG |" not in err.getvalue()
+          finally:
+              calendar.resolve_applicable_providers = original_resolve
+              calendar.fetch_yahoo_news = original_fetch
 
           print("CALENDAR_TESTS_OK")
           PY
