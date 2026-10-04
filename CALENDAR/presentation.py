@@ -9,27 +9,35 @@ from html import unescape
 
 from .config import DataIntegrityError
 
+# Presentation state is output-local: rendered lines are derived from the supplied event/details records.
+
 class _DetailTextParser(HTMLParser):
     def __init__(self) -> None:
+        """Internal helper: __init__ performs the focused init   step in the Calendar implementation."""
         super().__init__(convert_charrefs=True)
         self.parts: List[str] = []
 
     def handle_starttag(self, tag: str, attrs: List[Tuple[str, Optional[str]]]) -> None:
+        """Calendar operation: handle_starttag performs the focused handle starttag step in the Calendar implementation."""
         if tag.lower() == "br":
             self.parts.append("\n")
 
     def handle_startendtag(self, tag: str, attrs: List[Tuple[str, Optional[str]]]) -> None:
+        """Calendar operation: handle_startendtag performs the focused handle startendtag step in the Calendar implementation."""
         if tag.lower() == "br":
             self.parts.append("\n")
 
     def handle_endtag(self, tag: str) -> None:
+        """Calendar operation: handle_endtag performs the focused handle endtag step in the Calendar implementation."""
         if tag.lower() in {"p", "div", "li", "tr", "table", "h1", "h2", "h3", "h4", "h5", "h6"}:
             self.parts.append("\n")
 
     def handle_data(self, data: str) -> None:
+        """Calendar operation: handle_data performs the focused handle data step in the Calendar implementation."""
         self.parts.append(data)
 
 def _detail_html_to_text(value: str) -> str:
+    """Internal helper: _detail_html_to_text performs the focused detail html to text step in the Calendar implementation."""
     # ForexFactory may return Detail HTML with markup escaped one or more times.
     # Decode to a stable representation before parsing so literal and escaped
     # provider markup are treated identically. HTMLParser then handles tags
@@ -79,6 +87,7 @@ def format_cleartext_details(details: Dict[str, Any]) -> List[str]:
     return lines
 
 def output_query_result(
+    """Calendar operation: output_query_result performs the focused output query result step in the Calendar implementation."""
     status: str,
     symbol: str,
     events: List[Dict[str, Any]],
