@@ -492,3 +492,22 @@ Source-quality result:
 
 Remaining deliberate scope boundary:
 network provider I/O still runs within the existing Calendar transaction lock. Moving it outside the lock requires a two-phase/optimistic persistence protocol and is not mixed into this behavior-preserving source refactor.
+
+
+## 2.4.1 ForexFactory Detail failure isolation and retry correction
+
+Audit identified a state-consistency defect in the 2.4.0 post-refactor implementation: Detail requests were isolated correctly and the provider was reported as PARTIAL, but the acquisition workflow still recorded the affected ForexFactory coverage as COMPLETE and advanced the watermark. Because an empty details.specs list can also be a legitimate Detail result, that state could suppress the required retry.
+
+Correction:
+- ForexFactory coverage is now recorded per acquired gap as COMPLETE only when that gap has no Detail failures;
+- a gap with one or more Detail failures is recorded as PARTIAL;
+- explicit acquisition does not advance the ForexFactory watermark when any acquired gap is Detail-partial;
+- current-mode acquisition follows the same rule and retains its previous successful watermark;
+- partial coverage remains uncovered to the existing find_uncovered_intervals logic and is therefore retried;
+- the existing provider-level PARTIAL result and Detail failure count are retained;
+- regression coverage now verifies three base events with one Detail failure, successful retry/promotion to COMPLETE, watermark behavior, and current-mode retry semantics;
+- the stale regression expecting Detail failure to raise ProviderError was replaced with the intended isolated-failure contract.
+
+The Calendar specification and design documents now define this retry contract explicitly. Implementation version: 2.4.1; persistent schema remains 2.
+
+Validation status before final CI/live smoke: implementation and specification changes applied; fresh GitHub Actions validation is required for PASS.
