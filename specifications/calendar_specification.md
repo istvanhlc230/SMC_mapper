@@ -296,6 +296,9 @@ No Yahoo impact is invented.
 
 ## 8. Persistent schema
 
+If a local `calendar.json` has a schema version that differs from the expected `SCHEMA_VERSION` (e.g., version 1 vs 2), the script strictly rejects the file with `Unsupported calendar schema version.` to guarantee data integrity.
+The script must never silently destroy or automatically migrate an old cache to fulfill a query. The user must explicitly purge the obsolete state using `python calendar.py delete` or by manually removing the file.
+
     {
       "schema_version": 2,
       "events": [],

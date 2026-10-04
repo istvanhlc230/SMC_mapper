@@ -39,13 +39,53 @@ jobs:
 
           next_doc = calendar.build_empty_calendar_document()
           next_doc["events"] = [
-              {"event_id":"forexfactory:next-usd","symbol":"USD","asset_type":"forex","event_type":"economic","source":"forexfactory","timestamp":"2026-10-05T09:00:00Z","title":"Next USD","details":{"currency":"USD","impact":"HIGH","actual":None,"forecast":None,"previous":None}},
-              {"event_id":"forexfactory:later-usd","symbol":"USD","asset_type":"forex","event_type":"economic","source":"forexfactory","timestamp":"2026-10-06T09:00:00Z","title":"Later USD","details":{"currency":"USD","impact":"LOW","actual":None,"forecast":None,"previous":None}},
+              {"event_id":"forexfactory:past-usd","symbol":"USD","asset_type":"forex","event_type":"economic","source":"forexfactory","timestamp":"2026-10-03T09:00:00Z","title":"Past USD","details":{"currency":"USD","impact":"HIGH"}},
+              {"event_id":"forexfactory:now-usd","symbol":"USD","asset_type":"forex","event_type":"economic","source":"forexfactory","timestamp":"2026-10-04T12:00:00Z","title":"Now USD","details":{"currency":"USD","impact":"HIGH"}},
+              {"event_id":"forexfactory:next-usd","symbol":"USD","asset_type":"forex","event_type":"economic","source":"forexfactory","timestamp":"2026-10-05T09:00:00Z","title":"Next USD","details":{"currency":"USD","impact":"HIGH"}},
+              {"event_id":"forexfactory:suppressed-usd","symbol":"USD","asset_type":"forex","event_type":"economic","source":"forexfactory","timestamp":"2026-10-05T08:00:00Z","title":"Suppressed USD","details":{"currency":"USD","impact":"HIGH"},"suppressed_for":["EURUSD"]},
+              {"event_id":"forexfactory:later-usd","symbol":"USD","asset_type":"forex","event_type":"economic","source":"forexfactory","timestamp":"2026-10-06T09:00:00Z","title":"Later USD","details":{"currency":"USD","impact":"LOW"}},
               {"event_id":"yahoo:future-nvda","symbol":"NVDA","asset_type":"ticker","event_type":"news","source":"yahoo_finance","timestamp":"2026-10-05T10:00:00Z","title":"Future NVDA","details":{"provider_symbol":"NVDA"}},
           ]
-          assert [e["event_id"] for e in calendar.query_next_event(next_doc["events"], "EURUSD", dt("2026-10-04T12:00:00Z"))] == ["forexfactory:next-usd"]
-          assert [e["event_id"] for e in calendar.query_next_event(next_doc["events"], "NVDA", dt("2026-10-04T12:00:00Z"))] == ["yahoo:future-nvda"]
-          assert calendar.query_next_event(next_doc["events"], "NVDA", dt("2026-10-05T10:00:00Z")) == []
+          
+          # test next queries
+          events_eurusd = calendar.query_next_event(next_doc["events"], "EURUSD", dt("2026-10-04T12:00:00Z"))
+          assert [e["event_id"] for e in events_eurusd] == ["forexfactory:next-usd"] # 4. earlier ignored, 5. later ignored, 6. exactly now ignored, 8. suppressed_for prevents return, 9. pair visibility works
+          assert [e["event_id"] for e in calendar.query_next_event(next_doc["events"], "NVDA", dt("2026-10-04T12:00:00Z"))] == ["yahoo:future-nvda"] # 10. NVDA works
+          assert calendar.query_next_event(next_doc["events"], "NVDA", dt("2026-10-05T10:00:00Z")) == [] # 7. NO_NEXT_EVENT when no future exists
+          
+          # test integration behavior without network
+          original_load = calendar.load_calendar_document
+          original_acquire = calendar.acquire_explicit
+          original_save = calendar.save_calendar_atomic
+          try:
+              calendar.load_calendar_document = lambda: next_doc.copy()
+              acquired_calls = []
+              def fake_acquire(*args, **kwargs):
+                  acquired_calls.append(True)
+                  return {"failures": []}
+              calendar.acquire_explicit = fake_acquire
+              saved_docs = []
+              calendar.save_calendar_atomic = lambda doc: saved_docs.append(doc)
+              
+              import contextlib, io
+              out = io.StringIO()
+              with contextlib.redirect_stdout(out):
+                  assert calendar.run_query("EURUSD", "next", cleartext=True) == 0 # 14. cleartext produces output
+              assert "Next USD" in out.getvalue()
+              assert not acquired_calls # 13. next does not trigger acquisition
+              assert not saved_docs # 11. next does not alter watermarks, 12. next does not alter coverage
+              
+              # check NO_NEXT_EVENT status
+              out = io.StringIO()
+              with contextlib.redirect_stdout(out):
+                  calendar.utc_now = lambda: dt("2026-11-01T00:00:00Z") # in the far future
+                  assert calendar.run_query("EURUSD", "next", cleartext=False) == 0
+              assert json.loads(out.getvalue())["status"] == "NO_NEXT_EVENT" # 7. returns NO_NEXT_EVENT output
+          finally:
+              calendar.load_calendar_document = original_load
+              calendar.acquire_explicit = original_acquire
+              calendar.save_calendar_atomic = original_save
+              calendar.utc_now = lambda: dt("2026-10-04T12:00:00Z")
 
 
           for bad in ("today", "next_week", "next_month", "2026.10.01..2026.10.31"):
