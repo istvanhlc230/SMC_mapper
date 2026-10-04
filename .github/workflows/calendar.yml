@@ -85,6 +85,31 @@ jobs:
           assert ff_rows[0]["name"] == "ECB Test Event"
           assert ff_rows[0]["impactName"] == "high"
           assert ff_rows[0]["url"] == "https://www.forexfactory.com/calendar/252-us-ecb-test-event"
+          # Provider-row CSS classes are advisory: an event-ID-bearing row
+          # must still be parsed and its native Detail href must be retained.
+          id_only_html = """<html><body>
+          <div>Calendar Time Zone: Europe/Budapest (GMT +2)</div>
+          <table><tbody>
+          <tr data-event-id="1004">
+            <td class="calendar__cell calendar__date date">Mon Oct 5</td>
+            <td class="calendar__cell calendar__time time">12:00pm</td>
+            <td class="calendar__cell calendar__currency currency">USD</td>
+            <td class="calendar__cell calendar__event event">
+              <a href="/calendar/76-id-only-test-event">
+                <span class="calendar__event-title">ID Only Test Event</span>
+              </a>
+            </td>
+          </tr>
+          </tbody></table></body></html>"""
+          id_only_rows = calendar.parse_forexfactory_html_events(
+              id_only_html,
+              dt("2026-10-04T00:00:00Z"),
+              dt("2026-10-06T00:00:00Z"),
+          )
+          assert len(id_only_rows) == 1
+          assert id_only_rows[0]["id"] == "1004"
+          assert id_only_rows[0]["url"] == "https://www.forexfactory.com/calendar/76-id-only-test-event"
+
           medium_html = """<html><body>
           <div>Calendar Time Zone: Europe/Budapest (GMT +2)</div>
           <tr class="calendar__row calendar_row" data-eventid="1003">
@@ -123,7 +148,7 @@ jobs:
               {"days":[{"events":[{"id":"146900","dateline":1790847000,"currency":"USD","name":"Challenger Job Cuts y/y","impactName":"Low Impact Expected","actual":"-19.9%","forecast":null,"previous":"-38.5%"}]}]}
               </script>
               <table><tbody>
-              <tr class="calendar__row calendar_row" data-eventid="146900">
+              <tr data-eventid="146900">
                 <td class="calendar__cell calendar__date date">Thu Oct 1</td>
                 <td class="calendar__cell calendar__time time">9:30am</td>
                 <td class="calendar__cell calendar__currency currency">USD</td>
@@ -210,7 +235,7 @@ jobs:
               }
               assert calendar.normalize_provider_event(structured_raw)["details"]["impact"] == expected_impact
 
-          assert calendar.__version__ == "2.2.14"
+          assert calendar.__version__ == "2.2.15"
           assert f"Calendar CLI v{calendar.__version__}" in calendar.HELP_TEXT
 
           # Cleartext output must render normalized details as readable fields,

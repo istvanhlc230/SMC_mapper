@@ -2,7 +2,7 @@
 
 Status: Current V2 specification.
 
-Calendar implementation baseline: 2.2.14.
+Calendar implementation baseline: 2.2.15.
 
 Scope:
 - unified economic-calendar and news acquisition;
@@ -339,8 +339,10 @@ Rendered event times are interpreted using the provider-declared Calendar Time Z
 is preferred. When the runtime has no matching IANA timezone database entry, the provider-declared
 GMT offset is used as a fallback.
 
-The fallback produces the same canonical normalized event contract and does not alter provider
-routing, coverage, watermark, or atomic persistence semantics.
+The rendered-row parser identifies an event row by the provider event-instance ID first. Current
+ForexFactory CSS row classes are advisory and must not be a required condition for URL extraction
+or event parsing. The fallback produces the same canonical normalized event contract and does not
+alter provider routing, coverage, watermark, or atomic persistence semantics.
 
 Provider-query construction is deterministic from the requested interval. The requested interval is
 still filtered against canonical UTC event timestamps after acquisition, so provider query inclusivity
@@ -480,5 +482,5 @@ Acceptance requires:
 - rendered ForexFactory impact classification must not silently collapse known HIGH/MEDIUM/LOW events to UNKNOWN;
 - relative ForexFactory navigation aliases are documented but are not accepted as public Calendar CLI scopes;
 - `latest` is read-only and returns `NO_LATEST_EVENT` when the committed snapshot contains no visible event at or before current UTC time;
-- ForexFactory normalized events include `details.url` when the provider exposes an explicit concrete event-detail URL; the current Calendar implementation enriches structured events from the rendered ForexFactory calendar-row href keyed by the provider event-instance ID. The implementation must not synthesize an event-detail URL from the instance ID alone;
+- ForexFactory normalized events include `details.url` when the provider exposes an explicit concrete event-detail URL; the current Calendar implementation enriches structured events from the rendered ForexFactory calendar-row href keyed by the provider event-instance ID. Event-ID-bearing rendered rows must remain parseable even if the provider's current CSS row class changes or is absent. The implementation must not synthesize an event-detail URL from the instance ID alone;
 - `--cleartext` renders normalized event details as human-readable fields rather than a raw JSON dictionary, without changing canonical data or machine-readable output.

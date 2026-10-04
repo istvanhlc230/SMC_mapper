@@ -31,7 +31,7 @@ HTTP_TIMEOUT = 15.0
 # SCHEMA_VERSION — persistent calendar.json schema version.
 SCHEMA_VERSION = 2
 # __version__ — Calendar CLI implementation version, independent from SCHEMA_VERSION.
-__version__ = "2.2.14"
+__version__ = "2.2.15"
 
 # SUPPORTED_CURRENCIES — standalone currencies accepted by the CLI.
 SUPPORTED_CURRENCIES = {
@@ -988,27 +988,34 @@ class ForexFactoryHTMLCalendarParser(HTMLParser):
         attributes = dict(attrs)
         classes = set(str(attributes.get("class") or "").split())
 
-        if tag == "tr" and ("calendar__row" in classes or "calendar_row" in classes):
+        if tag == "tr":
             event_id = (
                 attributes.get("data-eventid")
                 or attributes.get("data-event-id")
                 or attributes.get("data-eid")
             )
-            self.current_row = {
-                "id": event_id,
-                "date": "",
-                "time": "",
-                "currency": "",
-                "impact": "",
-                "title": "",
-                "actual": "",
-                "forecast": "",
-                "previous": "",
-                "url": "",
-            }
-            self.current_cell = None
-            self.text_buffer = []
-            return
+            is_calendar_row = (
+                "calendar__row" in classes
+                or "calendar_row" in classes
+            )
+            # The provider event-instance ID is the stable row anchor. Current
+            # CSS row classes are advisory because ForexFactory may change them.
+            if event_id or is_calendar_row:
+                self.current_row = {
+                    "id": event_id,
+                    "date": "",
+                    "time": "",
+                    "currency": "",
+                    "impact": "",
+                    "title": "",
+                    "actual": "",
+                    "forecast": "",
+                    "previous": "",
+                    "url": "",
+                }
+                self.current_cell = None
+                self.text_buffer = []
+                return
 
         if self.current_row is None:
             return

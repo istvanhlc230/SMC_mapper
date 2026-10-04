@@ -1,6 +1,6 @@
 # AGENT_REVIEW.md
 
-Status: FIXED_FF_URL_AND_LATEST_CI_PENDING
+Status: FIXED_FF_ROW_DETECTION_CI_PENDING_LIVE_SMOKE
 
 ## Change
 The Windows live smoke showed that ForexFactory acquisition succeeds, but most events persisted
@@ -125,3 +125,20 @@ The implementation now uses the existing in-project HTML parser to extract concr
 CI regression coverage exercises the combined structured-payload + rendered-row path with the real-form event ID `146900`.
 
 A fresh CI result and the clean Windows live smoke are required before final PASS.
+
+
+## ForexFactory live-smoke row-detection correction
+
+Calendar implementation version: 2.2.15
+Persistent schema: 2
+
+The clean Windows smoke on 2026-10-04 still persisted details.url as N/A for real ForexFactory events despite CI passing the 2.2.14 fixture. The rendered-row parser required a current ForexFactory CSS row class (calendar__row or calendar_row) before it would create a row record. That requirement was too strict for the live provider representation.
+
+The correction makes the provider event-instance ID the primary rendered-row anchor. A row carrying data-eventid, data-event-id, or data-eid is parsed even when the CSS row class is absent or renamed. The row class remains advisory for helper rows without an event ID.
+
+The 2.2.15 regression fixture removes the CSS row class from the structured/rendered Challenger event and adds an ID-only rendered row with a concrete native /calendar/... href. No URL is synthesized from the numeric event-instance ID and no external scraper is used.
+
+Validation state:
+- prior CI #78 on 2.2.14: PASS;
+- 2.2.15 CI: pending after commit;
+- Windows live smoke with real provider data: required before PASS.
