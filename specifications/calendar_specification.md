@@ -2,7 +2,7 @@
 
 Status: Current V2 specification.
 
-Calendar implementation baseline: 2.3.4.
+Calendar implementation baseline: 2.3.5.
 
 Scope:
 - unified economic-calendar and news acquisition;
@@ -319,6 +319,8 @@ ForexFactory details include:
     html
 
 The `html` value is the provider's Detail specification content and may contain links.
+The `title` value is also provider-controlled text and may contain HTML markup; cleartext presentation
+must sanitize the title and HTML content through the same HTML-aware rendering path.
 
 Yahoo details may include:
 
@@ -385,9 +387,11 @@ The `Details` section in cleartext output must render the normalized `details` o
     Previous
 
 ForexFactory `specs` follow the core fields in provider order. Each specification renders as
-`<Title>: <text content>` after decoding HTML character references to a stable value and parsing the result as HTML for human-readable
-presentation. The renderer must remove provider markup such as `<img>` and convert `<br>` to line breaks,
-including markup that was escaped more than once such as `&amp;lt;br&amp;gt;` or `&amp;lt;img ...&amp;gt;`.
+`<Title>: <text content>` after applying the same HTML-aware cleartext sanitization to both the provider
+`title` and `html` fields: decode HTML character references to a stable value, parse the result as HTML,
+remove provider markup such as `<img>`, and convert `<br>` to line breaks. This includes markup that was
+escaped more than once such as `&amp;lt;br&amp;gt;` or `&amp;lt;img ...&amp;gt;`. Raw provider markup or
+escaped markup must never leak from either field into `--cleartext` output.
 Raw provider markup or escaped markup must never leak into `--cleartext` output. The
 canonical `calendar.json` retains the original provider HTML so links and formatting information are not
 lost.
