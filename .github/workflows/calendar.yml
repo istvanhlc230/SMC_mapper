@@ -1085,5 +1085,35 @@ jobs:
               domain.utc_now = original_now
               storage.save_calendar_atomic = original_save
 
+          # A provider may complete successfully with zero matching events.
+          # This is a successful no-match, not a partial acquisition.
+          original_resolve = domain.resolve_applicable_providers
+          original_fetch_yahoo = providers.fetch_yahoo_news
+          original_save = storage.save_calendar_atomic
+          try:
+              domain.resolve_applicable_providers = lambda _symbol: ["yahoo_finance"]
+              providers.fetch_yahoo_news = lambda _symbol: []
+              storage.save_calendar_atomic = lambda document: None
+
+              no_match_doc = domain.build_empty_calendar_document()
+              no_match_result = operations.acquire_explicit(
+                  no_match_doc,
+                  "CCCC",
+                  dt("2026-10-01T00:00:00Z"),
+                  dt("2026-10-03T00:00:00Z"),
+              )
+              assert no_match_result["failures"] == []
+              assert no_match_result["provider_results"][0]["status"] == "NO_MATCH"
+              assert no_match_doc["events"] == []
+              assert "yahoo_finance|CCCC" in no_match_doc["watermarks"]
+
+              assert domain.status_from_provider_results(
+                  no_match_result["provider_results"]
+              ) == "NO_RELEVANT_EVENT"
+          finally:
+              domain.resolve_applicable_providers = original_resolve
+              providers.fetch_yahoo_news = original_fetch_yahoo
+              storage.save_calendar_atomic = original_save
+
           print("CALENDAR_TESTS_OK")
           PY
