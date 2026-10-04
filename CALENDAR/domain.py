@@ -276,11 +276,11 @@ def validate_calendar_document(document: Dict[str, Any]) -> None:
     _validate_watermarks(document["watermarks"])
 
 def merge_events(
-    """Calendar operation: merge_events performs the focused merge events step in the Calendar implementation."""
     document: Dict[str, Any],
     new_events: List[Dict[str, Any]],
     clear_suppressed_symbol: Optional[str] = None,
 ) -> None:
+    """Calendar operation: merge_events performs the focused merge events step in the Calendar implementation."""
     by_id = {event["event_id"]: event for event in document["events"]}
     for event in new_events:
         old = by_id.get(event["event_id"])
@@ -350,13 +350,13 @@ def merge_coverage(document: Dict[str, Any], item: Dict[str, Any]) -> None:
     document["coverage"] = merged
 
 def find_uncovered_intervals(
-    """Calendar operation: find_uncovered_intervals performs the focused find uncovered intervals step in the Calendar implementation."""
     document: Dict[str, Any],
     provider: str,
     symbol: str,
     start: datetime,
     end: datetime,
 ) -> List[Tuple[datetime, datetime]]:
+    """Calendar operation: find_uncovered_intervals performs the focused find uncovered intervals step in the Calendar implementation."""
     if end <= start:
         raise CalendarInputError("Coverage interval must have end after start.")
 
@@ -467,24 +467,24 @@ def filter_events_for_symbol(events: List[Dict[str, Any]], symbol: str) -> List[
     ]
 
 def filter_events_for_interval(
-    """Calendar operation: filter_events_for_interval performs the focused filter events for interval step in the Calendar implementation."""
     events: List[Dict[str, Any]],
     start: datetime,
     end: datetime,
 ) -> List[Dict[str, Any]]:
+    """Calendar operation: filter_events_for_interval performs the focused filter events for interval step in the Calendar implementation."""
     return [
         event for event in events
         if start <= parse_iso8601(event["timestamp"]) < end
     ]
 
 def update_watermark(
-    """Calendar operation: update_watermark performs the focused update watermark step in the Calendar implementation."""
     document: Dict[str, Any],
     provider: str,
     symbol: str,
     successful_at: datetime,
     events: List[Dict[str, Any]],
 ) -> None:
+    """Calendar operation: update_watermark performs the focused update watermark step in the Calendar implementation."""
     key = watermark_key(provider, symbol)
     old = document["watermarks"].get(key, {})
     old_successful_at = (
@@ -514,22 +514,22 @@ def update_watermark(
     }
 
 def query_current_events(
-    """Calendar operation: query_current_events performs the focused query current events step in the Calendar implementation."""
     events: List[Dict[str, Any]],
     since: datetime,
     until: datetime,
 ) -> List[Dict[str, Any]]:
+    """Calendar operation: query_current_events performs the focused query current events step in the Calendar implementation."""
     return [
         event for event in events
         if since < parse_iso8601(event["timestamp"]) <= until
     ]
 
 def query_latest_event(
-    """Calendar operation: query_latest_event performs the focused query latest event step in the Calendar implementation."""
     events: List[Dict[str, Any]],
     symbol: str,
     now: datetime,
 ) -> List[Dict[str, Any]]:
+    """Calendar operation: query_latest_event performs the focused query latest event step in the Calendar implementation."""
     visible_past = [
         event
         for event in filter_events_for_symbol(events, symbol)
@@ -549,11 +549,11 @@ def query_latest_event(
     ]
 
 def query_next_event(
-    """Calendar operation: query_next_event performs the focused query next event step in the Calendar implementation."""
     events: List[Dict[str, Any]],
     symbol: str,
     now: datetime,
 ) -> List[Dict[str, Any]]:
+    """Calendar operation: query_next_event performs the focused query next event step in the Calendar implementation."""
     visible_future = [
         event
         for event in filter_events_for_symbol(events, symbol)
@@ -594,7 +594,6 @@ def status_from_provider_results(provider_results: List[Dict[str, Any]]) -> str:
     return "OK"
 
 def filter_query_events(
-    """Calendar operation: filter_query_events performs the focused filter query events step in the Calendar implementation."""
     document: Dict[str, Any],
     events: List[Dict[str, Any]],
     symbol: str,
