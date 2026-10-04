@@ -393,10 +393,8 @@ boundaries are normalized to spaces so the title remains a single-line field lab
 content, `<br>` becomes a readable line break. HTML character references are decoded to a stable value
 before parsing, including markup escaped more than once such as `&amp;lt;br&amp;gt;` or
 `&amp;lt;img ...&amp;gt;`. Raw provider markup or escaped markup must never leak from either field into
-`--cleartext` output.
-Raw provider markup or escaped markup must never leak into `--cleartext` output. The
-canonical `calendar.json` retains the original provider HTML so links and formatting information are not
-lost.
+`--cleartext` output. The canonical `calendar.json` retains the original provider HTML so links and
+formatting information are not lost.
 A null detail value is displayed as `N/A`. Additional non-spec detail fields are rendered afterward in
 deterministic key order. Each cleartext event block ends after `Event ID`; there is no closing separator
 line, and adjacent event blocks are separated by one blank line. The default machine-readable JSON output
