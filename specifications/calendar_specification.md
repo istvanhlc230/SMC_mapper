@@ -2,7 +2,7 @@
 
 Status: Current V2 specification.
 
-Calendar implementation baseline: 2.2.15.
+Calendar implementation baseline: 2.2.16.
 
 Scope:
 - unified economic-calendar and news acquisition;
@@ -347,6 +347,8 @@ alter provider routing, coverage, watermark, or atomic persistence semantics.
 Provider-query construction is deterministic from the requested interval. The requested interval is
 still filtered against canonical UTC event timestamps after acquisition, so provider query inclusivity
 cannot widen the persisted/result interval.
+For rendered and structured ForexFactory Detail URLs, the native `/calendar?day=...&event=...` query form is a valid concrete provider URL and must be preserved verbatim. Concrete `/calendar/...` event paths are also valid. URL extraction must never synthesize a URL from the numeric event-instance ID.
+
 ## 7.6 Human-readable CLI presentation
 
 `--cleartext` is presentation-only and must not modify the canonical event data or persistent schema.

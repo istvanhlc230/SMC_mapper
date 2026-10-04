@@ -151,4 +151,6 @@ Development artifacts belong under dev_tmp/. The repository root must not receiv
 
 Rendered-row recognition is event-ID-first: a rendered row carrying the provider event-instance ID must be parsed even when the current CSS row class is absent or renamed; the CSS row class is advisory only. The implementation must not synthesize an event-detail URL from the numeric instance ID.
 
+Provider-native concrete Detail URLs may use `/calendar?day=<provider-date>&event=<event-id>` as well as concrete `/calendar/...` event paths. The exact provider href is preserved; no URL is synthesized from the numeric instance ID.
+
 ForexFactory normalized economic events expose `details.url` when a concrete provider detail URL is available. The implementation first accepts an explicit provider URL/event-base slug from structured data; for structured events without one, it parses the same response's rendered calendar-row anchors and assigns the exact `/calendar/...` href to the normalized event by provider event-instance ID. No URL is synthesized from the numeric instance ID. Regression tests cover explicit URLs and rendered-row enrichment. Yahoo Finance news continues to use `details.url` for the provider article URL.

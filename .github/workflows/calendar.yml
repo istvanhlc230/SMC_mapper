@@ -84,7 +84,7 @@ jobs:
           assert ff_rows[0]["currency"] == "EUR"
           assert ff_rows[0]["name"] == "ECB Test Event"
           assert ff_rows[0]["impactName"] == "high"
-          assert ff_rows[0]["url"] == "https://www.forexfactory.com/calendar/252-us-ecb-test-event"
+          assert ff_rows[0]["url"] == "https://www.forexfactory.com/calendar?day=oct5.2026&event=1001"
           # Provider-row CSS classes are advisory: an event-ID-bearing row
           # must still be parsed and its native Detail href must be retained.
           id_only_html = """<html><body>
@@ -95,7 +95,7 @@ jobs:
             <td class="calendar__cell calendar__time time">12:00pm</td>
             <td class="calendar__cell calendar__currency currency">USD</td>
             <td class="calendar__cell calendar__event event">
-              <a href="/calendar/76-id-only-test-event">
+              <a href="/calendar?day=oct5.2026&event=1004">
                 <span class="calendar__event-title">ID Only Test Event</span>
               </a>
             </td>
@@ -108,7 +108,7 @@ jobs:
           )
           assert len(id_only_rows) == 1
           assert id_only_rows[0]["id"] == "1004"
-          assert id_only_rows[0]["url"] == "https://www.forexfactory.com/calendar/76-id-only-test-event"
+          assert id_only_rows[0]["url"] == "https://www.forexfactory.com/calendar?day=oct5.2026&event=1004"
 
           medium_html = """<html><body>
           <div>Calendar Time Zone: Europe/Budapest (GMT +2)</div>
@@ -138,7 +138,19 @@ jobs:
           normalized_ff = calendar.normalize_provider_event(ff_rows[0])
           assert normalized_ff["timestamp"] == "2026-10-05T07:00:00Z"
           assert normalized_ff["details"]["impact"] == "HIGH"
-          assert normalized_ff["details"]["url"] == "https://www.forexfactory.com/calendar/252-us-ecb-test-event"
+          assert normalized_ff["details"]["url"] == "https://www.forexfactory.com/calendar?day=oct5.2026&event=1001"
+          assert calendar._is_forexfactory_event_url(
+              "https://www.forexfactory.com/calendar?day=oct1.2026&event=146900"
+          )
+          assert calendar._is_forexfactory_event_url("/calendar/event/legacy-event")
+          assert calendar._is_forexfactory_event_url("/calendar/76-us-challenger-job-cuts-yy")
+          assert not calendar._is_forexfactory_event_url(
+              "https://www.forexfactory.com/calendar?day=oct1.2026"
+          )
+          assert not calendar._is_forexfactory_event_url(
+              "https://example.com/calendar?event=146900"
+          )
+
 
           original_fetch_url = calendar.fetch_url
           try:
@@ -154,7 +166,7 @@ jobs:
                 <td class="calendar__cell calendar__currency currency">USD</td>
                 <td class="calendar__cell calendar__impact impact"><span title="Low Impact Expected" class="low"></span></td>
                 <td class="calendar__cell calendar__event event">
-                  <a href="/calendar/76-us-challenger-job-cuts-yy">
+                  <a href="/calendar?day=oct1.2026&event=146900">
                     <span class="calendar__event-title">Challenger Job Cuts y/y</span>
                   </a>
                 </td>
@@ -170,7 +182,7 @@ jobs:
               )
               assert len(enriched) == 1
               assert enriched[0]["event_id"] == "forexfactory:146900"
-              assert enriched[0]["details"]["url"] == "https://www.forexfactory.com/calendar/76-us-challenger-job-cuts-yy"
+              assert enriched[0]["details"]["url"] == "https://www.forexfactory.com/calendar?day=oct1.2026&event=146900"
           finally:
               calendar.fetch_url = original_fetch_url
           for raw_impact, expected_impact in (
@@ -235,7 +247,7 @@ jobs:
               }
               assert calendar.normalize_provider_event(structured_raw)["details"]["impact"] == expected_impact
 
-          assert calendar.__version__ == "2.2.15"
+          assert calendar.__version__ == "2.2.16"
           assert f"Calendar CLI v{calendar.__version__}" in calendar.HELP_TEXT
 
           # Cleartext output must render normalized details as readable fields,

@@ -31,7 +31,7 @@ HTTP_TIMEOUT = 15.0
 # SCHEMA_VERSION — persistent calendar.json schema version.
 SCHEMA_VERSION = 2
 # __version__ — Calendar CLI implementation version, independent from SCHEMA_VERSION.
-__version__ = "2.2.15"
+__version__ = "2.2.16"
 
 # SUPPORTED_CURRENCIES — standalone currencies accepted by the CLI.
 SUPPORTED_CURRENCIES = {
@@ -1025,9 +1025,11 @@ class ForexFactoryHTMLCalendarParser(HTMLParser):
             if (
                 href
                 and not self.current_row.get("url")
-                and (
-                    re.search(r"/calendar/event/", href, re.IGNORECASE)
-                    or re.search(r"/calendar/\d+-[^?#]+", href, re.IGNORECASE)
+                and _is_forexfactory_event_url(
+                    urllib.parse.urljoin(
+                        "https://www.forexfactory.com/",
+                        href,
+                    )
                 )
             ):
                 self.current_row["url"] = urllib.parse.urljoin(
@@ -1357,6 +1359,32 @@ def _resolve_impact(raw: Dict[str, Any]) -> str:
     return "UNKNOWN"
 
 
+# Function: _is_forexfactory_event_url — validates a concrete ForexFactory event-detail URL.
+# Variables: value=provider URL candidate.
+# Local variables: parsed=parsed URL; event_values=event query values.
+def _is_forexfactory_event_url(value: str) -> bool:
+    resolved = urllib.parse.urljoin(
+        "https://www.forexfactory.com/",
+        value.strip(),
+    )
+    parsed = urllib.parse.urlparse(resolved)
+    if parsed.scheme.lower() != "https":
+        return False
+    if parsed.netloc.lower() not in {"forexfactory.com", "www.forexfactory.com"}:
+        return False
+
+    if re.match(r"^/calendar/event/[^/?#]+$", parsed.path, re.IGNORECASE):
+        return True
+    if re.match(r"^/calendar/\d+-[^/?#]+$", parsed.path, re.IGNORECASE):
+        return True
+
+    if parsed.path.rstrip("/").lower() != "/calendar":
+        return False
+    query = urllib.parse.parse_qs(parsed.query)
+    event_values = [item.strip() for item in query.get("event", []) if item.strip()]
+    return bool(event_values and all(re.fullmatch(r"\d+", item) for item in event_values))
+
+
 # Function: _resolve_forexfactory_event_url — resolves an explicit provider detail-page URL.
 # Variables: raw=provider event record.
 # Local variables: candidate=provider URL/slug candidate; resolved=normalized absolute URL.
@@ -1373,11 +1401,7 @@ def _resolve_forexfactory_event_url(raw: Dict[str, Any]) -> Optional[str]:
             "https://www.forexfactory.com/",
             candidate,
         )
-        if re.match(
-            r"^https://(?:www\.)?forexfactory\.com/calendar/(?:event/|\d+-)",
-            resolved,
-            re.IGNORECASE,
-        ):
+        if _is_forexfactory_event_url(resolved):
             return resolved
 
     for field_name in ("ebaseSlug", "ebase_slug", "eventSlug", "event_slug"):

@@ -1,6 +1,6 @@
 # AGENT_REVIEW.md
 
-Status: FIXED_FF_ROW_DETECTION_CI_PENDING_LIVE_SMOKE
+Status: FIXED_FF_NATIVE_DETAIL_QUERY_CI_PENDING_LIVE_SMOKE
 
 ## Change
 The Windows live smoke showed that ForexFactory acquisition succeeds, but most events persisted
@@ -141,4 +141,19 @@ The 2.2.15 regression fixture removes the CSS row class from the structured/rend
 Validation state:
 - prior CI #78 on 2.2.14: PASS;
 - 2.2.15 CI: pending after commit;
+- Windows live smoke with real provider data: required before PASS.
+
+
+## ForexFactory native Detail-query correction
+
+Calendar implementation version: 2.2.16
+Persistent schema: 2
+
+The 2.2.15 Windows live smoke still produced `details.url = N/A` for every real ForexFactory event. The URL recognizer accepted only `/calendar/event/...` and `/calendar/<numeric>-<slug>` forms. ForexFactory exposes concrete event-detail pages through the native `/calendar?day=<date>&event=<event-id>` form as well. The recognizer therefore rejected the real Detail hrefs even when the rendered row contained them.
+
+The correction accepts and preserves the native query-form event URL in both rendered-row extraction and explicit structured URL normalization. The URL remains provider-derived; no URL is generated from an event ID.
+
+Validation state:
+- prior CI #79 on 2.2.15: PASS;
+- 2.2.16 CI: pending after commit;
 - Windows live smoke with real provider data: required before PASS.
