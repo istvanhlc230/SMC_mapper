@@ -1,6 +1,6 @@
 # AGENT_REVIEW.md
 
-Status: CI_PENDING_FINAL_RUN
+Status: CI_TRIGGERED_FINAL_RUN
 
 ## Change
 ForexFactory provider query construction follows the native calendar query forms:
@@ -19,3 +19,5 @@ No `test/` or `tests/` directory was added.
 ## Validation
 The previous CI failures were analyzed and corrected. A fresh CI run against the resulting snapshot is
 required before this review can be marked validated.
+
+CI trigger commit reflects parser-row handling fix from 8de2427847937ede8035c79e9d512079afde6a21.
