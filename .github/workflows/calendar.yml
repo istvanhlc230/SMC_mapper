@@ -235,6 +235,25 @@ jobs:
           assert any("Source   : Example Source" in line for line in cleartext_specs)
           assert any("Measures : Monthly data." in line for line in cleartext_specs)
 
+          # Provider Detail HTML may be entity-escaped. Cleartext must decode
+          # entities before stripping markup, while calendar.json still retains
+          # the original provider HTML.
+          escaped_detail = (
+              "FF Notice &lt;img class=&quot;svg-img svg-img--misc-star&quot; "
+              "width=&quot;12&quot; height=&quot;11&quot; src=&quot;resources/svg/images/misc/star.svg&quot;&gt;: "
+              "Event added to calendar 176 minutes before release time; "
+              "Why Traders&lt;br&gt;Care: Federal Reserve members vote on rates"
+          )
+          escaped_lines = calendar.format_cleartext_details({
+              "specs": [{"order": 1, "title": "Provider Detail", "html": escaped_detail}],
+          })
+          escaped_rendered = "\n".join(escaped_lines)
+          assert "<img" not in escaped_rendered
+          assert "svg-img" not in escaped_rendered
+          assert "<br>" not in escaped_rendered
+          assert "FF Notice : Event added to calendar 176 minutes before release time" in escaped_rendered
+          assert "Why Traders\nCare:" in escaped_rendered
+
           # Legacy schema-2 ForexFactory coverage without Detail specs is incomplete
           # for the requested overlap and must be reacquired.
           legacy_doc = calendar.build_empty_calendar_document()
@@ -333,7 +352,7 @@ jobs:
               }
               assert calendar.normalize_provider_event(structured_raw)["details"]["impact"] == expected_impact
 
-          assert calendar.__version__ == "2.3.0"
+          assert calendar.__version__ == "2.3.1"
           assert f"Calendar CLI v{calendar.__version__}" in calendar.HELP_TEXT
 
           # Cleartext output must render normalized details as readable fields,
