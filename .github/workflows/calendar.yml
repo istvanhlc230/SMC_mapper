@@ -1,0 +1,190 @@
+name: Calendar Python tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  calendar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile
+        run: python -m py_compile calendar.py
+      - name: Calendar unit/runtime contract tests
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import subprocess
+          import sys
+          import tempfile
+          from datetime import datetime, timedelta, timezone
+
+          import calendar
+
+          def dt(value):
+              return datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+          assert calendar.validate_symbol("EURUSD") == "EURUSD"
+          assert calendar.validate_symbol("USDGBP") == "USDGBP"
+          assert calendar.validate_symbol("HUF") == "HUF"
+          assert calendar.validate_symbol("NVDA") == "NVDA"
+
+          for bad in ("today", "next_week", "next_month", "next", "2026.10.01..2026.10.31"):
+              try:
+                  calendar.parse_request(["EURUSD", bad])
+              except calendar.CalendarInputError:
+                  pass
+              else:
+                  raise AssertionError(f"legacy scope accepted: {bad}")
+
+          start = calendar.parse_date("2026.10.01")
+          end = calendar.parse_date("2026.10.03")
+          doc = calendar.build_empty_calendar_document()
+          assert calendar.find_uncovered_intervals(doc, "forexfactory", "EURUSD", start, end) == [(start, end)]
+
+          event = {
+              "event_id": "forexfactory:1",
+              "symbol": "USD",
+              "asset_type": "forex",
+              "event_type": "economic",
+              "source": "forexfactory",
+              "timestamp": "2026-10-01T10:00:00Z",
+              "title": "Test",
+              "details": {"currency": "USD", "impact": "HIGH", "actual": None, "forecast": None, "previous": None},
+          }
+          calendar.merge_events(doc, [event], clear_suppressed_symbol="EURUSD")
+          event2 = dict(event)
+          event2["suppressed_for"] = ["EURUSD"]
+          calendar.merge_events(doc, [event2])
+          assert "EURUSD" in doc["events"][0]["suppressed_for"]
+          calendar.merge_events(doc, [event], clear_suppressed_symbol="EURUSD")
+          assert "suppressed_for" not in doc["events"][0]
+
+          calendar.update_watermark(doc, "yahoo_finance", "EURGBP", dt("2026-10-04T12:00:00Z"), [])
+          calendar.update_watermark(doc, "yahoo_finance", "EURGBP", dt("2026-10-03T12:00:00Z"), [])
+          assert doc["watermarks"]["yahoo_finance|EURGBP"]["last_successful_at"] == "2026-10-04T12:00:00Z"
+
+          original_search = calendar._fetch_yahoo_search_payload
+          try:
+              calls = []
+              def fake_search(query_symbol):
+                  calls.append(query_symbol)
+                  if query_symbol == "GBP=X":
+                      return {"quotes": [{"symbol": "GBP=X", "quoteType": "CURRENCY"}], "news": []}
+                  return {"quotes": [], "news": []}
+              calendar._fetch_yahoo_search_payload = fake_search
+              provider_symbol, _ = calendar._resolve_yahoo_instrument("USDGBP")
+              assert provider_symbol == "GBP=X"
+              assert "GBP=X" in calls
+          finally:
+              calendar._fetch_yahoo_search_payload = original_search
+
+          try:
+              def fake_missing(query_symbol):
+                  return {"quotes": [], "news": []}
+              calendar._fetch_yahoo_search_payload = fake_missing
+              try:
+                  calendar._resolve_yahoo_instrument("USDGBP")
+              except calendar.YahooForexPairUnavailable:
+                  pass
+              else:
+                  raise AssertionError("unverified Yahoo FX pair accepted")
+          finally:
+              calendar._fetch_yahoo_search_payload = original_search
+
+          now = dt("2026-10-04T12:00:00Z")
+          original_now = calendar.utc_now
+          original_fetch = calendar.fetch_yahoo_news
+          try:
+              calendar.utc_now = lambda: now
+              calendar.fetch_yahoo_news = lambda symbol: [
+                  {
+                      "event_id": "yahoo:old",
+                      "symbol": symbol,
+                      "asset_type": "ticker",
+                      "event_type": "news",
+                      "source": "yahoo_finance",
+                      "timestamp": "2026-10-01T12:00:00Z",
+                      "title": "Old",
+                      "details": {"provider_symbol": symbol},
+                  },
+                  {
+                      "event_id": "yahoo:in",
+                      "symbol": symbol,
+                      "asset_type": "ticker",
+                      "event_type": "news",
+                      "source": "yahoo_finance",
+                      "timestamp": "2026-10-03T12:00:00Z",
+                      "title": "In",
+                      "details": {"provider_symbol": symbol},
+                  },
+                  {
+                      "event_id": "yahoo:new",
+                      "symbol": symbol,
+                      "asset_type": "ticker",
+                      "event_type": "news",
+                      "source": "yahoo_finance",
+                      "timestamp": "2026-10-05T12:00:00Z",
+                      "title": "Future",
+                      "details": {"provider_symbol": symbol},
+                  },
+              ]
+              qdoc = calendar.build_empty_calendar_document()
+              result = calendar.acquire_explicit(qdoc, "NVDA", dt("2026-10-02T00:00:00Z"), dt("2026-10-04T00:00:00Z"))
+              ids = {e["event_id"] for e in qdoc["events"]}
+              assert ids == {"yahoo:in"}
+              wm = qdoc["watermarks"]["yahoo_finance|NVDA"]
+              assert wm["last_successful_at"] == "2026-10-04T00:00:00Z"
+          finally:
+              calendar.utc_now = original_now
+              calendar.fetch_yahoo_news = original_fetch
+
+          cached = [{
+              "event_id": "yahoo:cached",
+              "symbol": "USDGBP",
+              "asset_type": "forex",
+              "event_type": "news",
+              "source": "yahoo_finance",
+              "timestamp": "2026-10-03T12:00:00Z",
+              "title": "Cached",
+              "details": {},
+          }]
+          assert calendar.filter_query_events(
+              calendar.build_empty_calendar_document(),
+              cached,
+              "USDGBP",
+              dt("2026-10-03T00:00:00Z"),
+              dt("2026-10-04T00:00:00Z"),
+              yahoo_pair_available=False,
+          ) == []
+
+          with tempfile.TemporaryDirectory() as td:
+              env = dict(os.environ)
+              env["SMC_DATA_ROOT"] = td
+              p = subprocess.run(
+                  [sys.executable, "calendar.py", "EURUSD", "2026.10.01", "--debug"],
+                  env=env,
+                  capture_output=True,
+                  text=True,
+              )
+              assert p.returncode in (0, 2, 3)
+              assert "DEBUG |" in p.stderr or "Error:" in p.stderr
+              p2 = subprocess.run(
+                  [sys.executable, "calendar.py", "EURUSD", "bad_scope"],
+                  env=env,
+                  capture_output=True,
+                  text=True,
+              )
+              assert p2.returncode == 2
+              assert "DEBUG |" not in p2.stderr
+
+          print("CALENDAR_TESTS_OK")
+          PY
