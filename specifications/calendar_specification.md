@@ -366,6 +366,11 @@ the provider event ID. Its ordered `specs` collection is stored under `details.s
 HTML preserved so Source and Next Release links and future Detail fields are retained. No Detail URL
 is extracted, persisted, or synthesized.
 
+A complete coverage interval is not considered Detail-enriched when an existing ForexFactory event
+inside the requested interval has no `details.specs`. Such an interval is reacquired so the existing
+provider facts can be enriched with Detail specifications. This is an enrichment rule within schema
+version 2, not a schema migration.
+
 ## 7.6 Human-readable CLI presentation
 
 `--cleartext` is presentation-only and must not modify the canonical event data or persistent schema.
