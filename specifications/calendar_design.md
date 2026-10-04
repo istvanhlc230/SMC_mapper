@@ -226,3 +226,8 @@ A rendered ForexFactory event without a concrete clock is rejected by the fallba
 ### 6.2 Successful no-match semantics
 
 An acquisition that reaches the provider successfully but yields no events for the requested symbol and interval is a successful empty result. It is represented as `NO_MATCH`, not `PARTIAL`. The query layer maps an all-`NO_MATCH` provider result set to `NO_RELEVANT_EVENT`. `PARTIAL` is reserved for actual incomplete acquisition state. Yahoo Finance uses `NO_MATCH` for an empty successful news collection; `SKIPPED_NO_FOREX_PAIR` remains the distinct verified-instrument-unavailable state.
+
+
+### 6.3 Source activity documentation
+
+The Calendar implementation documents function activity and meaningful state variables directly in the Python source. Documentation is concise and implementation-oriented: functions state their role in the Calendar flow, important module state variables state their purpose, and non-obvious transactional/local state is explained where needed. This is documentation only and must not alter Calendar behavior or persistent contracts.
