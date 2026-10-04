@@ -1,5 +1,6 @@
 """Calendar command-line entrypoint and request dispatch."""
 
+import json
 import sys
 import traceback
 from typing import Any, Dict, List, Optional
@@ -159,7 +160,7 @@ def run_delete(
     # validation so an incompatible calendar.json cannot block the reset.
     with storage.acquire_calendar_lock():
         if symbol is None and scope is None:
-            save_calendar_atomic(build_empty_calendar_document())
+            storage.save_calendar_atomic(domain.build_empty_calendar_document())
         else:
             document = storage.load_calendar_document()
             if symbol is None or scope is None:
@@ -172,9 +173,9 @@ def run_delete(
                     "current cannot be used as a delete scope."
                 )
             start, end = domain.resolve_scope_interval(scope)
-            delete_symbol_interval(document, symbol, start, end)
-            validate_calendar_document(document)
-            save_calendar_atomic(document)
+            operations.delete_symbol_interval(document, symbol, start, end)
+            domain.validate_calendar_document(document)
+            storage.save_calendar_atomic(document)
 
     print(json.dumps({
         "status": "OK",
@@ -279,7 +280,7 @@ def run() -> int:
         request = parse_request(sys.argv[1:])
         debug = request["debug"]
         if request["operation"] == "DELETE":
-            return operations.run_delete(
+            return run_delete(
                 request["symbol"],
                 request["scope"],
             )
