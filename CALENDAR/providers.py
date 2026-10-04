@@ -206,7 +206,10 @@ def _enrich_forexfactory_details(
             provider_event_id = event["event_id"].split(":", 1)[1]
             try:
                 _, specs = future.result()
-            except (ProviderError, OSError, ValueError) as exc:
+            except Exception:
+                # Detail enrichment must never invalidate successfully fetched
+                # base calendar events. Provider-specific failures are isolated
+                # to the affected event.
                 event["details"]["specs"] = []
                 failures.append(provider_event_id)
             else:
