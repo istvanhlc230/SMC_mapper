@@ -164,8 +164,6 @@ Removed from the public grammar:
 - next_week
 - month
 - next_month
-- next
-
 Date syntax is YYYY.MM.DD. Time syntax is HH:MM. @ separates date/time. - separates interval endpoints. No .. syntax exists.
 
 Date = full UTC day.
