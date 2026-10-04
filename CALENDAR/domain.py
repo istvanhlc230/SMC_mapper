@@ -308,12 +308,20 @@ def merge_coverage(document: Dict[str, Any], item: Dict[str, Any]) -> None:
             and previous["symbol"] == current["symbol"]
         )
         if same_scope and parse_iso8601(current["start"]) <= parse_iso8601(previous["end"]):
-            previous["end"] = format_iso8601(max(
-                parse_iso8601(previous["end"]),
-                parse_iso8601(current["end"]),
-            ))
+            previous_start = parse_iso8601(previous["start"])
+            previous_end = parse_iso8601(previous["end"])
+            current_start = parse_iso8601(current["start"])
+            current_end = parse_iso8601(current["end"])
+            previous["end"] = format_iso8601(max(previous_end, current_end))
+
             if current["status"] == "PARTIAL":
                 previous["status"] = "PARTIAL"
+            elif previous["status"] == "PARTIAL":
+                # A retry may re-acquire the exact partial interval
+                # successfully. Promote only when the new COMPLETE record
+                # fully covers the previously partial interval.
+                if current_start <= previous_start and current_end >= previous_end:
+                    previous["status"] = "COMPLETE"
             continue
         merged.append(current)
     document["coverage"] = merged
