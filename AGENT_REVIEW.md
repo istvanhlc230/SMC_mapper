@@ -1,6 +1,6 @@
 # AGENT_REVIEW.md
 
-Status: FIXED_CI_PENDING_LIVE_SMOKE
+Status: FIXED_HTML_ICON_CI_PENDING_LIVE_SMOKE
 
 ## Change
 The Windows live smoke showed that ForexFactory acquisition succeeds, but most events persisted
@@ -12,13 +12,12 @@ Root cause of the remaining issue: the actual structured ForexFactory event obje
 `impactClass` icon forms such as `icon--ff-impact-yel`. The implementation previously looked
 for `impactName` first and did not recognize these actual fields/forms.
 
-Calendar implementation version: 2.2.8
+Calendar implementation version: 2.2.9
 Persistent schema: 2
 
-The fix:
-- reads explicit `impactTitle` first, with `impactName` and direct `impact` as compatibility forms;
-- recognizes explicit color/icon impactClass tokens, including the short provider forms;
-- never infers impact from event title or other unrelated data.
+The fix now recognizes the rendered abbreviated provider icon classes `icon--ff-impact-ora`,
+`icon--ff-impact-yel`, `icon--ff-impact-grn`, and `icon--ff-impact-gry`, in addition to the existing
+red/high and long-form classes. Severity remains explicit only.
 
 ## Validation
 Regression tests cover:

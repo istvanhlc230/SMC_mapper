@@ -98,6 +98,15 @@ jobs:
           )
           assert medium_rows[0]["impactName"] == "medium"
 
+          for raw_class, expected_impact in (
+              ("icon--ff-impact-red", "high"),
+              ("icon--ff-impact-ora", "medium"),
+              ("icon--ff-impact-yel", "low"),
+              ("icon--ff-impact-grn", "low"),
+              ("icon--ff-impact-gry", "holiday"),
+          ):
+              assert calendar._classify_forexfactory_impact({raw_class}) == expected_impact
+
           normalized_ff = calendar.normalize_provider_event(ff_rows[0])
           assert normalized_ff["timestamp"] == "2026-10-05T07:00:00Z"
           assert normalized_ff["details"]["impact"] == "HIGH"
@@ -163,7 +172,7 @@ jobs:
               }
               assert calendar.normalize_provider_event(structured_raw)["details"]["impact"] == expected_impact
 
-          assert calendar.__version__ == "2.2.8"
+          assert calendar.__version__ == "2.2.9"
           assert f"Calendar CLI v{calendar.__version__}" in calendar.HELP_TEXT
 
           # Explicit bare delete must recover from an incompatible legacy cache.

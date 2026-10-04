@@ -31,7 +31,7 @@ HTTP_TIMEOUT = 15.0
 # SCHEMA_VERSION — persistent calendar.json schema version.
 SCHEMA_VERSION = 2
 # __version__ — Calendar CLI implementation version, independent from SCHEMA_VERSION.
-__version__ = "2.2.8"
+__version__ = "2.2.9"
 
 # SUPPORTED_CURRENCIES — standalone currencies accepted by the CLI.
 SUPPORTED_CURRENCIES = {
@@ -915,11 +915,25 @@ def _classify_forexfactory_impact(classes: set[str]) -> str:
         lowered = class_name.lower()
         if lowered.endswith("--high") or lowered in {"high", "icon--ff-impact-red"}:
             return "high"
-        if lowered.endswith("--medium") or lowered in {"medium", "med", "icon--ff-impact-orange"}:
+        if lowered.endswith("--medium") or lowered in {
+            "medium", "med", "icon--ff-impact-orange", "icon--ff-impact-ora"
+        }:
             return "medium"
-        if lowered.endswith("--low") or lowered in {"low", "icon--ff-impact-yellow", "icon--ff-impact-green"}:
+        if lowered.endswith("--low") or lowered in {
+            "low",
+            "icon--ff-impact-yellow",
+            "icon--ff-impact-yel",
+            "icon--ff-impact-green",
+            "icon--ff-impact-grn",
+        }:
             return "low"
-        if lowered in {"holiday", "non-economic", "icon--ff-impact-grey"}:
+        if lowered in {
+            "holiday",
+            "non-economic",
+            "icon--ff-impact-grey",
+            "icon--ff-impact-gray",
+            "icon--ff-impact-gry",
+        }:
             return "holiday"
     return ""
 
