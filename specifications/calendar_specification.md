@@ -296,8 +296,19 @@ No Yahoo impact is invented.
 
 ## 8. Persistent schema
 
+### Software version
+
+The Calendar CLI implementation version is exposed in `calendar.py` as `__version__` and is shown
+by `python calendar.py --help`. The software version is independent from `SCHEMA_VERSION`;
+changing the implementation version does not by itself change the persistent JSON schema.
+
+
+
 If a local `calendar.json` has a schema version that differs from the expected `SCHEMA_VERSION` (e.g., version 1 vs 2), the script strictly rejects the file with `Unsupported calendar schema version.` to guarantee data integrity.
-The script must never silently destroy or automatically migrate an old cache to fulfill a query. The user must explicitly purge the obsolete state using `python calendar.py delete` or by manually removing the file.
+The script must never silently destroy or automatically migrate an old cache to fulfill a query. The user must explicitly purge the obsolete state using the bare `python calendar.py delete`
+command or by manually removing the file. Bare delete is an explicit full-cache reset and is
+intentionally allowed to replace an incompatible legacy cache without first validating its schema.
+Scoped delete continues to require a valid current-schema document.
 
     {
       "schema_version": 2,
