@@ -1,3 +1,4 @@
+# (c) Istvan Jakab <istvanhlc230@gmail.com>
 """Stable Python-facing Calendar compatibility facade."""
 
 from .config import *
