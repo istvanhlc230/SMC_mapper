@@ -336,6 +336,67 @@ jobs:
               calendar.fetch_forexfactory_event_detail = original_detail_fetch
               calendar.ThreadPoolExecutor = original_executor
 
+          # Targeted refresh reacquires the provider event by stable ID and updates
+          # mutable provider fields without advancing coverage or watermark state.
+          refresh_doc = calendar.build_empty_calendar_document()
+          refresh_event = {
+              "event_id": "forexfactory:147017",
+              "symbol": "USD",
+              "asset_type": "forex",
+              "event_type": "economic",
+              "source": "forexfactory",
+              "timestamp": "2026-10-01T12:30:00Z",
+              "title": "Unemployment Claims",
+              "details": {
+                  "currency": "USD",
+                  "impact": "MEDIUM",
+                  "actual": "198K",
+                  "forecast": "201K",
+                  "previous": "198K",
+                  "specs": [{"order": 1, "title": "Source", "html": "Department of Labor"}],
+              },
+          }
+          refresh_doc["events"] = [refresh_event]
+          refresh_doc["watermarks"]["forexfactory|USD"] = {
+              "last_successful_at": "2026-10-02T12:31:00Z",
+              "last_event_timestamp": "2026-10-01T12:30:00Z",
+          }
+          refresh_doc["coverage"] = [{
+              "provider": "forexfactory",
+              "symbol": "USD",
+              "start": "2026-10-01T00:00:00Z",
+              "end": "2026-10-02T00:00:00Z",
+              "status": "COMPLETE",
+              "updated_at": "2026-10-02T12:31:00Z",
+          }]
+          refreshed_event = dict(refresh_event)
+          refreshed_event["details"] = dict(refresh_event["details"])
+          refreshed_event["details"]["actual"] = "197K"
+          refreshed_event["details"]["specs"] = [{"order": 1, "title": "Source", "html": "Department of Labor (latest release)"}]
+          original_refresh_fetch = calendar.fetch_forexfactory_event_refresh
+          original_refresh_save = calendar.save_calendar_atomic
+          saved_refresh_docs = []
+          try:
+              calendar.fetch_forexfactory_event_refresh = lambda event_id, reference_timestamp: refreshed_event
+              calendar.save_calendar_atomic = lambda document: saved_refresh_docs.append(document)
+              assert calendar.run_refresh("forexfactory:147017", cleartext=False) == 0
+              assert refresh_doc["events"][0]["details"]["actual"] == "197K"
+              assert refresh_doc["events"][0]["details"]["specs"][0]["html"] == "Department of Labor (latest release)"
+              assert refresh_doc["watermarks"]["forexfactory|USD"]["last_successful_at"] == "2026-10-02T12:31:00Z"
+              assert refresh_doc["coverage"][0]["status"] == "COMPLETE"
+              assert len(saved_refresh_docs) == 1
+          finally:
+              calendar.fetch_forexfactory_event_refresh = original_refresh_fetch
+              calendar.save_calendar_atomic = original_refresh_save
+
+          assert calendar.parse_request(["refresh", "forexfactory:147017"])["operation"] == "REFRESH"
+          try:
+              calendar.parse_request(["refresh", "USD", "forexfactory:147017"])
+          except calendar.CalendarInputError:
+              pass
+          else:
+              raise AssertionError("refresh accepted an invalid argument count")
+
           # Legacy schema-2 ForexFactory coverage without Detail specs is incomplete
           # for the requested overlap and must be reacquired.
           legacy_doc = calendar.build_empty_calendar_document()
@@ -434,7 +495,7 @@ jobs:
               }
               assert calendar.normalize_provider_event(structured_raw)["details"]["impact"] == expected_impact
 
-          assert calendar.__version__ == "2.3.6"
+          assert calendar.__version__ == "2.3.7"
           assert f"Calendar CLI v{calendar.__version__}" in calendar.HELP_TEXT
 
           # Cleartext output must render normalized details as readable fields,
