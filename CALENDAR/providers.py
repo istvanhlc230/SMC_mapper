@@ -180,23 +180,36 @@ def fetch_forexfactory(
 
 def _enrich_forexfactory_details(
     events: List[Dict[str, Any]],
-) -> None:
-    def fetch_detail(event: Dict[str, Any]) -> List[Dict[str, Any]]:
+) -> List[str]:
+    """Best-effort FF detail enrichment; return provider IDs that failed."""
+    def fetch_detail(event: Dict[str, Any]) -> Tuple[str, List[Dict[str, Any]]]:
         provider_event_id = event["event_id"].split(":", 1)[1]
-        return fetch_forexfactory_event_detail(provider_event_id)
+        return provider_event_id, fetch_forexfactory_event_detail(provider_event_id)
 
     if not events:
-        return
+        return []
 
     max_workers = min(6, len(events))
+    failures: List[str] = []
     with ThreadPoolExecutor(
         max_workers=max_workers,
         thread_name_prefix="ff-detail",
     ) as executor:
-        detail_specs = list(executor.map(fetch_detail, events))
+        futures = [
+            (event, executor.submit(fetch_detail, event))
+            for event in events
+        ]
+        for event, future in futures:
+            provider_event_id = event["event_id"].split(":", 1)[1]
+            try:
+                _, specs = future.result()
+            except (ProviderError, OSError, ValueError) as exc:
+                event["details"]["specs"] = []
+                failures.append(provider_event_id)
+            else:
+                event["details"]["specs"] = specs
 
-    for event, specs in zip(events, detail_specs):
-        event["details"]["specs"] = specs
+    return failures
 
 def fetch_forexfactory_event_detail(event_id: str) -> List[Dict[str, Any]]:
     event_id = str(event_id).strip()
