@@ -322,3 +322,18 @@ Validation:
 - CI regression test verifies the bounded worker count and event-order preservation.
 - Calendar implementation version: 2.3.3; persistent schema remains 2.
 - CI/live performance validation remains pending.
+## 2.3.4 ForexFactory Detail parser correction
+
+Live Windows output after 2.3.3 still contained literal `<br>` and `<img>` markup in cleartext.
+This disproved the assumption that regex-only sanitization was sufficient for all provider Detail fragments.
+
+Correction:
+- `_detail_html_to_text` now decodes HTML character references to a stable representation and parses the result with Python HTMLParser.
+- `<br>` and common block-level closing tags are converted to readable line boundaries.
+- provider tags such as `<img>` are discarded from cleartext.
+- multiply escaped markup remains supported.
+- canonical provider HTML stored in `calendar.json` remains unchanged.
+
+Regression coverage now includes the literal live-form `<img>` and `<br>` fragments in addition to escaped and multiply-escaped variants.
+Calendar implementation version: 2.3.4; persistent schema remains 2.
+Final validation requires a fresh Windows live smoke and CI result.
