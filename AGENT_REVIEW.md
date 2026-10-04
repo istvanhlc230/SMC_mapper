@@ -84,3 +84,23 @@ The public `resolve_yahoo_symbol()` helper now returns `None` when no verified Y
 instrument exists, matching its `Optional[str]` contract. The acquisition path still uses the
 explicit `YahooForexPairUnavailable` signal so missing provider instruments cannot be converted
 to empty-success coverage or watermark advancement.
+
+
+## Re-audit corrections
+
+The prior audit identified three concrete implementation defects and one stale wording item.
+This commit corrects all four:
+
+1. `is_fx_pair()` and `validate_symbol()` now use `FX_CURRENCY_CODES`, allowing
+   valid six-letter FX candidates outside the narrower standalone-currency CLI set.
+2. `normalize_provider_event()` now validates ForexFactory currency codes against
+   `FX_CURRENCY_CODES`, so valid pair components such as SEK/NOK/QAR/BRL are not
+   rejected at normalization.
+3. `acquire_current()` now passes `clear_suppressed_symbol=symbol` when merging
+   ForexFactory events, so successful reacquisition restores visibility after a
+   symbol-scoped deletion.
+4. Monitor Phase 9 now describes Calendar Update Engine acquisition versus Monitor
+   local committed-snapshot reading rather than the obsolete "local query" wording.
+
+The Calendar specification/design acceptance language was synchronized with these
+implementation rules. Runtime validation remains the only unperformed validation boundary.

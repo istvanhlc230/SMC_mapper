@@ -1862,7 +1862,7 @@ Verify:
 calendar.json is the sole persistent News store
 dynamic warning horizon is derived from stored analysis entry timeframes
 HIGH/MEDIUM/LOW warning scaling is deterministic
-Calendar acquisition and local query are separate operations
+Calendar Update Engine acquisition and Monitor local snapshot read are separate operations
 the committed normalized calendar.json snapshot is the machine-readable News boundary
 missing calendar data does not block canonical processing
 UTC event timing

@@ -344,4 +344,8 @@ Acceptance requires:
 - provider failures remain observable;
 - Yahoo historical completeness is never falsely claimed;
 - a missing Yahoo Forex pair is reported as provider-unavailable for that pair and
-  never converted into a fabricated `=X` instrument or persisted Yahoo coverage.
+  never converted into a fabricated `=X` instrument or persisted Yahoo coverage;
+- six-letter FX recognition uses the currency-code universe independently of the
+  narrower standalone-currency CLI set;
+- successful current-mode ForexFactory reacquisition clears the target symbol's
+  `suppressed_for` marker.

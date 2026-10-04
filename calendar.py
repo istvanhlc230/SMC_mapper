@@ -169,8 +169,8 @@ def is_fx_pair(value: str) -> bool:
     token = canonicalize_fx_token(value)
     return (
         len(token) == 6
-        and token[:3] in SUPPORTED_CURRENCIES
-        and token[3:] in SUPPORTED_CURRENCIES
+        and token[:3] in FX_CURRENCY_CODES
+        and token[3:] in FX_CURRENCY_CODES
     )
 
 
@@ -187,8 +187,8 @@ def validate_symbol(value: str) -> str:
         return token
     if (
         len(token) == 6
-        and token[:3] in SUPPORTED_CURRENCIES
-        and token[3:] in SUPPORTED_CURRENCIES
+        and token[:3] in FX_CURRENCY_CODES
+        and token[3:] in FX_CURRENCY_CODES
     ):
         return token
     if is_ticker(value):
@@ -725,7 +725,7 @@ def normalize_provider_event(raw: Dict[str, Any]) -> Dict[str, Any]:
         raise ProviderError("ForexFactory event has an invalid dateline.") from exc
 
     currency = str(raw.get("currency", "")).strip().upper()
-    if currency not in SUPPORTED_CURRENCIES and currency != "ALL":
+    if currency not in FX_CURRENCY_CODES and currency != "ALL":
         raise ProviderError(
             f"Unsupported ForexFactory currency '{currency}'."
         )
@@ -1001,7 +1001,11 @@ def acquire_current(
                     hour=0, minute=0, second=0, microsecond=0
                 )
                 events = fetch_forexfactory(fetch_start, fetch_end)
-                merge_events(document, events)
+                merge_events(
+                    document,
+                    events,
+                    clear_suppressed_symbol=symbol,
+                )
                 incremental.extend(
                     query_current_events(events, last_successful_at, now)
                 )
