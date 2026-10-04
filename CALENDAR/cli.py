@@ -108,7 +108,7 @@ def run_refresh(
 
     with storage.acquire_calendar_lock():
         if debug:
-            print(f"DEBUG | Calendar file: {CALENDAR_FILE}", file=sys.stderr)
+            print(f"DEBUG | Calendar file: {storage.CALENDAR_FILE}", file=sys.stderr)
         document = storage.load_calendar_document()
         result = operations.refresh_calendar_scope(
             document,
