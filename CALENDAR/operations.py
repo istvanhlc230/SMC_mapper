@@ -1,3 +1,4 @@
+# (c) Istvan Jakab <istvanhlc230@gmail.com>
 """Calendar acquisition, refresh and deletion workflows."""
 
 import sys
