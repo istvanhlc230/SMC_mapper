@@ -866,7 +866,9 @@ jobs:
           ) == []
 
           original_parse = calendar.parse_request
+          original_cli_parse = __import__("CALENDAR.cli", fromlist=["parse_request"]).parse_request
           original_run_query = calendar.run_query
+          original_cli_run_query = __import__("CALENDAR.cli", fromlist=["run_query"]).run_query
           try:
               captured = {}
               calendar.parse_request = lambda _args: {
@@ -876,7 +878,8 @@ jobs:
                   "cleartext": False,
                   "debug": True,
               }
-              calendar.run_query = lambda symbol, scope, cleartext=False, debug=False: (
+              __import__("CALENDAR.cli", fromlist=["run_query"]).parse_request = calendar.parse_request
+              __import__("CALENDAR.cli", fromlist=["run_query"]).run_query = lambda symbol, scope, cleartext=False, debug=False: (
                   captured.update({
                       "symbol": symbol,
                       "scope": scope,
@@ -891,6 +894,7 @@ jobs:
               calendar.parse_request = lambda _args: (_ for _ in ()).throw(
                   RuntimeError("synthetic debug test")
               )
+              __import__("CALENDAR.cli", fromlist=["parse_request"]).parse_request = calendar.parse_request
               sys.argv = ["calendar.py", "EURUSD", "current", "--debug"]
               err = io.StringIO()
               with contextlib.redirect_stderr(err):
@@ -900,6 +904,7 @@ jobs:
               calendar.parse_request = lambda _args: (_ for _ in ()).throw(
                   RuntimeError("synthetic no-debug test")
               )
+              __import__("CALENDAR.cli", fromlist=["parse_request"]).parse_request = calendar.parse_request
               sys.argv = ["calendar.py", "EURUSD", "current"]
               err = io.StringIO()
               with contextlib.redirect_stderr(err):
@@ -907,7 +912,9 @@ jobs:
               assert "DEBUG |" not in err.getvalue()
           finally:
               calendar.parse_request = original_parse
+              __import__("CALENDAR.cli", fromlist=["parse_request"]).parse_request = original_cli_parse
               calendar.run_query = original_run_query
+              __import__("CALENDAR.cli", fromlist=["run_query"]).run_query = original_cli_run_query
 
           original_now = domain.utc_now
           original_fetch = providers.fetch_yahoo_news
