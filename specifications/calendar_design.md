@@ -221,3 +221,8 @@ Provider networking, HTML parsing, threading, and OS-specific file locking are i
 ## 13. Rendered time rule
 
 A rendered ForexFactory event without a concrete clock is rejected by the fallback parser instead of being assigned midnight.
+
+
+### 6.2 Successful no-match semantics
+
+An acquisition that reaches the provider successfully but yields no events for the requested symbol and interval is a successful empty result. It is represented as `NO_MATCH`, not `PARTIAL`. The query layer maps an all-`NO_MATCH` provider result set to `NO_RELEVANT_EVENT`. `PARTIAL` is reserved for actual incomplete acquisition state. Yahoo Finance uses `NO_MATCH` for an empty successful news collection; `SKIPPED_NO_FOREX_PAIR` remains the distinct verified-instrument-unavailable state.
