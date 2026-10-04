@@ -1384,8 +1384,6 @@ def _is_forexfactory_event_url(value: str) -> bool:
         return True
     if re.match(r"^/calendar/\d+-[^/?#]+$", parsed.path, re.IGNORECASE):
         return True
-    if re.match(r"^/calendar/details/1-\d+$", parsed.path, re.IGNORECASE):
-        return True
 
     if parsed.path.rstrip("/").lower() != "/calendar":
         return False
@@ -1408,9 +1406,6 @@ def _forexfactory_url_event_id(value: str) -> Optional[str]:
     if len(event_values) == 1 and re.fullmatch(r"\d+", event_values[0]):
         return event_values[0]
     match = re.match(r"^/calendar/(\d+)-[^/?#]+$", parsed.path, re.IGNORECASE)
-    if match:
-        return match.group(1)
-    match = re.match(r"^/calendar/details/1-(\d+)$", parsed.path, re.IGNORECASE)
     if match:
         return match.group(1)
     return None
