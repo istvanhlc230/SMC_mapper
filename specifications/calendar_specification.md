@@ -2,7 +2,7 @@
 
 Status: Current V2 specification.
 
-Calendar implementation baseline: 2.3.0.
+Calendar implementation baseline: 2.3.1.
 
 Scope:
 - unified economic-calendar and news acquisition;
@@ -384,8 +384,11 @@ The `Details` section in cleartext output must render the normalized `details` o
     Previous
 
 ForexFactory `specs` follow the core fields in provider order. Each specification renders as
-`<Title>: <text content>` after stripping HTML markup for human-readable presentation. The canonical
-`calendar.json` retains the original provider HTML so links and formatting information are not lost.
+`<Title>: <text content>` after decoding HTML character references and stripping HTML markup for
+human-readable presentation. This applies both to literal provider tags and entity-escaped tags such as
+`&lt;br&gt;` or `&lt;img ...&gt;`; raw provider markup must never leak into `--cleartext` output. The
+canonical `calendar.json` retains the original provider HTML so links and formatting information are not
+lost.
 A null detail value is displayed as `N/A`. Additional non-spec detail fields are rendered afterward in
 deterministic key order. Each cleartext event block ends after `Event ID`; there is no closing separator
 line, and adjacent event blocks are separated by one blank line. The default machine-readable JSON output
