@@ -35,7 +35,7 @@ HTTP_TIMEOUT = 15.0
 # SCHEMA_VERSION — persistent calendar.json schema version.
 SCHEMA_VERSION = 2
 # __version__ — Calendar CLI implementation version, independent from SCHEMA_VERSION.
-__version__ = "2.3.3"
+__version__ = "2.3.4"
 
 # SUPPORTED_CURRENCIES — standalone currencies accepted by the CLI.
 SUPPORTED_CURRENCIES = {
@@ -1983,24 +1983,53 @@ def status_from_provider_results(provider_results: List[Dict[str, Any]]) -> str:
     return "OK"
 
 
+# Class: _DetailTextParser — converts provider Detail HTML into readable text.
+class _DetailTextParser(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.parts: List[str] = []
+
+    def handle_starttag(self, tag: str, attrs: List[Tuple[str, Optional[str]]]) -> None:
+        if tag.lower() == "br":
+            self.parts.append("\n")
+
+    def handle_startendtag(self, tag: str, attrs: List[Tuple[str, Optional[str]]]) -> None:
+        if tag.lower() == "br":
+            self.parts.append("\n")
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag.lower() in {"p", "div", "li", "tr", "table", "h1", "h2", "h3", "h4", "h5", "h6"}:
+            self.parts.append("\n")
+
+    def handle_data(self, data: str) -> None:
+        self.parts.append(data)
+
+
 # Function: _detail_html_to_text — strips provider HTML for cleartext presentation.
 # Variables: value=provider HTML fragment.
 def _detail_html_to_text(value: str) -> str:
-    # ForexFactory may return Detail HTML with markup escaped one or more times
-    # (for example &lt;br&gt;, &amp;lt;br&amp;gt;, or escaped <img ...> markup).
-    # Decode repeatedly to a stable value before removing provider markup so
-    # cleartext never exposes raw HTML tags.
+    # ForexFactory may return Detail HTML with markup escaped one or more times.
+    # Decode to a stable representation before parsing so literal and escaped
+    # provider markup are treated identically. HTMLParser then handles tags
+    # reliably instead of relying on provider-specific regular expressions.
     text = value
     for _ in range(3):
         decoded = unescape(text)
         if decoded == text:
             break
         text = decoded
-    text = re.sub(r"(?is)<br\s*/?>", "\n", text)
-    text = re.sub(r"(?is)</(p|div|li|tr|table|h[1-6])\s*>", "\n", text)
-    text = re.sub(r"(?is)<[^>]+>", "", text)
+
+    parser = _DetailTextParser()
+    try:
+        parser.feed(text)
+        parser.close()
+    except Exception as exc:
+        raise DataIntegrityError(f"Invalid ForexFactory Detail HTML: {exc}") from exc
+
+    text = "".join(parser.parts)
     text = re.sub(r"[ \t]+", " ", text)
-    text = re.sub(r"\n[ \t]+", "\n", text)
+    text = re.sub(r" *\n *", "\n", text)
+    text = re.sub(r"\n{2,}", "\n", text)
     return text.strip()
 
 
