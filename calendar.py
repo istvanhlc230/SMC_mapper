@@ -35,7 +35,7 @@ HTTP_TIMEOUT = 15.0
 # SCHEMA_VERSION — persistent calendar.json schema version.
 SCHEMA_VERSION = 2
 # __version__ — Calendar CLI implementation version, independent from SCHEMA_VERSION.
-__version__ = "2.3.9"
+__version__ = "2.3.10"
 
 # SUPPORTED_CURRENCIES — standalone currencies accepted by the CLI.
 SUPPORTED_CURRENCIES = {
@@ -2344,8 +2344,8 @@ def _refresh_provider_window(
     return expanded_start, expanded_end
 
 
-# Function: _refresh_event_records — compares and replaces refreshed event records without
-# treating provider timestamp changes as identity conflicts.
+# Function: _refresh_event_records — compares complete cached/provider records and replaces
+# changed event records without treating provider timestamp changes as identity conflicts.
 # Variables: document=in-memory Calendar document; refreshed_events=fresh provider records;
 # symbol=canonical symbol used for suppression ownership.
 # Local variables: changed=changed existing records; event=refreshed event; old=previous record;
@@ -2539,6 +2539,8 @@ def run_refresh(
     start, end = resolve_scope_interval(scope)
 
     with acquire_calendar_lock():
+        if debug:
+            print(f"DEBUG | Calendar file: {CALENDAR_FILE}", file=sys.stderr)
         document = load_calendar_document()
         result = refresh_calendar_scope(
             document,
