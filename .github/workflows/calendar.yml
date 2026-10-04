@@ -42,6 +42,44 @@ jobs:
           assert calendar.build_forexfactory_query(one_day, two_day_end) == "day=apr3.2026"
           range_end = calendar.parse_date("2026.04.11")
           assert calendar.build_forexfactory_query(one_day, range_end) == "range=apr3.2026-apr10.2026"
+
+          # Legacy ForexFactory cache without Detail specs must be treated as
+          # incomplete so the next explicit request refreshes its Details.
+          legacy_doc = calendar.build_empty_calendar_document()
+          legacy_doc["events"] = [{
+              "event_id": "forexfactory:legacy",
+              "symbol": "USD",
+              "asset_type": "forex",
+              "event_type": "economic",
+              "source": "forexfactory",
+              "timestamp": "2026-10-05T12:00:00Z",
+              "title": "Legacy Event",
+              "details": {
+                  "currency": "USD",
+                  "impact": "HIGH",
+                  "actual": None,
+                  "forecast": None,
+                  "previous": None,
+                  "url": None,
+              },
+          }]
+          legacy_doc["coverage"] = [{
+              "provider": "forexfactory",
+              "symbol": "USD",
+              "start": "2026-10-05T00:00:00Z",
+              "end": "2026-10-06T00:00:00Z",
+              "status": "COMPLETE",
+              "updated_at": "2026-10-05T00:00:00Z",
+          }]
+          assert calendar.find_uncovered_intervals(
+              legacy_doc,
+              "forexfactory",
+              "USD",
+              dt("2026-10-05T00:00:00Z"),
+              dt("2026-10-06T00:00:00Z"),
+          ) == [
+              (dt("2026-10-05T00:00:00Z"), dt("2026-10-06T00:00:00Z"))
+          ]
           html = """<html><body>
           <div>Calendar Time Zone: Europe/Budapest (GMT +2)</div>
           <table><tbody>
@@ -317,6 +355,18 @@ jobs:
           assert "  Actual   : N/A\n" in rendered
           assert "  Forecast : 57.1\n" in rendered
           assert "  Previous : 57.8\n" in rendered
+
+          legacy_url_event = dict(cleartext_event)
+          legacy_url_event["details"] = {
+              **cleartext_event["details"],
+              "url": None,
+          }
+          legacy_url_out = io.StringIO()
+          with contextlib.redirect_stdout(legacy_url_out):
+              calendar.output_query_result(
+                  "OK", "USD", [legacy_url_event], [], cleartext=True
+              )
+          assert "Url" not in legacy_url_out.getvalue()
 
           detail_text_event = dict(cleartext_event)
           detail_text_event["details"] = {
