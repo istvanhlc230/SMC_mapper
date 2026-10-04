@@ -31,7 +31,7 @@ HTTP_TIMEOUT = 15.0
 # SCHEMA_VERSION — persistent calendar.json schema version.
 SCHEMA_VERSION = 2
 # __version__ — Calendar CLI implementation version, independent from SCHEMA_VERSION.
-__version__ = "2.2.1"
+__version__ = "2.2.2"
 
 # SUPPORTED_CURRENCIES — standalone currencies accepted by the CLI.
 SUPPORTED_CURRENCIES = {
@@ -820,6 +820,39 @@ def fetch_url(url: str) -> str:
         raise ProviderError(str(exc)) from exc
 
 
+# Function: _forexfactory_date_token — formats a provider date token without zero-padding the day.
+# Variables: value=UTC date value.
+# Local variables: month=lowercase abbreviated month; day=calendar day; year=calendar year.
+def _forexfactory_date_token(value: datetime) -> str:
+    month = value.strftime("%b").lower()
+    day = value.day
+    year = value.year
+    return f"{month}{day}.{year}"
+
+
+# Function: build_forexfactory_query — selects the native ForexFactory query form for an interval.
+# Variables: start=request/provider interval start; end=request/provider interval end.
+# Local variables: query=provider query parameters; first_day=first calendar day; last_day=last calendar day.
+def build_forexfactory_query(start: datetime, end: datetime) -> str:
+    if end <= start:
+        raise CalendarInputError("ForexFactory query interval must have a positive duration.")
+
+    first_day = start.replace(hour=0, minute=0, second=0, microsecond=0)
+    last_day = (end - timedelta(microseconds=1)).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+    if first_day == last_day:
+        query = {"day": _forexfactory_date_token(first_day)}
+    else:
+        query = {
+            "range": (
+                f"{_forexfactory_date_token(first_day)}-"
+                f"{_forexfactory_date_token(last_day)}"
+            )
+        }
+    return urllib.parse.urlencode(query)
+
+
 # Function: fetch_forexfactory — fetches FF calendar data.
 # Variables: start=interval start; end=interval end.
 # Local variables: days=provider calendar days; end_token=local intermediate value; event=normalized event; hour=hour component; html=provider HTML; last_day=last processed day; normalized=normalized record; provider_end=provider interval end; provider_start=provider interval start; query=provider query symbol; request_end=requested interval end; request_start=requested interval start; start_token=local intermediate value.
@@ -838,9 +871,7 @@ def fetch_forexfactory(
         provider_end += timedelta(days=1)
     last_day = provider_end - timedelta(days=1)
 
-    start_token = provider_start.strftime("%b%d.%Y").lower()
-    end_token = last_day.strftime("%b%d.%Y").lower()
-    query = urllib.parse.urlencode({"range": f"{start_token}-{end_token}"})
+    query = build_forexfactory_query(provider_start, provider_end)
     html = fetch_url(f"{FOREXFACTORY_URL}?{query}")
     try:
         days = parse_calendar_days(extract_days_payload(html))

@@ -35,6 +35,11 @@ jobs:
           assert calendar.validate_symbol("USDGBP") == "USDGBP"
           assert calendar.validate_symbol("HUF") == "HUF"
           assert calendar.validate_symbol("NVDA") == "NVDA"
+          one_day = calendar.parse_date("2026.04.03")
+          two_day_end = calendar.parse_date("2026.04.04")
+          assert calendar.build_forexfactory_query(one_day, two_day_end) == "day=apr3.2026"
+          range_end = calendar.parse_date("2026.04.10")
+          assert calendar.build_forexfactory_query(one_day, range_end) == "range=apr3.2026-apr10.2026"
           html = """<html><body>
           <div>Calendar Time Zone: Europe/Budapest (GMT +2)</div>
           <table><tbody>
@@ -62,7 +67,7 @@ jobs:
           assert normalized_ff["timestamp"] == "2026-10-05T07:00:00Z"
           assert normalized_ff["details"]["impact"] == "HIGH"
 
-          assert calendar.__version__ == "2.1.0"
+          assert calendar.__version__ == "2.2.2"
           assert f"Calendar CLI v{calendar.__version__}" in calendar.HELP_TEXT
 
           # Explicit bare delete must recover from an incompatible legacy cache.

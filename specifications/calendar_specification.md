@@ -32,6 +32,10 @@ Development-only temporary artifacts belong under dev_tmp/.
 
 ForexFactory:
 - primary source for economic events;
+- the implementation uses ForexFactory's native calendar query grammar;
+- a single concrete calendar day uses `day=<monD.YYYY>` (for example `day=apr3.2026`);
+- a multi-day interval uses `range=<monD.YYYY>-<monD.YYYY>` (for example `range=apr3.2026-apr10.2026`);
+- the web UI also exposes relative/navigation forms `day=today`, `day=tomorrow`, `day=yesterday`, `week=this`, `week=next`, `week=last`, `month=this`, `month=next`, and `month=last`; these are provider-native navigation forms and are not part of the Calendar CLI grammar;
 - the range-filtered ForexFactory calendar HTML is the current provider representation; the legacy embedded structured days payload is still accepted when present;
 - normalized fields include id, dateline, currency, name, impactName/impactClass, actual, forecast, previous;
 - provider country codes are never used as canonical currencies.
@@ -309,6 +313,10 @@ GMT offset is used as a fallback.
 
 The fallback produces the same canonical normalized event contract and does not alter provider
 routing, coverage, watermark, or atomic persistence semantics.
+
+Provider-query construction is deterministic from the requested interval. The requested interval is
+still filtered against canonical UTC event timestamps after acquisition, so provider query inclusivity
+cannot widen the persisted/result interval.
 ## 8. Persistent schema
 
 ### Software version
@@ -421,4 +429,7 @@ Acceptance requires:
 - six-letter FX recognition uses the currency-code universe independently of the
   narrower standalone-currency CLI set;
 - successful current-mode ForexFactory reacquisition clears the target symbol's
-  `suppressed_for` marker.
+  `suppressed_for` marker;
+- single-day ForexFactory acquisition uses the native `day=` query form;
+- multi-day ForexFactory acquisition uses the native `range=` query form;
+- relative ForexFactory navigation aliases are documented but are not accepted as public Calendar CLI scopes.
