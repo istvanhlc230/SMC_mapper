@@ -975,11 +975,6 @@ def _enrich_forexfactory_details(
         event["details"]["specs"] = specs
 
 
-    # ForexFactory Detail is provider data, not a canonical event URL.
-    # Detail enrichment can be disabled for discovery-only refresh acquisition.
-    if include_details:
-        _enrich_forexfactory_details(normalized)
-
 # Function: _normalize_forexfactory_impact_value — normalizes provider impact text to a canonical token.
 # Variables: value=provider impact text.
 # Local variables: lowered=lowercase provider text.
