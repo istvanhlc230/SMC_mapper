@@ -1,4 +1,5 @@
 import contextlib
+from concurrent.futures import ThreadPoolExecutor
 import hashlib
 import json
 import os
@@ -34,7 +35,7 @@ HTTP_TIMEOUT = 15.0
 # SCHEMA_VERSION — persistent calendar.json schema version.
 SCHEMA_VERSION = 2
 # __version__ — Calendar CLI implementation version, independent from SCHEMA_VERSION.
-__version__ = "2.3.2"
+__version__ = "2.3.3"
 
 # SUPPORTED_CURRENCIES — standalone currencies accepted by the CLI.
 SUPPORTED_CURRENCIES = {
@@ -939,12 +940,23 @@ def fetch_forexfactory(
 
     # ForexFactory Detail is provider data, not a canonical event URL.
     # It is acquired separately by numeric provider event ID after the calendar
-    # event set is normalized and interval-filtered.
-    for event in normalized:
+    # event set is normalized and interval-filtered. Detail requests are
+    # intentionally bounded-parallel to avoid N sequential network round-trips;
+    # results are assigned back in normalized event order.
+    def fetch_detail(event: Dict[str, Any]) -> List[Dict[str, Any]]:
         provider_event_id = event["event_id"].split(":", 1)[1]
-        event["details"]["specs"] = fetch_forexfactory_event_detail(
-            provider_event_id
-        )
+        return fetch_forexfactory_event_detail(provider_event_id)
+
+    if normalized:
+        max_workers = min(6, len(normalized))
+        with ThreadPoolExecutor(
+            max_workers=max_workers,
+            thread_name_prefix="ff-detail",
+        ) as executor:
+            detail_specs = list(executor.map(fetch_detail, normalized))
+
+        for event, specs in zip(normalized, detail_specs):
+            event["details"]["specs"] = specs
 
     return normalized
 
