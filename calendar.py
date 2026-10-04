@@ -907,18 +907,6 @@ def fetch_forexfactory(
     try:
         days = parse_calendar_days(extract_days_payload(html))
         normalized = normalize_calendar_events(days)
-        normalized = [
-            event for event in normalized
-            if request_start <= parse_iso8601(event["timestamp"]) < request_end
-        ]
-
-        # Fetch provider Detail specifications only for events in the requested
-        # interval. The calendar-page Detail control is not a canonical event URL.
-        for event in normalized:
-            provider_event_id = event["event_id"].split(":", 1)[1]
-            event["details"]["specs"] = fetch_forexfactory_event_detail(
-                provider_event_id
-            )
     except ProviderError:
         fallback_raw = parse_forexfactory_html_events(
             html,
@@ -929,6 +917,19 @@ def fetch_forexfactory(
             normalize_provider_event(raw_event)
             for raw_event in fallback_raw
         ]
+
+    normalized = [
+        event for event in normalized
+        if request_start <= parse_iso8601(event["timestamp"]) < request_end
+    ]
+
+    # Fetch provider Detail specifications only after the calendar event set has
+    # been acquired. A Detail provider error is not treated as HTML-parser fallback.
+    for event in normalized:
+        provider_event_id = event["event_id"].split(":", 1)[1]
+        event["details"]["specs"] = fetch_forexfactory_event_detail(
+            provider_event_id
+        )
 
     return normalized
 
@@ -1354,9 +1355,6 @@ def _resolve_impact(raw: Dict[str, Any]) -> str:
     return "UNKNOWN"
 
 
-# Function: _is_forexfactory_event_url — validates a concrete ForexFactory event-detail URL.
-# Variables: value=provider URL candidate.
-# Local variables: parsed=parsed URL; event_values=event query values.
 # Function: fetch_forexfactory_event_detail — fetches one ForexFactory Detail specification set.
 # Variables: event_id=provider event identifier.
 # Local variables: data=decoded response; exc=local exception; payload=provider response text; spec=provider specification; specs=provider specification collection; normalized=canonical specification collection.
@@ -1414,7 +1412,7 @@ def fetch_forexfactory_event_detail(event_id: str) -> List[Dict[str, Any]]:
 
 # Function: normalize_provider_event — normalizes one provider event.
 # Variables: raw=local intermediate value.
-# Local variables: currency=currency code; exc=local intermediate value; timestamp=event timestamp; title=event title; url=provider detail URL.
+# Local variables: currency=currency code; exc=local intermediate value; timestamp=event timestamp; title=event title.
 def normalize_provider_event(raw: Dict[str, Any]) -> Dict[str, Any]:
     if raw.get("id") in (None, "", "None"):
         raise ProviderError("ForexFactory event has no provider ID.")
