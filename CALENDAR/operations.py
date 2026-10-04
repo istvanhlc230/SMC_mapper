@@ -24,8 +24,15 @@ def acquire_explicit(
             if provider == "forexfactory":
                 gaps = domain.find_uncovered_intervals(document, provider, symbol, start, end)
                 events: List[Dict[str, Any]] = []
+                detail_failures: List[str] = []
                 for gap_start, gap_end in gaps:
-                    events.extend(providers.fetch_forexfactory(gap_start, gap_end))
+                    events.extend(
+                        providers.fetch_forexfactory(
+                            gap_start,
+                            gap_end,
+                            detail_failures=detail_failures,
+                        )
+                    )
                 if gaps:
                     domain.merge_events(document, events, clear_suppressed_symbol=symbol)
                     for gap_start, gap_end in gaps:
@@ -36,7 +43,13 @@ def acquire_explicit(
                             "status": "COMPLETE", "updated_at": domain.format_iso8601(now),
                         })
                     domain.update_watermark(document, provider, symbol, now, events)
-                    provider_results.append({"provider": provider, "status": "OK", "events_acquired": len(events), "coverage": "UPDATED"})
+                    provider_results.append({
+                        "provider": provider,
+                        "status": "PARTIAL" if detail_failures else "OK",
+                        "events_acquired": len(events),
+                        "coverage": "UPDATED",
+                        **({"detail_failures": len(detail_failures)} if detail_failures else {}),
+                    })
                 else:
                     provider_results.append({"provider": provider, "status": "OK", "events_acquired": 0, "coverage": "CACHED"})
                 successful += 1
