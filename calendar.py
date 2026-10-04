@@ -2572,7 +2572,13 @@ def run_refresh(
                 f"unchanged={result['summary']['unchanged']}"
             )
         else:
-            print(json.dumps({"refresh": result["summary"]}, ensure_ascii=False))
+            print(json.dumps({
+                "status": status,
+                "symbol": symbol,
+                "events": result["events"],
+                "providers": result["provider_results"],
+                "refresh": result["summary"],
+            }, ensure_ascii=False))
         return 0 if status != "UNAVAILABLE" else 2
 
 
