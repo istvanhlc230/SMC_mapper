@@ -31,7 +31,7 @@ HTTP_TIMEOUT = 15.0
 # SCHEMA_VERSION — persistent calendar.json schema version.
 SCHEMA_VERSION = 2
 # __version__ — Calendar CLI implementation version, independent from SCHEMA_VERSION.
-__version__ = "2.2.3"
+__version__ = "2.2.4"
 
 # SUPPORTED_CURRENCIES — standalone currencies accepted by the CLI.
 SUPPORTED_CURRENCIES = {
@@ -914,7 +914,11 @@ class ForexFactoryHTMLCalendarParser(HTMLParser):
         classes = set(str(attributes.get("class") or "").split())
 
         if tag == "tr" and ("calendar__row" in classes or "calendar_row" in classes):
-            event_id = attributes.get("data-eventid") or attributes.get("data-event-id")
+            event_id = (
+                attributes.get("data-eventid")
+                or attributes.get("data-event-id")
+                or attributes.get("data-eid")
+            )
             self.current_row = {
                 "id": event_id,
                 "date": "",
@@ -1119,17 +1123,21 @@ def parse_forexfactory_html_events(
     normalized_events: List[Dict[str, Any]] = []
 
     for row in parser.rows:
-        event_id = str(row.get("id") or "").strip()
-        if not event_id:
-            raise ProviderError("ForexFactory calendar row has no provider ID.")
-
         currency = str(row.get("currency") or "").strip().upper()
+        title = str(row.get("title") or "").strip()
+
+        # Structural/helper rows may share the calendar-row CSS class but are not
+        # economic event records. Ignore rows without an event title before the
+        # provider-ID requirement is enforced.
+        if not title:
+            continue
+
         if currency not in FX_CURRENCY_CODES and currency != "ALL":
             raise ProviderError(f"Unsupported ForexFactory currency '{currency}'.")
 
-        title = str(row.get("title") or "").strip()
-        if not title:
-            continue
+        event_id = str(row.get("id") or "").strip()
+        if not event_id:
+            raise ProviderError("ForexFactory calendar event has no provider ID.")
 
         event_date = _parse_forexfactory_date(str(row.get("date") or ""), start, end)
         hour, minute = _parse_forexfactory_time(str(row.get("time") or ""))

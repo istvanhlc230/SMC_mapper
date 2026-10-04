@@ -432,4 +432,5 @@ Acceptance requires:
   `suppressed_for` marker;
 - single-day ForexFactory acquisition uses the native `day=` query form;
 - multi-day ForexFactory acquisition uses the native `range=` query form;
+- rendered ForexFactory helper rows without an event title do not fail the provider acquisition path;
 - relative ForexFactory navigation aliases are documented but are not accepted as public Calendar CLI scopes.

@@ -54,6 +54,24 @@ jobs:
             <td class="calendar__cell calendar__previous previous">1.0%</td>
           </tr>
           </tbody></table></body></html>"""
+          helper_row_html = """<html><body>
+          <div>Calendar Time Zone: Europe/Budapest (GMT +2)</div>
+          <table><tbody>
+          <tr class="calendar__row calendar_row"><td class="calendar__cell calendar__date date">Mon Oct 5</td></tr>
+          <tr class="calendar__row calendar_row" data-event-id="1002">
+            <td class="calendar__cell calendar__date date">Mon Oct 5</td>
+            <td class="calendar__cell calendar__time time">10:00am</td>
+            <td class="calendar__cell calendar__currency currency">USD</td>
+            <td class="calendar__cell calendar__event event"><span class="calendar__event-title">US Test Event</span></td>
+          </tr></tbody></table></body></html>"""
+          helper_rows = calendar.parse_forexfactory_html_events(
+              helper_row_html,
+              dt("2026-10-04T00:00:00Z"),
+              dt("2026-10-06T00:00:00Z"),
+          )
+          assert [row["id"] for row in helper_rows] == ["1002"]
+          assert helper_rows[0]["currency"] == "USD"
+
           ff_rows = calendar.parse_forexfactory_html_events(
               html,
               dt("2026-10-04T00:00:00Z"),
@@ -67,7 +85,7 @@ jobs:
           assert normalized_ff["timestamp"] == "2026-10-05T07:00:00Z"
           assert normalized_ff["details"]["impact"] == "HIGH"
 
-          assert calendar.__version__ == "2.2.3"
+          assert calendar.__version__ == "2.2.4"
           assert f"Calendar CLI v{calendar.__version__}" in calendar.HELP_TEXT
 
           # Explicit bare delete must recover from an incompatible legacy cache.
