@@ -287,7 +287,7 @@ jobs:
           assert "svg-img" not in literal_rendered
           assert "<br>" not in literal_rendered
           assert "FF Notice : Event added" in literal_rendered
-          assert "Why Traders\nCare:" in literal_rendered
+          assert "Why Traders Care:" in literal_rendered
 
           # Detail acquisition must use bounded parallel workers while preserving
           # the original event order.
@@ -434,7 +434,7 @@ jobs:
               }
               assert calendar.normalize_provider_event(structured_raw)["details"]["impact"] == expected_impact
 
-          assert calendar.__version__ == "2.3.5"
+          assert calendar.__version__ == "2.3.6"
           assert f"Calendar CLI v{calendar.__version__}" in calendar.HELP_TEXT
 
           # Cleartext output must render normalized details as readable fields,
