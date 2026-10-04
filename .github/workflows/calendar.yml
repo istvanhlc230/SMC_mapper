@@ -417,6 +417,46 @@ jobs:
               calendar._enrich_forexfactory_details = original_refresh_detail_enrich
               calendar.save_calendar_atomic = original_refresh_save
 
+          # A cached mutable value that differs from the provider must be detected and replaced.
+          manual_mutation_doc = calendar.build_empty_calendar_document()
+          manual_mutation_event = {
+              "event_id": "forexfactory:147017",
+              "symbol": "USD",
+              "asset_type": "forex",
+              "event_type": "economic",
+              "source": "forexfactory",
+              "timestamp": "2026-10-01T12:30:00Z",
+              "title": "Unemployment Claims",
+              "details": {
+                  "currency": "USD",
+                  "impact": "MEDIUM",
+                  "actual": "999K",
+                  "forecast": "201K",
+                  "previous": "198K",
+                  "specs": [{"order": 1, "title": "Source", "html": "Department of Labor"}],
+              },
+          }
+          manual_mutation_doc["events"] = [manual_mutation_event]
+          original_refresh_fetch = calendar.fetch_forexfactory
+          original_refresh_detail_enrich = calendar._enrich_forexfactory_details
+          try:
+              provider_event = dict(manual_mutation_event)
+              provider_event["details"] = dict(manual_mutation_event["details"])
+              provider_event["details"]["actual"] = "197K"
+              calendar.fetch_forexfactory = lambda start, end, include_details=True: [provider_event]
+              calendar._enrich_forexfactory_details = lambda events: None
+              refresh_result = calendar.refresh_calendar_scope(
+                  manual_mutation_doc,
+                  "USD",
+                  dt("2026-10-01T12:30:00Z"),
+                  dt("2026-10-01T12:31:00Z"),
+              )
+              assert refresh_result["summary"] == {"added": 0, "changed": 1, "unchanged": 0}
+              assert manual_mutation_doc["events"][0]["details"]["actual"] == "197K"
+          finally:
+              calendar.fetch_forexfactory = original_refresh_fetch
+              calendar._enrich_forexfactory_details = original_refresh_detail_enrich
+
           # Refresh machine-readable output is exactly one JSON document.
           original_refresh_scope = calendar.refresh_calendar_scope
           try:
@@ -552,7 +592,7 @@ jobs:
               }
               assert calendar.normalize_provider_event(structured_raw)["details"]["impact"] == expected_impact
 
-          assert calendar.__version__ == "2.3.9"
+          assert calendar.__version__ == "2.3.10"
           assert f"Calendar CLI v{calendar.__version__}" in calendar.HELP_TEXT
 
           # Cleartext output must render normalized details as readable fields,
