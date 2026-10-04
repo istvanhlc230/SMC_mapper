@@ -421,3 +421,16 @@ Implementation refinements within 2.3.8:
 - Refresh Detail enrichment is limited to ForexFactory events; Yahoo refresh never calls the ForexFactory Detail endpoint.
 - Refresh machine-readable output is a single JSON document containing the refresh summary.
 - An unchanged refresh does not rewrite calendar.json.
+
+## 2.3.9 Refresh output duplication correction
+
+The Windows refresh smoke revealed that machine-readable refresh output was emitted twice: first through the
+generic query renderer and then again through the dedicated refresh JSON payload.
+
+Correction:
+- refresh machine-readable mode now emits exactly one JSON document;
+- cleartext mode retains the event blocks plus one human-readable refresh summary;
+- regression coverage asserts that machine-readable refresh produces exactly one non-empty stdout line;
+- Calendar implementation version: 2.3.9; persistent schema remains 2.
+
+Fresh CI and Windows refresh smoke remain required before PASS.
