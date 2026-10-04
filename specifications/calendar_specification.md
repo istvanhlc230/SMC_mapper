@@ -32,7 +32,7 @@ Development-only temporary artifacts belong under dev_tmp/.
 
 ForexFactory:
 - primary source for economic events;
-- structured days payload is the canonical provider representation;
+- the range-filtered ForexFactory calendar HTML is the current provider representation; the legacy embedded structured days payload is still accepted when present;
 - normalized fields include id, dateline, currency, name, impactName/impactClass, actual, forecast, previous;
 - provider country codes are never used as canonical currencies.
 
@@ -294,6 +294,21 @@ Yahoo details may include:
 
 No Yahoo impact is invented.
 
+## 7.5 ForexFactory HTML fallback
+
+The Calendar must not fail solely because the legacy embedded days JSON payload is absent from the
+ForexFactory HTML response.
+
+The acquisition path first attempts the structured days payload. When it is absent, it parses the
+current rendered calendar rows using the provider event identifier, visible date/time, currency,
+impact, title, actual, forecast, and previous fields.
+
+Rendered event times are interpreted using the provider-declared Calendar Time Zone. An IANA timezone
+is preferred. When the runtime has no matching IANA timezone database entry, the provider-declared
+GMT offset is used as a fallback.
+
+The fallback produces the same canonical normalized event contract and does not alter provider
+routing, coverage, watermark, or atomic persistence semantics.
 ## 8. Persistent schema
 
 ### Software version
