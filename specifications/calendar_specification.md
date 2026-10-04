@@ -2,7 +2,7 @@
 
 Status: Current V2 specification.
 
-Calendar implementation baseline: 2.2.17.
+Calendar implementation baseline: 2.3.0.
 
 Scope:
 - unified economic-calendar and news acquisition;
@@ -40,6 +40,9 @@ ForexFactory:
 - the web UI also exposes relative/navigation forms `day=today`, `day=tomorrow`, `day=yesterday`, `week=this`, `week=next`, `week=last`, `month=this`, `month=next`, and `month=last`; these are provider-native navigation forms and are not part of the Calendar CLI grammar;
 - the range-filtered ForexFactory calendar HTML is the current provider representation; the legacy embedded structured days payload is still accepted when present;
 - normalized fields include id, dateline, currency, name, impactName/impactClass, actual, forecast, previous;
+- the event's calendar-page `Detail` content is acquired separately as provider JSON and normalized under `details.specs`;
+- `details.specs` is an ordered list of `{order, title, html}` records; provider HTML is preserved so linked Source/Next Release references are not discarded;
+- the calendar-page Detail navigation is not a canonical event URL; no Detail URL is stored or synthesized;
 - provider country codes are never used as canonical currencies.
 
 Yahoo Finance:
@@ -307,6 +310,15 @@ ForexFactory details include:
     actual
     forecast
     previous
+    specs
+
+`specs` is an ordered, possibly-empty list of:
+
+    order
+    title
+    html
+
+The `html` value is the provider's Detail specification content and may contain links.
 
 Yahoo details may include:
 
@@ -340,22 +352,25 @@ is preferred. When the runtime has no matching IANA timezone database entry, the
 GMT offset is used as a fallback.
 
 The rendered-row parser identifies an event row by the provider event-instance ID first. Current
-ForexFactory CSS row classes are advisory and must not be a required condition for URL extraction
-or event parsing. The fallback produces the same canonical normalized event contract and does not
-alter provider routing, coverage, watermark, or atomic persistence semantics.
+ForexFactory CSS row classes are advisory only; they are not a required condition for event parsing.
+The fallback produces the same canonical normalized event contract and does not alter provider routing,
+coverage, watermark, or atomic persistence semantics.
 
 Provider-query construction is deterministic from the requested interval. The requested interval is
 still filtered against canonical UTC event timestamps after acquisition, so provider query inclusivity
 cannot widen the persisted/result interval.
-For rendered and structured ForexFactory Detail URLs, the native `/calendar?day=...&event=...` query form is a valid concrete provider URL and must be preserved verbatim. Concrete `/calendar/...` event paths are also valid. URL extraction must never synthesize a URL from the numeric event-instance ID.
 
-Concrete ForexFactory Detail URL extraction is DOM-structure-independent. The Calendar collects provider anchor/data-URL targets globally and may associate them to events by the numeric event query parameter or numeric event-path prefix. Extraction must not require the link to be nested inside a particular calendar-row element.
+The calendar-page Detail control is presentation/navigation UI, not a canonical event URL field. For
+each acquired ForexFactory event, Calendar fetches the provider Detail JSON response identified by
+the provider event ID. Its ordered `specs` collection is stored under `details.specs`, with provider
+HTML preserved so Source and Next Release links and future Detail fields are retained. No Detail URL
+is extracted, persisted, or synthesized.
 
 ## 7.6 Human-readable CLI presentation
 
 `--cleartext` is presentation-only and must not modify the canonical event data or persistent schema.
 
-The `Details` section in cleartext output must render the normalized `details` object as individual human-readable fields, not as a serialized JSON dictionary. ForexFactory details are presented in this order when present:
+The `Details` section in cleartext output must render the normalized `details` object as individual human-readable fields, not as a serialized JSON dictionary. ForexFactory core details are presented in this order when present:
 
     Currency
     Impact
@@ -363,7 +378,13 @@ The `Details` section in cleartext output must render the normalized `details` o
     Forecast
     Previous
 
-A null detail value is displayed as `N/A`. Additional future detail fields are rendered afterward in deterministic key order. Each cleartext event block ends after `Event ID`; there is no closing separator line, and adjacent event blocks are separated by one blank line. The default machine-readable JSON output remains unchanged.
+ForexFactory `specs` follow the core fields in provider order. Each specification renders as
+`<Title>: <text content>` after stripping HTML markup for human-readable presentation. The canonical
+`calendar.json` retains the original provider HTML so links and formatting information are not lost.
+A null detail value is displayed as `N/A`. Additional non-spec detail fields are rendered afterward in
+deterministic key order. Each cleartext event block ends after `Event ID`; there is no closing separator
+line, and adjacent event blocks are separated by one blank line. The default machine-readable JSON output
+remains unchanged.
 
 ## 8. Persistent schema
 
@@ -486,5 +507,6 @@ Acceptance requires:
 - rendered ForexFactory impact classification must not silently collapse known HIGH/MEDIUM/LOW events to UNKNOWN;
 - relative ForexFactory navigation aliases are documented but are not accepted as public Calendar CLI scopes;
 - `latest` is read-only and returns `NO_LATEST_EVENT` when the committed snapshot contains no visible event at or before current UTC time;
-- ForexFactory normalized events include `details.url` when the provider exposes an explicit concrete event-detail URL; the current Calendar implementation enriches structured events from the rendered ForexFactory calendar-row href keyed by the provider event-instance ID. Event-ID-bearing rendered rows must remain parseable even if the provider's current CSS row class changes or is absent. The implementation must not synthesize an event-detail URL from the instance ID alone;
+- ForexFactory normalized events include `details.specs` from the provider Detail JSON payload; the visible calendar Detail navigation is not stored and no URL is synthesized from the event ID;
+- malformed or unavailable ForexFactory Detail JSON is surfaced as a provider failure and never silently converted into fabricated Detail content;
 - `--cleartext` renders normalized event details as human-readable fields rather than a raw JSON dictionary, without changing canonical data or machine-readable output.
