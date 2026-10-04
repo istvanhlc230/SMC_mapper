@@ -907,9 +907,13 @@ def fetch_forexfactory(
     try:
         days = parse_calendar_days(extract_days_payload(html))
         normalized = normalize_calendar_events(days)
+        normalized = [
+            event for event in normalized
+            if request_start <= parse_iso8601(event["timestamp"]) < request_end
+        ]
 
-        # Fetch provider Detail specifications for each acquired event.
-        # The calendar-page Detail control is not a canonical event URL.
+        # Fetch provider Detail specifications only for events in the requested
+        # interval. The calendar-page Detail control is not a canonical event URL.
         for event in normalized:
             provider_event_id = event["event_id"].split(":", 1)[1]
             event["details"]["specs"] = fetch_forexfactory_event_detail(
@@ -926,10 +930,7 @@ def fetch_forexfactory(
             for raw_event in fallback_raw
         ]
 
-    return [
-        event for event in normalized
-        if request_start <= parse_iso8601(event["timestamp"]) < request_end
-    ]
+    return normalized
 
 
 # Function: _normalize_forexfactory_impact_value — normalizes provider impact text to a canonical token.
@@ -1791,6 +1792,11 @@ def acquire_explicit(
     if successful:
         validate_calendar_document(document)
         save_calendar_atomic(document)
+        if debug:
+            print(
+                f"DEBUG | Persisted Calendar file: {CALENDAR_FILE}",
+                file=sys.stderr,
+            )
     return {"provider_results": provider_results, "failures": failures}
 
 
@@ -1899,6 +1905,11 @@ def acquire_current(
     ):
         validate_calendar_document(document)
         save_calendar_atomic(document)
+        if debug:
+            print(
+                f"DEBUG | Persisted Calendar file: {CALENDAR_FILE}",
+                file=sys.stderr,
+            )
 
     unique = {
         event["event_id"]: event
