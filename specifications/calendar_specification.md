@@ -340,7 +340,7 @@ The `Details` section in cleartext output must render the normalized `details` o
     Forecast
     Previous
 
-A null detail value is displayed as `N/A`. Additional future detail fields are rendered afterward in deterministic key order. The default machine-readable JSON output remains unchanged.
+A null detail value is displayed as `N/A`. Additional future detail fields are rendered afterward in deterministic key order. Each cleartext event block ends after `Event ID`; there is no closing separator line, and adjacent event blocks are separated by one blank line. The default machine-readable JSON output remains unchanged.
 
 ## 8. Persistent schema
 
