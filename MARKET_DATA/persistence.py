@@ -29,13 +29,29 @@ def update_available_bounds(timeframe_state):
     timeframe_state["available_start"]=candles[0]["timestamp"] if candles else None
     timeframe_state["available_end"]=candles[-1]["timestamp"] if candles else None
 
+def _validate_persisted_decimal(value: Any, field_name: str) -> None:
+    if not isinstance(value, str): raise ValueError(f"persisted {field_name} must be a Decimal string")
+    parsed = Decimal(value)
+    if not parsed.is_finite(): raise ValueError(f"persisted {field_name} must be finite")
+
 def _validate_candle_record(candle):
     required={"candle_id","timestamp","completion_time","open","high","low","close","volume"}
     if not required <= set(candle): raise ValueError("malformed persisted candle")
     stamp=_timestamp(candle["timestamp"]); completion=_timestamp(candle["completion_time"])
     if completion is None or stamp is None or completion <= stamp: raise ValueError("invalid persisted candle time")
-    for key in ("open","high","low","close"): Decimal(str(candle[key]))
-    if not isinstance(candle["volume"],dict): raise ValueError("invalid persisted volume")
+    for key in ("open","high","low","close"): _validate_persisted_decimal(candle[key], key)
+    if Decimal(candle["high"]) < Decimal(candle["low"]): raise ValueError("invalid persisted OHLC")
+    if not Decimal(candle["low"]) <= Decimal(candle["open"]) <= Decimal(candle["high"]): raise ValueError("invalid persisted OHLC")
+    if not Decimal(candle["low"]) <= Decimal(candle["close"]) <= Decimal(candle["high"]): raise ValueError("invalid persisted OHLC")
+    volume=candle["volume"]
+    if not isinstance(volume,dict): raise ValueError("invalid persisted volume")
+    for branch in ("total","ohlc","orderflow"):
+        if branch not in volume: continue
+        if branch=="total": _validate_persisted_decimal(volume[branch],"volume.total")
+        else:
+            if not isinstance(volume[branch],dict) or set(volume[branch]) != {"buy","sell"}: raise ValueError(f"invalid volume.{branch}")
+            _validate_persisted_decimal(volume[branch]["buy"],f"volume.{branch}.buy")
+            _validate_persisted_decimal(volume[branch]["sell"],f"volume.{branch}.sell")
 
 def load_market_data(path: Path, symbol: str) -> dict[str,Any]:
     if not path.exists(): return create_empty_market_data(symbol)
@@ -50,7 +66,12 @@ def load_market_data(path: Path, symbol: str) -> dict[str,Any]:
             _validate_candle_record(candle)
             if candle["candle_id"] in ids or (last is not None and _timestamp(candle["timestamp"]) <= last): raise ValueError("invalid candle ordering or duplicate identity")
             ids.add(candle["candle_id"]); last=_timestamp(candle["timestamp"])
-        update_available_bounds(state)
+        expected_start = state["candles"][0]["timestamp"] if state["candles"] else None
+        expected_end = state["candles"][-1]["timestamp"] if state["candles"] else None
+        if state["available_start"] != expected_start or state["available_end"] != expected_end:
+            raise ValueError(f"invalid availability bounds: {timeframe}")
+        current = state["current"]
+        if current is not None: _validate_candle_record(current)
     return market_data
 
 def serialize_decimal(value: Decimal) -> str:
