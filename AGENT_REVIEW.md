@@ -511,3 +511,19 @@ Correction:
 The Calendar specification and design documents now define this retry contract explicitly. Implementation version: 2.4.1; persistent schema remains 2.
 
 Validation status before final CI/live smoke: implementation and specification changes applied; fresh GitHub Actions validation is required for PASS.
+
+
+## 2.4.2 Successful no-match status correction
+
+Audit finding: a valid Yahoo Finance ticker with a successful empty news result was reported as `PARTIAL`, which incorrectly implied incomplete provider acquisition. For an unknown/non-matching ticker such as `CCCC`, the correct semantic state is a successful no-match.
+
+Correction:
+- Yahoo explicit/current/refresh acquisition now reports `NO_MATCH` when the provider succeeds but returns no matching events;
+- `NO_MATCH` is distinct from provider failure, incomplete acquisition, and verified FX-pair unavailability;
+- aggregate query status becomes `NO_RELEVANT_EVENT` when all applicable providers return `NO_MATCH`;
+- successful no-match acquisition may advance the Yahoo watermark according to normal successful-acquisition semantics;
+- Calendar specification and design now define this contract;
+- regression coverage verifies an empty Yahoo acquisition for `CCCC` produces `NO_MATCH` and `NO_RELEVANT_EVENT` without recording a failure.
+
+Implementation version: 2.4.2; persistent schema remains 2.
+Validation: fresh GitHub Actions Calendar workflow required before final PASS.
