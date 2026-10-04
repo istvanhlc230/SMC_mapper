@@ -2325,10 +2325,15 @@ def _refresh_provider_window(
     start: datetime,
     end: datetime,
 ) -> Tuple[datetime, datetime]:
-    return (
-        start.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=1),
-        end.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1),
+    expanded_start = (
+        start.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=1)
     )
+    expanded_end = (
+        (end - timedelta(microseconds=1)).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        ) + timedelta(days=2)
+    )
+    return expanded_start, expanded_end
 
 
 # Function: _refresh_event_records — compares and replaces refreshed event records without
@@ -2415,22 +2420,17 @@ def refresh_calendar_scope(
                     refresh_window_start,
                     refresh_window_end,
                 )
-                selected = [
-                    event for event in fetched
-                    if (
-                        start <= parse_iso8601(event["timestamp"]) < end
-                        or event["event_id"] in existing_ids
-                    )
-                ]
             else:
                 fetched = fetch_yahoo_news(symbol)
-                selected = [
-                    event for event in fetched
-                    if (
-                        start <= parse_iso8601(event["timestamp"]) < end
-                        or event["event_id"] in existing_ids
-                    )
-                ]
+
+            fetched_for_symbol = filter_events_for_symbol(fetched, symbol)
+            selected = [
+                event for event in fetched_for_symbol
+                if (
+                    start <= parse_iso8601(event["timestamp"]) < end
+                    or event["event_id"] in existing_ids
+                )
+            ]
 
             refreshed_for_symbol.extend(selected)
             provider_results.append({
@@ -2488,12 +2488,21 @@ def refresh_calendar_scope(
                 file=sys.stderr,
             )
 
+    refreshed_ids = {event["event_id"] for event in refreshed_for_symbol}
+    refreshed_visible = [
+        event for event in document["events"]
+        if event["event_id"] in refreshed_ids
+    ]
+    refreshed_visible.sort(
+        key=lambda event: (
+            parse_iso8601(event["timestamp"]),
+            event["source"],
+            event["event_id"],
+        )
+    )
+
     return {
-        "events": filter_events_for_interval(
-            filter_events_for_symbol(document["events"], symbol),
-            start,
-            end,
-        ),
+        "events": refreshed_visible,
         "provider_results": provider_results,
         "failures": failures,
         "summary": summary,
