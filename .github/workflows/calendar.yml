@@ -224,14 +224,15 @@ jobs:
               providers.fetch_forexfactory_event_detail = lambda _event_id: (_ for _ in ()).throw(
                   calendar.ProviderError("synthetic detail failure")
               )
-              try:
-                  providers.fetch_forexfactory(
-                      dt("2026-10-05T00:00:00Z"),
-                      dt("2026-10-06T00:00:00Z"),
-                  )
-                  raise AssertionError("Detail failure was swallowed")
-              except calendar.ProviderError as exc:
-                  assert "synthetic detail failure" in str(exc)
+              detail_failures = []
+              acquired = providers.fetch_forexfactory(
+                  dt("2026-10-05T00:00:00Z"),
+                  dt("2026-10-06T00:00:00Z"),
+                  detail_failures=detail_failures,
+              )
+              assert len(acquired) == 1
+              assert acquired[0]["details"]["specs"] == []
+              assert detail_failures == ["146901"]
           finally:
               providers.fetch_url = original_fetch_url
               providers.fetch_forexfactory_event_detail = detail_failure_original_detail_fetch
@@ -986,6 +987,103 @@ jobs:
           finally:
               domain.resolve_applicable_providers = original_resolve
               providers.fetch_yahoo_news = original_fetch
+
+          # Detail failure must make ForexFactory coverage PARTIAL and
+          # must not advance the current watermark. The incomplete interval
+          # must be retried by the next explicit acquisition.
+          def synthetic_ff_event(event_id, hour):
+              return {
+                  "event_id": f"forexfactory:{event_id}",
+                  "symbol": "USD",
+                  "asset_type": "forex",
+                  "event_type": "economic",
+                  "source": "forexfactory",
+                  "timestamp": f"2026-10-05T{hour:02d}:00:00Z",
+                  "title": f"Event {event_id}",
+                  "details": {
+                      "currency": "USD",
+                      "impact": "HIGH",
+                      "actual": None,
+                      "forecast": None,
+                      "previous": None,
+                      "specs": [{"order": 1, "title": "Source", "html": "Synthetic"}],
+                  },
+              }
+
+          original_ff_fetch = providers.fetch_forexfactory
+          original_now = domain.utc_now
+          original_save = storage.save_calendar_atomic
+          try:
+              domain.utc_now = lambda: dt("2026-10-05T12:00:00Z")
+              storage.save_calendar_atomic = lambda document: None
+              call_count = {"value": 0}
+
+              def partial_then_success(start, end, include_details=True, detail_failures=None):
+                  call_count["value"] += 1
+                  events = [
+                      synthetic_ff_event("2001", 7),
+                      synthetic_ff_event("2002", 8),
+                      synthetic_ff_event("2003", 9),
+                  ]
+                  if detail_failures is not None and call_count["value"] == 1:
+                      detail_failures.append("2002")
+                      events[1]["details"]["specs"] = []
+                  return events
+
+              providers.fetch_forexfactory = partial_then_success
+              partial_doc = domain.build_empty_calendar_document()
+              first = operations.acquire_explicit(
+                  partial_doc,
+                  "USD",
+                  dt("2026-10-05T00:00:00Z"),
+                  dt("2026-10-06T00:00:00Z"),
+              )
+              assert first["provider_results"][0]["status"] == "PARTIAL"
+              assert first["provider_results"][0]["detail_failures"] == 1
+              assert partial_doc["coverage"][0]["status"] == "PARTIAL"
+              assert "forexfactory|USD" not in partial_doc["watermarks"]
+              assert len(partial_doc["events"]) == 3
+
+              second = operations.acquire_explicit(
+                  partial_doc,
+                  "USD",
+                  dt("2026-10-05T00:00:00Z"),
+                  dt("2026-10-06T00:00:00Z"),
+              )
+              assert call_count["value"] == 2
+              assert second["provider_results"][0]["status"] == "OK"
+              assert partial_doc["coverage"][0]["status"] == "COMPLETE"
+              assert "forexfactory|USD" in partial_doc["watermarks"]
+
+              # Current mode must obey the same rule: a Detail-partial
+              # acquisition does not advance the existing successful cursor.
+              current_doc = domain.build_empty_calendar_document()
+              domain.update_watermark(
+                  current_doc,
+                  "forexfactory",
+                  "USD",
+                  dt("2026-10-05T06:00:00Z"),
+                  [],
+              )
+              current_calls = {"value": 0}
+
+              def current_partial(start, end, include_details=True, detail_failures=None):
+                  current_calls["value"] += 1
+                  events = [synthetic_ff_event("2101", 7)]
+                  if detail_failures is not None:
+                      detail_failures.append("2101")
+                      events[0]["details"]["specs"] = []
+                  return events
+
+              providers.fetch_forexfactory = current_partial
+              current_result = operations.acquire_current(current_doc, "USD")
+              assert current_result["provider_results"][0]["status"] == "PARTIAL"
+              assert current_doc["coverage"][0]["status"] == "PARTIAL"
+              assert current_doc["watermarks"]["forexfactory|USD"]["last_successful_at"] == "2026-10-05T06:00:00Z"
+          finally:
+              providers.fetch_forexfactory = original_ff_fetch
+              domain.utc_now = original_now
+              storage.save_calendar_atomic = original_save
 
           print("CALENDAR_TESTS_OK")
           PY
