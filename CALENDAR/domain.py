@@ -6,13 +6,18 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from .config import CalendarInputError, DataIntegrityError, DATE_RE, FX_CURRENCY_CODES, SCHEMA_VERSION, SUPPORTED_CURRENCIES, TIME_RE
 
+# Module state: domain functions operate on the caller-owned Calendar document; no provider I/O or persistent module state is kept here.
+
 def utc_now() -> datetime:
+    """Calendar operation: utc_now performs the focused utc now step in the Calendar implementation."""
     return datetime.now(timezone.utc)
 
 def format_iso8601(value: datetime) -> str:
+    """Calendar operation: format_iso8601 performs the focused format iso8601 step in the Calendar implementation."""
     return value.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 def parse_iso8601(value: str) -> datetime:
+    """Calendar operation: parse_iso8601 performs the focused parse iso8601 step in the Calendar implementation."""
     normalized = value[:-1] + "+00:00" if value.endswith("Z") else value
     try:
         parsed = datetime.fromisoformat(normalized)
@@ -23,15 +28,19 @@ def parse_iso8601(value: str) -> datetime:
     return parsed.astimezone(timezone.utc)
 
 def normalize_symbol(value: str) -> str:
+    """Calendar operation: normalize_symbol performs the focused normalize symbol step in the Calendar implementation."""
     return value.strip().upper()
 
 def is_currency(value: str) -> bool:
+    """Calendar operation: is_currency performs the focused is currency step in the Calendar implementation."""
     return value in SUPPORTED_CURRENCIES
 
 def canonicalize_fx_token(value: str) -> str:
+    """Calendar operation: canonicalize_fx_token performs the focused canonicalize fx token step in the Calendar implementation."""
     return re.sub(r"[/_-]", "", value.strip().upper())
 
 def is_fx_pair(value: str) -> bool:
+    """Calendar operation: is_fx_pair performs the focused is fx pair step in the Calendar implementation."""
     token = canonicalize_fx_token(value)
     return (
         len(token) == 6
@@ -40,12 +49,14 @@ def is_fx_pair(value: str) -> bool:
     )
 
 def is_ticker(value: str) -> bool:
+    """Calendar operation: is_ticker performs the focused is ticker step in the Calendar implementation."""
     token = normalize_symbol(value)
     if is_currency(token) or is_fx_pair(token):
         return False
     return bool(re.fullmatch(r"[A-Z0-9][A-Z0-9._-]{0,14}", token))
 
 def validate_symbol(value: str) -> str:
+    """Calendar operation: validate_symbol performs the focused validate symbol step in the Calendar implementation."""
     token = canonicalize_fx_token(value)
     if is_currency(token):
         return token
@@ -63,6 +74,7 @@ def validate_symbol(value: str) -> str:
     )
 
 def parse_time(value: str) -> Tuple[int, int]:
+    """Calendar operation: parse_time performs the focused parse time step in the Calendar implementation."""
     if not re.fullmatch(TIME_RE, value):
         raise CalendarInputError(f"Invalid time '{value}'. Expected HH:MM.")
     hour, minute = (int(part) for part in value.split(":"))
@@ -71,6 +83,7 @@ def parse_time(value: str) -> Tuple[int, int]:
     return hour, minute
 
 def parse_date(value: str) -> datetime:
+    """Calendar operation: parse_date performs the focused parse date step in the Calendar implementation."""
     if not re.fullmatch(DATE_RE, value):
         raise CalendarInputError(
             f"Invalid date '{value}'. Expected YYYY.MM.DD."
@@ -82,6 +95,7 @@ def parse_date(value: str) -> datetime:
         raise CalendarInputError(f"Invalid calendar date '{value}'.") from exc
 
 def parse_point(value: str) -> Tuple[datetime, bool]:
+    """Calendar operation: parse_point performs the focused parse point step in the Calendar implementation."""
     if "@" not in value:
         return parse_date(value), False
     date_part, time_part = value.split("@", 1)
@@ -90,6 +104,7 @@ def parse_point(value: str) -> Tuple[datetime, bool]:
     return base.replace(hour=hour, minute=minute), True
 
 def resolve_scope_interval(scope: str) -> Tuple[datetime, datetime]:
+    """Calendar operation: resolve_scope_interval performs the focused resolve scope interval step in the Calendar implementation."""
     if scope == "current":
         raise CalendarInputError("'current' is not a historical scope.")
 
@@ -124,12 +139,14 @@ def resolve_scope_interval(scope: str) -> Tuple[datetime, datetime]:
     return start, start + timedelta(days=1)
 
 def parse_scope(scope: str) -> str:
+    """Calendar operation: parse_scope performs the focused parse scope step in the Calendar implementation."""
     if scope in {"current", "latest", "next"}:
         return scope
     resolve_scope_interval(scope)
     return scope
 
 def build_empty_calendar_document() -> Dict[str, Any]:
+    """Calendar operation: build_empty_calendar_document performs the focused build empty calendar document step in the Calendar implementation."""
     return {
         "schema_version": SCHEMA_VERSION,
         "events": [],
@@ -138,6 +155,7 @@ def build_empty_calendar_document() -> Dict[str, Any]:
     }
 
 def _validate_calendar_event(event: Dict[str, Any], event_ids: set[str]) -> None:
+    """Internal helper: _validate_calendar_event performs the focused validate calendar event step in the Calendar implementation."""
     if not isinstance(event, dict):
         raise DataIntegrityError("Invalid event record.")
     required = {"event_id", "symbol", "asset_type", "event_type", "source", "timestamp", "title", "details"}
@@ -176,6 +194,7 @@ def _validate_calendar_event(event: Dict[str, Any], event_ids: set[str]) -> None
         raise DataIntegrityError("Yahoo Finance events must use event_type=news.")
 
 def _validate_forexfactory_details(details: Dict[str, Any]) -> None:
+    """Internal helper: _validate_forexfactory_details performs the focused validate forexfactory details step in the Calendar implementation."""
     if details.get("currency") not in FX_CURRENCY_CODES and details.get("currency") != "ALL":
         raise DataIntegrityError("Invalid ForexFactory currency.")
     if details.get("impact") not in {"HIGH", "MEDIUM", "LOW", "HOLIDAY", "UNKNOWN"}:
@@ -200,6 +219,7 @@ def _validate_forexfactory_details(details: Dict[str, Any]) -> None:
             raise DataIntegrityError("ForexFactory detail spec html must be a string.")
 
 def _validate_coverage_records(records: List[Dict[str, Any]]) -> None:
+    """Internal helper: _validate_coverage_records performs the focused validate coverage records step in the Calendar implementation."""
     seen = set()
     for coverage in records:
         if not isinstance(coverage, dict):
@@ -221,6 +241,7 @@ def _validate_coverage_records(records: List[Dict[str, Any]]) -> None:
         seen.add(key)
 
 def _validate_watermarks(watermarks: Dict[str, Any]) -> None:
+    """Internal helper: _validate_watermarks performs the focused validate watermarks step in the Calendar implementation."""
     for key, watermark in watermarks.items():
         if not isinstance(watermark, dict):
             raise DataIntegrityError("Invalid watermark record.")
@@ -255,6 +276,7 @@ def validate_calendar_document(document: Dict[str, Any]) -> None:
     _validate_watermarks(document["watermarks"])
 
 def merge_events(
+    """Calendar operation: merge_events performs the focused merge events step in the Calendar implementation."""
     document: Dict[str, Any],
     new_events: List[Dict[str, Any]],
     clear_suppressed_symbol: Optional[str] = None,
@@ -289,6 +311,7 @@ def merge_events(
     )
 
 def merge_coverage(document: Dict[str, Any], item: Dict[str, Any]) -> None:
+    """Calendar operation: merge_coverage performs the focused merge coverage step in the Calendar implementation."""
     candidates = [coverage.copy() for coverage in document["coverage"]]
     candidates.append(item.copy())
     candidates.sort(
@@ -327,6 +350,7 @@ def merge_coverage(document: Dict[str, Any], item: Dict[str, Any]) -> None:
     document["coverage"] = merged
 
 def find_uncovered_intervals(
+    """Calendar operation: find_uncovered_intervals performs the focused find uncovered intervals step in the Calendar implementation."""
     document: Dict[str, Any],
     provider: str,
     symbol: str,
@@ -390,9 +414,11 @@ def find_uncovered_intervals(
     return gaps
 
 def watermark_key(provider: str, symbol: str) -> str:
+    """Calendar operation: watermark_key performs the focused watermark key step in the Calendar implementation."""
     return f"{provider}|{symbol}"
 
 def resolve_applicable_providers(symbol: str) -> List[str]:
+    """Calendar operation: resolve_applicable_providers performs the focused resolve applicable providers step in the Calendar implementation."""
     if is_currency(symbol):
         return ["forexfactory"]
     if is_fx_pair(symbol):
@@ -400,7 +426,9 @@ def resolve_applicable_providers(symbol: str) -> List[str]:
     return ["yahoo_finance"]
 
 def filter_events_for_symbol(events: List[Dict[str, Any]], symbol: str) -> List[Dict[str, Any]]:
+    """Calendar operation: filter_events_for_symbol performs the focused filter events for symbol step in the Calendar implementation."""
     def visible(event: Dict[str, Any]) -> bool:
+        """Calendar operation: visible performs the focused visible step in the Calendar implementation."""
         return symbol not in event.get("suppressed_for", [])
 
     if is_currency(symbol):
@@ -439,6 +467,7 @@ def filter_events_for_symbol(events: List[Dict[str, Any]], symbol: str) -> List[
     ]
 
 def filter_events_for_interval(
+    """Calendar operation: filter_events_for_interval performs the focused filter events for interval step in the Calendar implementation."""
     events: List[Dict[str, Any]],
     start: datetime,
     end: datetime,
@@ -449,6 +478,7 @@ def filter_events_for_interval(
     ]
 
 def update_watermark(
+    """Calendar operation: update_watermark performs the focused update watermark step in the Calendar implementation."""
     document: Dict[str, Any],
     provider: str,
     symbol: str,
@@ -484,6 +514,7 @@ def update_watermark(
     }
 
 def query_current_events(
+    """Calendar operation: query_current_events performs the focused query current events step in the Calendar implementation."""
     events: List[Dict[str, Any]],
     since: datetime,
     until: datetime,
@@ -494,6 +525,7 @@ def query_current_events(
     ]
 
 def query_latest_event(
+    """Calendar operation: query_latest_event performs the focused query latest event step in the Calendar implementation."""
     events: List[Dict[str, Any]],
     symbol: str,
     now: datetime,
@@ -517,6 +549,7 @@ def query_latest_event(
     ]
 
 def query_next_event(
+    """Calendar operation: query_next_event performs the focused query next event step in the Calendar implementation."""
     events: List[Dict[str, Any]],
     symbol: str,
     now: datetime,
@@ -540,6 +573,7 @@ def query_next_event(
     ]
 
 def status_from_provider_results(provider_results: List[Dict[str, Any]]) -> str:
+    """Calendar operation: status_from_provider_results performs the focused status from provider results step in the Calendar implementation."""
     statuses = [result["status"] for result in provider_results]
     if not statuses:
         return "UNAVAILABLE"
@@ -560,6 +594,7 @@ def status_from_provider_results(provider_results: List[Dict[str, Any]]) -> str:
     return "OK"
 
 def filter_query_events(
+    """Calendar operation: filter_query_events performs the focused filter query events step in the Calendar implementation."""
     document: Dict[str, Any],
     events: List[Dict[str, Any]],
     symbol: str,
