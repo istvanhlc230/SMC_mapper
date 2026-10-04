@@ -2,7 +2,7 @@
 
 Status: Current V2 specification.
 
-Calendar implementation baseline: 2.2.10.
+Calendar implementation baseline: 2.2.11.
 
 Scope:
 - unified economic-calendar and news acquisition;
@@ -132,6 +132,7 @@ Public query forms:
     python calendar.py SYMBOL YYYY.MM.DD@HH:MM
     python calendar.py SYMBOL YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM
     python calendar.py SYMBOL current
+    python calendar.py SYMBOL latest
     python calendar.py SYMBOL next
 
 Delete forms:
@@ -204,7 +205,23 @@ current never means:
 - latest event;
 - nearest event.
 
-## 4.1 next semantics
+## 4.1 latest semantics
+
+`latest` is a read-only most-recent-event lookup over the committed `calendar.json` snapshot.
+
+For `python calendar.py SYMBOL latest`:
+
+1. load and validate the committed Calendar document under the Calendar lock;
+2. filter events according to the normal SYMBOL visibility rules, including `suppressed_for`;
+3. keep only events with `timestamp <= current UTC time`;
+4. sort by timestamp descending, then source and event identity for deterministic ordering;
+5. return exactly the first event, or `NO_LATEST_EVENT` when none exists.
+
+`latest` does not call ForexFactory or Yahoo Finance, does not acquire data, and does not modify coverage, watermarks, or `calendar.json`.
+
+`latest` is distinct from `current`: `current` performs incremental provider acquisition based on watermarks, while `latest` only reads the committed snapshot.
+
+## 4.2 next semantics
 
 `next` is a read-only nearest-future-event lookup over the committed `calendar.json` snapshot.
 
@@ -430,6 +447,7 @@ Any Yahoo-news severity requires an explicit future Monitor specification change
 
 Acceptance requires:
 - old relative scopes removed;
+- `latest` returns the most recent past/current visible event from the committed snapshot without provider calls;
 - `next` returns the nearest future visible event from the committed snapshot without provider calls;
 - current is watermark-based;
 - missing watermark is BOOTSTRAP_REQUIRED;
@@ -461,4 +479,6 @@ Acceptance requires:
 - structured and rendered ForexFactory impact representations normalize known HIGH/MEDIUM/LOW/HOLIDAY values without silent UNKNOWN collapse;
 - rendered ForexFactory impact classification must not silently collapse known HIGH/MEDIUM/LOW events to UNKNOWN;
 - relative ForexFactory navigation aliases are documented but are not accepted as public Calendar CLI scopes;
+- `latest` is read-only and returns `NO_LATEST_EVENT` when the committed snapshot contains no visible event at or before current UTC time;
+- ForexFactory normalized events include `details.url` when the provider exposes the event detail-page URL or event-base slug;
 - `--cleartext` renders normalized event details as human-readable fields rather than a raw JSON dictionary, without changing canonical data or machine-readable output.

@@ -53,3 +53,25 @@ CI must pass the new cleartext regression assertion. A fresh Windows live smoke 
 The closing dashed separator after each cleartext event was removed because the next event header already provides the event boundary. Consecutive events are separated by one blank line only. The canonical event data and machine-readable JSON output are unchanged.
 
 Regression coverage asserts that the closing separator is absent and that adjacent cleartext event blocks use the blank-line separator.
+
+
+## Latest Calendar CLI and ForexFactory detail URL
+
+Calendar implementation version: 2.2.11
+Persistent schema: 2
+
+The public CLI now includes `python calendar.py SYMBOL latest`. It is read-only and cache-only, selecting the most recent visible event with timestamp at or before current UTC time. No provider call, coverage change, watermark change, or calendar.json mutation occurs. No qualifying event returns `NO_LATEST_EVENT`.
+
+ForexFactory normalized economic events now also carry `details.url` when the provider supplies the concrete calendar event detail-page URL or event-base slug. The rendered HTML parser captures the actual event-detail href; structured provider data is checked for explicit URL/slug fields. The implementation does not manufacture a URL from the calendar event-instance ID.
+
+Persistent schema remains V2. Existing Yahoo `details.url` behavior is unchanged.
+
+Source-level validation performed:
+- CLI help includes `current`, `latest`, and `next`;
+- `latest` is accepted by the scope parser and dispatched to a deterministic cache lookup;
+- ForexFactory rendered rows retain a matching `/calendar/event/` href;
+- normalized ForexFactory details include `url`;
+- specification and design files are synchronized;
+- no test-directory restoration or root-level development artifact was introduced.
+
+Runtime/CI execution was not available in this tool session, so no live-test PASS is claimed.

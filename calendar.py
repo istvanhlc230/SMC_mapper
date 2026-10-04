@@ -31,7 +31,7 @@ HTTP_TIMEOUT = 15.0
 # SCHEMA_VERSION — persistent calendar.json schema version.
 SCHEMA_VERSION = 2
 # __version__ — Calendar CLI implementation version, independent from SCHEMA_VERSION.
-__version__ = "2.2.10"
+__version__ = "2.2.11"
 
 # SUPPORTED_CURRENCIES — standalone currencies accepted by the CLI.
 SUPPORTED_CURRENCIES = {
@@ -97,6 +97,7 @@ USAGE
   python calendar.py SYMBOL YYYY.MM.DD@HH:MM
   python calendar.py SYMBOL YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM
   python calendar.py SYMBOL current
+  python calendar.py SYMBOL latest
   python calendar.py SYMBOL next
   python calendar.py delete
   python calendar.py delete --debug
@@ -121,6 +122,8 @@ SCOPE
   current                             Incremental update from each
                                       provider+canonical-symbol watermark
                                       through current UTC time.
+  latest                              Return the most recent past/current event for
+                                      SYMBOL from the committed calendar cache.
   next                                Return the nearest future event for
                                       SYMBOL from the committed calendar cache.
 
@@ -138,6 +141,14 @@ CURRENT
   incremental acquisition, normalizes/deduplicates, atomically persists,
   and returns events newer than the watermark through now.
   Missing watermark -> BOOTSTRAP_REQUIRED. No timestamp is fabricated.
+
+LATEST
+  latest is a read-only most-recent-event lookup.
+  It reads only the committed calendar.json snapshot, filters events visible
+  for SYMBOL, keeps only timestamps at or before current UTC time, selects the
+  most recent event deterministically by timestamp, source, and event identity,
+  and never calls a provider or changes persistent state.
+  No past/current event -> NO_LATEST_EVENT.
 
 NEXT
   next is a read-only nearest-future-event lookup.
@@ -340,7 +351,7 @@ def resolve_scope_interval(scope: str) -> Tuple[datetime, datetime]:
 # Function: parse_scope — classifies or validates a scope.
 # Variables: scope=CLI scope.
 def parse_scope(scope: str) -> str:
-    if scope in {"current", "next"}:
+    if scope in {"current", "latest", "next"}:
         return scope
     resolve_scope_interval(scope)
     return scope
@@ -976,6 +987,7 @@ class ForexFactoryHTMLCalendarParser(HTMLParser):
                 "actual": "",
                 "forecast": "",
                 "previous": "",
+                "url": "",
             }
             self.current_cell = None
             self.text_buffer = []
@@ -983,6 +995,18 @@ class ForexFactoryHTMLCalendarParser(HTMLParser):
 
         if self.current_row is None:
             return
+
+        if tag == "a":
+            href = str(attributes.get("href") or "").strip()
+            if (
+                href
+                and not self.current_row.get("url")
+                and re.search(r"/calendar/event/", href, re.IGNORECASE)
+            ):
+                self.current_row["url"] = urllib.parse.urljoin(
+                    "https://www.forexfactory.com/",
+                    href,
+                )
 
         if tag == "td":
             self.current_cell = " ".join(classes)
@@ -1212,6 +1236,7 @@ def parse_forexfactory_html_events(
             "actual": str(row.get("actual") or "").strip() or None,
             "forecast": str(row.get("forecast") or "").strip() or None,
             "previous": str(row.get("previous") or "").strip() or None,
+            "url": str(row.get("url") or "").strip() or None,
         })
 
     return normalized_events
@@ -1305,9 +1330,36 @@ def _resolve_impact(raw: Dict[str, Any]) -> str:
     return "UNKNOWN"
 
 
+# Function: _resolve_forexfactory_event_url — resolves the provider detail-page URL.
+# Variables: raw=local intermediate value.
+# Local variables: candidate=provider URL/slug candidate; resolved=normalized absolute URL; slug=provider event-base slug.
+def _resolve_forexfactory_event_url(raw: Dict[str, Any]) -> Optional[str]:
+    for field_name in (
+        "url", "eventUrl", "eventURL", "event_url",
+        "detailUrl", "detailURL", "detail_url",
+        "ebaseUrl", "ebaseURL", "ebase_url",
+    ):
+        candidate = str(raw.get(field_name) or "").strip()
+        if not candidate:
+            continue
+        resolved = urllib.parse.urljoin(
+            "https://www.forexfactory.com/",
+            candidate,
+        )
+        if re.match(r"^https://(?:www\\.)?forexfactory\\.com/calendar/event/", resolved, re.IGNORECASE):
+            return resolved
+
+    for field_name in ("ebaseSlug", "ebase_slug", "eventSlug", "event_slug"):
+        slug = str(raw.get(field_name) or "").strip().strip("/")
+        if slug:
+            return f"https://www.forexfactory.com/calendar/event/{slug}"
+
+    return None
+
+
 # Function: normalize_provider_event — normalizes one provider event.
 # Variables: raw=local intermediate value.
-# Local variables: currency=currency code; exc=local intermediate value; timestamp=event timestamp; title=event title.
+# Local variables: currency=currency code; exc=local intermediate value; timestamp=event timestamp; title=event title; url=provider detail URL.
 def normalize_provider_event(raw: Dict[str, Any]) -> Dict[str, Any]:
     if raw.get("id") in (None, "", "None"):
         raise ProviderError("ForexFactory event has no provider ID.")
@@ -1350,6 +1402,7 @@ def normalize_provider_event(raw: Dict[str, Any]) -> Dict[str, Any]:
                 str(raw["previous"])
                 if raw.get("previous") not in (None, "") else None
             ),
+            "url": _resolve_forexfactory_event_url(raw),
         },
     }
 
@@ -1542,6 +1595,33 @@ def query_current_events(
     return [
         event for event in events
         if since < parse_iso8601(event["timestamp"]) <= until
+    ]
+
+
+# Function: query_latest_event — selects the most recent past/current visible event.
+# Variables: events=event collection; symbol=canonical symbol; now=current UTC reference time.
+# Local variables: event=normalized event; visible_past=local intermediate value.
+def query_latest_event(
+    events: List[Dict[str, Any]],
+    symbol: str,
+    now: datetime,
+) -> List[Dict[str, Any]]:
+    visible_past = [
+        event
+        for event in filter_events_for_symbol(events, symbol)
+        if parse_iso8601(event["timestamp"]) <= now
+    ]
+    if not visible_past:
+        return []
+    return [
+        max(
+            visible_past,
+            key=lambda event: (
+                parse_iso8601(event["timestamp"]),
+                event["source"],
+                event["event_id"],
+            ),
+        )
     ]
 
 
@@ -1929,6 +2009,12 @@ def run_query(
                 cleartext,
             )
             return 0 if status != "UNAVAILABLE" else 2
+
+        if scope == "latest":
+            events = query_latest_event(document["events"], symbol, utc_now())
+            status = "OK" if events else "NO_LATEST_EVENT"
+            output_query_result(status, symbol, events, [], cleartext)
+            return 0
 
         if scope == "next":
             events = query_next_event(document["events"], symbol, utc_now())

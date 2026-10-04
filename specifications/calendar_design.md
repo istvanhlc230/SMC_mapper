@@ -24,6 +24,8 @@ The engine runs in a process that may be detached from the Monitor.
     python calendar.py SYMBOL YYYY.MM.DD@HH:MM
     python calendar.py SYMBOL YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM
     python calendar.py SYMBOL current
+    python calendar.py SYMBOL latest
+    python calendar.py SYMBOL next
 
 User examples:
 
@@ -32,8 +34,10 @@ User examples:
     python calendar.py EURUSD 2026.10.01@10:00-2026.10.31@22:00
     python calendar.py EURUSD 2026.10.01@10:00
     python calendar.py NVDA current
+    python calendar.py EURUSD latest
 
-Old relative scopes and next evaluation are removed.
+`current`, `latest`, and `next` are explicit public scopes. `latest` and `next` are read-only cache lookups; `current` performs watermark-based incremental acquisition.
+Old relative date scopes remain removed.
 
 ## 3. Symbol/provider resolution
 
@@ -141,3 +145,8 @@ that watermark is removed so current cannot silently skip the deleted tail.
 ## 11. Repository hygiene
 
 Development artifacts belong under dev_tmp/. The repository root must not receive ad-hoc downloads, caches, debug outputs, or experiments.
+
+
+## 11.1 Provider detail URLs
+
+ForexFactory normalized economic events expose `details.url` when the provider supplies the concrete calendar event detail-page URL in the structured payload or rendered calendar markup. The implementation captures the actual provider href or a provider-supplied event-base slug; it does not fabricate a detail URL from a calendar event-instance ID. Yahoo Finance news continues to use `details.url` for the provider article URL.
