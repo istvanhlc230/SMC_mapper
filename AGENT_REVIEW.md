@@ -76,3 +76,11 @@ No provider symbol is fabricated from string concatenation.
 
 The Calendar specification/design were updated to make provider verification normative. Runtime
 validation is still required before PASS.
+
+
+## Resolver return-contract correction
+
+The public `resolve_yahoo_symbol()` helper now returns `None` when no verified Yahoo Forex
+instrument exists, matching its `Optional[str]` contract. The acquisition path still uses the
+explicit `YahooForexPairUnavailable` signal so missing provider instruments cannot be converted
+to empty-success coverage or watermark advancement.

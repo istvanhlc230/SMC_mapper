@@ -613,7 +613,10 @@ def _resolve_yahoo_instrument(
 
 
 def resolve_yahoo_symbol(symbol: str) -> Optional[str]:
-    provider_symbol, _ = _resolve_yahoo_instrument(symbol)
+    try:
+        provider_symbol, _ = _resolve_yahoo_instrument(symbol)
+    except YahooForexPairUnavailable:
+        return None
     return provider_symbol
 
 
