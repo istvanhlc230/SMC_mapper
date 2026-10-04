@@ -11,11 +11,15 @@ from typing import Any, Dict
 from .config import DataIntegrityError
 from .domain import build_empty_calendar_document, validate_calendar_document
 
+# PROJECT_ROOT — repository root used to derive the default Calendar data directory.
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+# DATA_ROOT — active runtime directory; SMC_DATA_ROOT overrides the repository-local default.
 DATA_ROOT = os.path.abspath(os.environ.get("SMC_DATA_ROOT", str(PROJECT_ROOT / "CALENDAR")))
+# CALENDAR_FILE — canonical persistent Calendar cache path for the active DATA_ROOT.
 CALENDAR_FILE = os.path.join(DATA_ROOT, "calendar.json")
 
 def _load_json_file() -> Dict[str, Any]:
+    """Internal helper: _load_json_file performs the focused load json file step in the Calendar implementation."""
     if not os.path.exists(CALENDAR_FILE) or os.path.getsize(CALENDAR_FILE) == 0:
         return build_empty_calendar_document()
     try:
@@ -25,11 +29,13 @@ def _load_json_file() -> Dict[str, Any]:
         raise DataIntegrityError(f"Calendar data integrity error: {exc}") from exc
 
 def load_calendar_document() -> Dict[str, Any]:
+    """Calendar operation: load_calendar_document performs the focused load calendar document step in the Calendar implementation."""
     document = _load_json_file()
     validate_calendar_document(document)
     return document
 
 def save_calendar_atomic(document: Dict[str, Any]) -> None:
+    """Calendar operation: save_calendar_atomic performs the focused save calendar atomic step in the Calendar implementation."""
     os.makedirs(DATA_ROOT, exist_ok=True)
     temp_path = None
     fd = None
