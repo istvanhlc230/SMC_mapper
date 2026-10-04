@@ -35,7 +35,7 @@ HTTP_TIMEOUT = 15.0
 # SCHEMA_VERSION — persistent calendar.json schema version.
 SCHEMA_VERSION = 2
 # __version__ — Calendar CLI implementation version, independent from SCHEMA_VERSION.
-__version__ = "2.3.6"
+__version__ = "2.3.7"
 
 # SUPPORTED_CURRENCIES — standalone currencies accepted by the CLI.
 SUPPORTED_CURRENCIES = {
@@ -103,6 +103,9 @@ USAGE
   python calendar.py SYMBOL current
   python calendar.py SYMBOL latest
   python calendar.py SYMBOL next
+  python calendar.py refresh forexfactory:<event-id>
+  python calendar.py refresh forexfactory:<event-id> --cleartext
+  python calendar.py refresh forexfactory:<event-id> --debug
   python calendar.py delete
   python calendar.py delete --debug
   python calendar.py delete SYMBOL YYYY.MM.DD
@@ -1385,6 +1388,55 @@ def _resolve_impact(raw: Dict[str, Any]) -> str:
 # Function: fetch_forexfactory_event_detail — fetches one ForexFactory Detail specification set.
 # Variables: event_id=provider event identifier.
 # Local variables: data=decoded response; exc=local exception; payload=provider response text; spec=provider specification; specs=provider specification collection; normalized=canonical specification collection.
+# Function: fetch_forexfactory_event_refresh — reacquires one ForexFactory event and its current Detail specs.
+# Variables: event_id=canonical ForexFactory event ID; reference_timestamp=last-known event timestamp.
+def fetch_forexfactory_event_refresh(
+    event_id: str,
+    reference_timestamp: datetime,
+) -> Dict[str, Any]:
+    provider_event_id = event_id.split(":", 1)[1]
+    # Query a small UTC-day envelope around the cached timestamp so provider-local
+    # timezone boundaries and small reschedules do not prevent event discovery.
+    day_start = reference_timestamp.replace(
+        hour=0, minute=0, second=0, microsecond=0
+    ) - timedelta(days=1)
+    day_end = day_start + timedelta(days=3)
+    query = build_forexfactory_query(day_start, day_end)
+    html = fetch_url(f"{FOREXFACTORY_URL}?{query}")
+
+    try:
+        days = parse_calendar_days(extract_days_payload(html))
+        candidates = normalize_calendar_events(days)
+    except ProviderError:
+        candidates = [
+            normalize_provider_event(raw_event)
+            for raw_event in parse_forexfactory_html_events(
+                html,
+                day_start,
+                day_end,
+            )
+        ]
+
+    matches = [
+        event for event in candidates
+        if event["event_id"] == event_id
+    ]
+    if len(matches) == 0:
+        raise ProviderError(
+            f"ForexFactory event {provider_event_id} was not found during refresh."
+        )
+    if len(matches) > 1:
+        raise DataIntegrityError(
+            f"ForexFactory refresh returned duplicate event identity {event_id}."
+        )
+
+    refreshed = matches[0]
+    refreshed["details"]["specs"] = fetch_forexfactory_event_detail(
+        provider_event_id
+    )
+    return refreshed
+
+
 def fetch_forexfactory_event_detail(event_id: str) -> List[Dict[str, Any]]:
     event_id = str(event_id).strip()
     if not re.fullmatch(r"\d+", event_id):
@@ -2313,6 +2365,56 @@ def delete_symbol_interval(
         if start <= last_event < end:
             del document["watermarks"][key]
 
+# Function: run_refresh — refreshes one already-known ForexFactory event in place.
+# Variables: event_id=canonical ForexFactory event ID; cleartext=human-readable output flag; debug=diagnostic flag.
+def run_refresh(
+    event_id: str,
+    cleartext: bool = False,
+    debug: bool = False,
+) -> int:
+    with acquire_calendar_lock():
+        document = load_calendar_document()
+        existing = next(
+            (event for event in document["events"] if event["event_id"] == event_id),
+            None,
+        )
+        if existing is None:
+            raise CalendarInputError(
+                f"Cannot refresh unknown event '{event_id}'. "
+                "The event must already exist in calendar.json."
+            )
+        if existing["source"] != "forexfactory":
+            raise CalendarInputError(
+                f"Event refresh is not supported for source '{existing['source']}'."
+            )
+
+        refreshed = fetch_forexfactory_event_refresh(
+            event_id,
+            parse_iso8601(existing["timestamp"]),
+        )
+        merge_events(
+            document,
+            [refreshed],
+            clear_suppressed_symbol=existing["symbol"],
+        )
+        validate_calendar_document(document)
+        save_calendar_atomic(document)
+        if debug:
+            print(
+                f"DEBUG | Persisted Calendar file: {CALENDAR_FILE}",
+                file=sys.stderr,
+            )
+
+        output_query_result(
+            "REFRESHED",
+            existing["symbol"],
+            [refreshed],
+            [{"provider": "forexfactory", "status": "REFRESHED", "events_acquired": 1}],
+            cleartext=cleartext,
+        )
+    return 0
+
+
 # Function: run_delete — executes full or scoped Calendar deletion.
 # Variables: symbol=canonical symbol; scope=CLI scope.
 # Local variables: document=in-memory Calendar document; end=interval end; start=interval start.
@@ -2349,6 +2451,17 @@ def run_delete(
     }))
     return 0
 
+# Function: validate_event_id — validates a canonical provider event identity accepted by refresh.
+# Variables: value=event identity.
+def validate_event_id(value: str) -> str:
+    token = str(value).strip().lower()
+    if not re.fullmatch(r"forexfactory:\d+", token):
+        raise CalendarInputError(
+            f"Invalid event ID '{value}'. Expected forexfactory:<numeric-id>."
+        )
+    return token
+
+
 # Function: parse_request — parses public CLI arguments.
 # Variables: args=local intermediate value.
 # Local variables: cleartext=human-readable output flag; debug=diagnostic flag; item=current collection item; positional=CLI positional arguments; scope=CLI scope; symbol=canonical symbol.
@@ -2376,6 +2489,21 @@ def parse_request(args: List[str]) -> Dict[str, Any]:
         raise CalendarInputError(
             "--cleartext requires a symbol query."
         )
+
+    if positional[0] == "refresh":
+        if len(positional) != 2:
+            raise CalendarInputError(
+                "Refresh requires REFRESH + EVENT_ID."
+            )
+        event_id = validate_event_id(positional[1])
+        return {
+            "operation": "REFRESH",
+            "event_id": event_id,
+            "symbol": None,
+            "scope": None,
+            "cleartext": cleartext,
+            "debug": debug,
+        }
 
     if positional[0] == "delete":
         if cleartext:
@@ -2434,6 +2562,12 @@ def run() -> int:
             return run_delete(
                 request["symbol"],
                 request["scope"],
+            )
+        if request["operation"] == "REFRESH":
+            return run_refresh(
+                request["event_id"],
+                request["cleartext"],
+                debug=debug,
             )
         return run_query(
             request["symbol"],
