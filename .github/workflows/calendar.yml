@@ -269,6 +269,53 @@ jobs:
           assert "FF Notice : Event added" in double_escaped_rendered
           assert "Why Traders\nCare:" in double_escaped_rendered
 
+          # Detail acquisition must use bounded parallel workers while preserving
+          # the original event order.
+          original_executor = calendar.ThreadPoolExecutor
+          executor_config = {}
+          class RecordingExecutor:
+              def __init__(self, max_workers=None, thread_name_prefix=None):
+                  executor_config["max_workers"] = max_workers
+                  self.max_workers = max_workers
+              def __enter__(self):
+                  return self
+              def __exit__(self, exc_type, exc_value, tb):
+                  return False
+              def map(self, function, iterable):
+                  return [function(item) for item in iterable]
+          original_detail_fetch = calendar.fetch_forexfactory_event_detail
+          try:
+              calendar.ThreadPoolExecutor = RecordingExecutor
+              seen_detail_ids = []
+              def fake_detail(event_id):
+                  seen_detail_ids.append(event_id)
+                  return [{"order": 1, "title": "Source", "html": event_id}]
+              calendar.fetch_forexfactory_event_detail = fake_detail
+              original_build_query = calendar.build_forexfactory_query
+              original_fetch_url = calendar.fetch_url
+              try:
+                  calendar.build_forexfactory_query = lambda _start, _end: "day=oct5.2026"
+                  calendar.fetch_url = lambda _url: json.dumps([{
+                      "date": {"date": "2026-10-05"},
+                      "events": [
+                          {"id": "101", "dateline": int(dt("2026-10-05T07:00:00Z").timestamp()), "currency": "USD", "name": "A", "impactName": "Low Impact Expected", "actual": None, "forecast": None, "previous": None},
+                          {"id": "102", "dateline": int(dt("2026-10-05T08:00:00Z").timestamp()), "currency": "USD", "name": "B", "impactName": "Low Impact Expected", "actual": None, "forecast": None, "previous": None},
+                      ]
+                  }])
+                  fetched_events = calendar.fetch_forexfactory(
+                      dt("2026-10-05T00:00:00Z"),
+                      dt("2026-10-06T00:00:00Z"),
+                  )
+                  assert executor_config["max_workers"] == 2
+                  assert seen_detail_ids == ["101", "102"]
+                  assert [event["details"]["specs"][0]["html"] for event in fetched_events] == ["101", "102"]
+              finally:
+                  calendar.build_forexfactory_query = original_build_query
+                  calendar.fetch_url = original_fetch_url
+          finally:
+              calendar.fetch_forexfactory_event_detail = original_detail_fetch
+              calendar.ThreadPoolExecutor = original_executor
+
           # Legacy schema-2 ForexFactory coverage without Detail specs is incomplete
           # for the requested overlap and must be reacquired.
           legacy_doc = calendar.build_empty_calendar_document()
@@ -367,7 +414,7 @@ jobs:
               }
               assert calendar.normalize_provider_event(structured_raw)["details"]["impact"] == expected_impact
 
-          assert calendar.__version__ == "2.3.2"
+          assert calendar.__version__ == "2.3.3"
           assert f"Calendar CLI v{calendar.__version__}" in calendar.HELP_TEXT
 
           # Cleartext output must render normalized details as readable fields,
