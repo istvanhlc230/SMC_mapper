@@ -307,12 +307,14 @@ The acquisition path first attempts the structured days payload. When it is abse
 current rendered calendar rows using the provider event identifier, visible date/time, currency,
 impact, title, actual, forecast, and previous fields.
 
-For the structured payload, explicit ForexFactory impactName and/or impactClass representations are
-normalized to the canonical HIGH/MEDIUM/LOW/HOLIDAY values. Known forms include descriptive labels
-such as High Impact Expected, Med Impact Expected, Medium Impact Expected, Low Impact Expected, and
-Non-Economic, plus provider color/icon tokens such as impact-red, impact-orange, impact-yellow,
-impact-green, and impact-grey. Known provider severity must not silently collapse to UNKNOWN.
-Severity must never be inferred from an event title or other unrelated field.
+For the structured payload, explicit ForexFactory impactTitle, impactName (compatibility alias),
+and/or impactClass representations are normalized to the canonical HIGH/MEDIUM/LOW/HOLIDAY values.
+Known impactTitle forms include High Impact Expected, Med Impact Expected, Medium Impact Expected,
+Low Impact Expected, and Non-Economic. Known impactClass forms include provider color/icon tokens
+such as impact-red, icon--ff-impact-red, impact-orange, icon--ff-impact-ora, impact-yellow,
+icon--ff-impact-yel, impact-green, icon--ff-impact-grn, impact-grey, and the corresponding grey/gray
+variants. Known provider severity must not silently collapse to UNKNOWN. Severity must never be
+inferred from an event title or other unrelated field.
 
 Rendered event times are interpreted using the provider-declared Calendar Time Zone. An IANA timezone
 is preferred. When the runtime has no matching IANA timezone database entry, the provider-declared
