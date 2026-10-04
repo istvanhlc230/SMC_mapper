@@ -394,12 +394,13 @@ jobs:
               calendar.fetch_forexfactory = lambda start, end, include_details=True: [refreshed_event]
               calendar._enrich_forexfactory_details = lambda events: None
               calendar.save_calendar_atomic = lambda document: saved_refresh_docs.append(document)
-              summary = calendar.refresh_calendar_scope(
+              refresh_result = calendar.refresh_calendar_scope(
                   refresh_doc,
                   "USD",
                   dt("2026-10-01T12:30:00Z"),
                   dt("2026-10-01T12:31:00Z"),
-              )["summary"]
+              )
+              summary = refresh_result["summary"]
               assert summary == {"added": 0, "changed": 1, "unchanged": 0}
               assert refresh_doc["events"][0]["timestamp"] == "2026-10-01T12:35:00Z"
               assert refresh_doc["events"][0]["details"]["actual"] == "197K"
@@ -407,12 +408,9 @@ jobs:
               assert refresh_doc["watermarks"]["forexfactory|USD"]["last_successful_at"] == "2026-10-02T12:31:00Z"
               assert refresh_doc["coverage"][0]["status"] == "COMPLETE"
               assert len(saved_refresh_docs) == 1
-              refresh_result = calendar.filter_events_for_interval(
-                  calendar.filter_events_for_symbol(refresh_doc["events"], "USD"),
-                  dt("2026-10-01T12:30:00Z"),
-                  dt("2026-10-01T12:31:00Z"),
-              )
-              assert refresh_result == []
+              assert len(refresh_result["events"]) == 1
+              assert refresh_result["events"][0]["event_id"] == "forexfactory:147017"
+              assert refresh_result["events"][0]["timestamp"] == "2026-10-01T12:35:00Z"
               assert refresh_doc["events"][0]["event_id"] == "forexfactory:147017"
           finally:
               calendar.fetch_forexfactory = original_refresh_fetch
