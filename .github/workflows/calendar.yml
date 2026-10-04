@@ -269,6 +269,20 @@ jobs:
           assert "FF Notice : Event added" in double_escaped_rendered
           assert "Why Traders\nCare:" in double_escaped_rendered
 
+          literal_html_detail = (
+              "FF Notice <img class=\"svg-img svg-img--misc-star\">: Event added; "
+              "Why Traders<br>Care: policy clues"
+          )
+          literal_lines = calendar.format_cleartext_details({
+              "specs": [{"order": 1, "title": "Provider Detail", "html": literal_html_detail}],
+          })
+          literal_rendered = "\n".join(literal_lines)
+          assert "<img" not in literal_rendered
+          assert "svg-img" not in literal_rendered
+          assert "<br>" not in literal_rendered
+          assert "FF Notice : Event added" in literal_rendered
+          assert "Why Traders\nCare:" in literal_rendered
+
           # Detail acquisition must use bounded parallel workers while preserving
           # the original event order.
           original_executor = calendar.ThreadPoolExecutor
@@ -414,7 +428,7 @@ jobs:
               }
               assert calendar.normalize_provider_event(structured_raw)["details"]["impact"] == expected_impact
 
-          assert calendar.__version__ == "2.3.3"
+          assert calendar.__version__ == "2.3.4"
           assert f"Calendar CLI v{calendar.__version__}" in calendar.HELP_TEXT
 
           # Cleartext output must render normalized details as readable fields,
