@@ -2,7 +2,7 @@
 
 Status: Current V2 specification.
 
-Calendar implementation baseline: 2.3.7.
+Calendar implementation baseline: 2.3.8.
 
 Scope:
 - unified economic-calendar and news acquisition;
@@ -243,6 +243,49 @@ For `python calendar.py SYMBOL next`:
 No synthetic bootstrap timestamp is permitted.
 
 Explicit date or datetime-range acquisition establishes bootstrap state.
+
+## 4.3 Refresh semantics
+
+`refresh` is a forced provider re-acquisition for a SYMBOL and an explicit date/time scope. It bypasses
+existing coverage so that mutable provider data released or changed after the original acquisition can be
+detected.
+
+Public forms:
+
+    python calendar.py refresh SYMBOL YYYY.MM.DD
+    python calendar.py refresh SYMBOL YYYY.MM.DD-YYYY.MM.DD
+    python calendar.py refresh SYMBOL YYYY.MM.DD@HH:MM
+    python calendar.py refresh SYMBOL YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM
+
+`latest`, `next`, and `current` are not refresh scopes.
+
+Refresh behavior:
+
+1. resolve the requested UTC interval;
+2. determine the same applicable providers as normal query/acquisition;
+3. reacquire provider data regardless of existing coverage;
+4. for ForexFactory, use a one-day provider-side envelope around the requested interval so an event
+   rescheduled near a boundary can still be matched by its stable provider event ID;
+5. select fresh events whose new timestamp falls inside the requested interval or whose stable provider
+   event ID matches an existing event visible for SYMBOL in the requested interval;
+6. compare fresh records with the existing records by stable `event_id`;
+7. replace only records whose provider data differs, while adding newly discovered records;
+8. provider identity remains authoritative. A provider event may change timestamp during an explicit refresh;
+   this is an expected mutable provider update and must not be rejected as an identity conflict;
+9. an existing event absent from the fresh provider response is not deleted automatically;
+10. preserve existing coverage and watermarks. Refresh does not establish new coverage and does not advance
+    acquisition watermarks;
+11. validate and atomically persist only when refreshed records produce additions or changes.
+
+The comparison covers the complete normalized event record, including timestamp, title, core details
+(`actual`, `forecast`, `previous`, impact), and ForexFactory Detail specifications.
+
+Refresh output reports the number of added, changed, and unchanged records. `--cleartext` changes only
+presentation. Provider failures retain the normal isolated-provider semantics; if all applicable
+providers fail, the aggregate status is `UNAVAILABLE`.
+
+Yahoo Finance refresh follows the same compare-and-replace model over the provider's currently exposed
+rolling feed. Historical completeness remains subject to the Yahoo rolling-feed limitation.
 
 ## 5. Explicit-range acquisition
 
