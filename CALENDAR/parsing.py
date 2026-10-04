@@ -203,11 +203,11 @@ def _extract_forexfactory_timezone(html: str) -> timezone:
         return timezone(sign * timedelta(hours=hours, minutes=minutes))
 
 def _parse_forexfactory_date(
-    """Internal helper: _parse_forexfactory_date performs the focused parse forexfactory date step in the Calendar implementation."""
     date_text: str,
     reference_start: datetime,
     reference_end: datetime,
 ) -> datetime:
+    """Internal helper: _parse_forexfactory_date performs the focused parse forexfactory date step in the Calendar implementation."""
     cleaned = " ".join(date_text.split())
     match = re.search(
         r"(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2})",
@@ -252,11 +252,11 @@ def _parse_forexfactory_date(
     return min(candidates, key=lambda item: abs(item - reference_start))
 
 def parse_forexfactory_html_events(
-    """Calendar operation: parse_forexfactory_html_events performs the focused parse forexfactory html events step in the Calendar implementation."""
     html: str,
     start: datetime,
     end: datetime,
 ) -> List[Dict[str, Any]]:
+    """Calendar operation: parse_forexfactory_html_events performs the focused parse forexfactory html events step in the Calendar implementation."""
     parser = ForexFactoryHTMLCalendarParser()
     parser.feed(html)
     parser.close()
