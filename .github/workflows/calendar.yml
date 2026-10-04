@@ -94,6 +94,7 @@ jobs:
           try:
               calendar.fetch_url = lambda _url: detail_json
               detail_specs = calendar.fetch_forexfactory_event_detail("146900")
+              print("DETAIL_SPECS_TEST", repr(detail_specs))
               assert [spec["title"] for spec in detail_specs] == ["Source", "Measures", "Frequency"]
               assert detail_specs[0]["html"].startswith("<a href=")
           finally:
