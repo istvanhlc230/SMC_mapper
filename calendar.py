@@ -9,6 +9,8 @@ import traceback
 import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta, timezone
+from html.parser import HTMLParser
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from typing import Any, Dict, List, Optional, Tuple
 
 # DATA_ROOT — root directory for Calendar persistent data.
@@ -29,7 +31,7 @@ HTTP_TIMEOUT = 15.0
 # SCHEMA_VERSION — persistent calendar.json schema version.
 SCHEMA_VERSION = 2
 # __version__ — Calendar CLI implementation version, independent from SCHEMA_VERSION.
-__version__ = "2.1.0"
+__version__ = "2.2.1"
 
 # SUPPORTED_CURRENCIES — standalone currencies accepted by the CLI.
 SUPPORTED_CURRENCIES = {
@@ -821,16 +823,17 @@ def fetch_url(url: str) -> str:
 # Function: fetch_forexfactory — fetches FF calendar data.
 # Variables: start=interval start; end=interval end.
 # Local variables: days=provider calendar days; end_token=local intermediate value; event=normalized event; hour=hour component; html=provider HTML; last_day=last processed day; normalized=normalized record; provider_end=provider interval end; provider_start=provider interval start; query=provider query symbol; request_end=requested interval end; request_start=requested interval start; start_token=local intermediate value.
-def fetch_forexfactory(start: datetime, end: datetime) -> List[Dict[str, Any]]:
+# Function: fetch_forexfactory — fetches FF calendar data using structured payload or current HTML rows.
+# Variables: start=interval start; end=interval end.
+# Local variables: request_start=requested start; request_end=requested end; provider_start=provider day start; provider_end=provider day end; last_day=last provider day; start_token=range-start token; end_token=range-end token; query=provider query parameters; html=provider HTML; days=legacy structured days; normalized=canonical events; fallback_raw=HTML-derived raw events.
+def fetch_forexfactory(
+    start: datetime,
+    end: datetime,
+) -> List[Dict[str, Any]]:
     request_start = start
     request_end = end
-
-    provider_start = start.replace(
-        hour=0, minute=0, second=0, microsecond=0
-    )
-    provider_end = end.replace(
-        hour=0, minute=0, second=0, microsecond=0
-    )
+    provider_start = start.replace(hour=0, minute=0, second=0, microsecond=0)
+    provider_end = end.replace(hour=0, minute=0, second=0, microsecond=0)
     if provider_end < end:
         provider_end += timedelta(days=1)
     last_day = provider_end - timedelta(days=1)
@@ -839,13 +842,276 @@ def fetch_forexfactory(start: datetime, end: datetime) -> List[Dict[str, Any]]:
     end_token = last_day.strftime("%b%d.%Y").lower()
     query = urllib.parse.urlencode({"range": f"{start_token}-{end_token}"})
     html = fetch_url(f"{FOREXFACTORY_URL}?{query}")
-    days = parse_calendar_days(extract_days_payload(html))
-    normalized = normalize_calendar_events(days)
+    try:
+        days = parse_calendar_days(extract_days_payload(html))
+        normalized = normalize_calendar_events(days)
+    except ProviderError:
+        fallback_raw = parse_forexfactory_html_events(
+            html,
+            request_start,
+            request_end,
+        )
+        normalized = [
+            normalize_provider_event(raw_event)
+            for raw_event in fallback_raw
+        ]
 
     return [
         event for event in normalized
         if request_start <= parse_iso8601(event["timestamp"]) < request_end
     ]
+
+
+# Class: ForexFactoryHTMLCalendarParser — parses current rendered ForexFactory calendar rows.
+class ForexFactoryHTMLCalendarParser(HTMLParser):
+    # Function: __init__ — initializes parser state.
+    # Variables: none.
+    # Local state: rows=completed provider rows; current_row=active provider row; current_cell=active cell classes; text_buffer=active cell text; capture_title=event-title flag; last_date_text=latest date; last_time_text=latest numeric time.
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.rows: List[Dict[str, Any]] = []
+        self.current_row: Optional[Dict[str, Any]] = None
+        self.current_cell: Optional[str] = None
+        self.text_buffer: List[str] = []
+        self.capture_title = False
+        self.last_date_text = ""
+        self.last_time_text = ""
+
+    # Function: handle_starttag — processes opening tags belonging to a calendar row.
+    # Variables: tag=HTML tag; attrs=attribute pairs.
+    # Local variables: attributes=attribute map; classes=CSS classes; event_id=provider event ID; impact_title=impact metadata.
+    def handle_starttag(self, tag: str, attrs: List[Tuple[str, Optional[str]]]) -> None:
+        attributes = dict(attrs)
+        classes = set(str(attributes.get("class") or "").split())
+
+        if tag == "tr" and ("calendar__row" in classes or "calendar_row" in classes):
+            event_id = attributes.get("data-eventid") or attributes.get("data-event-id")
+            self.current_row = {
+                "id": event_id,
+                "date": "",
+                "time": "",
+                "currency": "",
+                "impact": "",
+                "title": "",
+                "actual": "",
+                "forecast": "",
+                "previous": "",
+            }
+            self.current_cell = None
+            self.text_buffer = []
+            return
+
+        if self.current_row is None:
+            return
+
+        if tag == "td":
+            self.current_cell = " ".join(classes)
+            self.text_buffer = []
+            return
+
+        if tag == "span" and "calendar__event-title" in classes:
+            self.capture_title = True
+            self.text_buffer = []
+
+        if tag == "span" and self.current_cell and "calendar__impact" in self.current_cell:
+            impact_title = attributes.get("title")
+            if impact_title:
+                self.current_row["impact"] = str(impact_title).strip()
+
+    # Function: handle_endtag — finalizes cells and complete rows.
+    # Variables: tag=HTML tag; no external arguments beyond parser state.
+    # Local variables: cell_text=normalized cell text; row=completed row; date_text=visible date; time_text=visible time.
+    def handle_endtag(self, tag: str) -> None:
+        if self.current_row is None:
+            return
+
+        if tag == "span" and self.capture_title:
+            self.current_row["title"] = " ".join(self.text_buffer).strip()
+            self.capture_title = False
+            return
+
+        if tag == "td":
+            cell_text = " ".join(self.text_buffer).strip()
+            if self.current_cell:
+                if "calendar__date" in self.current_cell:
+                    self.current_row["date"] = cell_text
+                elif "calendar__time" in self.current_cell:
+                    self.current_row["time"] = cell_text
+                elif "calendar__currency" in self.current_cell:
+                    self.current_row["currency"] = cell_text
+                elif "calendar__actual" in self.current_cell:
+                    self.current_row["actual"] = cell_text
+                elif "calendar__forecast" in self.current_cell:
+                    self.current_row["forecast"] = cell_text
+                elif "calendar__previous" in self.current_cell:
+                    self.current_row["previous"] = cell_text
+            self.current_cell = None
+            self.text_buffer = []
+            return
+
+        if tag == "tr":
+            row = self.current_row
+            self.current_row = None
+            self.current_cell = None
+            self.text_buffer = []
+            date_text = str(row.get("date") or "").strip()
+            time_text = str(row.get("time") or "").strip()
+            if date_text:
+                self.last_date_text = date_text
+            else:
+                row["date"] = self.last_date_text
+            if time_text and re.search(r"\d{1,2}:\d{2}\s*(?:am|pm)", time_text, re.IGNORECASE):
+                self.last_time_text = time_text
+            elif not time_text:
+                row["time"] = self.last_time_text
+            self.rows.append(row)
+
+    # Function: handle_data — captures text inside the active calendar cell.
+    # Variables: data=HTML text fragment.
+    def handle_data(self, data: str) -> None:
+        if self.current_row is not None:
+            self.text_buffer.append(data)
+
+
+# Function: _extract_forexfactory_timezone — extracts the provider-declared Calendar Time Zone.
+# Variables: html=provider HTML.
+# Local variables: match=timezone declaration; timezone_name=IANA timezone name; offset_match=GMT offset fallback; sign=offset sign; hours=offset hours; minutes=offset minutes.
+def _extract_forexfactory_timezone(html: str) -> timezone:
+    match = re.search(
+        r"Calendar\s+Time\s+Zone:\s*([A-Za-z_]+(?:/[A-Za-z0-9_.+-]+)+)",
+        html,
+        re.IGNORECASE,
+    )
+    if not match:
+        raise ProviderError("ForexFactory response has no calendar timezone declaration.")
+
+    timezone_name = match.group(1)
+    try:
+        return ZoneInfo(timezone_name)
+    except ZoneInfoNotFoundError:
+        offset_match = re.search(
+            r"Calendar\s+Time\s+Zone:.*?\(GMT\s*([+-])(\d{1,2})(?::(\d{2}))?\)",
+            html,
+            re.IGNORECASE | re.DOTALL,
+        )
+        if not offset_match:
+            raise ProviderError(
+                f"Unsupported ForexFactory calendar timezone '{timezone_name}'."
+            )
+        sign = 1 if offset_match.group(1) == "+" else -1
+        hours = int(offset_match.group(2))
+        minutes = int(offset_match.group(3) or "0")
+        return timezone(sign * timedelta(hours=hours, minutes=minutes))
+
+
+# Function: _parse_forexfactory_date — resolves a rendered FF date to a concrete date.
+# Variables: date_text=rendered date; reference_start=request start; reference_end=request end.
+# Local variables: cleaned=normalized text; match=date match; month_text=month token; day_text=day token; candidates=candidate dates; year=candidate year; parsed=parsed candidate.
+def _parse_forexfactory_date(
+    date_text: str,
+    reference_start: datetime,
+    reference_end: datetime,
+) -> datetime:
+    cleaned = " ".join(date_text.split())
+    match = re.search(
+        r"(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2})",
+        cleaned,
+    )
+    if not match:
+        raise ProviderError(f"Invalid ForexFactory event date '{date_text}'.")
+
+    month_text = match.group(1)
+    day_text = match.group(2)
+    candidates: List[datetime] = []
+    for year in range(reference_start.year - 1, reference_end.year + 2):
+        try:
+            parsed = datetime.strptime(
+                f"{year} {month_text} {day_text}",
+                "%Y %b %d",
+            ).replace(tzinfo=timezone.utc)
+        except ValueError:
+            continue
+        candidates.append(parsed)
+
+    in_window = [
+        candidate
+        for candidate in candidates
+        if reference_start.date() <= candidate.date() <= reference_end.date()
+    ]
+    if in_window:
+        return min(in_window, key=lambda item: abs(item - reference_start))
+    if not candidates:
+        raise ProviderError(f"Unable to resolve ForexFactory event date '{date_text}'.")
+    return min(candidates, key=lambda item: abs(item - reference_start))
+
+
+# Function: _parse_forexfactory_time — resolves a rendered FF clock.
+# Variables: time_text=rendered time text.
+# Local variables: cleaned=normalized time; match=time match; hour=24-hour hour; minute=minute component.
+def _parse_forexfactory_time(time_text: str) -> Tuple[int, int]:
+    cleaned = " ".join(time_text.split()).lower()
+    match = re.search(r"(\d{1,2}):(\d{2})\s*(am|pm)", cleaned)
+    if not match:
+        return 0, 0
+
+    hour = int(match.group(1))
+    minute = int(match.group(2))
+    if match.group(3) == "pm" and hour < 12:
+        hour += 12
+    if match.group(3) == "am" and hour == 12:
+        hour = 0
+    return hour, minute
+
+
+# Function: parse_forexfactory_html_events — converts rendered FF HTML rows to provider-shaped events.
+# Variables: html=provider HTML; start=request start; end=request end.
+# Local variables: parser=HTML parser; timezone_info=provider timezone; normalized_events=provider-shaped events; row=parsed row; event_id=provider ID; currency=currency; title=title; event_date=resolved date; hour=event hour; minute=event minute; local_datetime=timezone-aware datetime; raw_event=provider-shaped record.
+def parse_forexfactory_html_events(
+    html: str,
+    start: datetime,
+    end: datetime,
+) -> List[Dict[str, Any]]:
+    parser = ForexFactoryHTMLCalendarParser()
+    parser.feed(html)
+    parser.close()
+
+    timezone_info = _extract_forexfactory_timezone(html)
+    normalized_events: List[Dict[str, Any]] = []
+
+    for row in parser.rows:
+        event_id = str(row.get("id") or "").strip()
+        if not event_id:
+            raise ProviderError("ForexFactory calendar row has no provider ID.")
+
+        currency = str(row.get("currency") or "").strip().upper()
+        if currency not in FX_CURRENCY_CODES and currency != "ALL":
+            raise ProviderError(f"Unsupported ForexFactory currency '{currency}'.")
+
+        title = str(row.get("title") or "").strip()
+        if not title:
+            continue
+
+        event_date = _parse_forexfactory_date(str(row.get("date") or ""), start, end)
+        hour, minute = _parse_forexfactory_time(str(row.get("time") or ""))
+        local_datetime = event_date.replace(
+            hour=hour,
+            minute=minute,
+            tzinfo=timezone_info,
+        )
+
+        normalized_events.append({
+            "id": event_id,
+            "dateline": int(local_datetime.timestamp()),
+            "currency": currency,
+            "name": title,
+            "impactName": str(row.get("impact") or "").replace(" Impact Expected", "").strip(),
+            "actual": str(row.get("actual") or "").strip() or None,
+            "forecast": str(row.get("forecast") or "").strip() or None,
+            "previous": str(row.get("previous") or "").strip() or None,
+        })
+
+    return normalized_events
+
 
 # Function: extract_days_payload — extracts provider day payloads.
 # Variables: html=provider HTML.
