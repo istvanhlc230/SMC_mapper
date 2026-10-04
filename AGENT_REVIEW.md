@@ -272,3 +272,20 @@ Final validation gate still pending:
 - real Windows execution from the repository root;
 - persisted path must resolve to C:\Users\Jaki\SMC_Mapper\calendar.json;
 - the resulting ForexFactory events must contain details.specs from live provider Detail JSON.
+## 2.3.1 cleartext HTML-entity correction
+
+Findings:
+1. Real ForexFactory Detail data can contain HTML markup that is itself HTML-entity escaped inside details.specs[].html.
+2. The existing --cleartext renderer stripped literal tags but did not first decode entities, so provider markup such as &lt;img ...&gt; and &lt;br&gt; was exposed to the user as raw HTML.
+3. The canonical calendar.json contract is unchanged: provider HTML remains preserved verbatim in details.specs[].html; only human-readable presentation is sanitized.
+4. The correction decodes HTML character references before stripping markup, so both literal and entity-escaped provider tags are removed from --cleartext output.
+5. Calendar implementation version advances to 2.3.1; persistent schema remains 2.
+
+Validation added:
+- CI compile/runtime tests cover an entity-escaped ForexFactory Detail fragment containing <img> and <br> markup.
+- The test verifies no raw HTML tag/class leaks into cleartext while readable text remains present.
+- Specification §7.6 explicitly documents entity decoding before markup removal.
+
+Validation status:
+- CI result after 2.3.1 correction: pending.
+- Windows real-provider smoke should be rerun from the repository root to confirm the observed Event 21–29 presentation is clean.
