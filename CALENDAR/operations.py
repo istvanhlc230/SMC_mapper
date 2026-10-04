@@ -107,7 +107,7 @@ def acquire_current(
     incremental: List[Dict[str, Any]] = []
 
     for provider in domain.resolve_applicable_providers(symbol):
-        key = watermark_key(provider, symbol)
+        key = domain.watermark_key(provider, symbol)
         watermark = document["watermarks"].get(key)
 
         if not watermark or not watermark.get("last_successful_at"):
@@ -227,8 +227,8 @@ def delete_symbol_interval(
     end: datetime,
 ) -> None:
     applicable_providers = set(domain.resolve_applicable_providers(symbol))
-    currencies = ({symbol} if is_currency(symbol) else
-                  {symbol[:3], symbol[3:]} if is_fx_pair(symbol) else set())
+    currencies = ({symbol} if domain.is_currency(symbol) else
+                  {symbol[:3], symbol[3:]} if domain.is_fx_pair(symbol) else set())
 
     retained_events: List[Dict[str, Any]] = []
     for event in document["events"]:
@@ -291,7 +291,7 @@ def delete_symbol_interval(
     document["coverage"] = retained_coverage
 
     for provider in applicable_providers:
-        key = watermark_key(provider, symbol)
+        key = domain.watermark_key(provider, symbol)
         watermark = document["watermarks"].get(key)
         if watermark is None:
             continue
