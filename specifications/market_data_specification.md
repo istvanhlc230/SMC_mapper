@@ -2288,3 +2288,114 @@ The output of this process is only the normalized market-data JSON state. Canoni
 - explicit historical reacquisition remains retained through the current processing transaction;
 - `available_start/end` represent completed-candle bounds only;
 - provider errors, malformed records, and malformed persisted JSON remain distinguishable failure classes.
+
+# 21. IMPLEMENTATION MODULE DECOMPOSITION
+
+The implementation is split by functional ownership while preserving market_data.py as the root CLI entry point.
+
+Module tree:
+
+market_data.py -> MARKET_DATA/cli.py -> models.py, provider.py, normalization.py, persistence.py, service.py
+
+MARKET_DATA/market_data_cache.json is a provider acquisition cache only. The canonical mapper-facing document remains <DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json.
+
+## 21.1 Module ownership
+
+| Module | Ownership |
+|---|---|
+| market_data.py | root executable entry point only |
+| MARKET_DATA/models.py | domain models and provider-neutral constants |
+| MARKET_DATA/provider.py | provider abstraction, Yahoo transport and provider cache |
+| MARKET_DATA/normalization.py | UTC conversion, completion, Decimal conversion, validation and identity |
+| MARKET_DATA/persistence.py | symbol paths, JSON validation, serialization and atomic save |
+| MARKET_DATA/service.py | acquisition planning, merge, retention and timeframe/symbol orchestration |
+| MARKET_DATA/cli.py | argparse, request parsing, validation and process execution |
+| MARKET_DATA/market_data_cache.json | provider cache; never the canonical mapper document |
+
+## 21.2 UML-style component relationship
+
+market_data.py -> cli.py -> service.py -> provider.py
+                              -> normalization.py
+                              -> persistence.py
+                              -> models.py
+provider.py -> external provider API and MARKET_DATA/market_data_cache.json
+persistence.py -> <DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json
+
+Dependency direction is one-way: CLI -> service -> provider/normalization/persistence/models. Provider and normalization must not import service or CLI. Persistence must not perform acquisition or SMC interpretation.
+
+## 21.3 Variable naming contract
+
+| Variable | Meaning |
+|---|---|
+| request | validated MarketDataRequest |
+| symbol | normalized instrument identity |
+| timeframe | canonical timeframe identifier |
+| start_time / end_time | canonical UTC boundaries |
+| provider | selected MarketDataProvider |
+| provider_candle | provider record before normalization |
+| normalized_candle | validated NormalizedCandle |
+| incoming_candles | newly acquired completed candles |
+| existing_candles | persisted completed candle records |
+| market_data | complete symbol document |
+| timeframe_state | one timeframe persisted state |
+| acquisition_start / acquisition_end | resolved acquisition boundaries |
+| retention_limit | completed-candle storage limit |
+| current_snapshot | persisted in-progress candle |
+| data_directory | common data root |
+| market_data_path | canonical symbol JSON path |
+| cache_path | provider cache path |
+| changed | whether resulting state differs from original |
+
+Do not use opaque domain-state names such as data, item, obj, tmp, helper or result2.
+
+## 21.4 Function ownership matrix
+
+| Function | Owner | Responsibility |
+|---|---|---|
+| build_argument_parser | cli.py | construct CLI |
+| parse_market_data_request | cli.py | parse request |
+| validate_request | cli.py | request invariants |
+| normalize_symbol | cli.py | symbol normalization |
+| normalize_timeframe | cli.py | timeframe normalization |
+| parse_iso8601 | cli.py | UTC timestamp parsing |
+| create_provider | provider.py | provider selection |
+| fetch_range | provider.py | provider range acquisition |
+| fetch_latest_completed | provider.py | latest provider record |
+| fetch_current | provider.py | current provider record |
+| derive_completion_time | normalization.py | interval boundary |
+| is_candle_complete | normalization.py | completion classification |
+| build_candle_id | normalization.py | stable identity |
+| normalize_provider_candle | normalization.py | provider-to-domain conversion |
+| normalize_provider_candles | normalization.py | batch conversion |
+| validate_normalized_candle | normalization.py | integrity validation |
+| deduplicate_candles | service.py | identity deduplication |
+| sort_candles | service.py | chronological ordering |
+| merge_completed_candles | service.py | immutable idempotent merge |
+| apply_candle_retention | service.py | bounded retention |
+| resolve_acquisition_range | service.py | request-mode planning |
+| fetch_completed_candles | service.py | completed acquisition path |
+| fetch_latest_completed_candle | service.py | latest completed path |
+| fetch_current_candle | service.py | current path |
+| build_current_snapshot | service.py | current serialization |
+| clear_completed_current_snapshot | service.py | current/completed separation |
+| ensure_timeframe_state | persistence.py | timeframe initialization |
+| update_available_bounds | persistence.py | completed-only bounds |
+| create_empty_market_data | persistence.py | empty document |
+| get_symbol_data_directory | persistence.py | symbol directory |
+| get_market_data_path | persistence.py | canonical output path |
+| load_market_data | persistence.py | load and validate |
+| serialize_decimal | persistence.py | deterministic Decimal string |
+| serialize_market_data | persistence.py | deterministic JSON |
+| save_market_data_atomic | persistence.py | atomic write |
+| update_timeframe | service.py | one-timeframe transaction |
+| update_market_data | service.py | symbol transaction |
+| run | cli.py | process execution |
+| main | market_data.py | root entry point |
+
+## 21.5 State-flow UML
+
+MarketDataRequest -> resolve_acquisition_range -> provider acquisition -> normalization/validation -> merge/current -> retention -> availability -> symbol validation -> atomic save or no-op.
+
+## 21.6 Structural implementation rule
+
+Any implementation change affecting interfaces, fields, paths, state transitions, CLI options or ownership boundaries must update this specification in the same iteration before implementation is accepted.
