@@ -9,7 +9,10 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from .config import FX_CURRENCY_CODES, ProviderError
 
+# Parser state is input-local: parsed rows and normalized values are produced from provider responses without persistent module state.
+
 def _normalize_forexfactory_impact_value(value: str) -> str:
+    """Internal helper: _normalize_forexfactory_impact_value performs the focused normalize forexfactory impact value step in the Calendar implementation."""
     lowered = value.strip().lower()
     if "high" in lowered:
         return "high"
@@ -22,6 +25,7 @@ def _normalize_forexfactory_impact_value(value: str) -> str:
     return ""
 
 def _classify_forexfactory_impact(classes: set[str]) -> str:
+    """Internal helper: _classify_forexfactory_impact performs the focused classify forexfactory impact step in the Calendar implementation."""
     for class_name in classes:
         lowered = class_name.lower()
         if lowered.endswith("--high") or lowered in {"high", "icon--ff-impact-red"}:
@@ -50,6 +54,7 @@ def _classify_forexfactory_impact(classes: set[str]) -> str:
 
 class ForexFactoryHTMLCalendarParser(HTMLParser):
     def __init__(self) -> None:
+        """Internal helper: __init__ performs the focused init   step in the Calendar implementation."""
         super().__init__(convert_charrefs=True)
         self.rows: List[Dict[str, Any]] = []
         self.current_row: Optional[Dict[str, Any]] = None
@@ -60,6 +65,7 @@ class ForexFactoryHTMLCalendarParser(HTMLParser):
         self.last_time_text = ""
 
     def handle_starttag(self, tag: str, attrs: List[Tuple[str, Optional[str]]]) -> None:
+        """Calendar operation: handle_starttag performs the focused handle starttag step in the Calendar implementation."""
         attributes = dict(attrs)
         classes = set(str(attributes.get("class") or "").split())
 
@@ -118,6 +124,7 @@ class ForexFactoryHTMLCalendarParser(HTMLParser):
                 self.current_row["impact"] = impact
 
     def handle_endtag(self, tag: str) -> None:
+        """Calendar operation: handle_endtag performs the focused handle endtag step in the Calendar implementation."""
         if self.current_row is None:
             return
 
@@ -163,10 +170,12 @@ class ForexFactoryHTMLCalendarParser(HTMLParser):
             self.rows.append(row)
 
     def handle_data(self, data: str) -> None:
+        """Calendar operation: handle_data performs the focused handle data step in the Calendar implementation."""
         if self.current_row is not None:
             self.text_buffer.append(data)
 
 def _extract_forexfactory_timezone(html: str) -> timezone:
+    """Internal helper: _extract_forexfactory_timezone performs the focused extract forexfactory timezone step in the Calendar implementation."""
     match = re.search(
         r"Calendar\s+Time\s+Zone:\s*([A-Za-z_]+(?:/[A-Za-z0-9_.+-]+)+)",
         html,
@@ -194,6 +203,7 @@ def _extract_forexfactory_timezone(html: str) -> timezone:
         return timezone(sign * timedelta(hours=hours, minutes=minutes))
 
 def _parse_forexfactory_date(
+    """Internal helper: _parse_forexfactory_date performs the focused parse forexfactory date step in the Calendar implementation."""
     date_text: str,
     reference_start: datetime,
     reference_end: datetime,
@@ -242,6 +252,7 @@ def _parse_forexfactory_date(
     return min(candidates, key=lambda item: abs(item - reference_start))
 
 def parse_forexfactory_html_events(
+    """Calendar operation: parse_forexfactory_html_events performs the focused parse forexfactory html events step in the Calendar implementation."""
     html: str,
     start: datetime,
     end: datetime,
@@ -300,6 +311,7 @@ def parse_forexfactory_html_events(
     return normalized_events
 
 def extract_days_payload(html: str) -> str:
+    """Calendar operation: extract_days_payload performs the focused extract days payload step in the Calendar implementation."""
     match = re.search(r"[\"']days[\"']\s*:\s*\[", html, re.IGNORECASE)
     if not match:
         raise ProviderError("ForexFactory response has no structured days payload.")
@@ -317,6 +329,7 @@ def extract_days_payload(html: str) -> str:
     return html[payload_start:payload_start + end_offset]
 
 def parse_calendar_days(payload: str) -> List[Dict[str, Any]]:
+    """Calendar operation: parse_calendar_days performs the focused parse calendar days step in the Calendar implementation."""
     try:
         parsed = json.loads(payload)
     except json.JSONDecodeError as exc:
