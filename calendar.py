@@ -35,7 +35,7 @@ HTTP_TIMEOUT = 15.0
 # SCHEMA_VERSION — persistent calendar.json schema version.
 SCHEMA_VERSION = 2
 # __version__ — Calendar CLI implementation version, independent from SCHEMA_VERSION.
-__version__ = "2.3.8"
+__version__ = "2.3.9"
 
 # SUPPORTED_CURRENCIES — standalone currencies accepted by the CLI.
 SUPPORTED_CURRENCIES = {
@@ -2558,14 +2558,14 @@ def run_refresh(
         else:
             status = "UNCHANGED"
 
-        output_query_result(
-            status,
-            symbol,
-            result["events"],
-            result["provider_results"],
-            cleartext=cleartext,
-        )
         if cleartext:
+            output_query_result(
+                status,
+                symbol,
+                result["events"],
+                result["provider_results"],
+                cleartext=True,
+            )
             print(
                 f"REFRESH | added={result['summary']['added']} "
                 f"changed={result['summary']['changed']} "
