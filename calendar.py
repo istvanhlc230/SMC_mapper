@@ -31,7 +31,7 @@ HTTP_TIMEOUT = 15.0
 # SCHEMA_VERSION — persistent calendar.json schema version.
 SCHEMA_VERSION = 2
 # __version__ — Calendar CLI implementation version, independent from SCHEMA_VERSION.
-__version__ = "2.2.12"
+__version__ = "2.2.14"
 
 # SUPPORTED_CURRENCIES — standalone currencies accepted by the CLI.
 SUPPORTED_CURRENCIES = {
@@ -885,6 +885,23 @@ def fetch_forexfactory(
     try:
         days = parse_calendar_days(extract_days_payload(html))
         normalized = normalize_calendar_events(days)
+
+        # The structured ForexFactory payload does not reliably expose the
+        # concrete Detail href. Enrich events from the same page's rendered
+        # calendar-row anchors, keyed by the provider event-instance ID.
+        parser = ForexFactoryHTMLCalendarParser()
+        parser.feed(html)
+        parser.close()
+        detail_urls = {
+            str(row.get("id")).strip(): str(row.get("url")).strip()
+            for row in parser.rows
+            if row.get("id") and row.get("url")
+        }
+        for event in normalized:
+            provider_event_id = event["event_id"].split(":", 1)[1]
+            detail_url = detail_urls.get(provider_event_id)
+            if detail_url:
+                event["details"]["url"] = detail_url
     except ProviderError:
         fallback_raw = parse_forexfactory_html_events(
             html,
@@ -1001,7 +1018,10 @@ class ForexFactoryHTMLCalendarParser(HTMLParser):
             if (
                 href
                 and not self.current_row.get("url")
-                and re.search(r"/calendar/event/", href, re.IGNORECASE)
+                and (
+                    re.search(r"/calendar/event/", href, re.IGNORECASE)
+                    or re.search(r"/calendar/\d+-[^?#]+", href, re.IGNORECASE)
+                )
             ):
                 self.current_row["url"] = urllib.parse.urljoin(
                     "https://www.forexfactory.com/",
@@ -1330,9 +1350,9 @@ def _resolve_impact(raw: Dict[str, Any]) -> str:
     return "UNKNOWN"
 
 
-# Function: _resolve_forexfactory_event_url — resolves the provider detail-page URL.
-# Variables: raw=local intermediate value.
-# Local variables: candidate=provider URL/slug candidate; resolved=normalized absolute URL; slug=provider event-base slug.
+# Function: _resolve_forexfactory_event_url — resolves an explicit provider detail-page URL.
+# Variables: raw=provider event record.
+# Local variables: candidate=provider URL/slug candidate; resolved=normalized absolute URL.
 def _resolve_forexfactory_event_url(raw: Dict[str, Any]) -> Optional[str]:
     for field_name in (
         "url", "eventUrl", "eventURL", "event_url",
@@ -1346,12 +1366,18 @@ def _resolve_forexfactory_event_url(raw: Dict[str, Any]) -> Optional[str]:
             "https://www.forexfactory.com/",
             candidate,
         )
-        if re.match(r"^https://(?:www\.)?forexfactory\.com/calendar/event/", resolved, re.IGNORECASE):
+        if re.match(
+            r"^https://(?:www\.)?forexfactory\.com/calendar/(?:event/|\d+-)",
+            resolved,
+            re.IGNORECASE,
+        ):
             return resolved
 
     for field_name in ("ebaseSlug", "ebase_slug", "eventSlug", "event_slug"):
         slug = str(raw.get(field_name) or "").strip().strip("/")
         if slug:
+            if re.match(r"^\d+-[^/?#]+$", slug):
+                return f"https://www.forexfactory.com/calendar/{slug}"
             return f"https://www.forexfactory.com/calendar/event/{slug}"
 
     return None

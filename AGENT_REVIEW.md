@@ -94,3 +94,34 @@ The fix corrects the URL regex, updates the CI version assertion, and adds regre
 Specification and design baselines are synchronized to 2.2.12. No `test/` directory was introduced and no root-level development artifact was added.
 
 A new CI result is required before declaring PASS.
+
+
+## ForexFactory live-smoke correction
+
+Calendar implementation version: 2.2.13
+Persistent schema: 2
+
+The clean live smoke proved that the structured ForexFactory calendar payload does not expose a concrete detail URL for the real events observed. Therefore the previous URL-only strategy was insufficient.
+
+The implementation now prefers provider-supplied concrete event-detail URLs/event-base slugs when available, and otherwise generates the provider-supported Calendar Detail fragment from the real event-instance ID and event timestamp:
+https://www.forexfactory.com/calendar?month=<mon>.<YYYY>#detail=<event-instance-id>
+
+This is a deterministic Detail-view URL, not an invented event-base slug. The current implementation therefore covers both concrete event-page URLs and the actual calendar Detail mechanism used by ForexFactory.
+
+CI regression coverage includes the deterministic fallback for event ID 146900 / Challenger Job Cuts y/y.
+
+A fresh CI result and the Windows clean-state live smoke are required before final PASS.
+
+
+## ForexFactory URL extraction correction
+
+Calendar implementation version: 2.2.14
+Persistent schema: 2
+
+The 2.2.13 Detail-fragment fallback was removed because it was still deriving a URL from the event-instance ID rather than preserving the provider's actual detail link.
+
+The implementation now uses the existing in-project HTML parser to extract concrete ForexFactory calendar-row anchors such as `/calendar/76-us-challenger-job-cuts-yy` and enriches structured events by provider event-instance ID. No external scraper is used and no event-detail slug is fabricated.
+
+CI regression coverage exercises the combined structured-payload + rendered-row path with the real-form event ID `146900`.
+
+A fresh CI result and the clean Windows live smoke are required before final PASS.

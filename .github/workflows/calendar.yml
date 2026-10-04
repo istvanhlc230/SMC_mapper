@@ -50,7 +50,7 @@ jobs:
             <td class="calendar__cell calendar__time time">9:00am</td>
             <td class="calendar__cell calendar__currency currency">EUR</td>
             <td class="calendar__cell calendar__impact impact"><span title="High Impact Expected" class="high"></span></td>
-            <td class="calendar__cell calendar__event event"><a href="/calendar/event/ecb-test-event/"><span class="calendar__event-title">ECB Test Event</span></a></td>
+            <td class="calendar__cell calendar__event event"><a href="/calendar/252-us-ecb-test-event"><span class="calendar__event-title">ECB Test Event</span></a></td>
             <td class="calendar__cell calendar__actual actual"></td>
             <td class="calendar__cell calendar__forecast forecast">1.2%</td>
             <td class="calendar__cell calendar__previous previous">1.0%</td>
@@ -84,7 +84,7 @@ jobs:
           assert ff_rows[0]["currency"] == "EUR"
           assert ff_rows[0]["name"] == "ECB Test Event"
           assert ff_rows[0]["impactName"] == "high"
-          assert ff_rows[0]["url"] == "https://www.forexfactory.com/calendar/event/ecb-test-event/"
+          assert ff_rows[0]["url"] == "https://www.forexfactory.com/calendar/252-us-ecb-test-event"
           medium_html = """<html><body>
           <div>Calendar Time Zone: Europe/Budapest (GMT +2)</div>
           <tr class="calendar__row calendar_row" data-eventid="1003">
@@ -113,8 +113,41 @@ jobs:
           normalized_ff = calendar.normalize_provider_event(ff_rows[0])
           assert normalized_ff["timestamp"] == "2026-10-05T07:00:00Z"
           assert normalized_ff["details"]["impact"] == "HIGH"
-          assert normalized_ff["details"]["url"] == "https://www.forexfactory.com/calendar/event/ecb-test-event/"
+          assert normalized_ff["details"]["url"] == "https://www.forexfactory.com/calendar/252-us-ecb-test-event"
 
+          original_fetch_url = calendar.fetch_url
+          try:
+              structured_fixture = """<html><body>
+              <div>Calendar Time Zone: Europe/Budapest (GMT +2)</div>
+              <script>
+              {"days":[{"events":[{"id":"146900","dateline":1790847000,"currency":"USD","name":"Challenger Job Cuts y/y","impactName":"Low Impact Expected","actual":"-19.9%","forecast":null,"previous":"-38.5%"}]}]}
+              </script>
+              <table><tbody>
+              <tr class="calendar__row calendar_row" data-eventid="146900">
+                <td class="calendar__cell calendar__date date">Thu Oct 1</td>
+                <td class="calendar__cell calendar__time time">9:30am</td>
+                <td class="calendar__cell calendar__currency currency">USD</td>
+                <td class="calendar__cell calendar__impact impact"><span title="Low Impact Expected" class="low"></span></td>
+                <td class="calendar__cell calendar__event event">
+                  <a href="/calendar/76-us-challenger-job-cuts-yy">
+                    <span class="calendar__event-title">Challenger Job Cuts y/y</span>
+                  </a>
+                </td>
+                <td class="calendar__cell calendar__actual actual">-19.9%</td>
+                <td class="calendar__cell calendar__forecast forecast"></td>
+                <td class="calendar__cell calendar__previous previous">-38.5%</td>
+              </tr>
+              </tbody></table></body></html>"""
+              calendar.fetch_url = lambda _url: structured_fixture
+              enriched = calendar.fetch_forexfactory(
+                  dt("2026-10-01T00:00:00Z"),
+                  dt("2026-10-02T00:00:00Z"),
+              )
+              assert len(enriched) == 1
+              assert enriched[0]["event_id"] == "forexfactory:146900"
+              assert enriched[0]["details"]["url"] == "https://www.forexfactory.com/calendar/76-us-challenger-job-cuts-yy"
+          finally:
+              calendar.fetch_url = original_fetch_url
           for raw_impact, expected_impact in (
               ("High Impact Expected", "HIGH"),
               ("Med Impact Expected", "MEDIUM"),
@@ -177,7 +210,7 @@ jobs:
               }
               assert calendar.normalize_provider_event(structured_raw)["details"]["impact"] == expected_impact
 
-          assert calendar.__version__ == "2.2.12"
+          assert calendar.__version__ == "2.2.14"
           assert f"Calendar CLI v{calendar.__version__}" in calendar.HELP_TEXT
 
           # Cleartext output must render normalized details as readable fields,
