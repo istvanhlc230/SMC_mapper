@@ -417,6 +417,31 @@ jobs:
               calendar._enrich_forexfactory_details = original_refresh_detail_enrich
               calendar.save_calendar_atomic = original_refresh_save
 
+          # Refresh machine-readable output is exactly one JSON document.
+          original_refresh_scope = calendar.refresh_calendar_scope
+          try:
+              refresh_output_doc = calendar.build_empty_calendar_document()
+              calendar.refresh_calendar_scope = lambda document, symbol, start, end, debug=False: {
+                  "events": [],
+                  "provider_results": [],
+                  "failures": [],
+                  "summary": {"added": 0, "changed": 0, "unchanged": 0},
+              }
+              out = io.StringIO()
+              with contextlib.redirect_stdout(out):
+                  assert calendar.run_refresh(
+                      "USD", "2026.10.01", cleartext=False
+                  ) == 0
+              lines = [line for line in out.getvalue().splitlines() if line.strip()]
+              assert len(lines) == 1
+              parsed_refresh_output = json.loads(lines[0])
+              assert parsed_refresh_output["status"] == "UNCHANGED"
+              assert parsed_refresh_output["refresh"] == {
+                  "added": 0, "changed": 0, "unchanged": 0
+              }
+          finally:
+              calendar.refresh_calendar_scope = original_refresh_scope
+
           assert calendar.parse_request(["refresh", "USD", "2026.10.01"])["operation"] == "REFRESH"
           assert calendar.parse_request(["refresh", "USD", "2026.10.01-2026.10.02"])["operation"] == "REFRESH"
           assert calendar.parse_request(["refresh", "USD", "2026.10.01@12:30"])["operation"] == "REFRESH"
@@ -527,7 +552,7 @@ jobs:
               }
               assert calendar.normalize_provider_event(structured_raw)["details"]["impact"] == expected_impact
 
-          assert calendar.__version__ == "2.3.8"
+          assert calendar.__version__ == "2.3.9"
           assert f"Calendar CLI v{calendar.__version__}" in calendar.HELP_TEXT
 
           # Cleartext output must render normalized details as readable fields,
