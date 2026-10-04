@@ -1575,6 +1575,7 @@ def run() -> int:
             request["symbol"],
             request["scope"],
             request["cleartext"],
+            debug=debug,
         )
     except CalendarInputError as exc:
         print(f"Error: {exc}", file=sys.stderr)

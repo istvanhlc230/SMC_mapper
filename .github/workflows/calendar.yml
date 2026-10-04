@@ -22,7 +22,7 @@ jobs:
           python - <<'PY'
           import json
           import os
-                    import sys
+          import sys
           import tempfile
           from datetime import datetime, timedelta, timezone
 
@@ -166,7 +166,52 @@ jobs:
           ) == []
 
           original_parse = calendar.parse_request
+          original_run_query = calendar.run_query
           try:
+              captured = {}
+              calendar.parse_request = lambda _args: {
+                  "operation": "QUERY",
+                  "symbol": "EURUSD",
+                  "scope": "current",
+                  "cleartext": False,
+                  "debug": True,
+              }
+              calendar.run_query = lambda symbol, scope, cleartext=False, debug=False: (
+                  captured.update({
+                      "symbol": symbol,
+                      "scope": scope,
+                      "cleartext": cleartext,
+                      "debug": debug,
+                  }) or 0
+              )
+              calendar.sys.argv = ["calendar.py", "EURUSD", "current", "--debug"]
+              assert calendar.run() == 0
+              assert captured["debug"] is True
+
+              calendar.parse_request = lambda _args: (_ for _ in ()).throw(
+                  RuntimeError("synthetic debug test")
+              )
+              calendar.sys.argv = ["calendar.py", "EURUSD", "current", "--debug"]
+              import contextlib
+              import io
+              err = io.StringIO()
+              with contextlib.redirect_stderr(err):
+                  assert calendar.run() == 1
+              assert "DEBUG | Unexpected exception traceback:" in err.getvalue()
+
+              calendar.parse_request = lambda _args: (_ for _ in ()).throw(
+                  RuntimeError("synthetic no-debug test")
+              )
+              calendar.sys.argv = ["calendar.py", "EURUSD", "current"]
+              err = io.StringIO()
+              with contextlib.redirect_stderr(err):
+                  assert calendar.run() == 1
+              assert "DEBUG |" not in err.getvalue()
+          finally:
+              calendar.parse_request = original_parse
+              calendar.run_query = original_run_query
+
+          original_now = calendar.utc_now
               calendar.parse_request = lambda _args: (_ for _ in ()).throw(
                   RuntimeError("synthetic debug test")
               )

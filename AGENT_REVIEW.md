@@ -177,3 +177,16 @@ Automatic audit correction:
 - Added provider-level `ProviderError` debug checks.
 - Wired `debug` from the CLI query boundary into both provider acquisition paths.
 - Added future-only and watermark non-regression checks to the suite.
+
+
+## Second audit correction
+
+The first post-fix test run compiled successfully but the contract suite stopped before
+executing its assertions because the workflow script contained an accidental indentation
+error. Static audit of the tested Calendar snapshot simultaneously found one real CLI defect:
+the top-level `run()` parsed `--debug` but did not pass it into `run_query()`, so
+provider-level diagnostics could not be enabled from the public CLI.
+
+Both issues are corrected in this commit. The automated suite now explicitly asserts that
+`run()` propagates `debug=True` into `run_query()`, and provider-error diagnostics are
+tested without network access.
