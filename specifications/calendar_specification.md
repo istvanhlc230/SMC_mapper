@@ -619,3 +619,8 @@ For this state:
 - `PARTIAL` remains reserved for an acquisition that completed with incomplete provider coverage or another explicitly partial provider result.
 
 For Yahoo Finance specifically, an empty successful news collection is `NO_MATCH`. A verified Yahoo Forex-pair unavailability remains the separate `SKIPPED_NO_FOREX_PAIR` state.
+
+
+## 10.3 Source activity documentation
+
+Calendar Python source must document the activity of its functions and meaningful state variables without changing runtime behavior. Function docstrings/comments must identify the function's role in the Calendar flow, including whether it is a public operation or an internal helper. Important module-level state variables must have concise comments describing what they represent and how they are used. Local variables should be documented through nearby comments when their role is non-obvious or when they carry acquisition, persistence, coverage, watermark, provider-result, or presentation state. Trivial loop/index variables do not require comments. Documentation must remain synchronized with the implementation and must not introduce generated noise or duplicate the specification.
