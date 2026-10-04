@@ -330,13 +330,13 @@ jobs:
               original_fetch_url = providers.fetch_url
               try:
                   providers.build_forexfactory_query = lambda _start, _end: "day=oct5.2026"
-                  providers.fetch_url = lambda _url: json.dumps([{
+                  providers.fetch_url = lambda _url: json.dumps({"days": [{
                       "date": {"date": "2026-10-05"},
                       "events": [
                           {"id": "101", "dateline": int(dt("2026-10-05T07:00:00Z").timestamp()), "currency": "USD", "name": "A", "impactName": "Low Impact Expected", "actual": None, "forecast": None, "previous": None},
                           {"id": "102", "dateline": int(dt("2026-10-05T08:00:00Z").timestamp()), "currency": "USD", "name": "B", "impactName": "Low Impact Expected", "actual": None, "forecast": None, "previous": None},
                       ]
-                  }])
+                  }]})
                   fetched_events = providers.fetch_forexfactory(
                       dt("2026-10-05T00:00:00Z"),
                       dt("2026-10-06T00:00:00Z"),
