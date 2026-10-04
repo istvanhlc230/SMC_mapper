@@ -23,6 +23,7 @@ jobs:
           import json
           import os
           import io
+          import contextlib
           import sys
           import tempfile
           from datetime import datetime, timedelta, timezone
@@ -448,8 +449,7 @@ jobs:
                   RuntimeError("synthetic debug test")
               )
               calendar.sys.argv = ["calendar.py", "EURUSD", "current", "--debug"]
-              import contextlib
-              import io
+                  import io
               err = io.StringIO()
               with contextlib.redirect_stderr(err):
                   assert calendar.run() == 1
