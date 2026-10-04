@@ -143,6 +143,7 @@ def fetch_forexfactory(
     start: datetime,
     end: datetime,
     include_details: bool = True,
+    detail_failures: Optional[List[str]] = None,
 ) -> List[Dict[str, Any]]:
     request_start = start
     request_end = end
@@ -174,7 +175,9 @@ def fetch_forexfactory(
     # ForexFactory Detail is provider data, not a canonical event URL.
     # Detail enrichment can be disabled for discovery-only refresh acquisition.
     if include_details:
-        _enrich_forexfactory_details(normalized)
+        failures = _enrich_forexfactory_details(normalized)
+        if detail_failures is not None:
+            detail_failures.extend(failures)
 
     return normalized
 
