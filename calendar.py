@@ -19,6 +19,8 @@ DATA_ROOT = os.environ.get("SMC_DATA_ROOT", ".")
 CALENDAR_FILE = os.path.join(DATA_ROOT, "calendar.json")
 # FOREXFACTORY_URL — ForexFactory economic-calendar endpoint.
 FOREXFACTORY_URL = "https://www.forexfactory.com/calendar"
+# FOREXFACTORY_DETAIL_URL — provider event-detail JSON endpoint template.
+FOREXFACTORY_DETAIL_URL = "https://www.forexfactory.com/calendar/details/1-{event_id}"
 # YAHOO_SEARCH_URL — Yahoo Finance search endpoint.
 YAHOO_SEARCH_URL = "https://query1.finance.yahoo.com/v1/finance/search"
 # USER_AGENT — HTTP User-Agent sent to providers.
@@ -31,7 +33,7 @@ HTTP_TIMEOUT = 15.0
 # SCHEMA_VERSION — persistent calendar.json schema version.
 SCHEMA_VERSION = 2
 # __version__ — Calendar CLI implementation version, independent from SCHEMA_VERSION.
-__version__ = "2.2.17"
+__version__ = "2.3.0"
 
 # SUPPORTED_CURRENCIES — standalone currencies accepted by the CLI.
 SUPPORTED_CURRENCIES = {
@@ -448,6 +450,26 @@ def validate_calendar_document(document: Dict[str, Any]) -> None:
             impact = event["details"].get("impact")
             if impact not in {"HIGH", "MEDIUM", "LOW", "HOLIDAY", "UNKNOWN"}:
                 raise DataIntegrityError("Invalid ForexFactory impact.")
+            specs = event["details"].get("specs", [])
+            if not isinstance(specs, list):
+                raise DataIntegrityError("Invalid ForexFactory specs.")
+            last_order = -1
+            for spec in specs:
+                if not isinstance(spec, dict):
+                    raise DataIntegrityError("Invalid ForexFactory detail spec.")
+                if set(spec) != {"order", "title", "html"}:
+                    raise DataIntegrityError("Invalid ForexFactory detail spec fields.")
+                try:
+                    order = int(spec["order"])
+                except (TypeError, ValueError) as exc:
+                    raise DataIntegrityError("Invalid ForexFactory detail spec order.") from exc
+                if order < 0 or order < last_order:
+                    raise DataIntegrityError("Non-deterministic ForexFactory detail spec order.")
+                last_order = order
+                if not isinstance(spec["title"], str) or not spec["title"].strip():
+                    raise DataIntegrityError("ForexFactory detail spec title must not be empty.")
+                if not isinstance(spec["html"], str):
+                    raise DataIntegrityError("ForexFactory detail spec html must be a string.")
 
         if event["source"] == "yahoo_finance":
             if event["event_type"] != "news":
@@ -886,23 +908,13 @@ def fetch_forexfactory(
         days = parse_calendar_days(extract_days_payload(html))
         normalized = normalize_calendar_events(days)
 
-        # The structured ForexFactory payload does not reliably expose the
-        # concrete Detail href. Enrich events from the same page's rendered
-        # calendar-row anchors, keyed by the provider event-instance ID.
-        parser = ForexFactoryHTMLCalendarParser()
-        parser.feed(html)
-        parser.close()
-        detail_urls = dict(parser.detail_urls)
-        for row in parser.rows:
-            row_id = str(row.get("id") or "").strip()
-            row_url = str(row.get("url") or "").strip()
-            if row_id and row_url:
-                detail_urls.setdefault(row_id, row_url)
+        # Fetch provider Detail specifications for each acquired event.
+        # The calendar-page Detail control is not a canonical event URL.
         for event in normalized:
             provider_event_id = event["event_id"].split(":", 1)[1]
-            detail_url = detail_urls.get(provider_event_id)
-            if detail_url:
-                event["details"]["url"] = detail_url
+            event["details"]["specs"] = fetch_forexfactory_event_detail(
+                provider_event_id
+            )
     except ProviderError:
         fallback_raw = parse_forexfactory_html_events(
             html,
@@ -975,7 +987,6 @@ class ForexFactoryHTMLCalendarParser(HTMLParser):
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
         self.rows: List[Dict[str, Any]] = []
-        self.detail_urls: Dict[str, str] = {}
         self.current_row: Optional[Dict[str, Any]] = None
         self.current_cell: Optional[str] = None
         self.text_buffer: List[str] = []
@@ -1013,33 +1024,10 @@ class ForexFactoryHTMLCalendarParser(HTMLParser):
                     "actual": "",
                     "forecast": "",
                     "previous": "",
-                    "url": "",
                 }
                 self.current_cell = None
                 self.text_buffer = []
                 return
-
-        if tag == "a":
-            href = str(
-                attributes.get("href")
-                or attributes.get("data-href")
-                or attributes.get("data-url")
-                or ""
-            ).strip()
-            if href:
-                resolved_href = urllib.parse.urljoin(
-                    "https://www.forexfactory.com/",
-                    href,
-                )
-                if _is_forexfactory_event_url(resolved_href):
-                    event_id_from_url = _forexfactory_url_event_id(resolved_href)
-                    if event_id_from_url:
-                        self.detail_urls.setdefault(
-                            event_id_from_url,
-                            resolved_href,
-                        )
-                    if self.current_row is not None and not self.current_row.get("url"):
-                        self.current_row["url"] = resolved_href
 
         if self.current_row is None:
             return
@@ -1272,7 +1260,6 @@ def parse_forexfactory_html_events(
             "actual": str(row.get("actual") or "").strip() or None,
             "forecast": str(row.get("forecast") or "").strip() or None,
             "previous": str(row.get("previous") or "").strip() or None,
-            "url": str(row.get("url") or "").strip() or None,
         })
 
     return normalized_events
@@ -1369,75 +1356,59 @@ def _resolve_impact(raw: Dict[str, Any]) -> str:
 # Function: _is_forexfactory_event_url — validates a concrete ForexFactory event-detail URL.
 # Variables: value=provider URL candidate.
 # Local variables: parsed=parsed URL; event_values=event query values.
-def _is_forexfactory_event_url(value: str) -> bool:
-    resolved = urllib.parse.urljoin(
-        "https://www.forexfactory.com/",
-        value.strip(),
+# Function: fetch_forexfactory_event_detail — fetches one ForexFactory Detail specification set.
+# Variables: event_id=provider event identifier.
+# Local variables: data=decoded response; exc=local exception; payload=provider response text; spec=provider specification; specs=provider specification collection; normalized=canonical specification collection.
+def fetch_forexfactory_event_detail(event_id: str) -> List[Dict[str, Any]]:
+    event_id = str(event_id).strip()
+    if not re.fullmatch(r"\d+", event_id):
+        raise ProviderError("ForexFactory event detail has an invalid provider ID.")
+
+    payload = fetch_url(
+        FOREXFACTORY_DETAIL_URL.format(event_id=event_id)
     )
-    parsed = urllib.parse.urlparse(resolved)
-    if parsed.scheme.lower() != "https":
-        return False
-    if parsed.netloc.lower() not in {"forexfactory.com", "www.forexfactory.com"}:
-        return False
+    try:
+        data = json.loads(payload)
+    except json.JSONDecodeError as exc:
+        raise ProviderError(
+            f"Malformed ForexFactory detail JSON for event {event_id}: {exc}"
+        ) from exc
 
-    if re.match(r"^/calendar/event/[^/?#]+$", parsed.path, re.IGNORECASE):
-        return True
-    if re.match(r"^/calendar/\d+-[^/?#]+$", parsed.path, re.IGNORECASE):
-        return True
-
-    if parsed.path.rstrip("/").lower() != "/calendar":
-        return False
-    query = urllib.parse.parse_qs(parsed.query)
-    event_values = [item.strip() for item in query.get("event", []) if item.strip()]
-    return bool(event_values and all(re.fullmatch(r"\d+", item) for item in event_values))
-
-
-# Function: _forexfactory_url_event_id — extracts the provider event ID from a concrete Detail URL.
-# Variables: value=provider Detail URL.
-# Local variables: parsed=parsed URL; event_values=event query values; match=path-ID match.
-def _forexfactory_url_event_id(value: str) -> Optional[str]:
-    resolved = urllib.parse.urljoin(
-        "https://www.forexfactory.com/",
-        value.strip(),
-    )
-    parsed = urllib.parse.urlparse(resolved)
-    query = urllib.parse.parse_qs(parsed.query)
-    event_values = [item.strip() for item in query.get("event", []) if item.strip()]
-    if len(event_values) == 1 and re.fullmatch(r"\d+", event_values[0]):
-        return event_values[0]
-    match = re.match(r"^/calendar/(\d+)-[^/?#]+$", parsed.path, re.IGNORECASE)
-    if match:
-        return match.group(1)
-    return None
-
-
-# Function: _resolve_forexfactory_event_url — resolves an explicit provider detail-page URL.
-# Variables: raw=provider event record.
-# Local variables: candidate=provider URL/slug candidate; resolved=normalized absolute URL.
-def _resolve_forexfactory_event_url(raw: Dict[str, Any]) -> Optional[str]:
-    for field_name in (
-        "url", "eventUrl", "eventURL", "event_url",
-        "detailUrl", "detailURL", "detail_url",
-        "ebaseUrl", "ebaseURL", "ebase_url",
-    ):
-        candidate = str(raw.get(field_name) or "").strip()
-        if not candidate:
-            continue
-        resolved = urllib.parse.urljoin(
-            "https://www.forexfactory.com/",
-            candidate,
+    if not isinstance(data, dict) or not isinstance(data.get("data"), dict):
+        raise ProviderError(
+            f"Malformed ForexFactory detail response for event {event_id}."
         )
-        if _is_forexfactory_event_url(resolved):
-            return resolved
 
-    for field_name in ("ebaseSlug", "ebase_slug", "eventSlug", "event_slug"):
-        slug = str(raw.get(field_name) or "").strip().strip("/")
-        if slug:
-            if re.match(r"^\d+-[^/?#]+$", slug):
-                return f"https://www.forexfactory.com/calendar/{slug}"
-            return f"https://www.forexfactory.com/calendar/event/{slug}"
+    specs = data["data"].get("specs", [])
+    if not isinstance(specs, list):
+        raise ProviderError(
+            f"ForexFactory detail specs are not a list for event {event_id}."
+        )
 
-    return None
+    normalized: List[Dict[str, Any]] = []
+    for spec in specs:
+        if not isinstance(spec, dict):
+            continue
+        try:
+            order = int(spec.get("order", 0))
+        except (TypeError, ValueError) as exc:
+            raise ProviderError(
+                f"Invalid ForexFactory detail spec order for event {event_id}."
+            ) from exc
+        title = str(spec.get("title", "")).strip()
+        html_value = str(spec.get("html", ""))
+        if not title:
+            continue
+        normalized.append({
+            "order": order,
+            "title": title,
+            "html": html_value,
+        })
+
+    return sorted(
+        normalized,
+        key=lambda item: (item["order"], item["title"]),
+    )
 
 
 # Function: normalize_provider_event — normalizes one provider event.
@@ -1485,7 +1456,7 @@ def normalize_provider_event(raw: Dict[str, Any]) -> Dict[str, Any]:
                 str(raw["previous"])
                 if raw.get("previous") not in (None, "") else None
             ),
-            "url": _resolve_forexfactory_event_url(raw),
+            "specs": [],
         },
     }
 
@@ -1968,11 +1939,24 @@ def status_from_provider_results(provider_results: List[Dict[str, Any]]) -> str:
 # Function: format_cleartext_details — renders normalized details for human-readable CLI output.
 # Variables: details=normalized event details.
 # Local variables: display=human-readable value; key=detail key; label=display label; ordered_keys=preferred key order; value=detail value.
+def _detail_html_to_text(value: str) -> str:
+    text = re.sub(r"(?is)<br\s*/?>", "\n", value)
+    text = re.sub(r"(?is)</(p|div|li|tr|table|h[1-6])\s*>", "\n", text)
+    text = re.sub(r"(?is)<[^>]+>", "", text)
+    text = re.sub(r"[ \t]+", " ", text)
+    text = re.sub(r"\n[ \t]+", "\n", text)
+    return text.strip()
+
+
+# Function: format_cleartext_details — renders normalized details for human-readable CLI output.
+# Variables: details=normalized event details.
+# Local variables: display=human-readable value; key=detail key; label=display label; ordered_keys=preferred key order; spec=detail specification; value=detail value.
 def format_cleartext_details(details: Dict[str, Any]) -> List[str]:
     """Render details without exposing the internal dictionary representation."""
     preferred_keys = ("currency", "impact", "actual", "forecast", "previous")
     ordered_keys = [key for key in preferred_keys if key in details]
-    ordered_keys.extend(sorted(key for key in details if key not in ordered_keys))
+    extra_keys = [key for key in details if key not in ordered_keys and key != "specs"]
+    ordered_keys.extend(sorted(extra_keys))
 
     lines: List[str] = []
     for key in ordered_keys:
@@ -1985,6 +1969,11 @@ def format_cleartext_details(details: Dict[str, Any]) -> List[str]:
             display = str(value)
         label = key.replace("_", " ").title()
         lines.append(f"  {label:<9}: {display}")
+
+    for spec in details.get("specs", []):
+        title = str(spec.get("title", "")).strip()
+        content = _detail_html_to_text(str(spec.get("html", "")))
+        lines.append(f"  {title:<9}: {content or 'N/A'}")
     return lines
 
 
