@@ -80,16 +80,32 @@ class YahooChartsProvider(MarketDataProvider):
             output.append(ProviderCandle(stamp,"UTC",stamp,group[0].open_price,max(x.high_price for x in group),min(x.low_price for x in group),group[-1].close_price,total,provider_metadata={"provider":"yahoo_charts","aggregated_from":"1h"}))
         return output
 
+    def _window_start(self, timeframe: str, now: datetime) -> datetime:
+        from .models import TIMEFRAME_SECONDS
+        seconds = TIMEFRAME_SECONDS[timeframe]
+        epoch = int(now.timestamp())
+        return datetime.fromtimestamp(epoch - (epoch % seconds), tz=timezone.utc)
+
     def fetch_latest_completed(self, symbol, timeframe):
-        now=datetime.now(timezone.utc); start=now.replace(minute=0,second=0,microsecond=0)
-        records=self.fetch_range(symbol,timeframe,start.timestamp() and start,now)
-        return records[-1] if records else None
+        now = datetime.now(timezone.utc)
+        from .models import TIMEFRAME_SECONDS
+        start = self._window_start(timeframe, now) - __import__("datetime").timedelta(seconds=TIMEFRAME_SECONDS[timeframe] * 3)
+        records = self.fetch_range(symbol, timeframe, start, now)
+        if not records:
+            return None
+        from .normalization import derive_completion_time
+        completed = [record for record in records if derive_completion_time(record.timestamp, timeframe) <= now]
+        return max(completed, key=lambda record: record.timestamp) if completed else None
 
     def fetch_current(self, symbol, timeframe):
-        now=datetime.now(timezone.utc)
-        start=now.replace(minute=0,second=0,microsecond=0)
-        records=self.fetch_range(symbol,timeframe,start,now)
-        return records[-1] if records else None
+        now = datetime.now(timezone.utc)
+        start = self._window_start(timeframe, now)
+        records = self.fetch_range(symbol, timeframe, start, now + __import__("datetime").timedelta(seconds=1))
+        if not records:
+            return None
+        from .normalization import derive_completion_time
+        incomplete = [record for record in records if derive_completion_time(record.timestamp, timeframe) > now]
+        return max(incomplete, key=lambda record: record.timestamp) if incomplete else None
 
 def create_provider(provider_name: str) -> MarketDataProvider:
     if provider_name != DEFAULT_PROVIDER_NAME: raise ValueError(f"unsupported provider: {provider_name}")
