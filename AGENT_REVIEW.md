@@ -174,3 +174,32 @@ Validation state:
 - CI #81 on the 2.2.16 fixture: PASS;
 - 2.2.17 CI: pending after commit;
 - Windows live smoke with real provider data: required before PASS.
+
+## Final 2.2.17 Windows live-smoke validation
+
+Calendar implementation baseline: 2.2.17
+Persistent schema: 2
+
+A clean Windows Server 2025 GitHub-hosted runner executed the real ForexFactory acquisition using an isolated temporary `SMC_DATA_ROOT` and no pre-existing Calendar state. The request was:
+
+    python calendar.py EURUSD 2026.10.05 --debug
+
+Result: SUCCESS / PARTIAL at the aggregate Calendar level because Yahoo historical news coverage is intentionally not guaranteed; the ForexFactory provider itself returned OK with 15 acquired economic events.
+
+Live evidence:
+- 15 real ForexFactory events persisted;
+- all ForexFactory events used event_type=economic;
+- normalized impact values were within the canonical set HIGH/MEDIUM/LOW/HOLIDAY/UNKNOWN;
+- representative real events included Spanish Services PMI (LOW), Italian Services PMI (LOW), German Buba President Nagel Speaks (LOW), and ISM Services PMI (MEDIUM);
+- EVENTS_WITH_EXPLICIT_DETAIL_URL=0.
+
+The live ForexFactory calendar response did not expose a concrete event-detail href for the observed events. Therefore `details.url = null` is the correct non-synthesized result under the existing specification requirement: preserve `details.url` only when the provider exposes an explicit concrete Detail URL. No URL was fabricated from the numeric event-instance ID.
+
+Validation:
+- Calendar Python CI run #95: PASS;
+- Windows live smoke run #13: PASS;
+- source/specification baseline remains 2.2.17;
+- no test directory was restored;
+- no repository-root development artifact was introduced.
+
+Acceptance status: PASS for the 2.2.17 Calendar implementation and its current provider behavior.
