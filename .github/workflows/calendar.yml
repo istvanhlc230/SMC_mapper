@@ -75,12 +75,6 @@ jobs:
           assert helper_rows[0]["currency"] == "USD"
 
           original_detail_fetch = calendar.fetch_forexfactory_event_detail
-          calendar.fetch_forexfactory_event_detail = lambda _event_id: [
-              {"order": 1, "title": "Source", "html": "<a href='https://example.com/source'>Example Source</a>"},
-              {"order": 2, "title": "Measures", "html": "Percentage of the work force unemployed."},
-              {"order": 3, "title": "Usual Effect", "html": "Actual less than Forecast is good for currency."},
-          ]
-
           detail_json = json.dumps({
               "data": {
                   "specs": [
@@ -94,11 +88,17 @@ jobs:
           try:
               calendar.fetch_url = lambda _url: detail_json
               detail_specs = calendar.fetch_forexfactory_event_detail("146900")
-              print("DETAIL_SPECS_TEST", repr(detail_specs))
               assert [spec["title"] for spec in detail_specs] == ["Source", "Measures", "Frequency"]
               assert detail_specs[0]["html"].startswith("<a href=")
           finally:
               calendar.fetch_url = original_detail_url_fetch
+
+          calendar.fetch_forexfactory_event_detail = lambda _event_id: [
+              {"order": 1, "title": "Source", "html": "<a href='https://example.com/source'>Example Source</a>"},
+              {"order": 2, "title": "Measures", "html": "Percentage of the work force unemployed."},
+              {"order": 3, "title": "Usual Effect", "html": "Actual less than Forecast is good for currency."},
+          ]
+
 
           ff_rows = calendar.parse_forexfactory_html_events(
               html,
@@ -111,7 +111,7 @@ jobs:
           assert ff_rows[0]["name"] == "ECB Test Event"
           assert ff_rows[0]["impactName"] == "high"
           # Provider-row CSS classes are advisory: an event-ID-bearing row
-          # must still be parsed and its native Detail href must be retained.
+          # must still be parsed without depending on its CSS row class.
           id_only_html = """<html><body>
           <div>Calendar Time Zone: Europe/Budapest (GMT +2)</div>
           <table><tbody>
