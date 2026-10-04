@@ -449,7 +449,6 @@ jobs:
                   RuntimeError("synthetic debug test")
               )
               calendar.sys.argv = ["calendar.py", "EURUSD", "current", "--debug"]
-                  import io
               err = io.StringIO()
               with contextlib.redirect_stderr(err):
                   assert calendar.run() == 1
