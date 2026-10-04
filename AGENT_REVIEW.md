@@ -1,6 +1,6 @@
 # AGENT_REVIEW.md — Calendar/Monitor Update Engine Synchronization
 
-Status: BLOCKED_PENDING_FINAL_CI_AFTER_LEGACY_RESET_AND_SOURCE-DOCUMENTATION
+Status: BLOCKED_PENDING_FINAL_CI_VALIDATION
 
 ## Follow-up audit correction
 
@@ -301,3 +301,21 @@ The deterministic CI suite now checks:
 - existing `next` semantics.
 
 Final CI status is intentionally left pending until GitHub Actions validates this complete snapshot.
+
+
+## Source-comment correction
+
+The first automated source-documentation patch briefly duplicated the first line of each
+function definition. That transient defect was detected during re-audit and corrected before
+final validation.
+
+Current source state:
+- 53 top-level function definitions remain;
+- no duplicated top-level function-definition lines remain;
+- parameter parsing in the comments respects nested typing syntax such as `Dict[str, Any]`;
+- the erroneous `Any=function parameter` documentation was removed.
+
+Final source commit containing this correction:
+`4c22e4046742ac1f2ee04f8f680b28956e3d4195`.
+
+The complete snapshot still requires the repository CI result before a final PASS claim.
