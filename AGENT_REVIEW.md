@@ -289,3 +289,20 @@ Validation added:
 Validation status:
 - CI result after 2.3.1 correction: pending.
 - Windows real-provider smoke should be rerun from the repository root to confirm the observed Event 21–29 presentation is clean.
+## 2.3.2 multiply-escaped Detail HTML correction
+
+The 2.3.1 correction handled one HTML-entity layer, but the live Windows output proved that some
+ForexFactory Detail fragments are escaped more than once. For example, `&amp;lt;br&amp;gt;` became
+`&lt;br&gt;` after one decode and therefore still leaked as visible markup.
+
+The renderer now repeatedly decodes HTML character references to a stable value (bounded to three
+passes) before removing HTML tags. This removes both literal and multiply-escaped `<img>` / `<br>` markup
+without modifying the canonical provider HTML retained in `details.specs[].html`.
+
+Validation added:
+- CI covers a multiply-escaped `<img>` fragment.
+- CI covers a multiply-escaped `<br>` fragment and verifies readable line-break output.
+- Specification §7.6 defines stable repeated entity decoding before markup removal.
+
+Calendar implementation version: 2.3.2; persistent schema remains 2.
+CI and a fresh Windows live smoke remain the final validation gates.
