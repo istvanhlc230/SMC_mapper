@@ -1,6 +1,6 @@
 # AGENT_REVIEW.md
 
-Status: PASS_2_2_17
+Status: FIX_REQUIRED_FF_DETAIL_SPEC_2_3_0_CI_PENDING
 
 ## Change
 The Windows live smoke showed that ForexFactory acquisition succeeds, but most events persisted
@@ -203,3 +203,18 @@ Validation:
 - no repository-root development artifact was introduced.
 
 Acceptance status: PASS for the 2.2.17 Calendar implementation and its current provider behavior.
+
+
+## 2.3.0 corrective change requested by user
+
+Findings:
+1. Calendar persists one normalized artifact at `<DATA_ROOT>/calendar.json`. With the default `DATA_ROOT="."`, this is the repository working directory. `calendar.json` is intentionally ignored by Git, so `git status` does not show it. The raw provider calendar response is not persisted as a separate file.
+2. The ForexFactory calendar-page Detail control is not a canonical event URL field. The useful provider data is the event Detail specification set, including Source, Measures, Usual Effect, Frequency, Next Release, Why Traders Care, and Also Called when supplied.
+3. Calendar 2.3.0 removes ForexFactory event-URL extraction and acquires the provider Detail JSON `specs` collection into `event.details.specs`.
+4. Each Detail specification preserves `order`, `title`, and provider `html`. Links embedded in the provider HTML are therefore retained in `calendar.json` without inventing an event URL.
+5. The persistent schema remains version 2 because `details.specs` is an additive field inside the existing extensible `details` object. Only the Calendar software version advances to 2.3.0.
+6. `--debug` now reports the exact persisted Calendar file path after a successful atomic save, making local persistence directly observable.
+
+Validation status:
+- Python unit/runtime CI: pending after the corrective commit.
+- Windows real-provider Detail smoke: required before final PASS.
