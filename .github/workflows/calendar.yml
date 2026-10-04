@@ -884,14 +884,14 @@ jobs:
                       "debug": debug,
                   }) or 0
               )
-              calendar.sys.argv = ["calendar.py", "EURUSD", "current", "--debug"]
+              sys.argv = ["calendar.py", "EURUSD", "current", "--debug"]
               assert calendar.run() == 0
               assert captured["debug"] is True
 
               calendar.parse_request = lambda _args: (_ for _ in ()).throw(
                   RuntimeError("synthetic debug test")
               )
-              calendar.sys.argv = ["calendar.py", "EURUSD", "current", "--debug"]
+              sys.argv = ["calendar.py", "EURUSD", "current", "--debug"]
               err = io.StringIO()
               with contextlib.redirect_stderr(err):
                   assert calendar.run() == 1
@@ -900,7 +900,7 @@ jobs:
               calendar.parse_request = lambda _args: (_ for _ in ()).throw(
                   RuntimeError("synthetic no-debug test")
               )
-              calendar.sys.argv = ["calendar.py", "EURUSD", "current"]
+              sys.argv = ["calendar.py", "EURUSD", "current"]
               err = io.StringIO()
               with contextlib.redirect_stderr(err):
                   assert calendar.run() == 1
