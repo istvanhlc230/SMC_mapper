@@ -1,6 +1,6 @@
 # AGENT_REVIEW.md
 
-Status: PENDING_WINDOWS_LIVE_DETAIL_SMOKE_2_3_0_CI_PASS
+PENDING_LOCAL_LIVE_DETAIL_VALIDATION
 
 ## Change
 The Windows live smoke showed that ForexFactory acquisition succeeds, but most events persisted
@@ -223,3 +223,7 @@ Validation status:
 - Calendar Python tests workflow #111 completed successfully on commit `b07e512588dc2fba7c03194a86be0a9295d58d28`.
 - Compile and Calendar unit/runtime contract tests passed.
 - The remaining validation gate is a real Windows run against the current ForexFactory provider, verifying that `calendar.json` is written and `details.specs` contains the provider Detail data.
+
+### Latest local-validation finding
+The user run confirmed that `SMC_DATA_ROOT` currently points to `dev_tmp/calendar_live_smoke`, so the persisted file is there rather than at repository root. The application reports that exact path with `--debug`.
+The same run exposed the need to refresh schema-2 legacy FF events that lack `details.specs`; the code now treats them as incomplete coverage and reacquires them. Legacy FF `details.url` is also hidden from cleartext output.
