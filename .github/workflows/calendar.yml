@@ -212,29 +212,6 @@ jobs:
               calendar.run_query = original_run_query
 
           original_now = calendar.utc_now
-              calendar.parse_request = lambda _args: (_ for _ in ()).throw(
-                  RuntimeError("synthetic debug test")
-              )
-              calendar.sys.argv = ["calendar.py", "EURUSD", "current", "--debug"]
-              import contextlib
-              import io
-              err = io.StringIO()
-              with contextlib.redirect_stderr(err):
-                  assert calendar.run() == 1
-              assert "DEBUG | Unexpected exception traceback:" in err.getvalue()
-
-              calendar.parse_request = lambda _args: (_ for _ in ()).throw(
-                  RuntimeError("synthetic no-debug test")
-              )
-              calendar.sys.argv = ["calendar.py", "EURUSD", "current"]
-              err = io.StringIO()
-              with contextlib.redirect_stderr(err):
-                  assert calendar.run() == 1
-              assert "DEBUG |" not in err.getvalue()
-          finally:
-              calendar.parse_request = original_parse
-
-          original_now = calendar.utc_now
           original_fetch = calendar.fetch_yahoo_news
           original_save = calendar.save_calendar_atomic
           try:

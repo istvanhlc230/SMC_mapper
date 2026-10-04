@@ -190,3 +190,13 @@ provider-level diagnostics could not be enabled from the public CLI.
 Both issues are corrected in this commit. The automated suite now explicitly asserts that
 `run()` propagates `debug=True` into `run_query()`, and provider-error diagnostics are
 tested without network access.
+
+
+## Third audit correction
+
+The second post-fix GitHub test compiled `calendar.py` successfully but the contract
+suite failed with an `IndentationError` caused by a duplicated debug-test block in the
+workflow script. The Calendar implementation itself was not the source of that failure.
+
+This commit removes the duplicate test block and leaves one deterministic, network-free
+debug propagation/traceback test. No dedicated `test/` directory is introduced.
