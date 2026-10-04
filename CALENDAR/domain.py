@@ -4,7 +4,7 @@ import re
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
-from .config import CalendarInputError, DataIntegrityError, FX_CURRENCY_CODES, SCHEMA_VERSION, SUPPORTED_CURRENCIES
+from .config import CalendarInputError, DataIntegrityError, DATE_RE, FX_CURRENCY_CODES, SCHEMA_VERSION, SUPPORTED_CURRENCIES, TIME_RE
 
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
