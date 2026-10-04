@@ -1,3 +1,4 @@
+# (c) Istvan Jakab <istvanhlc230@gmail.com>
 """Calendar command-line entrypoint and request dispatch."""
 
 import json
