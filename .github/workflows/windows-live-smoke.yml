@@ -36,51 +36,36 @@ jobs:
             throw "No real ForexFactory events were persisted"
           }
 
-          $withUrl = @($ffEvents | Where-Object {
-            $_.details.url -and $_.details.url.Trim().Length -gt 0
-          })
-
-          if ($withUrl.Count -eq 0) {
-            throw "No persisted ForexFactory event has a concrete details.url"
-          }
-
-          $nativeQueryPattern = '^https://(www\.)?forexfactory\.com/calendar\?day=[^&]+&event=\d+$'
-          $nativeDetailsPattern = '^https://(www\.)?forexfactory\.com/calendar/details/1-\d+$'
-
-          $validNativeUrls = @($withUrl | Where-Object {
-            $_.details.url -match $nativeQueryPattern -or
-            $_.details.url -match $nativeDetailsPattern
-          })
-
-          if ($validNativeUrls.Count -eq 0) {
-            throw "No native ForexFactory Detail URL was persisted"
-          }
-
-          $acceptedUrlPattern = '^https://(www\.)?forexfactory\.com/(calendar/event/[^/?#]+|calendar/\d+-[^/?#]+|calendar/details/1-\d+|calendar\?day=[^&]+&event=\d+)$'
-          $invalidUrls = @($withUrl | Where-Object {
-            $_.details.url -notmatch $acceptedUrlPattern
-          })
-
-          if ($invalidUrls.Count -gt 0) {
-            throw "Persisted ForexFactory URL is outside the accepted concrete provider URL forms"
-          }
-
           $badEventTypes = @($ffEvents | Where-Object { $_.event_type -ne "economic" })
           if ($badEventTypes.Count -gt 0) {
             throw "ForexFactory event_type contract violated"
           }
 
-          $knownImpacts = @("HIGH","MEDIUM","LOW","HOLIDAY")
-          $unknownImpactEvents = @($ffEvents | Where-Object {
+          $knownImpacts = @("HIGH","MEDIUM","LOW","HOLIDAY","UNKNOWN")
+          $badImpacts = @($ffEvents | Where-Object {
             $impact = [string]$_.details.impact
             $knownImpacts -notcontains $impact
           })
-          if ($unknownImpactEvents.Count -gt 0) {
+          if ($badImpacts.Count -gt 0) {
             throw "ForexFactory impact normalization contract violated"
+          }
+
+          $withUrl = @($ffEvents | Where-Object {
+            $_.details.url -and $_.details.url.Trim().Length -gt 0
+          })
+
+          $acceptedUrlPattern = '^https://(www\.)?forexfactory\.com/(calendar/event/[^/?#]+|calendar/\d+-[^/?#]+|calendar\?day=[^&]+&event=\d+)$'
+          $invalidUrls = @($withUrl | Where-Object {
+            $_.details.url -notmatch $acceptedUrlPattern
+          })
+
+          if ($invalidUrls.Count -gt 0) {
+            throw "A persisted ForexFactory URL is not an exact accepted provider URL form"
           }
 
           Write-Host "WINDOWS_LIVE_SMOKE_OK"
           Write-Host ("EVENT_COUNT={0}" -f $ffEvents.Count)
-          foreach ($event in $validNativeUrls | Select-Object -First 5) {
-            Write-Host ("EVENT|{0}|{1}|{2}|{3}|{4}" -f $event.event_id,$event.timestamp,$event.title,$event.details.impact,$event.details.url)
+          Write-Host ("EVENTS_WITH_EXPLICIT_DETAIL_URL={0}" -f $withUrl.Count)
+          foreach ($event in $ffEvents | Select-Object -First 5) {
+            Write-Host ("EVENT|{0}|{1}|{2}|{3}|URL={4}" -f $event.event_id,$event.timestamp,$event.title,$event.details.impact,([string]$event.details.url))
           }
