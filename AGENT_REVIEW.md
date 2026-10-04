@@ -1,6 +1,6 @@
 # AGENT_REVIEW.md — Calendar/Monitor Update Engine Synchronization
 
-Status: BLOCKED_PENDING_FINAL_CI_VALIDATION
+Status: VALIDATED_CI_CONTRACT_SUITE
 
 ## Follow-up audit correction
 
@@ -318,4 +318,18 @@ Current source state:
 Final source commit containing this correction:
 `4c22e4046742ac1f2ee04f8f680b28956e3d4195`.
 
-The complete snapshot still requires the repository CI result before a final PASS claim.
+The complete snapshot has now passed the repository CI contract suite.
+
+
+## Final CI validation for the complete snapshot
+
+GitHub Actions workflow `Calendar Python tests`:
+- run ID: `37217565336`;
+- commit: `661443c2f34d88f0fadefc900a260c3f32136553`;
+- overall conclusion: success;
+- `Compile`: success;
+- `Calendar unit/runtime contract tests`: success.
+
+The deterministic suite therefore validates the complete Calendar snapshot containing the
+legacy-cache reset, version/help changes, source comments, and `next` tests.
+Live ForexFactory/Yahoo provider smoke testing is not implied by this CI result.
