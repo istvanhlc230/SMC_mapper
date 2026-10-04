@@ -1853,7 +1853,7 @@ def output_query_result(
             for detail_line in format_cleartext_details(event["details"]):
                 print(detail_line)
             print(f"Event ID  : {event['event_id']}")
-            print("-----------------------------------------------")
+            print()
         return
 
     print(json.dumps({
