@@ -420,15 +420,21 @@ def refresh_calendar_scope(
                     or event["event_id"] in existing_ids
                 )
             ]
+            detail_failures: List[str] = []
             if provider == "forexfactory":
-                providers._enrich_forexfactory_details(selected)
+                detail_failures = providers._enrich_forexfactory_details(selected)
 
             refreshed_for_symbol.extend(selected)
             provider_results.append({
                 "provider": provider,
-                "status": "OK" if provider == "forexfactory" else "PARTIAL",
+                "status": (
+                    "PARTIAL"
+                    if provider == "yahoo_finance" or detail_failures
+                    else "OK"
+                ),
                 "events_fetched": len(fetched),
                 "events_refreshed": len(selected),
+                **({"detail_failures": len(detail_failures)} if detail_failures else {}),
             })
         except YahooForexPairUnavailable as exc:
             if debug:
