@@ -307,6 +307,13 @@ The acquisition path first attempts the structured days payload. When it is abse
 current rendered calendar rows using the provider event identifier, visible date/time, currency,
 impact, title, actual, forecast, and previous fields.
 
+For the structured payload, explicit ForexFactory impactName and/or impactClass representations are
+normalized to the canonical HIGH/MEDIUM/LOW/HOLIDAY values. Known forms include descriptive labels
+such as High Impact Expected, Med Impact Expected, Medium Impact Expected, Low Impact Expected, and
+Non-Economic, plus provider color/icon tokens such as impact-red, impact-orange, impact-yellow,
+impact-green, and impact-grey. Known provider severity must not silently collapse to UNKNOWN.
+Severity must never be inferred from an event title or other unrelated field.
+
 Rendered event times are interpreted using the provider-declared Calendar Time Zone. An IANA timezone
 is preferred. When the runtime has no matching IANA timezone database entry, the provider-declared
 GMT offset is used as a fallback.
@@ -433,5 +440,6 @@ Acceptance requires:
 - single-day ForexFactory acquisition uses the native `day=` query form;
 - multi-day ForexFactory acquisition uses the native `range=` query form;
 - rendered ForexFactory helper rows without an event title do not fail the provider acquisition path;
+- structured and rendered ForexFactory impact representations normalize known HIGH/MEDIUM/LOW/HOLIDAY values without silent UNKNOWN collapse;
 - rendered ForexFactory impact classification must not silently collapse known HIGH/MEDIUM/LOW events to UNKNOWN;
 - relative ForexFactory navigation aliases are documented but are not accepted as public Calendar CLI scopes.
