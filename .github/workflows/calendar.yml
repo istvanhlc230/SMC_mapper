@@ -81,7 +81,15 @@ jobs:
               {"order": 3, "title": "Usual Effect", "html": "Actual less than Forecast is good for currency."},
           ]
 
-          detail_json = '{"data":{"specs":[{"order":2,"title":"Measures","html":"Measures text"},{"order":1,"title":"Source","html":"<a href=\"https://example.com\">Source text</a>"},{"order":3,"title":"Frequency","html":"Monthly"}]}}'
+          detail_json = json.dumps({
+              "data": {
+                  "specs": [
+                      {"order": 2, "title": "Measures", "html": "Measures text"},
+                      {"order": 1, "title": "Source", "html": "<a href='https://example.com'>Source text</a>"},
+                      {"order": 3, "title": "Frequency", "html": "Monthly"},
+                  ]
+              }
+          })
           original_detail_url_fetch = calendar.fetch_url
           try:
               calendar.fetch_url = lambda _url: detail_json
