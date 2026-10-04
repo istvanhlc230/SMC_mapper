@@ -174,18 +174,21 @@ class DataIntegrityError(Exception):
 
 # Function: utc_now — returns current UTC time.
 def utc_now() -> datetime:
+def utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-# Function: format_iso8601 — formats a datetime as canonical UTC ISO-8601.
+# Function: format_iso8601 — formats a datetime as UTC ISO-8601.
 # Variables: value=input value.
+def format_iso8601(value: datetime) -> str:
 def format_iso8601(value: datetime) -> str:
     return value.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-# Function: parse_iso8601 — parses and validates a UTC ISO-8601 timestamp.
+# Function: parse_iso8601 — parses and validates a UTC timestamp.
 # Variables: value=input value.
-# Local variables: exc=local intermediate value; normalized=normalized value; parsed=parsed datetime.
+# Local variables: exc=local intermediate value; normalized=normalized record; parsed=parsed datetime.
+def parse_iso8601(value: str) -> datetime:
 def parse_iso8601(value: str) -> datetime:
     normalized = value[:-1] + "+00:00" if value.endswith("Z") else value
     try:
@@ -200,17 +203,20 @@ def parse_iso8601(value: str) -> datetime:
 # Function: normalize_symbol — normalizes a user symbol.
 # Variables: value=input value.
 def normalize_symbol(value: str) -> str:
+def normalize_symbol(value: str) -> str:
     return value.strip().upper()
 
 
 # Function: is_currency — checks standalone currency support.
 # Variables: value=input value.
 def is_currency(value: str) -> bool:
+def is_currency(value: str) -> bool:
     return value in SUPPORTED_CURRENCIES
 
 
-# Function: canonicalize_fx_token — canonicalizes an FX symbol token.
+# Function: canonicalize_fx_token — canonicalizes an FX token.
 # Variables: value=input value.
+def canonicalize_fx_token(value: str) -> str:
 def canonicalize_fx_token(value: str) -> str:
     return re.sub(r"[/_-]", "", value.strip().upper())
 
@@ -218,6 +224,7 @@ def canonicalize_fx_token(value: str) -> str:
 # Function: is_fx_pair — checks six-letter FX-pair syntax.
 # Variables: value=input value.
 # Local variables: token=canonical token.
+def is_fx_pair(value: str) -> bool:
 def is_fx_pair(value: str) -> bool:
     token = canonicalize_fx_token(value)
     return (
@@ -231,6 +238,7 @@ def is_fx_pair(value: str) -> bool:
 # Variables: value=input value.
 # Local variables: token=canonical token.
 def is_ticker(value: str) -> bool:
+def is_ticker(value: str) -> bool:
     token = normalize_symbol(value)
     if is_currency(token) or is_fx_pair(token):
         return False
@@ -240,6 +248,7 @@ def is_ticker(value: str) -> bool:
 # Function: validate_symbol — validates and canonicalizes a CLI symbol.
 # Variables: value=input value.
 # Local variables: token=canonical token.
+def validate_symbol(value: str) -> str:
 def validate_symbol(value: str) -> str:
     token = canonicalize_fx_token(value)
     if is_currency(token):
@@ -258,9 +267,10 @@ def validate_symbol(value: str) -> str:
     )
 
 
-# Function: parse_time — parses HH:MM.
+# Function: parse_time — parses HH:MM time.
 # Variables: value=input value.
 # Local variables: hour=hour component; minute=minute component; part=local intermediate value.
+def parse_time(value: str) -> Tuple[int, int]:
 def parse_time(value: str) -> Tuple[int, int]:
     if not re.fullmatch(TIME_RE, value):
         raise CalendarInputError(f"Invalid time '{value}'. Expected HH:MM.")
@@ -274,6 +284,7 @@ def parse_time(value: str) -> Tuple[int, int]:
 # Variables: value=input value.
 # Local variables: day=calendar day; exc=local intermediate value; month=calendar month; part=local intermediate value; year=calendar year.
 def parse_date(value: str) -> datetime:
+def parse_date(value: str) -> datetime:
     if not re.fullmatch(DATE_RE, value):
         raise CalendarInputError(
             f"Invalid date '{value}'. Expected YYYY.MM.DD."
@@ -285,9 +296,10 @@ def parse_date(value: str) -> datetime:
         raise CalendarInputError(f"Invalid calendar date '{value}'.") from exc
 
 
-# Function: parse_point — parses a date or datetime point.
+# Function: parse_point — parses a date/datetime point.
 # Variables: value=input value.
 # Local variables: base=date base; date_part=date portion; hour=hour component; minute=minute component; time_part=time portion.
+def parse_point(value: str) -> Tuple[datetime, bool]:
 def parse_point(value: str) -> Tuple[datetime, bool]:
     if "@" not in value:
         return parse_date(value), False
@@ -297,9 +309,10 @@ def parse_point(value: str) -> Tuple[datetime, bool]:
     return base.replace(hour=hour, minute=minute), True
 
 
-# Function: resolve_scope_interval — resolves an explicit historical scope into a UTC interval.
+# Function: resolve_scope_interval — resolves an explicit scope into a UTC interval.
 # Variables: scope=CLI scope.
 # Local variables: _=local intermediate value; end=interval end; end_date=local intermediate value; end_is_point=local intermediate value; parts=parsed scope parts; point=single datetime; start=interval start; start_is_point=local intermediate value.
+def resolve_scope_interval(scope: str) -> Tuple[datetime, datetime]:
 def resolve_scope_interval(scope: str) -> Tuple[datetime, datetime]:
     if scope == "current":
         raise CalendarInputError("'current' is not a historical scope.")
@@ -335,8 +348,9 @@ def resolve_scope_interval(scope: str) -> Tuple[datetime, datetime]:
     return start, start + timedelta(days=1)
 
 
-# Function: parse_scope — classifies current/next or validates a historical scope.
+# Function: parse_scope — classifies or validates a scope.
 # Variables: scope=CLI scope.
+def parse_scope(scope: str) -> str:
 def parse_scope(scope: str) -> str:
     if scope in {"current", "next"}:
         return scope
@@ -346,6 +360,7 @@ def parse_scope(scope: str) -> str:
 
 # Function: build_empty_calendar_document — builds a clean V2 Calendar document.
 def build_empty_calendar_document() -> Dict[str, Any]:
+def build_empty_calendar_document() -> Dict[str, Any]:
     return {
         "schema_version": SCHEMA_VERSION,
         "events": [],
@@ -354,8 +369,9 @@ def build_empty_calendar_document() -> Dict[str, Any]:
     }
 
 
-# Function: _load_json_file — loads the raw Calendar JSON file.
+# Function: _load_json_file — loads raw Calendar JSON.
 # Local variables: exc=local intermediate value; handle=local intermediate value.
+def _load_json_file() -> Dict[str, Any]:
 def _load_json_file() -> Dict[str, Any]:
     if not os.path.exists(CALENDAR_FILE) or os.path.getsize(CALENDAR_FILE) == 0:
         return build_empty_calendar_document()
@@ -366,9 +382,10 @@ def _load_json_file() -> Dict[str, Any]:
         raise DataIntegrityError(f"Calendar data integrity error: {exc}") from exc
 
 
-# Function: validate_calendar_document — validates Calendar document schema and provider contracts.
-# Variables: document=in-memory Calendar document; Any=function parameter.
-# Local variables: coverage=local intermediate value; currency=currency code; event=normalized event; event_id=local intermediate value; field=local intermediate value; ids=event-ID set; impact=local intermediate value; item=local intermediate value; key=dictionary key; missing=local intermediate value; provider=provider identifier; required=local intermediate value; seen_coverage=validated coverage-ID set; suppressed_for=local intermediate value; symbol=canonical symbol; value=input value; watermark=provider/symbol watermark.
+# Function: validate_calendar_document — validates the Calendar document.
+# Variables: document=in-memory Calendar document.
+# Local variables: coverage=local intermediate value; currency=currency code; event=normalized event; event_id=local intermediate value; field=local intermediate value; ids=event-ID set; impact=local intermediate value; item=current collection item; key=dictionary key; missing=local intermediate value; provider=provider identifier; required=local intermediate value; seen_coverage=validated coverage-ID set; suppressed_for=local intermediate value; symbol=canonical symbol; value=input value; watermark=provider/symbol watermark.
+def validate_calendar_document(document: Dict[str, Any]) -> None:
 def validate_calendar_document(document: Dict[str, Any]) -> None:
     if not isinstance(document, dict):
         raise DataIntegrityError("Calendar document must be an object.")
@@ -490,14 +507,16 @@ def validate_calendar_document(document: Dict[str, Any]) -> None:
 # Function: load_calendar_document — loads and validates Calendar state.
 # Local variables: document=in-memory Calendar document.
 def load_calendar_document() -> Dict[str, Any]:
+def load_calendar_document() -> Dict[str, Any]:
     document = _load_json_file()
     validate_calendar_document(document)
     return document
 
 
 # Function: save_calendar_atomic — atomically persists Calendar state.
-# Variables: document=in-memory Calendar document; Any=function parameter.
+# Variables: document=in-memory Calendar document.
 # Local variables: exc=local intermediate value; fd=temporary file descriptor; handle=local intermediate value; prefix=local intermediate value; temp_path=temporary file path.
+def save_calendar_atomic(document: Dict[str, Any]) -> None:
 def save_calendar_atomic(document: Dict[str, Any]) -> None:
     os.makedirs(DATA_ROOT, exist_ok=True)
     temp_path = None
@@ -523,8 +542,9 @@ def save_calendar_atomic(document: Dict[str, Any]) -> None:
 
 
 @contextlib.contextmanager
-# Function: acquire_calendar_lock — serializes Calendar read-modify-write access.
+# Function: acquire_calendar_lock — serializes Calendar access.
 # Local variables: fd=temporary file descriptor; kernel32=local intermediate value; lock_path=POSIX lock-file path; mutex=Windows mutex handle; result=computed result.
+def acquire_calendar_lock():
 def acquire_calendar_lock():
     os.makedirs(DATA_ROOT, exist_ok=True)
     if os.name == "nt":
@@ -562,8 +582,9 @@ def acquire_calendar_lock():
 
 
 # Function: merge_events — merges provider events by identity.
-# Variables: document=in-memory Calendar document; Any=function parameter; new_events=incoming events; clear_suppressed_symbol=function parameter.
-# Local variables: by_id=local intermediate value; event=normalized event; incoming=incoming suppression metadata; inherited=previous suppression metadata; key=dictionary key; normalized=normalized value; old=previous record; suppressed=combined suppression metadata.
+# Variables: document=in-memory Calendar document; new_events=incoming events; clear_suppressed_symbol=local intermediate value.
+# Local variables: by_id=local intermediate value; event=normalized event; incoming=incoming suppression metadata; inherited=previous suppression metadata; key=dictionary key; normalized=normalized record; old=previous record; suppressed=combined suppression metadata.
+def merge_events(
 def merge_events(
     document: Dict[str, Any],
     new_events: List[Dict[str, Any]],
@@ -598,9 +619,10 @@ def merge_events(
         ),
     )
 
-# Function: merge_coverage — merges provider coverage intervals.
-# Variables: document=in-memory Calendar document; Any=function parameter; item=function parameter.
+# Function: merge_coverage — merges coverage intervals.
+# Variables: document=in-memory Calendar document; item=current collection item.
 # Local variables: candidates=candidate provider records; coverage=local intermediate value; current=local intermediate value; key=dictionary key; previous=local intermediate value; same_scope=local intermediate value.
+def merge_coverage(document: Dict[str, Any], item: Dict[str, Any]) -> None:
 def merge_coverage(document: Dict[str, Any], item: Dict[str, Any]) -> None:
     candidates = [coverage.copy() for coverage in document["coverage"]]
     candidates.append(item.copy())
@@ -632,9 +654,10 @@ def merge_coverage(document: Dict[str, Any], item: Dict[str, Any]) -> None:
     document["coverage"] = merged
 
 
-# Function: find_uncovered_intervals — computes missing COMPLETE coverage segments.
-# Variables: document=in-memory Calendar document; Any=function parameter; provider=provider identifier; symbol=canonical symbol; start=interval start; end=interval end.
+# Function: find_uncovered_intervals — computes missing complete coverage segments.
+# Variables: document=in-memory Calendar document; provider=provider identifier; symbol=canonical symbol; start=interval start; end=interval end.
 # Local variables: complete_intervals=local intermediate value; coverage=local intermediate value; coverage_end=existing coverage end; coverage_start=existing coverage start; cursor=provider cursor.
+def find_uncovered_intervals(
 def find_uncovered_intervals(
     document: Dict[str, Any],
     provider: str,
@@ -684,14 +707,16 @@ def find_uncovered_intervals(
     return gaps
 
 
-# Function: watermark_key — builds provider/symbol watermark key.
+# Function: watermark_key — builds watermark identity.
 # Variables: provider=provider identifier; symbol=canonical symbol.
+def watermark_key(provider: str, symbol: str) -> str:
 def watermark_key(provider: str, symbol: str) -> str:
     return f"{provider}|{symbol}"
 
 
 # Function: resolve_applicable_providers — selects providers for a symbol.
 # Variables: symbol=canonical symbol.
+def resolve_applicable_providers(symbol: str) -> List[str]:
 def resolve_applicable_providers(symbol: str) -> List[str]:
     if is_currency(symbol):
         return ["forexfactory"]
@@ -700,9 +725,10 @@ def resolve_applicable_providers(symbol: str) -> List[str]:
     return ["yahoo_finance"]
 
 
-# Function: _fetch_yahoo_search_payload — fetches Yahoo instrument/news search payload.
-# Variables: query_symbol=function parameter.
+# Function: _fetch_yahoo_search_payload — fetches Yahoo search payload.
+# Variables: query_symbol=local intermediate value.
 # Local variables: data=local intermediate value; exc=local intermediate value; params=HTTP query parameters; payload=provider payload; query=provider query symbol.
+def _fetch_yahoo_search_payload(query_symbol: str) -> Dict[str, Any]:
 def _fetch_yahoo_search_payload(query_symbol: str) -> Dict[str, Any]:
     params = {
         "q": query_symbol,
@@ -721,9 +747,10 @@ def _fetch_yahoo_search_payload(query_symbol: str) -> Dict[str, Any]:
     return data
 
 
-# Function: _is_verified_yahoo_forex_quote — checks exact Yahoo Forex instrument classification.
-# Variables: quote=function parameter; Any=function parameter; candidate_symbol=function parameter.
+# Function: _is_verified_yahoo_forex_quote — verifies a Yahoo Forex quote.
+# Variables: quote=local intermediate value; candidate_symbol=local intermediate value.
 # Local variables: quote_type=provider classification; returned_symbol=provider-returned symbol; type_display=provider display classification.
+def _is_verified_yahoo_forex_quote(
 def _is_verified_yahoo_forex_quote(
     quote: Dict[str, Any],
     candidate_symbol: str,
@@ -740,9 +767,10 @@ def _is_verified_yahoo_forex_quote(
     )
 
 
-# Function: _resolve_yahoo_instrument — resolves a Yahoo provider symbol for an FX pair.
+# Function: _resolve_yahoo_instrument — resolves a Yahoo FX instrument.
 # Variables: symbol=canonical symbol.
 # Local variables: candidate=local intermediate value; data=local intermediate value; derived_usd_base=local intermediate value; direct=direct candidate; mapped=mapped candidate; query_symbol=local intermediate value; quote=local intermediate value; quotes=local intermediate value.
+def _resolve_yahoo_instrument(
 def _resolve_yahoo_instrument(
     symbol: str,
 ) -> Tuple[str, Dict[str, Any]]:
@@ -787,9 +815,10 @@ def _resolve_yahoo_instrument(
     )
 
 
-# Function: resolve_yahoo_symbol — returns verified Yahoo symbol or no result.
+# Function: resolve_yahoo_symbol — returns verified Yahoo symbol.
 # Variables: symbol=canonical symbol.
 # Local variables: _=local intermediate value; provider_symbol=verified provider symbol.
+def resolve_yahoo_symbol(symbol: str) -> Optional[str]:
 def resolve_yahoo_symbol(symbol: str) -> Optional[str]:
     try:
         provider_symbol, _ = _resolve_yahoo_instrument(symbol)
@@ -799,8 +828,9 @@ def resolve_yahoo_symbol(symbol: str) -> Optional[str]:
 
 
 # Function: fetch_url — performs an HTTP GET.
-# Variables: url=function parameter.
+# Variables: url=local intermediate value.
 # Local variables: exc=local intermediate value; headers=local intermediate value; request=parsed CLI request; response=provider response.
+def fetch_url(url: str) -> str:
 def fetch_url(url: str) -> str:
     request = urllib.request.Request(
         url,
@@ -818,9 +848,10 @@ def fetch_url(url: str) -> str:
         raise ProviderError(str(exc)) from exc
 
 
-# Function: fetch_forexfactory — fetches ForexFactory calendar data.
+# Function: fetch_forexfactory — fetches FF calendar data.
 # Variables: start=interval start; end=interval end.
-# Local variables: days=provider calendar days; end_token=local intermediate value; event=normalized event; hour=hour component; html=provider HTML; last_day=last processed day; normalized=normalized value; provider_end=provider end timestamp; provider_start=provider start timestamp; query=provider query symbol; request_end=requested interval end; request_start=requested interval start; start_token=local intermediate value.
+# Local variables: days=provider calendar days; end_token=local intermediate value; event=normalized event; hour=hour component; html=provider HTML; last_day=last processed day; normalized=normalized record; provider_end=provider interval end; provider_start=provider interval start; query=provider query symbol; request_end=requested interval end; request_start=requested interval start; start_token=local intermediate value.
+def fetch_forexfactory(start: datetime, end: datetime) -> List[Dict[str, Any]]:
 def fetch_forexfactory(start: datetime, end: datetime) -> List[Dict[str, Any]]:
     request_start = start
     request_end = end
@@ -847,9 +878,10 @@ def fetch_forexfactory(start: datetime, end: datetime) -> List[Dict[str, Any]]:
         if request_start <= parse_iso8601(event["timestamp"]) < request_end
     ]
 
-# Function: extract_days_payload — extracts day payloads from provider HTML.
+# Function: extract_days_payload — extracts provider day payloads.
 # Variables: html=provider HTML.
 # Local variables: decoded=local intermediate value; end_offset=local intermediate value; exc=local intermediate value; match=regular-expression/provider match; payload_start=local intermediate value.
+def extract_days_payload(html: str) -> str:
 def extract_days_payload(html: str) -> str:
     match = re.search(r"[\"']days[\"']\s*:\s*\[", html, re.IGNORECASE)
     if not match:
@@ -868,9 +900,10 @@ def extract_days_payload(html: str) -> str:
     return html[payload_start:payload_start + end_offset]
 
 
-# Function: parse_calendar_days — parses ForexFactory calendar days.
+# Function: parse_calendar_days — parses FF calendar days.
 # Variables: payload=provider payload.
 # Local variables: exc=local intermediate value; parsed=parsed datetime.
+def parse_calendar_days(payload: str) -> List[Dict[str, Any]]:
 def parse_calendar_days(payload: str) -> List[Dict[str, Any]]:
     try:
         parsed = json.loads(payload)
@@ -881,9 +914,10 @@ def parse_calendar_days(payload: str) -> List[Dict[str, Any]]:
     return parsed
 
 
-# Function: _resolve_impact — normalizes ForexFactory impact text.
-# Variables: raw=function parameter; Any=function parameter.
+# Function: _resolve_impact — normalizes provider impact.
+# Variables: raw=local intermediate value.
 # Local variables: direct=direct candidate; impact_class=normalized impact class; name=local intermediate value; needle=local intermediate value; value=input value.
+def _resolve_impact(raw: Dict[str, Any]) -> str:
 def _resolve_impact(raw: Dict[str, Any]) -> str:
     name = str(raw.get("impactName", "")).strip().lower()
     direct = {
@@ -907,9 +941,10 @@ def _resolve_impact(raw: Dict[str, Any]) -> str:
     return "UNKNOWN"
 
 
-# Function: normalize_provider_event — normalizes a provider event.
-# Variables: raw=function parameter; Any=function parameter.
-# Local variables: currency=currency code; exc=local intermediate value; timestamp=local intermediate value; title=event title.
+# Function: normalize_provider_event — normalizes one provider event.
+# Variables: raw=local intermediate value.
+# Local variables: currency=currency code; exc=local intermediate value; timestamp=event timestamp; title=event title.
+def normalize_provider_event(raw: Dict[str, Any]) -> Dict[str, Any]:
 def normalize_provider_event(raw: Dict[str, Any]) -> Dict[str, Any]:
     if raw.get("id") in (None, "", "None"):
         raise ProviderError("ForexFactory event has no provider ID.")
@@ -956,9 +991,10 @@ def normalize_provider_event(raw: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-# Function: normalize_calendar_events — normalizes a collection of provider events.
-# Variables: days_data=function parameter; Any=function parameter.
+# Function: normalize_calendar_events — normalizes provider events.
+# Variables: days_data=local intermediate value.
 # Local variables: day=calendar day; raw=local intermediate value.
+def normalize_calendar_events(days_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 def normalize_calendar_events(days_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     normalized: List[Dict[str, Any]] = []
     for day in days_data:
@@ -971,9 +1007,10 @@ def normalize_calendar_events(days_data: List[Dict[str, Any]]) -> List[Dict[str,
     return normalized
 
 
-# Function: fetch_yahoo_news — fetches and normalizes Yahoo news.
+# Function: fetch_yahoo_news — fetches Yahoo news.
 # Variables: symbol=canonical symbol.
-# Local variables: data=local intermediate value; item=local intermediate value; link=local intermediate value; news=provider news collection; provider_symbol=verified provider symbol; publish_epoch=local intermediate value; publisher=local intermediate value; stable_id=local intermediate value; timestamp=local intermediate value; title=event title; uuid=local intermediate value; uuid_raw=local intermediate value.
+# Local variables: data=local intermediate value; item=current collection item; link=local intermediate value; news=provider news collection; provider_symbol=verified provider symbol; publish_epoch=local intermediate value; publisher=local intermediate value; stable_id=local intermediate value; timestamp=event timestamp; title=event title; uuid=local intermediate value; uuid_raw=local intermediate value.
+def fetch_yahoo_news(symbol: str) -> List[Dict[str, Any]]:
 def fetch_yahoo_news(symbol: str) -> List[Dict[str, Any]]:
     provider_symbol, data = _resolve_yahoo_instrument(symbol)
 
@@ -1038,9 +1075,10 @@ def fetch_yahoo_news(symbol: str) -> List[Dict[str, Any]]:
     return normalized
 
 
-# Function: filter_events_for_symbol — filters Calendar events visible for a symbol.
-# Variables: events=event collection; Any=function parameter; symbol=canonical symbol.
+# Function: filter_events_for_symbol — filters symbol-visible events.
+# Variables: events=event collection; symbol=canonical symbol.
 # Local variables: currencies=symbol-relevant currencies; event=normalized event.
+def filter_events_for_symbol(events: List[Dict[str, Any]], symbol: str) -> List[Dict[str, Any]]:
 def filter_events_for_symbol(events: List[Dict[str, Any]], symbol: str) -> List[Dict[str, Any]]:
     def visible(event: Dict[str, Any]) -> bool:
         return symbol not in event.get("suppressed_for", [])
@@ -1080,9 +1118,10 @@ def filter_events_for_symbol(events: List[Dict[str, Any]], symbol: str) -> List[
         )
     ]
 
-# Function: filter_events_for_interval — filters events into a half-open UTC interval.
-# Variables: events=event collection; Any=function parameter; start=interval start; end=interval end.
+# Function: filter_events_for_interval — filters events by interval.
+# Variables: events=event collection; start=interval start; end=interval end.
 # Local variables: event=normalized event.
+def filter_events_for_interval(
 def filter_events_for_interval(
     events: List[Dict[str, Any]],
     start: datetime,
@@ -1094,9 +1133,10 @@ def filter_events_for_interval(
     ]
 
 
-# Function: update_watermark — advances provider/symbol watermark safely.
-# Variables: document=in-memory Calendar document; Any=function parameter; provider=provider identifier; symbol=canonical symbol; successful_at=function parameter; events=event collection.
+# Function: update_watermark — updates provider/symbol watermark.
+# Variables: document=in-memory Calendar document; provider=provider identifier; symbol=canonical symbol; successful_at=local intermediate value; events=event collection.
 # Local variables: event=normalized event; event_timestamps=event timestamp collection; key=dictionary key; max_event_ts=latest event timestamp; old=previous record; old_event_ts=previous latest event timestamp; old_successful_at=previous successful-acquisition timestamp.
+def update_watermark(
 def update_watermark(
     document: Dict[str, Any],
     provider: str,
@@ -1133,9 +1173,10 @@ def update_watermark(
     }
 
 
-# Function: query_current_events — filters incremental current-mode events.
-# Variables: events=event collection; Any=function parameter; since=function parameter; until=function parameter.
+# Function: query_current_events — filters current incremental events.
+# Variables: events=event collection; since=local intermediate value; until=local intermediate value.
 # Local variables: event=normalized event.
+def query_current_events(
 def query_current_events(
     events: List[Dict[str, Any]],
     since: datetime,
@@ -1148,8 +1189,9 @@ def query_current_events(
 
 
 # Function: query_next_event — selects the nearest future visible event.
-# Variables: events=event collection; Any=function parameter; symbol=canonical symbol; now=current UTC reference time.
+# Variables: events=event collection; symbol=canonical symbol; now=current UTC reference time.
 # Local variables: event=normalized event; key=dictionary key; visible_future=local intermediate value.
+def query_next_event(
 def query_next_event(
     events: List[Dict[str, Any]],
     symbol: str,
@@ -1174,9 +1216,10 @@ def query_next_event(
     ]
 
 
-# Function: acquire_explicit — performs explicit-range provider acquisition.
-# Variables: document=in-memory Calendar document; Any=function parameter; symbol=canonical symbol; start=interval start; end=interval end; debug=diagnostic flag.
+# Function: acquire_explicit — performs explicit-range acquisition.
+# Variables: document=in-memory Calendar document; symbol=canonical symbol; start=interval start; end=interval end; debug=diagnostic flag.
 # Local variables: exc=local intermediate value; fetched_events=local intermediate value; file=local intermediate value; gap_end=local intermediate value; gap_start=local intermediate value; gaps=local intermediate value; in_range=local intermediate value; now=current UTC reference time; provider=provider identifier; successful=successful-provider state/count.
+def acquire_explicit(
 def acquire_explicit(
     document: Dict[str, Any],
     symbol: str,
@@ -1262,9 +1305,10 @@ def acquire_explicit(
     return {"provider_results": provider_results, "failures": failures}
 
 
-# Function: acquire_current — performs watermark-based current acquisition.
-# Variables: document=in-memory Calendar document; Any=function parameter; symbol=canonical symbol; debug=diagnostic flag.
+# Function: acquire_current — performs watermark-based acquisition.
+# Variables: document=in-memory Calendar document; symbol=canonical symbol; debug=diagnostic flag.
 # Local variables: clear_suppressed_symbol=local intermediate value; event=normalized event; events=event collection; exc=local intermediate value; fetch_end=local intermediate value; fetch_start=local intermediate value; file=local intermediate value; hour=hour component; key=dictionary key; last_successful_at=local intermediate value; now=current UTC reference time; provider=provider identifier; result=computed result; unique=deduplicated event mapping; watermark=provider/symbol watermark.
+def acquire_current(
 def acquire_current(
     document: Dict[str, Any],
     symbol: str,
@@ -1384,9 +1428,10 @@ def acquire_current(
     }
 
 
-# Function: status_from_provider_results — derives aggregate provider status.
-# Variables: provider_results=provider result collection; Any=function parameter.
+# Function: status_from_provider_results — derives aggregate status.
+# Variables: provider_results=provider result collection.
 # Local variables: result=computed result; status=local intermediate value; statuses=status collection.
+def status_from_provider_results(provider_results: List[Dict[str, Any]]) -> str:
 def status_from_provider_results(provider_results: List[Dict[str, Any]]) -> str:
     statuses = [result["status"] for result in provider_results]
     if not statuses:
@@ -1405,8 +1450,9 @@ def status_from_provider_results(provider_results: List[Dict[str, Any]]) -> str:
 
 
 # Function: output_query_result — renders query output.
-# Variables: status=function parameter; symbol=canonical symbol; events=event collection; Any=function parameter; provider_results=provider result collection; cleartext=human-readable output flag.
+# Variables: status=local intermediate value; symbol=canonical symbol; events=event collection; provider_results=provider result collection; cleartext=human-readable output flag.
 # Local variables: event=normalized event; index=local intermediate value; provider=provider identifier.
+def output_query_result(
 def output_query_result(
     status: str,
     symbol: str,
@@ -1442,8 +1488,9 @@ def output_query_result(
 
 
 # Function: filter_query_events — applies cache visibility guards.
-# Variables: document=in-memory Calendar document; Any=function parameter; events=event collection; symbol=canonical symbol; start=interval start; end=interval end; yahoo_pair_available=Yahoo instrument availability.
+# Variables: document=in-memory Calendar document; events=event collection; symbol=canonical symbol; start=interval start; end=interval end; yahoo_pair_available=Yahoo instrument availability.
 # Local variables: event=normalized event; ff_coverage_valid=ForexFactory coverage validity.
+def filter_query_events(
 def filter_query_events(
     document: Dict[str, Any],
     events: List[Dict[str, Any]],
@@ -1482,7 +1529,8 @@ def filter_query_events(
 
 # Function: run_query — executes a Calendar query.
 # Variables: symbol=canonical symbol; scope=CLI scope; cleartext=human-readable output flag; debug=diagnostic flag.
-# Local variables: acquisition=explicit acquisition result; document=in-memory Calendar document; end=interval end; events=event collection; item=local intermediate value; provider_statuses=local intermediate value; result=computed result; start=interval start; status=local intermediate value; yahoo_pair_available=Yahoo instrument availability.
+# Local variables: acquisition=explicit acquisition result; document=in-memory Calendar document; end=interval end; events=event collection; item=current collection item; provider_statuses=provider status list; result=computed result; start=interval start; status=local intermediate value; yahoo_pair_available=Yahoo instrument availability.
+def run_query(
 def run_query(
     symbol: str,
     scope: str,
@@ -1564,8 +1612,9 @@ def run_query(
         return 0 if status != "UNAVAILABLE" else 2
 
 # Function: delete_symbol_interval — deletes/suppresses a symbol interval.
-# Variables: document=in-memory Calendar document; Any=function parameter; symbol=canonical symbol; start=interval start; end=interval end.
-# Local variables: applicable_providers=providers selected for symbol; coverage=local intermediate value; coverage_end=existing coverage end; coverage_start=existing coverage start; currencies=symbol-relevant currencies; event=normalized event; key=dictionary key; last_event=local intermediate value; last_event_timestamp=local intermediate value; left=left retained coverage segment; provider=provider identifier; right=right retained coverage segment; suppressed=combined suppression metadata; timestamp=local intermediate value; updated=local intermediate value; watermark=provider/symbol watermark.
+# Variables: document=in-memory Calendar document; symbol=canonical symbol; start=interval start; end=interval end.
+# Local variables: applicable_providers=providers selected for symbol; coverage=local intermediate value; coverage_end=existing coverage end; coverage_start=existing coverage start; currencies=symbol-relevant currencies; event=normalized event; key=dictionary key; last_event=latest event timestamp; last_event_timestamp=local intermediate value; left=left retained coverage segment; provider=provider identifier; right=right retained coverage segment; suppressed=combined suppression metadata; timestamp=event timestamp; updated=updated record; watermark=provider/symbol watermark.
+def delete_symbol_interval(
 def delete_symbol_interval(
     document: Dict[str, Any],
     symbol: str,
@@ -1652,6 +1701,7 @@ def delete_symbol_interval(
 # Variables: symbol=canonical symbol; scope=CLI scope.
 # Local variables: document=in-memory Calendar document; end=interval end; start=interval start.
 def run_delete(
+def run_delete(
     symbol: Optional[str],
     scope: Optional[str],
 ) -> int:
@@ -1685,8 +1735,9 @@ def run_delete(
     return 0
 
 # Function: parse_request — parses public CLI arguments.
-# Variables: args=function parameter.
-# Local variables: cleartext=human-readable output flag; debug=diagnostic flag; item=local intermediate value; positional=CLI positional arguments; scope=CLI scope; symbol=canonical symbol.
+# Variables: args=local intermediate value.
+# Local variables: cleartext=human-readable output flag; debug=diagnostic flag; item=current collection item; positional=CLI positional arguments; scope=CLI scope; symbol=canonical symbol.
+def parse_request(args: List[str]) -> Dict[str, Any]:
 def parse_request(args: List[str]) -> Dict[str, Any]:
     if not args:
         raise CalendarInputError("No arguments provided. Use --help.")
@@ -1761,6 +1812,7 @@ def parse_request(args: List[str]) -> Dict[str, Any]:
 # Function: run — dispatches the parsed CLI operation.
 # Local variables: debug=diagnostic flag; exc=local intermediate value; request=parsed CLI request.
 def run() -> int:
+def run() -> int:
     debug = "--debug" in sys.argv[1:]
     try:
         request = parse_request(sys.argv[1:])
@@ -1797,6 +1849,7 @@ def run() -> int:
 
 
 # Function: main — processes the CLI entry point.
+def main() -> None:
 def main() -> None:
     raise SystemExit(run())
 
