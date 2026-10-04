@@ -1,6 +1,6 @@
 # AGENT_REVIEW.md
 
-Status: CI_PENDING_FINAL_RUN
+Status: CI_TRIGGERED_FINAL_RUN
 
 ## Change
 Live Windows smoke testing now successfully acquires ForexFactory events for the requested
@@ -13,6 +13,7 @@ The parser now converts FF CSS/title/icon impact forms to canonical provider tok
 The existing event-ID, date/time, currency, and value parsing behavior is unchanged.
 
 Calendar implementation version: 2.2.6
+CI trigger snapshot: 2026-10-04T17:21Z.
 Persistent schema: 2
 
 ## Validation
