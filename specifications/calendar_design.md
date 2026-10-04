@@ -109,6 +109,26 @@ Coverage never comes from the mere presence of an event.
 For explicit Yahoo requests, rolling-feed records outside the requested interval are
 not persisted as part of that acquisition.
 
+
+
+### 6.1 ForexFactory Detail failure semantics
+
+ForexFactory base-event acquisition and Detail enrichment are independently failure-isolated.
+If the calendar rows are acquired successfully but one or more event Detail requests fail:
+
+- successfully acquired base events remain persisted;
+- the affected event retains `details.specs=[]` for this acquisition attempt;
+- the provider result is `PARTIAL` and reports the number of Detail failures;
+- the affected acquisition coverage interval is `PARTIAL`, never `COMPLETE`;
+- the ForexFactory watermark is not advanced by that acquisition;
+- a later explicit acquisition must treat the partial interval as uncovered and retry it;
+- `current` must follow the same rule and retain its previous successful watermark until the
+  Detail-complete acquisition succeeds.
+
+A Detail failure must therefore never become an apparently complete cached interval merely because
+an empty `specs` list is present. A legitimately empty Detail response remains valid; retry state is
+represented by coverage status, not by the `specs` list itself.
+
 ## 7. Persistence
 
 Shared schema version is 2.
