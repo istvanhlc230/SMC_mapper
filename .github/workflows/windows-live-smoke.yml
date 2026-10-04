@@ -1,0 +1,82 @@
+name: Calendar Windows live smoke
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  windows-live-smoke:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Clean ForexFactory live smoke
+        shell: pwsh
+        run: |
+          $dataRoot = Join-Path $env:RUNNER_TEMP "smc_calendar_live_smoke"
+          New-Item -ItemType Directory -Force -Path $dataRoot | Out-Null
+          $env:SMC_DATA_ROOT = $dataRoot
+
+          python calendar.py EURUSD 2026.10.05 --debug
+          if ($LASTEXITCODE -ne 0) {
+            throw "Calendar acquisition failed with exit code $LASTEXITCODE"
+          }
+
+          $calendarPath = Join-Path $dataRoot "calendar.json"
+          if (-not (Test-Path $calendarPath)) {
+            throw "calendar.json was not created"
+          }
+
+          $doc = Get-Content -Raw $calendarPath | ConvertFrom-Json
+          $ffEvents = @($doc.events | Where-Object { $_.source -eq "forexfactory" })
+
+          if ($ffEvents.Count -eq 0) {
+            throw "No real ForexFactory events were persisted"
+          }
+
+          $withUrl = @($ffEvents | Where-Object {
+            $_.details.url -and $_.details.url.Trim().Length -gt 0
+          })
+
+          if ($withUrl.Count -eq 0) {
+            throw "No persisted ForexFactory event has a concrete details.url"
+          }
+
+          $nativeUrlPattern = '^https://(www.)?forexfactory.com/calendar\?day=[^&]+&event=\d+$'
+          $validNativeUrls = @($withUrl | Where-Object {
+            $_.details.url -match $nativeUrlPattern
+          })
+
+          if ($validNativeUrls.Count -eq 0) {
+            throw "No native ForexFactory Detail query URL was persisted"
+          }
+
+          $invalidUrls = @($withUrl | Where-Object {
+            $_.details.url -notmatch '^https://(www\.)?forexfactory\.com/(calendar/event/[^/?#]+|calendar/\d+-[^/?#]+|calendar\?day=[^&]+&event=\d+)$'
+          })
+
+          if ($invalidUrls.Count -gt 0) {
+            throw "Persisted ForexFactory URL is outside the accepted concrete provider URL forms"
+          }
+
+          $badEventTypes = @($ffEvents | Where-Object { $_.event_type -ne "economic" })
+          if ($badEventTypes.Count -gt 0) {
+            throw "ForexFactory event_type contract violated"
+          }
+
+          $knownImpacts = @("HIGH","MEDIUM","LOW","HOLIDAY")
+          $unknownImpactEvents = @($ffEvents | Where-Object {
+            $impact = $_.details.impact
+            -not [string]::IsNullOrWhiteSpace($impact) -and $knownImpacts -notcontains $impact
+          })
+          if ($unknownImpactEvents.Count -gt 0) {
+            throw "ForexFactory supplied impact normalized outside the canonical impact set"
+          }
+
+          Write-Host "WINDOWS_LIVE_SMOKE_OK"
+          Write-Host ("EVENT_COUNT={0}" -f $ffEvents.Count)
+          foreach ($event in $validNativeUrls | Select-Object -First 5) {
+            Write-Host ("EVENT|{0}|{1}|{2}|{3}|{4}" -f $event.event_id,$event.timestamp,$event.title,$event.details.impact,$event.details.url)
+          }
