@@ -945,6 +945,13 @@ def fetch_forexfactory(
         if request_start <= parse_iso8601(event["timestamp"]) < request_end
     ]
 
+    # ForexFactory Detail is provider data, not a canonical event URL.
+    # Detail enrichment can be disabled for discovery-only refresh acquisition.
+    if include_details:
+        _enrich_forexfactory_details(normalized)
+
+    return normalized
+
 # Function: _enrich_forexfactory_details — fetches Detail specs with bounded parallelism.
 # Variables: events=normalized ForexFactory events requiring Detail enrichment.
 def _enrich_forexfactory_details(
@@ -972,9 +979,6 @@ def _enrich_forexfactory_details(
     # Detail enrichment can be disabled for discovery-only refresh acquisition.
     if include_details:
         _enrich_forexfactory_details(normalized)
-
-
-
 
 # Function: _normalize_forexfactory_impact_value — normalizes provider impact text to a canonical token.
 # Variables: value=provider impact text.
