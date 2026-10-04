@@ -151,7 +151,7 @@ Development artifacts belong under dev_tmp/. The repository root must not receiv
 
 Rendered-row recognition is event-ID-first: a rendered row carrying the provider event-instance ID must be parsed even when the current CSS row class is absent or renamed; the CSS row class is advisory only. The implementation must not synthesize an event-detail URL from the numeric instance ID.
 
-Provider-native concrete Detail URLs may use `/calendar?day=<provider-date>&event=<event-id>` as well as concrete `/calendar/...` event paths. The native `/calendar/details/1-<event-id>` provider detail endpoint is also accepted when the provider exposes that concrete href. Exact provider URLs are preserved; no URL is synthesized from the numeric instance ID. The exact provider href is preserved; no URL is synthesized from the numeric instance ID.
+Provider-native concrete Detail URLs may use `/calendar?day=<provider-date>&event=<event-id>` as well as concrete `/calendar/...` event paths. The exact provider href is preserved; no URL is synthesized from the numeric instance ID.
 
 The rendered-page anchor collector is independent of row structure: concrete Detail URLs are collected from provider anchor/data-URL attributes globally and mapped by the event ID carried in the URL when present. Row parsing remains available as a secondary association path. This avoids coupling URL extraction to a specific ForexFactory DOM row structure.
 
