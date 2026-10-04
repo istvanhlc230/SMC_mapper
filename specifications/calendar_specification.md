@@ -2,7 +2,7 @@
 
 Status: Current V2 specification.
 
-Calendar implementation baseline: 2.3.9.
+Calendar implementation baseline: 2.3.10.
 
 Scope:
 - unified economic-calendar and news acquisition;
@@ -122,6 +122,8 @@ is descriptive only; provider verification is authoritative at runtime.
 - With `--debug`, diagnostic exception information and tracebacks may be printed to
   stderr only, including provider-level `try/except` diagnostics and unexpected
   exceptions that reach the CLI boundary.
+- Refresh also reports the active `calendar.json` path so a refresh run can be verified against the
+  exact persistent file being compared.
 - `--debug` never changes the machine-readable stdout contract, event data, coverage,
   watermark semantics, or provider routing.
 - `--debug` is presentation/diagnostic state only and never enters canonical data.
@@ -278,7 +280,9 @@ Refresh behavior:
 11. validate and atomically persist only when refreshed records produce additions or changes.
 
 The comparison covers the complete normalized event record, including timestamp, title, core details
-(`actual`, `forecast`, `previous`, impact), and ForexFactory Detail specifications.
+(`actual`, `forecast`, `previous`, impact), and ForexFactory Detail specifications. A locally modified cached
+field must therefore be detected and replaced by the provider value on refresh; refresh must compare against
+the record actually loaded from the active `calendar.json` path.
 
 Refresh output is emitted as exactly one result document. Machine-readable output is one JSON document
 containing the refreshed events, provider results, and the `added`/`changed`/`unchanged` summary. In
