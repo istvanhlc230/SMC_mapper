@@ -2,7 +2,7 @@
 
 Status: Current V2 specification.
 
-Calendar implementation baseline: 2.3.10.
+Calendar implementation baseline: 2.4.0.
 
 Scope:
 - unified economic-calendar and news acquisition;
@@ -573,3 +573,14 @@ Acceptance requires:
 - ForexFactory normalized events include `details.specs` from the provider Detail JSON payload; the visible calendar Detail navigation is not stored and no URL is synthesized from the event ID;
 - malformed or unavailable ForexFactory Detail JSON is surfaced as a provider failure and never silently converted into fabricated Detail content;
 - `--cleartext` renders normalized event details as human-readable fields rather than a raw JSON dictionary, without changing canonical data or machine-readable output.
+
+
+## 14. Source layout and portability
+
+The repository-root `calendar.py` remains the stable CLI entrypoint. Internal Calendar modules are grouped under `CALENDAR/` by responsibility, and the default persistent cache is `CALENDAR/calendar.json`. `SMC_DATA_ROOT` remains an explicit override.
+
+The domain layer keeps event, interval, coverage, watermark, merge, filtering, and refresh decisions represented by explicit fields and simple scalar values so the semantic core remains straightforward to port to MQL4/MQL5. Python-only provider HTTP, HTML parsing, threading, and OS-specific locking are confined to infrastructure modules.
+
+## 14.1 Rendered ForexFactory time handling
+
+The rendered HTML fallback requires a concrete provider clock. Missing, `Tentative`, or `All Day` time text is not converted to `00:00` or another synthetic timestamp. Such a row causes provider parsing to fail closed; invalid hour/minute values are also rejected explicitly.

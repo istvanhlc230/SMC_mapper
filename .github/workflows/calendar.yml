@@ -15,7 +15,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: Compile
-        run: python -m py_compile calendar.py
+        run: python -m py_compile calendar.py && python -m compileall -q CALENDAR
       - name: Calendar unit/runtime contract tests
         shell: bash
         run: |
@@ -29,6 +29,7 @@ jobs:
           from datetime import datetime, timedelta, timezone
 
           import calendar
+          from CALENDAR import domain, operations, providers, storage
 
           def dt(value):
               return datetime.fromisoformat(value.replace("Z", "+00:00"))
@@ -39,9 +40,9 @@ jobs:
           assert calendar.validate_symbol("NVDA") == "NVDA"
           one_day = calendar.parse_date("2026.04.03")
           two_day_end = calendar.parse_date("2026.04.04")
-          assert calendar.build_forexfactory_query(one_day, two_day_end) == "day=apr3.2026"
+          assert providers.build_forexfactory_query(one_day, two_day_end) == "day=apr3.2026"
           range_end = calendar.parse_date("2026.04.11")
-          assert calendar.build_forexfactory_query(one_day, range_end) == "range=apr3.2026-apr10.2026"
+          assert providers.build_forexfactory_query(one_day, range_end) == "range=apr3.2026-apr10.2026"
           html = """<html><body>
           <div>Calendar Time Zone: Europe/Budapest (GMT +2)</div>
           <table><tbody>
@@ -123,6 +124,20 @@ jobs:
               dt("2026-10-06T00:00:00Z"),
           )
           assert medium_rows[0]["impactName"] == "medium"
+          missing_time_html = """<html><body>
+          <div>Calendar Time Zone: Europe/Budapest (GMT +2)</div>
+          <tr class="calendar__row calendar_row" data-eventid="1005">
+            <td class="calendar__cell calendar__date date">Mon Oct 5</td>
+            <td class="calendar__cell calendar__time time">Tentative</td>
+            <td class="calendar__cell calendar__currency currency">USD</td>
+            <td class="calendar__cell calendar__event event"><span class="calendar__event-title">Tentative Event</span></td>
+          </tr></body></html>"""
+          try:
+              calendar.parse_forexfactory_html_events(missing_time_html, dt("2026-10-04T00:00:00Z"), dt("2026-10-06T00:00:00Z"))
+          except calendar.ProviderError:
+              pass
+          else:
+              raise AssertionError("missing provider time must fail closed")
 
           for raw_class, expected_impact in (
               ("icon--ff-impact-red", "high"),
@@ -147,15 +162,15 @@ jobs:
                   ]
               }
           })
-          original_fetch_url = calendar.fetch_url
+          original_fetch_url = providers.fetch_url
           try:
-              calendar.fetch_url = lambda _url: detail_json
-              specs = calendar.fetch_forexfactory_event_detail("146900")
+              providers.fetch_url = lambda _url: detail_json
+              specs = providers.fetch_forexfactory_event_detail("146900")
               assert [item["title"] for item in specs] == ["Source", "Measures", "Frequency"]
               assert [item["order"] for item in specs] == [-1, 7, 7]
               assert specs[0]["html"].startswith("<a href=")
           finally:
-              calendar.fetch_url = original_fetch_url
+              providers.fetch_url = original_fetch_url
 
           normalized_ff["details"]["specs"] = specs
           calendar.validate_calendar_document({
@@ -167,8 +182,8 @@ jobs:
 
           # fetch_forexfactory must obtain Detail after interval filtering and
           # must not route a Detail failure through the calendar HTML fallback.
-          original_fetch_url = calendar.fetch_url
-          original_detail_fetch = calendar.fetch_forexfactory_event_detail
+          original_fetch_url = providers.fetch_url
+          original_detail_fetch = providers.fetch_forexfactory_event_detail
           calendar_detail_payload = """<html><body>
           <div>Calendar Time Zone: Europe/Budapest (GMT +2)</div>
           <script>{}</script>
@@ -189,9 +204,9 @@ jobs:
               ]
           }
           try:
-              calendar.fetch_url = lambda _url: calendar_detail_payload
-              calendar.fetch_forexfactory_event_detail = lambda event_id: detail_by_id[event_id]
-              acquired = calendar.fetch_forexfactory(
+              providers.fetch_url = lambda _url: calendar_detail_payload
+              providers.fetch_forexfactory_event_detail = lambda event_id: detail_by_id[event_id]
+              acquired = providers.fetch_forexfactory(
                   dt("2026-10-05T00:00:00Z"),
                   dt("2026-10-06T00:00:00Z"),
               )
@@ -200,17 +215,17 @@ jobs:
               assert [x["title"] for x in acquired[0]["details"]["specs"]] == ["Source", "Why Traders Care"]
               assert "url" not in acquired[0]["details"]
           finally:
-              calendar.fetch_url = original_fetch_url
-              calendar.fetch_forexfactory_event_detail = original_detail_fetch
+              providers.fetch_url = original_fetch_url
+              providers.fetch_forexfactory_event_detail = original_detail_fetch
 
-          detail_failure_original_detail_fetch = calendar.fetch_forexfactory_event_detail
+          detail_failure_original_detail_fetch = providers.fetch_forexfactory_event_detail
           try:
-              calendar.fetch_url = lambda _url: calendar_detail_payload
-              calendar.fetch_forexfactory_event_detail = lambda _event_id: (_ for _ in ()).throw(
+              providers.fetch_url = lambda _url: calendar_detail_payload
+              providers.fetch_forexfactory_event_detail = lambda _event_id: (_ for _ in ()).throw(
                   calendar.ProviderError("synthetic detail failure")
               )
               try:
-                  calendar.fetch_forexfactory(
+                  providers.fetch_forexfactory(
                       dt("2026-10-05T00:00:00Z"),
                       dt("2026-10-06T00:00:00Z"),
                   )
@@ -218,8 +233,8 @@ jobs:
               except calendar.ProviderError as exc:
                   assert "synthetic detail failure" in str(exc)
           finally:
-              calendar.fetch_url = original_fetch_url
-              calendar.fetch_forexfactory_event_detail = detail_failure_original_detail_fetch
+              providers.fetch_url = original_fetch_url
+              providers.fetch_forexfactory_event_detail = detail_failure_original_detail_fetch
 
           cleartext_specs = calendar.format_cleartext_details({
               "currency": "USD",
@@ -291,7 +306,7 @@ jobs:
 
           # Detail acquisition must use bounded parallel workers while preserving
           # the original event order.
-          original_executor = calendar.ThreadPoolExecutor
+          original_executor = providers.ThreadPoolExecutor
           executor_config = {}
           class RecordingExecutor:
               def __init__(self, max_workers=None, thread_name_prefix=None):
@@ -303,26 +318,26 @@ jobs:
                   return False
               def map(self, function, iterable):
                   return [function(item) for item in iterable]
-          original_detail_fetch = calendar.fetch_forexfactory_event_detail
+          original_detail_fetch = providers.fetch_forexfactory_event_detail
           try:
-              calendar.ThreadPoolExecutor = RecordingExecutor
+              providers.ThreadPoolExecutor = RecordingExecutor
               seen_detail_ids = []
               def fake_detail(event_id):
                   seen_detail_ids.append(event_id)
                   return [{"order": 1, "title": "Source", "html": event_id}]
-              calendar.fetch_forexfactory_event_detail = fake_detail
-              original_build_query = calendar.build_forexfactory_query
-              original_fetch_url = calendar.fetch_url
+              providers.fetch_forexfactory_event_detail = fake_detail
+              original_build_query = providers.build_forexfactory_query
+              original_fetch_url = providers.fetch_url
               try:
-                  calendar.build_forexfactory_query = lambda _start, _end: "day=oct5.2026"
-                  calendar.fetch_url = lambda _url: json.dumps([{
+                  providers.build_forexfactory_query = lambda _start, _end: "day=oct5.2026"
+                  providers.fetch_url = lambda _url: json.dumps([{
                       "date": {"date": "2026-10-05"},
                       "events": [
                           {"id": "101", "dateline": int(dt("2026-10-05T07:00:00Z").timestamp()), "currency": "USD", "name": "A", "impactName": "Low Impact Expected", "actual": None, "forecast": None, "previous": None},
                           {"id": "102", "dateline": int(dt("2026-10-05T08:00:00Z").timestamp()), "currency": "USD", "name": "B", "impactName": "Low Impact Expected", "actual": None, "forecast": None, "previous": None},
                       ]
                   }])
-                  fetched_events = calendar.fetch_forexfactory(
+                  fetched_events = providers.fetch_forexfactory(
                       dt("2026-10-05T00:00:00Z"),
                       dt("2026-10-06T00:00:00Z"),
                   )
@@ -330,16 +345,16 @@ jobs:
                   assert seen_detail_ids == ["101", "102"]
                   assert [event["details"]["specs"][0]["html"] for event in fetched_events] == ["101", "102"]
               finally:
-                  calendar.build_forexfactory_query = original_build_query
-                  calendar.fetch_url = original_fetch_url
+                  providers.build_forexfactory_query = original_build_query
+                  providers.fetch_url = original_fetch_url
           finally:
-              calendar.fetch_forexfactory_event_detail = original_detail_fetch
-              calendar.ThreadPoolExecutor = original_executor
+              providers.fetch_forexfactory_event_detail = original_detail_fetch
+              providers.ThreadPoolExecutor = original_executor
 
           # Scope-based refresh force-fetches provider data, compares stable event IDs,
           # replaces mutable values, permits provider rescheduling, and preserves
           # coverage/watermark state.
-          refresh_doc = calendar.build_empty_calendar_document()
+          refresh_doc = domain.build_empty_calendar_document()
           refresh_doc["events"] = [{
               "event_id": "forexfactory:147017",
               "symbol": "USD",
@@ -386,15 +401,15 @@ jobs:
                   "specs": [{"order": 1, "title": "Source", "html": "Department of Labor (latest release)"}],
               },
           }
-          original_refresh_fetch = calendar.fetch_forexfactory
-          original_refresh_detail_enrich = calendar._enrich_forexfactory_details
-          original_refresh_save = calendar.save_calendar_atomic
+          original_refresh_fetch = providers.fetch_forexfactory
+          original_refresh_detail_enrich = providers._enrich_forexfactory_details
+          original_refresh_save = storage.save_calendar_atomic
           saved_refresh_docs = []
           try:
-              calendar.fetch_forexfactory = lambda start, end, include_details=True: [refreshed_event]
-              calendar._enrich_forexfactory_details = lambda events: None
-              calendar.save_calendar_atomic = lambda document: saved_refresh_docs.append(document)
-              refresh_result = calendar.refresh_calendar_scope(
+              providers.fetch_forexfactory = lambda start, end, include_details=True: [refreshed_event]
+              providers._enrich_forexfactory_details = lambda events: None
+              storage.save_calendar_atomic = lambda document: saved_refresh_docs.append(document)
+              refresh_result = operations.refresh_calendar_scope(
                   refresh_doc,
                   "USD",
                   dt("2026-10-01T12:30:00Z"),
@@ -413,12 +428,12 @@ jobs:
               assert refresh_result["events"][0]["timestamp"] == "2026-10-01T12:35:00Z"
               assert refresh_doc["events"][0]["event_id"] == "forexfactory:147017"
           finally:
-              calendar.fetch_forexfactory = original_refresh_fetch
-              calendar._enrich_forexfactory_details = original_refresh_detail_enrich
-              calendar.save_calendar_atomic = original_refresh_save
+              providers.fetch_forexfactory = original_refresh_fetch
+              providers._enrich_forexfactory_details = original_refresh_detail_enrich
+              storage.save_calendar_atomic = original_refresh_save
 
           # A cached mutable value that differs from the provider must be detected and replaced.
-          manual_mutation_doc = calendar.build_empty_calendar_document()
+          manual_mutation_doc = domain.build_empty_calendar_document()
           manual_mutation_event = {
               "event_id": "forexfactory:147017",
               "symbol": "USD",
@@ -437,15 +452,15 @@ jobs:
               },
           }
           manual_mutation_doc["events"] = [manual_mutation_event]
-          original_refresh_fetch = calendar.fetch_forexfactory
-          original_refresh_detail_enrich = calendar._enrich_forexfactory_details
+          original_refresh_fetch = providers.fetch_forexfactory
+          original_refresh_detail_enrich = providers._enrich_forexfactory_details
           try:
               provider_event = dict(manual_mutation_event)
               provider_event["details"] = dict(manual_mutation_event["details"])
               provider_event["details"]["actual"] = "197K"
-              calendar.fetch_forexfactory = lambda start, end, include_details=True: [provider_event]
-              calendar._enrich_forexfactory_details = lambda events: None
-              refresh_result = calendar.refresh_calendar_scope(
+              providers.fetch_forexfactory = lambda start, end, include_details=True: [provider_event]
+              providers._enrich_forexfactory_details = lambda events: None
+              refresh_result = operations.refresh_calendar_scope(
                   manual_mutation_doc,
                   "USD",
                   dt("2026-10-01T12:30:00Z"),
@@ -454,14 +469,14 @@ jobs:
               assert refresh_result["summary"] == {"added": 0, "changed": 1, "unchanged": 0}
               assert manual_mutation_doc["events"][0]["details"]["actual"] == "197K"
           finally:
-              calendar.fetch_forexfactory = original_refresh_fetch
-              calendar._enrich_forexfactory_details = original_refresh_detail_enrich
+              providers.fetch_forexfactory = original_refresh_fetch
+              providers._enrich_forexfactory_details = original_refresh_detail_enrich
 
           # Refresh machine-readable output is exactly one JSON document.
-          original_refresh_scope = calendar.refresh_calendar_scope
+          original_refresh_scope = operations.refresh_calendar_scope
           try:
-              refresh_output_doc = calendar.build_empty_calendar_document()
-              calendar.refresh_calendar_scope = lambda document, symbol, start, end, debug=False: {
+              refresh_output_doc = domain.build_empty_calendar_document()
+              operations.refresh_calendar_scope = lambda document, symbol, start, end, debug=False: {
                   "events": [],
                   "provider_results": [],
                   "failures": [],
@@ -480,7 +495,7 @@ jobs:
                   "added": 0, "changed": 0, "unchanged": 0
               }
           finally:
-              calendar.refresh_calendar_scope = original_refresh_scope
+              operations.refresh_calendar_scope = original_refresh_scope
 
           assert calendar.parse_request(["refresh", "USD", "2026.10.01"])["operation"] == "REFRESH"
           assert calendar.parse_request(["refresh", "USD", "2026.10.01-2026.10.02"])["operation"] == "REFRESH"
@@ -496,7 +511,7 @@ jobs:
 
           # Legacy schema-2 ForexFactory coverage without Detail specs is incomplete
           # for the requested overlap and must be reacquired.
-          legacy_doc = calendar.build_empty_calendar_document()
+          legacy_doc = domain.build_empty_calendar_document()
           legacy_doc["events"] = [{
               "event_id": "forexfactory:legacy",
               "symbol": "USD",
@@ -522,7 +537,7 @@ jobs:
               "status": "COMPLETE",
               "updated_at": "2026-10-05T00:00:00Z",
           }]
-          assert calendar.find_uncovered_intervals(
+          assert domain.find_uncovered_intervals(
               legacy_doc,
               "forexfactory",
               "USD",
@@ -592,7 +607,7 @@ jobs:
               }
               assert calendar.normalize_provider_event(structured_raw)["details"]["impact"] == expected_impact
 
-          assert calendar.__version__ == "2.3.10"
+          assert calendar.__version__ == "2.4.0"
           assert f"Calendar CLI v{calendar.__version__}" in calendar.HELP_TEXT
 
           # Cleartext output must render normalized details as readable fields,
@@ -640,28 +655,28 @@ jobs:
           assert "Event ID  : forexfactory:cleartext\n\n--- EVENT 02" in rendered_blocks
 
           # Explicit bare delete must recover from an incompatible legacy cache.
-          original_root = calendar.DATA_ROOT
-          original_file = calendar.CALENDAR_FILE
+          original_root = storage.DATA_ROOT
+          original_file = storage.CALENDAR_FILE
           try:
               with tempfile.TemporaryDirectory() as tmp:
-                  calendar.DATA_ROOT = tmp
-                  calendar.CALENDAR_FILE = os.path.join(tmp, "calendar.json")
-                  with open(calendar.CALENDAR_FILE, "w", encoding="utf-8") as handle:
+                  storage.DATA_ROOT = tmp
+                  storage.CALENDAR_FILE = os.path.join(tmp, "calendar.json")
+                  with open(storage.CALENDAR_FILE, "w", encoding="utf-8") as handle:
                       json.dump({"schema_version": 1, "events": [], "coverage": [], "watermarks": {}}, handle)
                   assert calendar.run_delete(None, None) == 0
-                  reset_document = calendar.load_calendar_document()
+                  reset_document = storage.load_calendar_document()
                   assert reset_document["schema_version"] == calendar.SCHEMA_VERSION
                   assert reset_document["events"] == []
                   assert reset_document["coverage"] == []
                   assert reset_document["watermarks"] == {}
           finally:
-              calendar.DATA_ROOT = original_root
-              calendar.CALENDAR_FILE = original_file
+              storage.DATA_ROOT = original_root
+              storage.CALENDAR_FILE = original_file
 
           assert calendar.parse_request(["EURUSD", "next"])["scope"] == "next"
           assert calendar.parse_request(["EURUSD", "latest"])["scope"] == "latest"
 
-          next_doc = calendar.build_empty_calendar_document()
+          next_doc = domain.build_empty_calendar_document()
           next_doc["events"] = [
               {"event_id":"forexfactory:past-usd","symbol":"USD","asset_type":"forex","event_type":"economic","source":"forexfactory","timestamp":"2026-10-03T09:00:00Z","title":"Past USD","details":{"currency":"USD","impact":"HIGH"}},
               {"event_id":"forexfactory:now-usd","symbol":"USD","asset_type":"forex","event_type":"economic","source":"forexfactory","timestamp":"2026-10-04T12:00:00Z","title":"Now USD","details":{"currency":"USD","impact":"HIGH"}},
@@ -679,18 +694,18 @@ jobs:
           assert calendar.query_next_event(next_doc["events"], "NVDA", dt("2026-10-05T10:00:00Z")) == [] # 7. NO_NEXT_EVENT when no future exists
           
           # test integration behavior without network
-          original_load = calendar.load_calendar_document
-          original_acquire = calendar.acquire_explicit
-          original_save = calendar.save_calendar_atomic
+          original_load = storage.load_calendar_document
+          original_acquire = operations.acquire_explicit
+          original_save = storage.save_calendar_atomic
           try:
-              calendar.load_calendar_document = lambda: next_doc.copy()
+              storage.load_calendar_document = lambda: next_doc.copy()
               acquired_calls = []
               def fake_acquire(*args, **kwargs):
                   acquired_calls.append(True)
                   return {"failures": []}
-              calendar.acquire_explicit = fake_acquire
+              operations.acquire_explicit = fake_acquire
               saved_docs = []
-              calendar.save_calendar_atomic = lambda doc: saved_docs.append(doc)
+              storage.save_calendar_atomic = lambda doc: saved_docs.append(doc)
               
               import contextlib, io
               out = io.StringIO()
@@ -701,7 +716,7 @@ jobs:
 
               out = io.StringIO()
               with contextlib.redirect_stdout(out):
-                  calendar.utc_now = lambda: dt("2026-10-04T12:00:00Z")
+                  domain.utc_now = lambda: dt("2026-10-04T12:00:00Z")
                   assert calendar.run_query("EURUSD", "latest", cleartext=True) == 0
               assert "Now USD" in out.getvalue()
               assert not acquired_calls # latest must not trigger acquisition
@@ -711,14 +726,14 @@ jobs:
               # check NO_NEXT_EVENT status
               out = io.StringIO()
               with contextlib.redirect_stdout(out):
-                  calendar.utc_now = lambda: dt("2026-11-01T00:00:00Z") # in the far future
+                  domain.utc_now = lambda: dt("2026-11-01T00:00:00Z") # in the far future
                   assert calendar.run_query("EURUSD", "next", cleartext=False) == 0
               assert json.loads(out.getvalue())["status"] == "NO_NEXT_EVENT" # 7. returns NO_NEXT_EVENT output
           finally:
-              calendar.load_calendar_document = original_load
-              calendar.acquire_explicit = original_acquire
-              calendar.save_calendar_atomic = original_save
-              calendar.utc_now = lambda: dt("2026-10-04T12:00:00Z")
+              storage.load_calendar_document = original_load
+              operations.acquire_explicit = original_acquire
+              storage.save_calendar_atomic = original_save
+              domain.utc_now = lambda: dt("2026-10-04T12:00:00Z")
 
 
           for bad in ("today", "next_week", "next_month", "2026.10.01..2026.10.31"):
@@ -731,8 +746,8 @@ jobs:
 
           start = calendar.parse_date("2026.10.01")
           end = calendar.parse_date("2026.10.03")
-          doc = calendar.build_empty_calendar_document()
-          assert calendar.find_uncovered_intervals(doc, "forexfactory", "EURUSD", start, end) == [(start, end)]
+          doc = domain.build_empty_calendar_document()
+          assert domain.find_uncovered_intervals(doc, "forexfactory", "EURUSD", start, end) == [(start, end)]
 
           event = {
               "event_id": "forexfactory:1",
@@ -744,19 +759,19 @@ jobs:
               "title": "Test",
               "details": {"currency": "USD", "impact": "HIGH", "actual": None, "forecast": None, "previous": None},
           }
-          calendar.merge_events(doc, [event], clear_suppressed_symbol="EURUSD")
+          domain.merge_events(doc, [event], clear_suppressed_symbol="EURUSD")
           event2 = dict(event)
           event2["suppressed_for"] = ["EURUSD"]
-          calendar.merge_events(doc, [event2])
+          domain.merge_events(doc, [event2])
           assert "EURUSD" in doc["events"][0]["suppressed_for"]
-          calendar.merge_events(doc, [event], clear_suppressed_symbol="EURUSD")
+          domain.merge_events(doc, [event], clear_suppressed_symbol="EURUSD")
           assert "suppressed_for" not in doc["events"][0]
 
-          calendar.update_watermark(doc, "yahoo_finance", "EURGBP", dt("2026-10-04T12:00:00Z"), [])
-          calendar.update_watermark(doc, "yahoo_finance", "EURGBP", dt("2026-10-03T12:00:00Z"), [])
+          domain.update_watermark(doc, "yahoo_finance", "EURGBP", dt("2026-10-04T12:00:00Z"), [])
+          domain.update_watermark(doc, "yahoo_finance", "EURGBP", dt("2026-10-03T12:00:00Z"), [])
           assert doc["watermarks"]["yahoo_finance|EURGBP"]["last_successful_at"] == "2026-10-04T12:00:00Z"
 
-          original_search = calendar._fetch_yahoo_search_payload
+          original_search = providers._fetch_yahoo_search_payload
           try:
               calls = []
               def fake_search(query_symbol):
@@ -764,32 +779,32 @@ jobs:
                   if query_symbol == "GBP=X":
                       return {"quotes": [{"symbol": "GBP=X", "quoteType": "CURRENCY"}], "news": []}
                   return {"quotes": [], "news": []}
-              calendar._fetch_yahoo_search_payload = fake_search
-              provider_symbol, _ = calendar._resolve_yahoo_instrument("USDGBP")
+              providers._fetch_yahoo_search_payload = fake_search
+              provider_symbol, _ = providers._resolve_yahoo_instrument("USDGBP")
               assert provider_symbol == "GBP=X"
               assert "GBP=X" in calls
           finally:
-              calendar._fetch_yahoo_search_payload = original_search
+              providers._fetch_yahoo_search_payload = original_search
 
           try:
               def fake_missing(query_symbol):
                   return {"quotes": [], "news": []}
-              calendar._fetch_yahoo_search_payload = fake_missing
+              providers._fetch_yahoo_search_payload = fake_missing
               try:
-                  calendar._resolve_yahoo_instrument("USDGBP")
+                  providers._resolve_yahoo_instrument("USDGBP")
               except calendar.YahooForexPairUnavailable:
                   pass
               else:
                   raise AssertionError("unverified Yahoo FX pair accepted")
           finally:
-              calendar._fetch_yahoo_search_payload = original_search
+              providers._fetch_yahoo_search_payload = original_search
 
           now = dt("2026-10-04T12:00:00Z")
-          original_now = calendar.utc_now
-          original_fetch = calendar.fetch_yahoo_news
+          original_now = domain.utc_now
+          original_fetch = providers.fetch_yahoo_news
           try:
-              calendar.utc_now = lambda: now
-              calendar.fetch_yahoo_news = lambda symbol: [
+              domain.utc_now = lambda: now
+              providers.fetch_yahoo_news = lambda symbol: [
                   {
                       "event_id": "yahoo:old",
                       "symbol": symbol,
@@ -821,15 +836,15 @@ jobs:
                       "details": {"provider_symbol": symbol},
                   },
               ]
-              qdoc = calendar.build_empty_calendar_document()
-              result = calendar.acquire_explicit(qdoc, "NVDA", dt("2026-10-02T00:00:00Z"), dt("2026-10-04T00:00:00Z"))
+              qdoc = domain.build_empty_calendar_document()
+              result = operations.acquire_explicit(qdoc, "NVDA", dt("2026-10-02T00:00:00Z"), dt("2026-10-04T00:00:00Z"))
               ids = {e["event_id"] for e in qdoc["events"]}
               assert ids == {"yahoo:in"}
               wm = qdoc["watermarks"]["yahoo_finance|NVDA"]
               assert wm["last_successful_at"] == "2026-10-04T00:00:00Z"
           finally:
-              calendar.utc_now = original_now
-              calendar.fetch_yahoo_news = original_fetch
+              domain.utc_now = original_now
+              providers.fetch_yahoo_news = original_fetch
 
           cached = [{
               "event_id": "yahoo:cached",
@@ -842,7 +857,7 @@ jobs:
               "details": {},
           }]
           assert calendar.filter_query_events(
-              calendar.build_empty_calendar_document(),
+              domain.build_empty_calendar_document(),
               cached,
               "USDGBP",
               dt("2026-10-03T00:00:00Z"),
@@ -894,16 +909,16 @@ jobs:
               calendar.parse_request = original_parse
               calendar.run_query = original_run_query
 
-          original_now = calendar.utc_now
-          original_fetch = calendar.fetch_yahoo_news
-          original_save = calendar.save_calendar_atomic
+          original_now = domain.utc_now
+          original_fetch = providers.fetch_yahoo_news
+          original_save = storage.save_calendar_atomic
           try:
-              calendar.utc_now = lambda: dt("2026-10-04T12:00:00Z")
-              calendar.fetch_yahoo_news = lambda symbol: []
-              calendar.save_calendar_atomic = lambda document: None
+              domain.utc_now = lambda: dt("2026-10-04T12:00:00Z")
+              providers.fetch_yahoo_news = lambda symbol: []
+              storage.save_calendar_atomic = lambda document: None
 
-              future_doc = calendar.build_empty_calendar_document()
-              future_result = calendar.acquire_explicit(
+              future_doc = domain.build_empty_calendar_document()
+              future_result = operations.acquire_explicit(
                   future_doc,
                   "NVDA",
                   dt("2026-11-01T00:00:00Z"),
@@ -912,15 +927,15 @@ jobs:
               assert future_result["failures"] == []
               assert "yahoo_finance|NVDA" not in future_doc["watermarks"]
 
-              seeded = calendar.build_empty_calendar_document()
-              calendar.update_watermark(
+              seeded = domain.build_empty_calendar_document()
+              domain.update_watermark(
                   seeded,
                   "yahoo_finance",
                   "NVDA",
                   dt("2026-10-04T10:00:00Z"),
                   [],
               )
-              calendar.acquire_explicit(
+              operations.acquire_explicit(
                   seeded,
                   "NVDA",
                   dt("2026-10-01T00:00:00Z"),
@@ -928,21 +943,21 @@ jobs:
               )
               assert seeded["watermarks"]["yahoo_finance|NVDA"]["last_successful_at"] == "2026-10-04T10:00:00Z"
           finally:
-              calendar.utc_now = original_now
-              calendar.fetch_yahoo_news = original_fetch
-              calendar.save_calendar_atomic = original_save
+              domain.utc_now = original_now
+              providers.fetch_yahoo_news = original_fetch
+              storage.save_calendar_atomic = original_save
 
-          original_resolve = calendar.resolve_applicable_providers
-          original_fetch = calendar.fetch_yahoo_news
+          original_resolve = domain.resolve_applicable_providers
+          original_fetch = providers.fetch_yahoo_news
           try:
-              calendar.resolve_applicable_providers = lambda _symbol: ["yahoo_finance"]
-              calendar.fetch_yahoo_news = lambda _symbol: (_ for _ in ()).throw(
+              domain.resolve_applicable_providers = lambda _symbol: ["yahoo_finance"]
+              providers.fetch_yahoo_news = lambda _symbol: (_ for _ in ()).throw(
                   calendar.ProviderError("synthetic provider failure")
               )
               err = io.StringIO()
               with contextlib.redirect_stderr(err):
-                  result = calendar.acquire_explicit(
-                      calendar.build_empty_calendar_document(),
+                  result = operations.acquire_explicit(
+                      domain.build_empty_calendar_document(),
                       "NVDA",
                       dt("2026-10-01T00:00:00Z"),
                       dt("2026-10-02T00:00:00Z"),
@@ -953,8 +968,8 @@ jobs:
 
               err = io.StringIO()
               with contextlib.redirect_stderr(err):
-                  calendar.acquire_explicit(
-                      calendar.build_empty_calendar_document(),
+                  operations.acquire_explicit(
+                      domain.build_empty_calendar_document(),
                       "NVDA",
                       dt("2026-10-01T00:00:00Z"),
                       dt("2026-10-02T00:00:00Z"),
@@ -962,8 +977,8 @@ jobs:
                   )
               assert "DEBUG |" not in err.getvalue()
           finally:
-              calendar.resolve_applicable_providers = original_resolve
-              calendar.fetch_yahoo_news = original_fetch
+              domain.resolve_applicable_providers = original_resolve
+              providers.fetch_yahoo_news = original_fetch
 
           print("CALENDAR_TESTS_OK")
           PY

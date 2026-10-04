@@ -1,5 +1,27 @@
 # Calendar Implementation Design
 
+Implementation baseline: 2.4.0
+
+## 0. Source layout
+
+    calendar.py
+        stable repository-root CLI entrypoint
+
+    CALENDAR/
+        api.py
+        config.py
+        models.py
+        domain.py
+        storage.py
+        providers.py
+        parsing.py
+        operations.py
+        presentation.py
+        cli.py
+        calendar.json (runtime cache)
+
+The split is structural; persistent schema and public CLI semantics remain unchanged. The default cache is `CALENDAR/calendar.json`; `SMC_DATA_ROOT` overrides it explicitly.
+
 ## 1. Runtime architecture
 
     Calendar Update Engine
@@ -170,3 +192,12 @@ placeholder Detail content is generated. Yahoo Finance continues to use `details
 A complete schema-2 ForexFactory coverage interval is considered incomplete when an existing ForexFactory
 event inside the requested overlap lacks details.specs. The interval is reacquired so the provider Detail
 specifications can be added. This is an enrichment rule within schema version 2, not schema migration.
+
+
+## 12. Portability boundary
+
+Provider networking, HTML parsing, threading, and OS-specific file locking are infrastructure concerns. Domain decisions use explicit event, interval, coverage, watermark, filtering, merge, and refresh fields so the semantic layer can be represented naturally in MQL4/MQL5.
+
+## 13. Rendered time rule
+
+A rendered ForexFactory event without a concrete clock is rejected by the fallback parser instead of being assigned midnight.

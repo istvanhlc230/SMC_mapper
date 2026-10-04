@@ -450,3 +450,21 @@ Correction:
 Calendar implementation version: 2.3.10; persistent schema remains 2.
 
 Fresh CI and a Windows refresh smoke using --debug remain required before PASS.
+
+
+## 2.4.0 source-quality implementation
+
+Applied the full Calendar source-quality refactor after the 2.3.10 refresh fixes.
+
+- Root `calendar.py` remains the stable executable entrypoint.
+- Calendar implementation modules moved under `CALENDAR/`; default cache is `CALENDAR/calendar.json`.
+- Configuration, explicit record shapes, domain rules, persistence/locking, provider access, parsing, operations, presentation, CLI dispatch, and compatibility facade are separated.
+- Generated `Function/Variables/Local variables/Local state` comment noise was removed while meaningful rationale comments remain.
+- Calendar document validation was decomposed into focused validators.
+- Windows lock identity is derived from the absolute Calendar file path, so distinct DATA_ROOT values do not share one fixed mutex.
+- Rendered ForexFactory rows without a concrete clock no longer become fabricated 00:00 events; invalid clocks fail closed.
+- TypedDict contracts document event, Detail, coverage, watermark, provider-result, and refresh-summary fields.
+- Provider HTTP error handling is narrowed to expected network/decode failures.
+- Persistent schema remains V2; implementation version advances to 2.4.0.
+
+The existing acquisition transaction still holds the Calendar lock across provider I/O. Moving network I/O outside that lock requires an optimistic/two-phase commit protocol to preserve concurrent deletion and refresh semantics, so it remains a separate future change rather than being mixed into this behavior-preserving refactor.
