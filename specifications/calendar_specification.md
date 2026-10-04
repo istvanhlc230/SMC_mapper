@@ -2,7 +2,7 @@
 
 Status: Current V2 specification.
 
-Calendar implementation baseline: 2.4.0.
+Calendar implementation baseline: 2.4.2.
 
 Scope:
 - unified economic-calendar and news acquisition;
@@ -604,3 +604,18 @@ The domain layer keeps event, interval, coverage, watermark, merge, filtering, a
 ## 14.1 Rendered ForexFactory time handling
 
 The rendered HTML fallback requires a concrete provider clock. Missing, `Tentative`, or `All Day` time text is not converted to `00:00` or another synthetic timestamp. Such a row causes provider parsing to fail closed; invalid hour/minute values are also rejected explicitly.
+
+
+## 10.2 Successful no-match provider result semantics
+
+A provider may successfully complete an acquisition and return zero matching events for the requested canonical symbol and interval. This is a valid empty result, not a partial provider failure.
+
+For this state:
+- provider status is `NO_MATCH`;
+- no provider failure is recorded;
+- normal successful acquisition state may be persisted, including the provider watermark where the acquisition semantics permit it;
+- the aggregate query status is `NO_RELEVANT_EVENT` when all applicable providers return `NO_MATCH`;
+- `NO_MATCH` must not be converted to `PARTIAL` merely because the provider has no matching events;
+- `PARTIAL` remains reserved for an acquisition that completed with incomplete provider coverage or another explicitly partial provider result.
+
+For Yahoo Finance specifically, an empty successful news collection is `NO_MATCH`. A verified Yahoo Forex-pair unavailability remains the separate `SKIPPED_NO_FOREX_PAIR` state.
