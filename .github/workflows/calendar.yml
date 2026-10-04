@@ -35,6 +35,33 @@ jobs:
           assert calendar.validate_symbol("USDGBP") == "USDGBP"
           assert calendar.validate_symbol("HUF") == "HUF"
           assert calendar.validate_symbol("NVDA") == "NVDA"
+          html = """<html><body>
+          <div>Calendar Time Zone: Europe/Budapest (GMT +2)</div>
+          <table><tbody>
+          <tr class="calendar__row calendar_row" data-eventid="1001">
+            <td class="calendar__cell calendar__date date">Mon Oct 5</td>
+            <td class="calendar__cell calendar__time time">9:00am</td>
+            <td class="calendar__cell calendar__currency currency">EUR</td>
+            <td class="calendar__cell calendar__impact impact"><span title="High Impact Expected" class="high"></span></td>
+            <td class="calendar__cell calendar__event event"><span class="calendar__event-title">ECB Test Event</span></td>
+            <td class="calendar__cell calendar__actual actual"></td>
+            <td class="calendar__cell calendar__forecast forecast">1.2%</td>
+            <td class="calendar__cell calendar__previous previous">1.0%</td>
+          </tr>
+          </tbody></table></body></html>"""
+          ff_rows = calendar.parse_forexfactory_html_events(
+              html,
+              dt("2026-10-04T00:00:00Z"),
+              dt("2026-10-06T00:00:00Z"),
+          )
+          assert len(ff_rows) == 1
+          assert ff_rows[0]["id"] == "1001"
+          assert ff_rows[0]["currency"] == "EUR"
+          assert ff_rows[0]["name"] == "ECB Test Event"
+          normalized_ff = calendar.normalize_provider_event(ff_rows[0])
+          assert normalized_ff["timestamp"] == "2026-10-05T07:00:00Z"
+          assert normalized_ff["details"]["impact"] == "HIGH"
+
           assert calendar.__version__ == "2.1.0"
           assert f"Calendar CLI v{calendar.__version__}" in calendar.HELP_TEXT
 
