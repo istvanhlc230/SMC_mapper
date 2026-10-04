@@ -468,3 +468,27 @@ Applied the full Calendar source-quality refactor after the 2.3.10 refresh fixes
 - Persistent schema remains V2; implementation version advances to 2.4.0.
 
 The existing acquisition transaction still holds the Calendar lock across provider I/O. Moving network I/O outside that lock requires an optimistic/two-phase commit protocol to preserve concurrent deletion and refresh semantics, so it remains a separate future change rather than being mixed into this behavior-preserving refactor.
+
+
+## 2.4.0 post-refactor validation
+
+The refactored Calendar source tree was revalidated after the corrective import, facade, lock, fixture, and CLI-test-boundary fixes.
+
+Validation evidence:
+- GitHub Actions Calendar workflow run `37233383361` on commit `7739fc5de903a0c247657ddd41d02156e959ce8b` completed successfully.
+- Root `calendar.py` compiled successfully.
+- Every `CALENDAR/` implementation module compiled successfully.
+- The complete existing Calendar unit/runtime contract suite completed successfully.
+- The new rendered-time regression passed: non-concrete ForexFactory time is rejected instead of becoming 00:00.
+- The repository-root entrypoint and `CALENDAR/` source/cache layout are synchronized.
+- Runtime cache ignore rules now include `CALENDAR/calendar.json` and its POSIX lock file.
+
+Source-quality result:
+- The former 2768-line monolith is split by responsibility.
+- Generated Function/Variables/Local-variable comment noise is removed from implementation modules.
+- Calendar document validation is decomposed.
+- The semantic/domain boundary is explicitly documented for MQL4/MQL5 portability.
+- Windows Calendar locking is isolated by the absolute Calendar file path.
+
+Remaining deliberate scope boundary:
+network provider I/O still runs within the existing Calendar transaction lock. Moving it outside the lock requires a two-phase/optimistic persistence protocol and is not mixed into this behavior-preserving source refactor.
