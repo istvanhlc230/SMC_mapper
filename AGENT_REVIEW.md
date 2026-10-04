@@ -370,3 +370,25 @@ Correction:
 Calendar implementation version: 2.3.6; persistent schema remains 2.
 
 Final validation requires fresh CI and the Windows live smoke for the affected USD interval.
+
+## 2.3.7 Targeted ForexFactory event refresh
+
+New release data can change after the initial acquisition of an economic event. The existing `current`
+operation is watermark-based and therefore is not a sufficient explicit command for refreshing the exact
+event currently being monitored.
+
+Correction:
+- add `python calendar.py refresh forexfactory:<event-id>`;
+- refresh requires the event to already exist in `calendar.json` and uses the stable provider event ID;
+- a small ForexFactory day envelope around the cached timestamp is reacquired, the exact provider event
+  is selected, and its current core values plus Detail specs replace the cached record;
+- refresh does not advance coverage or watermarks;
+- `--cleartext` and `--debug` remain presentation/diagnostic flags;
+- Yahoo-news refresh is explicitly outside the current operation.
+
+The relevant Calendar specification has been updated and CI regression coverage now verifies mutable value
+replacement while preserving coverage/watermark state and CLI parsing.
+
+Calendar implementation version: 2.3.7; persistent schema remains 2.
+
+Final validation requires fresh CI and a Windows live smoke using a known ForexFactory event ID.
