@@ -53,8 +53,6 @@ def save_calendar_atomic(document: Dict[str, Any]) -> None:
             os.remove(temp_path)
 
 @contextlib.contextmanager
-
-@contextlib.contextmanager
 def acquire_calendar_lock():
     """Serialize Calendar state access with a lock isolated by DATA_ROOT."""
     os.makedirs(DATA_ROOT, exist_ok=True)
