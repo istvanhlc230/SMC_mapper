@@ -126,6 +126,7 @@ Public query forms:
     python calendar.py SYMBOL YYYY.MM.DD@HH:MM
     python calendar.py SYMBOL YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM
     python calendar.py SYMBOL current
+    python calendar.py SYMBOL next
 
 Delete forms:
 
@@ -198,6 +199,22 @@ current never means:
 - next event;
 - latest event;
 - nearest event.
+
+## 4.1 next semantics
+
+`next` is a read-only nearest-future-event lookup over the committed `calendar.json` snapshot.
+
+For `python calendar.py SYMBOL next`:
+
+1. load and validate the committed Calendar document under the Calendar lock;
+2. filter events according to the normal SYMBOL visibility rules, including `suppressed_for`;
+3. keep only events with `timestamp > current UTC time`;
+4. sort by timestamp, then source and event identity for deterministic ordering;
+5. return exactly the first event, or `NO_NEXT_EVENT` when none exists.
+
+`next` does not call ForexFactory or Yahoo Finance, does not acquire data, and does not modify coverage, watermarks, or `calendar.json`.
+
+`next` is distinct from `current`: `current` performs incremental provider acquisition based on watermarks, while `next` only reads the committed snapshot.
 
 No synthetic bootstrap timestamp is permitted.
 
@@ -353,7 +370,7 @@ Any Yahoo-news severity requires an explicit future Monitor specification change
 
 Acceptance requires:
 - old relative scopes removed;
-- next removed;
+- `next` returns the nearest future visible event from the committed snapshot without provider calls;
 - current is watermark-based;
 - missing watermark is BOOTSTRAP_REQUIRED;
 - EURUSD date, date range, datetime, and datetime range parse correctly;
