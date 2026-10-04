@@ -349,8 +349,6 @@ still filtered against canonical UTC event timestamps after acquisition, so prov
 cannot widen the persisted/result interval.
 For rendered and structured ForexFactory Detail URLs, the native `/calendar?day=...&event=...` query form is a valid concrete provider URL and must be preserved verbatim. Concrete `/calendar/...` event paths are also valid. URL extraction must never synthesize a URL from the numeric event-instance ID.
 
-Concrete ForexFactory Detail URLs may also use the provider's native `/calendar/details/1-<event-id>` path. When this concrete URL is present in provider HTML/data, it is preserved verbatim and associated by its event ID. The implementation must not synthesize this URL from an event ID.
-
 Concrete ForexFactory Detail URL extraction is DOM-structure-independent. The Calendar collects provider anchor/data-URL targets globally and may associate them to events by the numeric event query parameter or numeric event-path prefix. Extraction must not require the link to be nested inside a particular calendar-row element.
 
 ## 7.6 Human-readable CLI presentation
