@@ -1,9 +1,25 @@
 """Stable Python-facing Calendar compatibility facade."""
 
 from .config import *
+from .config import __version__
 from .domain import *
 from .providers import *
+from .providers import (
+    _fetch_yahoo_search_payload,
+    _is_verified_yahoo_forex_quote,
+    _resolve_yahoo_instrument,
+    _forexfactory_date_token,
+    _enrich_forexfactory_details,
+)
 from .parsing import *
+from .parsing import (
+    _normalize_forexfactory_impact_value,
+    _classify_forexfactory_impact,
+    ForexFactoryHTMLCalendarParser,
+    _extract_forexfactory_timezone,
+    _parse_forexfactory_date,
+    _parse_forexfactory_time,
+)
 from .presentation import *
 from .operations import *
 from .storage import DATA_ROOT, CALENDAR_FILE, load_calendar_document, save_calendar_atomic, acquire_calendar_lock
