@@ -599,3 +599,32 @@ The connected repository currently exposes no Python test runner or CI workflow 
 
 ## Final result
 **PASS — Market Data specification structure and implementation audit complete.**
+
+# Market Data date/time alignment review
+
+**Status: IMPLEMENTED — validation pending**
+
+## Change requested
+Market Data CLI date/time handling is now aligned with the established Calendar convention.
+
+## Implementation
+- Replaced ISO-8601 `--starttime` / `--endtime` input semantics with independent:
+  - `--startdate YYYY.MM.DD`
+  - `--starttime HH:MM`
+  - `--enddate YYYY.MM.DD`
+  - `--endtime HH:MM`
+- Date and time parsing is strict and UTC-based.
+- No machine-local timezone is assumed.
+- Date-only start resolves to UTC `00:00`.
+- Date-only end resolves to the following UTC day `00:00` as an exclusive boundary.
+- Time-only boundaries use the current UTC calendar date.
+- A single UTC `now` value is captured during request parsing so defaults are internally consistent.
+- Seconds, offsets, malformed dates, malformed times and invalid calendar values are rejected.
+- `--lastcandle` is mutually exclusive with any explicit date/time boundary component.
+- Existing completed-candle acquisition modes and `--live` semantics remain unchanged.
+
+## Specification synchronization
+`specifications/market_data_specification.md` was updated in the same implementation iteration with the CLI contract, resolution table, validation rules, and new function ownership for `parse_calendar_date`, `parse_calendar_time`, and `resolve_boundary`.
+
+## Validation
+Repository-level runtime/CI execution remains unavailable from the current environment. The implementation should be syntax-checked and the CLI boundary matrix tested in the developer environment before marking this change PASS.
