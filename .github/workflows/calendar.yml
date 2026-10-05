@@ -1151,6 +1151,61 @@ jobs:
               operations.refresh_current_scope = original_refresh_current
               storage.load_calendar_document = original_load
 
+          # current refresh must also update Detail data for an existing event
+          # whose timestamp is just before the incremental watermark. The provider
+          # overlap window must match it by stable event ID even though the event is
+          # outside the logical current query interval.
+          original_now = domain.utc_now
+          original_resolve = domain.resolve_applicable_providers
+          original_ff_fetch = providers.fetch_forexfactory
+          original_detail_fetch = providers.fetch_forexfactory_event_detail
+          original_save = storage.save_calendar_atomic
+          try:
+              domain.utc_now = lambda: dt("2026-10-05T12:00:00Z")
+              domain.resolve_applicable_providers = lambda _symbol: ["forexfactory"]
+              storage.save_calendar_atomic = lambda document: None
+
+              late_detail_doc = domain.build_empty_calendar_document()
+              late_event = synthetic_ff_event("2201", 5)
+              late_event["details"]["specs"] = [
+                  {"order": 1, "title": "Source", "html": "Old Detail"}
+              ]
+              late_detail_doc["events"] = [late_event]
+              domain.update_watermark(
+                  late_detail_doc,
+                  "forexfactory",
+                  "USD",
+                  dt("2026-10-05T06:00:00Z"),
+                  [],
+              )
+
+              providers.fetch_forexfactory = (
+                  lambda start, end, include_details=False: [synthetic_ff_event("2201", 5)]
+              )
+              providers.fetch_forexfactory_event_detail = (
+                  lambda _event_id: [
+                      {"order": 1, "title": "Source", "html": "New Detail"}
+                  ]
+              )
+
+              late_detail_result = operations.refresh_current_scope(
+                  late_detail_doc,
+                  "USD",
+              )
+              assert late_detail_result["summary"] == {
+                  "added": 0, "changed": 1, "unchanged": 0
+              }
+              assert late_detail_result["events"] == []
+              assert late_detail_doc["events"][0]["details"]["specs"] == [
+                  {"order": 1, "title": "Source", "html": "New Detail"}
+              ]
+          finally:
+              domain.utc_now = original_now
+              domain.resolve_applicable_providers = original_resolve
+              providers.fetch_forexfactory = original_ff_fetch
+              providers.fetch_forexfactory_event_detail = original_detail_fetch
+              storage.save_calendar_atomic = original_save
+
           # A provider may complete successfully with zero matching events.
           # This is a successful no-match, not a partial acquisition.
           original_resolve = domain.resolve_applicable_providers
