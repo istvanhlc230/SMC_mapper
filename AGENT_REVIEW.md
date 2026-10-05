@@ -846,7 +846,7 @@ Calendar unit/runtime contract tests: PASS
 
 # Calendar 2.4.7 audit — first-use current bootstrap refresh
 
-**Status: IMPLEMENTED — validation pending**
+**Status: PASS — validated**
 
 The user-facing execution `python calendar.py USDHUF current` exposed a semantic contradiction:
 the specification described `current` as always-refreshing, but `acquire_current()` still returned
@@ -864,4 +864,9 @@ Automatic correction:
 - provider `BOOTSTRAP_REQUIRED` is no longer emitted by the `current` acquisition path;
 - source comments/docstrings were extended for the new bootstrap state and variables.
 
-Fresh CI validation is required before PASS.
+Fresh GitHub Actions validation completed successfully.
+
+Validation run: `37297837871`
+Commit: `95ab66a8f5ddd4a9b7cb4ad625bff801d670bf9e` 
+Compile: PASS
+Calendar unit/runtime contract tests: PASS
