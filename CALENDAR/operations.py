@@ -99,6 +99,18 @@ def acquire_explicit(
                 # A successful Yahoo acquisition is complete even when it returns
                 # matching events. PARTIAL is reserved for genuinely incomplete
                 # provider work, not for a non-empty successful result.
+                # Yahoo's rolling feed is an acquisition-success boundary,
+                # not a guarantee of complete historical news coverage. Record the
+                # completed requested fetch as coverage while keeping that limitation
+                # explicit in the provider result.
+                domain.merge_coverage(document, {
+                    "provider": provider,
+                    "symbol": symbol,
+                    "start": domain.format_iso8601(start),
+                    "end": domain.format_iso8601(min(end, now)),
+                    "status": "COMPLETE",
+                    "updated_at": domain.format_iso8601(now),
+                }) if start < now else None
                 provider_results.append({
                     "provider": provider,
                     "status": "NO_MATCH" if not in_range else "OK",
