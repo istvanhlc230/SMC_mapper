@@ -17,7 +17,7 @@ HTTP_TIMEOUT = 15.0
 # SCHEMA_VERSION — persistent calendar.json schema version.
 SCHEMA_VERSION = 2
 # __version__ — Calendar CLI implementation version, independent from SCHEMA_VERSION.
-__version__ = "2.4.5"
+__version__ = "2.4.6"
 
 # SUPPORTED_CURRENCIES — standalone currencies accepted by the CLI.
 SUPPORTED_CURRENCIES = {
@@ -127,10 +127,17 @@ PROVIDERS
 
 CURRENT
   current is not "event at the current minute" and not "next".
-  It loads each applicable provider+canonical-symbol watermark, performs
-  incremental acquisition, normalizes/deduplicates, atomically persists,
-  and returns events newer than the watermark through now.
+  When an applicable provider has a committed watermark, current always
+  performs provider acquisition on every invocation, normalizes/deduplicates,
+  atomically persists refreshed data, and returns events newer than the
+  watermark through now. The watermark controls output filtering, not
+  whether provider acquisition occurs.
+  This allows late ForexFactory Detail data to refresh existing events.
   Missing watermark -> BOOTSTRAP_REQUIRED. No timestamp is fabricated.
+  Existing non-empty ForexFactory details.specs are preserved when a later
+  Detail request fails. Provider failures are not exposed as error records or
+  exception text in normal current output; aggregate PARTIAL/UNAVAILABLE status
+  remains available. --debug emits diagnostics to stderr only.
 
 RELATIVE DAYS
   today, tomorrow, and yesterday are exact UTC calendar-day scopes.
@@ -167,6 +174,8 @@ OUTPUT
 ERRORS
   Invalid syntax and unsupported symbols are rejected explicitly.
   Provider failures are never converted to successful empty data.
+  For current, provider error details are diagnostic-only and are not included
+  in normal stdout; aggregate failure status remains machine-readable.
 """
 
 
