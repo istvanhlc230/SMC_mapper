@@ -116,8 +116,8 @@ SCOPE
   yesterday                           Exact previous UTC calendar day.
   latest                              Return the most recent past/current event for
                                       SYMBOL from the committed calendar cache.
-  next                                Return the nearest future event for
-                                      SYMBOL from the committed calendar cache.
+  next                                Return the nearest future scheduled economic
+                                      event for SYMBOL from ForexFactory cache.
 
 SYMBOL
   Supported FX pair, standalone supported currency, or Yahoo ticker.
@@ -173,10 +173,10 @@ LAST UPDATE
   watermark is reported explicitly as NO_LAST_UPDATE.
 
 NEXT
-  next is a read-only nearest-future-event lookup.
-  It reads only the committed calendar.json snapshot, filters events visible
-  for SYMBOL, keeps only timestamps strictly later than current UTC time,
-  sorts chronologically, and returns the first event.
+  next is a read-only nearest-future scheduled-economic-event lookup.
+  It reads only the committed calendar.json snapshot, filters visible
+  ForexFactory economic events for SYMBOL, keeps only timestamps strictly
+  later than current UTC time, sorts chronologically, and returns the first event.
   next never calls a provider, never changes coverage, and never changes
   watermarks. No future event -> NO_NEXT_EVENT.
 
