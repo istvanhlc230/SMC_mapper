@@ -887,3 +887,6 @@ Calendar unit/runtime contract tests: PASS
 
 ## Validation requirement
 Fresh GitHub Actions validation must confirm compile, parser grammar, read-only `current`, current refresh delegation, and trailing refresh behavior before PASS.
+
+
+Validation rerun queued after correcting the regression-test fixture indentation.
