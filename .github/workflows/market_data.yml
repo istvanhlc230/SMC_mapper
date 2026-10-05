@@ -91,5 +91,39 @@ jobs:
           else:
               raise AssertionError("--range current must remain rejected")
 
+          # The production timeframe update path must use the request mode fields
+          # last_closed_only and current after the range correction.
+          from MARKET_DATA.service import update_timeframe
+          class EmptyProvider:
+              def fetch_range(self, symbol, timeframe, start_time, end_time):
+                  return []
+              def fetch_latest_completed(self, symbol, timeframe):
+                  return None
+              def fetch_current(self, symbol, timeframe):
+                  return None
+
+          runtime_request = parse_market_data_request([
+              "--symbol", "EURUSD",
+              "--timeframes", "M1",
+              "--range", "-2026.10.20",
+          ])
+          runtime_market_data = {
+              "symbol": "EURUSD",
+              "timeframes": {
+                  "M1": {
+                      "available_start": "2026-10-01T00:00:00Z",
+                      "available_end": "2026-10-05T07:15:00Z",
+                      "candles": [],
+                      "current": None,
+                  }
+              },
+          }
+          assert update_timeframe(
+              runtime_market_data,
+              EmptyProvider(),
+              runtime_request,
+              "M1",
+          ) is False
+
           print("MARKET_DATA_RANGE_TESTS_OK")
           PY
