@@ -38,8 +38,13 @@ def apply_candle_retention(candles, retention_limit, protected_start=None, prote
     if retention_limit < 0: raise ValueError("retention_limit must be non-negative")
     protected=[]; unprotected=[]
     for candle in candles:
-        stamp=candle["timestamp"]
-        in_range=(protected_start is not None and stamp>=protected_start and (protected_end is None or stamp<=protected_end))
+        # Persisted candle timestamps are UTC ISO strings at the storage boundary.
+        stamp = datetime.fromisoformat(candle["timestamp"].replace("Z", "+00:00"))
+        in_range = (
+            protected_start is not None
+            and stamp >= protected_start
+            and (protected_end is None or stamp <= protected_end)
+        )
         (protected if in_range else unprotected).append(candle)
     if protected_start is None: return sort_candles(list(candles))[-retention_limit:] if retention_limit else []
     remaining=max(0,retention_limit-len(protected))
