@@ -97,7 +97,7 @@ def update_timeframe(market_data,provider,request,timeframe):
             state["candles"] = deduplicate_candles(state["candles"] + [state["current"]])
             state["current"] = None
     acquisition_start,acquisition_end=resolve_acquisition_range(request,timeframe,state)
-    if request.last_candle_only:
+    if request.last_closed_only:
         latest=fetch_latest_completed_candle(provider,request.symbol,timeframe)
         incoming=[] if latest is None else [latest]
         protected_start=protected_end=None
@@ -106,7 +106,7 @@ def update_timeframe(market_data,provider,request,timeframe):
         protected_start,protected_end=acquisition_start,acquisition_end
     else: incoming=[]; protected_start=protected_end=None
     state["candles"]=merge_completed_candles(state["candles"],incoming)
-    if request.live:
+    if request.current:
         current=fetch_current_candle(provider,request.symbol,timeframe)
         state["current"]=None if current is None else build_current_snapshot(current)
         if current is not None and current.completion_time<=datetime.now(timezone.utc):
