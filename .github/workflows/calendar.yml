@@ -35,6 +35,7 @@ jobs:
               return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
           assert calendar.validate_symbol("EURUSD") == "EURUSD"
+          assert calendar.__version__ == "2.4.8"
           assert calendar.validate_symbol("USDGBP") == "USDGBP"
           assert calendar.validate_symbol("HUF") == "HUF"
           assert calendar.validate_symbol("NVDA") == "NVDA"
@@ -483,44 +484,70 @@ jobs:
               providers.fetch_forexfactory = original_refresh_fetch
               providers._enrich_forexfactory_details = original_refresh_detail_enrich
 
-          # Refresh machine-readable output is exactly one JSON document.
+          # Refresh is a trailing query modifier and emits one query result document
+          # plus a refresh summary in JSON.
           original_refresh_scope = operations.refresh_calendar_scope
+          original_load = storage.load_calendar_document
           try:
               refresh_output_doc = domain.build_empty_calendar_document()
               operations.refresh_calendar_scope = lambda document, symbol, start, end, debug=False: {
                   "events": [],
-                  # A successful provider with no changes must aggregate to OK,
-                  # allowing run_refresh() to expose the refresh-specific UNCHANGED state.
                   "provider_results": [{"provider": "forexfactory", "status": "OK"}],
                   "failures": [],
                   "summary": {"added": 0, "changed": 0, "unchanged": 0},
               }
+              storage.load_calendar_document = lambda: refresh_output_doc
               out = io.StringIO()
               with contextlib.redirect_stdout(out):
-                  assert calendar.run_refresh(
-                      "USD", "2026.10.01", cleartext=False
+                  assert calendar.run_query(
+                      "USD", "2026.10.01", cleartext=False, refresh=True
                   ) == 0
               lines = [line for line in out.getvalue().splitlines() if line.strip()]
               assert len(lines) == 1
               parsed_refresh_output = json.loads(lines[0])
-              assert parsed_refresh_output["status"] == "UNCHANGED"
+              assert parsed_refresh_output["status"] == "NO_RELEVANT_EVENT"
               assert parsed_refresh_output["refresh"] == {
                   "added": 0, "changed": 0, "unchanged": 0
               }
           finally:
               operations.refresh_calendar_scope = original_refresh_scope
+              storage.load_calendar_document = original_load
 
-          assert calendar.parse_request(["refresh", "USD", "2026.10.01"])["operation"] == "REFRESH"
-          assert calendar.parse_request(["refresh", "USD", "2026.10.01-2026.10.02"])["operation"] == "REFRESH"
-          assert calendar.parse_request(["refresh", "USD", "2026.10.01@12:30"])["operation"] == "REFRESH"
-          assert calendar.parse_request(["refresh", "USD", "2026.10.01@12:30-2026.10.01@13:30"])["operation"] == "REFRESH"
-          for invalid_scope in ("latest", "next", "current"):
+          # Trailing refresh is valid for query scopes except latest/next.
+          for tokens in (
+              ["USD", "2026.10.01", "refresh"],
+              ["USD", "2026.10.01-2026.10.02", "refresh"],
+              ["USD", "2026.10.01@12:30", "refresh"],
+              ["USD", "2026.10.01@12:30-2026.10.01@13:30", "refresh"],
+              ["USD", "current", "refresh"],
+              ["USD", "today", "refresh"],
+              ["USD", "tomorrow", "refresh"],
+              ["USD", "yesterday", "refresh"],
+              ["USD", "--date", "2026.10.01", "refresh"],
+              ["USD", "--date", "2026.10.01", "--time", "12:30", "refresh"],
+              ["USD", "--time", "12:30", "refresh"],
+          ):
+              parsed = calendar.parse_request(tokens)
+              assert parsed["operation"] == "QUERY"
+              assert parsed["refresh"] is True
+
+          assert calendar.parse_request(["USD", "current"])["refresh"] is False
+          assert calendar.parse_request(["USD", "today"])["refresh"] is False
+          assert calendar.parse_request(["USD", "latest"])["refresh"] is False
+          assert calendar.parse_request(["USD", "next"])["refresh"] is False
+
+          for invalid_tokens in (
+              ["refresh", "USD", "2026.10.01"],
+              ["USD", "latest", "refresh"],
+              ["USD", "next", "refresh"],
+              ["delete", "USD", "today", "refresh"],
+          ):
               try:
-                  calendar.parse_request(["refresh", "USD", invalid_scope])
+                  calendar.parse_request(invalid_tokens)
               except calendar.CalendarInputError:
                   pass
               else:
-                  raise AssertionError(f"refresh accepted unsupported scope: {invalid_scope}")
+                  raise AssertionError(f"unexpected refresh grammar accepted: {invalid_tokens}")
 
           # Legacy schema-2 ForexFactory coverage without Detail specs is incomplete
           # for the requested overlap and must be reacquired.
@@ -1075,133 +1102,49 @@ jobs:
               assert partial_doc["coverage"][0]["status"] == "COMPLETE"
               assert "forexfactory|USD" in partial_doc["watermarks"]
 
-              # Current mode must obey the same rule: a Detail-partial
-              # acquisition does not advance the existing successful cursor.
-              current_doc = domain.build_empty_calendar_document()
-              current_doc["events"] = [synthetic_ff_event("2101", 7)]
-              current_doc["events"][0]["details"]["specs"] = [
-                  {"order": 1, "title": "Source", "html": "Already committed"}
-              ]
-              domain.update_watermark(
-                  current_doc,
-                  "forexfactory",
-                  "USD",
-                  dt("2026-10-05T06:00:00Z"),
-                  [],
-              )
-              current_calls = {"value": 0}
-
-              def current_partial(start, end, include_details=True, detail_failures=None):
-                  current_calls["value"] += 1
-                  events = [synthetic_ff_event("2101", 7)]
-                  if detail_failures is not None:
-                      detail_failures.append("2101")
-                      events[0]["details"]["specs"] = []
-                  return events
-
-              providers.fetch_forexfactory = current_partial
-              current_result = operations.acquire_current(current_doc, "USD")
-              assert current_result["provider_results"][0]["status"] == "PARTIAL"
-              assert current_doc["coverage"][0]["status"] == "PARTIAL"
-              assert current_doc["watermarks"]["forexfactory|USD"]["last_successful_at"] == "2026-10-05T06:00:00Z"
-              assert current_doc["events"][0]["details"]["specs"] == [
-                  {"order": 1, "title": "Source", "html": "Already committed"}
-              ]
-          finally:
-              providers.fetch_forexfactory = original_ff_fetch
-              domain.utc_now = original_now
-              storage.save_calendar_atomic = original_save
-
-          # First-use current is also a provider acquisition: missing watermark means
-          # bounded bootstrap refresh, not BOOTSTRAP_REQUIRED termination.
-          original_resolve = domain.resolve_applicable_providers
-          original_fetch_yahoo = providers.fetch_yahoo_news
-          original_save = storage.save_calendar_atomic
-          try:
-              domain.resolve_applicable_providers = lambda _symbol: ["yahoo_finance"]
-              domain.utc_now = lambda: dt("2026-10-05T12:00:00Z")
-              bootstrap_calls = {"value": 0}
-              providers.fetch_yahoo_news = lambda _symbol: (
-                  bootstrap_calls.update(value=bootstrap_calls["value"] + 1) or []
-              )
-              storage.save_calendar_atomic = lambda document: None
-              bootstrap_doc = domain.build_empty_calendar_document()
-              bootstrap_result = operations.acquire_current(bootstrap_doc, "NVDA")
-              assert bootstrap_calls["value"] == 1
-              assert bootstrap_result["provider_results"][0]["status"] == "NO_MATCH"
-              assert bootstrap_result["events"] == []
-              assert bootstrap_doc["watermarks"]["yahoo_finance|NVDA"]["last_successful_at"] == "2026-10-05T12:00:00Z"
-              # A second current call must use the existing watermark path.
-              second_bootstrap_result = operations.acquire_current(bootstrap_doc, "NVDA")
-              assert bootstrap_calls["value"] == 2
-              assert second_bootstrap_result["provider_results"][0]["status"] == "NO_MATCH"
-          finally:
-              domain.resolve_applicable_providers = original_resolve
-              providers.fetch_yahoo_news = original_fetch_yahoo
-              storage.save_calendar_atomic = original_save
-          # current must contact a provider on every invocation when a successful watermark exists,
-          # even if the provider returns no new events.
-          original_resolve = domain.resolve_applicable_providers
-          original_fetch_yahoo = providers.fetch_yahoo_news
-          original_save = storage.save_calendar_atomic
-          original_now = domain.utc_now
-          try:
-              domain.resolve_applicable_providers = lambda _symbol: ["yahoo_finance"]
-              refresh_calls = {"value": 0}
-              domain.utc_now = lambda: dt("2026-10-05T12:00:00Z")
-              providers.fetch_yahoo_news = lambda _symbol: (
-                  refresh_calls.update(value=refresh_calls["value"] + 1) or []
-              )
-              storage.save_calendar_atomic = lambda document: None
-              refresh_doc = domain.build_empty_calendar_document()
-              domain.update_watermark(
-                  refresh_doc,
-                  "yahoo_finance",
-                  "NVDA",
-                  dt("2026-10-05T10:00:00Z"),
-                  [],
-              )
-              first_current = operations.acquire_current(refresh_doc, "NVDA")
-              second_current = operations.acquire_current(refresh_doc, "NVDA")
-              assert refresh_calls["value"] == 2
-              assert first_current["provider_results"][0]["status"] == "NO_MATCH"
-              assert second_current["provider_results"][0]["status"] == "NO_MATCH"
-          finally:
-              domain.resolve_applicable_providers = original_resolve
-              providers.fetch_yahoo_news = original_fetch_yahoo
-              storage.save_calendar_atomic = original_save
-              domain.utc_now = original_now
-
-          # current stdout must expose aggregate status but not provider exception details.
-          original_run_query = calendar.run_query
-          original_cli_run_query = __import__("CALENDAR.cli", fromlist=["run_query"]).run_query
-          original_current_acquire = operations.acquire_current
+          # Plain current is read-only and never calls a provider.
+          original_yahoo_news = providers.fetch_yahoo_news
           original_load = storage.load_calendar_document
           try:
-              operations.acquire_current = lambda *_args, **_kwargs: {
-                  "events": [],
-                  "provider_results": [{
-                      "provider": "yahoo_finance",
-                      "status": "ERROR",
-                      "error": "synthetic provider failure should stay diagnostic",
-                  }],
-              }
+              providers.fetch_yahoo_news = lambda _symbol: (_ for _ in ()).throw(
+                  AssertionError("plain current must not call provider acquisition")
+              )
               storage.load_calendar_document = lambda: domain.build_empty_calendar_document()
-              __import__("CALENDAR.cli", fromlist=["run_query"]).run_query = original_cli_run_query
               out = io.StringIO()
               with contextlib.redirect_stdout(out):
-                  assert calendar.run_query("NVDA", "current", cleartext=False, debug=False) == 2
-              public_output = out.getvalue()
-              assert "synthetic provider failure should stay diagnostic" not in public_output
-              assert "\"error\"" not in public_output
-              parsed_output = json.loads(public_output)
-              assert parsed_output["status"] == "UNAVAILABLE"
-              assert parsed_output["providers"] == []
+                  assert calendar.run_query(
+                      "USD", "current", cleartext=False, refresh=False
+                  ) == 0
+              parsed_current = json.loads(out.getvalue())
+              assert parsed_current["status"] == "NO_RELEVANT_EVENT"
           finally:
-              operations.acquire_current = original_current_acquire
+              providers.fetch_yahoo_news = original_yahoo_news
               storage.load_calendar_document = original_load
-              calendar.run_query = original_run_query
-              __import__("CALENDAR.cli", fromlist=["run_query"]).run_query = original_cli_run_query
+
+          # current refresh uses the trailing modifier and a dedicated current
+          # refresh operation rather than automatic provider acquisition.
+          original_refresh_current = operations.refresh_current_scope
+          original_load = storage.load_calendar_document
+          try:
+              operations.refresh_current_scope = lambda document, symbol, debug=False: {
+                  "events": [],
+                  "provider_results": [{"provider": "forexfactory", "status": "OK"}],
+                  "failures": [],
+                  "summary": {"added": 1, "changed": 0, "unchanged": 2},
+              }
+              storage.load_calendar_document = lambda: domain.build_empty_calendar_document()
+              out = io.StringIO()
+              with contextlib.redirect_stdout(out):
+                  assert calendar.run_query(
+                      "USD", "current", cleartext=False, refresh=True
+                  ) == 0
+              parsed_current_refresh = json.loads(out.getvalue())
+              assert parsed_current_refresh["refresh"] == {
+                  "added": 1, "changed": 0, "unchanged": 2
+              }
+          finally:
+              operations.refresh_current_scope = original_refresh_current
+              storage.load_calendar_document = original_load
 
           # A provider may complete successfully with zero matching events.
           # This is a successful no-match, not a partial acquisition.
