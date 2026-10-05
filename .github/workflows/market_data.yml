@@ -1,0 +1,95 @@
+name: Market Data Python tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  market-data:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile
+        run: python -m py_compile market_data.py && python -m compileall -q MARKET_DATA
+      - name: Market Data range contract tests
+        shell: bash
+        run: |
+          python - <<'PY'
+          from datetime import datetime, timezone
+
+          from MARKET_DATA.cli import parse_market_data_request
+          from MARKET_DATA.models import MarketDataRequest
+          from MARKET_DATA.service import resolve_acquisition_range
+
+          def dt(value):
+              return datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+          request = parse_market_data_request([
+              "--symbol", "EURUSD",
+              "--timeframes", "M1", "M5",
+              "--range", "-2026.10.20",
+          ])
+          assert request.start_time is None
+          assert request.end_time == dt("2026-10-21T00:00:00Z")
+          assert request.current is False
+          assert request.last_closed_only is False
+
+          request = parse_market_data_request([
+              "--symbol", "EURUSD",
+              "--timeframes", "M1",
+              "--range", "-2026.10.10@05.00",
+          ])
+          assert request.start_time is None
+          assert request.end_time == dt("2026-10-10T05:01:00Z")
+
+          request = parse_market_data_request([
+              "--symbol", "EURUSD",
+              "--timeframes", "M1",
+              "--range", "-2026.10.10@05:00",
+          ])
+          assert request.start_time is None
+          assert request.end_time == dt("2026-10-10T05:01:00Z")
+
+          state = {
+              "available_start": "2026-09-01T00:00:00Z",
+              "available_end": "2026-10-05T07:15:00Z",
+              "candles": [],
+              "current": None,
+          }
+          resolved = resolve_acquisition_range(request, "M1", state)
+          assert resolved == (
+              dt("2026-10-05T07:15:00Z"),
+              dt("2026-10-10T05:01:00Z"),
+          )
+
+          missing = {
+              "available_start": None,
+              "available_end": None,
+              "candles": [],
+              "current": None,
+          }
+          try:
+              resolve_acquisition_range(request, "M1", missing)
+          except ValueError as exc:
+              assert "open-start --range requires existing retained history" in str(exc)
+          else:
+              raise AssertionError("open-start range without retained history must fail")
+
+          try:
+              parse_market_data_request([
+                  "--symbol", "EURUSD",
+                  "--timeframes", "M1",
+                  "--range", "current",
+              ])
+          except ValueError:
+              pass
+          else:
+              raise AssertionError("--range current must remain rejected")
+
+          print("MARKET_DATA_RANGE_TESTS_OK")
+          PY
