@@ -712,6 +712,9 @@ jobs:
           original_save = storage.save_calendar_atomic
           try:
               storage.load_calendar_document = lambda: next_doc.copy()
+              # Freeze the Calendar clock so the integration fixture remains
+              # deterministic and the 2026-10-05 09:00 event is still future.
+              domain.utc_now = lambda: dt("2026-10-04T12:00:00Z")
               acquired_calls = []
               def fake_acquire(*args, **kwargs):
                   acquired_calls.append(True)
