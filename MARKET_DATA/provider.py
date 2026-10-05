@@ -48,8 +48,12 @@ class YahooChartsProvider(MarketDataProvider):
         records=[]
         for index, raw_timestamp in enumerate(timestamps):
             try:
-                values=[quote.get(key,[None]*len(timestamps))[index] for key in ("open","high","low","close")]
-                if any(value is None for value in values): continue
+                values = [
+                    quote.get(key, [None] * len(timestamps))[index]
+                    for key in ("open", "high", "low", "close")
+                ]
+                if any(value is None for value in values):
+                    raise ValueError("malformed Yahoo candle: missing OHLC field")
                 stamp=datetime.fromtimestamp(raw_timestamp, tz=timezone.utc)
                 records.append(ProviderCandle(stamp, "UTC", stamp, *values, volume[index] if index < len(volume) else None, provider_metadata={"provider":"yahoo_charts","interval":interval}))
             except (ValueError, TypeError, IndexError):
@@ -74,7 +78,16 @@ class YahooChartsProvider(MarketDataProvider):
             buckets.setdefault(bucket,[]).append(candle)
         output=[]
         for bucket, group in sorted(buckets.items()):
-            if len(group) != hours: continue
+            group = sorted(group, key=lambda candle: candle.timestamp)
+            if len(group) != hours:
+                continue
+            expected = [
+                datetime.fromtimestamp(bucket, tz=timezone.utc)
+                + timedelta(hours=offset)
+                for offset in range(hours)
+            ]
+            if [candle.timestamp for candle in group] != expected:
+                continue
             stamp=datetime.fromtimestamp(bucket,tz=timezone.utc)
             total=sum((Decimal(str(x.total_volume or 0)) for x in group), Decimal("0"))
             output.append(ProviderCandle(stamp,"UTC",stamp,group[0].open_price,max(x.high_price for x in group),min(x.low_price for x in group),group[-1].close_price,total,provider_metadata={"provider":"yahoo_charts","aggregated_from":"1h"}))
