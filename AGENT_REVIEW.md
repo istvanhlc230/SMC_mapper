@@ -676,3 +676,19 @@ Restore a Calendar CLI time-only shorthand so a concrete --time HH:MM without an
 - Static source inspection completed after the implementation.
 - Repository test directory is intentionally absent under the current project structure, so no repository-root test suite was added.
 - Fresh runtime/CI validation is still required before marking this change PASS.
+
+
+## Calendar 2.4.3 post-audit correction
+
+**Status: IMPLEMENTED — validation pending**
+
+The Calendar audit identified two consistency issues and both were corrected:
+
+- CALENDAR/operations.py: successful Yahoo explicit acquisition with matching events now reports OK instead of PARTIAL. PARTIAL remains reserved for genuinely incomplete acquisition. Successful empty acquisition remains NO_MATCH.
+- specifications/calendar_specification.md: the public delete grammar now explicitly documents delete SYMBOL --time HH:MM and delete SYMBOL YYYY.MM.DD --time HH:MM, matching the already-supported CLI implementation.
+
+The existing --time semantics, UTC normalization, provider routing, watermark handling, atomic persistence, and persistent schema were not otherwise changed.
+
+Implementation version remains 2.4.3; persistent schema remains V2.
+
+Validation requirement: run the Calendar CLI/parser matrix and fresh GitHub Actions validation before marking this correction PASS.
