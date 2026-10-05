@@ -2398,7 +2398,7 @@ No provider cache file is part of the permanent repository structure. Provider r
 |---|---|
 | market_data.py | root executable entry point only |
 | MARKET_DATA/models.py | domain models and provider-neutral constants |
-| MARKET_DATA/provider.py | provider abstraction, Yahoo transport and provider cache |
+| MARKET_DATA/provider.py | provider abstraction and Yahoo transport |
 | MARKET_DATA/normalization.py | UTC conversion, completion, Decimal conversion, validation and identity |
 | MARKET_DATA/persistence.py | symbol paths, JSON validation, serialization and atomic save |
 | MARKET_DATA/service.py | acquisition planning, merge, retention and timeframe/symbol orchestration |
@@ -2411,7 +2411,7 @@ market_data.py -> cli.py -> service.py -> provider.py
                               -> normalization.py
                               -> persistence.py
                               -> models.py
-provider.py -> external provider API and MARKET_DATA/market_data_cache.json
+provider.py -> external provider API and transient request-local provider state
 persistence.py -> <DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json
 
 Dependency direction is one-way: CLI -> service -> provider/normalization/persistence/models. Provider and normalization must not import service or CLI. Persistence must not perform acquisition or SMC interpretation.
@@ -2436,7 +2436,6 @@ Dependency direction is one-way: CLI -> service -> provider/normalization/persis
 | current_snapshot | persisted in-progress candle |
 | data_directory | common data root |
 | market_data_path | canonical symbol JSON path |
-| cache_path | removed; no persistent provider cache path exists |
 | changed | whether resulting state differs from original |
 
 Do not use opaque domain-state names such as data, item, obj, tmp, helper or result2.
