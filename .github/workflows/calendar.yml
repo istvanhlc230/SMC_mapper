@@ -1067,7 +1067,8 @@ jobs:
               current_doc["events"][0]["details"]["specs"] = [
                   {"order": 1, "title": "Source", "html": "Already committed"}
               ]
-              domain.update_watermark(                  current_doc,
+              domain.update_watermark(
+                  current_doc,
                   "forexfactory",
                   "USD",
                   dt("2026-10-05T06:00:00Z"),
