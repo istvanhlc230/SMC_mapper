@@ -207,23 +207,62 @@ def parse_request(args: List[str]) -> Dict[str, Any]:
 
     cleartext = "--cleartext" in args
     debug = "--debug" in args
-    positional = [
-        item for item in args
-        if item not in {"--cleartext", "--debug"}
-    ]
+
+    # --time is a Calendar-compatible convenience form: when no date is
+    # supplied, it resolves against the current UTC calendar day; when a
+    # date-only scope is supplied, it is normalized to the existing
+    # canonical YYYY.MM.DD@HH:MM form before normal scope parsing.
+    time_values = [item for item in args if item.startswith("--time=")]
+    if "--time" in args:
+        index = args.index("--time")
+        if index + 1 >= len(args):
+            raise CalendarInputError("--time requires HH:MM.")
+        time_values.append(f"--time={args[index + 1]}")
+    if len(time_values) > 1:
+        raise CalendarInputError("--time may be specified only once.")
+    cli_time = None
+    if time_values:
+        cli_time = time_values[0].split("=", 1)[1]
+
+    positional = []
+    skip_next = False
+    for index, item in enumerate(args):
+        if skip_next:
+            skip_next = False
+            continue
+        if item in {"--cleartext", "--debug"}:
+            continue
+        if item == "--time":
+            skip_next = True
+            continue
+        if item.startswith("--time="):
+            continue
+        positional.append(item)
 
     if not positional:
         raise CalendarInputError(
-            "--cleartext requires a symbol query."
+            "--cleartext/--debug/--time requires a symbol query."
         )
 
     if positional[0] == "refresh":
-        if len(positional) != 3:
+        if len(positional) not in {2, 3}:
             raise CalendarInputError(
-                "Refresh requires REFRESH + SYMBOL + SCOPE."
+                "Refresh requires REFRESH + SYMBOL + SCOPE, or REFRESH + SYMBOL with --time."
             )
         symbol = domain.validate_symbol(positional[1])
-        scope = domain.parse_scope(positional[2])
+        if len(positional) == 2:
+            if cli_time is None:
+                raise CalendarInputError(
+                    "Refresh requires an explicit scope or --time HH:MM."
+                )
+            current_date = domain.utc_now().strftime("%Y.%m.%d")
+            scope = domain.parse_scope(f"{current_date}@{cli_time}")
+        else:
+            if cli_time is not None:
+                raise CalendarInputError(
+                    "--time cannot be combined with an explicit refresh scope."
+                )
+            scope = domain.parse_scope(positional[2])
         if scope in {"latest", "next", "current"}:
             raise CalendarInputError(
                 "refresh requires an explicit date, date range, datetime, or datetime range."
@@ -241,6 +280,10 @@ def parse_request(args: List[str]) -> Dict[str, Any]:
             raise CalendarInputError("--cleartext is not valid for delete.")
 
         if len(positional) == 1:
+            if cli_time is not None:
+                raise CalendarInputError(
+                    "--time cannot be used with bare delete."
+                )
             return {
                 "operation": "DELETE",
                 "symbol": None,
@@ -249,13 +292,25 @@ def parse_request(args: List[str]) -> Dict[str, Any]:
                 "debug": debug,
             }
 
-        if len(positional) != 3:
+        if len(positional) not in {2, 3}:
             raise CalendarInputError(
-                "Scoped delete requires DELETE + SYMBOL + SCOPE."
+                "Scoped delete requires DELETE + SYMBOL + SCOPE, or DELETE + SYMBOL with --time."
             )
 
         symbol = domain.validate_symbol(positional[1])
-        scope = domain.parse_scope(positional[2])
+        if len(positional) == 2:
+            if cli_time is None:
+                raise CalendarInputError(
+                    "Scoped delete requires an explicit scope or --time HH:MM."
+                )
+            current_date = domain.utc_now().strftime("%Y.%m.%d")
+            scope = domain.parse_scope(f"{current_date}@{cli_time}")
+        else:
+            if cli_time is not None:
+                raise CalendarInputError(
+                    "--time cannot be combined with an explicit delete scope."
+                )
+            scope = domain.parse_scope(positional[2])
         if scope == "current":
             raise CalendarInputError("current cannot be used as a delete scope.")
 
@@ -266,13 +321,25 @@ def parse_request(args: List[str]) -> Dict[str, Any]:
             "cleartext": False,
             "debug": debug,
         }
-    if len(positional) != 2:
+    if len(positional) not in {1, 2}:
         raise CalendarInputError(
-            "Expected exactly SYMBOL + SCOPE."
+            "Expected SYMBOL + SCOPE, or SYMBOL with --time HH:MM."
         )
 
     symbol = domain.validate_symbol(positional[0])
-    scope = domain.parse_scope(positional[1])
+    if len(positional) == 1:
+        if cli_time is None:
+            raise CalendarInputError(
+                "Expected SYMBOL + SCOPE, or SYMBOL with --time HH:MM."
+            )
+        current_date = domain.utc_now().strftime("%Y.%m.%d")
+        scope = domain.parse_scope(f"{current_date}@{cli_time}")
+    else:
+        if cli_time is not None:
+            raise CalendarInputError(
+                "--time cannot be combined with an explicit query scope."
+            )
+        scope = domain.parse_scope(positional[1])
     return {
         "operation": "QUERY",
         "symbol": symbol,
