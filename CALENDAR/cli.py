@@ -11,6 +11,29 @@ from .config import HELP_TEXT, CalendarInputError, DataIntegrityError
 
 # CLI state is request-local: parsed arguments determine one operation and its diagnostic/presentation flags.
 
+def _current_public_provider_results(
+    provider_results: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    """Return only non-diagnostic provider metadata for current output."""
+    # Internal provider results are authoritative for status aggregation, but
+    # network/provider exception details must never leak into normal stdout.
+    public_results: List[Dict[str, Any]] = []
+    # diagnostic_fields contains details intended exclusively for --debug stderr.
+    diagnostic_fields = {"error", "reason", "detail_failures"}
+
+    for provider_result in provider_results:
+        # A failed provider is represented by the aggregate status only; its
+        # individual ERROR record and diagnostics are intentionally suppressed.
+        if provider_result.get("status") == "ERROR":
+            continue
+        public_results.append({
+            key: value
+            for key, value in provider_result.items()
+            if key not in diagnostic_fields
+        })
+
+    return public_results
+
 def run_query(
     symbol: str,
     scope: str,
@@ -27,11 +50,16 @@ def run_query(
             status = domain.status_from_provider_results(result["provider_results"])
             if status == "OK" and not events:
                 status = "NO_RELEVANT_EVENT"
+            # Use complete internal provider results for status calculation, then
+            # suppress provider-error diagnostics from the public current output.
+            public_provider_results = _current_public_provider_results(
+                result["provider_results"]
+            )
             presentation.output_query_result(
                 status,
                 symbol,
                 events,
-                result["provider_results"],
+                public_provider_results,
                 cleartext,
             )
             return 0 if status != "UNAVAILABLE" else 2
