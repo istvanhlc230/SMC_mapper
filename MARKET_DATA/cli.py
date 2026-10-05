@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import re
+import sys
 from datetime import datetime, timedelta, timezone
 from typing import Sequence
 
@@ -13,6 +14,24 @@ from .service import update_market_data
 
 DATE_RE = r"\d{4}\.\d{2}\.\d{2}"
 TIME_RE = r"\d{2}:\d{2}"
+
+
+def _normalize_cli_argv(argv):
+    """Normalize a separate negative --range value for argparse."""
+    values = list(sys.argv[1:] if argv is None else argv)
+    normalized = []
+    index = 0
+    while index < len(values):
+        value = values[index]
+        if value == "--range" and index + 1 < len(values):
+            candidate = values[index + 1]
+            if candidate.startswith("-"):
+                normalized.append(f"--range={candidate}")
+                index += 2
+                continue
+        normalized.append(value)
+        index += 1
+    return normalized
 
 
 def build_argument_parser():
@@ -169,7 +188,7 @@ def validate_request(request):
 
 def parse_market_data_request(argv: Sequence[str] | None = None):
     """Parse the Calendar-compatible Market Data scope into a MarketDataRequest."""
-    args = build_argument_parser().parse_args(argv)
+    args = build_argument_parser().parse_args(_normalize_cli_argv(argv))
     scope = validate_scope(args.scope)
 
     if args.current:
