@@ -737,7 +737,7 @@ jobs:
               domain.utc_now = lambda: dt("2026-10-04T12:00:00Z")
 
 
-          for bad in ("today", "next_week", "next_month", "2026.10.01..2026.10.31"):
+          for bad in ("next_day", "week", "next_week", "month", "next_month", "2026.10.01..2026.10.31"):
               try:
                   calendar.parse_request(["EURUSD", bad])
               except calendar.CalendarInputError:
@@ -745,6 +745,11 @@ jobs:
               else:
                   raise AssertionError(f"legacy scope accepted: {bad}")
 
+          # Relative UTC-day scopes are valid public aliases and remain distinct from current/latest/next.
+          for relative_scope in ("today", "tomorrow", "yesterday"):
+              parsed = calendar.parse_request(["EURUSD", relative_scope])
+              assert parsed["scope"] == relative_scope
+              assert parsed["operation"] == "QUERY"
           start = calendar.parse_date("2026.10.01")
           end = calendar.parse_date("2026.10.03")
           doc = domain.build_empty_calendar_document()
@@ -1058,8 +1063,11 @@ jobs:
               # Current mode must obey the same rule: a Detail-partial
               # acquisition does not advance the existing successful cursor.
               current_doc = domain.build_empty_calendar_document()
-              domain.update_watermark(
-                  current_doc,
+              current_doc["events"] = [synthetic_ff_event("2101", 7)]
+              current_doc["events"][0]["details"]["specs"] = [
+                  {"order": 1, "title": "Source", "html": "Already committed"}
+              ]
+              domain.update_watermark(                  current_doc,
                   "forexfactory",
                   "USD",
                   dt("2026-10-05T06:00:00Z"),
@@ -1080,10 +1088,74 @@ jobs:
               assert current_result["provider_results"][0]["status"] == "PARTIAL"
               assert current_doc["coverage"][0]["status"] == "PARTIAL"
               assert current_doc["watermarks"]["forexfactory|USD"]["last_successful_at"] == "2026-10-05T06:00:00Z"
+              assert current_doc["events"][0]["details"]["specs"] == [
+                  {"order": 1, "title": "Source", "html": "Already committed"}
+              ]
           finally:
               providers.fetch_forexfactory = original_ff_fetch
               domain.utc_now = original_now
               storage.save_calendar_atomic = original_save
+
+          # current must contact a provider on every invocation when a successful watermark exists,
+          # even if the provider returns no new events.
+          original_resolve = domain.resolve_applicable_providers
+          original_fetch_yahoo = providers.fetch_yahoo_news
+          original_save = storage.save_calendar_atomic
+          original_now = domain.utc_now
+          try:
+              domain.resolve_applicable_providers = lambda _symbol: ["yahoo_finance"]
+              refresh_calls = {"value": 0}
+              domain.utc_now = lambda: dt("2026-10-05T12:00:00Z")
+              providers.fetch_yahoo_news = lambda _symbol: (
+                  refresh_calls.update(value=refresh_calls["value"] + 1) or []
+              )
+              storage.save_calendar_atomic = lambda document: None
+              refresh_doc = domain.build_empty_calendar_document()
+              domain.update_watermark(
+                  refresh_doc, "yahoo_finance",
+                  dt("2026-10-05T10:00:00Z"), []
+              )
+              first_current = operations.acquire_current(refresh_doc, "NVDA")
+              second_current = operations.acquire_current(refresh_doc, "NVDA")
+              assert refresh_calls["value"] == 2
+              assert first_current["provider_results"][0]["status"] == "NO_MATCH"
+              assert second_current["provider_results"][0]["status"] == "NO_MATCH"
+          finally:
+              domain.resolve_applicable_providers = original_resolve
+              providers.fetch_yahoo_news = original_fetch_yahoo
+              storage.save_calendar_atomic = original_save
+              domain.utc_now = original_now
+
+          # current stdout must expose aggregate status but not provider exception details.
+          original_run_query = calendar.run_query
+          original_cli_run_query = __import__("CALENDAR.cli", fromlist=["run_query"]).run_query
+          original_current_acquire = operations.acquire_current
+          original_load = storage.load_calendar_document
+          try:
+              operations.acquire_current = lambda *_args, **_kwargs: {
+                  "events": [],
+                  "provider_results": [{
+                      "provider": "yahoo_finance",
+                      "status": "ERROR",
+                      "error": "synthetic provider failure should stay diagnostic",
+                  }],
+              }
+              storage.load_calendar_document = lambda: domain.build_empty_calendar_document()
+              __import__("CALENDAR.cli", fromlist=["run_query"]).run_query = original_cli_run_query
+              out = io.StringIO()
+              with contextlib.redirect_stdout(out):
+                  assert calendar.run_query("NVDA", "current", cleartext=False, debug=False) == 2
+              public_output = out.getvalue()
+              assert "synthetic provider failure should stay diagnostic" not in public_output
+              assert "\"error\"" not in public_output
+              parsed_output = json.loads(public_output)
+              assert parsed_output["status"] == "UNAVAILABLE"
+              assert parsed_output["providers"] == []
+          finally:
+              operations.acquire_current = original_current_acquire
+              storage.load_calendar_document = original_load
+              calendar.run_query = original_run_query
+              __import__("CALENDAR.cli", fromlist=["run_query"]).run_query = original_cli_run_query
 
           # A provider may complete successfully with zero matching events.
           # This is a successful no-match, not a partial acquisition.
