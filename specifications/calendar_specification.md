@@ -300,52 +300,56 @@ No synthetic bootstrap timestamp is permitted.
 
 Explicit date or datetime-range acquisition establishes bootstrap state.
 
-## 4.3 Refresh semantics
+## 4.3 Refresh modifier semantics
 
-`refresh` is a forced provider re-acquisition for a SYMBOL and an explicit date/time scope. It bypasses
-existing coverage so that mutable provider data released or changed after the original acquisition can be
-detected.
+`refresh` is a trailing query modifier, not an independent CLI command.
 
 Public forms:
 
-    python calendar.py refresh SYMBOL YYYY.MM.DD
-    python calendar.py refresh SYMBOL YYYY.MM.DD-YYYY.MM.DD
-    python calendar.py refresh SYMBOL YYYY.MM.DD@HH:MM
-    python calendar.py refresh SYMBOL YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM
+    python calendar.py SYMBOL current refresh
+    python calendar.py SYMBOL today refresh
+    python calendar.py SYMBOL tomorrow refresh
+    python calendar.py SYMBOL yesterday refresh
+    python calendar.py SYMBOL YYYY.MM.DD refresh
+    python calendar.py SYMBOL YYYY.MM.DD-YYYY.MM.DD refresh
+    python calendar.py SYMBOL YYYY.MM.DD@HH:MM refresh
+    python calendar.py SYMBOL YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM refresh
+    python calendar.py SYMBOL --date YYYY.MM.DD refresh
+    python calendar.py SYMBOL --date YYYY.MM.DD --time HH:MM refresh
+    python calendar.py SYMBOL --time HH:MM refresh
 
-`latest`, `next`, and `current` are not refresh scopes.
+The former `refresh SYMBOL SCOPE` command grammar is removed.
+`latest refresh` and `next refresh` are invalid.
 
 Refresh behavior:
 
-1. resolve the requested UTC interval;
-2. determine the same applicable providers as normal query/acquisition;
-3. reacquire provider data regardless of existing coverage;
-4. for ForexFactory, use a one-day provider-side envelope around the requested interval so an event
-   rescheduled near a boundary can still be matched by its stable provider event ID;
-5. select fresh events whose new timestamp falls inside the requested interval or whose stable provider
-   event ID matches an existing event visible for SYMBOL in the requested interval;
-6. compare fresh records with the existing records by stable `event_id`;
-7. replace only records whose provider data differs, while adding newly discovered records;
-8. provider identity remains authoritative. A provider event may change timestamp during an explicit refresh;
-   this is an expected mutable provider update and must not be rejected as an identity conflict;
-9. an existing event absent from the fresh provider response is not deleted automatically;
-10. preserve existing coverage and watermarks. Refresh does not establish new coverage and does not advance
-    acquisition watermarks;
-11. validate and atomically persist only when refreshed records produce additions or changes.
+1. resolve the query scope to its UTC interval;
+2. determine the same applicable providers as normal acquisition;
+3. force provider acquisition even when the requested interval is already covered;
+4. for ForexFactory, use a one-day provider-side envelope around the requested interval so mutable events near
+   a scope boundary can still be matched by stable provider event ID;
+5. for `current refresh`, derive the logical refresh interval from the earliest applicable committed
+   `last_successful_at` through current UTC time. If no applicable watermark exists, use a bounded one-day
+   interval ending at now;
+6. select fresh events whose new timestamp falls inside the logical interval or whose stable provider event ID
+   matches an existing event visible for the symbol in that interval;
+7. compare fresh records with existing records by stable `event_id`;
+8. replace changed records and add newly discovered records, including late ForexFactory Detail changes;
+9. provider identity remains authoritative even if a refreshed event changes its timestamp;
+10. an existing event absent from the fresh provider response is not deleted;
+11. preserve existing coverage and watermarks. Refresh does not establish coverage and does not advance
+    `last_successful_at`;
+12. validate and atomically persist when refreshed records produce additions or changes;
+13. after refresh, return the normal query result for the same scope. Machine-readable output includes the
+    `added`/`changed`/`unchanged` refresh summary. In `--cleartext` mode the normal event output is
+    followed by one refresh summary line.
 
-The comparison covers the complete normalized event record, including timestamp, title, core details
-(`actual`, `forecast`, `previous`, impact), and ForexFactory Detail specifications. A locally modified cached
-field must therefore be detected and replaced by the provider value on refresh; refresh must compare against
-the record actually loaded from the active `calendar.json` path.
+A refresh performed by the Monitor MUST run outside the candle-close processing path and MUST NOT block candle
+processing on provider/network I/O. The CLI may remain synchronous because the user explicitly requested the
+refresh operation.
 
-Refresh output is emitted as exactly one result document. Machine-readable output is one JSON document
-containing the refreshed events, provider results, and the `added`/`changed`/`unchanged` summary. In
-`--cleartext` mode, the human-readable event output is followed by one refresh summary line. `--cleartext`
-changes only presentation. Provider failures retain the normal isolated-provider semantics; if all applicable
-providers fail, the aggregate status is `UNAVAILABLE`.
-
-Yahoo Finance refresh follows the same compare-and-replace model over the provider's currently exposed
-rolling feed. Historical completeness remains subject to the Yahoo rolling-feed limitation.
+Yahoo Finance refresh follows the same compare-and-replace model over the provider's currently exposed rolling
+feed. Historical completeness remains subject to the Yahoo rolling-feed limitation.
 
 ## 5. Explicit-range acquisition
 
