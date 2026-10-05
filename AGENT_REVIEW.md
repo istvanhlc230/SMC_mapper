@@ -689,7 +689,7 @@ The Calendar audit identified two consistency issues and both were corrected:
 
 The existing --time semantics, UTC normalization, provider routing, watermark handling, atomic persistence, and persistent schema were not otherwise changed.
 
-Implementation version remains 2.4.3; persistent schema remains V2.
+Implementation version is 2.4.4; persistent schema remains V2.
 
 Validation requirement: run the Calendar CLI/parser matrix and fresh GitHub Actions validation before marking this correction PASS.
 
@@ -709,7 +709,7 @@ The post-audit refresh status inconsistency is corrected.
 - specifications/calendar_specification.md now defines these refresh aggregate rules explicitly.
 - Added concise source comments explaining why verified Yahoo FX-pair unavailability must not be hidden by UNCHANGED.
 
-Implementation version remains 2.4.3; persistent schema remains V2.
+Implementation version is 2.4.4; persistent schema remains V2.
 
 Validation requirement: run the Calendar CLI status matrix and fresh GitHub Actions validation before marking this correction PASS.
 
@@ -745,6 +745,6 @@ Corrections:
 - specifications/calendar_specification.md records the new CLI contract;
 - source comments/docstrings were retained for the new semantic paths.
 
-Implementation version remains 2.4.3; persistent schema remains V2.
+Implementation version is 2.4.4; persistent schema remains V2.
 
 Validation requirement: run the CLI parser matrix covering --date, --time, --date+--time, invalid combinations, and --last-update, then run fresh GitHub Actions validation before marking PASS.
