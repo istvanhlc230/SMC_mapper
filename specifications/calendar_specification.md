@@ -24,6 +24,8 @@ The Update Engine owns provider access, normalization, provider-specific identit
 
 The Monitor does not call ForexFactory or Yahoo directly and does not block its candle-close path on Calendar network activity.
 
+Provider refresh requested by the Monitor is a background/non-blocking operation; the candle-close processing path must not wait for network I/O.
+
 There is one persistent data artifact:
 
     <DATA_ROOT>/calendar.json
@@ -135,16 +137,16 @@ is descriptive only; provider verification is authoritative at runtime.
 
 Public query forms:
 
-    python calendar.py SYMBOL YYYY.MM.DD
-    python calendar.py SYMBOL YYYY.MM.DD-YYYY.MM.DD
-    python calendar.py SYMBOL YYYY.MM.DD@HH:MM
-    python calendar.py SYMBOL YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM
-    python calendar.py SYMBOL --time HH:MM
-    python calendar.py SYMBOL YYYY.MM.DD --time HH:MM
-    python calendar.py SYMBOL current
-    python calendar.py SYMBOL today
-    python calendar.py SYMBOL tomorrow
-    python calendar.py SYMBOL yesterday
+    python calendar.py SYMBOL YYYY.MM.DD [refresh]
+    python calendar.py SYMBOL YYYY.MM.DD-YYYY.MM.DD [refresh]
+    python calendar.py SYMBOL YYYY.MM.DD@HH:MM [refresh]
+    python calendar.py SYMBOL YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM [refresh]
+    python calendar.py SYMBOL --time HH:MM [refresh]
+    python calendar.py SYMBOL YYYY.MM.DD --time HH:MM [refresh]
+    python calendar.py SYMBOL current [refresh]
+    python calendar.py SYMBOL today [refresh]
+    python calendar.py SYMBOL tomorrow [refresh]
+    python calendar.py SYMBOL yesterday [refresh]
     python calendar.py SYMBOL latest
     python calendar.py SYMBOL next
 
@@ -228,8 +230,8 @@ These scopes are resolved at execution time using the same utc_now() clock as
 the Calendar domain. They are dynamically resolved exact-day aliases, not
 persistent state and not provider-native ForexFactory navigation parameters.
 
-They use the normal exact-day acquisition/query interval semantics and are also
-valid for explicit refresh and symbol-scoped delete. They do not mean current,
+They use the normal exact-day query/acquisition interval semantics and are also
+valid with the trailing refresh modifier and for symbol-scoped delete. They do not mean current,
 latest, or next.
 
 ## 4. current semantics
