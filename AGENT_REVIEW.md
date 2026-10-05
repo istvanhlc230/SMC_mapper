@@ -843,3 +843,25 @@ Validation run: `37297403084`
 Commit: `1ad4747b83e9d5acdda6d6ae51884784a1f4ff55`
 Compile: PASS
 Calendar unit/runtime contract tests: PASS
+
+# Calendar 2.4.7 audit — first-use current bootstrap refresh
+
+**Status: IMPLEMENTED — validation pending**
+
+The user-facing execution `python calendar.py USDHUF current` exposed a semantic contradiction:
+the specification described `current` as always-refreshing, but `acquire_current()` still returned
+`BOOTSTRAP_REQUIRED` and made no provider call when the watermark was missing.
+
+Automatic correction:
+- `acquire_current()` now performs provider acquisition on first use instead of terminating at a missing watermark;
+- ForexFactory first-use `current` uses the bounded `(now - 1 day)` to `(now + 1 day)` midnight-aligned window;
+- Yahoo first-use `current` performs its normal news acquisition;
+- first-use successful acquisition persists `last_successful_at=now`;
+- successful Yahoo `NO_MATCH` now persists its watermark because persistence is based on successful acquisition state,
+  not only on non-empty result events;
+- bootstrap-acquired events are persisted but are not returned as incremental `current` events because there is no prior
+  watermark boundary;
+- provider `BOOTSTRAP_REQUIRED` is no longer emitted by the `current` acquisition path;
+- source comments/docstrings were extended for the new bootstrap state and variables.
+
+Fresh CI validation is required before PASS.
