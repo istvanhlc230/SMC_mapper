@@ -873,7 +873,7 @@ Calendar unit/runtime contract tests: PASS
 
 # Calendar 2.4.8 — final audit snapshot
 
-**Status: IMPLEMENTED — validation pending**
+**Status: PASS — validated**
 
 ## Audit findings and corrections
 - Plain `current` is cache-only and performs no provider/network I/O.
@@ -885,5 +885,12 @@ Calendar unit/runtime contract tests: PASS
 - Obsolete `acquire_current`, `run_refresh`, and `BOOTSTRAP_REQUIRED` production paths were removed.
 - The specification and CI contract were corrected for the trailing modifier grammar, overlap-boundary Detail semantics, rescheduled-event output, and Calendar 2.4.8 version alignment.
 
-## Validation target
-Compile, parser grammar, read-only `current`, current refresh delegation, trailing refresh behavior, late-Detail overlap refresh, rescheduled-event refresh output, and the full existing Calendar regression suite must pass before PASS is recorded.
+## Validation evidence
+- Validation branch snapshot: `validation/calendar-2.4.8-final3`
+- Validation commit: `5c43a7ac9b43d220a8badbd81adf5e3c28e6435e`
+- GitHub Actions run: `37300598899`
+- Compile: PASS
+- Calendar unit/runtime contract tests: PASS
+- Job conclusion: SUCCESS
+
+The passing run includes regression coverage for plain read-only `current`, trailing `refresh` parsing, `current refresh` delegation, late ForexFactory Detail refresh across the watermark boundary, explicit refresh rescheduling behavior, and the existing Calendar contract suite.
