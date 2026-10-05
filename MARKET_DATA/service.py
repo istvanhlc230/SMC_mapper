@@ -46,7 +46,7 @@ def apply_candle_retention(candles, retention_limit, protected_start=None, prote
     return sort_candles(protected+sort_candles(unprotected)[-remaining:])
 
 def resolve_acquisition_range(request,timeframe,existing_state):
-    if request.last_candle_only: return None,None
+    if request.last_closed_only: return None,None
     if request.start_time is not None:
         end=request.end_time or datetime.now(timezone.utc)
         return request.start_time,end
