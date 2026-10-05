@@ -2,7 +2,7 @@
 
 Status: Current V2 specification.
 
-Calendar implementation baseline: 2.4.8.
+Calendar implementation baseline: 2.4.9.
 
 Scope:
 - unified economic-calendar and news acquisition;
@@ -343,9 +343,14 @@ Refresh behavior:
 11. preserve existing coverage and watermarks. Refresh does not establish coverage and does not advance
     `last_successful_at`;
 12. validate and atomically persist when refreshed records produce additions or changes;
-13. after refresh, return events whose refreshed timestamp is inside the logical query scope, plus records whose stable ID belonged to an event already visible in the logical scope before refresh (this preserves rescheduled-event results). Records refreshed only because they fall within the provider-side overlap and were outside the logical scope before refresh are merged into the cache but are not returned. Machine-readable output includes the
-    `added`/`changed`/`unchanged` refresh summary. In `--cleartext` mode the normal event output is
-    followed by one refresh summary line.
+13. after refresh, the refresh operation is the authoritative source of the public `events` result. Return events whose
+    refreshed timestamp is inside the logical query scope, plus records whose stable ID belonged to an event already visible
+    in the logical scope before refresh (this preserves rescheduled-event results). Records refreshed only because they fall
+    within the provider-side overlap and were outside the logical scope before refresh are merged into the cache but are not
+    returned. The CLI MUST NOT reapply committed coverage or watermark filters to the refresh result, because refresh is
+    allowed to return first-use acquisitions and rescheduled records that are not representable by a normal cache query.
+    Machine-readable output includes the `added`/`changed`/`unchanged` refresh summary. In `--cleartext` mode the normal
+    event output is followed by one refresh summary line.
 
 A refresh performed by the Monitor MUST run outside the candle-close processing path and MUST NOT block candle
 processing on provider/network I/O. The CLI may remain synchronous because the user explicitly requested the
@@ -620,8 +625,9 @@ Acceptance requires:
 - old relative scopes removed;
 - `latest` returns the most recent past/current visible event from the committed snapshot without provider calls;
 - `next` returns the nearest future visible event from the committed snapshot without provider calls;
-- current is watermark-based;
-- missing watermark is BOOTSTRAP_REQUIRED;
+- current is watermark-based and remains cache-only;
+- a missing current-mode watermark contributes no events to plain `current`;
+- provider acquisition for current-mode refresh is explicit through the trailing `refresh` modifier;
 - EURUSD date, date range, datetime, and datetime range parse correctly;
 - NVDA routes to Yahoo;
 - HUF routes to ForexFactory;
@@ -833,4 +839,30 @@ Validation requirements:
 - verify `current refresh` performs the refresh operation;
 - verify trailing `refresh` parsing for current/relative/date/datetime scopes;
 - verify old standalone `refresh SYMBOL SCOPE` syntax is rejected;
+- run fresh GitHub Actions validation before marking this change PASS.
+
+
+## 2.4.9 CLI refresh result-boundary correction
+
+**Status: IMPLEMENTED — validation pending**
+
+The refresh operation is the authoritative source of the public post-refresh `events` result.
+The CLI no longer reconstructs refresh output from the committed cache after the refresh operation.
+
+This correction is required because a post-refresh cache query can incorrectly hide valid refresh results:
+- first-use refresh events may exist before refresh establishes coverage/watermark state;
+- rescheduled events may have moved outside the original logical interval while remaining visible by stable event ID;
+- `current refresh` has an explicit logical interval even when no prior watermark exists.
+
+The CLI therefore passes `refresh_result["events"]` directly to presentation and machine-readable output.
+Plain `current` remains cache-only.
+
+Implementation version: 2.4.9; persistent schema remains V2.
+
+Validation requirements:
+- compile the Calendar entrypoint and all `CALENDAR/` modules;
+- verify explicit first-use refresh events are returned by the CLI;
+- verify first-use `current refresh` events are returned by the CLI;
+- verify rescheduled refresh events remain in CLI output by stable event ID;
+- verify the refresh result is not filtered by committed coverage/watermark state;
 - run fresh GitHub Actions validation before marking this change PASS.
