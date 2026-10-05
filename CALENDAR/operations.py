@@ -41,7 +41,18 @@ def acquire_explicit(
                     detail_failures.extend(gap_detail_failures)
                     gap_results.append((gap_start, gap_end, gap_detail_failures))
                 if gaps:
-                    domain.merge_events(document, events, clear_suppressed_symbol=symbol)
+                    # Detail failures arrive as provider IDs; the domain layer uses
+                    # stable Calendar IDs, so convert them before merging.
+                    failed_detail_event_ids = {
+                        f"forexfactory:{provider_event_id}"
+                        for provider_event_id in detail_failures
+                    }
+                    domain.merge_events(
+                        document,
+                        events,
+                        clear_suppressed_symbol=symbol,
+                        preserve_detail_failure_ids=failed_detail_event_ids,
+                    )
                     for gap_start, gap_end, gap_detail_failures in gap_results:
                         domain.merge_coverage(document, {
                             "provider": provider, "symbol": symbol,
@@ -161,10 +172,17 @@ def acquire_current(
                     fetch_end,
                     detail_failures=detail_failures,
                 )
+                # current refreshes the provider even when no new event timestamp
+                # is expected. Failed Detail calls must not erase good cached specs.
+                failed_detail_event_ids = {
+                    f"forexfactory:{provider_event_id}"
+                    for provider_event_id in detail_failures
+                }
                 domain.merge_events(
                     document,
                     events,
                     clear_suppressed_symbol=symbol,
+                    preserve_detail_failure_ids=failed_detail_event_ids,
                 )
                 incremental.extend(
                     domain.query_current_events(events, last_successful_at, now)
@@ -372,17 +390,35 @@ def _refresh_event_records(
     document: Dict[str, Any],
     refreshed_events: List[Dict[str, Any]],
     symbol: str,
+    preserve_detail_failure_ids: Optional[set[str]] = None,
 ) -> Dict[str, int]:
-    """Internal helper: _refresh_event_records performs the focused refresh event records step in the Calendar implementation."""
+    """Compare and merge refreshed records without destroying good Detail data."""
+    # by_id is the committed event snapshot keyed by stable provider event ID.
     by_id = {event["event_id"]: event for event in document["events"]}
+    # Failed Detail IDs identify records whose new Detail payload was unavailable.
+    failed_detail_ids = preserve_detail_failure_ids or set()
     changed = 0
     added = 0
     unchanged = 0
 
     for event in refreshed_events:
-        old = by_id.get(event["event_id"])
+        event_id = event["event_id"]
+        old = by_id.get(event_id)
         normalized = event.copy()
 
+        # A failed Detail refresh returns an empty specs list. Keep the prior
+        # non-empty list while accepting all other freshly fetched fields.
+        if (
+            event_id in failed_detail_ids
+            and old is not None
+            and old.get("details", {}).get("specs")
+            and not normalized.get("details", {}).get("specs")
+        ):
+            normalized["details"] = normalized.get("details", {}).copy()
+            normalized["details"]["specs"] = old["details"]["specs"]
+
+        # suppressed_for is symbol-scoped visibility metadata and survives a
+        # refresh except for the symbol whose facts were successfully reacquired.
         inherited = set(old.get("suppressed_for", [])) if old else set()
         incoming = set(normalized.get("suppressed_for", []))
         suppressed = inherited | incoming
@@ -399,8 +435,9 @@ def _refresh_event_records(
         else:
             changed += 1
 
-        by_id[event["event_id"]] = normalized
+        by_id[event_id] = normalized
 
+    # Keep event ordering deterministic for stable persistence and audit diffs.
     document["events"] = sorted(
         by_id.values(),
         key=lambda item: (
@@ -414,10 +451,6 @@ def _refresh_event_records(
         "changed": changed,
         "unchanged": unchanged,
     }
-
-# end=refresh interval end; debug=diagnostic flag.
-# provider=provider identifier; provider_results=provider result list; refresh_window_end=expanded end;
-# refresh_window_start=expanded start.
 
 def refresh_calendar_scope(
     document: Dict[str, Any],
@@ -434,7 +467,10 @@ def refresh_calendar_scope(
         end,
     )
     existing_ids = {event["event_id"] for event in existing_events}
+    # refreshed_for_symbol collects selected provider records that may replace or add cache entries.
     refreshed_for_symbol: List[Dict[str, Any]] = []
+    # refresh_detail_failure_ids records stable IDs whose Detail retrieval failed.
+    refresh_detail_failure_ids: set[str] = set()
     provider_results: List[Dict[str, Any]] = []
     failures: List[Dict[str, str]] = []
 
@@ -459,7 +495,12 @@ def refresh_calendar_scope(
             ]
             detail_failures: List[str] = []
             if provider == "forexfactory":
+                # Preserve the stable event IDs of failed Detail requests for the merge stage.
                 detail_failures = providers._enrich_forexfactory_details(selected)
+                refresh_detail_failure_ids.update(
+                    f"forexfactory:{provider_event_id}"
+                    for provider_event_id in detail_failures
+                )
 
             refreshed_for_symbol.extend(selected)
             provider_results.append({
@@ -514,6 +555,7 @@ def refresh_calendar_scope(
         document,
         refreshed_for_symbol,
         symbol,
+        preserve_detail_failure_ids=refresh_detail_failure_ids,
     )
     if refreshed_for_symbol and (
         summary["added"] or summary["changed"]
