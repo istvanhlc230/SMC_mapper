@@ -85,9 +85,12 @@ def acquire_explicit(
                         min(end, now),
                         in_range,
                     )
+                # A successful Yahoo acquisition is complete even when it returns
+                # matching events. PARTIAL is reserved for genuinely incomplete
+                # provider work, not for a non-empty successful result.
                 provider_results.append({
                     "provider": provider,
-                    "status": "NO_MATCH" if not in_range else "PARTIAL",
+                    "status": "NO_MATCH" if not in_range else "OK",
                     "events_acquired": len(in_range),
                     "historical_coverage": "NOT_GUARANTEED",
                 })
