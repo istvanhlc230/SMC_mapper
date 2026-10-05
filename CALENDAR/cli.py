@@ -48,6 +48,22 @@ def run_query(
             presentation.output_query_result(status, symbol, events, [], cleartext)
             return 0
 
+        if scope == "last-update":
+            updates = domain.query_last_update(document, symbol)
+            status = "OK" if any(item["last_successful_at"] for item in updates) else "NO_LAST_UPDATE"
+            if cleartext:
+                print(f"CALENDAR RESULT | {status} | {symbol}")
+                for item in updates:
+                    value = item["last_successful_at"] or "N/A"
+                    print(f"PROVIDER | {item['provider']} | {value}")
+            else:
+                print(json.dumps({
+                    "status": status,
+                    "symbol": symbol,
+                    "last_updates": updates,
+                }, ensure_ascii=False))
+            return 0
+
         start, end = domain.resolve_scope_interval(scope)
         acquisition = operations.acquire_explicit(
             document,
