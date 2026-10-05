@@ -2,7 +2,7 @@
 
 Status: Current V2 specification.
 
-Calendar implementation baseline: 2.4.6.
+Calendar implementation baseline: 2.4.7.
 
 Scope:
 - unified economic-calendar and news acquisition;
@@ -241,7 +241,7 @@ For every invocation and every applicable provider:
 
     load provider|canonical_symbol watermark
               |
-              +-- missing -> BOOTSTRAP_REQUIRED
+              +-- missing -> bounded bootstrap acquisition
               |
               +-- present -> ALWAYS execute provider acquisition
                               using an overlap-safe provider window
@@ -266,10 +266,15 @@ successful acquisition.
 `current` is therefore intentionally different from a read-only cache query:
 provider acquisition occurs even when no new event timestamp is expected.
 
-The bootstrap exception remains unchanged: when an applicable provider has no
-committed successful watermark for the requested canonical symbol,
-`current` reports `BOOTSTRAP_REQUIRED` for that provider and does not invent a
-synthetic watermark.
+`current` does not stop at the absence of a watermark. When an applicable provider
+has no committed successful watermark, `current` performs a bounded bootstrap
+acquisition immediately. ForexFactory uses a one-day overlap before the current
+UTC time and extends through the next UTC midnight; Yahoo uses its normal current
+news acquisition. No synthetic historical watermark is fabricated. A successful
+bootstrap acquisition commits `last_successful_at=now` through the normal watermark
+mechanism. Bootstrap events are refreshed into the cache but are not returned as
+incremental `current` events because no prior output boundary exists; callers can
+use `latest` or `next` for cache lookup after bootstrap.
 
 A successful refresh of an existing provider event may replace its normalized
 record in `calendar.json` even when the event timestamp is older than the current
@@ -298,7 +303,7 @@ For `current` normal output:
 - exception text, `error`, `reason`, and Detail-failure diagnostic fields are not
   returned;
 - successful/usable provider states remain representable (`OK`, `NO_MATCH`,
-  `PARTIAL`, `SKIPPED_NO_FOREX_PAIR`, `BOOTSTRAP_REQUIRED`);
+  `PARTIAL`, `SKIPPED_NO_FOREX_PAIR`);
 - the aggregate `status` is still computed from the complete internal provider
   result set, so an all-provider failure can still return `UNAVAILABLE` and a
   mixed successful/failed acquisition can still return `PARTIAL`;
@@ -822,4 +827,30 @@ Validation requirements:
 - verify `--debug` retains provider exception diagnostics on stderr;
 - verify aggregate status still reports `UNAVAILABLE` for all-provider failure and
   `PARTIAL` for mixed successful/failed acquisition;
+- run fresh GitHub Actions validation before marking this change PASS.
+
+## 2.4.7 current bootstrap refresh correction
+
+**Status: IMPLEMENTED — validation pending**
+
+`current` now refreshes an applicable provider even when its provider+canonical-symbol
+watermark is missing. Missing watermark means bootstrap acquisition, not `BOOTSTRAP_REQUIRED`
+termination.
+
+For ForexFactory the bootstrap current window is `(now - 1 day)` rounded down to UTC midnight
+through `(now + 1 day)` rounded down to UTC midnight, with Detail enrichment enabled. For Yahoo
+Finance the normal provider news acquisition is executed. Successful provider acquisition updates
+the provider watermark to the current UTC timestamp; a successful zero-result Yahoo acquisition
+therefore also commits its watermark and does not repeatedly bootstrap on the next invocation.
+
+Because bootstrap has no previous incremental cursor, bootstrap-acquired events are persisted but
+not returned in the incremental `events` array. The aggregate provider status remains normal
+(`OK`, `NO_MATCH`, or `PARTIAL`).
+
+Validation requirements:
+- verify `SYMBOL current` performs provider acquisition on first use with no watermark;
+- verify first-use successful acquisition persists a watermark;
+- verify successful Yahoo `NO_MATCH` bootstrap also persists its watermark;
+- verify a second `current` call uses the normal existing-watermark refresh path;
+- verify no `BOOTSTRAP_REQUIRED` provider status is emitted by `current`;
 - run fresh GitHub Actions validation before marking this change PASS.
