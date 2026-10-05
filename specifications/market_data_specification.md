@@ -432,6 +432,15 @@ Required options:
 ```
 
 `--range` accepts the Calendar-compatible scope grammar:
+
+```text
+YYYY.MM.DD
+YYYY.MM.DD-YYYY.MM.DD
+YYYY.MM.DD@HH:MM
+YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM
+current
+```
+
 Open-start range forms are also supported:
 
     --range -YYYY.MM.DD
@@ -443,15 +452,6 @@ the upper boundary. An open-start range therefore requires retained completed hi
 timeframe; a missing `available_end` fails explicitly rather than fabricating a start. The canonical time
 spelling is `HH:MM`; `HH.MM` is accepted only as a compatibility alias in the open-start datetime form
 and is normalized to `HH:MM`.
-
-
-```text
-YYYY.MM.DD
-YYYY.MM.DD-YYYY.MM.DD
-YYYY.MM.DD@HH:MM
-YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM
-current
-```
 
 Examples:
 
