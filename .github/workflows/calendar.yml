@@ -927,7 +927,7 @@ jobs:
                   "debug": True,
               }
               __import__("CALENDAR.cli", fromlist=["run_query"]).parse_request = calendar.parse_request
-              __import__("CALENDAR.cli", fromlist=["run_query"]).run_query = lambda symbol, scope, cleartext=False, debug=False: (
+              __import__("CALENDAR.cli", fromlist=["run_query"]).run_query = lambda symbol, scope, cleartext=False, debug=False, refresh=False: (
                   captured.update({
                       "symbol": symbol,
                       "scope": scope,
