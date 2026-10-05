@@ -343,7 +343,7 @@ Refresh behavior:
 11. preserve existing coverage and watermarks. Refresh does not establish coverage and does not advance
     `last_successful_at`;
 12. validate and atomically persist when refreshed records produce additions or changes;
-13. after refresh, return the normal query result for the same logical scope; overlap-only records refreshed for mutable provider state are not included merely because they were used for identity matching. Machine-readable output includes the
+13. after refresh, return events whose refreshed timestamp is inside the logical query scope, plus records whose stable ID belonged to an event already visible in the logical scope before refresh (this preserves rescheduled-event results). Records refreshed only because they fall within the provider-side overlap and were outside the logical scope before refresh are merged into the cache but are not returned. Machine-readable output includes the
     `added`/`changed`/`unchanged` refresh summary. In `--cleartext` mode the normal event output is
     followed by one refresh summary line.
 
