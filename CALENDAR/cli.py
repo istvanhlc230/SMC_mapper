@@ -494,12 +494,6 @@ def run() -> int:
             debug=debug,
             refresh=request.get("refresh", False),
         )
-        return run_query(
-            request["symbol"],
-            request["scope"],
-            request["cleartext"],
-            debug=debug,
-        )
     except CalendarInputError as exc:
         print(f"Error: {exc}", file=sys.stderr)
         if debug:
