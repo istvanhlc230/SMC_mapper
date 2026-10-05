@@ -594,6 +594,24 @@ def status_from_provider_results(provider_results: List[Dict[str, Any]]) -> str:
         return "PARTIAL"
     return "OK"
 
+def query_last_update(
+    document: Dict[str, Any],
+    symbol: str,
+) -> List[Dict[str, Any]]:
+    """Calendar operation: query_last_update returns committed provider watermark timestamps."""
+    results: List[Dict[str, Any]] = []
+    for provider in resolve_applicable_providers(symbol):
+        key = watermark_key(provider, symbol)
+        watermark = document["watermarks"].get(key)
+        results.append({
+            "provider": provider,
+            "symbol": symbol,
+            "last_successful_at": (
+                watermark.get("last_successful_at") if watermark else None
+            ),
+        })
+    return results
+
 def filter_query_events(
     document: Dict[str, Any],
     events: List[Dict[str, Any]],
