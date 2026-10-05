@@ -140,12 +140,12 @@ jobs:
               def fetch_range(self, symbol, timeframe, start_time, end_time):
                   return [
                       ProviderCandle(
-                          dt("2026-10-04T04:59:00Z"), "UTC",
-                          dt("2026-10-04T04:59:00Z"), "1", "2", "0", "1.5"
+                          dt("2026-01-01T04:59:00Z"), "UTC",
+                          dt("2026-01-01T04:59:00Z"), "1", "2", "0", "1.5"
                       ),
                       ProviderCandle(
-                          dt("2026-10-04T05:00:00Z"), "UTC",
-                          dt("2026-10-04T05:00:00Z"), "1", "2", "0", "1.5"
+                          dt("2026-01-01T05:00:00Z"), "UTC",
+                          dt("2026-01-01T05:00:00Z"), "1", "2", "0", "1.5"
                       ),
                   ]
 
@@ -153,10 +153,10 @@ jobs:
               RangeProvider(),
               "EURUSD",
               "M1",
-              dt("2026-10-04T05:00:00Z"),
-              dt("2026-10-04T05:01:00Z"),
+              dt("2026-01-01T05:00:00Z"),
+              dt("2026-01-01T05:01:00Z"),
           )
-          assert [c.timestamp for c in ranged] == [dt("2026-10-04T05:00:00Z")]
+          assert [c.timestamp for c in ranged] == [dt("2026-01-01T05:00:00Z")]
 
           # H4 aggregation must reject missing hourly source intervals.
           from MARKET_DATA.provider import YahooChartsProvider
