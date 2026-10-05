@@ -617,17 +617,15 @@ def query_next_event(
     ]
 
 def status_from_provider_results(provider_results: List[Dict[str, Any]]) -> str:
-    """Calendar operation: status_from_provider_results performs the focused status from provider results step in the Calendar implementation."""
+    """Aggregate isolated provider results into the public Calendar status."""
     statuses = [result["status"] for result in provider_results]
     if not statuses:
         return "UNAVAILABLE"
     if all(status == "SKIPPED_NO_FOREX_PAIR" for status in statuses):
         return "NO_FOREX_PAIR"
-    if all(status == "BOOTSTRAP_REQUIRED" for status in statuses):
-        return "BOOTSTRAP_REQUIRED"
     if all(status == "ERROR" for status in statuses):
         return "UNAVAILABLE"
-    if any(status in {"ERROR", "BOOTSTRAP_REQUIRED"} for status in statuses):
+    if any(status == "ERROR" for status in statuses):
         return "PARTIAL"
     if any(status == "PARTIAL" for status in statuses):
         return "PARTIAL"
