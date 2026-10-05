@@ -165,8 +165,7 @@ def acquire_current(
             if watermark and watermark.get("last_successful_at")
             else None
         )
-        # A bootstrap provider has no prior output boundary; acquisition still runs immediately.
-        is_bootstrap = last_successful_at is None
+        # A missing watermark has no prior output boundary, but acquisition still runs immediately.
         detail_failures: List[str] = []
         try:
             if provider == "forexfactory":
@@ -232,9 +231,6 @@ def acquire_current(
                 # but the old successful watermark remains so the incomplete Detail window is retried.
                 persist_required = True
 
-            # is_bootstrap is exposed only through the comment-level state rationale; provider status
-            # remains the normal acquisition result because current no longer aborts on bootstrap.
-            _ = is_bootstrap
             provider_results.append({
                 "provider": provider,
                 "status": (
