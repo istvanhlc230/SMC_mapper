@@ -26,12 +26,15 @@ def derive_completion_time(timestamp: datetime, timeframe: str) -> datetime:
     from datetime import timedelta
     return timestamp + timedelta(seconds=TIMEFRAME_SECONDS[timeframe])
 
-def is_candle_complete(provider_candle: ProviderCandle, timeframe: str, now: datetime | None = None) -> bool:
+def is_candle_complete(
+    provider_candle: ProviderCandle,
+    timeframe: str,
+    now: datetime | None = None,
+) -> bool:
+    # The canonical interval boundary is authoritative. Provider hints are
+    # advisory evidence and must never mark a candle complete before its
+    # deterministic timeframe boundary or keep it incomplete after that boundary.
     completion_time = derive_completion_time(provider_candle.timestamp, timeframe)
-    if provider_candle.completion_hint is True:
-        return True
-    if provider_candle.completion_hint is False:
-        return False
     return _utc(now or datetime.now(timezone.utc)) >= completion_time
 
 def build_candle_id(symbol: str, timeframe: str, timestamp: datetime) -> str:
