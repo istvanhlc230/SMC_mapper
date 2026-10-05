@@ -65,11 +65,6 @@ def run_query(
                     symbol,
                     debug=debug,
                 )
-                events = _query_current_cached(
-                    document,
-                    symbol,
-                    domain.utc_now(),
-                )
             else:
                 start, end = domain.resolve_scope_interval(scope)
                 refresh_result = operations.refresh_calendar_scope(
@@ -79,24 +74,12 @@ def run_query(
                     end,
                     debug=debug,
                 )
-                events = domain.filter_events_for_interval(
-                    domain.filter_events_for_symbol(document["events"], symbol),
-                    start,
-                    end,
-                )
-                yahoo_pair_available = not any(
-                    item["provider"] == "yahoo_finance"
-                    and item["status"] == "SKIPPED_NO_FOREX_PAIR"
-                    for item in refresh_result["provider_results"]
-                )
-                events = domain.filter_query_events(
-                    document,
-                    events,
-                    symbol,
-                    start,
-                    end,
-                    yahoo_pair_available=yahoo_pair_available,
-                )
+
+            # Refresh operations already return the canonical post-refresh
+            # event result. Do not reapply cache coverage or watermark filters:
+            # that would hide first-use refresh events and rescheduled events
+            # that intentionally moved outside the original query interval.
+            events = refresh_result["events"]
 
             provider_status = domain.status_from_provider_results(
                 refresh_result["provider_results"]
