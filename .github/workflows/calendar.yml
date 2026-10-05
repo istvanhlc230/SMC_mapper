@@ -1112,6 +1112,33 @@ jobs:
               domain.utc_now = original_now
               storage.save_calendar_atomic = original_save
 
+          # First-use current is also a provider acquisition: missing watermark means
+          # bounded bootstrap refresh, not BOOTSTRAP_REQUIRED termination.
+          original_resolve = domain.resolve_applicable_providers
+          original_fetch_yahoo = providers.fetch_yahoo_news
+          original_save = storage.save_calendar_atomic
+          try:
+              domain.resolve_applicable_providers = lambda _symbol: ["yahoo_finance"]
+              domain.utc_now = lambda: dt("2026-10-05T12:00:00Z")
+              bootstrap_calls = {"value": 0}
+              providers.fetch_yahoo_news = lambda _symbol: (
+                  bootstrap_calls.update(value=bootstrap_calls["value"] + 1) or []
+              )
+              storage.save_calendar_atomic = lambda document: None
+              bootstrap_doc = domain.build_empty_calendar_document()
+              bootstrap_result = operations.acquire_current(bootstrap_doc, "NVDA")
+              assert bootstrap_calls["value"] == 1
+              assert bootstrap_result["provider_results"][0]["status"] == "NO_MATCH"
+              assert bootstrap_result["events"] == []
+              assert bootstrap_doc["watermarks"]["yahoo_finance|NVDA"]["last_successful_at"] == "2026-10-05T12:00:00Z"
+              # A second current call must use the existing watermark path.
+              second_bootstrap_result = operations.acquire_current(bootstrap_doc, "NVDA")
+              assert bootstrap_calls["value"] == 2
+              assert second_bootstrap_result["provider_results"][0]["status"] == "NO_MATCH"
+          finally:
+              domain.resolve_applicable_providers = original_resolve
+              providers.fetch_yahoo_news = original_fetch_yahoo
+              storage.save_calendar_atomic = original_save
           # current must contact a provider on every invocation when a successful watermark exists,
           # even if the provider returns no new events.
           original_resolve = domain.resolve_applicable_providers
