@@ -2,7 +2,7 @@
 
 Status: Current V2 specification.
 
-Calendar implementation baseline: 2.4.10.
+Calendar implementation baseline: 2.4.11.
 
 Scope:
 - unified economic-calendar and news acquisition;
@@ -389,7 +389,8 @@ processing on provider/network I/O. The CLI may remain synchronous because the u
 refresh operation.
 
 Yahoo Finance refresh follows the same compare-and-replace model over the provider's currently exposed rolling
-feed. Historical completeness remains subject to the Yahoo rolling-feed limitation.
+feed. Yahoo news represents already published/current news, not scheduled future events. Historical completeness
+remains subject to the Yahoo rolling-feed limitation.
 
 ## 5. Explicit-range acquisition
 
@@ -412,6 +413,12 @@ For an explicit date/time range:
 Provider failures are isolated.
 
 A successful provider update is preserved when another applicable provider fails.
+
+Yahoo explicit acquisition creates provider/symbol coverage for the portion of the requested interval
+that is at or before acquisition time and actually queried successfully. This coverage means the Calendar
+completed the requested provider operation; it does not guarantee that Yahoo's rolling feed was historically
+complete. The provider result must therefore retain `historical_coverage=NOT_GUARANTEED` while the persisted
+coverage record may be `COMPLETE` for the successfully completed acquisition interval.
 
 ## 6. Yahoo historical limitation
 
@@ -661,6 +668,8 @@ Acceptance requires:
 - a missing current-mode watermark contributes no events to plain `current`;
 - provider acquisition for current-mode refresh is explicit through the trailing `refresh` modifier;
 - `--range -YYYY.MM.DD` and `--range -YYYY.MM.DD@HH:MM` resolve their start from the latest recorded visible Calendar event and preserve the explicit END boundary;
+- `next` considers only scheduled ForexFactory economic events; Yahoo published/current news is not a future-event source;
+- normal public query output never exposes provider `ERROR` records or provider exception text;
 - plain open-start `--range` is cache-only; trailing `refresh` performs provider acquisition over that resolved interval;
 - EURUSD date, date range, datetime, and datetime range parse correctly;
 - NVDA routes to Yahoo;
