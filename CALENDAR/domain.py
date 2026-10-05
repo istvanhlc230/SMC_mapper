@@ -197,6 +197,16 @@ def parse_scope(scope: str) -> str:
     """Calendar operation: parse_scope performs the focused parse scope step in the Calendar implementation."""
     if scope in {"current", "latest", "next", "today", "tomorrow", "yesterday"}:
         return scope
+    if is_open_start_scope(scope):
+        if "@" in scope:
+            endpoint = scope[1:].split("@", 1)
+            if len(endpoint) != 2:
+                raise CalendarInputError(f"Invalid open-start range '{scope}'.")
+            parse_date(endpoint[0])
+            parse_time(endpoint[1].replace(".", ":", 1))
+        else:
+            parse_date(scope[1:])
+        return scope
     resolve_scope_interval(scope)
     return scope
 
