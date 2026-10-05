@@ -149,6 +149,8 @@ Delete forms:
     python calendar.py delete SYMBOL YYYY.MM.DD-YYYY.MM.DD
     python calendar.py delete SYMBOL YYYY.MM.DD@HH:MM
     python calendar.py delete SYMBOL YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM
+    python calendar.py delete SYMBOL --time HH:MM
+    python calendar.py delete SYMBOL YYYY.MM.DD --time HH:MM
 
 Bare delete is the explicit full-cache reset.
 
