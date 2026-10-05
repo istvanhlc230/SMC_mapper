@@ -85,8 +85,13 @@ USAGE
   python calendar.py SYMBOL current
   python calendar.py SYMBOL latest
   python calendar.py SYMBOL next
+  python calendar.py SYMBOL --date YYYY.MM.DD
+  python calendar.py SYMBOL --date YYYY.MM.DD --time HH:MM
   python calendar.py SYMBOL --time HH:MM
   python calendar.py SYMBOL YYYY.MM.DD --time HH:MM
+  python calendar.py SYMBOL --last-update
+  python calendar.py refresh SYMBOL --date YYYY.MM.DD
+  python calendar.py refresh SYMBOL --date YYYY.MM.DD --time HH:MM
   python calendar.py refresh SYMBOL --time HH:MM
   python calendar.py refresh SYMBOL YYYY.MM.DD --time HH:MM
   python calendar.py refresh SYMBOL YYYY.MM.DD
@@ -111,9 +116,13 @@ USAGE
 FLAGS
   --cleartext  Human-readable presentation only; does not change data.
   --debug      Emit diagnostic exception/traceback output to stderr only.
-  --time HH:MM Query/refresh/delete time shorthand. Without an explicit date,
-                HH:MM is resolved on the current UTC calendar day. With a
-                date-only scope, it is normalized to YYYY.MM.DD@HH:MM.
+  --date YYYY.MM.DD Query/refresh/delete date shorthand. With --time, forms
+                the canonical YYYY.MM.DD@HH:MM scope; without --time, selects
+                the exact UTC calendar day.
+  --time HH:MM Query/refresh/delete time shorthand. Without --date, HH:MM is
+                resolved on the current UTC calendar day.
+  --last-update  Read the last successful provider update time for SYMBOL from
+                committed Calendar watermarks. Read-only; no provider call.
 
 SCOPE
   YYYY.MM.DD                         Exact UTC calendar day.
@@ -150,6 +159,12 @@ LATEST
   most recent event deterministically by timestamp, source, and event identity,
   and never calls a provider or changes persistent state.
   No past/current event -> NO_LATEST_EVENT.
+
+LAST UPDATE
+  --last-update is a read-only watermark lookup. It reads last_successful_at
+  for each applicable provider+canonical-symbol watermark from calendar.json,
+  never calls a provider, and never changes persistent state. Missing provider
+  watermark is reported explicitly as NO_LAST_UPDATE.
 
 NEXT
   next is a read-only nearest-future-event lookup.
