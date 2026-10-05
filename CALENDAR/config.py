@@ -17,7 +17,7 @@ HTTP_TIMEOUT = 15.0
 # SCHEMA_VERSION — persistent calendar.json schema version.
 SCHEMA_VERSION = 2
 # __version__ — Calendar CLI implementation version, independent from SCHEMA_VERSION.
-__version__ = "2.4.6"
+__version__ = "2.4.7"
 
 # SUPPORTED_CURRENCIES — standalone currencies accepted by the CLI.
 SUPPORTED_CURRENCIES = {
@@ -106,9 +106,10 @@ SCOPE
   YYYY.MM.DD-YYYY.MM.DD              Inclusive UTC date range.
   YYYY.MM.DD@HH:MM                   Exact UTC minute.
   YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM  Half-open UTC datetime range.
-  current                             Always-refreshing provider update when
-                                      a provider+canonical-symbol watermark
-                                      exists; return remains incremental.
+  current                             Always-refreshing provider update.
+                                      Existing watermark controls incremental
+                                      return filtering; missing watermark
+                                      triggers bounded bootstrap acquisition.
   today                               Exact current UTC calendar day.
   tomorrow                            Exact next UTC calendar day.
   yesterday                           Exact previous UTC calendar day.
@@ -127,13 +128,12 @@ PROVIDERS
 
 CURRENT
   current is not "event at the current minute" and not "next".
-  When an applicable provider has a committed watermark, current always
-  performs provider acquisition on every invocation, normalizes/deduplicates,
-  atomically persists refreshed data, and returns events newer than the
-  watermark through now. The watermark controls output filtering, not
-  whether provider acquisition occurs.
+  Current always performs provider acquisition. When a provider has a committed
+  watermark, it refreshes every invocation and returns events newer than the
+  watermark through now. When the watermark is missing, current performs a
+  bounded bootstrap acquisition immediately, persists the resulting watermark,
+  and does not return bootstrap-acquired events as incremental results.
   This allows late ForexFactory Detail data to refresh existing events.
-  Missing watermark -> BOOTSTRAP_REQUIRED. No timestamp is fabricated.
   Existing non-empty ForexFactory details.specs are preserved when a later
   Detail request fails. Provider failures are not exposed as error records or
   exception text in normal current output; aggregate PARTIAL/UNAVAILABLE status
