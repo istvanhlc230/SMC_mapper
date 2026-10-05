@@ -2,7 +2,7 @@
 
 Status: Current V2 specification.
 
-Calendar implementation baseline: 2.4.9.
+Calendar implementation baseline: 2.4.10.
 
 Scope:
 - unified economic-calendar and news acquisition;
@@ -142,6 +142,8 @@ Public query forms:
     python calendar.py SYMBOL YYYY.MM.DD@HH:MM [refresh]
     python calendar.py SYMBOL YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM [refresh]
     python calendar.py SYMBOL --time HH:MM [refresh]
+    python calendar.py SYMBOL --range -YYYY.MM.DD [refresh]
+    python calendar.py SYMBOL --range -YYYY.MM.DD@HH:MM [refresh]
     python calendar.py SYMBOL YYYY.MM.DD --time HH:MM [refresh]
     python calendar.py SYMBOL current [refresh]
     python calendar.py SYMBOL today [refresh]
@@ -210,6 +212,21 @@ The first form targets the current UTC calendar day. The second form targets the
 
 The shorthand is CLI syntax only; the canonical internal scope remains YYYY.MM.DD@HH:MM. The same shorthand accepts the trailing refresh modifier and symbol-scoped delete operations. Bare delete cannot be combined with --time.
 
+Open-start `--range`:
+    python calendar.py SYMBOL --range -YYYY.MM.DD [refresh]
+    python calendar.py SYMBOL --range -YYYY.MM.DD@HH:MM [refresh]
+
+A leading `-` omits the start boundary. Calendar resolves that start at execution time from the latest
+recorded visible event timestamp for SYMBOL in the committed `calendar.json` snapshot. The explicit END
+remains the upper boundary: a date END resolves to the next UTC midnight, and a datetime END resolves to
+the end of that exact UTC minute. An open-start range requires retained visible event history for SYMBOL;
+otherwise the request fails explicitly. Plain open-start range is cache-only. Adding trailing `refresh`
+forces provider acquisition over the same resolved interval.
+
+The canonical time spelling is `HH:MM`. For compatibility with the approved CLI example, the open-start
+datetime form also accepts `HH.MM` and normalizes it to `HH:MM`.
+
+
 --time is mutually exclusive with an explicit datetime, datetime range, date range, current, latest, or next scope. Invalid HH:MM values fail through the existing Calendar time parser.
 
 ## 3.2 Relative day scopes
@@ -233,6 +250,21 @@ persistent state and not provider-native ForexFactory navigation parameters.
 They use the normal exact-day query/acquisition interval semantics and are also
 valid with the trailing refresh modifier and for symbol-scoped delete. They do not mean current,
 latest, or next.
+
+## 3.3 Open-start --range
+
+`--range -END` is a query/refresh shorthand for a range whose start is resolved from the latest recorded
+visible Calendar event for SYMBOL.
+
+Semantics:
+- `--range -YYYY.MM.DD` ends at the next UTC midnight after the specified date;
+- `--range -YYYY.MM.DD@HH:MM` ends at the end of the specified UTC minute;
+- the start is the timestamp of the latest visible persisted event for SYMBOL;
+- without retained visible event history, the request fails explicitly;
+- plain open-start range is cache-only and does not contact providers;
+- open-start range with trailing `refresh` forces provider acquisition over the resolved interval;
+- the resolved interval is the same logical query interval used for refresh matching and result presentation;
+- the range does not create or alter coverage/watermarks merely by parsing or querying.
 
 ## 4. current semantics
 
@@ -628,6 +660,8 @@ Acceptance requires:
 - current is watermark-based and remains cache-only;
 - a missing current-mode watermark contributes no events to plain `current`;
 - provider acquisition for current-mode refresh is explicit through the trailing `refresh` modifier;
+- `--range -YYYY.MM.DD` and `--range -YYYY.MM.DD@HH:MM` resolve their start from the latest recorded visible Calendar event and preserve the explicit END boundary;
+- plain open-start `--range` is cache-only; trailing `refresh` performs provider acquisition over that resolved interval;
 - EURUSD date, date range, datetime, and datetime range parse correctly;
 - NVDA routes to Yahoo;
 - HUF routes to ForexFactory;
@@ -866,3 +900,13 @@ Validation requirements:
 - verify rescheduled refresh events remain in CLI output by stable event ID;
 - verify the refresh result is not filtered by committed coverage/watermark state;
 - run fresh GitHub Actions validation before marking this change PASS.
+
+
+## 2.4.10 Open-start range correction
+
+**Status: IMPLEMENTED — validation pending**
+
+The Calendar CLI supports open-start `--range -END` queries and refreshes. The start is resolved from the
+latest recorded visible event for SYMBOL in the committed cache. Date and datetime END forms are supported;
+`HH.MM` is accepted as a compatibility alias for the datetime END and normalized to `HH:MM`.
+
