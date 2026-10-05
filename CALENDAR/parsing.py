@@ -174,10 +174,9 @@ class ForexFactoryHTMLCalendarParser(HTMLParser):
                 self.last_date_text = date_text
             else:
                 row["date"] = self.last_date_text
-            if time_text and re.search(r"\d{1,2}:\d{2}\s*(?:am|pm)", time_text, re.IGNORECASE):
-                self.last_time_text = time_text
-            elif not time_text:
-                row["time"] = self.last_time_text
+            # Do not inherit a previous row's clock. A missing clock must
+            # remain missing so the event parser can fail closed instead of
+            # fabricating a timestamp.
             self.rows.append(row)
 
     def handle_data(self, data: str) -> None:
