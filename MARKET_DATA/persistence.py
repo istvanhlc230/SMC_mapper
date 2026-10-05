@@ -1,7 +1,7 @@
 """Canonical Market Data JSON persistence and atomic storage."""
 from __future__ import annotations
 import json, os, tempfile
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal, ROUND_HALF_EVEN
 from pathlib import Path
 from typing import Any
@@ -71,9 +71,7 @@ def _validate_current_snapshot(
     completion = _timestamp(current["completion_time"])
     if stamp is None or completion is None:
         raise ValueError("invalid current snapshot timestamps")
-    expected_completion = stamp + __import__("datetime").timedelta(
-        seconds=TIMEFRAME_SECONDS[timeframe]
-    )
+    expected_completion = stamp + timedelta(seconds=TIMEFRAME_SECONDS[timeframe])
     if completion != expected_completion:
         raise ValueError("current completion_time does not match timeframe boundary")
 
