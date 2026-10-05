@@ -504,6 +504,10 @@ Purpose:
 
 Malformed dates/times, impossible calendar dates, invalid 24-hour times, unexpected seconds/offset syntax, and reversed/empty intervals must fail explicitly.
 
+Historical range inclusion is based on the canonical candle interval start:
+`start_time <= candle.timestamp < end_time`. Completion status is checked separately;
+`completion_time` must not be used as the range boundary itself.
+
 No machine-local timezone is ever assumed.
 
 ### Request-mode rules
@@ -1187,7 +1191,7 @@ Rules:
 - retention does not modify candle contents;
 - retention does not invalidate mapper structural history;
 - when `protected_start` is supplied, candles at or after that boundary are protected for the current requested processing range;
-- when `protected_end` is supplied, only candles at or before that boundary are protected by the requested range;
+- when `protected_end` is supplied, only candles strictly before that exclusive boundary are protected by the requested range;
 - when `protected_start` is supplied and `protected_end` is absent, protection extends through the newest currently available completed candle;
 - protected candles are retained even when this temporarily exceeds `retention_limit`;
 - once the protected range is no longer requested, normal rolling retention may evict old candles;
@@ -1203,8 +1207,8 @@ The function must be pure with respect to its inputs.
 4. if protected candles alone exceed `retention_limit`, retain all protected candles for this invocation;
 5. if no protected range exists, retain at most `retention_limit` completed candles;
 6. restore strict chronological ordering before returning;
-6. never mutate candle contents;
-7. never delete the current snapshot because of completed-candle retention.
+7. never mutate candle contents;
+8. never delete the current snapshot because of completed-candle retention.
 
 Retention therefore bounds ordinary storage while guaranteeing that an explicitly requested historical range survives long enough for the consuming Mapper invocation.
 
