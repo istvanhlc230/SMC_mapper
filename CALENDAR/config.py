@@ -17,7 +17,7 @@ HTTP_TIMEOUT = 15.0
 # SCHEMA_VERSION — persistent calendar.json schema version.
 SCHEMA_VERSION = 2
 # __version__ — Calendar CLI implementation version, independent from SCHEMA_VERSION.
-__version__ = "2.4.7"
+__version__ = "2.4.8"
 
 # SUPPORTED_CURRENCIES — standalone currencies accepted by the CLI.
 SUPPORTED_CURRENCIES = {
@@ -78,13 +78,10 @@ TIME_RE = r"\d{2}:\d{2}"
 HELP_TEXT = f"""Calendar CLI v{__version__} (schema {SCHEMA_VERSION}) - unified economic calendar and news update engine
 
 USAGE
-  python calendar.py SYMBOL <scope>
-  python calendar.py SYMBOL --date YYYY.MM.DD [--time HH:MM]
-  python calendar.py SYMBOL --time HH:MM
+  python calendar.py SYMBOL <scope> [refresh]
+  python calendar.py SYMBOL --date YYYY.MM.DD [--time HH:MM] [refresh]
+  python calendar.py SYMBOL --time HH:MM [refresh]
   python calendar.py SYMBOL --last-update
-  python calendar.py refresh SYMBOL <scope>
-  python calendar.py refresh SYMBOL --date YYYY.MM.DD [--time HH:MM]
-  python calendar.py refresh SYMBOL --time HH:MM
   python calendar.py delete
   python calendar.py delete SYMBOL <scope>
   python calendar.py delete SYMBOL --date YYYY.MM.DD [--time HH:MM]
@@ -106,10 +103,9 @@ SCOPE
   YYYY.MM.DD-YYYY.MM.DD              Inclusive UTC date range.
   YYYY.MM.DD@HH:MM                   Exact UTC minute.
   YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM  Half-open UTC datetime range.
-  current                             Always-refreshing provider update.
-                                      Existing watermark controls incremental
-                                      return filtering; missing watermark
-                                      triggers bounded bootstrap acquisition.
+  current                             Read current incremental events from
+                                      the committed Calendar cache. No provider
+                                      call occurs unless trailing refresh is used.
   today                               Exact current UTC calendar day.
   tomorrow                            Exact next UTC calendar day.
   yesterday                           Exact previous UTC calendar day.
@@ -127,17 +123,27 @@ PROVIDERS
   Yahoo Finance -> complementary news.
 
 CURRENT
-  current is not "event at the current minute" and not "next".
-  Current always performs provider acquisition. When a provider has a committed
-  watermark, it refreshes every invocation and returns events newer than the
-  watermark through now. When the watermark is missing, current performs a
-  bounded bootstrap acquisition immediately, persists the resulting watermark,
-  and does not return bootstrap-acquired events as incremental results.
-  This allows late ForexFactory Detail data to refresh existing events.
-  Existing non-empty ForexFactory details.specs are preserved when a later
-  Detail request fails. Provider failures are not exposed as error records or
-  exception text in normal current output; aggregate PARTIAL/UNAVAILABLE status
-  remains available. --debug emits diagnostics to stderr only.
+  current is a read-only cache query. It never calls ForexFactory or Yahoo Finance
+  and never changes calendar.json, coverage, or watermarks.
+  For each applicable provider, events newer than that provider's committed
+  last_successful_at and no later than current UTC time are returned.
+  A missing watermark means there is no current incremental result for that provider.
+
+REFRESH MODIFIER
+  refresh is a trailing modifier, not an independent command or scope.
+  Example: python calendar.py EURUSD today refresh
+  It forces provider re-acquisition for the timespan represented by the scope,
+  merges changed/new records, and preserves existing coverage and watermarks.
+  current refresh uses the current incremental timespan (earliest applicable
+  watermark through now); when no watermark exists it uses a bounded one-day
+  interval ending at now. Provider-side overlap is then applied so mutable
+  ForexFactory Detail data can be refreshed.
+  The normal query result for the same scope is returned after refresh.
+  JSON output includes a refresh summary with added/changed/unchanged counts.
+  refresh is valid with current, today, tomorrow, yesterday, and explicit
+  date/datetime scopes. latest and next cannot be combined with refresh.
+  CLI refresh may block on provider I/O; the Monitor must invoke the underlying
+  refresh operation asynchronously and outside its candle-close processing path.
 
 RELATIVE DAYS
   today, tomorrow, and yesterday are exact UTC calendar-day scopes.
