@@ -105,53 +105,7 @@ def parse_point(value: str) -> Tuple[datetime, bool]:
     return base.replace(hour=hour, minute=minute), True
 
 def resolve_scope_interval(scope: str) -> Tuple[datetime, datetime]:
-def resolve_open_start_scope(
-    document: Dict[str, Any],
-    symbol: str,
-    scope: str,
-) -> Tuple[datetime, datetime]:
-    """Resolve an open-start range from the latest visible persisted event to END."""
-    if not scope.startswith("-"):
-        raise CalendarInputError(f"Invalid open-start range '{scope}'.")
-
-    endpoint = scope[1:]
-    if not endpoint or endpoint.startswith("-"):
-        raise CalendarInputError(
-            f"Invalid open-start range '{scope}'. Expected -YYYY.MM.DD or -YYYY.MM.DD@HH:MM."
-        )
-
-    normalized_endpoint = (
-        endpoint.replace("@", "@", 1)
-        if "@" not in endpoint
-        else endpoint.split("@", 1)[0] + "@" + endpoint.split("@", 1)[1].replace(".", ":", 1)
-    )
-    if "@" in normalized_endpoint:
-        point, _ = parse_point(normalized_endpoint)
-        end = point + timedelta(minutes=1)
-    else:
-        end = parse_date(normalized_endpoint) + timedelta(days=1)
-
-    visible = filter_events_for_symbol(document["events"], symbol)
-    timestamps = [
-        parse_iso8601(event["timestamp"])
-        for event in visible
-    ]
-    if not timestamps:
-        raise CalendarInputError(
-            f"No recorded Calendar event exists for {symbol}; an open-start range requires retained history."
-        )
-    start = max(timestamps)
-    if end <= start:
-        raise CalendarInputError(
-            f"Open-start range '{scope}' ends at or before the latest recorded event for {symbol}."
-        )
-    return start, end
-
-def is_open_start_scope(scope: str) -> bool:
-    """Identify the CLI-only open-start range form."""
-    return scope.startswith("-")
-
-    """Calendar operation: resolve_scope_interval performs the focused resolve scope interval step in the Calendar implementation."""
+    """Calendar operation: resolve_scope_interval performs historical scope resolution."""
     # Relative day scopes use Calendar's canonical UTC clock rather than the
     # host-local date, so midnight boundaries remain deterministic.
     if scope in {"today", "tomorrow", "yesterday"}:
@@ -193,19 +147,69 @@ def is_open_start_scope(scope: str) -> bool:
     start = parse_date(scope)
     return start, start + timedelta(days=1)
 
+
+def is_open_start_scope(scope: str) -> bool:
+    """Identify the CLI-only open-start range form."""
+    return scope.startswith("-")
+
+
+def resolve_open_start_scope(
+    document: Dict[str, Any],
+    symbol: str,
+    scope: str,
+) -> Tuple[datetime, datetime]:
+    """Resolve an open-start range from the latest visible persisted event to END."""
+    if not is_open_start_scope(scope):
+        raise CalendarInputError(f"Invalid open-start range '{scope}'.")
+
+    endpoint = scope[1:]
+    if not endpoint or endpoint.startswith("-"):
+        raise CalendarInputError(
+            f"Invalid open-start range '{scope}'. Expected -YYYY.MM.DD or -YYYY.MM.DD@HH:MM."
+        )
+
+    if "@" in endpoint:
+        date_part, time_part = endpoint.split("@", 1)
+        normalized_time = time_part.replace(".", ":", 1)
+        point, _ = parse_point(f"{date_part}@{normalized_time}")
+        end = point + timedelta(minutes=1)
+    else:
+        end = parse_date(endpoint) + timedelta(days=1)
+
+    visible = filter_events_for_symbol(document["events"], symbol)
+    timestamps = [
+        parse_iso8601(event["timestamp"])
+        for event in visible
+    ]
+    if not timestamps:
+        raise CalendarInputError(
+            f"No recorded Calendar event exists for {symbol}; an open-start range requires retained history."
+        )
+
+    start = max(timestamps)
+    if end <= start:
+        raise CalendarInputError(
+            f"Open-start range '{scope}' ends at or before the latest recorded event for {symbol}."
+        )
+    return start, end
+
+
 def parse_scope(scope: str) -> str:
-    """Calendar operation: parse_scope performs the focused parse scope step in the Calendar implementation."""
+    """Calendar operation: parse_scope validates the canonical and open-start scope forms."""
     if scope in {"current", "latest", "next", "today", "tomorrow", "yesterday"}:
         return scope
     if is_open_start_scope(scope):
-        if "@" in scope:
-            endpoint = scope[1:].split("@", 1)
-            if len(endpoint) != 2:
-                raise CalendarInputError(f"Invalid open-start range '{scope}'.")
-            parse_date(endpoint[0])
-            parse_time(endpoint[1].replace(".", ":", 1))
+        endpoint = scope[1:]
+        if not endpoint or endpoint.startswith("-"):
+            raise CalendarInputError(
+                f"Invalid open-start range '{scope}'. Expected -YYYY.MM.DD or -YYYY.MM.DD@HH:MM."
+            )
+        if "@" in endpoint:
+            date_part, time_part = endpoint.split("@", 1)
+            parse_date(date_part)
+            parse_time(time_part.replace(".", ":", 1))
         else:
-            parse_date(scope[1:])
+            parse_date(endpoint)
         return scope
     resolve_scope_interval(scope)
     return scope
