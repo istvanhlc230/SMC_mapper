@@ -821,7 +821,7 @@ fresh workflow run for this change completes successfully.
 
 # Calendar 2.4.6 audit correction — strict rendered ForexFactory event time
 
-**Status: IMPLEMENTED — validation pending**
+**Status: PASS — validated**
 
 The first fresh CI run after the 2.4.6 changes exposed an existing parser/test inconsistency:
 `parse_forexfactory_html_events()` silently discarded a titled rendered event whose provider time
@@ -837,4 +837,9 @@ Automatic correction:
 The existing Calendar specification already states that invalid rendered event clocks fail closed, so
 no semantic specification change beyond the 2.4.6 current-refresh contract was required for this parser fix.
 
-Fresh GitHub Actions validation is required before PASS.
+Fresh GitHub Actions validation completed successfully.
+
+Validation run: `37297403084`
+Commit: `1ad4747b83e9d5acdda6d6ae51884784a1f4ff55`
+Compile: PASS
+Calendar unit/runtime contract tests: PASS
