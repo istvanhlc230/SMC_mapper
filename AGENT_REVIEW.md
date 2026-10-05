@@ -870,3 +870,20 @@ Validation run: `37297837871`
 Commit: `95ab66a8f5ddd4a9b7cb4ad625bff801d670bf9e` 
 Compile: PASS
 Calendar unit/runtime contract tests: PASS
+
+# Calendar 2.4.8 — read-only current and trailing refresh modifier
+
+**Status: IMPLEMENTED — validation pending**
+
+## Change
+- `current` is now a cache-only incremental query and performs no provider/network I/O.
+- The old standalone `refresh SYMBOL SCOPE` CLI command is removed.
+- `refresh` is now a trailing query modifier: `SYMBOL SCOPE refresh`.
+- The modifier applies to `current`, relative-day scopes, explicit date/datetime scopes, and their ranges.
+- `latest` and `next` remain read-only and reject `refresh`.
+- `current refresh` refreshes the current incremental timespan without advancing provider watermarks.
+- Monitor refresh must run outside candle-close processing and must not block candle processing on network I/O.
+- The obsolete `acquire_current` / `run_refresh` public surfaces were removed.
+
+## Validation requirement
+Fresh GitHub Actions validation must confirm compile, parser grammar, read-only `current`, current refresh delegation, and trailing refresh behavior before PASS.
