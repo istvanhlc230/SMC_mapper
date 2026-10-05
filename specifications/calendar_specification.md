@@ -208,7 +208,7 @@ The public Calendar CLI also accepts a time-only shorthand:
 
 The first form targets the current UTC calendar day. The second form targets the supplied date. Both forms are converted to the canonical datetime scope before parse_scope()/resolve_scope_interval() processing.
 
-The shorthand is CLI syntax only; the canonical internal scope remains YYYY.MM.DD@HH:MM. The same shorthand is accepted for explicit refresh SYMBOL and symbol-scoped delete SYMBOL operations. Bare delete cannot be combined with --time.
+The shorthand is CLI syntax only; the canonical internal scope remains YYYY.MM.DD@HH:MM. The same shorthand accepts the trailing refresh modifier and symbol-scoped delete operations. Bare delete cannot be combined with --time.
 
 --time is mutually exclusive with an explicit datetime, datetime range, date range, current, latest, or next scope. Invalid HH:MM values fail through the existing Calendar time parser.
 
@@ -709,23 +709,28 @@ Implementation version: 2.4.3; persistent schema remains 2.
 
 Validation requirement: run the Calendar CLI parser matrix and fresh GitHub Actions validation before marking this change PASS.
 
-## 10.5 Refresh aggregate provider status
+## 10.5 Refresh provider/status contract
 
-Refresh uses the same provider-result aggregation semantics as normal acquisition before applying the refresh-specific REFRESHED / UNCHANGED result.
+The trailing `refresh` modifier uses the same isolated-provider acquisition semantics
+as normal Calendar acquisition.
 
-The refresh result status must follow these rules:
+The refresh result exposes:
+- provider-level acquisition results in the `providers` collection;
+- `events` containing the normal query result for the requested scope after the
+  refresh merge;
+- `refresh.added`, `refresh.changed`, and `refresh.unchanged` counts.
 
-- all applicable providers ERROR -> UNAVAILABLE;
-- all applicable providers SKIPPED_NO_FOREX_PAIR -> NO_FOREX_PAIR;
-- any ERROR together with a successful provider -> PARTIAL;
-- OK together with SKIPPED_NO_FOREX_PAIR -> PARTIAL;
-- any provider PARTIAL -> PARTIAL;
-- all providers NO_MATCH, or successful providers with no record changes -> UNCHANGED;
-- successful provider acquisition with one or more added/changed records -> REFRESHED;
-- SKIPPED_NO_FOREX_PAIR must never be collapsed into UNCHANGED, even when no records changed;
-- BOOTSTRAP_REQUIRED remains observable rather than being converted into UNCHANGED.
+Provider failure semantics remain fail-closed:
+- all applicable providers fail -> aggregate status `UNAVAILABLE`;
+- a mixture of successful and failed providers -> aggregate status `PARTIAL`;
+- `SKIPPED_NO_FOREX_PAIR` remains distinguishable and is never treated as a
+  successful empty acquisition;
+- Detail-partial ForexFactory acquisition remains `PARTIAL`;
+- provider diagnostics remain subject to the normal `--debug` stderr contract.
 
-This aggregation rule applies to both machine-readable and --cleartext refresh output.
+The modifier does not introduce a separate `REFRESHED`, `UNCHANGED`, or
+`BOOTSTRAP_REQUIRED` query status. Change detection is represented by the
+refresh summary.
 
 ## 2.4.4 Calendar date flag and last-update lookup
 
