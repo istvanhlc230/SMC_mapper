@@ -51,8 +51,14 @@ def resolve_acquisition_range(request,timeframe,existing_state):
         end=request.end_time or datetime.now(timezone.utc)
         return request.start_time,end
     if request.end_time is not None:
-        if not existing_state or not existing_state.get("available_start"): raise ValueError(f"--endtime requires existing retained history for {timeframe}")
-        return datetime.fromisoformat(existing_state["available_start"].replace("Z","+00:00")),request.end_time
+        if not existing_state or not existing_state.get("available_end"):
+            raise ValueError(f"open-start --range requires existing retained history for {timeframe}")
+        # Open-start ranges begin at the latest persisted completed candle for
+        # this timeframe; merge logic reconciles the inclusive boundary by candle ID.
+        start = datetime.fromisoformat(
+            existing_state["available_end"].replace("Z", "+00:00")
+        )
+        return start, request.end_time
     if existing_state and existing_state.get("available_end"):
         start=datetime.fromisoformat(existing_state["available_end"].replace("Z","+00:00"))
         return start,datetime.now(timezone.utc)
