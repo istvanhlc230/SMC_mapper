@@ -106,6 +106,14 @@ def parse_point(value: str) -> Tuple[datetime, bool]:
 
 def resolve_scope_interval(scope: str) -> Tuple[datetime, datetime]:
     """Calendar operation: resolve_scope_interval performs the focused resolve scope interval step in the Calendar implementation."""
+    # Relative day scopes use Calendar's canonical UTC clock rather than the
+    # host-local date, so midnight boundaries remain deterministic.
+    if scope in {"today", "tomorrow", "yesterday"}:
+        today = utc_now().replace(hour=0, minute=0, second=0, microsecond=0)
+        offsets = {"yesterday": -1, "today": 0, "tomorrow": 1}
+        start = today + timedelta(days=offsets[scope])
+        return start, start + timedelta(days=1)
+
     if scope == "current":
         raise CalendarInputError("'current' is not a historical scope.")
 
@@ -141,7 +149,7 @@ def resolve_scope_interval(scope: str) -> Tuple[datetime, datetime]:
 
 def parse_scope(scope: str) -> str:
     """Calendar operation: parse_scope performs the focused parse scope step in the Calendar implementation."""
-    if scope in {"current", "latest", "next"}:
+    if scope in {"current", "latest", "next", "today", "tomorrow", "yesterday"}:
         return scope
     resolve_scope_interval(scope)
     return scope
