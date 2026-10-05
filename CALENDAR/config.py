@@ -85,13 +85,10 @@ USAGE
   python calendar.py SYMBOL current
   python calendar.py SYMBOL latest
   python calendar.py SYMBOL next
-  python calendar.py SYMBOL --date YYYY.MM.DD
-  python calendar.py SYMBOL --date YYYY.MM.DD --time HH:MM
+  python calendar.py SYMBOL --date YYYY.MM.DD [--time HH:MM]
   python calendar.py SYMBOL --time HH:MM
-  python calendar.py SYMBOL YYYY.MM.DD --time HH:MM
   python calendar.py SYMBOL --last-update
-  python calendar.py refresh SYMBOL --date YYYY.MM.DD
-  python calendar.py refresh SYMBOL --date YYYY.MM.DD --time HH:MM
+  python calendar.py refresh SYMBOL --date YYYY.MM.DD [--time HH:MM]
   python calendar.py refresh SYMBOL --time HH:MM
   python calendar.py refresh SYMBOL YYYY.MM.DD --time HH:MM
   python calendar.py refresh SYMBOL YYYY.MM.DD
