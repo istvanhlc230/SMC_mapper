@@ -63,6 +63,10 @@ def resolve_acquisition_range(request,timeframe,existing_state):
         start = datetime.fromisoformat(
             existing_state["available_end"].replace("Z", "+00:00")
         )
+        if request.end_time <= start:
+            raise ValueError(
+                f"open-start --range end must be after the latest retained candle for {timeframe}"
+            )
         return start, request.end_time
     if existing_state and existing_state.get("available_end"):
         start=datetime.fromisoformat(existing_state["available_end"].replace("Z","+00:00"))
