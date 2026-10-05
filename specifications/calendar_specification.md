@@ -703,4 +703,4 @@ If no applicable provider has a successful watermark, the result status is NO_LA
 
 The help text must expose --date, --time, and --last-update once in the FLAGS section and keep usage examples concise without duplicating equivalent --time forms.
 
-Implementation version remains 2.4.3; persistent schema remains V2.
+Implementation version is 2.4.4; persistent schema remains V2.
