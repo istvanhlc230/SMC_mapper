@@ -31,7 +31,7 @@ def build_argument_parser():
             "YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM, or current."
         ),
     )
-    parser.add_argument("--lastcandle", action="store_true")
+    parser.add_argument("--lastclosed", action="store_true")
     parser.add_argument("--debug", action="store_true")
     return parser
 
@@ -136,8 +136,8 @@ def validate_request(request):
         raise ValueError("at least one timeframe is required")
     if len(set(request.timeframes)) != len(request.timeframes):
         raise ValueError("duplicate timeframe")
-    if request.current and request.last_candle_only:
-        raise ValueError("--range current is mutually exclusive with --lastcandle")
+    if request.current and request.last_closed_only:
+        raise ValueError("--range current is mutually exclusive with --lastclosed")
     if request.current and request.start_time is not None:
         raise ValueError("current cannot be combined with a historical range")
 
@@ -164,7 +164,7 @@ def parse_market_data_request(argv: Sequence[str] | None = None):
         [normalize_timeframe(x) for x in args.timeframes],
         start_time,
         end_time,
-        args.lastcandle,
+        args.lastclosed,
         current,
         args.debug,
     )
