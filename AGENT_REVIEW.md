@@ -886,9 +886,8 @@ Calendar unit/runtime contract tests: PASS
 - The specification and CI contract were corrected for the trailing modifier grammar, overlap-boundary Detail semantics, rescheduled-event output, and Calendar 2.4.8 version alignment.
 
 ## Validation evidence
-- Validation branch snapshot: `validation/calendar-2.4.8-final3`
-- Validation commit: `5c43a7ac9b43d220a8badbd81adf5e3c28e6435e`
-- GitHub Actions run: `37300598899`
+- Validated implementation snapshot: `0ca92512f359f03d1841131d27f5c6ebba5853c1`
+- GitHub Actions run: `37300650748`
 - Compile: PASS
 - Calendar unit/runtime contract tests: PASS
 - Job conclusion: SUCCESS
