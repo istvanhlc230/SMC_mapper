@@ -678,7 +678,7 @@ Acceptance requires:
 - Yahoo events are news;
 - Yahoo FX news is persisted only after exact provider-side Forex instrument verification;
 - ForexFactory events are economic;
-- provider failures remain observable;
+- provider failures remain observable through aggregate PARTIAL/UNAVAILABLE status and debug diagnostics, while normal stdout omits provider ERROR records and exception text;
 - bare `python calendar.py delete` can reset an incompatible legacy schema cache;
 - the CLI help exposes the Calendar software version and persistent schema version;
 - the source implementation documents function responsibilities and variable roles with comments;
