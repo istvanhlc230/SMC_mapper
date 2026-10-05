@@ -87,10 +87,10 @@ def format_cleartext_details(details: Dict[str, Any]) -> List[str]:
         lines.append(f"  {title:<9}: {content or 'N/A'}")
     return lines
 
-def _public_provider_results(
+def public_provider_results(
     provider_results: List[Dict[str, Any]],
 ) -> List[Dict[str, Any]]:
-    """Remove provider exception records from normal public output."""
+    """Return provider result metadata safe for normal public output."""
     return [
         {
             key: value
@@ -110,7 +110,7 @@ def output_query_result(
     cleartext: bool = False,
 ) -> None:
     """Calendar operation: output_query_result performs the focused output query result step in the Calendar implementation."""
-    public_provider_results = _public_provider_results(provider_results)
+    public_provider_results = public_provider_results(provider_results)
 
     if cleartext:
         print(f"CALENDAR RESULT | {status} | {symbol}")
