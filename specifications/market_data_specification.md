@@ -165,8 +165,8 @@ class MarketDataRequest:
     timeframes: list[str]
     start_time: datetime | None
     end_time: datetime | None
-    last_candle_only: bool
-    live: bool
+    last_closed_only: bool
+    current: bool
     debug: bool
 ```
 
@@ -515,6 +515,7 @@ No machine-local timezone is ever assumed.
 - Historical `--range` scopes, including open-start `-END` ranges, are mutually exclusive with `current` and `lastclosed` modes.
 - With no explicit mode, normal incremental completed-candle acquisition is used.
 - `lastclosed` must use the provider's latest-completed acquisition path and completion validation.
+- The implementation request fields are `last_closed_only` and `current`; these names are authoritative for service orchestration.
 - A candle is eligible for `lastclosed` only when its canonical `completion_time` has passed.
 - `lastclosed` must never promote an in-progress candle merely because it is the provider's newest record.
 - `current` must use the provider current-candle path and must persist the candle only as the separate `current` snapshot while it remains incomplete.
