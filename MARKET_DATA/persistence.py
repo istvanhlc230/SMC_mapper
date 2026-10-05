@@ -35,7 +35,11 @@ def _validate_persisted_decimal(value: Any, field_name: str) -> None:
     parsed = Decimal(value)
     if not parsed.is_finite():
         raise ValueError(f"persisted {field_name} must be finite")
-    if parsed < 0:
+
+
+def _validate_persisted_non_negative_decimal(value: Any, field_name: str) -> None:
+    _validate_persisted_decimal(value, field_name)
+    if Decimal(value) < 0:
         raise ValueError(f"persisted {field_name} must be non-negative")
 
 def _validate_candle_record(candle):
@@ -51,11 +55,11 @@ def _validate_candle_record(candle):
     if not isinstance(volume,dict): raise ValueError("invalid persisted volume")
     for branch in ("total","ohlc","orderflow"):
         if branch not in volume: continue
-        if branch=="total": _validate_persisted_decimal(volume[branch],"volume.total")
+        if branch=="total": _validate_persisted_non_negative_decimal(volume[branch],"volume.total")
         else:
             if not isinstance(volume[branch],dict) or set(volume[branch]) != {"buy","sell"}: raise ValueError(f"invalid volume.{branch}")
-            _validate_persisted_decimal(volume[branch]["buy"],f"volume.{branch}.buy")
-            _validate_persisted_decimal(volume[branch]["sell"],f"volume.{branch}.sell")
+            _validate_persisted_non_negative_decimal(volume[branch]["buy"],f"volume.{branch}.buy")
+            _validate_persisted_non_negative_decimal(volume[branch]["sell"],f"volume.{branch}.sell")
 
 def _validate_current_snapshot(
     current: dict[str, Any],
