@@ -105,6 +105,52 @@ def parse_point(value: str) -> Tuple[datetime, bool]:
     return base.replace(hour=hour, minute=minute), True
 
 def resolve_scope_interval(scope: str) -> Tuple[datetime, datetime]:
+def resolve_open_start_scope(
+    document: Dict[str, Any],
+    symbol: str,
+    scope: str,
+) -> Tuple[datetime, datetime]:
+    """Resolve an open-start range from the latest visible persisted event to END."""
+    if not scope.startswith("-"):
+        raise CalendarInputError(f"Invalid open-start range '{scope}'.")
+
+    endpoint = scope[1:]
+    if not endpoint or endpoint.startswith("-"):
+        raise CalendarInputError(
+            f"Invalid open-start range '{scope}'. Expected -YYYY.MM.DD or -YYYY.MM.DD@HH:MM."
+        )
+
+    normalized_endpoint = (
+        endpoint.replace("@", "@", 1)
+        if "@" not in endpoint
+        else endpoint.split("@", 1)[0] + "@" + endpoint.split("@", 1)[1].replace(".", ":", 1)
+    )
+    if "@" in normalized_endpoint:
+        point, _ = parse_point(normalized_endpoint)
+        end = point + timedelta(minutes=1)
+    else:
+        end = parse_date(normalized_endpoint) + timedelta(days=1)
+
+    visible = filter_events_for_symbol(document["events"], symbol)
+    timestamps = [
+        parse_iso8601(event["timestamp"])
+        for event in visible
+    ]
+    if not timestamps:
+        raise CalendarInputError(
+            f"No recorded Calendar event exists for {symbol}; an open-start range requires retained history."
+        )
+    start = max(timestamps)
+    if end <= start:
+        raise CalendarInputError(
+            f"Open-start range '{scope}' ends at or before the latest recorded event for {symbol}."
+        )
+    return start, end
+
+def is_open_start_scope(scope: str) -> bool:
+    """Identify the CLI-only open-start range form."""
+    return scope.startswith("-")
+
     """Calendar operation: resolve_scope_interval performs the focused resolve scope interval step in the Calendar implementation."""
     # Relative day scopes use Calendar's canonical UTC clock rather than the
     # host-local date, so midnight boundaries remain deterministic.
