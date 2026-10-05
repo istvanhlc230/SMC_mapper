@@ -2,7 +2,7 @@
 
 Status: Current V2 specification.
 
-Calendar implementation baseline: 2.4.3.
+Calendar implementation baseline: 2.4.5.
 
 Scope:
 - unified economic-calendar and news acquisition;
@@ -139,6 +139,9 @@ Public query forms:
     python calendar.py SYMBOL --time HH:MM
     python calendar.py SYMBOL YYYY.MM.DD --time HH:MM
     python calendar.py SYMBOL current
+    python calendar.py SYMBOL today
+    python calendar.py SYMBOL tomorrow
+    python calendar.py SYMBOL yesterday
     python calendar.py SYMBOL latest
     python calendar.py SYMBOL next
 
@@ -149,6 +152,9 @@ Delete forms:
     python calendar.py delete SYMBOL YYYY.MM.DD-YYYY.MM.DD
     python calendar.py delete SYMBOL YYYY.MM.DD@HH:MM
     python calendar.py delete SYMBOL YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM
+    python calendar.py delete SYMBOL today
+    python calendar.py delete SYMBOL tomorrow
+    python calendar.py delete SYMBOL yesterday
     python calendar.py delete SYMBOL --time HH:MM
     python calendar.py delete SYMBOL YYYY.MM.DD --time HH:MM
 
@@ -174,7 +180,6 @@ provider+canonical-symbol watermark, that watermark is removed. No synthetic
 watermark is created.
 
 Removed from the public grammar:
-- today
 - next_day
 - week
 - next_week
@@ -201,6 +206,28 @@ The first form targets the current UTC calendar day. The second form targets the
 The shorthand is CLI syntax only; the canonical internal scope remains YYYY.MM.DD@HH:MM. The same shorthand is accepted for explicit refresh SYMBOL and symbol-scoped delete SYMBOL operations. Bare delete cannot be combined with --time.
 
 --time is mutually exclusive with an explicit datetime, datetime range, date range, current, latest, or next scope. Invalid HH:MM values fail through the existing Calendar time parser.
+
+## 3.2 Relative day scopes
+
+The public CLI accepts three relative UTC calendar-day scopes:
+
+    python calendar.py SYMBOL today
+    python calendar.py SYMBOL tomorrow
+    python calendar.py SYMBOL yesterday
+
+Semantics:
+
+- today = the current UTC calendar day, from 00:00:00 to the next UTC midnight;
+- tomorrow = the next UTC calendar day;
+- yesterday = the previous UTC calendar day.
+
+These scopes are resolved at execution time using the same utc_now() clock as
+the Calendar domain. They are dynamically resolved exact-day aliases, not
+persistent state and not provider-native ForexFactory navigation parameters.
+
+They use the normal exact-day acquisition/query interval semantics and are also
+valid for explicit refresh and symbol-scoped delete. They do not mean current,
+latest, or next.
 
 ## 4. current semantics
 
