@@ -1351,7 +1351,7 @@ jobs:
               parsed_open_query = json.loads(out.getvalue())
               assert parsed_open_query["status"] == "OK"
               assert [event["event_id"] for event in parsed_open_query["events"]] == [
-                  "forexfactory:latest-usd"
+                  "forexfactory:open-range-latest"
               ]
           finally:
               operations.acquire_explicit = original_acquire_explicit
