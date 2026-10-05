@@ -334,15 +334,16 @@ Refresh behavior:
    `last_successful_at` through current UTC time. If no applicable watermark exists, use a bounded one-day
    interval ending at now;
 6. select fresh events whose new timestamp falls inside the logical interval or whose stable provider event ID
-   matches an existing event visible for the symbol in that interval;
+   matches an existing event visible for the symbol in the provider-side envelope. The envelope is required so
+   late mutable Detail data for an event just before the incremental boundary can still be refreshed by identity;
 7. compare fresh records with existing records by stable `event_id`;
-8. replace changed records and add newly discovered records, including late ForexFactory Detail changes;
+8. replace changed records and add newly discovered records, including late ForexFactory Detail changes. Overlap-boundary records may be merged into the cache even when they are outside the logical query interval;
 9. provider identity remains authoritative even if a refreshed event changes its timestamp;
 10. an existing event absent from the fresh provider response is not deleted;
 11. preserve existing coverage and watermarks. Refresh does not establish coverage and does not advance
     `last_successful_at`;
 12. validate and atomically persist when refreshed records produce additions or changes;
-13. after refresh, return the normal query result for the same scope. Machine-readable output includes the
+13. after refresh, return the normal query result for the same logical scope; overlap-only records refreshed for mutable provider state are not included merely because they were used for identity matching. Machine-readable output includes the
     `added`/`changed`/`unchanged` refresh summary. In `--cleartext` mode the normal event output is
     followed by one refresh summary line.
 
