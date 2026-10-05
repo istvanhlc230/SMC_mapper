@@ -692,3 +692,23 @@ The existing --time semantics, UTC normalization, provider routing, watermark ha
 Implementation version remains 2.4.3; persistent schema remains V2.
 
 Validation requirement: run the Calendar CLI/parser matrix and fresh GitHub Actions validation before marking this correction PASS.
+
+## Calendar 2.4.3 refresh aggregate-status correction
+
+**Status: IMPLEMENTED — validation pending**
+
+The post-audit refresh status inconsistency is corrected.
+
+- CALENDAR/cli.py no longer derives refresh status only from failures and changed/added counts.
+- Refresh now uses the canonical domain provider-status aggregation before applying the refresh-specific REFRESHED/UNCHANGED distinction.
+- All SKIPPED_NO_FOREX_PAIR results now surface as NO_FOREX_PAIR.
+- A successful provider combined with SKIPPED_NO_FOREX_PAIR surfaces as PARTIAL.
+- Provider ERROR combinations remain UNAVAILABLE when all providers fail and PARTIAL when at least one provider succeeds.
+- BOOTSTRAP_REQUIRED remains observable instead of being collapsed into UNCHANGED.
+- Successful refreshes with changes remain REFRESHED; successful refreshes without changes remain UNCHANGED.
+- specifications/calendar_specification.md now defines these refresh aggregate rules explicitly.
+- Added concise source comments explaining why verified Yahoo FX-pair unavailability must not be hidden by UNCHANGED.
+
+Implementation version remains 2.4.3; persistent schema remains V2.
+
+Validation requirement: run the Calendar CLI status matrix and fresh GitHub Actions validation before marking this correction PASS.
