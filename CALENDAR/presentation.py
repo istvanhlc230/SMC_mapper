@@ -87,6 +87,21 @@ def format_cleartext_details(details: Dict[str, Any]) -> List[str]:
         lines.append(f"  {title:<9}: {content or 'N/A'}")
     return lines
 
+def _public_provider_results(
+    provider_results: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    """Remove provider exception records from normal public output."""
+    return [
+        {
+            key: value
+            for key, value in provider.items()
+            if key != "error"
+        }
+        for provider in provider_results
+        if provider.get("status") != "ERROR"
+    ]
+
+
 def output_query_result(
     status: str,
     symbol: str,
@@ -95,9 +110,11 @@ def output_query_result(
     cleartext: bool = False,
 ) -> None:
     """Calendar operation: output_query_result performs the focused output query result step in the Calendar implementation."""
+    public_provider_results = _public_provider_results(provider_results)
+
     if cleartext:
         print(f"CALENDAR RESULT | {status} | {symbol}")
-        for provider in provider_results:
+        for provider in public_provider_results:
             print(f"PROVIDER | {provider['provider']} | {provider['status']}")
         if not events:
             print("No matching events.")
@@ -120,5 +137,5 @@ def output_query_result(
         "status": status,
         "symbol": symbol,
         "events": events,
-        "providers": provider_results,
+        "providers": public_provider_results,
     }, ensure_ascii=False))
