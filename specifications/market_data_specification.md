@@ -424,13 +424,22 @@ Required options:
 ```text
 --symbol SYMBOL
 --timeframes TF [TF ...]
---starttime ISO8601
---endtime ISO8601
+--startdate YYYY.MM.DD
+--starttime HH:MM
+--enddate YYYY.MM.DD
+--endtime HH:MM
 --lastcandle
 --live
 --debug
 --help
 ```
+
+Market Data uses the same canonical date/time input convention as Calendar:
+
+- date: `YYYY.MM.DD`;
+- time: `HH:MM`, 24-hour, no seconds;
+- date and time are supplied independently;
+- ISO-8601 input is not the CLI input format.
 
 No price-basis option is allowed.
 
@@ -450,19 +459,53 @@ def parse_market_data_request(argv: Sequence[str] | None = None) -> MarketDataRe
 Purpose:
 
 - parse CLI arguments;
-- normalize primitive input forms;
+- resolve independent Calendar-style date/time components;
+- normalize the resolved boundary to timezone-aware UTC;
 - construct `MarketDataRequest`.
 
-Rules:
+### Date/time resolution contract
+
+Each boundary has an independent date and time component.
+
+| Date | Time | Resolved boundary |
+|---|---|---|
+| supplied | supplied | exact supplied UTC minute |
+| supplied | omitted | start: `00:00`; end: next day `00:00` (exclusive) |
+| omitted | supplied | current UTC date + supplied `HH:MM` |
+| omitted | omitted | boundary absent |
+
+The current UTC date/time is captured once while parsing the request, so start and end defaults are internally consistent.
+
+Examples:
+
+```text
+--startdate 2026.10.05
+--startdate 2026.10.05 --starttime 08:30
+--starttime 08:30
+--enddate 2026.10.05
+--enddate 2026.10.05 --endtime 16:45
+--endtime 16:45
+```
+
+A date-only start means the beginning of that UTC calendar day.
+
+A date-only end means the complete UTC calendar day and is represented internally by the following day's `00:00` exclusive boundary.
+
+A time-only boundary uses the current UTC calendar date.
+
+Malformed dates/times, impossible calendar dates, invalid 24-hour times, and unexpected seconds/offset syntax must fail explicitly.
+
+No machine-local timezone is ever assumed.
+
+### Request validation rules
 
 - at least one timeframe is required;
 - duplicate timeframes must be rejected or deterministically normalized once;
 - unsupported or non-normalizable timeframes must fail explicitly; a hardcoded timeframe catalog is not required when valid timeframe values are supplied through the CLI/boundary contract;
-- `--lastcandle` is mutually exclusive with `--starttime`;
-- `--lastcandle` is mutually exclusive with `--endtime`;
+- `--lastcandle` is mutually exclusive with any explicit start/end date/time component;
 - `--lastcandle --live` is valid;
-- `--starttime` and `--endtime` may be used together for historical range acquisition;
-- invalid temporal ordering must fail explicitly;
+- explicit start/end boundaries may be used together for historical range acquisition;
+- when both resolved boundaries exist, start must be strictly before end;
 - do not silently infer a different symbol or timeframe.
 
 ### Request-mode decision table
@@ -479,7 +522,7 @@ Rules:
 
 The `--live` flag is orthogonal to completed-candle acquisition. It adds current-snapshot refresh; it does not change the completed-candle range semantics.
 
-`--lastcandle` changes the completed-candle branch to exactly one latest completed candle and is mutually exclusive with explicit historical boundaries.
+`--lastcandle` changes the completed-candle branch to exactly one latest completed candle and is mutually exclusive with explicit date/time boundaries.
 
 ## 5.3 normalize_symbol
 
@@ -514,21 +557,57 @@ Rules:
 - use `TIMEFRAME_SECONDS` only when completion arithmetic requires a known duration;
 - do not reject an otherwise valid boundary-supplied timeframe solely because `SUPPORTED_TIMEFRAMES` is empty.
 
-## 5.5 parse_iso8601
+## 5.5 parse_calendar_date
 
 Signature:
 
 ```python
-def parse_iso8601(value: str) -> datetime:
+def parse_calendar_date(value: str) -> date:
     ...
 ```
 
-Rules:
+Purpose:
 
-- return timezone-aware UTC datetime;
-- reject malformed or ambiguous timestamps;
-- normalize explicit offsets to UTC;
-- never return a naive datetime.
+- parse the shared Calendar/Market Data date representation `YYYY.MM.DD`;
+- reject malformed or impossible dates.
+
+## 5.6 parse_calendar_time
+
+Signature:
+
+```python
+def parse_calendar_time(value: str) -> time:
+    ...
+```
+
+Purpose:
+
+- parse the shared Calendar/Market Data time representation `HH:MM`;
+- reject malformed times and seconds.
+
+## 5.7 resolve_boundary
+
+Signature:
+
+```python
+def resolve_boundary(
+    date_value: str | None,
+    time_value: str | None,
+    *,
+    boundary_name: str,
+    now: datetime,
+) -> datetime | None:
+    ...
+```
+
+Purpose:
+
+- combine independently supplied date/time components;
+- apply the Calendar-compatible defaults;
+- return a timezone-aware UTC boundary;
+- represent a date-only end boundary as the following day's exclusive midnight.
+
+No provider I/O is allowed.
 
 ---
 
