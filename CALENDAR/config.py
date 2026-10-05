@@ -78,38 +78,18 @@ TIME_RE = r"\d{2}:\d{2}"
 HELP_TEXT = f"""Calendar CLI v{__version__} (schema {SCHEMA_VERSION}) - unified economic calendar and news update engine
 
 USAGE
-  python calendar.py SYMBOL YYYY.MM.DD
-  python calendar.py SYMBOL YYYY.MM.DD-YYYY.MM.DD
-  python calendar.py SYMBOL YYYY.MM.DD@HH:MM
-  python calendar.py SYMBOL YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM
-  python calendar.py SYMBOL current
-  python calendar.py SYMBOL latest
-  python calendar.py SYMBOL next
+  python calendar.py SYMBOL <scope>
   python calendar.py SYMBOL --date YYYY.MM.DD [--time HH:MM]
   python calendar.py SYMBOL --time HH:MM
   python calendar.py SYMBOL --last-update
+  python calendar.py refresh SYMBOL <scope>
   python calendar.py refresh SYMBOL --date YYYY.MM.DD [--time HH:MM]
   python calendar.py refresh SYMBOL --time HH:MM
-  python calendar.py refresh SYMBOL YYYY.MM.DD --time HH:MM
-  python calendar.py refresh SYMBOL YYYY.MM.DD
-  python calendar.py refresh SYMBOL YYYY.MM.DD-YYYY.MM.DD
-  python calendar.py refresh SYMBOL YYYY.MM.DD@HH:MM
-  python calendar.py refresh SYMBOL YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM
-  python calendar.py refresh SYMBOL <scope> --cleartext
-  python calendar.py refresh SYMBOL <scope> --debug
   python calendar.py delete
-  python calendar.py delete --debug
-  python calendar.py delete SYMBOL YYYY.MM.DD
-  python calendar.py delete SYMBOL YYYY.MM.DD-YYYY.MM.DD
-  python calendar.py delete SYMBOL YYYY.MM.DD@HH:MM
-  python calendar.py delete SYMBOL YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM
+  python calendar.py delete SYMBOL <scope>
+  python calendar.py delete SYMBOL --date YYYY.MM.DD [--time HH:MM]
   python calendar.py delete SYMBOL --time HH:MM
-  python calendar.py delete SYMBOL YYYY.MM.DD --time HH:MM
-  python calendar.py SYMBOL <scope> --cleartext
-  python calendar.py SYMBOL <scope> --debug
-  python calendar.py SYMBOL <scope> --cleartext --debug
   python calendar.py --help
-
 FLAGS
   --cleartext  Human-readable presentation only; does not change data.
   --debug      Emit diagnostic exception/traceback output to stderr only.
