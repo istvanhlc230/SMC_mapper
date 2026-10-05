@@ -17,7 +17,7 @@ HTTP_TIMEOUT = 15.0
 # SCHEMA_VERSION — persistent calendar.json schema version.
 SCHEMA_VERSION = 2
 # __version__ — Calendar CLI implementation version, independent from SCHEMA_VERSION.
-__version__ = "2.4.9"
+__version__ = "2.4.10"
 
 # SUPPORTED_CURRENCIES — standalone currencies accepted by the CLI.
 SUPPORTED_CURRENCIES = {
@@ -81,6 +81,8 @@ USAGE
   python calendar.py SYMBOL <scope> [refresh]
   python calendar.py SYMBOL --date YYYY.MM.DD [--time HH:MM] [refresh]
   python calendar.py SYMBOL --time HH:MM [refresh]
+  python calendar.py SYMBOL --range -YYYY.MM.DD [refresh]
+  python calendar.py SYMBOL --range -YYYY.MM.DD@HH:MM [refresh]
   python calendar.py SYMBOL --last-update
   python calendar.py delete
   python calendar.py delete SYMBOL <scope>
@@ -95,6 +97,9 @@ FLAGS
                 the exact UTC calendar day.
   --time HH:MM Query/refresh/delete time shorthand. Without --date, HH:MM is
                 resolved on the current UTC calendar day.
+  --range -END  Open-start query/refresh range. END is YYYY.MM.DD or
+                YYYY.MM.DD@HH:MM; the start is resolved from the latest
+                recorded visible event for SYMBOL.
   --last-update  Read the last successful provider update time for SYMBOL from
                 committed Calendar watermarks. Read-only; no provider call.
 
@@ -140,8 +145,9 @@ REFRESH MODIFIER
   ForexFactory Detail data can be refreshed.
   The normal query result for the same scope is returned after refresh.
   JSON output includes a refresh summary with added/changed/unchanged counts.
-  refresh is valid with current, today, tomorrow, yesterday, and explicit
-  date/datetime scopes. latest and next cannot be combined with refresh.
+  refresh is valid with current, today, tomorrow, yesterday, explicit
+  date/datetime scopes, and the open-start --range -END form. latest and next
+  cannot be combined with refresh.
   CLI refresh may block on provider I/O; the Monitor must invoke the underlying
   refresh operation asynchronously and outside its candle-close processing path.
 
