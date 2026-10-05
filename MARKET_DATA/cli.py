@@ -11,6 +11,10 @@ from .provider import create_provider
 from .service import update_market_data
 
 
+DATE_RE = r"\d{4}\.\d{2}\.\d{2}"
+TIME_RE = r"\d{2}:\d{2}"
+
+
 def build_argument_parser():
     """Define the Market Data CLI without performing I/O."""
     parser = argparse.ArgumentParser(
@@ -18,12 +22,16 @@ def build_argument_parser():
     )
     parser.add_argument("--symbol", required=True)
     parser.add_argument("--timeframes", nargs="+", required=True)
-    parser.add_argument("--startdate")
-    parser.add_argument("--starttime")
-    parser.add_argument("--enddate")
-    parser.add_argument("--endtime")
+    parser.add_argument(
+        "--range",
+        dest="scope",
+        help=(
+            "Calendar-compatible scope: YYYY.MM.DD, "
+            "YYYY.MM.DD-YYYY.MM.DD, YYYY.MM.DD@HH:MM, "
+            "YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM, or current."
+        ),
+    )
     parser.add_argument("--lastcandle", action="store_true")
-    parser.add_argument("--live", action="store_true")
     parser.add_argument("--debug", action="store_true")
     return parser
 
@@ -48,94 +56,108 @@ def normalize_timeframe(timeframe):
 
 def parse_calendar_date(value):
     """Parse the Calendar-compatible YYYY.MM.DD date format."""
-    if not re.fullmatch(r"\\d{4}\\.\\d{2}\\.\\d{2}", value.strip()):
+    if not re.fullmatch(DATE_RE, value.strip()):
         raise ValueError(f"invalid date, expected YYYY.MM.DD: {value}")
     try:
-        return datetime.strptime(value.strip(), "%Y.%m.%d").date()
+        return datetime.strptime(value.strip(), "%Y.%m.%d").replace(
+            tzinfo=timezone.utc
+        )
     except ValueError as exc:
-        raise ValueError(
-            f"invalid date, expected YYYY.MM.DD: {value}"
-        ) from exc
+        raise ValueError(f"invalid date, expected YYYY.MM.DD: {value}") from exc
 
 
 def parse_calendar_time(value):
     """Parse the Calendar-compatible HH:MM 24-hour time format."""
-    if not re.fullmatch(r"\\d{2}:\\d{2}", value.strip()):
+    if not re.fullmatch(TIME_RE, value.strip()):
         raise ValueError(f"invalid time, expected HH:MM: {value}")
     try:
         return datetime.strptime(value.strip(), "%H:%M").time()
     except ValueError as exc:
-        raise ValueError(
-            f"invalid time, expected HH:MM: {value}"
-        ) from exc
+        raise ValueError(f"invalid time, expected HH:MM: {value}") from exc
 
 
-def resolve_boundary(date_value, time_value, *, boundary_name, now):
-    """Resolve independent Calendar-style date/time components into UTC."""
-    if date_value is None and time_value is None:
+def resolve_scope_interval(scope):
+    """Resolve one Calendar-compatible historical scope into a UTC interval."""
+    if scope == "current":
+        raise ValueError("'current' is not a historical scope")
+
+    if "@" in scope:
+        parts = scope.split("-", 1)
+        if len(parts) == 2:
+            start = parse_calendar_point(parts[0], require_time=True)
+            end = parse_calendar_point(parts[1], require_time=True)
+            if end <= start:
+                raise ValueError(f"invalid datetime range: {scope}")
+            return start, end
+        point = parse_calendar_point(scope, require_time=True)
+        return point, point + timedelta(minutes=1)
+
+    if "-" in scope:
+        parts = scope.split("-")
+        if len(parts) != 2:
+            raise ValueError(f"invalid date range: {scope}")
+        start = parse_calendar_date(parts[0])
+        end = parse_calendar_date(parts[1])
+        if end < start:
+            raise ValueError(
+                f"invalid date range: {scope}: end must not precede start"
+            )
+        return start, end + timedelta(days=1)
+
+    start = parse_calendar_date(scope)
+    return start, start + timedelta(days=1)
+
+
+def parse_calendar_point(value, *, require_time=False):
+    """Parse a Calendar-compatible date or date-time point."""
+    if "@" not in value:
+        if require_time:
+            raise ValueError(f"invalid datetime point: {value}")
+        return parse_calendar_date(value)
+
+    date_part, time_part = value.split("@", 1)
+    base = parse_calendar_date(date_part)
+    clock = parse_calendar_time(time_part)
+    return base.replace(hour=clock.hour, minute=clock.minute)
+
+
+def validate_scope(scope):
+    """Validate the Market Data scope grammar and return its canonical value."""
+    if scope is None:
         return None
-
-    if date_value is not None:
-        boundary_date = parse_calendar_date(date_value)
-    else:
-        boundary_date = now.date()
-
-    if time_value is not None:
-        boundary_time = parse_calendar_time(time_value)
-    elif date_value is not None:
-        boundary_time = datetime.min.time()
-    else:
-        boundary_time = now.time().replace(second=0, microsecond=0)
-
-    resolved = datetime.combine(
-        boundary_date,
-        boundary_time,
-        tzinfo=timezone.utc,
-    )
-
-    # An end date without an explicit time denotes the complete UTC
-    # calendar day, represented internally by the next day's exclusive bound.
-    if boundary_name == "end" and date_value is not None and time_value is None:
-        resolved += timedelta(days=1)
-
-    return resolved
+    if scope == "current":
+        return scope
+    return scope if resolve_scope_interval(scope) else scope
 
 
 def validate_request(request):
-    """Validate Market Data request combinations and temporal ordering."""
+    """Validate Market Data request combinations."""
     if not request.timeframes:
         raise ValueError("at least one timeframe is required")
     if len(set(request.timeframes)) != len(request.timeframes):
         raise ValueError("duplicate timeframe")
-    if request.last_candle_only and (request.start_time or request.end_time):
-        raise ValueError(
-            "--lastcandle is mutually exclusive with explicit date/time boundaries"
-        )
-    if (
-        request.start_time
-        and request.end_time
-        and request.start_time >= request.end_time
-    ):
-        raise ValueError("start boundary must be before end boundary")
+    if request.current and request.last_candle_only:
+        raise ValueError("--range current is mutually exclusive with --lastcandle")
+    if request.current and request.start_time is not None:
+        raise ValueError("current cannot be combined with a historical range")
 
 
 def parse_market_data_request(argv: Sequence[str] | None = None):
-    """Parse Calendar-style date/time CLI fields into a MarketDataRequest."""
+    """Parse the Calendar-compatible Market Data scope into a MarketDataRequest."""
     args = build_argument_parser().parse_args(argv)
-    now = datetime.now(timezone.utc).replace(second=0, microsecond=0)
+    scope = validate_scope(args.scope)
 
-    start_time = resolve_boundary(
-        args.startdate,
-        args.starttime,
-        boundary_name="start",
-        now=now,
-    )
-    end_time = resolve_boundary(
-        args.enddate,
-        args.endtime,
-        boundary_name="end",
-        now=now,
-    )
+    if scope == "current":
+        start_time = None
+        end_time = None
+        current = True
+    elif scope is not None:
+        start_time, end_time = resolve_scope_interval(scope)
+        current = False
+    else:
+        start_time = None
+        end_time = None
+        current = False
 
     request = MarketDataRequest(
         normalize_symbol(args.symbol),
@@ -143,7 +165,7 @@ def parse_market_data_request(argv: Sequence[str] | None = None):
         start_time,
         end_time,
         args.lastcandle,
-        args.live,
+        current,
         args.debug,
     )
     validate_request(request)
