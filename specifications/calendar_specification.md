@@ -685,3 +685,22 @@ The refresh result status must follow these rules:
 - BOOTSTRAP_REQUIRED remains observable rather than being converted into UNCHANGED.
 
 This aggregation rule applies to both machine-readable and --cleartext refresh output.
+
+## 2.4.4 Calendar date flag and last-update lookup
+
+The public CLI also accepts explicit date/time flags:
+
+- SYMBOL --date YYYY.MM.DD selects the exact UTC calendar day;
+- SYMBOL --date YYYY.MM.DD --time HH:MM selects the exact UTC minute;
+- SYMBOL --time HH:MM remains the current-UTC-day shorthand;
+- the same --date / --time scope construction is supported by explicit refresh SYMBOL and scoped delete SYMBOL;
+- --date and --time cannot be combined with an already explicit positional scope;
+- date/time flags are normalized to the existing canonical scope grammar before domain resolution.
+
+The read-only SYMBOL --last-update operation returns the latest successful provider acquisition timestamp (watermarks[provider|symbol].last_successful_at) for every applicable provider. It does not call providers, change coverage, change watermarks, or write calendar.json.
+
+If no applicable provider has a successful watermark, the result status is NO_LAST_UPDATE. Missing individual provider watermarks are returned as null / N/A rather than fabricated timestamps.
+
+The help text must expose --date, --time, and --last-update once in the FLAGS section and keep usage examples concise without duplicating equivalent --time forms.
+
+Implementation version remains 2.4.3; persistent schema remains V2.
