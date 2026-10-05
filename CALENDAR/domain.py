@@ -658,10 +658,17 @@ def query_next_event(
     now: datetime,
 ) -> List[Dict[str, Any]]:
     """Calendar operation: query_next_event performs the focused query next event step in the Calendar implementation."""
+    # Yahoo Finance supplies published/current news, not scheduled future events.
+    # Future-event lookup therefore only considers canonical scheduled economic
+    # events from ForexFactory.
     visible_future = [
         event
         for event in filter_events_for_symbol(events, symbol)
-        if parse_iso8601(event["timestamp"]) > now
+        if (
+            event["source"] == "forexfactory"
+            and event["event_type"] == "economic"
+            and parse_iso8601(event["timestamp"]) > now
+        )
     ]
     if not visible_future:
         return []
