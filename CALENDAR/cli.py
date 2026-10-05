@@ -66,7 +66,10 @@ def run_query(
                     debug=debug,
                 )
             else:
-                start, end = domain.resolve_scope_interval(scope)
+                if domain.is_open_start_scope(scope):
+                    start, end = domain.resolve_open_start_scope(document, symbol, scope)
+                else:
+                    start, end = domain.resolve_scope_interval(scope)
                 refresh_result = operations.refresh_calendar_scope(
                     document,
                     symbol,
@@ -162,7 +165,10 @@ def run_query(
                 }, ensure_ascii=False))
             return 0
 
-        start, end = domain.resolve_scope_interval(scope)
+        if domain.is_open_start_scope(scope):
+            start, end = domain.resolve_open_start_scope(document, symbol, scope)
+        else:
+            start, end = domain.resolve_scope_interval(scope)
         acquisition = operations.acquire_explicit(
             document, symbol, start, end, debug=debug
         )
@@ -256,6 +262,16 @@ def parse_request(args: List[str]) -> Dict[str, Any]:
     debug = "--debug" in args
     last_update = "--last-update" in args
 
+    range_values = [item for item in args if item.startswith("--range=")]
+    if "--range" in args:
+        index = args.index("--range")
+        if index + 1 >= len(args):
+            raise CalendarInputError("--range requires -YYYY.MM.DD or -YYYY.MM.DD@HH:MM.")
+        range_values.append(f"--range={args[index + 1]}")
+    if len(range_values) > 1:
+        raise CalendarInputError("--range may be specified only once.")
+    cli_range = range_values[0].split("=", 1)[1] if range_values else None
+
     date_values = [item for item in args if item.startswith("--date=")]
     if "--date" in args:
         index = args.index("--date")
@@ -284,6 +300,11 @@ def parse_request(args: List[str]) -> Dict[str, Any]:
             continue
         if item in {"--cleartext", "--debug", "--last-update"}:
             continue
+        if item == "--range":
+            skip_next = True
+            continue
+        if item.startswith("--range="):
+            continue
         if item == "--time":
             skip_next = True
             continue
@@ -298,7 +319,7 @@ def parse_request(args: List[str]) -> Dict[str, Any]:
 
     if not positional:
         raise CalendarInputError(
-            "--cleartext/--debug/--time/--date/--last-update requires a symbol query."
+            "--cleartext/--debug/--range/--time/--date/--last-update requires a symbol query."
         )
 
     # refresh is a trailing query modifier. It never forms its own CLI command.
@@ -312,10 +333,10 @@ def parse_request(args: List[str]) -> Dict[str, Any]:
         )
 
     if last_update:
-        if refresh or len(positional) != 1 or cli_date is not None or cli_time is not None:
+        if refresh or len(positional) != 1 or cli_range is not None or cli_date is not None or cli_time is not None:
             raise CalendarInputError(
                 "--last-update requires SYMBOL and cannot be combined with "
-                "refresh, --date or --time."
+                "refresh, --range, --date or --time."
             )
         return {
             "operation": "LAST_UPDATE",
@@ -327,6 +348,8 @@ def parse_request(args: List[str]) -> Dict[str, Any]:
         }
 
     if positional[0] == "delete":
+        if cli_range is not None:
+            raise CalendarInputError("--range is not valid for delete.")
         if refresh:
             raise CalendarInputError("refresh is not valid for delete.")
         if cleartext:
@@ -387,11 +410,22 @@ def parse_request(args: List[str]) -> Dict[str, Any]:
     if len(positional) not in {1, 2}:
         raise CalendarInputError(
             "Expected SYMBOL + SCOPE, optionally followed by refresh, "
+            "SYMBOL --range -END optionally followed by refresh, "
             "or SYMBOL with --date/--time and optional refresh."
         )
 
     symbol = domain.validate_symbol(positional[0])
-    if len(positional) == 1:
+    if cli_range is not None:
+        if len(positional) != 1:
+            raise CalendarInputError("--range cannot be combined with a positional scope.")
+        if cli_date is not None or cli_time is not None:
+            raise CalendarInputError("--range cannot be combined with --date or --time.")
+        scope = domain.parse_scope(cli_range)
+        if not domain.is_open_start_scope(scope):
+            raise CalendarInputError(
+                "--range currently requires an open-start value: -YYYY.MM.DD or -YYYY.MM.DD@HH:MM."
+            )
+    elif len(positional) == 1:
         if cli_date is not None:
             domain.parse_date(cli_date)
             scope = domain.parse_scope(
