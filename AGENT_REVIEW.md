@@ -973,3 +973,43 @@ Automatic corrections:
 - Market Data range contract tests: PASS
 
 The final implementation and specification state are on `main`.
+
+# Calendar + Market Data post-audit correction — 2.4.11 / current Market Data integrity
+
+**Status: PASS — validated**
+
+The post-2.4.10 audit was completed against the active Calendar and Market Data specifications and the implementation on `main`.
+
+## Corrected findings
+
+- Calendar next now considers only scheduled ForexFactory economic events. Yahoo Finance is treated as a published/current-news source and is never a future scheduled-event source.
+- Calendar plain open-start --range -END is cache-only. It resolves the lower boundary from retained visible event history and does not contact providers unless the trailing refresh modifier is present.
+- Calendar explicit Yahoo acquisition now records provider+symbol coverage for the successfully completed historical portion of the requested interval while retaining historical_coverage=NOT_GUARANTEED.
+- Calendar normal public output no longer exposes provider ERROR records or provider exception text; aggregate PARTIAL/UNAVAILABLE status remains observable.
+- Calendar scoped delete now rejects current, latest, next, and open-start range scopes.
+- Market Data historical range inclusion now uses the canonical candle interval start: start_time <= timestamp < end_time; completion is validated separately.
+- Market Data persisted-state validation now rejects negative persisted volume and current/completed candle identity overlap, and verifies current completion boundaries against the timeframe.
+- Yahoo H4 aggregation now requires a contiguous expected H1 sequence before producing a composite candle.
+- Yahoo Charts malformed OHLC records now fail explicitly instead of being silently discarded.
+- Market Data CLI help no longer advertises the obsolete --range current form.
+- The obsolete committed Market Data cache artifact and unused provider cache state were removed.
+
+## Validation evidence
+
+Validated implementation snapshot:
+
+d877edf11167dab3636f283235d2bebb050df489
+
+Calendar GitHub Actions:
+- run #423
+- run ID 37308308110
+- Compile: PASS
+- Calendar contract tests: PASS
+
+Market Data GitHub Actions:
+- run #38
+- run ID 37308308128
+- Compile: PASS
+- Market Data range/integrity contract tests: PASS
+
+The final validated CI state is green. The next behavior is intentionally consistent with the provider boundary: Yahoo provides historical/current news, while scheduled future events come from ForexFactory.
