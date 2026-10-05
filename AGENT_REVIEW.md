@@ -1013,3 +1013,55 @@ Market Data GitHub Actions:
 - Market Data range/integrity contract tests: PASS
 
 The final validated CI state is green. The next behavior is intentionally consistent with the provider boundary: Yahoo provides historical/current news, while scheduled future events come from ForexFactory.
+
+# Calendar + Market Data post-audit correction — 2.4.11 final validation
+
+**Status: PASS — validated**
+
+The post-2.4.10 audit was completed against the current implementation and owner specifications. The
+Yahoo provider boundary was also corrected: Yahoo supplies published/current news and is not a source of
+scheduled future Calendar events. `next` therefore considers only visible ForexFactory economic events.
+
+## Corrections validated
+
+- Calendar `next` excludes Yahoo Finance news from future-event lookup.
+- Calendar plain open-start `--range -END` is cache-only; only trailing `refresh` performs provider acquisition.
+- Calendar explicit Yahoo acquisition records successful provider/symbol coverage while preserving
+  `historical_coverage=NOT_GUARANTEED`.
+- Calendar normal query and refresh JSON output omit provider `ERROR` records and exception text while
+  retaining aggregate failure status.
+- Calendar scoped delete rejects query-only `current/latest/next` and open-start ranges.
+- Market Data range inclusion uses canonical candle start timestamps with half-open `[start,end)` semantics.
+- Market Data persisted validation rejects negative volume and completed/current identity conflicts and
+  validates timeframe-derived completion boundaries.
+- Canonical completion time is authoritative; provider completion hints cannot override the timeframe boundary.
+- H4 aggregation requires contiguous H1 source intervals.
+- Malformed Yahoo OHLC records fail explicitly instead of being silently dropped.
+- The obsolete persistent Market Data cache artifact and cache-path contract were removed.
+- Specifications and CI regression tests were updated to cover these contracts.
+
+## Validation evidence
+
+Final validated implementation snapshot:
+
+`62bb5a5ffc170f13d7093160bfa28d583b260bc3`
+
+Calendar GitHub Actions:
+- run #433
+- run ID `37326180189`
+- Compile: PASS
+- Calendar unit/runtime contract tests: PASS
+- Conclusion: SUCCESS
+
+Market Data GitHub Actions:
+- run #48
+- run ID `37326180436`
+- Compile: PASS
+- Market Data range/integrity contract tests: PASS
+- Conclusion: SUCCESS
+
+Earlier intermediate failing workflow runs were caused by outdated CI version assertions and one test-fixture
+timestamp choice, plus a temporary helper naming collision; these were corrected and are not part of the
+final validated snapshot.
+
+The final main branch therefore has a green Calendar and Market Data validation state at the snapshot above.
