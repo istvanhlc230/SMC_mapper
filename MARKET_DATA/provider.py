@@ -1,9 +1,8 @@
-"""Yahoo Charts provider adapter and bounded provider-response cache."""
+"""Yahoo Charts provider adapter."""
 from __future__ import annotations
 import json, time, urllib.parse, urllib.request
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
-from pathlib import Path
 from typing import Any
 from .models import DEFAULT_PROVIDER_NAME, ProviderCandle
 
@@ -18,8 +17,7 @@ class MarketDataProvider:
     def fetch_current(self, symbol: str, timeframe: str) -> ProviderCandle | None: raise NotImplementedError
 
 class YahooChartsProvider(MarketDataProvider):
-    def __init__(self, cache_path: Path | None = None, timeout_seconds: int = 20, retries: int = 3):
-        self.cache_path = cache_path or Path(__file__).with_name("market_data_cache.json")
+    def __init__(self, timeout_seconds: int = 20, retries: int = 3):
         self.timeout_seconds, self.retries = timeout_seconds, retries
 
     def _request(self, symbol: str, interval: str, start_time: datetime, end_time: datetime) -> dict[str, Any]:
