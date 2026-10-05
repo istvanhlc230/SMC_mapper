@@ -2,7 +2,7 @@
 
 Status: Current V2 specification.
 
-Calendar implementation baseline: 2.4.5.
+Calendar implementation baseline: 2.4.6.
 
 Scope:
 - unified economic-calendar and news acquisition;
@@ -117,8 +117,11 @@ is descriptive only; provider verification is authoritative at runtime.
 
 `--debug` is an optional CLI diagnostic flag.
 
-- Without `--debug`, normal errors remain concise and are written to stderr; detailed
-  exception diagnostics and tracebacks are not printed.
+- Provider acquisition failures are not exposed as provider error records or exception
+  text in normal machine-readable/human-readable query output. Aggregate status may still
+  be `PARTIAL` or `UNAVAILABLE` so the caller can detect incomplete acquisition.
+- Without `--debug`, provider acquisition diagnostics are silent; detailed exception
+  diagnostics and tracebacks are not printed.
 - With `--debug`, diagnostic exception information and tracebacks may be printed to
   stderr only, including provider-level `try/except` diagnostics and unexpected
   exceptions that reach the CLI boundary.
@@ -231,24 +234,78 @@ latest, or next.
 
 ## 4. current semantics
 
-current is an incremental update/query.
+`current` is an always-refreshing acquisition/query operation with incremental
+return semantics.
 
-For each applicable provider:
+For every invocation and every applicable provider:
 
     load provider|canonical_symbol watermark
               |
               +-- missing -> BOOTSTRAP_REQUIRED
               |
-              +-- present -> overlap-safe incremental acquisition
+              +-- present -> ALWAYS execute provider acquisition
+                              using an overlap-safe provider window
                                     |
                                 normalize
                                     |
                           provider-specific dedupe
                                     |
+                        merge refreshed records into cache
+                                    |
                                persist atomically
                                     |
                          return events newer than
                          watermark and no later than now
+
+The watermark controls the incremental result boundary. It MUST NOT be used as
+a reason to skip provider acquisition when the watermark exists. A provider is
+re-contacted on every `current` invocation because mutable provider data,
+especially ForexFactory `details.specs`, may become available after an earlier
+successful acquisition.
+
+`current` is therefore intentionally different from a read-only cache query:
+provider acquisition occurs even when no new event timestamp is expected.
+
+The bootstrap exception remains unchanged: when an applicable provider has no
+committed successful watermark for the requested canonical symbol,
+`current` reports `BOOTSTRAP_REQUIRED` for that provider and does not invent a
+synthetic watermark.
+
+A successful refresh of an existing provider event may replace its normalized
+record in `calendar.json` even when the event timestamp is older than the current
+watermark. This is required so late Detail data can update the committed cache.
+
+If a Detail request fails for an existing ForexFactory event, the previously
+committed non-empty `details.specs` MUST be retained for that event. The newly
+acquired core event fields may still be merged. The affected acquisition remains
+`PARTIAL` and the existing successful watermark is retained so the Detail gap is
+retried on a later `current` invocation. A failed Detail request MUST NOT erase
+previously successful Detail data.
+
+### 4.0 current error visibility
+
+Provider acquisition failure and provider diagnostic presentation are separate
+concerns.
+
+Internal provider results may contain `ERROR`, failure reasons, and Detail
+failure diagnostics because these values are needed for status aggregation and
+debugging. These diagnostic fields are not part of the normal `current` output.
+
+For `current` normal output:
+
+- provider results with `status=ERROR` are omitted from the returned `providers`
+  collection;
+- exception text, `error`, `reason`, and Detail-failure diagnostic fields are not
+  returned;
+- successful/usable provider states remain representable (`OK`, `NO_MATCH`,
+  `PARTIAL`, `SKIPPED_NO_FOREX_PAIR`, `BOOTSTRAP_REQUIRED`);
+- the aggregate `status` is still computed from the complete internal provider
+  result set, so an all-provider failure can still return `UNAVAILABLE` and a
+  mixed successful/failed acquisition can still return `PARTIAL`;
+- existing cached events are never deleted merely because a provider call fails.
+
+With `--debug`, provider exception diagnostics and tracebacks may be emitted to
+stderr. Debug diagnostics never alter the normal stdout JSON/cleartext contract.
 
 current never means:
 - current-minute event lookup;
@@ -270,7 +327,7 @@ For `python calendar.py SYMBOL latest`:
 
 `latest` does not call ForexFactory or Yahoo Finance, does not acquire data, and does not modify coverage, watermarks, or `calendar.json`.
 
-`latest` is distinct from `current`: `current` performs incremental provider acquisition based on watermarks, while `latest` only reads the committed snapshot.
+`latest` is distinct from `current`: `current` always performs provider acquisition when the provider has a committed watermark, while `latest` only reads the committed snapshot.
 
 ## 4.2 next semantics
 
@@ -286,7 +343,7 @@ For `python calendar.py SYMBOL next`:
 
 `next` does not call ForexFactory or Yahoo Finance, does not acquire data, and does not modify coverage, watermarks, or `calendar.json`.
 
-`next` is distinct from `current`: `current` performs incremental provider acquisition based on watermarks, while `next` only reads the committed snapshot.
+`next` is distinct from `current`: `current` always performs provider acquisition when the provider has a committed watermark, while `next` only reads the committed snapshot.
 
 No synthetic bootstrap timestamp is permitted.
 
@@ -731,3 +788,38 @@ If no applicable provider has a successful watermark, the result status is NO_LA
 The help text must expose --date, --time, and --last-update once in the FLAGS section and keep usage examples concise without duplicating equivalent --time forms.
 
 Implementation version is 2.4.4; persistent schema remains V2.
+## 2.4.6 current refresh and diagnostic-output correction
+
+**Status: IMPLEMENTED — validation pending**
+
+`current` is an always-refreshing operation when an applicable provider already has a
+committed successful watermark. The watermark remains an incremental output cursor,
+not a provider-call suppression mechanism. Every `current` invocation therefore
+re-acquires from the applicable providers so mutable provider fields, especially
+late ForexFactory Detail specifications, can be merged into the existing cache.
+
+Provider acquisition failures are internal diagnostic state. Normal `current` output
+does not expose failed provider records or exception text. The aggregate status still
+reflects the internal provider outcomes (`PARTIAL`/`UNAVAILABLE`) so callers can detect
+that the refresh was incomplete. With `--debug`, diagnostic exception information is
+emitted to stderr only.
+
+A second state-consistency correction preserves previously committed ForexFactory
+`details.specs` when a later Detail request fails. A failed Detail request can no longer
+replace an existing non-empty Detail specification list with an empty list. The event's
+other freshly acquired normalized fields remain mergeable, the acquisition remains
+`PARTIAL`, and the prior successful watermark is retained so the incomplete Detail
+window is retried.
+
+Validation requirements:
+- compile the root entrypoint and all `CALENDAR/` modules;
+- verify `current` invokes each applicable provider on every invocation with an existing
+  watermark, including when no new event timestamp exists;
+- verify a later Detail acquisition replaces previously missing/old `details.specs`;
+- verify a Detail failure preserves previously committed non-empty `details.specs`;
+- verify provider `ERROR`, `error`, `reason`, and Detail-failure diagnostics are absent from
+  normal `current` stdout;
+- verify `--debug` retains provider exception diagnostics on stderr;
+- verify aggregate status still reports `UNAVAILABLE` for all-provider failure and
+  `PARTIAL` for mixed successful/failed acquisition;
+- run fresh GitHub Actions validation before marking this change PASS.
