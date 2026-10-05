@@ -54,16 +54,26 @@ def _classify_forexfactory_impact(classes: set[str]) -> str:
     return ""
 
 class ForexFactoryHTMLCalendarParser(HTMLParser):
+    """Parse rendered ForexFactory calendar rows without inventing event timestamps."""
+
     def __init__(self) -> None:
         """Internal helper: __init__ performs the focused init   step in the Calendar implementation."""
         super().__init__(convert_charrefs=True)
+        # rows contains provider-rendered event rows collected from one response.
         self.rows: List[Dict[str, Any]] = []
+        # current_row holds the event currently being parsed.
         self.current_row: Optional[Dict[str, Any]] = None
+        # current_cell identifies which semantic calendar field is receiving text.
         self.current_cell: Optional[str] = None
+        # text_buffer accumulates the visible text inside the active cell/span.
         self.text_buffer: List[str] = []
+        # capture_title tracks the nested event-title span.
         self.capture_title = False
+        # last_date_text supports ForexFactory rows that omit repeated calendar dates.
         self.last_date_text = ""
-        self.last_time_text = ""
+        # Time is deliberately not inherited: a missing/non-concrete provider clock
+        # must fail closed instead of attaching the previous row's time. This avoids
+        # silently creating a false event timestamp.
 
     def handle_starttag(self, tag: str, attrs: List[Tuple[str, Optional[str]]]) -> None:
         """Calendar operation: handle_starttag performs the focused handle starttag step in the Calendar implementation."""
@@ -285,12 +295,12 @@ def parse_forexfactory_html_events(
         event_date = _parse_forexfactory_date(str(row.get("date") or ""), start, end)
         parsed_time = _parse_forexfactory_time(str(row.get("time") or ""))
         if parsed_time is None:
-            # ForexFactory publishes legitimate all-day/tentative rows (for
-            # example bank holidays) without a concrete clock. The canonical
-            # Calendar event contract requires an exact timestamp, so these
-            # rows are intentionally excluded rather than synthesized at
-            # midnight or allowed to invalidate the whole provider response.
-            continue
+            # A titled event without a concrete clock is not safely timestampable.
+            # Fail closed so "Tentative", "All Day", an empty clock, or another
+            # malformed value can never be turned into a fabricated event time.
+            raise ProviderError(
+                f"ForexFactory event '{event_id}' has no concrete provider time."
+            )
         hour, minute = parsed_time
         local_datetime = event_date.replace(
             hour=hour,
