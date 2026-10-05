@@ -35,7 +35,7 @@ jobs:
               return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
           assert calendar.validate_symbol("EURUSD") == "EURUSD"
-          assert calendar.__version__ == "2.4.9"
+          assert calendar.__version__ == "2.4.10"
           assert calendar.validate_symbol("USDGBP") == "USDGBP"
           assert calendar.validate_symbol("HUF") == "HUF"
           assert calendar.validate_symbol("NVDA") == "NVDA"
@@ -650,6 +650,80 @@ jobs:
               operations.refresh_calendar_scope = original_refresh_scope
               storage.load_calendar_document = original_load
 
+          # Open-start --range uses the latest recorded visible Calendar event
+          # as its lower boundary and keeps the explicit END as the upper boundary.
+          open_range_doc = domain.build_empty_calendar_document()
+          open_range_doc["events"] = [
+              {
+                  "event_id": "forexfactory:open-range-old",
+                  "symbol": "USD",
+                  "asset_type": "forex",
+                  "event_type": "economic",
+                  "source": "forexfactory",
+                  "timestamp": "2026-10-01T09:00:00Z",
+                  "title": "Old Event",
+                  "details": {
+                      "currency": "USD",
+                      "impact": "LOW",
+                      "actual": None,
+                      "forecast": None,
+                      "previous": None,
+                      "specs": [],
+                  },
+              },
+              {
+                  "event_id": "forexfactory:open-range-latest",
+                  "symbol": "USD",
+                  "asset_type": "forex",
+                  "event_type": "economic",
+                  "source": "forexfactory",
+                  "timestamp": "2026-10-05T07:15:00Z",
+                  "title": "Latest Event",
+                  "details": {
+                      "currency": "USD",
+                      "impact": "HIGH",
+                      "actual": None,
+                      "forecast": None,
+                      "previous": None,
+                      "specs": [],
+                  },
+              },
+          ]
+          assert calendar.parse_request(
+              ["USD", "--range", "-2026.10.20"]
+          )["scope"] == "-2026.10.20"
+          assert calendar.parse_request(
+              ["USD", "--range", "-2026.10.10@05.00", "refresh"]
+          ) == {
+              "operation": "QUERY",
+              "symbol": "USD",
+              "scope": "-2026.10.10@05.00",
+              "cleartext": False,
+              "debug": False,
+              "refresh": True,
+          }
+          start, end = domain.resolve_open_start_scope(
+              open_range_doc, "USD", "-2026.10.20"
+          )
+          assert start == dt("2026-10-05T07:15:00Z")
+          assert end == dt("2026-10-21T00:00:00Z")
+          start, end = domain.resolve_open_start_scope(
+              open_range_doc, "USD", "-2026.10.10@05.00"
+          )
+          assert start == dt("2026-10-05T07:15:00Z")
+          assert end == dt("2026-10-10T05:01:00Z")
+
+          try:
+              domain.resolve_open_start_scope(
+                  domain.build_empty_calendar_document(),
+                  "USD",
+                  "-2026.10.20",
+              )
+          except calendar.CalendarInputError:
+              pass
+          else:
+              raise AssertionError("open-start range without retained history must fail")
+
           # Legacy schema-2 ForexFactory coverage without Detail specs is incomplete
           # for the requested overlap and must be reacquired.
           legacy_doc = domain.build_empty_calendar_document()
@@ -748,7 +822,7 @@ jobs:
               }
               assert calendar.normalize_provider_event(structured_raw)["details"]["impact"] == expected_impact
 
-          assert calendar.__version__ == "2.4.9"
+          assert calendar.__version__ == "2.4.10"
           assert f"Calendar CLI v{calendar.__version__}" in calendar.HELP_TEXT
 
           # Cleartext output must render normalized details as readable fields,
