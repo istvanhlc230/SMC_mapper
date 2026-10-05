@@ -238,8 +238,9 @@ jobs:
                   }]
               }
           }
+          malformed_provider = YahooChartsProvider()
           try:
-              aggregate_provider._parse(malformed_payload, "EURUSD", "1m")
+              malformed_provider._parse(malformed_payload, "EURUSD", "1m")
           except ValueError:
               pass
           else:
