@@ -114,7 +114,9 @@ def run_query(
                     "status": status,
                     "symbol": symbol,
                     "events": events,
-                    "providers": refresh_result["provider_results"],
+                    "providers": presentation.public_provider_results(
+                        refresh_result["provider_results"]
+                    ),
                     "refresh": refresh_result["summary"],
                 }, ensure_ascii=False))
             return 0 if status != "UNAVAILABLE" else 2
