@@ -425,6 +425,7 @@ Required options:
 --symbol SYMBOL
 --timeframes TF [TF ...]
 --range SCOPE
+--current
 --lastclosed
 --debug
 --help
@@ -447,7 +448,7 @@ Examples:
 --range 2026.10.05-2026.10.08
 --range 2026.10.05@08:30
 --range 2026.10.05@08:30-2026.10.05@16:45
---range current
+--current
 --lastclosed
 ```
 
@@ -483,7 +484,7 @@ Purpose:
 | `YYYY.MM.DD-YYYY.MM.DD` | inclusive date range: `[start 00:00, day-after-end 00:00)` |
 | `YYYY.MM.DD@HH:MM` | exact UTC minute: `[point, point+1 minute)` |
 | `YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM` | half-open UTC interval |
-| `current` | no historical interval; refresh the current in-progress candle snapshot |
+| `--current` | no historical interval; refresh the current in-progress candle snapshot |
 | omitted | normal incremental completed-candle acquisition |
 | `--lastclosed` | exactly the latest completed candle |
 
@@ -494,9 +495,9 @@ No machine-local timezone is ever assumed.
 ### Request-mode rules
 
 - `--lastclosed` means **the latest completed/closed candle**, never the current in-progress candle.
-- `--range current` means **the current in-progress candle snapshot**.
+- `--current` means **the current in-progress candle snapshot**.
 - `--lastclosed` is mutually exclusive with `--range`.
-- `--range current` is mutually exclusive with `--lastclosed`.
+- `--current` is mutually exclusive with `--lastclosed`.
 - Historical `--range` scopes are mutually exclusive with `current` and `lastclosed` modes.
 - With no explicit mode, normal incremental completed-candle acquisition is used.
 - `lastclosed` must use the provider's latest-completed acquisition path and completion validation.
@@ -521,6 +522,18 @@ debug
 
 `last_closed_only` and `current` are explicit mutually exclusive mode states.
 
+
+## 5.2.1 Explicit current CLI parameter
+
+The current in-progress candle mode is exposed as the explicit `--current` CLI parameter.
+
+Canonical forms:
+
+    python market_data.py --symbol EURUSD --timeframes M1 M5 --current
+    python market_data.py --symbol EURUSD --timeframes M1 M5 --range 2026.10.05
+    python market_data.py --symbol EURUSD --timeframes M1 M5 --lastclosed
+
+`--current` must not be encoded as `--range current`. The latter form is not part of the public Market Data CLI grammar and must be rejected. `--current` is mutually exclusive with `--range` and `--lastclosed`.
 
 ## 5.3 normalize_symbol
 
