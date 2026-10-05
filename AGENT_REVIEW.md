@@ -712,3 +712,18 @@ The post-audit refresh status inconsistency is corrected.
 Implementation version remains 2.4.3; persistent schema remains V2.
 
 Validation requirement: run the Calendar CLI status matrix and fresh GitHub Actions validation before marking this correction PASS.
+
+## CLI help/parameter restoration correction — 2026-10-05
+
+**Status: IMPLEMENTED — validation pending**
+
+The CLI audit found two presentation/contract regressions:
+
+- Calendar --time HH:MM was listed redundantly in both the FLAGS and SCOPE help sections. The duplicate SCOPE entry was removed; --time remains documented once as a flag and in the concrete usage forms.
+- Market Data's explicit current mode had been lost from the actual CLI surface even though the specification model already used current. MARKET_DATA/cli.py now exposes --current and rejects combining it with --range or --lastclosed.
+- Market Data help/specification now present --current as the public current-candle parameter instead of the obsolete --range current form.
+- Existing useful Market Data parameters remain: --symbol, --timeframes, --range, --lastclosed, --debug, and --help.
+
+No SMC semantics or persistent schema were changed.
+
+Validation requirement: run the CLI help/parser matrix for both Calendar and Market Data before marking this correction PASS.
