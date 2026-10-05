@@ -1102,6 +1102,11 @@ jobs:
               assert partial_doc["coverage"][0]["status"] == "COMPLETE"
               assert "forexfactory|USD" in partial_doc["watermarks"]
 
+          finally:
+              providers.fetch_forexfactory = original_ff_fetch
+              domain.utc_now = original_now
+              storage.save_calendar_atomic = original_save
+
           # Plain current is read-only and never calls a provider.
           original_yahoo_news = providers.fetch_yahoo_news
           original_load = storage.load_calendar_document
