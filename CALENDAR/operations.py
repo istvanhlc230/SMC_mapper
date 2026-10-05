@@ -136,170 +136,6 @@ def acquire_explicit(
             )
     return {"provider_results": provider_results, "failures": failures}
 
-def acquire_current(
-    document: Dict[str, Any],
-    symbol: str,
-    debug: bool = False,
-) -> Dict[str, Any]:
-    """Refresh all applicable providers and return the current incremental result.
-
-    An existing watermark controls the returned event boundary. A missing watermark
-    triggers a bootstrap acquisition rather than suppressing the provider call.
-    """
-    # now is the single UTC reference for the complete current operation.
-    now = domain.utc_now()
-    # provider_results contains complete internal status/diagnostic state for aggregation.
-    provider_results: List[Dict[str, Any]] = []
-    # incremental collects events whose provider timestamps are newer than the prior watermark.
-    incremental: List[Dict[str, Any]] = []
-    # persist_required is true whenever a successful acquisition changed the committed state.
-    persist_required = False
-
-    for provider in domain.resolve_applicable_providers(symbol):
-        # key identifies the provider/canonical-symbol watermark independently for each provider.
-        key = domain.watermark_key(provider, symbol)
-        # watermark is optional on first current invocation and becomes the incremental output cursor.
-        watermark = document["watermarks"].get(key)
-        last_successful_at = (
-            domain.parse_iso8601(watermark["last_successful_at"])
-            if watermark and watermark.get("last_successful_at")
-            else None
-        )
-        # A missing watermark has no prior output boundary, but acquisition still runs immediately.
-        detail_failures: List[str] = []
-        try:
-            if provider == "forexfactory":
-                # The overlap window keeps late mutable provider data re-acquirable while avoiding
-                # an unbounded historical bootstrap. One day of overlap is sufficient for current.
-                fetch_start = (
-                    (last_successful_at or now) - timedelta(days=1)
-                ).replace(hour=0, minute=0, second=0, microsecond=0)
-                fetch_end = (now + timedelta(days=1)).replace(
-                    hour=0, minute=0, second=0, microsecond=0
-                )
-                events = providers.fetch_forexfactory(
-                    fetch_start,
-                    fetch_end,
-                    detail_failures=detail_failures,
-                )
-                # Convert provider Detail IDs to stable Calendar event IDs before merging.
-                failed_detail_event_ids = {
-                    f"forexfactory:{provider_event_id}"
-                    for provider_event_id in detail_failures
-                }
-                # Failed Detail requests preserve previously committed non-empty specs.
-                domain.merge_events(
-                    document,
-                    events,
-                    clear_suppressed_symbol=symbol,
-                    preserve_detail_failure_ids=failed_detail_event_ids,
-                )
-                if last_successful_at is not None:
-                    incremental.extend(
-                        domain.query_current_events(events, last_successful_at, now)
-                    )
-            else:
-                # Yahoo current is provider-side refresh; its news response is normalized and merged
-                # even when no article falls inside the incremental output boundary.
-                events = providers.fetch_yahoo_news(symbol)
-                domain.merge_events(document, events)
-                if last_successful_at is not None:
-                    incremental.extend(
-                        domain.query_current_events(events, last_successful_at, now)
-                    )
-
-            if provider == "forexfactory":
-                # Coverage reflects whether the current provider acquisition obtained all Details.
-                domain.merge_coverage(
-                    document,
-                    {
-                        "provider": provider,
-                        "symbol": symbol,
-                        "start": domain.format_iso8601(fetch_start),
-                        "end": domain.format_iso8601(fetch_end),
-                        "status": "PARTIAL" if detail_failures else "COMPLETE",
-                        "updated_at": domain.format_iso8601(now),
-                    },
-                )
-
-            # A bootstrap or existing successful watermark advances only after complete FF Detail work.
-            if provider != "forexfactory" or not detail_failures:
-                domain.update_watermark(document, provider, symbol, now, events)
-                persist_required = True
-            elif detail_failures:
-                # Partial FF Detail work must still persist the refreshed core event/coverage state,
-                # but the old successful watermark remains so the incomplete Detail window is retried.
-                persist_required = True
-
-            provider_results.append({
-                "provider": provider,
-                "status": (
-                    "PARTIAL"
-                    if detail_failures
-                    else ("NO_MATCH" if not events else "OK")
-                    if provider == "yahoo_finance"
-                    else "OK"
-                ),
-                "events_acquired": len(events),
-                "events_returned": len(
-                    domain.query_current_events(events, last_successful_at, now)
-                ) if last_successful_at is not None else 0,
-                "historical_coverage": (
-                    "NOT_GUARANTEED"
-                    if provider == "yahoo_finance"
-                    else ("PARTIAL" if detail_failures else "COMPLETE")
-                ),
-                **({"detail_failures": len(detail_failures)} if detail_failures else {}),
-            })
-        except YahooForexPairUnavailable as exc:
-            if debug:
-                print(
-                    f"DEBUG | {provider} YahooForexPairUnavailable: {exc}",
-                    file=sys.stderr,
-                )
-            provider_results.append({
-                "provider": provider,
-                "status": "SKIPPED_NO_FOREX_PAIR",
-                "reason": str(exc),
-            })
-        except ProviderError as exc:
-            if debug:
-                print(
-                    f"DEBUG | {provider} ProviderError traceback:",
-                    file=sys.stderr,
-                )
-                traceback.print_exc()
-            provider_results.append({
-                "provider": provider,
-                "status": "ERROR",
-                "error": str(exc),
-            })
-
-    if persist_required:
-        # Successful/partial acquisition state is validated and committed atomically exactly once.
-        domain.validate_calendar_document(document)
-        storage.save_calendar_atomic(document)
-        if debug:
-            print(
-                f"DEBUG | Persisted Calendar file: {storage.CALENDAR_FILE}",
-                file=sys.stderr,
-            )
-
-    unique = {
-        event["event_id"]: event
-        for event in incremental
-    }
-    return {
-        "events": sorted(
-            unique.values(),
-            key=lambda event: (
-                domain.parse_iso8601(event["timestamp"]),
-                event["event_id"],
-            ),
-        ),
-        "provider_results": provider_results,
-    }
-
 def delete_symbol_interval(
     document: Dict[str, Any],
     symbol: str,
@@ -468,6 +304,40 @@ def _refresh_event_records(
         "unchanged": unchanged,
     }
 
+def refresh_current_scope(
+    document: Dict[str, Any],
+    symbol: str,
+    debug: bool = False,
+) -> Dict[str, Any]:
+    """Force-refresh the provider interval represented by the current scope."""
+    now = domain.utc_now()
+    # Current refresh follows the earliest applicable watermark so it refreshes
+    # the same incremental timespan that a current cache query represents.
+    watermark_times: List[datetime] = []
+    for provider in domain.resolve_applicable_providers(symbol):
+        watermark = document["watermarks"].get(
+            domain.watermark_key(provider, symbol)
+        )
+        if watermark and watermark.get("last_successful_at"):
+            watermark_times.append(
+                domain.parse_iso8601(watermark["last_successful_at"])
+            )
+
+    # First-use current has no prior cursor; use a bounded one-day interval ending now.
+    refresh_start = (
+        min(watermark_times)
+        if watermark_times
+        else now - timedelta(days=1)
+    )
+    refresh_end = now
+
+    return refresh_calendar_scope(
+        document,
+        symbol,
+        refresh_start,
+        refresh_end,
+        debug=debug,
+    )
 def refresh_calendar_scope(
     document: Dict[str, Any],
     symbol: str,
