@@ -21,7 +21,7 @@ class MarketDataRequest:
     timeframes: list[str]
     start_time: datetime | None
     end_time: datetime | None
-    last_candle_only: bool
+    last_closed_only: bool
     current: bool
     debug: bool
 
