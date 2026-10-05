@@ -424,22 +424,34 @@ Required options:
 ```text
 --symbol SYMBOL
 --timeframes TF [TF ...]
---startdate YYYY.MM.DD
---starttime HH:MM
---enddate YYYY.MM.DD
---endtime HH:MM
---lastcandle
---live
+--range SCOPE
+--lastclosed
 --debug
 --help
 ```
 
-Market Data uses the same canonical date/time input convention as Calendar:
+`--range` accepts the Calendar-compatible scope grammar:
 
-- date: `YYYY.MM.DD`;
-- time: `HH:MM`, 24-hour, no seconds;
-- date and time are supplied independently;
-- ISO-8601 input is not the CLI input format.
+```text
+YYYY.MM.DD
+YYYY.MM.DD-YYYY.MM.DD
+YYYY.MM.DD@HH:MM
+YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM
+current
+```
+
+Examples:
+
+```text
+--range 2026.10.05
+--range 2026.10.05-2026.10.08
+--range 2026.10.05@08:30
+--range 2026.10.05@08:30-2026.10.05@16:45
+--range current
+--lastclosed
+```
+
+The historical scope grammar is intentionally aligned with the Calendar CLI specification. Market Data does not introduce a second date/time syntax.
 
 No price-basis option is allowed.
 
@@ -458,71 +470,57 @@ def parse_market_data_request(argv: Sequence[str] | None = None) -> MarketDataRe
 
 Purpose:
 
-- parse CLI arguments;
-- resolve independent Calendar-style date/time components;
-- normalize the resolved boundary to timezone-aware UTC;
-- construct `MarketDataRequest`.
+- parse the Calendar-compatible scope;
+- resolve the scope into timezone-aware UTC boundaries;
+- construct `MarketDataRequest`;
+- distinguish historical acquisition, `current`, and `lastclosed` modes.
 
-### Date/time resolution contract
+### Scope resolution contract
 
-Each boundary has an independent date and time component.
+| Scope | Resolved interval / mode |
+|---|---|
+| `YYYY.MM.DD` | full UTC calendar day: `[00:00, next-day 00:00)` |
+| `YYYY.MM.DD-YYYY.MM.DD` | inclusive date range: `[start 00:00, day-after-end 00:00)` |
+| `YYYY.MM.DD@HH:MM` | exact UTC minute: `[point, point+1 minute)` |
+| `YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM` | half-open UTC interval |
+| `current` | no historical interval; refresh the current in-progress candle snapshot |
+| omitted | normal incremental completed-candle acquisition |
+| `--lastclosed` | exactly the latest completed candle |
 
-| Date | Time | Resolved boundary |
-|---|---|---|
-| supplied | supplied | exact supplied UTC minute |
-| supplied | omitted | start: `00:00`; end: next day `00:00` (exclusive) |
-| omitted | supplied | current UTC date + supplied `HH:MM` |
-| omitted | omitted | boundary absent |
-
-The current UTC date/time is captured once while parsing the request, so start and end defaults are internally consistent.
-
-Examples:
-
-```text
---startdate 2026.10.05
---startdate 2026.10.05 --starttime 08:30
---starttime 08:30
---enddate 2026.10.05
---enddate 2026.10.05 --endtime 16:45
---endtime 16:45
-```
-
-A date-only start means the beginning of that UTC calendar day.
-
-A date-only end means the complete UTC calendar day and is represented internally by the following day's `00:00` exclusive boundary.
-
-A time-only boundary uses the current UTC calendar date.
-
-Malformed dates/times, impossible calendar dates, invalid 24-hour times, and unexpected seconds/offset syntax must fail explicitly.
+Malformed dates/times, impossible calendar dates, invalid 24-hour times, unexpected seconds/offset syntax, and reversed/empty intervals must fail explicitly.
 
 No machine-local timezone is ever assumed.
 
-### Request validation rules
+### Request-mode rules
 
-- at least one timeframe is required;
-- duplicate timeframes must be rejected or deterministically normalized once;
-- unsupported or non-normalizable timeframes must fail explicitly; a hardcoded timeframe catalog is not required when valid timeframe values are supplied through the CLI/boundary contract;
-- `--lastcandle` is mutually exclusive with any explicit start/end date/time component;
-- `--lastcandle --live` is valid;
-- explicit start/end boundaries may be used together for historical range acquisition;
-- when both resolved boundaries exist, start must be strictly before end;
-- do not silently infer a different symbol or timeframe.
+- `--lastclosed` means **the latest completed/closed candle**, never the current in-progress candle.
+- `--range current` means **the current in-progress candle snapshot**.
+- `--lastclosed` is mutually exclusive with `--range`.
+- `--range current` is mutually exclusive with `--lastclosed`.
+- Historical `--range` scopes are mutually exclusive with `current` and `lastclosed` modes.
+- With no explicit mode, normal incremental completed-candle acquisition is used.
+- `lastclosed` must use the provider's latest-completed acquisition path and completion validation.
+- A candle is eligible for `lastclosed` only when its canonical `completion_time` has passed.
+- `lastclosed` must never promote an in-progress candle merely because it is the provider's newest record.
+- `current` must use the provider current-candle path and must persist the candle only as the separate `current` snapshot while it remains incomplete.
+- When a current candle reaches its canonical completion boundary, it becomes eligible for the completed-candle collection and the separate `current` snapshot must be cleared.
 
-### Request-mode decision table
+### Request object
 
-| Condition | Completed-candle operation | Current-snapshot operation |
-|---|---|---|
-| historical `start+end` | requested completed interval | only when `--live` |
-| historical `start` only | `start` through latest completed | only when `--live` |
-| historical `end` only | persisted `available_start` through `end`; fail if no existing range | only when `--live` |
-| no boundaries, no `--lastcandle`, `--live=false` | incremental after `available_end`; latest completed if empty | none |
-| no boundaries, no `--lastcandle`, `--live=true` | same incremental completed behavior | fetch latest current |
-| `--lastcandle`, `--live=false` | exactly one latest completed | none |
-| `--lastcandle`, `--live=true` | exactly one latest completed | fetch latest current |
+`MarketDataRequest` uses these mode fields:
 
-The `--live` flag is orthogonal to completed-candle acquisition. It adds current-snapshot refresh; it does not change the completed-candle range semantics.
+```text
+symbol
+timeframes
+start_time
+end_time
+last_closed_only
+current
+debug
+```
 
-`--lastcandle` changes the completed-candle branch to exactly one latest completed candle and is mutually exclusive with explicit date/time boundaries.
+`last_closed_only` and `current` are explicit mutually exclusive mode states.
+
 
 ## 5.3 normalize_symbol
 
