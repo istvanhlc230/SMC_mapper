@@ -927,3 +927,33 @@ The validation covers the existing Calendar contract suite plus CLI regressions 
 - trailing refresh grammar and rejection of the obsolete standalone refresh command.
 
 The validated implementation source/specification snapshot is unchanged by the final documentation-only synchronization on `main`.
+
+# Calendar + Market Data open-start range correction — 2.4.10
+
+**Status: VALIDATION PENDING**
+
+The requested open-start range form was missing from the Calendar implementation and from the Market Data CLI contract.
+
+Supported forms:
+
+    python calendar.py SYMBOL --range -YYYY.MM.DD
+    python calendar.py SYMBOL --range -YYYY.MM.DD@HH:MM
+    python market_data.py --symbol SYMBOL --timeframes TF [TF ...] --range -YYYY.MM.DD
+    python market_data.py --symbol SYMBOL --timeframes TF [TF ...] --range -YYYY.MM.DD@HH:MM
+
+A leading `-` omits the start boundary. Calendar resolves the start from the latest recorded visible event for the
+requested symbol. Market Data resolves the start independently for each requested timeframe from `available_end`,
+the latest persisted completed candle. The explicit END remains the upper boundary.
+
+The datetime END also accepts `HH.MM` as the requested compatibility spelling and normalizes it to `HH:MM`.
+
+Automatic corrections:
+- Calendar parser accepts `--range` open-start syntax and resolves it against retained Calendar history;
+- Calendar refresh reuses the same resolved interval;
+- Market Data parser accepts open-start `--range`;
+- Market Data acquisition planning now starts from `available_end` rather than `available_start` for end-only requests;
+- Calendar and Market Data specifications document the same open-start range concept;
+- Calendar CI adds parser/resolution regressions;
+- Market Data now has a dedicated CI contract workflow covering parsing and per-timeframe range resolution.
+
+A fresh Calendar and Market Data GitHub Actions validation is required before PASS.
