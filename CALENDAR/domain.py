@@ -288,28 +288,63 @@ def merge_events(
     document: Dict[str, Any],
     new_events: List[Dict[str, Any]],
     clear_suppressed_symbol: Optional[str] = None,
+    preserve_detail_failure_ids: Optional[set[str]] = None,
 ) -> None:
-    """Calendar operation: merge_events performs the focused merge events step in the Calendar implementation."""
+    """Merge normalized provider events into the committed event collection.
+
+    The merge is identity-based. A provider event may update mutable fields, but
+    a failed ForexFactory Detail request must not erase an already persisted
+    non-empty ``details.specs`` list.
+    """
+    # document stores the currently committed event snapshot keyed by stable ID.
     by_id = {event["event_id"]: event for event in document["events"]}
+    # preserve_detail_failure_ids contains stable event IDs whose latest Detail
+    # request failed during this acquisition and therefore must retain old specs.
+    failed_detail_ids = preserve_detail_failure_ids or set()
+
     for event in new_events:
-        old = by_id.get(event["event_id"])
-        if old is not None and old["timestamp"] != event["timestamp"]:
+        event_id = event["event_id"]
+        old_event = by_id.get(event_id)
+
+        # Provider identity normally includes the event timestamp. A timestamp
+        # change is rejected here because explicit refresh handles rescheduling
+        # separately through its stable-ID replacement path.
+        if old_event is not None and old_event["timestamp"] != event["timestamp"]:
             raise DataIntegrityError(
-                f"Provider identity/time conflict for {event['event_id']}."
+                f"Provider identity/time conflict for {event_id}."
             )
 
-        normalized = event.copy()
-        inherited = set(old.get("suppressed_for", [])) if old else set()
-        incoming = set(normalized.get("suppressed_for", []))
+        # Start from the freshly normalized provider record so mutable fields
+        # such as actual/forecast/previous and Detail content can be updated.
+        normalized_event = event.copy()
+
+        # A failed Detail request returns an empty specs list. Preserve an older
+        # non-empty list so transient provider failures never destroy good data.
+        if (
+            event_id in failed_detail_ids
+            and old_event is not None
+            and old_event.get("details", {}).get("specs")
+            and not normalized_event.get("details", {}).get("specs")
+        ):
+            normalized_event["details"] = normalized_event.get("details", {}).copy()
+            normalized_event["details"]["specs"] = old_event["details"]["specs"]
+
+        # suppressed_for is symbol-scoped metadata and must survive a merge
+        # unless this acquisition successfully reacquires that symbol.
+        inherited = set(old_event.get("suppressed_for", [])) if old_event else set()
+        incoming = set(normalized_event.get("suppressed_for", []))
         suppressed = inherited | incoming
         if clear_suppressed_symbol is not None:
             suppressed.discard(clear_suppressed_symbol)
         if suppressed:
-            normalized["suppressed_for"] = sorted(suppressed)
+            normalized_event["suppressed_for"] = sorted(suppressed)
         else:
-            normalized.pop("suppressed_for", None)
-        by_id[event["event_id"]] = normalized
+            normalized_event.pop("suppressed_for", None)
 
+        by_id[event_id] = normalized_event
+
+    # Keep persisted events deterministic so identical provider responses lead
+    # to identical calendar.json ordering.
     document["events"] = sorted(
         by_id.values(),
         key=lambda item: (
