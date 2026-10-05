@@ -347,10 +347,13 @@ def refresh_calendar_scope(
 ) -> Dict[str, Any]:
     """Calendar operation: refresh_calendar_scope performs the focused refresh calendar scope step in the Calendar implementation."""
     refresh_window_start, refresh_window_end = _refresh_provider_window(start, end)
+    # Existing IDs are collected from the provider-side envelope, not only the
+    # logical query interval, so late mutable Detail data on an event just outside
+    # the incremental boundary can still be refreshed by stable provider identity.
     existing_events = domain.filter_events_for_interval(
         domain.filter_events_for_symbol(document["events"], symbol),
-        start,
-        end,
+        refresh_window_start,
+        refresh_window_end,
     )
     existing_ids = {event["event_id"] for event in existing_events}
     # refreshed_for_symbol collects selected provider records that may replace or add cache entries.
@@ -457,8 +460,14 @@ def refresh_calendar_scope(
             )
 
     refreshed_ids = {event["event_id"] for event in refreshed_for_symbol}
+    # The merge may refresh overlap-boundary records outside the logical query scope,
+    # but the public result must remain the normal query result for the requested scope.
     refreshed_visible = [
-        event for event in document["events"]
+        event for event in domain.filter_events_for_interval(
+            domain.filter_events_for_symbol(document["events"], symbol),
+            start,
+            end,
+        )
         if event["event_id"] in refreshed_ids
     ]
     refreshed_visible.sort(
