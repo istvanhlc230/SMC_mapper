@@ -895,3 +895,19 @@ Calendar unit/runtime contract tests: PASS
 The passing run includes regression coverage for plain read-only `current`, trailing `refresh` parsing, `current refresh` delegation, late ForexFactory Detail refresh across the watermark boundary, explicit refresh rescheduling behavior, and the existing Calendar contract suite.
 
 The final documentation synchronization is revalidated on the validation snapshot.
+
+# Calendar 2.4.9 — CLI refresh result-boundary correction
+
+**Status: VALIDATION PENDING**
+
+A re-audit of the 2.4.8 snapshot found a real CLI-layer contract defect: `run_query()` reconstructed explicit refresh output from the committed cache after `refresh_calendar_scope()` returned its authoritative result. That second filtering pass could hide valid first-use refresh events and rescheduled events that moved outside the original logical interval. The same defect affected first-use `current refresh` because a missing watermark intentionally produces no plain-current cache boundary.
+
+Automatic corrections:
+- `CALENDAR/cli.py` now uses `refresh_result["events"]` directly for every refresh scope;
+- CLI refresh output no longer reapplies committed coverage or watermark filters;
+- Calendar version is 2.4.9;
+- the acceptance specification explicitly makes the refresh operation result authoritative for public refresh events;
+- CI adds CLI regressions for explicit first-use refresh, first-use `current refresh`, and rescheduled-event output;
+- the obsolete active acceptance statement requiring `BOOTSTRAP_REQUIRED` for a missing watermark is removed.
+
+A fresh GitHub Actions run is required before PASS. The previous 2.4.8 PASS remains historical and is superseded by this correction.
