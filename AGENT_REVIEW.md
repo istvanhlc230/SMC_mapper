@@ -628,3 +628,25 @@ Market Data CLI date/time handling is now aligned with the established Calendar 
 
 ## Validation
 Repository-level runtime/CI execution remains unavailable from the current environment. The implementation should be syntax-checked and the CLI boundary matrix tested in the developer environment before marking this change PASS.
+
+
+## Market Data CLI mode correction
+
+**Status: IMPLEMENTED — validation pending**
+
+The previous Market Data date/time CLI iteration used independent `--startdate`, `--starttime`, `--enddate`, and `--endtime` options and a `--live` flag. That was not aligned with the Calendar scope grammar.
+
+Correction:
+- historical acquisition now uses Calendar-compatible `--range` scope forms;
+- `--range current` is the current in-progress candle mode;
+- `--lastclosed` is the explicit latest completed/closed candle mode;
+- `--live` and the old `lastcandle` terminology are removed from the Market Data request contract;
+- the request model now uses `current` and `last_closed_only`;
+- `lastclosed` uses the latest-completed provider path and completion validation;
+- `current` and `lastclosed` are mutually exclusive.
+
+Specification synchronized in `specifications/market_data_specification.md`.
+
+Validation status:
+- Repository source changes are committed.
+- Python runtime/CLI matrix validation remains pending because no local execution environment is available through the connected repository interface.
