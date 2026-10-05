@@ -870,3 +870,27 @@ Validation run: `37297837871`
 Commit: `95ab66a8f5ddd4a9b7cb4ad625bff801d670bf9e` 
 Compile: PASS
 Calendar unit/runtime contract tests: PASS
+
+# Calendar 2.4.8 — final audit snapshot
+
+**Status: PASS — validated**
+
+## Audit findings and corrections
+- Plain `current` is cache-only and performs no provider/network I/O.
+- The obsolete standalone `refresh SYMBOL SCOPE` command is removed.
+- `refresh` is a trailing query modifier for current, relative-day, date and datetime scopes.
+- `current refresh` uses the current incremental watermark interval, with a bounded first-use interval when no watermark exists.
+- Refresh matching includes stable event IDs from the provider-side overlap envelope, so late ForexFactory Detail data can update an already committed event immediately before the incremental watermark.
+- Rescheduled events that were already visible in the logical scope remain in refresh output by stable ID; overlap-only records outside the logical scope are merged silently.
+- Obsolete `acquire_current`, `run_refresh`, and `BOOTSTRAP_REQUIRED` production paths were removed.
+- The specification and CI contract were corrected for the trailing modifier grammar, overlap-boundary Detail semantics, rescheduled-event output, and Calendar 2.4.8 version alignment.
+
+## Validation evidence
+- Validation branch snapshot: `validation/calendar-2.4.8-final3`
+- Validation commit: `5c43a7ac9b43d220a8badbd81adf5e3c28e6435e`
+- GitHub Actions run: `37300598899`
+- Compile: PASS
+- Calendar unit/runtime contract tests: PASS
+- Job conclusion: SUCCESS
+
+The passing run includes regression coverage for plain read-only `current`, trailing `refresh` parsing, `current refresh` delegation, late ForexFactory Detail refresh across the watermark boundary, explicit refresh rescheduling behavior, and the existing Calendar contract suite.
