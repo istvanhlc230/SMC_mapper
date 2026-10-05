@@ -727,3 +727,24 @@ The CLI audit found two presentation/contract regressions:
 No SMC semantics or persistent schema were changed.
 
 Validation requirement: run the CLI help/parser matrix for both Calendar and Market Data before marking this correction PASS.
+
+## Calendar 2.4.4 date / last-update CLI correction
+
+**Status: IMPLEMENTED — validation pending**
+
+The CLI/help audit identified that the public help did not expose --date and repeated equivalent --time usage forms.
+
+Corrections:
+- --date YYYY.MM.DD is now supported for exact-day scope selection;
+- --date YYYY.MM.DD --time HH:MM is supported for exact-minute lookup;
+- --time HH:MM without --date still resolves to the current UTC calendar day;
+- the same date/time flag construction is supported by query, explicit refresh, and scoped delete;
+- --last-update is now a read-only watermark lookup returning last_successful_at for each applicable provider;
+- missing provider watermarks are reported as null/N/A and never fabricated;
+- help usage was consolidated so equivalent --time forms are not redundantly listed;
+- specifications/calendar_specification.md records the new CLI contract;
+- source comments/docstrings were retained for the new semantic paths.
+
+Implementation version remains 2.4.3; persistent schema remains V2.
+
+Validation requirement: run the CLI parser matrix covering --date, --time, --date+--time, invalid combinations, and --last-update, then run fresh GitHub Actions validation before marking PASS.
