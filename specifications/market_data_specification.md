@@ -66,7 +66,6 @@ MARKET_DATA/normalization.py
 MARKET_DATA/persistence.py
 MARKET_DATA/service.py
 MARKET_DATA/cli.py
-MARKET_DATA/market_data_cache.json
 
 The root file is only the executable entry point. Domain models, provider acquisition, normalization, persistence and orchestration are owned by the corresponding MARKET_DATA modules. The internal module boundaries are deliberately small and functional; do not split further without a real ownership boundary.
 
@@ -966,6 +965,7 @@ Signature:
 def normalize_provider_candles(
     provider_candles: Iterable[ProviderCandle],
     timeframe: str,
+    symbol: str = "",
 ) -> list[NormalizedCandle]:
     ...
 ```
