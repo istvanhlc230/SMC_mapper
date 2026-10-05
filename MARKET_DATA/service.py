@@ -43,7 +43,7 @@ def apply_candle_retention(candles, retention_limit, protected_start=None, prote
         in_range = (
             protected_start is not None
             and stamp >= protected_start
-            and (protected_end is None or stamp <= protected_end)
+            and (protected_end is None or stamp < protected_end)
         )
         (protected if in_range else unprotected).append(candle)
     if protected_start is None: return sort_candles(list(candles))[-retention_limit:] if retention_limit else []
@@ -69,13 +69,17 @@ def resolve_acquisition_range(request,timeframe,existing_state):
         return start,datetime.now(timezone.utc)
     return None,datetime.now(timezone.utc)
 
-def fetch_completed_candles(provider,symbol,timeframe,start_time,end_time):
-    records=provider.fetch_range(symbol,timeframe,start_time,end_time)
-    normalized=normalize_provider_candles(records,timeframe,symbol)
-    output=[]
-    for candle in normalized:
-        if candle.completion_time>=start_time and candle.completion_time<=end_time: output.append(candle)
-    return [c for c in output if c.completion_time<=datetime.now(timezone.utc)]
+def fetch_completed_candles(provider, symbol, timeframe, start_time, end_time):
+    """Fetch completed candles whose canonical interval start is inside the requested range."""
+    records = provider.fetch_range(symbol, timeframe, start_time, end_time)
+    normalized = normalize_provider_candles(records, timeframe, symbol)
+    now = datetime.now(timezone.utc)
+    return [
+        candle
+        for candle in normalized
+        if start_time <= candle.timestamp < end_time
+        and candle.completion_time <= now
+    ]
 
 def fetch_latest_completed_candle(provider,symbol,timeframe):
     record=provider.fetch_latest_completed(symbol,timeframe)
