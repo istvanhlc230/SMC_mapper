@@ -1128,8 +1128,11 @@ jobs:
               storage.save_calendar_atomic = lambda document: None
               refresh_doc = domain.build_empty_calendar_document()
               domain.update_watermark(
-                  refresh_doc, "yahoo_finance",
-                  dt("2026-10-05T10:00:00Z"), []
+                  refresh_doc,
+                  "yahoo_finance",
+                  "NVDA",
+                  dt("2026-10-05T10:00:00Z"),
+                  [],
               )
               first_current = operations.acquire_current(refresh_doc, "NVDA")
               second_current = operations.acquire_current(refresh_doc, "NVDA")
