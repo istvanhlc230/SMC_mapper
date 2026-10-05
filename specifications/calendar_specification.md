@@ -2,7 +2,7 @@
 
 Status: Current V2 specification.
 
-Calendar implementation baseline: 2.4.7.
+Calendar implementation baseline: 2.4.8.
 
 Scope:
 - unified economic-calendar and news acquisition;
@@ -234,85 +234,31 @@ latest, or next.
 
 ## 4. current semantics
 
-`current` is an always-refreshing acquisition/query operation with incremental
-return semantics.
+`current` is a read-only incremental query over the committed `calendar.json` snapshot.
 
-For every invocation and every applicable provider:
+For each applicable provider:
 
     load provider|canonical_symbol watermark
               |
-              +-- missing -> bounded bootstrap acquisition
+              +-- missing -> no incremental events for that provider
               |
-              +-- present -> ALWAYS execute provider acquisition
-                              using an overlap-safe provider window
-                                    |
-                                normalize
-                                    |
-                          provider-specific dedupe
-                                    |
-                        merge refreshed records into cache
-                                    |
-                               persist atomically
-                                    |
-                         return events newer than
-                         watermark and no later than now
+              +-- present -> return cached events newer than the watermark
+                              and no later than now
 
-The watermark controls the incremental result boundary. It MUST NOT be used as
-a reason to skip provider acquisition when the watermark exists. A provider is
-re-contacted on every `current` invocation because mutable provider data,
-especially ForexFactory `details.specs`, may become available after an earlier
-successful acquisition.
+`current` MUST NOT contact ForexFactory or Yahoo Finance. It MUST NOT modify
+coverage, watermarks, or `calendar.json`. This makes `current` safe to call from
+the Monitor's time-sensitive processing loop.
 
-`current` is therefore intentionally different from a read-only cache query:
-provider acquisition occurs even when no new event timestamp is expected.
+The watermark is only the local incremental-result boundary. It is not a provider
+refresh trigger. Late provider Detail data is obtained only when a `refresh`
+modifier is explicitly requested, either by the CLI or by the Monitor's background
+Calendar refresh operation.
 
-`current` does not stop at the absence of a watermark. When an applicable provider
-has no committed successful watermark, `current` performs a bounded bootstrap
-acquisition immediately. ForexFactory uses a one-day overlap before the current
-UTC time and extends through the next UTC midnight; Yahoo uses its normal current
-news acquisition. No synthetic historical watermark is fabricated. A successful
-bootstrap acquisition commits `last_successful_at=now` through the normal watermark
-mechanism. Bootstrap events are refreshed into the cache but are not returned as
-incremental `current` events because no prior output boundary exists; callers can
-use `latest` or `next` for cache lookup after bootstrap.
+A provider with no committed watermark has no local incremental boundary and
+therefore contributes no events to a plain `current` query. No synthetic
+bootstrap timestamp is created.
 
-A successful refresh of an existing provider event may replace its normalized
-record in `calendar.json` even when the event timestamp is older than the current
-watermark. This is required so late Detail data can update the committed cache.
-
-If a Detail request fails for an existing ForexFactory event, the previously
-committed non-empty `details.specs` MUST be retained for that event. The newly
-acquired core event fields may still be merged. The affected acquisition remains
-`PARTIAL` and the existing successful watermark is retained so the Detail gap is
-retried on a later `current` invocation. A failed Detail request MUST NOT erase
-previously successful Detail data.
-
-### 4.0 current error visibility
-
-Provider acquisition failure and provider diagnostic presentation are separate
-concerns.
-
-Internal provider results may contain `ERROR`, failure reasons, and Detail
-failure diagnostics because these values are needed for status aggregation and
-debugging. These diagnostic fields are not part of the normal `current` output.
-
-For `current` normal output:
-
-- provider results with `status=ERROR` are omitted from the returned `providers`
-  collection;
-- exception text, `error`, `reason`, and Detail-failure diagnostic fields are not
-  returned;
-- successful/usable provider states remain representable (`OK`, `NO_MATCH`,
-  `PARTIAL`, `SKIPPED_NO_FOREX_PAIR`);
-- the aggregate `status` is still computed from the complete internal provider
-  result set, so an all-provider failure can still return `UNAVAILABLE` and a
-  mixed successful/failed acquisition can still return `PARTIAL`;
-- existing cached events are never deleted merely because a provider call fails.
-
-With `--debug`, provider exception diagnostics and tracebacks may be emitted to
-stderr. Debug diagnostics never alter the normal stdout JSON/cleartext contract.
-
-current never means:
+`current` never means:
 - current-minute event lookup;
 - next event;
 - latest event;
@@ -332,7 +278,7 @@ For `python calendar.py SYMBOL latest`:
 
 `latest` does not call ForexFactory or Yahoo Finance, does not acquire data, and does not modify coverage, watermarks, or `calendar.json`.
 
-`latest` is distinct from `current`: `current` always performs provider acquisition when the provider has a committed watermark, while `latest` only reads the committed snapshot.
+`latest` is distinct from `current`: both are read-only cache queries, but `current` applies provider-specific incremental watermark boundaries while `latest` selects the most recent past/current event.
 
 ## 4.2 next semantics
 
@@ -348,7 +294,7 @@ For `python calendar.py SYMBOL next`:
 
 `next` does not call ForexFactory or Yahoo Finance, does not acquire data, and does not modify coverage, watermarks, or `calendar.json`.
 
-`next` is distinct from `current`: `current` always performs provider acquisition when the provider has a committed watermark, while `next` only reads the committed snapshot.
+`next` is distinct from `current`: both are read-only cache queries, but `next` selects the nearest future event while `current` applies provider-specific incremental watermark boundaries.
 
 No synthetic bootstrap timestamp is permitted.
 
