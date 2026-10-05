@@ -90,6 +90,22 @@ def resolve_scope_interval(scope):
     if scope == "current":
         raise ValueError("'current' is not a historical scope")
 
+    if scope.startswith("-"):
+        endpoint = scope[1:]
+        if not endpoint or endpoint.startswith("-"):
+            raise ValueError(
+                f"invalid open-start range: {scope}; expected -YYYY.MM.DD or -YYYY.MM.DD@HH:MM"
+            )
+        if "@" in endpoint:
+            date_part, time_part = endpoint.split("@", 1)
+            normalized_time = time_part.replace(".", ":", 1)
+            point = parse_calendar_point(
+                f"{date_part}@{normalized_time}",
+                require_time=True,
+            )
+            return None, point + timedelta(minutes=1)
+        return None, parse_calendar_date(endpoint) + timedelta(days=1)
+
     if "@" in scope:
         parts = scope.split("-", 1)
         if len(parts) == 2:
