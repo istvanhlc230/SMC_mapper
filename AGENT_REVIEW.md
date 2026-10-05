@@ -898,9 +898,9 @@ The final documentation synchronization is revalidated on the validation snapsho
 
 # Calendar 2.4.9 — CLI refresh result-boundary correction
 
-**Status: VALIDATION PENDING**
+**Status: PASS — validated**
 
-A re-audit of the 2.4.8 snapshot found a real CLI-layer contract defect: `run_query()` reconstructed explicit refresh output from the committed cache after `refresh_calendar_scope()` returned its authoritative result. That second filtering pass could hide valid first-use refresh events and rescheduled events that moved outside the original logical interval. The same defect affected first-use `current refresh` because a missing watermark intentionally produces no plain-current cache boundary.
+A re-audit of the 2.4.8 snapshot found a real CLI-layer contract defect: `run_query()` reconstructed refresh output from the committed cache after the refresh operation had already produced its authoritative result. That second filtering pass could hide valid first-use refresh events and rescheduled events that moved outside the original logical interval. The same defect affected first-use `current refresh` because a missing watermark intentionally produces no plain-current cache boundary.
 
 Automatic corrections:
 - `CALENDAR/cli.py` now uses `refresh_result["events"]` directly for every refresh scope;
@@ -908,8 +908,22 @@ Automatic corrections:
 - Calendar version is 2.4.9;
 - the acceptance specification explicitly makes the refresh operation result authoritative for public refresh events;
 - CI adds CLI regressions for explicit first-use refresh, first-use `current refresh`, and rescheduled-event output;
-- the obsolete active acceptance statement requiring `BOOTSTRAP_REQUIRED` for a missing watermark is removed.
+- the obsolete active acceptance statement requiring `BOOTSTRAP_REQUIRED` for a missing watermark is removed;
+- the Calendar CI workflow's remaining 2.4.8 version assertion was corrected to 2.4.9.
 
-A fresh GitHub Actions run is required before PASS. The previous 2.4.8 PASS remains historical and is superseded by this correction.
+## Validation evidence
 
-Validation trigger: this branch changes no implementation semantics; its purpose is to execute the full Calendar workflow against the exact 2.4.9 implementation snapshot.
+- Validated implementation snapshot: `c9ca9220980f5a036ef965e8465c635fe3599c7e`
+- GitHub Actions run: `37303811257`
+- Run number: `373`
+- Compile: PASS
+- Calendar unit/runtime contract tests: PASS
+- Job conclusion: SUCCESS
+
+The validation covers the existing Calendar contract suite plus CLI regressions for:
+- first-use explicit refresh output;
+- first-use `current refresh` output;
+- rescheduled-event output by stable provider ID;
+- trailing refresh grammar and rejection of the obsolete standalone refresh command.
+
+The validated implementation source/specification snapshot is unchanged by the final documentation-only synchronization on `main`.
