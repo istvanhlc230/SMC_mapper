@@ -2,7 +2,7 @@
 
 Status: Current V2 specification.
 
-Calendar implementation baseline: 2.4.2.
+Calendar implementation baseline: 2.4.3.
 
 Scope:
 - unified economic-calendar and news acquisition;
@@ -136,6 +136,8 @@ Public query forms:
     python calendar.py SYMBOL YYYY.MM.DD-YYYY.MM.DD
     python calendar.py SYMBOL YYYY.MM.DD@HH:MM
     python calendar.py SYMBOL YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM
+    python calendar.py SYMBOL --time HH:MM
+    python calendar.py SYMBOL YYYY.MM.DD --time HH:MM
     python calendar.py SYMBOL current
     python calendar.py SYMBOL latest
     python calendar.py SYMBOL next
@@ -178,10 +180,25 @@ Removed from the public grammar:
 - next_month
 Date syntax is YYYY.MM.DD. Time syntax is HH:MM. @ separates date/time. - separates interval endpoints. No .. syntax exists.
 
+--time HH:MM is a CLI shorthand for an exact one-minute datetime query on the current UTC calendar day. With no explicit date scope, Calendar resolves it as <current UTC date>@HH:MM. With a date-only scope, SYMBOL YYYY.MM.DD --time HH:MM resolves to YYYY.MM.DD@HH:MM. --time must not be combined with an existing @HH:MM point or a date/range scope that already contains time. The shorthand is normalized to the canonical YYYY.MM.DD@HH:MM scope before domain parsing, so the underlying query/refresh/delete interval semantics remain unchanged. The current UTC date is obtained from the same Calendar utc_now() clock used by the domain layer; no local-machine date is assumed.
+
 Date = full UTC day.
 Date range = inclusive by calendar date.
 Datetime = exact one-minute interval.
 Datetime range = half-open start/end interval.
+
+## 3.1 --time CLI shorthand
+
+The public Calendar CLI also accepts a time-only shorthand:
+
+    python calendar.py SYMBOL --time HH:MM
+    python calendar.py SYMBOL YYYY.MM.DD --time HH:MM
+
+The first form targets the current UTC calendar day. The second form targets the supplied date. Both forms are converted to the canonical datetime scope before parse_scope()/resolve_scope_interval() processing.
+
+The shorthand is CLI syntax only; the canonical internal scope remains YYYY.MM.DD@HH:MM. The same shorthand is accepted for explicit refresh SYMBOL and symbol-scoped delete SYMBOL operations. Bare delete cannot be combined with --time.
+
+--time is mutually exclusive with an explicit datetime, datetime range, date range, current, latest, or next scope. Invalid HH:MM values fail through the existing Calendar time parser.
 
 ## 4. current semantics
 
@@ -632,3 +649,19 @@ Calendar Python source files must retain the following attribution header:
 `# (c) Istvan Jakab <istvanhlc230@gmail.com>`
 
 The attribution is informational source ownership/authorship metadata and must not affect runtime behavior.
+
+## 2.4.3 Calendar CLI time shorthand
+
+The Calendar CLI now supports a time-only --time HH:MM shorthand while preserving the canonical YYYY.MM.DD@HH:MM internal scope grammar.
+
+- SYMBOL --time HH:MM resolves to the current UTC calendar day at the supplied minute;
+- SYMBOL YYYY.MM.DD --time HH:MM resolves to the supplied date at the supplied minute;
+- the same shorthand is available for explicit refresh SYMBOL and symbol-scoped delete SYMBOL;
+- --time is rejected when an explicit scope already contains time or represents a range/current/latest/next operation;
+- the shorthand is normalized before domain interval resolution, so persistence, provider routing, coverage, watermark and query semantics remain unchanged;
+- the current date comes from the Calendar UTC clock, not the machine-local date;
+- help text and source comments document the behavior.
+
+Implementation version: 2.4.3; persistent schema remains 2.
+
+Validation requirement: run the Calendar CLI parser matrix and fresh GitHub Actions validation before marking this change PASS.
