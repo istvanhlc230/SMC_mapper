@@ -811,3 +811,25 @@ Validation requirements:
 - verify a second `current` call uses the normal existing-watermark refresh path;
 - verify no `BOOTSTRAP_REQUIRED` provider status is emitted by `current`;
 - run fresh GitHub Actions validation before marking this change PASS.
+## 2.4.8 read-only current and trailing refresh modifier
+
+**Status: IMPLEMENTED — validation pending**
+
+The public `current` query is now cache-only. It reads committed provider-specific watermark boundaries
+and returns matching cached events without provider/network I/O or persistent-state mutation.
+
+Provider acquisition is requested with the trailing `refresh` modifier. The previous standalone
+`refresh SYMBOL SCOPE` command grammar is removed. The modifier applies the requested scope timespan;
+`current refresh` derives its logical interval from the current incremental watermark state and uses
+a bounded first-use interval when no watermark exists.
+
+Monitor-triggered refresh is a background operation and must not block the candle-close processing path.
+The refresh summary reports additions/changes/unchanged counts rather than introducing a separate
+refresh query status.
+
+Validation requirements:
+- verify plain `current` performs no provider call;
+- verify `current refresh` performs the refresh operation;
+- verify trailing `refresh` parsing for current/relative/date/datetime scopes;
+- verify old standalone `refresh SYMBOL SCOPE` syntax is rejected;
+- run fresh GitHub Actions validation before marking this change PASS.
