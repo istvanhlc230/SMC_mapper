@@ -1336,6 +1336,27 @@ jobs:
               providers.fetch_yahoo_news = original_yahoo_news
               storage.load_calendar_document = original_load
 
+          # Plain open-start range is cache-only and must not contact providers.
+          original_acquire_explicit = operations.acquire_explicit
+          original_load = storage.load_calendar_document
+          try:
+              open_query_doc = json.loads(json.dumps(open_range_doc))
+              storage.load_calendar_document = lambda: open_query_doc
+              operations.acquire_explicit = lambda *args, **kwargs: (_ for _ in ()).throw(
+                  AssertionError("plain open-start range must not call provider acquisition")
+              )
+              out = io.StringIO()
+              with contextlib.redirect_stdout(out):
+                  assert calendar.run_query("USD", "-2026.10.20", cleartext=False, refresh=False) == 0
+              parsed_open_query = json.loads(out.getvalue())
+              assert parsed_open_query["status"] == "OK"
+              assert [event["event_id"] for event in parsed_open_query["events"]] == [
+                  "forexfactory:latest-usd"
+              ]
+          finally:
+              operations.acquire_explicit = original_acquire_explicit
+              storage.load_calendar_document = original_load
+
           # current refresh uses the trailing modifier and a dedicated current
           # refresh operation rather than automatic provider acquisition.
           original_refresh_current = operations.refresh_current_scope
