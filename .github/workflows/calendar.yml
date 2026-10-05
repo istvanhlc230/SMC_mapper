@@ -326,7 +326,7 @@ jobs:
               def submit(self, function, item):
                   # The production parser uses submit() so the test double must
                   # expose the same executor contract.
-                  return RecordingFuture(function(item))
+                  return self.RecordingFuture(function(item))
               def map(self, function, iterable):
                   return [function(item) for item in iterable]
           original_detail_fetch = providers.fetch_forexfactory_event_detail
