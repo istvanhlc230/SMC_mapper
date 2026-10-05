@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from decimal import Decimal, ROUND_HALF_EVEN
 from pathlib import Path
 from typing import Any
-from .models import DECIMAL_PERSISTENCE_PLACES, WRITE_RETRY_DELAY_SECONDS, WRITE_RETRY_LIMIT
+from .models import DECIMAL_PERSISTENCE_PLACES, TIMEFRAME_SECONDS, WRITE_RETRY_DELAY_SECONDS, WRITE_RETRY_LIMIT
 
 def _timestamp(value: str | None) -> datetime | None:
     if value is None: return None
@@ -30,9 +30,13 @@ def update_available_bounds(timeframe_state):
     timeframe_state["available_end"]=candles[-1]["timestamp"] if candles else None
 
 def _validate_persisted_decimal(value: Any, field_name: str) -> None:
-    if not isinstance(value, str): raise ValueError(f"persisted {field_name} must be a Decimal string")
+    if not isinstance(value, str):
+        raise ValueError(f"persisted {field_name} must be a Decimal string")
     parsed = Decimal(value)
-    if not parsed.is_finite(): raise ValueError(f"persisted {field_name} must be finite")
+    if not parsed.is_finite():
+        raise ValueError(f"persisted {field_name} must be finite")
+    if parsed < 0:
+        raise ValueError(f"persisted {field_name} must be non-negative")
 
 def _validate_candle_record(candle):
     required={"candle_id","timestamp","completion_time","open","high","low","close","volume"}
@@ -53,6 +57,27 @@ def _validate_candle_record(candle):
             _validate_persisted_decimal(volume[branch]["buy"],f"volume.{branch}.buy")
             _validate_persisted_decimal(volume[branch]["sell"],f"volume.{branch}.sell")
 
+def _validate_current_snapshot(
+    current: dict[str, Any],
+    candles: list[dict[str, Any]],
+    timeframe: str,
+) -> None:
+    """Validate current-snapshot structural invariants without using wall-clock state."""
+    _validate_candle_record(current)
+    current_id = current["candle_id"]
+    if any(candle["candle_id"] == current_id for candle in candles):
+        raise ValueError("current candle identity must not also exist in candles")
+    stamp = _timestamp(current["timestamp"])
+    completion = _timestamp(current["completion_time"])
+    if stamp is None or completion is None:
+        raise ValueError("invalid current snapshot timestamps")
+    expected_completion = stamp + __import__("datetime").timedelta(
+        seconds=TIMEFRAME_SECONDS[timeframe]
+    )
+    if completion != expected_completion:
+        raise ValueError("current completion_time does not match timeframe boundary")
+
+
 def load_market_data(path: Path, symbol: str) -> dict[str,Any]:
     if not path.exists(): return create_empty_market_data(symbol)
     try: market_data=json.loads(path.read_text(encoding="utf-8"))
@@ -70,8 +95,11 @@ def load_market_data(path: Path, symbol: str) -> dict[str,Any]:
         expected_end = state["candles"][-1]["timestamp"] if state["candles"] else None
         if state["available_start"] != expected_start or state["available_end"] != expected_end:
             raise ValueError(f"invalid availability bounds: {timeframe}")
+        if timeframe not in TIMEFRAME_SECONDS:
+            raise ValueError(f"unsupported persisted timeframe: {timeframe}")
         current = state["current"]
-        if current is not None: _validate_candle_record(current)
+        if current is not None:
+            _validate_current_snapshot(current, state["candles"], timeframe)
     return market_data
 
 def serialize_decimal(value: Decimal) -> str:
