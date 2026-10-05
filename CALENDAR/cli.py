@@ -245,9 +245,9 @@ def run_delete(
                     "Scoped delete requires DELETE + SYMBOL + SCOPE. "
                     "Use bare 'delete' only for full cache deletion."
                 )
-            if scope == "current":
+            if scope in {"current", "latest", "next"} or domain.is_open_start_scope(scope):
                 raise CalendarInputError(
-                    "current cannot be used as a delete scope."
+                    "current, latest, next, and open-start ranges cannot be used as delete scopes."
                 )
             start, end = domain.resolve_scope_interval(scope)
             operations.delete_symbol_interval(document, symbol, start, end)
