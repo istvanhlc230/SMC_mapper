@@ -17,7 +17,7 @@ HTTP_TIMEOUT = 15.0
 # SCHEMA_VERSION — persistent calendar.json schema version.
 SCHEMA_VERSION = 2
 # __version__ — Calendar CLI implementation version, independent from SCHEMA_VERSION.
-__version__ = "2.4.2"
+__version__ = "2.4.3"
 
 # SUPPORTED_CURRENCIES — standalone currencies accepted by the CLI.
 SUPPORTED_CURRENCIES = {
@@ -85,6 +85,10 @@ USAGE
   python calendar.py SYMBOL current
   python calendar.py SYMBOL latest
   python calendar.py SYMBOL next
+  python calendar.py SYMBOL --time HH:MM
+  python calendar.py SYMBOL YYYY.MM.DD --time HH:MM
+  python calendar.py refresh SYMBOL --time HH:MM
+  python calendar.py refresh SYMBOL YYYY.MM.DD --time HH:MM
   python calendar.py refresh SYMBOL YYYY.MM.DD
   python calendar.py refresh SYMBOL YYYY.MM.DD-YYYY.MM.DD
   python calendar.py refresh SYMBOL YYYY.MM.DD@HH:MM
@@ -97,6 +101,8 @@ USAGE
   python calendar.py delete SYMBOL YYYY.MM.DD-YYYY.MM.DD
   python calendar.py delete SYMBOL YYYY.MM.DD@HH:MM
   python calendar.py delete SYMBOL YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM
+  python calendar.py delete SYMBOL --time HH:MM
+  python calendar.py delete SYMBOL YYYY.MM.DD --time HH:MM
   python calendar.py SYMBOL <scope> --cleartext
   python calendar.py SYMBOL <scope> --debug
   python calendar.py SYMBOL <scope> --cleartext --debug
@@ -105,12 +111,17 @@ USAGE
 FLAGS
   --cleartext  Human-readable presentation only; does not change data.
   --debug      Emit diagnostic exception/traceback output to stderr only.
+  --time HH:MM Query/refresh/delete time shorthand. Without an explicit date,
+                HH:MM is resolved on the current UTC calendar day. With a
+                date-only scope, it is normalized to YYYY.MM.DD@HH:MM.
 
 SCOPE
   YYYY.MM.DD                         Exact UTC calendar day.
   YYYY.MM.DD-YYYY.MM.DD              Inclusive UTC date range.
   YYYY.MM.DD@HH:MM                   Exact UTC minute.
   YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM  Half-open UTC datetime range.
+  --time HH:MM                       Exact UTC minute on the current UTC day
+                                      when no date is supplied.
   current                             Incremental update from each
                                       provider+canonical-symbol watermark
                                       through current UTC time.
