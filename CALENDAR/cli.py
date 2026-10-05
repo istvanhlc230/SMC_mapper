@@ -231,6 +231,17 @@ def parse_request(args: List[str]) -> Dict[str, Any]:
 
     cleartext = "--cleartext" in args
     debug = "--debug" in args
+    last_update = "--last-update" in args
+
+    date_values = [item for item in args if item.startswith("--date=")]
+    if "--date" in args:
+        index = args.index("--date")
+        if index + 1 >= len(args):
+            raise CalendarInputError("--date requires YYYY.MM.DD.")
+        date_values.append(f"--date={args[index + 1]}")
+    if len(date_values) > 1:
+        raise CalendarInputError("--date may be specified only once.")
+    cli_date = date_values[0].split("=", 1)[1] if date_values else None
 
     # --time is a Calendar-compatible convenience form: when no date is
     # supplied, it resolves against the current UTC calendar day; when a
@@ -254,19 +265,34 @@ def parse_request(args: List[str]) -> Dict[str, Any]:
         if skip_next:
             skip_next = False
             continue
-        if item in {"--cleartext", "--debug"}:
+        if item in {"--cleartext", "--debug", "--last-update"}:
             continue
         if item == "--time":
             skip_next = True
             continue
         if item.startswith("--time="):
             continue
+        if item == "--date":
+            skip_next = True
+            continue
+        if item.startswith("--date="):
+            continue
         positional.append(item)
 
     if not positional:
         raise CalendarInputError(
-            "--cleartext/--debug/--time requires a symbol query."
+            "--cleartext/--debug/--time/--date/--last-update requires a symbol query."
         )
+    if last_update:
+        if len(positional) != 1 or cli_date is not None or cli_time is not None:
+            raise CalendarInputError("--last-update requires SYMBOL and cannot be combined with --date or --time.")
+        return {
+            "operation": "LAST_UPDATE",
+            "symbol": domain.validate_symbol(positional[0]),
+            "scope": None,
+            "cleartext": cleartext,
+            "debug": debug,
+        }
 
     if positional[0] == "refresh":
         if len(positional) not in {2, 3}:
