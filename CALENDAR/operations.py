@@ -141,7 +141,7 @@ def acquire_current(
     symbol: str,
     debug: bool = False,
 ) -> Dict[str, Any]:
-    """Refresh all applicable providers and return the current incremental result."
+    """Refresh all applicable providers and return the current incremental result.
 
     An existing watermark controls the returned event boundary. A missing watermark
     triggers a bootstrap acquisition rather than suppressing the provider call.
