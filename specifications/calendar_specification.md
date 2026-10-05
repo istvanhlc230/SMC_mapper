@@ -667,3 +667,21 @@ The Calendar CLI now supports a time-only --time HH:MM shorthand while preservin
 Implementation version: 2.4.3; persistent schema remains 2.
 
 Validation requirement: run the Calendar CLI parser matrix and fresh GitHub Actions validation before marking this change PASS.
+
+## 10.5 Refresh aggregate provider status
+
+Refresh uses the same provider-result aggregation semantics as normal acquisition before applying the refresh-specific REFRESHED / UNCHANGED result.
+
+The refresh result status must follow these rules:
+
+- all applicable providers ERROR -> UNAVAILABLE;
+- all applicable providers SKIPPED_NO_FOREX_PAIR -> NO_FOREX_PAIR;
+- any ERROR together with a successful provider -> PARTIAL;
+- OK together with SKIPPED_NO_FOREX_PAIR -> PARTIAL;
+- any provider PARTIAL -> PARTIAL;
+- all providers NO_MATCH, or successful providers with no record changes -> UNCHANGED;
+- successful provider acquisition with one or more added/changed records -> REFRESHED;
+- SKIPPED_NO_FOREX_PAIR must never be collapsed into UNCHANGED, even when no records changed;
+- BOOTSTRAP_REQUIRED remains observable rather than being converted into UNCHANGED.
+
+This aggregation rule applies to both machine-readable and --cleartext refresh output.
