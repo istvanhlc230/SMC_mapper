@@ -23,7 +23,7 @@ jobs:
           from datetime import datetime, timezone
 
           from MARKET_DATA.cli import parse_market_data_request
-          from MARKET_DATA.models import MarketDataRequest
+          from MARKET_DATA.models import MarketDataRequest, ProviderCandle
           from MARKET_DATA.service import resolve_acquisition_range
 
           def dt(value):
@@ -133,6 +133,117 @@ jobs:
               runtime_request,
               "M1",
           ) is False
+
+          # Range inclusion is based on candle interval start, not completion_time.
+          from MARKET_DATA.service import fetch_completed_candles
+          class RangeProvider:
+              def fetch_range(self, symbol, timeframe, start_time, end_time):
+                  return [
+                      ProviderCandle(
+                          dt("2026-10-10T04:59:00Z"), "UTC",
+                          dt("2026-10-10T04:59:00Z"), "1", "2", "0", "1.5"
+                      ),
+                      ProviderCandle(
+                          dt("2026-10-10T05:00:00Z"), "UTC",
+                          dt("2026-10-10T05:00:00Z"), "1", "2", "0", "1.5"
+                      ),
+                  ]
+
+          ranged = fetch_completed_candles(
+              RangeProvider(),
+              "EURUSD",
+              "M1",
+              dt("2026-10-10T05:00:00Z"),
+              dt("2026-10-10T05:01:00Z"),
+          )
+          assert [c.timestamp for c in ranged] == [dt("2026-10-10T05:00:00Z")]
+
+          # H4 aggregation must reject missing hourly source intervals.
+          from MARKET_DATA.provider import YahooChartsProvider
+          aggregate_provider = YahooChartsProvider()
+          hourly = [
+              ProviderCandle(dt("2026-10-10T00:00:00Z"), "UTC", dt("2026-10-10T00:00:00Z"), "1","2","0","1",100),
+              ProviderCandle(dt("2026-10-10T01:00:00Z"), "UTC", dt("2026-10-10T01:00:00Z"), "1","2","0","1",100),
+              ProviderCandle(dt("2026-10-10T03:00:00Z"), "UTC", dt("2026-10-10T03:00:00Z"), "1","2","0","1",100),
+              ProviderCandle(dt("2026-10-10T04:00:00Z"), "UTC", dt("2026-10-10T04:00:00Z"), "1","2","0","1",100),
+          ]
+          aggregate_provider._parse = lambda payload, symbol, interval: hourly
+          aggregate_provider._request = lambda symbol, interval, start_time, end_time: {}
+          assert aggregate_provider._aggregate_hourly(
+              "EURUSD", dt("2026-10-10T00:00:00Z"), dt("2026-10-10T05:00:00Z"), 4
+          ) == []
+
+          # Persisted negative volume and duplicate current/completed identity must fail.
+          import tempfile
+          from pathlib import Path
+          from MARKET_DATA.persistence import load_market_data
+          with tempfile.TemporaryDirectory() as temp_dir:
+              path = Path(temp_dir) / "EURUSD" / "EURUSD_marketdata.json"
+              negative = {
+                  "symbol": "EURUSD",
+                  "timeframes": {
+                      "M1": {
+                          "available_start": "2026-10-10T05:00:00Z",
+                          "available_end": "2026-10-10T05:00:00Z",
+                          "candles": [{
+                              "candle_id": "EURUSD_M1_2026-10-10T05:00:00Z",
+                              "timestamp": "2026-10-10T05:00:00Z",
+                              "completion_time": "2026-10-10T05:01:00Z",
+                              "open": "1",
+                              "high": "2",
+                              "low": "0",
+                              "close": "1",
+                              "volume": {"total": "-1"}
+                          }],
+                          "current": None
+                      }
+                  }
+              }
+              path.parent.mkdir(parents=True)
+              import json
+              path.write_text(json.dumps(negative), encoding="utf-8")
+              try:
+                  load_market_data(path, "EURUSD")
+              except ValueError:
+                  pass
+              else:
+                  raise AssertionError("negative persisted volume must fail")
+
+              duplicate = json.loads(json.dumps(negative))
+              duplicate["timeframes"]["M1"]["candles"][0]["volume"]["total"] = "1"
+              duplicate["timeframes"]["M1"]["current"] = duplicate["timeframes"]["M1"]["candles"][0]
+              path.write_text(json.dumps(duplicate), encoding="utf-8")
+              try:
+                  load_market_data(path, "EURUSD")
+              except ValueError:
+                  pass
+              else:
+                  raise AssertionError("current/completed identity conflict must fail")
+
+          # Malformed Yahoo OHLC records must fail instead of being silently dropped.
+          malformed_payload = {
+              "chart": {
+                  "error": None,
+                  "result": [{
+                      "timestamp": [int(dt("2026-10-10T05:00:00Z").timestamp())],
+                      "indicators": {
+                          "quote": [{
+                              "open": [1.0],
+                              "high": [2.0],
+                              "low": [0.0],
+                              "close": [None],
+                              "volume": [10]
+                          }]
+                      }
+                  }]
+              }
+          }
+          try:
+              aggregate_provider._parse(malformed_payload, "EURUSD", "1m")
+          except ValueError:
+              pass
+          else:
+              raise AssertionError("missing Yahoo OHLC must fail")
 
           print("MARKET_DATA_RANGE_TESTS_OK")
           PY
