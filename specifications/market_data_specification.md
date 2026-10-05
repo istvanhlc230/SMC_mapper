@@ -2390,7 +2390,7 @@ Module tree:
 
 market_data.py -> MARKET_DATA/cli.py -> models.py, provider.py, normalization.py, persistence.py, service.py
 
-MARKET_DATA/market_data_cache.json is a provider acquisition cache only. The canonical mapper-facing document remains <DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json.
+No provider cache file is part of the permanent repository structure. Provider request-local/in-memory state is an implementation optimization only. The canonical mapper-facing document remains <DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json.
 
 ## 21.1 Module ownership
 
@@ -2403,7 +2403,7 @@ MARKET_DATA/market_data_cache.json is a provider acquisition cache only. The can
 | MARKET_DATA/persistence.py | symbol paths, JSON validation, serialization and atomic save |
 | MARKET_DATA/service.py | acquisition planning, merge, retention and timeframe/symbol orchestration |
 | MARKET_DATA/cli.py | argparse, request parsing, validation and process execution |
-| MARKET_DATA/market_data_cache.json | provider cache; never the canonical mapper document |
+| provider-local request state | transient provider optimization; never the canonical mapper document |
 
 ## 21.2 UML-style component relationship
 
@@ -2436,7 +2436,7 @@ Dependency direction is one-way: CLI -> service -> provider/normalization/persis
 | current_snapshot | persisted in-progress candle |
 | data_directory | common data root |
 | market_data_path | canonical symbol JSON path |
-| cache_path | provider cache path |
+| cache_path | removed; no persistent provider cache path exists |
 | changed | whether resulting state differs from original |
 
 Do not use opaque domain-state names such as data, item, obj, tmp, helper or result2.
