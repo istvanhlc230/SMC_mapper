@@ -748,3 +748,28 @@ Corrections:
 Implementation version is 2.4.4; persistent schema remains V2.
 
 Validation requirement: run the CLI parser matrix covering --date, --time, --date+--time, invalid combinations, and --last-update, then run fresh GitHub Actions validation before marking PASS.
+
+
+## Calendar 2.4.5 relative-day CLI scopes
+
+**Status: IMPLEMENTED — validation pending**
+
+Added the requested public relative-day scope parameters:
+- `today` — current UTC calendar day;
+- `tomorrow` — next UTC calendar day;
+- `yesterday` — previous UTC calendar day.
+
+The three scopes are resolved dynamically from Calendar's canonical `utc_now()`
+clock and use the existing exact-day interval semantics. They are available to
+normal query/acquisition, explicit refresh, and symbol-scoped delete. They are
+not provider-native ForexFactory navigation parameters and are distinct from
+`current`, `latest`, and `next`.
+
+Synchronized:
+- `CALENDAR/domain.py`
+- `CALENDAR/config.py` (implementation version 2.4.5)
+- `specifications/calendar_specification.md`
+
+Validation requirement: run the relative-scope parser matrix around UTC midnight,
+plus query/refresh/delete routing checks, and fresh GitHub Actions before marking
+this change PASS.
