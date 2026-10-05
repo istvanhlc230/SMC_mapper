@@ -114,7 +114,7 @@ def run_query(
                     "status": status,
                     "symbol": symbol,
                     "events": events,
-                    "providers": presentation.public_provider_results(
+                    "providers": presentation.sanitize_provider_results(
                         refresh_result["provider_results"]
                     ),
                     "refresh": refresh_result["summary"],
