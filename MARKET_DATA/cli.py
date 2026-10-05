@@ -47,7 +47,7 @@ def build_argument_parser():
         help=(
             "Calendar-compatible scope: YYYY.MM.DD, "
             "YYYY.MM.DD-YYYY.MM.DD, YYYY.MM.DD@HH:MM, "
-            "YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM, or current."
+            "YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM, or open-start -END."
         ),
     )
     parser.add_argument(
