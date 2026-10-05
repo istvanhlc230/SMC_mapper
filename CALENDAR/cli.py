@@ -124,9 +124,17 @@ def run_refresh(
             debug=debug,
         )
 
-        provider_statuses = [item["status"] for item in result["provider_results"]]
-        if provider_statuses and all(status == "ERROR" for status in provider_statuses):
+        provider_status = domain.status_from_provider_results(
+            result["provider_results"]
+        )
+        if provider_status == "UNAVAILABLE":
             status = "UNAVAILABLE"
+        elif provider_status == "NO_FOREX_PAIR":
+            # A refresh must preserve provider availability semantics instead of
+            # collapsing a verified Yahoo FX-pair absence into UNCHANGED.
+            status = "NO_FOREX_PAIR"
+        elif provider_status in {"PARTIAL", "BOOTSTRAP_REQUIRED"}:
+            status = provider_status if provider_status == "BOOTSTRAP_REQUIRED" else "PARTIAL"
         elif result["failures"]:
             status = "PARTIAL"
         elif result["summary"]["changed"] or result["summary"]["added"]:
