@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import re
 from datetime import datetime, timedelta, timezone
 from typing import Sequence
 
@@ -47,6 +48,8 @@ def normalize_timeframe(timeframe):
 
 def parse_calendar_date(value):
     """Parse the Calendar-compatible YYYY.MM.DD date format."""
+    if not re.fullmatch(r"\\d{4}\\.\\d{2}\\.\\d{2}", value.strip()):
+        raise ValueError(f"invalid date, expected YYYY.MM.DD: {value}")
     try:
         return datetime.strptime(value.strip(), "%Y.%m.%d").date()
     except ValueError as exc:
@@ -57,6 +60,8 @@ def parse_calendar_date(value):
 
 def parse_calendar_time(value):
     """Parse the Calendar-compatible HH:MM 24-hour time format."""
+    if not re.fullmatch(r"\\d{2}:\\d{2}", value.strip()):
+        raise ValueError(f"invalid time, expected HH:MM: {value}")
     try:
         return datetime.strptime(value.strip(), "%H:%M").time()
     except ValueError as exc:
