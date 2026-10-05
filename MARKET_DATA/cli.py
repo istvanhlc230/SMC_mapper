@@ -87,10 +87,9 @@ def parse_calendar_date(value):
     if not re.fullmatch(DATE_RE, value.strip()):
         raise ValueError(f"invalid date, expected YYYY.MM.DD: {value}")
     try:
-        return datetime.strptime(value.strip(), "%Y.%m.%d").replace(
-            tzinfo=timezone.utc
-        )
-    except ValueError as exc:
+        year, month, day = (int(part) for part in value.strip().split("."))
+        return datetime(year, month, day, tzinfo=timezone.utc)
+    except (ValueError, TypeError) as exc:
         raise ValueError(f"invalid date, expected YYYY.MM.DD: {value}") from exc
 
 
@@ -99,8 +98,11 @@ def parse_calendar_time(value):
     if not re.fullmatch(TIME_RE, value.strip()):
         raise ValueError(f"invalid time, expected HH:MM: {value}")
     try:
-        return datetime.strptime(value.strip(), "%H:%M").time()
-    except ValueError as exc:
+        hour, minute = (int(part) for part in value.strip().split(":"))
+        if hour > 23 or minute > 59:
+            raise ValueError
+        return datetime(2000, 1, 1, hour=hour, minute=minute).time()
+    except (ValueError, TypeError) as exc:
         raise ValueError(f"invalid time, expected HH:MM: {value}") from exc
 
 
