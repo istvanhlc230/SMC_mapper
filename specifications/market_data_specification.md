@@ -432,6 +432,18 @@ Required options:
 ```
 
 `--range` accepts the Calendar-compatible scope grammar:
+Open-start range forms are also supported:
+
+    --range -YYYY.MM.DD
+    --range -YYYY.MM.DD@HH:MM
+
+A leading `-` omits the start boundary. The start is resolved separately for each requested timeframe from
+that timeframe's latest persisted completed-candle timestamp (`available_end`). The explicit END remains
+the upper boundary. An open-start range therefore requires retained completed history for every requested
+timeframe; a missing `available_end` fails explicitly rather than fabricating a start. The canonical time
+spelling is `HH:MM`; `HH.MM` is accepted only as a compatibility alias in the open-start datetime form
+and is normalized to `HH:MM`.
+
 
 ```text
 YYYY.MM.DD
@@ -484,6 +496,8 @@ Purpose:
 | `YYYY.MM.DD-YYYY.MM.DD` | inclusive date range: `[start 00:00, day-after-end 00:00)` |
 | `YYYY.MM.DD@HH:MM` | exact UTC minute: `[point, point+1 minute)` |
 | `YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM` | half-open UTC interval |
+| `-YYYY.MM.DD` | from persisted `available_end` through the exclusive end of the given UTC day |
+| `-YYYY.MM.DD@HH:MM` | from persisted `available_end` through the exclusive end of the given UTC minute |
 | `--current` | no historical interval; refresh the current in-progress candle snapshot |
 | omitted | normal incremental completed-candle acquisition |
 | `--lastclosed` | exactly the latest completed candle |
@@ -498,7 +512,7 @@ No machine-local timezone is ever assumed.
 - `--current` means **the current in-progress candle snapshot**.
 - `--lastclosed` is mutually exclusive with `--range`.
 - `--current` is mutually exclusive with `--lastclosed`.
-- Historical `--range` scopes are mutually exclusive with `current` and `lastclosed` modes.
+- Historical `--range` scopes, including open-start `-END` ranges, are mutually exclusive with `current` and `lastclosed` modes.
 - With no explicit mode, normal incremental completed-candle acquisition is used.
 - `lastclosed` must use the provider's latest-completed acquisition path and completion validation.
 - A candle is eligible for `lastclosed` only when its canonical `completion_time` has passed.
@@ -1498,7 +1512,7 @@ When explicit historical boundaries are supplied:
 
 - `start_time + end_time`: acquire exactly the requested interval;
 - `start_time` only: acquire from `start_time` through the latest completed candle available at evaluation time;
-- `end_time` only: use the persisted `available_start` for the timeframe as the acquisition start; if no persisted completed range exists, fail explicitly and require `--starttime`;
+- `end_time` only (the internal representation of open-start `--range -END`): use the persisted `available_end` for the timeframe as the acquisition start; if no persisted completed history exists, fail explicitly;
 - honor requested boundaries;
 - do not invent candles outside requested scope.
 
@@ -2473,3 +2487,22 @@ MarketDataRequest -> resolve_acquisition_range -> provider acquisition -> normal
 ## 21.6 Structural implementation rule
 
 Any implementation change affecting interfaces, fields, paths, state transitions, CLI options or ownership boundaries must update this specification in the same iteration before implementation is accepted.
+
+## 13.1.1 Open-start `--range -END`
+
+The open-start Market Data range uses the latest retained completed candle as its lower boundary for each
+requested timeframe.
+
+Examples:
+
+    python market_data.py --symbol EURUSD --timeframes M1 M5 --range -2026.10.20
+    python market_data.py --symbol EURUSD --timeframes M1 M5 --range -2026.10.10@05:00
+    python market_data.py --symbol EURUSD --timeframes M1 M5 --range -2026.10.10@05.00
+
+For each timeframe:
+- `available_end` is the latest persisted completed-candle timestamp and becomes the resolved start;
+- the explicit END is converted to the existing canonical exclusive range boundary;
+- the latest persisted candle may be fetched again at the inclusive lower boundary and deduplicated by candle ID;
+- no start point is fabricated when the timeframe has no retained completed history;
+- this mode is historical acquisition and is not equivalent to `--current`.
+
