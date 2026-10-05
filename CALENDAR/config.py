@@ -120,8 +120,6 @@ SCOPE
   YYYY.MM.DD-YYYY.MM.DD              Inclusive UTC date range.
   YYYY.MM.DD@HH:MM                   Exact UTC minute.
   YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM  Half-open UTC datetime range.
-  --time HH:MM                       Exact UTC minute on the current UTC day
-                                      when no date is supplied.
   current                             Incremental update from each
                                       provider+canonical-symbol watermark
                                       through current UTC time.
