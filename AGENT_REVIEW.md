@@ -911,3 +911,5 @@ Automatic corrections:
 - the obsolete active acceptance statement requiring `BOOTSTRAP_REQUIRED` for a missing watermark is removed.
 
 A fresh GitHub Actions run is required before PASS. The previous 2.4.8 PASS remains historical and is superseded by this correction.
+
+Validation trigger: this branch changes no implementation semantics; its purpose is to execute the full Calendar workflow against the exact 2.4.9 implementation snapshot.
