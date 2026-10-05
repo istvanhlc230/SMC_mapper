@@ -111,9 +111,18 @@ jobs:
               "symbol": "EURUSD",
               "timeframes": {
                   "M1": {
-                      "available_start": "2026-10-01T00:00:00Z",
+                      "available_start": "2026-10-05T07:15:00Z",
                       "available_end": "2026-10-05T07:15:00Z",
-                      "candles": [],
+                      "candles": [{
+                          "candle_id": "EURUSD:M1:2026-10-05T07:15:00Z",
+                          "timestamp": "2026-10-05T07:15:00Z",
+                          "completion_time": "2026-10-05T07:16:00Z",
+                          "open": "1.000000000000000000",
+                          "high": "1.100000000000000000",
+                          "low": "0.900000000000000000",
+                          "close": "1.050000000000000000",
+                          "volume": {},
+                      }],
                       "current": None,
                   }
               },
