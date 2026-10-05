@@ -818,3 +818,23 @@ Detail list with that empty list before marking the acquisition PARTIAL.
 
 The updated Calendar source and inline CI contract must be run by GitHub Actions. PASS is not claimed until the
 fresh workflow run for this change completes successfully.
+
+# Calendar 2.4.6 audit correction — strict rendered ForexFactory event time
+
+**Status: IMPLEMENTED — validation pending**
+
+The first fresh CI run after the 2.4.6 changes exposed an existing parser/test inconsistency:
+`parse_forexfactory_html_events()` silently discarded a titled rendered event whose provider time
+was non-concrete (for example `Tentative`), while the Calendar regression contract requires fail-closed
+handling for an event that cannot receive an exact timestamp.
+
+Automatic correction:
+- `CALENDAR/parsing.py` now raises `ProviderError` for a titled rendered row without a concrete HH:MM AM/PM clock;
+- repeated/missing row times are no longer inherited from the previous event, preventing fabricated timestamps;
+- `ForexFactoryHTMLCalendarParser` now has a class-level activity docstring and state-variable comments;
+- the correction preserves the existing requirement that no synthetic midnight timestamp is created.
+
+The existing Calendar specification already states that invalid rendered event clocks fail closed, so
+no semantic specification change beyond the 2.4.6 current-refresh contract was required for this parser fix.
+
+Fresh GitHub Actions validation is required before PASS.
