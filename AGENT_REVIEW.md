@@ -773,3 +773,48 @@ Synchronized:
 Validation requirement: run the relative-scope parser matrix around UTC midnight,
 plus query/refresh/delete routing checks, and fresh GitHub Actions before marking
 this change PASS.
+
+# Calendar 2.4.6 current refresh/error-visibility audit and correction
+
+**Status: IMPLEMENTED — validation pending**
+
+## Audit findings
+
+The `current` acquisition path already re-contacted applicable providers on every invocation when a committed
+provider+symbol watermark existed. The watermark was therefore correctly acting as an incremental result cursor,
+not a provider-call suppression mechanism. The public specification was misleading because it described `current`
+primarily as incremental acquisition and did not explicitly guarantee unconditional provider refresh.
+
+A concrete output-boundary defect was also found: `CALENDAR/cli.py` passed the complete internal
+`provider_results` list directly to the public query presentation. A caught provider `ERROR` record could therefore
+expose its `error` text in normal JSON/cleartext output instead of remaining diagnostic-only.
+
+A state-consistency defect was found in both normal/current acquisition and forced refresh: a failed ForexFactory
+Detail request produces an empty `details.specs` list. A normal event merge could replace an already populated cached
+Detail list with that empty list before marking the acquisition PARTIAL.
+
+## Automatic corrections
+
+- Updated `specifications/calendar_specification.md` to baseline 2.4.6.
+- Defined `current` as an always-refreshing acquisition/query operation whenever the applicable provider has a
+  committed successful watermark.
+- Explicitly defined the watermark as an incremental output boundary, not a reason to skip provider acquisition.
+- Defined provider acquisition errors as diagnostic-only for normal `current` output.
+- Added the `current` public-output rule: provider `ERROR` records are omitted and diagnostic fields
+  (`error`, `reason`, `detail_failures`) are not returned.
+- Preserved aggregate status semantics, so `UNAVAILABLE` and `PARTIAL` remain machine-readable.
+- Kept `--debug` provider diagnostics on stderr only.
+- Extended `domain.merge_events()` with stable-ID-aware Detail-failure preservation.
+- Updated explicit acquisition and `current` acquisition to pass failed ForexFactory Detail IDs into the merge.
+- Updated explicit refresh merge handling with the same preservation rule.
+- A failed Detail refresh can no longer erase an already committed non-empty `details.specs` list.
+- Updated `CALENDAR/config.py` implementation version to 2.4.6 and synchronized CURRENT/ERROR help text.
+- Corrected the Calendar GitHub Actions regression suite: `today` is now tested as a valid relative-day scope.
+- Added regressions proving `current` calls a provider on every invocation with an existing watermark.
+- Added regressions proving Detail-failure preservation.
+- Added a regression proving normal `current` stdout contains no provider exception text or `ERROR` provider record.
+
+## Validation requirement
+
+The updated Calendar source and inline CI contract must be run by GitHub Actions. PASS is not claimed until the
+fresh workflow run for this change completes successfully.
