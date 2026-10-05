@@ -315,8 +315,18 @@ jobs:
                   self.max_workers = max_workers
               def __enter__(self):
                   return self
+              class RecordingFuture:
+                  def __init__(self, value):
+                      self.value = value
+                  def result(self):
+                      return self.value
+
               def __exit__(self, exc_type, exc_value, tb):
                   return False
+              def submit(self, function, item):
+                  # The production parser uses submit() so the test double must
+                  # expose the same executor contract.
+                  return RecordingFuture(function(item))
               def map(self, function, iterable):
                   return [function(item) for item in iterable]
           original_detail_fetch = providers.fetch_forexfactory_event_detail
