@@ -17,7 +17,7 @@ HTTP_TIMEOUT = 15.0
 # SCHEMA_VERSION — persistent calendar.json schema version.
 SCHEMA_VERSION = 2
 # __version__ — Calendar CLI implementation version, independent from SCHEMA_VERSION.
-__version__ = "2.4.4"
+__version__ = "2.4.5"
 
 # SUPPORTED_CURRENCIES — standalone currencies accepted by the CLI.
 SUPPORTED_CURRENCIES = {
@@ -109,6 +109,9 @@ SCOPE
   current                             Incremental update from each
                                       provider+canonical-symbol watermark
                                       through current UTC time.
+  today                               Exact current UTC calendar day.
+  tomorrow                            Exact next UTC calendar day.
+  yesterday                           Exact previous UTC calendar day.
   latest                              Return the most recent past/current event for
                                       SYMBOL from the committed calendar cache.
   next                                Return the nearest future event for
@@ -128,6 +131,13 @@ CURRENT
   incremental acquisition, normalizes/deduplicates, atomically persists,
   and returns events newer than the watermark through now.
   Missing watermark -> BOOTSTRAP_REQUIRED. No timestamp is fabricated.
+
+RELATIVE DAYS
+  today, tomorrow, and yesterday are exact UTC calendar-day scopes.
+  They are resolved at execution time from Calendar's utc_now() clock.
+  today = current UTC day; tomorrow = next UTC day; yesterday = previous UTC day.
+  They use the same acquisition/query interval semantics as YYYY.MM.DD and
+  are valid for normal query, explicit refresh, and scoped delete.
 
 LATEST
   latest is a read-only most-recent-event lookup.
