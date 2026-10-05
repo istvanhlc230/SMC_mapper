@@ -22,7 +22,7 @@ class MarketDataRequest:
     start_time: datetime | None
     end_time: datetime | None
     last_candle_only: bool
-    live: bool
+    current: bool
     debug: bool
 
 @dataclass(frozen=True)
