@@ -496,7 +496,9 @@ def refresh_calendar_scope(
             detail_failures: List[str] = []
             if provider == "forexfactory":
                 # Preserve the stable event IDs of failed Detail requests for the merge stage.
-                detail_failures = providers._enrich_forexfactory_details(selected)
+                # A provider helper may return no failure collection when all Detail work succeeded;
+                # normalize that case to an empty set before recording failed IDs.
+                detail_failures = providers._enrich_forexfactory_details(selected) or []
                 refresh_detail_failure_ids.update(
                     f"forexfactory:{provider_event_id}"
                     for provider_event_id in detail_failures
