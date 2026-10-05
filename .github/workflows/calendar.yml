@@ -35,7 +35,7 @@ jobs:
               return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
           assert calendar.validate_symbol("EURUSD") == "EURUSD"
-          assert calendar.__version__ == "2.4.8"
+          assert calendar.__version__ == "2.4.9"
           assert calendar.validate_symbol("USDGBP") == "USDGBP"
           assert calendar.validate_symbol("HUF") == "HUF"
           assert calendar.validate_symbol("NVDA") == "NVDA"
@@ -548,6 +548,107 @@ jobs:
                   pass
               else:
                   raise AssertionError(f"unexpected refresh grammar accepted: {invalid_tokens}")
+
+          # CLI refresh must expose the canonical post-refresh event result even
+          # when no committed coverage exists yet. The CLI must not reapply
+          # coverage/watermark filters to an explicit refresh result.
+          original_refresh_scope = operations.refresh_calendar_scope
+          original_load = storage.load_calendar_document
+          try:
+              refresh_event = {
+                  "event_id": "forexfactory:cli-first-use",
+                  "symbol": "USD",
+                  "asset_type": "forex",
+                  "event_type": "economic",
+                  "source": "forexfactory",
+                  "timestamp": "2026-10-05T12:00:00Z",
+                  "title": "CLI First Use",
+                  "details": {
+                      "currency": "USD",
+                      "impact": "HIGH",
+                      "actual": None,
+                      "forecast": None,
+                      "previous": None,
+                      "specs": [{"order": 1, "title": "Source", "html": "Synthetic"}],
+                  },
+              }
+              operations.refresh_calendar_scope = lambda document, symbol, start, end, debug=False: {
+                  "events": [refresh_event],
+                  "provider_results": [{"provider": "forexfactory", "status": "OK"}],
+                  "failures": [],
+                  "summary": {"added": 1, "changed": 0, "unchanged": 0},
+              }
+              storage.load_calendar_document = lambda: domain.build_empty_calendar_document()
+              out = io.StringIO()
+              with contextlib.redirect_stdout(out):
+                  assert calendar.run_query(
+                      "USD", "2026.10.05", cleartext=False, refresh=True
+                  ) == 0
+              parsed = json.loads(out.getvalue())
+              assert parsed["status"] == "OK"
+              assert [event["event_id"] for event in parsed["events"]] == [
+                  "forexfactory:cli-first-use"
+              ]
+          finally:
+              operations.refresh_calendar_scope = original_refresh_scope
+              storage.load_calendar_document = original_load
+
+          # current refresh on first use must also expose its logical refresh
+          # result even though no prior watermark exists.
+          original_refresh_current = operations.refresh_current_scope
+          original_load = storage.load_calendar_document
+          try:
+              current_event = dict(refresh_event)
+              current_event["event_id"] = "forexfactory:cli-current-first-use"
+              operations.refresh_current_scope = lambda document, symbol, debug=False: {
+                  "events": [current_event],
+                  "provider_results": [{"provider": "forexfactory", "status": "OK"}],
+                  "failures": [],
+                  "summary": {"added": 1, "changed": 0, "unchanged": 0},
+              }
+              storage.load_calendar_document = lambda: domain.build_empty_calendar_document()
+              out = io.StringIO()
+              with contextlib.redirect_stdout(out):
+                  assert calendar.run_query(
+                      "USD", "current", cleartext=False, refresh=True
+                  ) == 0
+              parsed = json.loads(out.getvalue())
+              assert parsed["status"] == "OK"
+              assert [event["event_id"] for event in parsed["events"]] == [
+                  "forexfactory:cli-current-first-use"
+              ]
+          finally:
+              operations.refresh_current_scope = original_refresh_current
+              storage.load_calendar_document = original_load
+
+          # A rescheduled event that was visible in the logical refresh scope
+          # must remain in the CLI result by stable provider ID even after its
+          # timestamp moves outside the original interval.
+          original_refresh_scope = operations.refresh_calendar_scope
+          original_load = storage.load_calendar_document
+          try:
+              rescheduled_event = dict(refresh_event)
+              rescheduled_event["event_id"] = "forexfactory:cli-rescheduled"
+              rescheduled_event["timestamp"] = "2026-10-06T01:00:00Z"
+              operations.refresh_calendar_scope = lambda document, symbol, start, end, debug=False: {
+                  "events": [rescheduled_event],
+                  "provider_results": [{"provider": "forexfactory", "status": "OK"}],
+                  "failures": [],
+                  "summary": {"added": 0, "changed": 1, "unchanged": 0},
+              }
+              storage.load_calendar_document = lambda: domain.build_empty_calendar_document()
+              out = io.StringIO()
+              with contextlib.redirect_stdout(out):
+                  assert calendar.run_query(
+                      "USD", "2026.10.05", cleartext=False, refresh=True
+                  ) == 0
+              parsed = json.loads(out.getvalue())
+              assert parsed["status"] == "OK"
+              assert parsed["events"][0]["event_id"] == "forexfactory:cli-rescheduled"
+              assert parsed["events"][0]["timestamp"] == "2026-10-06T01:00:00Z"
+          finally:
+              operations.refresh_calendar_scope = original_refresh_scope
+              storage.load_calendar_document = original_load
 
           # Legacy schema-2 ForexFactory coverage without Detail specs is incomplete
           # for the requested overlap and must be reacquired.
