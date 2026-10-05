@@ -297,16 +297,20 @@ def parse_request(args: List[str]) -> Dict[str, Any]:
     if positional[0] == "refresh":
         if len(positional) not in {2, 3}:
             raise CalendarInputError(
-                "Refresh requires REFRESH + SYMBOL + SCOPE, or REFRESH + SYMBOL with --time."
+                "Refresh requires REFRESH + SYMBOL + SCOPE, or REFRESH + SYMBOL with --date/--time."
             )
+        if cli_date is not None and len(positional) == 3:
+            raise CalendarInputError("--date cannot be combined with an explicit refresh scope.")
         symbol = domain.validate_symbol(positional[1])
         if len(positional) == 2:
-            if cli_time is None:
-                raise CalendarInputError(
-                    "Refresh requires an explicit scope or --time HH:MM."
-                )
-            current_date = domain.utc_now().strftime("%Y.%m.%d")
-            scope = domain.parse_scope(f"{current_date}@{cli_time}")
+            if cli_date is not None:
+                domain.parse_date(cli_date)
+                scope = domain.parse_scope(f"{cli_date}@{cli_time}") if cli_time is not None else domain.parse_scope(cli_date)
+            elif cli_time is not None:
+                current_date = domain.utc_now().strftime("%Y.%m.%d")
+                scope = domain.parse_scope(f"{current_date}@{cli_time}")
+            else:
+                raise CalendarInputError("Refresh requires an explicit scope or --date/--time.")
         else:
             if cli_time is not None:
                 raise CalendarInputError(
@@ -330,10 +334,8 @@ def parse_request(args: List[str]) -> Dict[str, Any]:
             raise CalendarInputError("--cleartext is not valid for delete.")
 
         if len(positional) == 1:
-            if cli_time is not None:
-                raise CalendarInputError(
-                    "--time cannot be used with bare delete."
-                )
+            if cli_date is not None or cli_time is not None:
+                raise CalendarInputError("--date/--time cannot be used with bare delete.")
             return {
                 "operation": "DELETE",
                 "symbol": None,
@@ -344,17 +346,21 @@ def parse_request(args: List[str]) -> Dict[str, Any]:
 
         if len(positional) not in {2, 3}:
             raise CalendarInputError(
-                "Scoped delete requires DELETE + SYMBOL + SCOPE, or DELETE + SYMBOL with --time."
+                "Scoped delete requires DELETE + SYMBOL + SCOPE, or DELETE + SYMBOL with --date/--time."
             )
+        if cli_date is not None and len(positional) == 3:
+            raise CalendarInputError("--date cannot be combined with an explicit delete scope.")
 
         symbol = domain.validate_symbol(positional[1])
         if len(positional) == 2:
-            if cli_time is None:
-                raise CalendarInputError(
-                    "Scoped delete requires an explicit scope or --time HH:MM."
-                )
-            current_date = domain.utc_now().strftime("%Y.%m.%d")
-            scope = domain.parse_scope(f"{current_date}@{cli_time}")
+            if cli_date is not None:
+                domain.parse_date(cli_date)
+                scope = domain.parse_scope(f"{cli_date}@{cli_time}") if cli_time is not None else domain.parse_scope(cli_date)
+            elif cli_time is not None:
+                current_date = domain.utc_now().strftime("%Y.%m.%d")
+                scope = domain.parse_scope(f"{current_date}@{cli_time}")
+            else:
+                raise CalendarInputError("Scoped delete requires an explicit scope or --date/--time.")
         else:
             if cli_time is not None:
                 raise CalendarInputError(
@@ -373,22 +379,22 @@ def parse_request(args: List[str]) -> Dict[str, Any]:
         }
     if len(positional) not in {1, 2}:
         raise CalendarInputError(
-            "Expected SYMBOL + SCOPE, or SYMBOL with --time HH:MM."
+            "Expected SYMBOL + SCOPE, or SYMBOL with --date/--time."
         )
 
     symbol = domain.validate_symbol(positional[0])
     if len(positional) == 1:
-        if cli_time is None:
-            raise CalendarInputError(
-                "Expected SYMBOL + SCOPE, or SYMBOL with --time HH:MM."
-            )
-        current_date = domain.utc_now().strftime("%Y.%m.%d")
-        scope = domain.parse_scope(f"{current_date}@{cli_time}")
+        if cli_date is not None:
+            domain.parse_date(cli_date)
+            scope = domain.parse_scope(f"{cli_date}@{cli_time}") if cli_time is not None else domain.parse_scope(cli_date)
+        elif cli_time is not None:
+            current_date = domain.utc_now().strftime("%Y.%m.%d")
+            scope = domain.parse_scope(f"{current_date}@{cli_time}")
+        else:
+            raise CalendarInputError("Expected SYMBOL + SCOPE, or SYMBOL with --date/--time.")
     else:
-        if cli_time is not None:
-            raise CalendarInputError(
-                "--time cannot be combined with an explicit query scope."
-            )
+        if cli_time is not None or cli_date is not None:
+            raise CalendarInputError("--date/--time cannot be combined with an explicit query scope.")
         scope = domain.parse_scope(positional[1])
     return {
         "operation": "QUERY",
@@ -409,6 +415,22 @@ def run() -> int:
                 request["symbol"],
                 request["scope"],
             )
+        if request["operation"] == "LAST_UPDATE":
+            with storage.acquire_calendar_lock():
+                document = storage.load_calendar_document()
+            updates = domain.query_last_update(document, request["symbol"])
+            status = "OK" if any(item["last_successful_at"] for item in updates) else "NO_LAST_UPDATE"
+            if request["cleartext"]:
+                print(f"CALENDAR RESULT | {status} | {request['symbol']}")
+                for item in updates:
+                    print(f"PROVIDER | {item['provider']} | {item['last_successful_at'] or 'N/A'}")
+            else:
+                print(json.dumps({
+                    "status": status,
+                    "symbol": request["symbol"],
+                    "last_updates": updates,
+                }, ensure_ascii=False))
+            return 0
         if request["operation"] == "REFRESH":
             return run_refresh(
                 request["symbol"],
