@@ -489,7 +489,9 @@ jobs:
               refresh_output_doc = domain.build_empty_calendar_document()
               operations.refresh_calendar_scope = lambda document, symbol, start, end, debug=False: {
                   "events": [],
-                  "provider_results": [],
+                  # A successful provider with no changes must aggregate to OK,
+                  # allowing run_refresh() to expose the refresh-specific UNCHANGED state.
+                  "provider_results": [{"provider": "forexfactory", "status": "OK"}],
                   "failures": [],
                   "summary": {"added": 0, "changed": 0, "unchanged": 0},
               }
