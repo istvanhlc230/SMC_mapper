@@ -106,9 +106,9 @@ SCOPE
   YYYY.MM.DD-YYYY.MM.DD              Inclusive UTC date range.
   YYYY.MM.DD@HH:MM                   Exact UTC minute.
   YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM  Half-open UTC datetime range.
-  current                             Incremental update from each
-                                      provider+canonical-symbol watermark
-                                      through current UTC time.
+  current                             Always-refreshing provider update when
+                                      a provider+canonical-symbol watermark
+                                      exists; return remains incremental.
   today                               Exact current UTC calendar day.
   tomorrow                            Exact next UTC calendar day.
   yesterday                           Exact previous UTC calendar day.
