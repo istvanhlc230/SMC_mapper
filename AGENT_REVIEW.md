@@ -650,3 +650,29 @@ Specification synchronized in `specifications/market_data_specification.md`.
 Validation status:
 - Repository source changes are committed.
 - Python runtime/CLI matrix validation remains pending because no local execution environment is available through the connected repository interface.
+
+
+# Calendar 2.4.3 --time CLI correction
+
+**Status: IMPLEMENTED — validation pending**
+
+## Change requested
+Restore a Calendar CLI time-only shorthand so a concrete --time HH:MM without an explicit date resolves on the current UTC calendar day, while retaining the canonical internal YYYY.MM.DD@HH:MM scope grammar.
+
+## Implementation
+- Added --time HH:MM to the Calendar CLI.
+- python calendar.py SYMBOL --time HH:MM resolves to <current UTC date>@HH:MM.
+- python calendar.py SYMBOL YYYY.MM.DD --time HH:MM resolves to YYYY.MM.DD@HH:MM.
+- The same shorthand is accepted for explicit refresh and symbol-scoped delete operations.
+- --time is rejected when combined with an explicit scope that already contains time or represents a range/current/latest/next operation.
+- Bare delete cannot use --time.
+- The current date is obtained from the Calendar domain's canonical UTC clock (utc_now()), not the machine-local date.
+- The CLI normalizes the shorthand before existing scope parsing, so provider routing, coverage, watermark, persistence and interval semantics are unchanged.
+- Added concise source comments explaining why the shorthand is normalized to the canonical date@time grammar.
+- Updated Calendar help text and specifications/calendar_specification.md.
+- Bumped Calendar implementation version from 2.4.2 to 2.4.3; persistent schema remains V2.
+
+## Validation
+- Static source inspection completed after the implementation.
+- Repository test directory is intentionally absent under the current project structure, so no repository-root test suite was added.
+- Fresh runtime/CI validation is still required before marking this change PASS.
