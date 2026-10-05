@@ -356,6 +356,17 @@ def refresh_calendar_scope(
         refresh_window_end,
     )
     existing_ids = {event["event_id"] for event in existing_events}
+    # logical_existing_ids identify records that were already visible in the
+    # requested query interval; these may be returned even when the provider
+    # reschedules them outside the interval during refresh.
+    logical_existing_events = domain.filter_events_for_interval(
+        domain.filter_events_for_symbol(document["events"], symbol),
+        start,
+        end,
+    )
+    logical_existing_ids = {
+        event["event_id"] for event in logical_existing_events
+    }
     # refreshed_for_symbol collects selected provider records that may replace or add cache entries.
     refreshed_for_symbol: List[Dict[str, Any]] = []
     # refresh_detail_failure_ids records stable IDs whose Detail retrieval failed.
@@ -460,15 +471,19 @@ def refresh_calendar_scope(
             )
 
     refreshed_ids = {event["event_id"] for event in refreshed_for_symbol}
-    # The merge may refresh overlap-boundary records outside the logical query scope,
-    # but the public result must remain the normal query result for the requested scope.
+    # Overlap-only records are merged silently. A record is returned when its
+    # refreshed timestamp is inside the logical scope or its stable ID belonged
+    # to an existing event already visible in that scope before refresh.
     refreshed_visible = [
-        event for event in domain.filter_events_for_interval(
-            domain.filter_events_for_symbol(document["events"], symbol),
-            start,
-            end,
+        event
+        for event in domain.filter_events_for_symbol(document["events"], symbol)
+        if (
+            event["event_id"] in refreshed_ids
+            and (
+                start <= domain.parse_iso8601(event["timestamp"]) < end
+                or event["event_id"] in logical_existing_ids
+            )
         )
-        if event["event_id"] in refreshed_ids
     ]
     refreshed_visible.sort(
         key=lambda event: (
