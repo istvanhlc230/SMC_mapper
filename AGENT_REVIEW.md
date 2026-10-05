@@ -893,3 +893,5 @@ Calendar unit/runtime contract tests: PASS
 - Job conclusion: SUCCESS
 
 The passing run includes regression coverage for plain read-only `current`, trailing `refresh` parsing, `current refresh` delegation, late ForexFactory Detail refresh across the watermark boundary, explicit refresh rescheduling behavior, and the existing Calendar contract suite.
+
+The final documentation synchronization is revalidated on the validation snapshot.
