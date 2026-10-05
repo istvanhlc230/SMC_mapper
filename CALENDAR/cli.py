@@ -4,6 +4,7 @@
 import json
 import sys
 import traceback
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from . import domain, operations, presentation, storage
@@ -34,44 +35,149 @@ def _current_public_provider_results(
 
     return public_results
 
+def _query_current_cached(
+    document: Dict[str, Any],
+    symbol: str,
+    now: datetime,
+) -> List[Dict[str, Any]]:
+    """Return current incremental events from committed cache without provider I/O."""
+    boundaries: Dict[str, Optional[datetime]] = {}
+    for provider in domain.resolve_applicable_providers(symbol):
+        watermark = document["watermarks"].get(
+            domain.watermark_key(provider, symbol)
+        )
+        boundaries[provider] = (
+            domain.parse_iso8601(watermark["last_successful_at"])
+            if watermark and watermark.get("last_successful_at")
+            else None
+        )
+
+    cached: List[Dict[str, Any]] = []
+    for event in domain.filter_events_for_symbol(document["events"], symbol):
+        timestamp = domain.parse_iso8601(event["timestamp"])
+        boundary = boundaries.get(event["source"])
+        if boundary is None:
+            continue
+        if boundary < timestamp <= now:
+            cached.append(event)
+
+    return sorted(
+        {event["event_id"]: event for event in cached}.values(),
+        key=lambda event: (
+            domain.parse_iso8601(event["timestamp"]),
+            event["event_id"],
+        ),
+    )
 def run_query(
     symbol: str,
     scope: str,
     cleartext: bool = False,
     debug: bool = False,
+    refresh: bool = False,
 ) -> int:
-    """Calendar operation: run_query performs the focused run query step in the Calendar implementation."""
+    """Run a local Calendar query, optionally preceded by a provider refresh."""
     with storage.acquire_calendar_lock():
         document = storage.load_calendar_document()
 
-        if scope == "current":
-            result = operations.acquire_current(document, symbol, debug=debug)
-            events = domain.filter_events_for_symbol(result["events"], symbol)
-            status = domain.status_from_provider_results(result["provider_results"])
-            if status == "OK" and not events:
-                status = "NO_RELEVANT_EVENT"
-            # Use complete internal provider results for status calculation, then
-            # suppress provider-error diagnostics from the public current output.
-            public_provider_results = _current_public_provider_results(
-                result["provider_results"]
+        if refresh:
+            if scope == "current":
+                refresh_result = operations.refresh_current_scope(
+                    document,
+                    symbol,
+                    debug=debug,
+                )
+                events = _query_current_cached(
+                    document,
+                    symbol,
+                    domain.utc_now(),
+                )
+            else:
+                start, end = domain.resolve_scope_interval(scope)
+                refresh_result = operations.refresh_calendar_scope(
+                    document,
+                    symbol,
+                    start,
+                    end,
+                    debug=debug,
+                )
+                events = domain.filter_events_for_interval(
+                    domain.filter_events_for_symbol(document["events"], symbol),
+                    start,
+                    end,
+                )
+                yahoo_pair_available = not any(
+                    item["provider"] == "yahoo_finance"
+                    and item["status"] == "SKIPPED_NO_FOREX_PAIR"
+                    for item in refresh_result["provider_results"]
+                )
+                events = domain.filter_query_events(
+                    document,
+                    events,
+                    symbol,
+                    start,
+                    end,
+                    yahoo_pair_available=yahoo_pair_available,
+                )
+
+            provider_status = domain.status_from_provider_results(
+                refresh_result["provider_results"]
             )
-            presentation.output_query_result(
-                status,
-                symbol,
-                events,
-                public_provider_results,
-                cleartext,
-            )
+            if provider_status == "UNAVAILABLE":
+                status = "UNAVAILABLE"
+            elif provider_status == "NO_FOREX_PAIR":
+                status = "NO_FOREX_PAIR"
+            elif provider_status == "PARTIAL":
+                status = "PARTIAL"
+            else:
+                status = "OK" if events else "NO_RELEVANT_EVENT"
+
+            if cleartext:
+                presentation.output_query_result(
+                    status,
+                    symbol,
+                    events,
+                    refresh_result["provider_results"],
+                    cleartext=True,
+                )
+                print(
+                    f"REFRESH | added={refresh_result['summary']['added']} "
+                    f"changed={refresh_result['summary']['changed']} "
+                    f"unchanged={refresh_result['summary']['unchanged']}"
+                )
+            else:
+                print(json.dumps({
+                    "status": status,
+                    "symbol": symbol,
+                    "events": events,
+                    "providers": refresh_result["provider_results"],
+                    "refresh": refresh_result["summary"],
+                }, ensure_ascii=False))
             return 0 if status != "UNAVAILABLE" else 2
 
+        if scope == "current":
+            # Plain current is intentionally read-only. Provider acquisition is
+            # requested explicitly by the trailing refresh modifier instead.
+            events = _query_current_cached(
+                document,
+                symbol,
+                domain.utc_now(),
+            )
+            status = "OK" if events else "NO_RELEVANT_EVENT"
+            presentation.output_query_result(status, symbol, events, [], cleartext)
+            return 0
+
         if scope == "latest":
-            events = domain.query_latest_event(document["events"], symbol, domain.utc_now())
+            events = domain.query_latest_event(
+                document["events"], symbol, domain.utc_now()
+            )
             status = "OK" if events else "NO_LATEST_EVENT"
             presentation.output_query_result(status, symbol, events, [], cleartext)
             return 0
 
         if scope == "next":
-            events = domain.query_next_event(document["events"], symbol, domain.utc_now())
+            events = domain.query_next_event(
+                document["events"], symbol, domain.utc_now()
+            )
             status = "OK" if events else "NO_NEXT_EVENT"
             presentation.output_query_result(status, symbol, events, [], cleartext)
             return 0
@@ -82,8 +188,10 @@ def run_query(
             if cleartext:
                 print(f"CALENDAR RESULT | {status} | {symbol}")
                 for item in updates:
-                    value = item["last_successful_at"] or "N/A"
-                    print(f"PROVIDER | {item['provider']} | {value}")
+                    print(
+                        f"PROVIDER | {item['provider']} | "
+                        f"{item['last_successful_at'] or 'N/A'}"
+                    )
             else:
                 print(json.dumps({
                     "status": status,
@@ -94,11 +202,7 @@ def run_query(
 
         start, end = domain.resolve_scope_interval(scope)
         acquisition = operations.acquire_explicit(
-            document,
-            symbol,
-            start,
-            end,
-            debug=debug,
+            document, symbol, start, end, debug=debug
         )
         events = domain.filter_events_for_interval(
             domain.filter_events_for_symbol(document["events"], symbol),
@@ -118,7 +222,6 @@ def run_query(
             end,
             yahoo_pair_available=yahoo_pair_available,
         )
-
         provider_statuses = [
             item["status"] for item in acquisition["provider_results"]
         ]
@@ -141,74 +244,6 @@ def run_query(
             cleartext,
         )
         return 0 if status != "UNAVAILABLE" else 2
-
-def run_refresh(
-    symbol: str,
-    scope: str,
-    cleartext: bool = False,
-    debug: bool = False,
-) -> int:
-    """Calendar operation: run_refresh performs the focused run refresh step in the Calendar implementation."""
-    if scope in {"latest", "next", "current"}:
-        raise CalendarInputError(
-            "refresh requires an explicit date, date range, datetime, or datetime range."
-        )
-
-    start, end = domain.resolve_scope_interval(scope)
-
-    with storage.acquire_calendar_lock():
-        if debug:
-            print(f"DEBUG | Calendar file: {storage.CALENDAR_FILE}", file=sys.stderr)
-        document = storage.load_calendar_document()
-        result = operations.refresh_calendar_scope(
-            document,
-            symbol,
-            start,
-            end,
-            debug=debug,
-        )
-
-        provider_status = domain.status_from_provider_results(
-            result["provider_results"]
-        )
-        if provider_status == "UNAVAILABLE":
-            status = "UNAVAILABLE"
-        elif provider_status == "NO_FOREX_PAIR":
-            # A refresh must preserve provider availability semantics instead of
-            # collapsing a verified Yahoo FX-pair absence into UNCHANGED.
-            status = "NO_FOREX_PAIR"
-        elif provider_status in {"PARTIAL", "BOOTSTRAP_REQUIRED"}:
-            status = provider_status if provider_status == "BOOTSTRAP_REQUIRED" else "PARTIAL"
-        elif result["failures"]:
-            status = "PARTIAL"
-        elif result["summary"]["changed"] or result["summary"]["added"]:
-            status = "REFRESHED"
-        else:
-            status = "UNCHANGED"
-
-        if cleartext:
-            presentation.output_query_result(
-                status,
-                symbol,
-                result["events"],
-                result["provider_results"],
-                cleartext=True,
-            )
-            print(
-                f"REFRESH | added={result['summary']['added']} "
-                f"changed={result['summary']['changed']} "
-                f"unchanged={result['summary']['unchanged']}"
-            )
-        else:
-            print(json.dumps({
-                "status": status,
-                "symbol": symbol,
-                "events": result["events"],
-                "providers": result["provider_results"],
-                "refresh": result["summary"],
-            }, ensure_ascii=False))
-        return 0 if status != "UNAVAILABLE" else 2
-
 def run_delete(
     symbol: Optional[str],
     scope: Optional[str],
@@ -244,7 +279,7 @@ def run_delete(
     return 0
 
 def parse_request(args: List[str]) -> Dict[str, Any]:
-    """Calendar operation: parse_request performs the focused parse request step in the Calendar implementation."""
+    """Parse one Calendar CLI request using the canonical scope + modifier grammar."""
     if not args:
         raise CalendarInputError("No arguments provided. Use --help.")
 
@@ -253,9 +288,7 @@ def parse_request(args: List[str]) -> Dict[str, Any]:
         raise SystemExit(0)
 
     if any(item in {"-h", "--help"} for item in args):
-        raise CalendarInputError(
-            "--help cannot be combined with other arguments."
-        )
+        raise CalendarInputError("--help cannot be combined with other arguments.")
 
     cleartext = "--cleartext" in args
     debug = "--debug" in args
@@ -271,10 +304,6 @@ def parse_request(args: List[str]) -> Dict[str, Any]:
         raise CalendarInputError("--date may be specified only once.")
     cli_date = date_values[0].split("=", 1)[1] if date_values else None
 
-    # --time is a Calendar-compatible convenience form: when no date is
-    # supplied, it resolves against the current UTC calendar day; when a
-    # date-only scope is supplied, it is normalized to the existing
-    # canonical YYYY.MM.DD@HH:MM form before normal scope parsing.
     time_values = [item for item in args if item.startswith("--time=")]
     if "--time" in args:
         index = args.index("--time")
@@ -283,13 +312,11 @@ def parse_request(args: List[str]) -> Dict[str, Any]:
         time_values.append(f"--time={args[index + 1]}")
     if len(time_values) > 1:
         raise CalendarInputError("--time may be specified only once.")
-    cli_time = None
-    if time_values:
-        cli_time = time_values[0].split("=", 1)[1]
+    cli_time = time_values[0].split("=", 1)[1] if time_values else None
 
-    positional = []
+    positional: List[str] = []
     skip_next = False
-    for index, item in enumerate(args):
+    for item in args:
         if skip_next:
             skip_next = False
             continue
@@ -311,53 +338,35 @@ def parse_request(args: List[str]) -> Dict[str, Any]:
         raise CalendarInputError(
             "--cleartext/--debug/--time/--date/--last-update requires a symbol query."
         )
+
+    # refresh is a trailing query modifier. It never forms its own CLI command.
+    refresh = positional[-1] == "refresh"
+    if refresh:
+        positional.pop()
+
+    if not positional:
+        raise CalendarInputError(
+            "refresh requires SYMBOL + SCOPE; use refresh only as a trailing modifier."
+        )
+
     if last_update:
-        if len(positional) != 1 or cli_date is not None or cli_time is not None:
-            raise CalendarInputError("--last-update requires SYMBOL and cannot be combined with --date or --time.")
+        if refresh or len(positional) != 1 or cli_date is not None or cli_time is not None:
+            raise CalendarInputError(
+                "--last-update requires SYMBOL and cannot be combined with "
+                "refresh, --date or --time."
+            )
         return {
             "operation": "LAST_UPDATE",
             "symbol": domain.validate_symbol(positional[0]),
             "scope": None,
             "cleartext": cleartext,
             "debug": debug,
-        }
-
-    if positional[0] == "refresh":
-        if len(positional) not in {2, 3}:
-            raise CalendarInputError(
-                "Refresh requires REFRESH + SYMBOL + SCOPE, or REFRESH + SYMBOL with --date/--time."
-            )
-        if cli_date is not None and len(positional) == 3:
-            raise CalendarInputError("--date cannot be combined with an explicit refresh scope.")
-        symbol = domain.validate_symbol(positional[1])
-        if len(positional) == 2:
-            if cli_date is not None:
-                domain.parse_date(cli_date)
-                scope = domain.parse_scope(f"{cli_date}@{cli_time}") if cli_time is not None else domain.parse_scope(cli_date)
-            elif cli_time is not None:
-                current_date = domain.utc_now().strftime("%Y.%m.%d")
-                scope = domain.parse_scope(f"{current_date}@{cli_time}")
-            else:
-                raise CalendarInputError("Refresh requires an explicit scope or --date/--time.")
-        else:
-            if cli_time is not None:
-                raise CalendarInputError(
-                    "--time cannot be combined with an explicit refresh scope."
-                )
-            scope = domain.parse_scope(positional[2])
-        if scope in {"latest", "next", "current"}:
-            raise CalendarInputError(
-                "refresh requires an explicit date, date range, datetime, or datetime range."
-            )
-        return {
-            "operation": "REFRESH",
-            "symbol": symbol,
-            "scope": scope,
-            "cleartext": cleartext,
-            "debug": debug,
+            "refresh": False,
         }
 
     if positional[0] == "delete":
+        if refresh:
+            raise CalendarInputError("refresh is not valid for delete.")
         if cleartext:
             raise CalendarInputError("--cleartext is not valid for delete.")
 
@@ -370,25 +379,31 @@ def parse_request(args: List[str]) -> Dict[str, Any]:
                 "scope": None,
                 "cleartext": False,
                 "debug": debug,
+                "refresh": False,
             }
 
         if len(positional) not in {2, 3}:
             raise CalendarInputError(
-                "Scoped delete requires DELETE + SYMBOL + SCOPE, or DELETE + SYMBOL with --date/--time."
+                "Scoped delete requires DELETE + SYMBOL + SCOPE."
             )
         if cli_date is not None and len(positional) == 3:
-            raise CalendarInputError("--date cannot be combined with an explicit delete scope.")
-
+            raise CalendarInputError(
+                "--date cannot be combined with an explicit delete scope."
+            )
         symbol = domain.validate_symbol(positional[1])
         if len(positional) == 2:
             if cli_date is not None:
                 domain.parse_date(cli_date)
-                scope = domain.parse_scope(f"{cli_date}@{cli_time}") if cli_time is not None else domain.parse_scope(cli_date)
+                scope = domain.parse_scope(
+                    f"{cli_date}@{cli_time}" if cli_time is not None else cli_date
+                )
             elif cli_time is not None:
                 current_date = domain.utc_now().strftime("%Y.%m.%d")
                 scope = domain.parse_scope(f"{current_date}@{cli_time}")
             else:
-                raise CalendarInputError("Scoped delete requires an explicit scope or --date/--time.")
+                raise CalendarInputError(
+                    "Scoped delete requires an explicit scope or --date/--time."
+                )
         else:
             if cli_time is not None:
                 raise CalendarInputError(
@@ -404,34 +419,47 @@ def parse_request(args: List[str]) -> Dict[str, Any]:
             "scope": scope,
             "cleartext": False,
             "debug": debug,
+            "refresh": False,
         }
+
     if len(positional) not in {1, 2}:
         raise CalendarInputError(
-            "Expected SYMBOL + SCOPE, or SYMBOL with --date/--time."
+            "Expected SYMBOL + SCOPE, optionally followed by refresh, "
+            "or SYMBOL with --date/--time and optional refresh."
         )
 
     symbol = domain.validate_symbol(positional[0])
     if len(positional) == 1:
         if cli_date is not None:
             domain.parse_date(cli_date)
-            scope = domain.parse_scope(f"{cli_date}@{cli_time}") if cli_time is not None else domain.parse_scope(cli_date)
+            scope = domain.parse_scope(
+                f"{cli_date}@{cli_time}" if cli_time is not None else cli_date
+            )
         elif cli_time is not None:
             current_date = domain.utc_now().strftime("%Y.%m.%d")
             scope = domain.parse_scope(f"{current_date}@{cli_time}")
         else:
-            raise CalendarInputError("Expected SYMBOL + SCOPE, or SYMBOL with --date/--time.")
+            raise CalendarInputError(
+                "Expected SYMBOL + SCOPE, optionally followed by refresh."
+            )
     else:
-        if cli_time is not None or cli_date is not None:
-            raise CalendarInputError("--date/--time cannot be combined with an explicit query scope.")
+        if cli_date is not None or cli_time is not None:
+            raise CalendarInputError(
+                "--date/--time cannot be combined with an explicit query scope."
+            )
         scope = domain.parse_scope(positional[1])
+
+    if refresh and scope in {"latest", "next"}:
+        raise CalendarInputError("refresh is not valid for latest or next.")
+
     return {
         "operation": "QUERY",
         "symbol": symbol,
         "scope": scope,
         "cleartext": cleartext,
         "debug": debug,
+        "refresh": refresh,
     }
-
 def run() -> int:
     """Calendar operation: run performs the focused run step in the Calendar implementation."""
     debug = "--debug" in sys.argv[1:]
@@ -459,13 +487,13 @@ def run() -> int:
                     "last_updates": updates,
                 }, ensure_ascii=False))
             return 0
-        if request["operation"] == "REFRESH":
-            return run_refresh(
-                request["symbol"],
-                request["scope"],
-                request["cleartext"],
-                debug=debug,
-            )
+        return run_query(
+            request["symbol"],
+            request["scope"],
+            request["cleartext"],
+            debug=debug,
+            refresh=request.get("refresh", False),
+        )
         return run_query(
             request["symbol"],
             request["scope"],
