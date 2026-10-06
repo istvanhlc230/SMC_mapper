@@ -1,6 +1,6 @@
 # Calendar Implementation Design
 
-Implementation baseline: 2.4.11
+Implementation baseline: 2.4.12
 
 ## 0. Source layout
 
@@ -58,10 +58,11 @@ User examples:
     python calendar.py EURUSD 2026.10.01-2026.10.31
     python calendar.py EURUSD 2026.10.01@10:00-2026.10.31@22:00
     python calendar.py EURUSD 2026.10.01@10:00
+    python calendar.py EURUSD 10:00-11:00 refresh
     python calendar.py NVDA current
     python calendar.py EURUSD latest
 
-`current`, `latest`, and `next` are explicit public scopes. All three are read-only cache lookups. `current` applies provider/symbol watermark boundaries; it does not contact providers. Provider acquisition for current is explicit through the trailing `refresh` modifier (`current refresh`). `latest` selects the most recent past/current event and `next` selects the nearest future scheduled ForexFactory economic event. Old relative date scopes remain removed.
+`current`, `latest`, and `next` are explicit public scopes. A positional `HH:MM-HH:MM` scope is a current-UTC-day shorthand for a canonical datetime range. All three are read-only cache lookups. `current` applies provider/symbol watermark boundaries; it does not contact providers. Provider acquisition for current is explicit through the trailing `refresh` modifier (`current refresh`). `latest` selects the most recent past/current event and `next` selects the nearest future scheduled ForexFactory economic event. Old relative date scopes remain removed.
 
 ## 3. Symbol/provider resolution
 
