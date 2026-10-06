@@ -4,6 +4,8 @@ Status: Current V2 specification.
 
 Calendar implementation baseline: 2.4.11.
 
+Default DATA_ROOT is the repository root, so the default persistent artifact is `<repository-root>/calendar.json`. `SMC_DATA_ROOT` may explicitly override this runtime location.
+
 Scope:
 - unified economic-calendar and news acquisition;
 - automatic provider resolution;
