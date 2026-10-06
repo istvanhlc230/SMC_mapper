@@ -2,6 +2,7 @@
 """Calendar command-line entrypoint and request dispatch."""
 
 import json
+import re
 import sys
 import traceback
 from datetime import datetime
@@ -264,6 +265,17 @@ def run_delete(
     }))
     return 0
 
+def _normalize_current_day_time_range(scope: str) -> str:
+    """Normalize HH:MM-HH:MM to the current UTC day's canonical datetime range."""
+    # The shorthand is CLI-only; domain parsing continues to operate on full UTC datetime scopes.
+    if not re.fullmatch(r"\\d{2}:\\d{2}-\\d{2}:\\d{2}", scope):
+        return scope
+    domain.parse_time(scope.split("-", 1)[0])
+    domain.parse_time(scope.split("-", 1)[1])
+    current_date = domain.utc_now().strftime("%Y.%m.%d")
+    return f"{current_date}@{scope}"
+
+
 def parse_request(args: List[str]) -> Dict[str, Any]:
     """Parse one Calendar CLI request using the canonical scope + modifier grammar."""
     if not args:
@@ -412,7 +424,7 @@ def parse_request(args: List[str]) -> Dict[str, Any]:
                 raise CalendarInputError(
                     "--time cannot be combined with an explicit delete scope."
                 )
-            scope = domain.parse_scope(positional[2])
+            scope = domain.parse_scope(_normalize_current_day_time_range(positional[2]))
         if scope == "current":
             raise CalendarInputError("current cannot be used as a delete scope.")
 
@@ -461,7 +473,7 @@ def parse_request(args: List[str]) -> Dict[str, Any]:
             raise CalendarInputError(
                 "--date/--time cannot be combined with an explicit query scope."
             )
-        scope = domain.parse_scope(positional[1])
+        scope = domain.parse_scope(_normalize_current_day_time_range(positional[1]))
 
     if refresh and scope in {"latest", "next"}:
         raise CalendarInputError("refresh is not valid for latest or next.")
