@@ -265,7 +265,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         request = parse_market_data_request(argv)
     except ValueError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
-        if argv is not None and "--debug" in argv:
+        debug_enabled = "--debug" in (sys.argv[1:] if argv is None else argv)
+        if debug_enabled:
             import traceback
             traceback.print_exc()
         return 2
