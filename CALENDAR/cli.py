@@ -485,7 +485,7 @@ def parse_calendar_cli_request(cli_arguments: List[str]) -> Dict[str, Any]:
             raise CalendarInputError(
                 "--date/--time cannot be combined with an explicit query scope."
             )
-        scope = domain.parse_scope(_normalize_current_day_time_range(positional[1]))
+        scope = domain.parse_scope(normalize_current_day_time_range_scope(positional[1]))
 
     if refresh and scope in {"latest", "next"}:
         raise CalendarInputError("refresh is not valid for latest or next.")
@@ -556,7 +556,7 @@ def execute_calendar_cli() -> int:
 
 def main() -> None:
     """Calendar operation: main performs the focused main step in the Calendar implementation."""
-    raise SystemExit(run())
+    raise SystemExit(execute_calendar_cli())
 
 if __name__ == "__main__":
     main()
