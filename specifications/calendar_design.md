@@ -49,11 +49,23 @@ The engine runs in a process that may be detached from the Monitor.
     python calendar.py SYMBOL YYYY.MM.DD@HH:MM
     python calendar.py SYMBOL YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM
     python calendar.py SYMBOL current
+    python calendar.py SYMBOL today
+    python calendar.py SYMBOL tomorrow
+    python calendar.py SYMBOL yesterday
+    python calendar.py SYMBOL prev_week
+    python calendar.py SYMBOL next_week
+    python calendar.py SYMBOL prev_month
+    python calendar.py SYMBOL next_month
     python calendar.py SYMBOL latest
     python calendar.py SYMBOL next
 
 User examples:
 
+    python calendar.py EURUSD today
+    python calendar.py EURUSD prev_week
+    python calendar.py EURUSD next_week
+    python calendar.py EURUSD prev_month
+    python calendar.py EURUSD next_month
     python calendar.py EURUSD 2026.10.01
     python calendar.py EURUSD 2026.10.01-2026.10.31
     python calendar.py EURUSD 2026.10.01@10:00-2026.10.31@22:00
@@ -62,7 +74,7 @@ User examples:
     python calendar.py NVDA current
     python calendar.py EURUSD latest
 
-`current`, `latest`, and `next` are explicit public scopes. A positional `HH:MM-HH:MM` scope is a current-UTC-day shorthand for a canonical datetime range. All three are read-only cache lookups. `current` applies provider/symbol watermark boundaries; it does not contact providers. Provider acquisition for current is explicit through the trailing `refresh` modifier (`current refresh`). `latest` selects the most recent past/current event and `next` selects the nearest future scheduled ForexFactory economic event. Old relative date scopes remain removed.
+`current`, `latest`, and `next` are explicit public scopes. A positional `HH:MM-HH:MM` scope is a current-UTC-day shorthand for a canonical datetime range. All three are read-only cache lookups. `current` applies provider/symbol watermark boundaries; it does not contact providers. Provider acquisition for current is explicit through the trailing `refresh` modifier (`current refresh`). `latest` selects the most recent past/current event and `next` selects the nearest future scheduled ForexFactory economic event. Relative day, week, and month scopes are explicit public aliases resolved at execution time.
 
 ## 3. Symbol/provider resolution
 
