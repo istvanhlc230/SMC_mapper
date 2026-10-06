@@ -71,8 +71,12 @@ User examples:
     python calendar.py EURUSD 2026.10.01@10:00-2026.10.31@22:00
     python calendar.py EURUSD 2026.10.01@10:00
     python calendar.py EURUSD 10:00-11:00 refresh
+    python calendar.py EURUSD --range 2026.10.01-
+    python calendar.py EURUSD --range 2026.10.01@10:00-
     python calendar.py NVDA current
     python calendar.py EURUSD latest
+
+Both --range -END and --range START- are explicit open-ended range forms. For START-, the end boundary is current UTC time at execution; for -END, the start boundary is resolved from the latest retained visible event for SYMBOL. Both forms are query/refresh scopes and are not valid delete scopes.
 
 `current`, `latest`, and `next` are explicit public scopes. A positional `HH:MM-HH:MM` scope is a current-UTC-day shorthand for a canonical datetime range. All three are read-only cache lookups. `current` applies provider/symbol watermark boundaries; it does not contact providers. Provider acquisition for current is explicit through the trailing `refresh` modifier (`current refresh`). `latest` selects the most recent past/current event and `next` selects the nearest future scheduled ForexFactory economic event. Relative day, week, and month scopes are explicit public aliases resolved at execution time.
 
