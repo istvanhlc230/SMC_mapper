@@ -151,6 +151,10 @@ Public query forms:
     python calendar.py SYMBOL today [refresh]
     python calendar.py SYMBOL tomorrow [refresh]
     python calendar.py SYMBOL yesterday [refresh]
+    python calendar.py SYMBOL prev_week [refresh]
+    python calendar.py SYMBOL next_week [refresh]
+    python calendar.py SYMBOL prev_month [refresh]
+    python calendar.py SYMBOL next_month [refresh]
     python calendar.py SYMBOL latest
     python calendar.py SYMBOL next
 
@@ -164,6 +168,10 @@ Delete forms:
     python calendar.py delete SYMBOL today
     python calendar.py delete SYMBOL tomorrow
     python calendar.py delete SYMBOL yesterday
+    python calendar.py delete SYMBOL prev_week
+    python calendar.py delete SYMBOL next_week
+    python calendar.py delete SYMBOL prev_month
+    python calendar.py delete SYMBOL next_month
     python calendar.py delete SYMBOL --time HH:MM
     python calendar.py delete SYMBOL YYYY.MM.DD --time HH:MM
 
@@ -191,9 +199,7 @@ watermark is created.
 Removed from the public grammar:
 - next_day
 - week
-- next_week
 - month
-- next_month
 Date syntax is YYYY.MM.DD. Time syntax is HH:MM. @ separates date/time. - separates interval endpoints. No .. syntax exists.
 
 --time HH:MM is a CLI shorthand for an exact one-minute datetime query on the current UTC calendar day. With no explicit date scope, Calendar resolves it as <current UTC date>@HH:MM. With a date-only scope, SYMBOL YYYY.MM.DD --time HH:MM resolves to YYYY.MM.DD@HH:MM. --time must not be combined with an existing @HH:MM point or a date/range scope that already contains time. The shorthand is normalized to the canonical YYYY.MM.DD@HH:MM scope before domain parsing, so the underlying query/refresh/delete interval semantics remain unchanged. The current UTC date is obtained from the same Calendar utc_now() clock used by the domain layer; no local-machine date is assumed.
@@ -274,6 +280,30 @@ Semantics:
 - the resolved interval is the same logical query interval used for refresh matching and result presentation;
 - the range does not create or alter coverage/watermarks merely by parsing or querying.
 
+## 3.4 Relative week and month scopes
+
+The public CLI accepts four relative UTC calendar scopes:
+
+    python calendar.py SYMBOL prev_week
+    python calendar.py SYMBOL next_week
+    python calendar.py SYMBOL prev_month
+    python calendar.py SYMBOL next_month
+
+Semantics:
+
+- prev_week = the immediately preceding ForexFactory-style calendar week;
+- next_week = the immediately following ForexFactory-style calendar week;
+- the relative week starts Sunday at 00:00:00 UTC and ends at the following Sunday 00:00:00 UTC;
+- prev_month = the complete UTC calendar month immediately before the current month;
+- next_month = the complete UTC calendar month immediately after the current month.
+
+These scopes are resolved at execution time using the same utc_now() clock as the
+Calendar domain. They are aliases only; they do not persist relative-state and do not
+mean current, latest, or next.
+
+They use the normal exact interval query/acquisition semantics and are valid with the
+trailing refresh modifier and for symbol-scoped delete.
+
 ## 4. current semantics
 
 `current` is a read-only incremental query over the committed `calendar.json` snapshot.
@@ -352,6 +382,10 @@ Public forms:
     python calendar.py SYMBOL today refresh
     python calendar.py SYMBOL tomorrow refresh
     python calendar.py SYMBOL yesterday refresh
+    python calendar.py SYMBOL prev_week refresh
+    python calendar.py SYMBOL next_week refresh
+    python calendar.py SYMBOL prev_month refresh
+    python calendar.py SYMBOL next_month refresh
     python calendar.py SYMBOL YYYY.MM.DD refresh
     python calendar.py SYMBOL YYYY.MM.DD-YYYY.MM.DD refresh
     python calendar.py SYMBOL YYYY.MM.DD@HH:MM refresh
