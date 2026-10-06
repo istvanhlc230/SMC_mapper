@@ -368,7 +368,7 @@ parse_market_data_request
 validate_request
 normalize_symbol
 normalize_timeframe
-parse_iso8601
+parse_calendar_point
 resolve_acquisition_range
 create_provider
 fetch_completed_candles
@@ -437,7 +437,6 @@ YYYY.MM.DD
 YYYY.MM.DD-YYYY.MM.DD
 YYYY.MM.DD@HH:MM
 YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM
-current
 ```
 
 Open-start range forms are also supported:
@@ -456,8 +455,7 @@ A trailing `-` omits the end boundary. The explicit START is retained and the en
 UTC time at execution. Therefore `--range YYYY.MM.DD-` means START at 00:00 UTC through NOW, while
 `--range YYYY.MM.DD@HH:MM-` means the exact UTC minute through NOW. A future START is rejected.
 Both open-start and open-end forms use the same UTC date/time grammar and half-open interval semantics.
-The canonical time spelling is `HH:MM`; `HH.MM` is accepted only as a compatibility alias in
-open-ended datetime forms and is normalized to `HH:MM`.
+The canonical time spelling is `HH:MM`; `HH.MM` is accepted only as a compatibility alias in open-ended datetime forms and is normalized to `HH:MM`.
 
 Examples:
 
@@ -508,7 +506,7 @@ Purpose:
 | omitted | normal incremental completed-candle acquisition |
 | `--lastclosed` | exactly the latest completed candle |
 
-Malformed dates/times, impossible calendar dates, invalid 24-hour times, unexpected seconds/offset syntax, and reversed/empty intervals must fail explicitly.
+Malformed dates/times, impossible calendar dates, invalid 24-hour times, unexpected seconds/offset syntax, reversed/empty intervals, and future range starts must fail explicitly.
 
 Historical range inclusion is based on the canonical candle interval start:
 `start_time <= candle.timestamp < end_time`. Completion status is checked separately;
@@ -853,7 +851,7 @@ in-progress -> current
 
 A current snapshot:
 
-- may change on repeated `--live` executions;
+- may change on repeated `--current` executions;
 - must carry stable candle identity;
 - must never be inserted into `candles[]` while incomplete;
 - must never advance mapper checkpoints;
@@ -916,11 +914,11 @@ COMPLETED(id=X) + CURRENT=null
 Rules:
 
 - only one current snapshot exists per timeframe;
-- repeated live refresh replaces the previous snapshot rather than appending history;
+- repeated current refresh replaces the previous snapshot rather than appending history;
 - a current snapshot may change OHLC/volume while its candle remains incomplete;
 - when the candle completes, the final completed record is merged into `candles[]` and the current snapshot is removed;
 - if completion occurs between fetch and persistence, the candle follows the completed path;
-- when a live refresh succeeds but the provider returns no current record, `current` is cleared to null so stale current price is not presented as live state;
+- when a current refresh succeeds but the provider returns no current record, `current` is cleared to null so stale current price is not presented as live state;
 - when the provider operation fails, the whole symbol transaction fails and the previously persisted current snapshot remains untouched;
 - a current-only update is a valid Market Data state change but never a Mapper checkpoint change.
 
@@ -1548,7 +1546,7 @@ When `last_candle_only=True`:
 
 ### Incremental mode
 
-When neither historical boundaries nor `--lastcandle` apply and `live=False`:
+When neither historical boundaries nor `--lastclosed` apply and `live=False`:
 
 - if the timeframe has persisted completed candles, acquire only newly completed candles after the persisted `available_end`;
 - if the timeframe has no persisted completed candles, acquire exactly the latest completed candle;
@@ -1781,7 +1779,7 @@ update_market_data(...) -> False
 
 No unnecessary file rewrite is required.
 
-A current-snapshot change with no new completed candle still counts as a market-data file change when `--live` is active.
+A current-snapshot change with no new completed candle still counts as a market-data file change when `--current` is active.
 
 ## 15.3 Multi-timeframe execution
 
@@ -1990,7 +1988,7 @@ Prefer pure functions for:
 ```text
 normalize_symbol
 normalize_timeframe
-parse_iso8601
+parse_calendar_point
 derive_completion_time
 build_candle_id
 validate_normalized_candle
@@ -2105,7 +2103,7 @@ parse_market_data_request
 validate_request
 normalize_symbol
 normalize_timeframe
-parse_iso8601
+parse_calendar_point
 ```
 
 Verify `--help` and invalid-combination handling.
@@ -2196,9 +2194,9 @@ Verify:
 
 ```text
 historical range acquisition
-lastcandle
-lastcandle + live
-live-only current refresh
+lastclosed
+lastclosed + live
+current-only current refresh
 one-new-candle incremental update
 missed-multiple-candle batch
 no-op
@@ -2351,9 +2349,9 @@ persist complete symbol document atomically
 exit
 ```
 
-For `--live`, current-snapshot refresh is independent of completed-candle acquisition. In live-only mode it is the current-data operation; with `--lastcandle` it runs alongside the exact latest-completed-candle acquisition.
+For `--current`, current-snapshot refresh is independent of completed-candle acquisition. In current-only mode it is the current-data operation; with `--lastclosed` it runs alongside the exact latest-completed-candle acquisition.
 
-For `--lastcandle`, the completed-candle acquisition branch returns exactly one latest completed candle per requested timeframe.
+For `--lastclosed`, the completed-candle acquisition branch returns exactly one latest completed candle per requested timeframe.
 
 The output of this process is only the normalized market-data JSON state. Canonical SMC analysis begins downstream in `smc_mapper.py`.
 
@@ -2456,7 +2454,7 @@ Do not use opaque domain-state names such as data, item, obj, tmp, helper or res
 | validate_request | cli.py | request invariants |
 | normalize_symbol | cli.py | symbol normalization |
 | normalize_timeframe | cli.py | timeframe normalization |
-| parse_iso8601 | cli.py | UTC timestamp parsing |
+| parse_calendar_point | cli.py | UTC timestamp parsing |
 | create_provider | provider.py | provider selection |
 | fetch_range | provider.py | provider range acquisition |
 | fetch_latest_completed | provider.py | latest provider record |
