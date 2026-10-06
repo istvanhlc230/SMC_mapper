@@ -31,9 +31,9 @@ def _fetch_yahoo_search_payload(query_symbol: str) -> Dict[str, Any]:
         yahoo_search_data = json.loads(yahoo_search_response)
     except json.JSONDecodeError as exc:
         raise ProviderError(f"Malformed Yahoo Finance JSON: {exc}") from exc
-    if not isinstance(data, dict):
+    if not isinstance(yahoo_search_data, dict):
         raise ProviderError("Yahoo Finance response is not an object.")
-    return data
+    return yahoo_search_data
 
 def _is_verified_yahoo_forex_quote(
     quote: Dict[str, Any],
@@ -82,14 +82,14 @@ def _resolve_yahoo_instrument(
                 continue
             queried.add(query_symbol)
             yahoo_search_data = _fetch_yahoo_search_payload(query_symbol)
-            quotes = data.get("quotes", [])
+            quotes = yahoo_search_data.get("quotes", [])
             if not isinstance(quotes, list):
                 continue
             for quote in quotes:
                 if not isinstance(quote, dict):
                     continue
                 if _is_verified_yahoo_forex_quote(quote, candidate):
-                    return candidate, data
+                    return candidate, yahoo_search_data
 
     raise YahooForexPairUnavailable(
         f"Yahoo Finance has no verified Forex instrument for '{symbol}'."

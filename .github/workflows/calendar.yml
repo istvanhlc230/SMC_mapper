@@ -899,7 +899,7 @@ jobs:
               ("impact-green", "LOW"),
               ("icon--ff-impact-grn", "LOW"),
               ("impact-grey", "HOLIDAY"),
-              ("icon--ff-impact-grey", "HOLIDAY"),
+              ("icon--ff-impact-gry", "HOLIDAY"),
           ):
               structured_raw = {
                   "id": f"class-{expected_impact}",
