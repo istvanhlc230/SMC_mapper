@@ -54,6 +54,30 @@ jobs:
               assert delete_request["scope"] == "2026.10.06@10:00-2026.10.06@11:00"
           finally:
               domain.utc_now = fixed_utc_now
+
+          # Relative week/month scopes remain public CLI scopes and resolve
+          # against the same UTC clock used by the Calendar domain.
+          relative_scope_expectations = {
+              "today": ("2026-10-04T00:00:00Z", "2026-10-07T00:00:00Z"),
+              "tomorrow": ("2026-10-07T00:00:00Z", "2026-10-08T00:00:00Z"),
+              "yesterday": ("2026-10-05T00:00:00Z", "2026-10-06T00:00:00Z"),
+              "prev_week": ("2026-09-27T00:00:00Z", "2026-10-04T00:00:00Z"),
+              "next_week": ("2026-10-11T00:00:00Z", "2026-10-18T00:00:00Z"),
+              "prev_month": ("2026-09-01T00:00:00Z", "2026-10-01T00:00:00Z"),
+              "next_month": ("2026-11-01T00:00:00Z", "2026-12-01T00:00:00Z"),
+          }
+          fixed_utc_now = domain.utc_now
+          try:
+              domain.utc_now = lambda: dt("2026-10-06T12:00:00Z")
+              for relative_scope, (expected_start, expected_end) in relative_scope_expectations.items():
+                  resolved_start, resolved_end = domain.resolve_scope_interval(relative_scope)
+                  assert resolved_start == dt(expected_start)
+                  assert resolved_end == dt(expected_end)
+                  parsed = domain.parse_scope(relative_scope)
+                  assert parsed == relative_scope
+          finally:
+              domain.utc_now = fixed_utc_now
+
           one_day = calendar.parse_date("2026.04.03")
           two_day_end = calendar.parse_date("2026.04.04")
           assert providers.build_forexfactory_query(one_day, two_day_end) == "day=apr3.2026"
