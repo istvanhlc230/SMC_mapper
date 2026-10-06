@@ -142,6 +142,18 @@ jobs:
               dt("2026-10-06T05:01:00Z"),
           )
 
+          # Normal incremental mode starts at the next canonical candle interval,
+          # while open-start --range remains inclusive at available_end.
+          incremental_request = parse_market_data_request([
+              "--symbol", "EURUSD",
+              "--timeframes", "M1",
+          ])
+          incremental = resolve_acquisition_range(incremental_request, "M1", state)
+          assert incremental == (
+              dt("2026-10-05T07:16:00Z"),
+              dt("2026-10-07T00:00:00Z"),
+          )
+
           missing = {
               "available_start": None,
               "available_end": None,
@@ -320,6 +332,43 @@ jobs:
               pass
           else:
               raise AssertionError("missing Yahoo OHLC must fail")
+
+          # Persisted Decimal values must use the approved plain base-10 representation.
+          from MARKET_DATA.persistence import _validate_persisted_decimal
+          _validate_persisted_decimal("1.230000000000000000", "price")
+          for invalid_decimal in ("1e-3", "01.2", "1.0000000000000000001"):
+              try:
+                  _validate_persisted_decimal(invalid_decimal, "price")
+              except ValueError:
+                  pass
+              else:
+                  raise AssertionError(f"invalid persisted Decimal accepted: {invalid_decimal}")
+
+          # H4 current aggregation must fail closed when an hourly source interval is missing.
+          from MARKET_DATA.provider import YahooChartsProvider
+          current_provider = YahooChartsProvider()
+          current_hourly = [
+              ProviderCandle(dt("2026-10-10T04:00:00Z"), "UTC", dt("2026-10-10T04:00:00Z"), "1","2","0","1",100),
+              ProviderCandle(dt("2026-10-10T05:00:00Z"), "UTC", dt("2026-10-10T05:00:00Z"), "1","2","0","1",100),
+          ]
+          current_provider._request = lambda symbol, interval, start_time, end_time: {}
+          current_provider._parse = lambda payload, symbol, interval: current_hourly
+          # Freeze the provider's wall clock inside the test so the 04:00 H4
+          # current window expects the contiguous 04:00 and 05:00 source hours.
+          from unittest.mock import patch
+          frozen_now = dt("2026-10-10T05:30:00Z")
+          with patch("MARKET_DATA.provider.datetime") as provider_datetime:
+              provider_datetime.now.return_value = frozen_now
+              provider_datetime.fromtimestamp = datetime.fromtimestamp
+              provider_datetime.side_effect = datetime
+              provider_datetime.combine = datetime.combine
+              provider_datetime.min = datetime.min
+              provider_datetime.max = datetime.max
+              assert current_provider.fetch_current("EURUSD", "H4") is not None
+              current_provider._parse = lambda payload, symbol, interval: [
+                  current_hourly[1]
+              ]
+              assert current_provider.fetch_current("EURUSD", "H4") is None
 
           print("MARKET_DATA_RANGE_TESTS_OK")
           PY
