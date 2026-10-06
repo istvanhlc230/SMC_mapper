@@ -120,11 +120,7 @@ def resolve_scope_interval(scope):
             )
         if "@" in endpoint:
             date_part, time_part = endpoint.split("@", 1)
-            normalized_time = time_part.replace(".", ":", 1)
-            point = parse_calendar_point(
-                f"{date_part}@{normalized_time}",
-                require_time=True,
-            )
+            point = parse_open_ended_point(endpoint)
             return None, point + timedelta(minutes=1)
         return None, parse_calendar_date(endpoint) + timedelta(days=1)
 
@@ -133,7 +129,7 @@ def resolve_scope_interval(scope):
         if not endpoint:
             raise ValueError(f"invalid open-end range: {scope}")
         if "@" in endpoint:
-            point = parse_calendar_point(endpoint, require_time=True)
+            point = parse_open_ended_point(endpoint)
         else:
             point = parse_calendar_date(endpoint)
         return point, None
@@ -165,6 +161,18 @@ def resolve_scope_interval(scope):
     return start, start + timedelta(days=1)
 
 
+def parse_open_ended_point(value):
+    """Parse a date-time point for an open-ended range, including HH.MM compatibility."""
+    if "@" not in value:
+        raise ValueError(f"invalid datetime point: {value}")
+    date_part, time_part = value.split("@", 1)
+    if "." in time_part:
+        if ":" in time_part:
+            raise ValueError(f"invalid datetime point: {value}")
+        time_part = time_part.replace(".", ":", 1)
+    return parse_calendar_point(f"{date_part}@{time_part}", require_time=True)
+
+
 def parse_calendar_point(value, *, require_time=False):
     """Parse a Calendar-compatible date or date-time point."""
     if "@" not in value:
@@ -183,8 +191,12 @@ def validate_scope(scope):
     if scope is None:
         return None
     if scope == "current":
-        return scope
-    return scope if resolve_scope_interval(scope) else scope
+        raise ValueError("'current' is not a historical --range scope; use --current")
+    start_time, _ = resolve_scope_interval(scope)
+    if start_time is not None and start_time > datetime.now(timezone.utc):
+        raise ValueError(f"future range start is not allowed: {scope}")
+    return scope
+
 
 
 def validate_request(request):
@@ -197,6 +209,8 @@ def validate_request(request):
         raise ValueError("--current is mutually exclusive with --lastclosed")
     if request.current and request.start_time is not None:
         raise ValueError("current cannot be combined with a historical range")
+    if request.last_closed_only and request.start_time is not None:
+        raise ValueError("lastclosed cannot be combined with a historical range")
 
 
 def parse_market_data_request(argv: Sequence[str] | None = None):
@@ -247,8 +261,16 @@ def run(request):
 
 def main(argv: Sequence[str] | None = None) -> int:
     """Parse and execute the Market Data CLI."""
-    request = parse_market_data_request(argv)
+    try:
+        request = parse_market_data_request(argv)
+    except ValueError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        if argv is not None and "--debug" in argv:
+            import traceback
+            traceback.print_exc()
+        return 2
     return run(request)
+
 
 
 if __name__ == "__main__":
