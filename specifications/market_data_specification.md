@@ -1546,7 +1546,7 @@ When `last_closed_only=True`:
 
 ### Incremental mode
 
-When neither historical boundaries nor `--lastclosed` apply and `live=False`:
+When neither historical boundaries nor `--lastclosed` apply and `current=False`:
 
 - if the timeframe has persisted completed candles, acquire only newly completed candles after the persisted `available_end`;
 - if the timeframe has no persisted completed candles, acquire exactly the latest completed candle;
