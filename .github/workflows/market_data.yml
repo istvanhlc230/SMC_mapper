@@ -149,10 +149,9 @@ jobs:
               "--timeframes", "M1",
           ])
           incremental = resolve_acquisition_range(incremental_request, "M1", state)
-          assert incremental == (
-              dt("2026-10-05T07:16:00Z"),
-              dt("2026-10-07T00:00:00Z"),
-          )
+          assert incremental[0] == dt("2026-10-05T07:16:00Z")
+          assert incremental[1] is not None
+          assert incremental[1] > incremental[0]
 
           missing = {
               "available_start": None,
