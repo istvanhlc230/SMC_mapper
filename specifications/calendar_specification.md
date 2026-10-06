@@ -2,7 +2,7 @@
 
 Status: Current V2 specification.
 
-Calendar implementation baseline: 2.4.11.
+Calendar implementation baseline: 2.4.12.
 
 Default DATA_ROOT is the repository `CALENDAR/` directory, so the default persistent artifact is `<repository-root>/CALENDAR/calendar.json`. `SMC_DATA_ROOT` may explicitly override this runtime location.
 
@@ -202,6 +202,12 @@ Date = full UTC day.
 Date range = inclusive by calendar date.
 Datetime = exact one-minute interval.
 Datetime range = half-open start/end interval.
+
+Positional time-range shorthand:
+
+    python calendar.py SYMBOL HH:MM-HH:MM [refresh]
+
+This shorthand resolves both times against the current UTC calendar date at execution time and normalizes to the canonical `YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM` datetime range before scope parsing. It is valid for normal query, trailing `refresh`, and symbol-scoped delete operations. It is mutually exclusive with `--date`, `--time`, `--range`, or another positional scope. The end time must be later than the start time; invalid clock values fail through the existing Calendar time parser.
 
 ## 3.1 --time CLI shorthand
 
