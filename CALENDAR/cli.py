@@ -268,7 +268,7 @@ def run_delete(
 def _normalize_current_day_time_range(scope: str) -> str:
     """Normalize HH:MM-HH:MM to the current UTC day's canonical datetime range."""
     # The shorthand is CLI-only; domain parsing continues to operate on full UTC datetime scopes.
-    if not re.fullmatch(r"\\d{2}:\\d{2}-\\d{2}:\\d{2}", scope):
+    if not re.fullmatch(r"\d{2}:\d{2}-\d{2}:\d{2}", scope):
         return scope
     domain.parse_time(scope.split("-", 1)[0])
     domain.parse_time(scope.split("-", 1)[1])
