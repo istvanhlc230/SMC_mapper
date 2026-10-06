@@ -582,6 +582,11 @@ def execute_calendar_cli() -> int:
             traceback.print_exc()
         return 1
 
+# Backward-compatible aliases retained for existing integration tests and callers.
+parse_request = parse_calendar_cli_request
+run_query = execute_calendar_query
+run_delete = execute_calendar_delete
+
 def main() -> None:
     """Calendar operation: main performs the focused main step in the Calendar implementation."""
     raise SystemExit(execute_calendar_cli())
