@@ -26,9 +26,9 @@ def _fetch_yahoo_search_payload(query_symbol: str) -> Dict[str, Any]:
         "enableFuzzyQuery": "false",
     }
     query = urllib.parse.urlencode(params)
-    payload = fetch_url(f"{YAHOO_SEARCH_URL}?{query}")
+    yahoo_search_response = fetch_url(f"{YAHOO_SEARCH_URL}?{query}")
     try:
-        data = json.loads(payload)
+        yahoo_search_data = json.loads(yahoo_search_response)
     except json.JSONDecodeError as exc:
         raise ProviderError(f"Malformed Yahoo Finance JSON: {exc}") from exc
     if not isinstance(data, dict):
@@ -81,7 +81,7 @@ def _resolve_yahoo_instrument(
             if query_symbol in queried:
                 continue
             queried.add(query_symbol)
-            data = _fetch_yahoo_search_payload(query_symbol)
+            yahoo_search_data = _fetch_yahoo_search_payload(query_symbol)
             quotes = data.get("quotes", [])
             if not isinstance(quotes, list):
                 continue
@@ -235,11 +235,11 @@ def fetch_forexfactory_event_detail(event_id: str) -> List[Dict[str, Any]]:
     if not re.fullmatch(r"\d+", event_id):
         raise ProviderError("ForexFactory event detail has an invalid provider ID.")
 
-    payload = fetch_url(
+    provider_response_payload = fetch_url(
         FOREXFACTORY_DETAIL_URL.format(event_id=event_id)
     )
     try:
-        data = json.loads(payload)
+        yahoo_search_data = json.loads(yahoo_search_response)
     except json.JSONDecodeError as exc:
         raise ProviderError(
             f"Malformed ForexFactory detail JSON for event {event_id}: {exc}"
