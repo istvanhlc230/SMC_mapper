@@ -35,10 +35,25 @@ jobs:
               return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
           assert calendar.validate_symbol("EURUSD") == "EURUSD"
-          assert calendar.__version__ == "2.4.11"
+          assert calendar.__version__ == "2.4.12"
           assert calendar.validate_symbol("USDGBP") == "USDGBP"
           assert calendar.validate_symbol("HUF") == "HUF"
           assert calendar.validate_symbol("NVDA") == "NVDA"
+          import CALENDAR.cli as calendar_cli
+          fixed_utc_now = domain.utc_now
+          try:
+              domain.utc_now = lambda: dt("2026-10-06T12:00:00Z")
+              shorthand_request = calendar_cli.parse_calendar_cli_request(
+                  ["EURUSD", "10:00-11:00", "refresh"]
+              )
+              assert shorthand_request["scope"] == "2026.10.06@10:00-2026.10.06@11:00"
+              assert shorthand_request["refresh"] is True
+              delete_request = calendar_cli.parse_calendar_cli_request(
+                  ["delete", "EURUSD", "10:00-11:00"]
+              )
+              assert delete_request["scope"] == "2026.10.06@10:00-2026.10.06@11:00"
+          finally:
+              domain.utc_now = fixed_utc_now
           one_day = calendar.parse_date("2026.04.03")
           two_day_end = calendar.parse_date("2026.04.04")
           assert providers.build_forexfactory_query(one_day, two_day_end) == "day=apr3.2026"
