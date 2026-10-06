@@ -21,6 +21,28 @@ for _name in dir(_stdlib_calendar):
         globals().setdefault(_name, getattr(_stdlib_calendar, _name))
 
 from CALENDAR.api import *
+import sys as _sys
+import traceback as _traceback
+
+
+def run() -> int:
+    """Compatibility CLI runner used by legacy callers and integration tests."""
+    debug = "--debug" in _sys.argv[1:]
+    try:
+        request = parse_request(_sys.argv[1:])
+        return run_query(
+            request["symbol"],
+            request["scope"],
+            request.get("cleartext", False),
+            debug=request.get("debug", debug),
+            refresh=request.get("refresh", False),
+        )
+    except Exception as exc:
+        print(f"Error: Internal error: {exc}", file=_sys.stderr)
+        if debug:
+            print("DEBUG | Unexpected exception traceback:", file=_sys.stderr)
+            _traceback.print_exc()
+        return 1
 
 
 if __name__ == "__main__":
