@@ -29,22 +29,26 @@ def _classify_forexfactory_impact(classes: set[str]) -> str:
     """Internal helper: _classify_forexfactory_impact performs the focused classify forexfactory impact step in the Calendar implementation."""
     for class_name in classes:
         lowered = class_name.lower()
-        if lowered.endswith("--high") or lowered in {"high", "icon--ff-impact-red"}:
+        if lowered.endswith("--high") or lowered in {"high", "impact-red", "icon--ff-impact-red"}:
             return "high"
         if lowered.endswith("--medium") or lowered in {
-            "medium", "med", "icon--ff-impact-orange", "icon--ff-impact-ora"
+            "medium", "med", "impact-orange", "icon--ff-impact-orange", "icon--ff-impact-ora"
         }:
             return "medium"
         if lowered.endswith("--low") or lowered in {
             "low",
+            "impact-yellow",
             "icon--ff-impact-yellow",
             "icon--ff-impact-yel",
+            "impact-green",
             "icon--ff-impact-green",
             "icon--ff-impact-grn",
         }:
             return "low"
         if lowered in {
             "holiday",
+            "impact-grey",
+            "impact-gray",
             "non-economic",
             "icon--ff-impact-grey",
             "icon--ff-impact-gray",
