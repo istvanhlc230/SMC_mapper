@@ -112,16 +112,44 @@ class YahooChartsProvider(MarketDataProvider):
         now = datetime.now(timezone.utc)
         start = self._window_start(timeframe, now)
         if timeframe == "H4":
-            hourly = self._parse(self._request(symbol, "1h", start, now + timedelta(seconds=1)), symbol, "1h")
-            if not hourly:
+            hourly = self._parse(
+                self._request(
+                    symbol,
+                    "1h",
+                    start,
+                    now + timedelta(seconds=1),
+                ),
+                symbol,
+                "1h",
+            )
+            hourly = sorted(
+                [item for item in hourly if item.timestamp >= start],
+                key=lambda item: item.timestamp,
+            )
+            expected = [
+                start + timedelta(hours=offset)
+                for offset in range(4)
+                if start + timedelta(hours=offset) <= now
+            ]
+            if not hourly or [item.timestamp for item in hourly] != expected:
                 return None
             return ProviderCandle(
-                start, "UTC", start, hourly[0].open_price,
+                start,
+                "UTC",
+                start,
+                hourly[0].open_price,
                 max(item.high_price for item in hourly),
                 min(item.low_price for item in hourly),
                 hourly[-1].close_price,
-                sum((Decimal(str(item.total_volume or 0)) for item in hourly), Decimal("0")),
-                provider_metadata={"provider":"yahoo_charts","aggregated_from":"1h","complete":False},
+                sum(
+                    (Decimal(str(item.total_volume or 0)) for item in hourly),
+                    Decimal("0"),
+                ),
+                provider_metadata={
+                    "provider": "yahoo_charts",
+                    "aggregated_from": "1h",
+                    "complete": False,
+                },
             )
         records = self.fetch_range(symbol, timeframe, start, now + timedelta(seconds=1))
         if not records:
