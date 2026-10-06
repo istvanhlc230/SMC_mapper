@@ -1526,9 +1526,9 @@ When explicit historical boundaries are supplied:
 - honor requested boundaries;
 - do not invent candles outside requested scope.
 
-### Live-only current refresh
+### Current-only current refresh
 
-When `live=True`, `last_candle_only=False`, and neither `start_time` nor `end_time` is supplied:
+When `current=True`, `last_closed_only=False`, and neither `start_time` nor `end_time` is supplied:
 
 - fetch the latest provider candle needed for the current snapshot for each requested timeframe;
 - persist it under the timeframe's `current` field while incomplete;
@@ -1538,7 +1538,7 @@ When `live=True`, `last_candle_only=False`, and neither `start_time` nor `end_ti
 
 ### Last-candle mode
 
-When `last_candle_only=True`:
+When `last_closed_only=True`:
 
 - retrieve exactly the latest completed candle for the timeframe;
 - do not treat `current` as the result;
@@ -1927,7 +1927,7 @@ symbol
 timeframes
 start_time
 end_time
-last_candle_only
+last_closed_only
 live
 debug
 ```
