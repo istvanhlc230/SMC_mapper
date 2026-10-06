@@ -290,53 +290,53 @@ def normalize_current_day_time_range_scope(time_range_scope: str) -> str:
 def parse_calendar_cli_request(cli_arguments: List[str]) -> Dict[str, Any]:
     """Parse CLI arguments into one canonical Calendar operation request."""
 
-    if not args:
+    if not cli_arguments:
         raise CalendarInputError("No arguments provided. Use --help.")
 
-    if len(args) == 1 and args[0] in {"-h", "--help"}:
+    if len(cli_arguments) == 1 and cli_arguments[0] in {"-h", "--help"}:
         print(HELP_TEXT)
         raise SystemExit(0)
 
-    if any(item in {"-h", "--help"} for item in args):
+    if any(item in {"-h", "--help"} for item in cli_arguments):
         raise CalendarInputError("--help cannot be combined with other arguments.")
 
-    cleartext = "--cleartext" in args
-    debug = "--debug" in args
-    last_update = "--last-update" in args
+    cleartext = "--cleartext" in cli_arguments
+    debug = "--debug" in cli_arguments
+    last_update = "--last-update" in cli_arguments
 
-    range_values = [item for item in args if item.startswith("--range=")]
-    if "--range" in args:
-        index = args.index("--range")
-        if index + 1 >= len(args):
+    range_values = [item for item in cli_arguments if item.startswith("--range=")]
+    if "--range" in cli_arguments:
+        index = cli_arguments.index("--range")
+        if index + 1 >= len(cli_arguments):
             raise CalendarInputError("--range requires -YYYY.MM.DD or -YYYY.MM.DD@HH:MM.")
-        range_values.append(f"--range={args[index + 1]}")
+        range_values.append(f"--range={cli_arguments[index + 1]}")
     if len(range_values) > 1:
         raise CalendarInputError("--range may be specified only once.")
     cli_range = range_values[0].split("=", 1)[1] if range_values else None
 
-    date_values = [item for item in args if item.startswith("--date=")]
-    if "--date" in args:
-        index = args.index("--date")
-        if index + 1 >= len(args):
+    date_values = [item for item in cli_arguments if item.startswith("--date=")]
+    if "--date" in cli_arguments:
+        index = cli_arguments.index("--date")
+        if index + 1 >= len(cli_arguments):
             raise CalendarInputError("--date requires YYYY.MM.DD.")
-        date_values.append(f"--date={args[index + 1]}")
+        date_values.append(f"--date={cli_arguments[index + 1]}")
     if len(date_values) > 1:
         raise CalendarInputError("--date may be specified only once.")
     cli_date = date_values[0].split("=", 1)[1] if date_values else None
 
-    time_values = [item for item in args if item.startswith("--time=")]
-    if "--time" in args:
-        index = args.index("--time")
-        if index + 1 >= len(args):
+    time_values = [item for item in cli_arguments if item.startswith("--time=")]
+    if "--time" in cli_arguments:
+        index = cli_arguments.index("--time")
+        if index + 1 >= len(cli_arguments):
             raise CalendarInputError("--time requires HH:MM.")
-        time_values.append(f"--time={args[index + 1]}")
+        time_values.append(f"--time={cli_arguments[index + 1]}")
     if len(time_values) > 1:
         raise CalendarInputError("--time may be specified only once.")
     cli_time = time_values[0].split("=", 1)[1] if time_values else None
 
     positional: List[str] = []
     skip_next = False
-    for item in args:
+    for item in cli_arguments:
         if skip_next:
             skip_next = False
             continue
