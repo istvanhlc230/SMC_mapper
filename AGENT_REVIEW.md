@@ -1092,3 +1092,24 @@ timestamp choice, plus a temporary helper naming collision; these were corrected
 final validated snapshot.
 
 The final main branch therefore has a green Calendar and Market Data validation state at the snapshot above.
+# Market Data post-audit correction — incremental boundary / persistence integrity
+
+**Status: CI PASS — re-audit completed**
+
+Audit findings corrected against the active Market Data specification:
+
+- normal incremental acquisition now starts at the next canonical timeframe interval after `available_end`;
+- open-start `--range -END` remains intentionally inclusive at `available_end` for boundary reacquisition/deduplication;
+- Market Data completed-range filtering is canonical candle-start based (`start_time <= timestamp < end_time`) with completion checked independently;
+- H4 current aggregation now fails closed when its hourly source sequence is not contiguous;
+- persisted Decimal validation now enforces plain base-10 strings and the approved maximum of 18 fractional places;
+- specification terminology was synchronized to `--current` / `--lastclosed` and removed stale `live` / `lastcandle` references;
+- the specification no longer claims `--lastclosed` refreshes the current snapshot.
+
+Validation evidence:
+
+- Final source/spec commit: `f4508c12099f5310843ee0296021dde4d8622e9d`;
+- Market Data GitHub Actions run: `37539850382` — SUCCESS;
+- Calendar GitHub Actions run: `37539850350` — SUCCESS.
+
+Remaining audit note: Yahoo-specific W1/MN1 and session-calendar boundary behavior is not changed here because the canonical project contract does not yet define calendar-session completion semantics for those provider intervals. No provider-specific boundary rule was invented during this correction.
