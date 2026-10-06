@@ -29,8 +29,9 @@ def run() -> int:
     """Compatibility CLI runner used by legacy callers and integration tests."""
     debug = "--debug" in _sys.argv[1:]
     try:
-        request = parse_request(_sys.argv[1:])
-        return run_query(
+        from CALENDAR import cli as _calendar_cli
+        request = _calendar_cli.parse_request(_sys.argv[1:])
+        return _calendar_cli.run_query(
             request["symbol"],
             request["scope"],
             request.get("cleartext", False),
@@ -43,7 +44,6 @@ def run() -> int:
             print("DEBUG | Unexpected exception traceback:", file=_sys.stderr)
             _traceback.print_exc()
         return 1
-
 
 if __name__ == "__main__":
     main()
