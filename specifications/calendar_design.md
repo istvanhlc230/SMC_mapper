@@ -1,6 +1,6 @@
 # Calendar Implementation Design
 
-Implementation baseline: 2.4.0
+Implementation baseline: 2.4.11
 
 ## 0. Source layout
 
@@ -18,9 +18,12 @@ Implementation baseline: 2.4.0
         operations.py
         presentation.py
         cli.py
-        calendar.json (runtime cache)
+        source modules only
 
-The split is structural; persistent schema and public CLI semantics remain unchanged. The default cache is `CALENDAR/calendar.json`; `SMC_DATA_ROOT` overrides it explicitly.
+    <repository-root>/calendar.json
+        canonical runtime cache (unless SMC_DATA_ROOT explicitly overrides it)
+
+The split is structural; persistent schema and public CLI semantics remain unchanged. The default cache is the repository-root `calendar.json`; `SMC_DATA_ROOT` explicitly overrides the runtime data root.
 
 ## 1. Runtime architecture
 
@@ -58,8 +61,7 @@ User examples:
     python calendar.py NVDA current
     python calendar.py EURUSD latest
 
-`current`, `latest`, and `next` are explicit public scopes. `latest` and `next` are read-only cache lookups; `current` performs watermark-based incremental acquisition.
-Old relative date scopes remain removed.
+`current`, `latest`, and `next` are explicit public scopes. All three are read-only cache lookups. `current` applies provider/symbol watermark boundaries; it does not contact providers. Provider acquisition for current is explicit through the trailing `refresh` modifier (`current refresh`). `latest` selects the most recent past/current event and `next` selects the nearest future scheduled ForexFactory economic event. Old relative date scopes remain removed.
 
 ## 3. Symbol/provider resolution
 
@@ -87,9 +89,7 @@ bootstrap Yahoo current state.
 
 Explicit ranges perform historical acquisition.
 
-current uses per-provider/per-symbol watermarks.
-
-No watermark means BOOTSTRAP_REQUIRED and no invented start time.
+current uses per-provider/per-symbol watermarks for the committed cache query. A missing watermark contributes no incremental events. No synthetic bootstrap timestamp is created. `current refresh` is the explicit provider acquisition path and uses its documented bounded first-use interval when no applicable watermark exists.
 
 ## 6. Coverage
 
@@ -150,7 +150,8 @@ Watermarks are keyed by provider|canonical_symbol.
 
 A failed provider:
 - leaves previous provider data intact;
-- is surfaced as ERROR;
+- contributes diagnostic state internally and aggregate `PARTIAL`/`UNAVAILABLE` status as documented;
+- does not expose provider `ERROR` records or exception text in normal public output;
 - does not erase another provider result.
 
 All-provider failure is UNAVAILABLE.
