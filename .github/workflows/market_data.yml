@@ -60,18 +60,18 @@ jobs:
           request = parse_market_data_request([
               "--symbol", "EURUSD",
               "--timeframes", "M1",
-              "--range", "-2026.10.10@05.00",
+              "--range", "-2026.10.06@05.00",
           ])
           assert request.start_time is None
-          assert request.end_time == dt("2026-10-10T05:01:00Z")
+          assert request.end_time == dt("2026-10-06T05:01:00Z")
 
           request = parse_market_data_request([
               "--symbol", "EURUSD",
               "--timeframes", "M1",
-              "--range", "-2026.10.10@05:00",
+              "--range", "-2026.10.06@05:00",
           ])
           assert request.start_time is None
-          assert request.end_time == dt("2026-10-10T05:01:00Z")
+          assert request.end_time == dt("2026-10-06T05:01:00Z")
 
           # HH.MM is compatibility-only for open-ended ranges; canonical explicit
           # datetime scopes must use HH:MM.
@@ -79,7 +79,7 @@ jobs:
               parse_market_data_request([
                   "--symbol", "EURUSD",
                   "--timeframes", "M1",
-                  "--range", "2026.10.10@05.00",
+                  "--range", "2026.10.05@05.00",
               ])
           except ValueError:
               pass
@@ -115,7 +115,7 @@ jobs:
                   "--symbol", "EURUSD",
                   "--timeframes", "M1",
                   "--lastclosed",
-                  "--range", "2026.10.10",
+                  "--range", "2026.10.05",
               ])
           except ValueError as exc:
               assert "lastclosed cannot be combined" in str(exc)
@@ -139,7 +139,7 @@ jobs:
           resolved = resolve_acquisition_range(request, "M1", state)
           assert resolved == (
               dt("2026-10-05T07:15:00Z"),
-              dt("2026-10-10T05:01:00Z"),
+              dt("2026-10-06T05:01:00Z"),
           )
 
           missing = {
