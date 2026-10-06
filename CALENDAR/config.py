@@ -17,7 +17,7 @@ HTTP_TIMEOUT = 15.0
 # SCHEMA_VERSION — persistent calendar.json schema version.
 SCHEMA_VERSION = 2
 # __version__ — Calendar CLI implementation version, independent from SCHEMA_VERSION.
-__version__ = "2.4.11"
+__version__ = "2.4.12"
 
 # SUPPORTED_CURRENCIES — standalone currencies accepted by the CLI.
 SUPPORTED_CURRENCIES = {
@@ -81,6 +81,7 @@ USAGE
   python calendar.py SYMBOL <scope> [refresh]
   python calendar.py SYMBOL --date YYYY.MM.DD [--time HH:MM] [refresh]
   python calendar.py SYMBOL --time HH:MM [refresh]
+  python calendar.py SYMBOL HH:MM-HH:MM [refresh]
   python calendar.py SYMBOL --range -YYYY.MM.DD [refresh]
   python calendar.py SYMBOL --range -YYYY.MM.DD@HH:MM [refresh]
   python calendar.py SYMBOL --last-update
@@ -97,6 +98,8 @@ FLAGS
                 the exact UTC calendar day.
   --time HH:MM Query/refresh/delete time shorthand. Without --date, HH:MM is
                 resolved on the current UTC calendar day.
+  HH:MM-HH:MM    Positional query/refresh/delete shorthand for a time range on
+                the current UTC calendar day.
   --range -END  Open-start query/refresh range. END is YYYY.MM.DD or
                 YYYY.MM.DD@HH:MM; the start is resolved from the latest
                 recorded visible event for SYMBOL.
@@ -108,6 +111,7 @@ SCOPE
   YYYY.MM.DD-YYYY.MM.DD              Inclusive UTC date range.
   YYYY.MM.DD@HH:MM                   Exact UTC minute.
   YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM  Half-open UTC datetime range.
+  HH:MM-HH:MM                       Current UTC day time range.
   current                             Read current incremental events from
                                       the committed Calendar cache. No provider
                                       call occurs unless trailing refresh is used.
