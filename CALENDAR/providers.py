@@ -239,7 +239,7 @@ def fetch_forexfactory_event_detail(event_id: str) -> List[Dict[str, Any]]:
         FOREXFACTORY_DETAIL_URL.format(event_id=event_id)
     )
     try:
-        yahoo_search_data = json.loads(yahoo_search_response)
+        data = json.loads(provider_response_payload)
     except json.JSONDecodeError as exc:
         raise ProviderError(
             f"Malformed ForexFactory detail JSON for event {event_id}: {exc}"
