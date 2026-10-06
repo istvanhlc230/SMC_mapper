@@ -58,7 +58,7 @@ jobs:
           # Relative week/month scopes remain public CLI scopes and resolve
           # against the same UTC clock used by the Calendar domain.
           relative_scope_expectations = {
-              "today": ("2026-10-04T00:00:00Z", "2026-10-07T00:00:00Z"),
+              "today": ("2026-10-06T00:00:00Z", "2026-10-07T00:00:00Z"),
               "tomorrow": ("2026-10-07T00:00:00Z", "2026-10-08T00:00:00Z"),
               "yesterday": ("2026-10-05T00:00:00Z", "2026-10-06T00:00:00Z"),
               "prev_week": ("2026-09-27T00:00:00Z", "2026-10-04T00:00:00Z"),
