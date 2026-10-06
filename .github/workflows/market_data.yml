@@ -32,6 +32,24 @@ jobs:
           request = parse_market_data_request([
               "--symbol", "EURUSD",
               "--timeframes", "M1", "M5",
+              "--range", "2026.10.06-",
+          ])
+          assert request.start_time == dt("2026-10-06T00:00:00Z")
+          assert request.end_time is None
+          assert request.current is False
+          assert request.last_closed_only is False
+
+          open_end_request = parse_market_data_request([
+              "--symbol", "EURUSD",
+              "--timeframes", "M1",
+              "--range", "2026.10.06@15:30-",
+          ])
+          assert open_end_request.start_time == dt("2026-10-06T15:30:00Z")
+          assert open_end_request.end_time is None
+
+          request = parse_market_data_request([
+              "--symbol", "EURUSD",
+              "--timeframes", "M1", "M5",
               "--range", "-2026.10.20",
           ])
           assert request.start_time is None
