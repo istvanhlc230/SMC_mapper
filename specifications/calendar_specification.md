@@ -203,11 +203,11 @@ Date range = inclusive by calendar date.
 Datetime = exact one-minute interval.
 Datetime range = half-open start/end interval.
 
-Positional time-range shorthand:
+Preferred positional time-range shorthand:
 
     python calendar.py SYMBOL HH:MM-HH:MM [refresh]
 
-This shorthand resolves both times against the current UTC calendar date at execution time and normalizes to the canonical `YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM` datetime range before scope parsing. It is valid for normal query, trailing `refresh`, and symbol-scoped delete operations. It is mutually exclusive with `--date`, `--time`, `--range`, or another positional scope. The end time must be later than the start time; invalid clock values fail through the existing Calendar time parser.
+This is the preferred public shorthand when the requested interval is entirely on the current UTC calendar day. It resolves both times against the current UTC calendar date at execution time and normalizes to the canonical `YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM` datetime range before scope parsing. It is valid for normal query, trailing `refresh`, and symbol-scoped delete operations. It is mutually exclusive with `--date`, `--time`, `--range`, or another positional scope. The end time must be later than the start time; invalid clock values fail through the existing Calendar time parser.
 
 ## 3.1 --time CLI shorthand
 
