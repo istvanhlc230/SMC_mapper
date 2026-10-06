@@ -20,10 +20,10 @@ Implementation baseline: 2.4.11
         cli.py
         source modules only
 
-    <repository-root>/calendar.json
+    CALENDAR/calendar.json
         canonical runtime cache (unless SMC_DATA_ROOT explicitly overrides it)
 
-The split is structural; persistent schema and public CLI semantics remain unchanged. The default cache is the repository-root `calendar.json`; `SMC_DATA_ROOT` explicitly overrides the runtime data root.
+The split is structural; persistent schema and public CLI semantics remain unchanged. The default cache is `CALENDAR/calendar.json`; `SMC_DATA_ROOT` explicitly overrides the runtime data root.
 
 ## 1. Runtime architecture
 
