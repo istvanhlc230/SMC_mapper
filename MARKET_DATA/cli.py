@@ -47,7 +47,8 @@ def build_argument_parser():
         help=(
             "Calendar-compatible scope: YYYY.MM.DD, "
             "YYYY.MM.DD-YYYY.MM.DD, YYYY.MM.DD@HH:MM, "
-            "YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM, or open-start -END."
+            "YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM, open-start -END, "
+            "or open-end START-."
         ),
     )
     parser.add_argument(
@@ -126,6 +127,16 @@ def resolve_scope_interval(scope):
             )
             return None, point + timedelta(minutes=1)
         return None, parse_calendar_date(endpoint) + timedelta(days=1)
+
+    if scope.endswith("-") and not scope.startswith("-"):
+        endpoint = scope[:-1]
+        if not endpoint:
+            raise ValueError(f"invalid open-end range: {scope}")
+        if "@" in endpoint:
+            point = parse_calendar_point(endpoint, require_time=True)
+        else:
+            point = parse_calendar_date(endpoint)
+        return point, None
 
     if "@" in scope:
         parts = scope.split("-", 1)
