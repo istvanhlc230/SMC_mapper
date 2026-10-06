@@ -2205,7 +2205,6 @@ Verify:
 ```text
 historical range acquisition
 lastclosed
-lastclosed + live
 current-only current refresh
 one-new-candle incremental update
 missed-multiple-candle batch
@@ -2229,8 +2228,8 @@ The developer agent must add focused tests around the module boundaries using th
 Test names:
 
 ```text
-test_parse_market_data_request_lastcandle_conflicts
-test_parse_market_data_request_lastcandle_live_allowed
+test_parse_market_data_request_lastclosed_conflicts
+test_parse_market_data_request_lastclosed_current_conflict
 test_parse_market_data_request_requires_timeframe
 test_parse_iso8601_returns_utc
 test_normalize_source_time_with_timezone
@@ -2248,8 +2247,8 @@ test_apply_candle_retention_evicts_oldest
 test_available_bounds_ignore_current_snapshot
 test_atomic_save_replaces_target
 test_atomic_save_retries_transient_write_failure
-test_lastcandle_fetches_exactly_one_completed_candle_per_timeframe
-test_lastcandle_live_refreshes_current_independently
+test_lastclosed_fetches_exactly_one_completed_candle_per_timeframe
+test_current_refresh_is_separate_from_lastclosed
 test_noop_does_not_rewrite_unchanged_market_data
 test_multitimeframe_updates_share_one_symbol_file
 test_symbol_output_directory_is_resolved_automatically
@@ -2257,7 +2256,7 @@ test_market_data_path_stays_within_symbol_directory
 test_rejects_unsafe_symbol_path_component
 test_multitimeframe_update_does_not_cross_contaminate
 test_missing_range_can_be_reacquired
-test_live_only_refresh_does_not_request_historical_range
+test_current_only_refresh_does_not_request_historical_range
 test_failed_timeframe_update_does_not_persist_partial_symbol_change
 test_historical_reacquisition_range_is_protected_from_immediate_eviction
 test_end_only_request_requires_existing_range
@@ -2278,11 +2277,11 @@ test_save_failure_leaves_previous_json_intact
 test_provider_empty_result_is_not_provider_error
 test_provider_failure_is_not_empty_success
 test_incremental_range_starts_after_available_end
-test_explicit_end_boundary_is_completion_time_based
-test_fetch_completed_candles_filters_by_completion_time
+test_explicit_range_boundary_uses_candle_timestamp
+test_fetch_completed_candles_filters_by_candle_timestamp_and_completion
 test_fetch_latest_completed_selects_max_completion_time
 test_fetch_current_ignores_completed_records
-test_successful_live_refresh_without_current_clears_stale_snapshot
+test_successful_incremental_refresh_without_current_clears_stale_snapshot
 test_provider_failure_preserves_previous_persisted_state
 test_decimal_persistence_is_plain_string
 test_decimal_persistence_round_half_even
@@ -2359,7 +2358,7 @@ persist complete symbol document atomically
 exit
 ```
 
-For `--current`, current-snapshot refresh is independent of completed-candle acquisition. In current-only mode it is the current-data operation; with `--lastclosed` it runs alongside the exact latest-completed-candle acquisition.
+For `--current`, current-snapshot refresh is independent of historical completed-candle acquisition. In current-only mode it is the current-data operation. `--lastclosed` is a separate mutually exclusive mode and does not refresh the current snapshot.
 
 For `--lastclosed`, the completed-candle acquisition branch returns exactly one latest completed candle per requested timeframe.
 
