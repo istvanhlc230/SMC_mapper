@@ -17,7 +17,7 @@ HTTP_TIMEOUT = 15.0
 # SCHEMA_VERSION — persistent calendar.json schema version.
 SCHEMA_VERSION = 2
 # __version__ — Calendar CLI implementation version, independent from SCHEMA_VERSION.
-__version__ = "2.4.12"
+__version__ = "2.4.13"
 
 # SUPPORTED_CURRENCIES — standalone currencies accepted by the CLI.
 SUPPORTED_CURRENCIES = {
@@ -82,6 +82,8 @@ USAGE
   python calendar.py SYMBOL --date YYYY.MM.DD [--time HH:MM] [refresh]
   python calendar.py SYMBOL --time HH:MM [refresh]
   python calendar.py SYMBOL HH:MM-HH:MM [refresh]
+  python calendar.py SYMBOL --range YYYY.MM.DD- [refresh]
+  python calendar.py SYMBOL --range YYYY.MM.DD@HH:MM- [refresh]
   python calendar.py SYMBOL --range -YYYY.MM.DD [refresh]
   python calendar.py SYMBOL --range -YYYY.MM.DD@HH:MM [refresh]
   python calendar.py SYMBOL --last-update
@@ -98,9 +100,10 @@ FLAGS
                 the exact UTC calendar day.
   --time HH:MM Query/refresh/delete time shorthand. Without --date, HH:MM is
                 resolved on the current UTC calendar day.
-  --range -END  Open-start query/refresh range. END is YYYY.MM.DD or
-                YYYY.MM.DD@HH:MM; the start is resolved from the latest
-                recorded visible event for SYMBOL.
+  --range RANGE  Explicit/open-ended query/refresh range. Supported forms:
+                START-, START-END, and -END, where START/END are
+                YYYY.MM.DD or YYYY.MM.DD@HH:MM. START- ends at current UTC
+                time; -END starts from the latest recorded visible event.
   --last-update  Read the last successful provider update time for SYMBOL from
                 committed Calendar watermarks. Read-only; no provider call.
 
@@ -154,7 +157,7 @@ REFRESH MODIFIER
   JSON output includes a refresh summary with added/changed/unchanged counts.
   refresh is valid with current, today, tomorrow, yesterday, prev_week,
   next_week, prev_month, next_month, explicit date/datetime scopes, and the
-  open-start --range -END form. latest and next
+  both open-start --range -END and open-end --range START- forms. latest and next
   cannot be combined with refresh.
   CLI refresh may block on provider I/O; the Monitor must invoke the underlying
   refresh operation asynchronously and outside its candle-close processing path.
