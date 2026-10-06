@@ -48,7 +48,7 @@ def _query_current_cached(
     )
 
 
-def run_query(
+def execute_calendar_query(
     symbol: str,
     scope: str,
     cleartext: bool = False,
@@ -231,7 +231,7 @@ def run_query(
             cleartext,
         )
         return 0 if status != "UNAVAILABLE" else 2
-def run_delete(
+def execute_calendar_delete(
     symbol: Optional[str],
     scope: Optional[str],
 ) -> int:
@@ -265,19 +265,31 @@ def run_delete(
     }))
     return 0
 
-def _normalize_current_day_time_range(scope: str) -> str:
-    """Normalize HH:MM-HH:MM to the current UTC day's canonical datetime range."""
-    # The shorthand is CLI-only; domain parsing continues to operate on full UTC datetime scopes.
-    if not re.fullmatch(r"\d{2}:\d{2}-\d{2}:\d{2}", scope):
-        return scope
-    domain.parse_time(scope.split("-", 1)[0])
-    domain.parse_time(scope.split("-", 1)[1])
-    current_date = domain.utc_now().strftime("%Y.%m.%d")
-    return f"{current_date}@{scope}"
+def normalize_current_day_time_range_scope(time_range_scope: str) -> str:
+    """Convert the preferred HH:MM-HH:MM shorthand to a canonical UTC datetime range.
+
+    The CLI owns this convenience syntax so the domain layer only receives the
+    canonical YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM representation.
+    """
+    if not re.fullmatch(r"\d{2}:\d{2}-\d{2}:\d{2}", time_range_scope):
+        return time_range_scope
+
+    # Validate both clock values before attaching today's UTC date.
+    range_start_time, range_end_time = time_range_scope.split("-", 1)
+    domain.parse_time(range_start_time)
+    domain.parse_time(range_end_time)
+
+    # Use Calendar's injectable UTC clock so CLI behavior is deterministic in tests.
+    current_utc_date = domain.utc_now().strftime("%Y.%m.%d")
+    canonical_datetime_range = (
+        f"{current_utc_date}@{range_start_time}-{current_utc_date}@{range_end_time}"
+    )
+    return canonical_datetime_range
 
 
-def parse_request(args: List[str]) -> Dict[str, Any]:
-    """Parse one Calendar CLI request using the canonical scope + modifier grammar."""
+def parse_calendar_cli_request(cli_arguments: List[str]) -> Dict[str, Any]:
+    """Parse CLI arguments into one canonical Calendar operation request."""
+
     if not args:
         raise CalendarInputError("No arguments provided. Use --help.")
 
@@ -424,7 +436,7 @@ def parse_request(args: List[str]) -> Dict[str, Any]:
                 raise CalendarInputError(
                     "--time cannot be combined with an explicit delete scope."
                 )
-            scope = domain.parse_scope(_normalize_current_day_time_range(positional[2]))
+            scope = domain.parse_scope(normalize_current_day_time_range_scope(positional[2]))
         if scope == "current":
             raise CalendarInputError("current cannot be used as a delete scope.")
 
@@ -488,14 +500,15 @@ def parse_request(args: List[str]) -> Dict[str, Any]:
     }
 
 
-def run() -> int:
-    """Calendar operation: run performs the focused run step in the Calendar implementation."""
+def execute_calendar_cli() -> int:
+    """Execute the parsed Calendar CLI request and return its process exit code."""
+
     debug = "--debug" in sys.argv[1:]
     try:
-        request = parse_request(sys.argv[1:])
+        request = parse_calendar_cli_request(sys.argv[1:])
         debug = request["debug"]
         if request["operation"] == "DELETE":
-            return run_delete(
+            return execute_calendar_delete(
                 request["symbol"],
                 request["scope"],
             )
@@ -515,7 +528,7 @@ def run() -> int:
                     "last_updates": updates,
                 }, ensure_ascii=False))
             return 0
-        return run_query(
+        return execute_calendar_query(
             request["symbol"],
             request["scope"],
             request["cleartext"],
