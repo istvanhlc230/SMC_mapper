@@ -73,6 +73,63 @@ jobs:
           assert request.start_time is None
           assert request.end_time == dt("2026-10-10T05:01:00Z")
 
+          # HH.MM is compatibility-only for open-ended ranges; canonical explicit
+          # datetime scopes must use HH:MM.
+          try:
+              parse_market_data_request([
+                  "--symbol", "EURUSD",
+                  "--timeframes", "M1",
+                  "--range", "2026.10.10@05.00",
+              ])
+          except ValueError:
+              pass
+          else:
+              raise AssertionError("explicit HH.MM datetime must be rejected")
+
+          # Future starts are invalid for every historical range form.
+          try:
+              parse_market_data_request([
+                  "--symbol", "EURUSD",
+                  "--timeframes", "M1",
+                  "--range", "2099.01.01-",
+              ])
+          except ValueError as exc:
+              assert "future range start" in str(exc)
+          else:
+              raise AssertionError("future open-end start must be rejected")
+
+          try:
+              parse_market_data_request([
+                  "--symbol", "EURUSD",
+                  "--timeframes", "M1",
+                  "--range", "2099.01.01-2099.01.02",
+              ])
+          except ValueError as exc:
+              assert "future range start" in str(exc)
+          else:
+              raise AssertionError("future explicit start must be rejected")
+
+          # --lastclosed cannot be combined with any historical range.
+          try:
+              parse_market_data_request([
+                  "--symbol", "EURUSD",
+                  "--timeframes", "M1",
+                  "--lastclosed",
+                  "--range", "2026.10.10",
+              ])
+          except ValueError as exc:
+              assert "lastclosed cannot be combined" in str(exc)
+          else:
+              raise AssertionError("lastclosed + range must be rejected")
+
+          # main() converts CLI ValueError into a concise non-zero exit result.
+          from MARKET_DATA.cli import main
+          assert main([
+              "--symbol", "EURUSD",
+              "--timeframes", "M1",
+              "--range", "2099.01.01-",
+          ]) == 2
+
           state = {
               "available_start": "2026-09-01T00:00:00Z",
               "available_end": "2026-10-05T07:15:00Z",
