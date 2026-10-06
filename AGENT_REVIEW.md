@@ -1,3 +1,30 @@
+
+## Post-audit correction — Calendar 2.4.11 + Market Data integrity
+
+### Scope
+Re-audited the active Calendar and Market Data specifications against the implementation after the open-start range changes.
+
+### Corrections
+- Calendar `next` now considers only scheduled ForexFactory economic events; Yahoo Finance published/current news is never treated as a future scheduled event.
+- Plain open-start Calendar `--range -END` is cache-only; provider acquisition occurs only with the trailing `refresh` modifier.
+- Yahoo acquisition persists provider/symbol coverage for the successfully queried historical/current interval while retaining `historical_coverage=NOT_GUARANTEED`.
+- Normal Calendar output no longer exposes provider `ERROR` records or exception text; aggregate `PARTIAL/UNAVAILABLE` status remains available.
+- Market Data range inclusion now uses canonical candle `timestamp` with an exclusive END boundary.
+- Persisted Market Data validation now rejects negative volume, duplicate current/completed candle identity, invalid current completion boundaries, and unsupported timeframes.
+- Yahoo malformed OHLC records now fail instead of being silently discarded.
+- H4 aggregation now requires contiguous H1 source timestamps at the expected boundaries.
+- Market Data help and normalization signature were synchronized with the active implementation.
+- Removed the unused tracked `MARKET_DATA/market_data_cache.json` artifact.
+
+### Validation
+- Calendar workflow #435 (`d3a076a9b6693cdf1bae438bd5238b9351ca1966`) — SUCCESS.
+- Market Data workflow #50 (`d3a076a9b6693cdf1bae438bd5238b9351ca1966`) — SUCCESS.
+- Both workflows passed compile and their contract/regression test steps.
+- Implementation and specification changes are on `main`.
+
+### Audit status
+PASS for the corrected scope. Yahoo Finance is explicitly treated as a published/current-news source, not a scheduled future-event provider.
+
 # AGENT_REVIEW.md
 
 PENDING_LOCAL_LIVE_DETAIL_VALIDATION
