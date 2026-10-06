@@ -69,7 +69,13 @@ def resolve_acquisition_range(request,timeframe,existing_state):
             )
         return start, request.end_time
     if existing_state and existing_state.get("available_end"):
-        start=datetime.fromisoformat(existing_state["available_end"].replace("Z","+00:00"))
+        available_end = datetime.fromisoformat(
+            existing_state["available_end"].replace("Z", "+00:00")
+        )
+        # Normal incremental acquisition starts at the next candle interval,
+        # not at the already persisted candle. Open-start --range intentionally
+        # retains the inclusive available_end boundary above.
+        start = available_end + timedelta(seconds=TIMEFRAME_SECONDS[timeframe])
         return start,datetime.now(timezone.utc)
     return None,datetime.now(timezone.utc)
 
