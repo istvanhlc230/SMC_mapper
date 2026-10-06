@@ -1,6 +1,6 @@
 """Canonical Market Data JSON persistence and atomic storage."""
 from __future__ import annotations
-import json, os, tempfile
+import json, os, re, tempfile
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal, ROUND_HALF_EVEN
 from pathlib import Path
@@ -29,12 +29,22 @@ def update_available_bounds(timeframe_state):
     timeframe_state["available_start"]=candles[0]["timestamp"] if candles else None
     timeframe_state["available_end"]=candles[-1]["timestamp"] if candles else None
 
+_PERSISTED_DECIMAL_RE = re.compile(r"^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$")
+
+
 def _validate_persisted_decimal(value: Any, field_name: str) -> None:
-    if not isinstance(value, str):
-        raise ValueError(f"persisted {field_name} must be a Decimal string")
+    if not isinstance(value, str) or not _PERSISTED_DECIMAL_RE.fullmatch(value):
+        raise ValueError(
+            f"persisted {field_name} must be a plain base-10 Decimal string"
+        )
     parsed = Decimal(value)
     if not parsed.is_finite():
         raise ValueError(f"persisted {field_name} must be finite")
+    fractional_places = len(value.partition(".")[2])
+    if fractional_places > DECIMAL_PERSISTENCE_PLACES:
+        raise ValueError(
+            f"persisted {field_name} exceeds {DECIMAL_PERSISTENCE_PLACES} decimal places"
+        )
 
 
 def _validate_persisted_non_negative_decimal(value: Any, field_name: str) -> None:
