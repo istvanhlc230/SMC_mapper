@@ -69,6 +69,8 @@ def execute_calendar_query(
             else:
                 if domain.is_open_start_scope(scope):
                     start, end = domain.resolve_open_start_scope(document, symbol, scope)
+                elif domain.is_open_end_scope(scope):
+                    start, end = domain.resolve_open_end_scope(scope)
                 else:
                     start, end = domain.resolve_scope_interval(scope)
                 refresh_result = operations.refresh_calendar_scope(
@@ -148,6 +150,24 @@ def execute_calendar_query(
             )
             status = "OK" if events else "NO_NEXT_EVENT"
             presentation.output_query_result(status, symbol, events, [], cleartext)
+            return 0
+
+        if domain.is_open_end_scope(scope):
+            # Open-end range is a cache query unless trailing refresh requests acquisition.
+            start, end = domain.resolve_open_end_scope(scope)
+            events = domain.filter_events_for_interval(
+                domain.filter_events_for_symbol(document["events"], symbol),
+                start,
+                end,
+            )
+            status = "OK" if events else "NO_RELEVANT_EVENT"
+            presentation.output_query_result(
+                status,
+                symbol,
+                events,
+                [],
+                cleartext,
+            )
             return 0
 
         if domain.is_open_start_scope(scope):
@@ -248,9 +268,13 @@ def execute_calendar_delete(
                     "Scoped delete requires DELETE + SYMBOL + SCOPE. "
                     "Use bare 'delete' only for full cache deletion."
                 )
-            if scope in {"current", "latest", "next"} or domain.is_open_start_scope(scope):
+            if (
+                scope in {"current", "latest", "next"}
+                or domain.is_open_start_scope(scope)
+                or domain.is_open_end_scope(scope)
+            ):
                 raise CalendarInputError(
-                    "current, latest, next, and open-start ranges cannot be used as delete scopes."
+                    "current, latest, next, open-start, and open-end ranges cannot be used as delete scopes."
                 )
             start, end = domain.resolve_scope_interval(scope)
             operations.delete_symbol_interval(document, symbol, start, end)
@@ -463,9 +487,13 @@ def parse_calendar_cli_request(cli_arguments: List[str]) -> Dict[str, Any]:
         if cli_date is not None or cli_time is not None:
             raise CalendarInputError("--range cannot be combined with --date or --time.")
         scope = domain.parse_scope(cli_range)
-        if not domain.is_open_start_scope(scope):
+        if scope in {
+            "current", "latest", "next", "today", "tomorrow", "yesterday",
+            "prev_week", "next_week", "prev_month", "next_month",
+        }:
             raise CalendarInputError(
-                "--range currently requires an open-start value: -YYYY.MM.DD or -YYYY.MM.DD@HH:MM."
+                "--range requires an explicit date/datetime range, an open-start -END range, "
+                "or an open-end START- range."
             )
     elif len(positional) == 1:
         if cli_date is not None:
