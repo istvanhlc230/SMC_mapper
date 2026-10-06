@@ -35,7 +35,7 @@ jobs:
               return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
           assert calendar.validate_symbol("EURUSD") == "EURUSD"
-          assert calendar.__version__ == "2.4.12"
+          assert calendar.__version__ == "2.4.13"
           assert calendar.validate_symbol("USDGBP") == "USDGBP"
           assert calendar.validate_symbol("HUF") == "HUF"
           assert calendar.validate_symbol("NVDA") == "NVDA"
@@ -75,6 +75,58 @@ jobs:
                   assert resolved_end == dt(expected_end)
                   parsed = domain.parse_scope(relative_scope)
                   assert parsed == relative_scope
+          finally:
+              domain.utc_now = fixed_utc_now
+
+          # Open-start and open-end --range forms share the canonical UTC interval model.
+          fixed_utc_now = domain.utc_now
+          try:
+              domain.utc_now = lambda: dt("2026-10-06T12:00:00Z")
+              open_start = domain.parse_scope("-2026.10.20")
+              assert domain.is_open_start_scope(open_start)
+              open_start_end = domain.resolve_open_start_scope(
+                  {
+                      "events": [{
+                          "event_id": "test:open-start",
+                          "symbol": "USD",
+                          "source": "forexfactory",
+                          "timestamp": "2026-10-06T08:00:00Z",
+                          "suppressed_for": [],
+                          "details": {"currency": "USD"},
+                      }]
+                  },
+                  "USD",
+                  open_start,
+              )
+              assert open_start_end == (
+                  dt("2026-10-06T08:00:00Z"),
+                  dt("2026-10-21T00:00:00Z"),
+              )
+
+              open_end = domain.parse_scope("2026.10.06-")
+              assert domain.is_open_end_scope(open_end)
+              assert domain.resolve_open_end_scope(open_end) == (
+                  dt("2026-10-06T00:00:00Z"),
+                  dt("2026-10-06T12:00:00Z"),
+              )
+              open_end_time = domain.parse_scope("2026.10.06@10:30-")
+              assert domain.resolve_open_end_scope(open_end_time) == (
+                  dt("2026-10-06T10:30:00Z"),
+                  dt("2026-10-06T12:00:00Z"),
+              )
+
+              range_request = calendar_cli.parse_calendar_cli_request(
+                  ["EURUSD", "--range", "2026.10.06-"]
+              )
+              assert range_request["scope"] == "2026.10.06-"
+              range_request = calendar_cli.parse_calendar_cli_request(
+                  ["EURUSD", "--range", "2026.10.06@10:30-"]
+              )
+              assert range_request["scope"] == "2026.10.06@10:30-"
+              assert domain.resolve_scope_interval("2026.10.06-") == (
+                  dt("2026-10-06T00:00:00Z"),
+                  dt("2026-10-06T12:00:00Z"),
+              )
           finally:
               domain.utc_now = fixed_utc_now
 
