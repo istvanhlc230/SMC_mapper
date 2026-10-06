@@ -2,7 +2,7 @@
 
 Status: Current V2 specification.
 
-Calendar implementation baseline: 2.4.12.
+Calendar implementation baseline: 2.4.13.
 
 Default DATA_ROOT is the repository `CALENDAR/` directory, so the default persistent artifact is `<repository-root>/CALENDAR/calendar.json`. `SMC_DATA_ROOT` may explicitly override this runtime location.
 
