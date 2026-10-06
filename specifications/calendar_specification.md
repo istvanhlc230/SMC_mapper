@@ -144,6 +144,8 @@ Public query forms:
     python calendar.py SYMBOL YYYY.MM.DD@HH:MM [refresh]
     python calendar.py SYMBOL YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM [refresh]
     python calendar.py SYMBOL --time HH:MM [refresh]
+    python calendar.py SYMBOL --range YYYY.MM.DD- [refresh]
+    python calendar.py SYMBOL --range YYYY.MM.DD@HH:MM- [refresh]
     python calendar.py SYMBOL --range -YYYY.MM.DD [refresh]
     python calendar.py SYMBOL --range -YYYY.MM.DD@HH:MM [refresh]
     python calendar.py SYMBOL YYYY.MM.DD --time HH:MM [refresh]
@@ -208,6 +210,11 @@ Date = full UTC day.
 Date range = inclusive by calendar date.
 Datetime = exact one-minute interval.
 Datetime range = half-open start/end interval.
+
+Open-start range = -END: start is resolved from the latest recorded visible event for SYMBOL.
+Open-end range = START-: end is resolved to the current UTC time at execution.
+For YYYY.MM.DD- the START is 00:00 UTC; for YYYY.MM.DD@HH:MM- the START is the exact UTC minute.
+A future START is rejected. Both forms are valid query/refresh scopes and neither is a delete scope.
 
 Preferred positional time-range shorthand:
 
