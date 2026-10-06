@@ -156,8 +156,7 @@ REFRESH MODIFIER
   The normal query result for the same scope is returned after refresh.
   JSON output includes a refresh summary with added/changed/unchanged counts.
   refresh is valid with current, today, tomorrow, yesterday, prev_week,
-  next_week, prev_month, next_month, explicit date/datetime scopes, and the
-  both open-start --range -END and open-end --range START- forms. latest and next
+  next_week, prev_month, next_month, explicit date/datetime scopes, and both open-start --range -END and open-end --range START- forms. latest and next
   cannot be combined with refresh.
   CLI refresh may block on provider I/O; the Monitor must invoke the underlying
   refresh operation asynchronously and outside its candle-close processing path.
