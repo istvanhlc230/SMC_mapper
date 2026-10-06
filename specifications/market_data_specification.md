@@ -510,7 +510,7 @@ Malformed dates/times, impossible calendar dates, invalid 24-hour times, unexpec
 
 Historical range inclusion is based on the canonical candle interval start:
 `start_time <= candle.timestamp < end_time`. Completion status is checked separately;
-`completion_time` must not be used as the range boundary itself.
+`completion_time` must not be used as the range boundary itself. The same rule applies to provider overfetch after normalization.
 
 No machine-local timezone is ever assumed.
 
@@ -1555,6 +1555,16 @@ When neither historical boundaries nor `--lastclosed` apply and `live=False`:
 
 This function plans provider acquisition only. It does not manipulate mapper checkpoints.
 
+### Incremental boundary rule
+
+Normal incremental mode advances past the persisted `available_end` candle. The next acquisition start is:
+
+    available_end + timeframe interval duration
+
+This prevents an ordinary incremental run from re-requesting the already persisted terminal candle. The open-start
+`--range -END` mode is intentionally different: it starts at `available_end` inclusively so the requested historical
+range can reacquire/reconcile the retained boundary candle and deduplicate it by stable candle ID.
+
 ### Resolved acquisition range contract
 
 `resolve_acquisition_range()` returns a logical canonical range after applying request mode, existing state, and current evaluation time.
@@ -1565,7 +1575,7 @@ The returned range must satisfy:
 - start <= end;
 - the range never exceeds the explicit user-requested boundary;
 - when no explicit end exists, the end is the latest completed candle boundary resolved at evaluation time;
-- when incremental mode uses `available_end`, the next acquisition begins strictly after the persisted end candle;
+- when incremental mode uses `available_end`, the next acquisition begins at the next canonical candle interval after the persisted end candle;
 - acquisition logic must not use the current snapshot as a completed-candle boundary;
 - the function must be deterministic when `now` is supplied explicitly.
 
@@ -1604,12 +1614,12 @@ Process:
 2. normalize every provider record;
 3. reject malformed records and ambiguous timestamps;
 4. evaluate completion;
-5. keep only candles with `completion_time >= start_time` and `completion_time <= end_time`;
+5. keep only candles whose canonical interval start satisfies `start_time <= timestamp < end_time`;
 6. exclude all incomplete/current candidates;
 7. validate normalized candles;
 8. return deterministic ascending chronology.
 
-The function returns only completed canonical market-data candles within the resolved canonical completion-time interval. Provider-native overfetch outside the interval is discarded before persistence.
+The function returns only completed canonical market-data candles whose interval starts fall inside the resolved half-open range. Completion status is evaluated independently. Provider-native overfetch outside the interval is discarded before persistence.
 
 ## 14.2 fetch_latest_completed_candle
 
@@ -1626,7 +1636,7 @@ def fetch_latest_completed_candle(
 
 Must return exactly one latest completed candle when available.
 
-Selection is by greatest canonical `completion_time`; ties are a data-integrity error unless they refer to the same normalized candle identity.
+Selection is by greatest canonical `timestamp`; for a fixed timeframe this is equivalent to greatest `completion_time`. Ties are a data-integrity error unless they refer to the same normalized candle identity.
 
 ## 14.3 fetch_current_candle
 
