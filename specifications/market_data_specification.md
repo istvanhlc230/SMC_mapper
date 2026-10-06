@@ -444,13 +444,20 @@ Open-start range forms are also supported:
 
     --range -YYYY.MM.DD
     --range -YYYY.MM.DD@HH:MM
+    --range YYYY.MM.DD-
+    --range YYYY.MM.DD@HH:MM-
 
 A leading `-` omits the start boundary. The start is resolved separately for each requested timeframe from
 that timeframe's latest persisted completed-candle timestamp (`available_end`). The explicit END remains
 the upper boundary. An open-start range therefore requires retained completed history for every requested
-timeframe; a missing `available_end` fails explicitly rather than fabricating a start. The canonical time
-spelling is `HH:MM`; `HH.MM` is accepted only as a compatibility alias in the open-start datetime form
-and is normalized to `HH:MM`.
+timeframe; a missing `available_end` fails explicitly rather than fabricating a start.
+
+A trailing `-` omits the end boundary. The explicit START is retained and the end resolves to the current
+UTC time at execution. Therefore `--range YYYY.MM.DD-` means START at 00:00 UTC through NOW, while
+`--range YYYY.MM.DD@HH:MM-` means the exact UTC minute through NOW. A future START is rejected.
+Both open-start and open-end forms use the same UTC date/time grammar and half-open interval semantics.
+The canonical time spelling is `HH:MM`; `HH.MM` is accepted only as a compatibility alias in
+open-ended datetime forms and is normalized to `HH:MM`.
 
 Examples:
 
