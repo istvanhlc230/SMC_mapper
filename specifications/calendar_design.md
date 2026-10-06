@@ -1,6 +1,6 @@
 # Calendar Implementation Design
 
-Implementation baseline: 2.4.12
+Implementation baseline: 2.4.13
 
 ## 0. Source layout
 
