@@ -106,6 +106,9 @@ def parse_point(value: str) -> Tuple[datetime, bool]:
 
 def resolve_scope_interval(scope: str) -> Tuple[datetime, datetime]:
     """Calendar operation: resolve_scope_interval performs historical scope resolution."""
+    if is_open_end_scope(scope):
+        return resolve_open_end_scope(scope)
+
     # Relative day scopes use Calendar's canonical UTC clock rather than the
     # host-local date, so midnight boundaries remain deterministic.
     if scope in {"today", "tomorrow", "yesterday"}:
@@ -178,6 +181,30 @@ def is_open_start_scope(scope: str) -> bool:
     return scope.startswith("-")
 
 
+def is_open_end_scope(scope: str) -> bool:
+    """Identify a range whose end boundary is the current UTC time."""
+    return scope.endswith("-") and not scope.startswith("-") and len(scope) > 1
+
+
+def resolve_open_end_scope(scope: str) -> Tuple[datetime, datetime]:
+    """Resolve START- to START through the current UTC time."""
+    if not is_open_end_scope(scope):
+        raise CalendarInputError(f"Invalid open-end range '{scope}'.")
+    endpoint = scope[:-1]
+    if "@" in endpoint:
+        date_part, time_part = endpoint.split("@", 1)
+        normalized_time = time_part.replace(".", ":", 1)
+        start, _ = parse_point(f"{date_part}@{normalized_time}")
+    else:
+        start = parse_date(endpoint)
+    end = utc_now()
+    if start >= end:
+        raise CalendarInputError(
+            f"Open-end range '{scope}' starts at or after the current UTC time."
+        )
+    return start, end
+
+
 def resolve_open_start_scope(
     document: Dict[str, Any],
     symbol: str,
@@ -231,6 +258,19 @@ def parse_scope(scope: str) -> str:
         if not endpoint or endpoint.startswith("-"):
             raise CalendarInputError(
                 f"Invalid open-start range '{scope}'. Expected -YYYY.MM.DD or -YYYY.MM.DD@HH:MM."
+            )
+        if "@" in endpoint:
+            date_part, time_part = endpoint.split("@", 1)
+            parse_date(date_part)
+            parse_time(time_part.replace(".", ":", 1))
+        else:
+            parse_date(endpoint)
+        return scope
+    if is_open_end_scope(scope):
+        endpoint = scope[:-1]
+        if not endpoint:
+            raise CalendarInputError(
+                f"Invalid open-end range '{scope}'. Expected YYYY.MM.DD- or YYYY.MM.DD@HH:MM-."
             )
         if "@" in endpoint:
             date_part, time_part = endpoint.split("@", 1)
