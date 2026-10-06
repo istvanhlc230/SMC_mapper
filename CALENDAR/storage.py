@@ -15,7 +15,7 @@ from .domain import build_empty_calendar_document, validate_calendar_document
 # PROJECT_ROOT — repository root used to derive the default Calendar data directory.
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 # DATA_ROOT — active runtime directory; SMC_DATA_ROOT overrides the repository-local default.
-DATA_ROOT = os.path.abspath(os.environ.get("SMC_DATA_ROOT", str(PROJECT_ROOT)))
+DATA_ROOT = os.path.abspath(os.environ.get("SMC_DATA_ROOT", str(PROJECT_ROOT / "CALENDAR")))
 # CALENDAR_FILE — canonical persistent Calendar cache path for the active DATA_ROOT.
 CALENDAR_FILE = os.path.join(DATA_ROOT, "calendar.json")
 
