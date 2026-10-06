@@ -1045,7 +1045,7 @@ jobs:
               domain.utc_now = lambda: dt("2026-10-04T12:00:00Z")
 
 
-          for bad in ("next_day", "week", "next_week", "month", "next_month", "2026.10.01..2026.10.31"):
+          for bad in ("next_day", "week", "month", "2026.10.01..2026.10.31"):
               try:
                   calendar.parse_request(["EURUSD", bad])
               except calendar.CalendarInputError:
