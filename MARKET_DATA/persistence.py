@@ -29,7 +29,7 @@ def update_available_bounds(timeframe_state):
     timeframe_state["available_start"]=candles[0]["timestamp"] if candles else None
     timeframe_state["available_end"]=candles[-1]["timestamp"] if candles else None
 
-_PERSISTED_DECIMAL_RE = re.compile(r"^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$")
+_PERSISTED_DECIMAL_RE = re.compile(r"^-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$")
 
 
 def _validate_persisted_decimal(value: Any, field_name: str) -> None:
