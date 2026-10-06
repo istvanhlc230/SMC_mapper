@@ -117,6 +117,10 @@ SCOPE
   today                               Exact current UTC calendar day.
   tomorrow                            Exact next UTC calendar day.
   yesterday                           Exact previous UTC calendar day.
+  prev_week                            Exact previous ForexFactory-style UTC week.
+  next_week                            Exact next ForexFactory-style UTC week.
+  prev_month                           Exact previous UTC calendar month.
+  next_month                           Exact next UTC calendar month.
   latest                              Return the most recent past/current event for
                                       SYMBOL from the committed calendar cache.
   next                                Return the nearest future scheduled economic
@@ -148,8 +152,9 @@ REFRESH MODIFIER
   ForexFactory Detail data can be refreshed.
   The normal query result for the same scope is returned after refresh.
   JSON output includes a refresh summary with added/changed/unchanged counts.
-  refresh is valid with current, today, tomorrow, yesterday, explicit
-  date/datetime scopes, and the open-start --range -END form. latest and next
+  refresh is valid with current, today, tomorrow, yesterday, prev_week,
+  next_week, prev_month, next_month, explicit date/datetime scopes, and the
+  open-start --range -END form. latest and next
   cannot be combined with refresh.
   CLI refresh may block on provider I/O; the Monitor must invoke the underlying
   refresh operation asynchronously and outside its candle-close processing path.
@@ -160,6 +165,16 @@ RELATIVE DAYS
   today = current UTC day; tomorrow = next UTC day; yesterday = previous UTC day.
   They use the same acquisition/query interval semantics as YYYY.MM.DD and
   are valid for normal query, explicit refresh, and scoped delete.
+
+RELATIVE WEEKS AND MONTHS
+  prev_week and next_week are exact ForexFactory-style UTC calendar-week scopes.
+  The week starts Sunday at 00:00 UTC and ends at the following Sunday 00:00 UTC.
+  prev_week selects the immediately preceding week; next_week selects the
+  immediately following week.
+  prev_month and next_month are exact UTC calendar-month scopes. They select the
+  immediately preceding or following complete calendar month.
+  These scopes are resolved at execution time and are valid for normal query,
+  refresh, and scoped delete.
 
 LATEST
   latest is a read-only most-recent-event lookup.
