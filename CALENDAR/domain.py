@@ -307,8 +307,11 @@ def _validate_calendar_event(event: Dict[str, Any], event_ids: set[str]) -> None
     event_ids.add(event_id)
     if event["event_type"] not in {"economic", "news", "earnings", "press_release", "sec_filing"}:
         raise DataIntegrityError("Invalid event_type.")
-    if event["source"] not in {"forexfactory", "yahoo_finance"}:
+    if event["source"] not in {"lse", "forexfactory", "yahoo_finance"}:
         raise DataIntegrityError("Invalid event source.")
+    sources = event.get("sources", [event["source"]])
+    if not isinstance(sources, list) or not sources or any(item not in {"lse", "forexfactory", "yahoo_finance"} for item in sources):
+        raise DataIntegrityError("Invalid event sources.")
     if event["asset_type"] not in {"forex", "ticker"}:
         raise DataIntegrityError("Invalid asset_type.")
     if not isinstance(event["symbol"], str) or not event["symbol"]:
@@ -323,12 +326,16 @@ def _validate_calendar_event(event: Dict[str, Any], event_ids: set[str]) -> None
     if not isinstance(event["details"], dict):
         raise DataIntegrityError("Event details must be an object.")
     parse_iso8601(event["timestamp"])
-    if event["source"] == "forexfactory":
-        if event["event_type"] != "economic":
-            raise DataIntegrityError("ForexFactory events must use event_type=economic.")
-        _validate_forexfactory_details(event["details"])
-    elif event["event_type"] != "news":
-        raise DataIntegrityError("Yahoo Finance events must use event_type=news.")
+    if event["event_type"] == "economic":
+        if not set(sources).intersection({"lse", "forexfactory"}):
+            raise DataIntegrityError("Economic event must have an LSE or ForexFactory source.")
+        if event["details"].get("currency") not in FX_CURRENCY_CODES and event["details"].get("currency") != "ALL":
+            raise DataIntegrityError("Invalid economic-event currency.")
+        if "specs" in event["details"]:
+            _validate_forexfactory_details(event["details"])
+    elif event["event_type"] == "news":
+        if "yahoo_finance" not in sources:
+            raise DataIntegrityError("News event must have a Yahoo Finance source.")
 
 def _validate_forexfactory_details(details: Dict[str, Any]) -> None:
     """Internal helper: _validate_forexfactory_details performs the focused validate forexfactory details step in the Calendar implementation."""
@@ -412,74 +419,81 @@ def validate_calendar_document(document: Dict[str, Any]) -> None:
     _validate_coverage_records(document["coverage"])
     _validate_watermarks(document["watermarks"])
 
+def _event_merge_key(event: Dict[str, Any]) -> Tuple[str, str, str]:
+    """Build a provider-independent identity for scheduled economic events."""
+    title = re.sub(r"[^a-z0-9]+", " ", event["title"].lower()).strip()
+    currency = str(event.get("details", {}).get("currency", "")).upper()
+    return event["event_type"], currency, f'{event["timestamp"]}|{title}'
+
+
+def _merge_event_details(existing: Dict[str, Any], incoming: Dict[str, Any]) -> Dict[str, Any]:
+    """Merge non-conflicting provider facts without discarding existing information."""
+    details = dict(existing.get("details", {}))
+    incoming_details = incoming.get("details", {})
+    provider = incoming.get("source", "unknown")
+    provider_fields = dict(details.get("provider_fields", {}))
+    for key, value in incoming_details.items():
+        if value in (None, "", [], {}):
+            continue
+        if key == "provider_fields":
+            provider_fields[provider] = value
+            continue
+        if key not in details or details[key] in (None, "", [], {}):
+            details[key] = value
+        elif details[key] != value:
+            provider_fields.setdefault(provider, {})[key] = value
+    if provider_fields:
+        details["provider_fields"] = provider_fields
+    return details
+
+
 def merge_events(
     document: Dict[str, Any],
     new_events: List[Dict[str, Any]],
     clear_suppressed_symbol: Optional[str] = None,
     preserve_detail_failure_ids: Optional[set[str]] = None,
 ) -> None:
-    """Merge normalized provider events into the committed event collection.
-
-    The merge is identity-based. A provider event may update mutable fields, but
-    a failed ForexFactory Detail request must not erase an already persisted
-    non-empty ``details.specs`` list.
-    """
-    # document stores the currently committed event snapshot keyed by stable ID.
+    """Merge provider events by stable provider ID and shared economic-event identity."""
     by_id = {event["event_id"]: event for event in document["events"]}
-    # preserve_detail_failure_ids contains stable event IDs whose latest Detail
-    # request failed during this acquisition and therefore must retain old specs.
+    economic_keys = {
+        _event_merge_key(event): event["event_id"]
+        for event in document["events"]
+        if event["event_type"] == "economic"
+    }
     failed_detail_ids = preserve_detail_failure_ids or set()
-
     for event in new_events:
         event_id = event["event_id"]
         old_event = by_id.get(event_id)
-
-        # Provider identity normally includes the event timestamp. A timestamp
-        # change is rejected here because explicit refresh handles rescheduling
-        # separately through its stable-ID replacement path.
+        merge_id = event_id
+        if old_event is None and event["event_type"] == "economic":
+            merge_id = economic_keys.get(_event_merge_key(event), event_id)
+            old_event = by_id.get(merge_id)
         if old_event is not None and old_event["timestamp"] != event["timestamp"]:
-            raise DataIntegrityError(
-                f"Provider identity/time conflict for {event_id}."
-            )
-
-        # Start from the freshly normalized provider record so mutable fields
-        # such as actual/forecast/previous and Detail content can be updated.
-        normalized_event = event.copy()
-
-        # A failed Detail request returns an empty specs list. Preserve an older
-        # non-empty list so transient provider failures never destroy good data.
-        if (
-            event_id in failed_detail_ids
-            and old_event is not None
-            and old_event.get("details", {}).get("specs")
-            and not normalized_event.get("details", {}).get("specs")
-        ):
-            normalized_event["details"] = normalized_event.get("details", {}).copy()
-            normalized_event["details"]["specs"] = old_event["details"]["specs"]
-
-        # suppressed_for is symbol-scoped metadata and must survive a merge
-        # unless this acquisition successfully reacquires that symbol.
-        inherited = set(old_event.get("suppressed_for", [])) if old_event else set()
-        incoming = set(normalized_event.get("suppressed_for", []))
-        suppressed = inherited | incoming
-        if clear_suppressed_symbol is not None:
-            suppressed.discard(clear_suppressed_symbol)
-        if suppressed:
-            normalized_event["suppressed_for"] = sorted(suppressed)
+            raise DataIntegrityError(f"Provider identity/time conflict for {event_id}.")
+        if old_event is None:
+            normalized_event = dict(event)
         else:
-            normalized_event.pop("suppressed_for", None)
-
-        by_id[event_id] = normalized_event
-
-    # Keep persisted events deterministic so identical provider responses lead
-    # to identical calendar.json ordering.
+            normalized_event = dict(old_event)
+            normalized_event["details"] = _merge_event_details(old_event, event)
+            sources = sorted(set(old_event.get("sources", [old_event["source"]])) | set(event.get("sources", [event["source"]])))
+            normalized_event["sources"] = sources
+            if event["source"] == "lse" and old_event["source"] == "forexfactory":
+                normalized_event["source"] = "lse"
+            if event["source"] == "yahoo_finance" and old_event["source"] != "yahoo_finance" and event["event_type"] == "news":
+                normalized_event["source"] = "yahoo_finance"
+        if clear_suppressed_symbol is not None:
+            suppressed = set(normalized_event.get("suppressed_for", []))
+            suppressed.discard(clear_suppressed_symbol)
+            if suppressed:
+                normalized_event["suppressed_for"] = sorted(suppressed)
+            else:
+                normalized_event.pop("suppressed_for", None)
+        by_id[merge_id] = normalized_event
+        if event["event_type"] == "economic":
+            economic_keys[_event_merge_key(normalized_event)] = merge_id
     document["events"] = sorted(
         by_id.values(),
-        key=lambda item: (
-            parse_iso8601(item["timestamp"]),
-            item["source"],
-            item["event_id"],
-        ),
+        key=lambda item: (parse_iso8601(item["timestamp"]), item["source"], item["event_id"]),
     )
 
 def merge_coverage(document: Dict[str, Any], item: Dict[str, Any]) -> None:
@@ -590,53 +604,32 @@ def watermark_key(provider: str, symbol: str) -> str:
     return f"{provider}|{symbol}"
 
 def resolve_applicable_providers(symbol: str) -> List[str]:
-    """Calendar operation: resolve_applicable_providers performs the focused resolve applicable providers step in the Calendar implementation."""
-    if is_currency(symbol):
-        return ["forexfactory"]
-    if is_fx_pair(symbol):
-        return ["forexfactory", "yahoo_finance"]
-    return ["yahoo_finance"]
+    """Return all Calendar provider adapters; each adapter decides symbol relevance."""
+    return ["lse", "forexfactory", "yahoo_finance"]
 
 def filter_events_for_symbol(events: List[Dict[str, Any]], symbol: str) -> List[Dict[str, Any]]:
-    """Calendar operation: filter_events_for_symbol performs the focused filter events for symbol step in the Calendar implementation."""
+    """Filter merged events by canonical symbol visibility and provider contribution."""
     def visible(event: Dict[str, Any]) -> bool:
-        """Calendar operation: visible performs the focused visible step in the Calendar implementation."""
         return symbol not in event.get("suppressed_for", [])
 
     if is_currency(symbol):
-        return [
-            event for event in events
-            if (
-                event["source"] == "forexfactory"
-                and event["details"].get("currency") == symbol
-                and visible(event)
-            )
-        ]
-
-    if is_fx_pair(symbol):
+        currencies = {symbol}
+    elif is_fx_pair(symbol):
         currencies = {symbol[:3], symbol[3:]}
-        return [
-            event for event in events
-            if (
-                event["source"] == "forexfactory"
-                and event["details"].get("currency") in currencies
-                and visible(event)
-            )
-            or (
-                event["source"] == "yahoo_finance"
-                and event["symbol"] == symbol
-                and visible(event)
-            )
-        ]
+    else:
+        currencies = set()
 
-    return [
-        event for event in events
-        if (
-            event["source"] == "yahoo_finance"
-            and event["symbol"] == symbol
-            and visible(event)
-        )
-    ]
+    result: List[Dict[str, Any]] = []
+    for event in events:
+        if not visible(event):
+            continue
+        sources = set(event.get("sources", [event.get("source")]))
+        if event["event_type"] == "economic" and sources.intersection({"lse", "forexfactory"}):
+            if event["details"].get("currency") in currencies:
+                result.append(event)
+        elif event["event_type"] == "news" and "yahoo_finance" in sources and event["symbol"] == symbol:
+            result.append(event)
+    return result
 
 def filter_events_for_interval(
     events: List[Dict[str, Any]],
@@ -808,7 +801,7 @@ def filter_query_events(
             and not yahoo_pair_available
         ):
             continue
-        if event["source"] == "forexfactory" and not ff_coverage_valid:
+        if event["event_type"] == "economic" and not ff_coverage_valid and "forexfactory" in event.get("sources", [event["source"]]):
             continue
         result.append(event)
     return result
