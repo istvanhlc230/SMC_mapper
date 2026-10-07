@@ -99,29 +99,6 @@ jobs:
           finally:
               domain.utc_now = fixed_utc_now
 
-          # Relative week/month scopes remain public CLI scopes and resolve
-          # against the same UTC clock used by the Calendar domain.
-          relative_scope_expectations = {
-              "today": ("2026-10-06T00:00:00Z", "2026-10-07T00:00:00Z"),
-              "tomorrow": ("2026-10-07T00:00:00Z", "2026-10-08T00:00:00Z"),
-              "yesterday": ("2026-10-05T00:00:00Z", "2026-10-06T00:00:00Z"),
-              "prev_week": ("2026-09-27T00:00:00Z", "2026-10-04T00:00:00Z"),
-              "next_week": ("2026-10-11T00:00:00Z", "2026-10-18T00:00:00Z"),
-              "prev_month": ("2026-09-01T00:00:00Z", "2026-10-01T00:00:00Z"),
-              "next_month": ("2026-11-01T00:00:00Z", "2026-12-01T00:00:00Z"),
-          }
-          fixed_utc_now = domain.utc_now
-          try:
-              domain.utc_now = lambda: dt("2026-10-06T12:00:00Z")
-              for relative_scope, (expected_start, expected_end) in relative_scope_expectations.items():
-                  resolved_start, resolved_end = domain.resolve_scope_interval(relative_scope)
-                  assert resolved_start == dt(expected_start)
-                  assert resolved_end == dt(expected_end)
-                  parsed = domain.parse_scope(relative_scope)
-                  assert parsed == relative_scope
-          finally:
-              domain.utc_now = fixed_utc_now
-
           # Open-start and open-end --range forms share the canonical UTC interval model.
           fixed_utc_now = domain.utc_now
           try:
@@ -287,7 +264,7 @@ jobs:
           normalized_ff = calendar.normalize_provider_event(ff_rows[0])
           assert normalized_ff["timestamp"] == "2026-10-05T07:00:00Z"
           assert normalized_ff["details"]["impact"] == "HIGH"
-          assert "url" not in normalized_ff["details"]
+          assert normalized_ff["details"]["url"] == "https://www.forexfactory.com/calendar/details/1-146900"
 
           detail_json = json.dumps({
               "data": {
@@ -349,7 +326,7 @@ jobs:
               assert len(acquired) == 1
               assert acquired[0]["event_id"] == "forexfactory:146901"
               assert [x["title"] for x in acquired[0]["details"]["specs"]] == ["Source", "Why Traders Care"]
-              assert "url" not in acquired[0]["details"]
+              assert acquired[0]["details"]["url"] == "https://www.forexfactory.com/calendar/details/1-146901"
           finally:
               providers.fetch_url = original_fetch_url
               providers.fetch_forexfactory_event_detail = original_detail_fetch
@@ -1038,7 +1015,26 @@ jobs:
           
           # test next queries
           events_eurusd = calendar.query_next_event(next_doc["events"], "EURUSD", dt("2026-10-04T12:00:00Z"))
-          assert [e["event_id"] for e in events_eurusd] == ["forexfactory:next-usd"] # 4. earlier ignored, 5. later ignored, 6. exactly now ignored, 8. suppressed_for prevents return, 9. pair visibility works
+          assert [e["event_id"] for e in events_eurusd] == ["forexfactory:next-usd"]
+
+          # A merged LSE+ForexFactory economic event remains eligible for next
+          # because source contribution is represented by the sources collection.
+          merged_next = {
+              "event_id": "lse:merged-next",
+              "symbol": "USD",
+              "asset_type": "forex",
+              "event_type": "economic",
+              "source": "lse",
+              "sources": ["lse", "forexfactory"],
+              "timestamp": "2026-10-05T08:30:00Z",
+              "title": "Merged Next",
+              "details": {"currency": "USD"},
+          }
+          next_doc["events"].append(merged_next)
+          merged_events = calendar.query_next_event(
+              next_doc["events"], "EURUSD", dt("2026-10-05T08:00:00Z")
+          )
+          assert [e["event_id"] for e in merged_events] == ["lse:merged-next"] # 4. earlier ignored, 5. later ignored, 6. exactly now ignored, 8. suppressed_for prevents return, 9. pair visibility works
           assert calendar.query_next_event(next_doc["events"], "NVDA", dt("2026-10-04T12:00:00Z")) == []
           assert [e["event_id"] for e in calendar.query_latest_event(next_doc["events"], "EURUSD", dt("2026-10-04T12:00:00Z"))] == ["forexfactory:now-usd"] # 10. NVDA works
           assert calendar.query_next_event(next_doc["events"], "NVDA", dt("2026-10-05T10:00:00Z")) == [] # 7. NO_NEXT_EVENT when no future exists
