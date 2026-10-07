@@ -99,16 +99,17 @@ class YahooChartsProvider(MarketDataProvider):
     def fetch_latest_completed(self, symbol, timeframe):
         now = datetime.now(timezone.utc)
         from .models import TIMEFRAME_SECONDS
-        from .normalization import canonical_interval_end
         start = self._window_start(timeframe, now)
-        for _ in range(3):
-            previous = start - timedelta(days=1)
-            if timeframe == "MN1":
+        if timeframe in TIMEFRAME_SECONDS:
+            start -= timedelta(seconds=TIMEFRAME_SECONDS[timeframe] * 3)
+        elif timeframe == "W1":
+            start -= timedelta(days=21)
+        elif timeframe == "MN1":
+            for _ in range(3):
                 if start.month == 1:
-                    previous = start.replace(year=start.year - 1, month=12, day=1)
+                    start = start.replace(year=start.year - 1, month=12, day=1)
                 else:
-                    previous = start.replace(month=start.month - 1, day=1)
-            start = previous if timeframe != "W1" else start - timedelta(days=7)
+                    start = start.replace(month=start.month - 1, day=1)
         records = self.fetch_range(symbol, timeframe, start, now)
         if not records:
             return None
