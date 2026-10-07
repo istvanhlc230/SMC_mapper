@@ -1113,3 +1113,33 @@ Validation evidence:
 - Calendar GitHub Actions run: `37539850350` — SUCCESS.
 
 Remaining audit note: Yahoo-specific W1/MN1 and session-calendar boundary behavior is not changed here because the canonical project contract does not yet define calendar-session completion semantics for those provider intervals. No provider-specific boundary rule was invented during this correction.
+
+## Market Data corrective audit — LSE pagination and persisted-boundary validation
+
+### Scope
+Corrected the latest re-audit findings for the Market Data implementation.
+
+### Corrections
+- LSEMarketDataProvider.fetch_range() now pages forward within one logical requested range instead of treating the 5000-row REST page cap as a complete result.
+- Pagination advances from the last returned candle to the canonical next interval boundary and fails closed if a page does not make forward progress.
+- Persisted completed candles now require timestamp == canonical_interval_start(timestamp, timeframe) and completion_time == canonical_interval_end(timestamp, timeframe).
+- W1 and MN1 completed-candle boundary rejection is covered by regression tests.
+- --lastclosed is now rejected with every historical range form, including open-start --range -END.
+- Regression coverage now includes LSE multi-page range acquisition and the open-start --lastclosed conflict.
+- Market Data specification now explicitly documents LSE pagination behavior and persisted canonical timestamp/completion invariants.
+
+### Validation
+- Implementation commit sequence before CI:
+  - be642fbe3184b2877c71cc252804b22808dc34c3 — LSE pagination.
+  - ab00f77191d061b89e2d493dcb1c5bd58989a13 — persisted canonical candle boundaries.
+  - c719ad33bd774f8d7d6249196cde8fcde0136399 — --lastclosed range exclusion.
+  - 6a4a73507bdcc58241251a2a273b1df426c8ad96 — pagination/CLI regressions.
+  - 9eaf6ff808992c2a60049987327fad31d5ffe477 — specification pagination/test contract.
+  - 9a8f9b0cbd48fb7c575064db87b4a0f309624913 — W1/MN1 completed-boundary regression tests.
+  - fa2c0016238fccd29c6d5475923aa7052c56d9cd — canonical persisted timestamp specification update.
+- Market Data CI run 37662822203 on commit c9ab8d63f651c9b520f70937fcd05f1cc71b7d60 — SUCCESS.
+- Calendar CI run 37662822220 on the same commit — SUCCESS.
+- Compile and Market Data contract/regression tests passed.
+
+### Audit status
+PASS
