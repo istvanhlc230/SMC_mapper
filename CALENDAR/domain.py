@@ -624,10 +624,11 @@ def filter_events_for_symbol(events: List[Dict[str, Any]], symbol: str) -> List[
         if not visible(event):
             continue
         sources = set(event.get("sources", [event.get("source")]))
-        if event.get("event_type") == "economic" and sources.intersection({"lse", "forexfactory"}):
+        event_type = event.get("event_type") or ("economic" if sources.intersection({"lse", "forexfactory"}) else "news" if "yahoo_finance" in sources else "")
+        if event_type == "economic" and sources.intersection({"lse", "forexfactory"}):
             if event["details"].get("currency") in currencies:
                 result.append(event)
-        elif event.get("event_type") == "news" and "yahoo_finance" in sources and event["symbol"] == symbol:
+        elif event_type == "news" and "yahoo_finance" in sources and event["symbol"] == symbol:
             result.append(event)
     return result
 
