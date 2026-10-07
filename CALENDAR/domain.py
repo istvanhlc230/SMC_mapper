@@ -371,7 +371,7 @@ def _validate_coverage_records(records: List[Dict[str, Any]]) -> None:
         for field in ("provider", "symbol", "start", "end", "status"):
             if field not in coverage:
                 raise DataIntegrityError(f"Malformed coverage; missing '{field}'.")
-        if coverage["provider"] not in {"forexfactory", "yahoo_finance"}:
+        if coverage["provider"] not in {"lse", "forexfactory", "yahoo_finance"}:
             raise DataIntegrityError("Invalid coverage provider.")
         start = parse_iso8601(coverage["start"])
         end = parse_iso8601(coverage["end"])
