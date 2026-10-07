@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import json
-import os
 import time
 import urllib.error
 import urllib.parse
@@ -12,9 +11,9 @@ from decimal import Decimal
 from typing import Any
 
 from .models import DEFAULT_PROVIDER_NAME, ProviderCandle, TIMEFRAME_SECONDS
+from PROVIDERS.credentials import ProviderCredentialError, get_provider_api_key
 
 LSE_CANDLES_URL = "https://api.londonstrategicedge.com/vault/candles"
-LSE_API_KEY_ENV = "LSE_API_KEY"
 TIMEFRAME_INTERVALS = {
     "M1": "1m",
     "M5": "5m",
@@ -107,9 +106,10 @@ class LSEMarketDataProvider(MarketDataProvider):
         start_time: datetime,
         end_time: datetime,
     ) -> list[dict[str, Any]]:
-        api_key = os.environ.get(LSE_API_KEY_ENV, "").strip()
-        if not api_key:
-            raise RuntimeError("LSE_API_KEY is not configured")
+        try:
+            api_key = get_provider_api_key("lse")
+        except ProviderCredentialError as exc:
+            raise RuntimeError(str(exc)) from exc
         interval = TIMEFRAME_INTERVALS.get(timeframe)
         if interval is None:
             raise ValueError(f"LSE does not have a mapping for {timeframe}")
@@ -178,12 +178,29 @@ class LSEMarketDataProvider(MarketDataProvider):
         return sorted(records, key=lambda item: item.timestamp)
 
     def fetch_range(self, symbol, timeframe, start_time, end_time):
-        """Fetch exactly the requested LSE timeframe without aggregation."""
-        return self._parse(
-            self._request(symbol, timeframe, start_time, end_time),
-            symbol,
-            timeframe,
-        )
+        """Fetch the requested LSE timeframe, paging forward without gaps or loops."""
+        if end_time <= start_time:
+            raise ValueError("LSE range end must be after start")
+
+        from .normalization import canonical_next_interval_start
+
+        page_start = start_time
+        records: list[ProviderCandle] = []
+        while page_start < end_time:
+            page_rows = self._request(symbol, timeframe, page_start, end_time)
+            if not page_rows:
+                break
+            page_records = self._parse(page_rows, symbol, timeframe)
+            records.extend(
+                record for record in page_records
+                if start_time <= record.timestamp < end_time
+            )
+            latest_timestamp = max(record.timestamp for record in page_records)
+            next_start = canonical_next_interval_start(latest_timestamp, timeframe)
+            if next_start <= page_start:
+                raise RuntimeError("LSE pagination made no forward progress")
+            page_start = next_start
+        return sorted(records, key=lambda item: item.timestamp)
 
     def _lookup_window(self, timeframe: str, now: datetime) -> datetime:
         """Return a bounded same-timeframe lookup start for latest/current reads."""
