@@ -22,13 +22,22 @@ jobs:
           python - <<'PY'
           from datetime import datetime, timezone
 
-          from MARKET_DATA.provider import LSEMarketDataProvider
+          from MARKET_DATA.provider import LSEMarketDataProvider, create_provider
           from MARKET_DATA.cli import parse_market_data_request
           from MARKET_DATA.models import MarketDataRequest, ProviderCandle
           from MARKET_DATA.service import resolve_acquisition_range
 
           def dt(value):
               return datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+          # The production CLI/provider boundary must select the canonical LSE adapter.
+          assert isinstance(create_provider("lse"), LSEMarketDataProvider)
+          try:
+              create_provider("yahoo_charts")
+          except ValueError:
+              pass
+          else:
+              raise AssertionError("obsolete Yahoo Charts provider must be rejected")
 
           request = parse_market_data_request([
               "--symbol", "EURUSD",
@@ -311,31 +320,22 @@ jobs:
               else:
                   raise AssertionError("current/completed identity conflict must fail")
 
-          # Malformed Yahoo OHLC records must fail instead of being silently dropped.
-          malformed_payload = {
-              "chart": {
-                  "error": None,
-                  "result": [{
-                      "timestamp": [int(dt("2026-10-10T05:00:00Z").timestamp())],
-                      "indicators": {
-                          "quote": [{
-                              "open": [1.0],
-                              "high": [2.0],
-                              "low": [0.0],
-                              "close": [None],
-                              "volume": [10]
-                          }]
-                      }
-                  }]
-              }
-          }
+          # Malformed LSE OHLC records must fail instead of being silently repaired.
+          malformed_rows = [{
+              "timestamp": "2026-10-10T05:00:00Z",
+              "open": "1.0",
+              "high": "2.0",
+              "low": "0.0",
+              "close": None,
+              "volume": 10,
+          }]
           malformed_provider = LSEMarketDataProvider()
           try:
-              malformed_provider._parse(malformed_payload, "EURUSD", "1m")
+              malformed_provider._parse(malformed_rows, "EURUSD", "M1")
           except ValueError:
               pass
           else:
-              raise AssertionError("missing Yahoo OHLC must fail")
+              raise AssertionError("missing LSE OHLC must fail")
 
           # Persisted Decimal values must use the approved plain base-10 representation.
           from MARKET_DATA.persistence import _validate_persisted_decimal
