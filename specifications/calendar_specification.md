@@ -2,7 +2,7 @@
 
 Status: Current V2 specification.
 
-Calendar implementation baseline: 2.4.13.
+Calendar implementation baseline: 2.5.0.
 
 Default DATA_ROOT is the repository `CALENDAR/` directory, so the default persistent artifact is `<repository-root>/CALENDAR/calendar.json`. `SMC_DATA_ROOT` may explicitly override this runtime location.
 
@@ -36,30 +36,65 @@ Development-only temporary artifacts belong under dev_tmp/.
 
 ## 1. Providers
 
+Calendar uses three independent provider adapters behind one common interface. All
+applicable providers are queried for an acquisition; they are not modeled as a
+single fallback chain.
+
+Provider interface:
+
+    fetch_events(symbol, start, end) -> normalized events
+
+Required providers:
+
+London Strategic Edge (LSE):
+- primary economic-calendar provider;
+- queried through the LSE economic_calendar API;
+- scheduled economic events are normalized to the common Calendar event contract;
+- provider fields such as actual, forecast, previous, impact, currency and provider
+  event identity are retained when available;
+- provider URL/source metadata is retained when available;
+- LSE does not provide stock-news events for the Calendar news role.
+
 ForexFactory:
-- primary source for economic events;
+- independent economic-calendar provider;
 - the implementation uses ForexFactory's native calendar query grammar;
-- a single concrete calendar day uses `day=<monD.YYYY>` (for example `day=apr3.2026`);
-- a multi-day interval uses `range=<monD.YYYY>-<monD.YYYY>` (for example `range=apr3.2026-apr10.2026`);
-- the web UI also exposes relative/navigation forms `day=today`, `day=tomorrow`, `day=yesterday`, `week=this`, `week=next`, `week=last`, `month=this`, `month=next`, and `month=last`; these are provider-native navigation forms and are not part of the Calendar CLI grammar;
-- the range-filtered ForexFactory calendar HTML is the current provider representation; the legacy embedded structured days payload is still accepted when present;
-- normalized fields include id, dateline, currency, name, impactName/impactClass, actual, forecast, previous;
-- the event's calendar-page `Detail` content is acquired separately as provider JSON and normalized under `details.specs`;
-- `details.specs` is an ordered list of `{order, title, html}` records; provider HTML is preserved so linked Source/Next Release references are not discarded;
-- the calendar-page Detail navigation is not a canonical event URL; no Detail URL is stored or synthesized;
-- provider country codes are never used as canonical currencies.
+- a single concrete calendar day uses day=<monD.YYYY>;
+- a multi-day interval uses range=<monD.YYYY>-<monD.YYYY>;
+- the range-filtered calendar HTML and legacy embedded structured payload are accepted;
+- Detail enrichment remains provider-specific and is preserved under details.specs.
 
 Yahoo Finance:
-- complementary source for news;
-- used for FX-pair news and ticker news;
-- provider symbol is kept separate from canonical symbol;
-- Yahoo news is event_type=news, never economic.
+- independent news provider;
+- used for current/rolling FX-pair and ticker news;
+- Yahoo news is event_type=news, never economic;
+- provider symbol remains separate from canonical symbol;
+- Yahoo remains a news source even when LSE and ForexFactory supply economic events.
 
-Automatic routing:
+All three adapters implement the same CalendarProvider contract. Provider transport,
+pagination, provider-specific parsing and provider-specific field names stay inside
+the adapter. The Calendar engine consumes only normalized provider events.
 
-    supported three-letter currency -> ForexFactory
-    recognized six-letter FX pair   -> ForexFactory + Yahoo Finance
-    other valid ticker              -> Yahoo Finance
+Provider acquisition is independent: failure or absence from one provider must not
+prevent successful events from another provider from being persisted. Aggregate status
+is PARTIAL when at least one applicable provider fails while another succeeds.
+
+Provider enrichment/merge:
+- provider records are first normalized;
+- the engine attempts to identify records representing the same real-world event;
+- matching records are merged into one canonical event record;
+- fields missing from the existing canonical event may be filled by another provider;
+- non-conflicting provider details are added rather than discarded;
+- provider provenance is retained so it is possible to see which sources contributed;
+- a provider-specific URL is retained when available;
+- conflicting values are not silently overwritten solely because one provider was queried later;
+  the canonical merge keeps the existing value and records the additional provider value in
+  provider-specific metadata when the schema supports it;
+- provider identity must never be used as the sole canonical identity because the same event
+  can have different provider IDs.
+
+No provider is a mandatory fallback. ForexFactory is therefore an alternative economic-calendar
+source as well as an independent confirmation/enrichment source. Yahoo remains the independent
+news source for stock/ticker news.
 
 No --forex, --ticker, or --provider flags exist.
 
@@ -493,10 +528,21 @@ Common envelope:
     asset_type
     event_type
     source
+    sources
     timestamp
     title
     details
     suppressed_for (optional symbol-scope visibility metadata)
+
+source is the canonical primary source for the normalized event identity. sources is the
+ordered list of provider names that contributed to the merged event. The list is unique and
+deterministic.
+
+Allowed source values:
+
+    lse
+    forexfactory
+    yahoo_finance
 
 Allowed event_type values:
 
@@ -525,6 +571,26 @@ The `html` value is the provider's Detail specification content and may contain 
 The `title` value is also provider-controlled text and may contain HTML markup; cleartext presentation
 must sanitize the title and HTML content through the same HTML-aware rendering path.
 
+LSE details may include:
+
+    currency
+    impact
+    actual
+    forecast
+    previous
+    provider_event_id
+    url
+    provider_fields
+
+ForexFactory details include:
+
+    currency
+    impact
+    actual
+    forecast
+    previous
+    specs
+
 Yahoo details may include:
 
     publisher
@@ -532,7 +598,8 @@ Yahoo details may include:
     provider_symbol
     summary
 
-No Yahoo impact is invented.
+Provider-specific fields not mapped to canonical fields may be retained under provider_fields.
+No provider severity or economic value is invented.
 
 ## 7.5 ForexFactory HTML fallback
 
