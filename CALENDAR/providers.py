@@ -527,6 +527,16 @@ def normalize_provider_event(raw: Dict[str, Any]) -> Dict[str, Any]:
                 if raw.get("previous") not in (None, "") else None
             ),
             "specs": [],
+            "url": (
+                str(next(
+                    (
+                        raw.get(field)
+                        for field in ("url", "link", "event_url", "eventUrl", "href")
+                        if raw.get(field) not in (None, "")
+                    ),
+                    ""
+                )).strip() or None
+            ),
         },
     }
 
