@@ -5,7 +5,8 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal, ROUND_HALF_EVEN
 from pathlib import Path
 from typing import Any
-from .models import DECIMAL_PERSISTENCE_PLACES, TIMEFRAME_SECONDS, WRITE_RETRY_DELAY_SECONDS, WRITE_RETRY_LIMIT
+from .models import DECIMAL_PERSISTENCE_PLACES, SUPPORTED_TIMEFRAMES, WRITE_RETRY_DELAY_SECONDS, WRITE_RETRY_LIMIT
+from .normalization import canonical_interval_start, canonical_interval_end
 
 def _timestamp(value: str | None) -> datetime | None:
     if value is None: return None
@@ -52,11 +53,15 @@ def _validate_persisted_non_negative_decimal(value: Any, field_name: str) -> Non
     if Decimal(value) < 0:
         raise ValueError(f"persisted {field_name} must be non-negative")
 
-def _validate_candle_record(candle):
+def _validate_candle_record(candle, timeframe):
     required={"candle_id","timestamp","completion_time","open","high","low","close","volume"}
     if not required <= set(candle): raise ValueError("malformed persisted candle")
     stamp=_timestamp(candle["timestamp"]); completion=_timestamp(candle["completion_time"])
     if completion is None or stamp is None or completion <= stamp: raise ValueError("invalid persisted candle time")
+    expected_start=canonical_interval_start(stamp,timeframe)
+    expected_completion=canonical_interval_end(stamp,timeframe)
+    if stamp != expected_start: raise ValueError("persisted candle timestamp does not match timeframe boundary")
+    if completion != expected_completion: raise ValueError("persisted candle completion_time does not match timeframe boundary")
     for key in ("open","high","low","close"): _validate_persisted_decimal(candle[key], key)
     if Decimal(candle["high"]) < Decimal(candle["low"]): raise ValueError("invalid persisted OHLC")
     if not Decimal(candle["low"]) <= Decimal(candle["open"]) <= Decimal(candle["high"]): raise ValueError("invalid persisted OHLC")
@@ -77,7 +82,7 @@ def _validate_current_snapshot(
     timeframe: str,
 ) -> None:
     """Validate current-snapshot structural invariants without using wall-clock state."""
-    _validate_candle_record(current)
+    _validate_candle_record(current, timeframe)
     current_id = current["candle_id"]
     if any(candle["candle_id"] == current_id for candle in candles):
         raise ValueError("current candle identity must not also exist in candles")
@@ -85,7 +90,10 @@ def _validate_current_snapshot(
     completion = _timestamp(current["completion_time"])
     if stamp is None or completion is None:
         raise ValueError("invalid current snapshot timestamps")
-    expected_completion = stamp + timedelta(seconds=TIMEFRAME_SECONDS[timeframe])
+    expected_start = canonical_interval_start(stamp, timeframe)
+    if stamp != expected_start:
+        raise ValueError("current timestamp does not match timeframe boundary")
+    expected_completion = canonical_interval_end(stamp, timeframe)
     if completion != expected_completion:
         raise ValueError("current completion_time does not match timeframe boundary")
 
@@ -99,16 +107,16 @@ def load_market_data(path: Path, symbol: str) -> dict[str,Any]:
         if not isinstance(state,dict) or set(("available_start","available_end","candles","current"))-set(state): raise ValueError(f"invalid timeframe state: {timeframe}")
         if not isinstance(state["candles"],list): raise ValueError("candles must be a list")
         last=None; ids=set()
+        if timeframe not in SUPPORTED_TIMEFRAMES:
+            raise ValueError(f"unsupported persisted timeframe: {timeframe}")
         for candle in state["candles"]:
-            _validate_candle_record(candle)
+            _validate_candle_record(candle, timeframe)
             if candle["candle_id"] in ids or (last is not None and _timestamp(candle["timestamp"]) <= last): raise ValueError("invalid candle ordering or duplicate identity")
             ids.add(candle["candle_id"]); last=_timestamp(candle["timestamp"])
         expected_start = state["candles"][0]["timestamp"] if state["candles"] else None
         expected_end = state["candles"][-1]["timestamp"] if state["candles"] else None
         if state["available_start"] != expected_start or state["available_end"] != expected_end:
             raise ValueError(f"invalid availability bounds: {timeframe}")
-        if timeframe not in TIMEFRAME_SECONDS:
-            raise ValueError(f"unsupported persisted timeframe: {timeframe}")
         current = state["current"]
         if current is not None:
             _validate_current_snapshot(current, state["candles"], timeframe)
