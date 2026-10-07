@@ -113,16 +113,15 @@ def delete_symbol_interval(
             continue
 
         if (
-            event["source"] == "yahoo_finance"
-            and event["symbol"] == symbol
-            and "yahoo_finance" in applicable_providers
+            event["symbol"] == symbol
+            and "yahoo_finance" in event.get("sources", [event["source"]])
         ):
             # Yahoo news is owned by one canonical symbol, so it can be deleted.
             continue
 
         if (
-            event["source"] == "forexfactory"
-            and "forexfactory" in applicable_providers
+            event["event_type"] == "economic"
+            and set(event.get("sources", [event["source"]])).intersection({"lse", "forexfactory"})
             and event["details"].get("currency") in currencies
         ):
             # ForexFactory facts are shared. Record a symbol-level suppression
