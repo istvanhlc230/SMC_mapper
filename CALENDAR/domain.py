@@ -481,13 +481,14 @@ def merge_events(
                 normalized_event["source"] = "lse"
             if event["source"] == "yahoo_finance" and old_event["source"] != "yahoo_finance" and event["event_type"] == "news":
                 normalized_event["source"] = "yahoo_finance"
+        suppressed = set(normalized_event.get("suppressed_for", []))
+        suppressed.update(event.get("suppressed_for", []))
         if clear_suppressed_symbol is not None:
-            suppressed = set(normalized_event.get("suppressed_for", []))
             suppressed.discard(clear_suppressed_symbol)
-            if suppressed:
-                normalized_event["suppressed_for"] = sorted(suppressed)
-            else:
-                normalized_event.pop("suppressed_for", None)
+        if suppressed:
+            normalized_event["suppressed_for"] = sorted(suppressed)
+        else:
+            normalized_event.pop("suppressed_for", None)
         by_id[merge_id] = normalized_event
         if event["event_type"] == "economic":
             economic_keys[_event_merge_key(normalized_event)] = merge_id
