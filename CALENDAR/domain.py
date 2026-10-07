@@ -702,7 +702,7 @@ def query_next_event(
         event
         for event in filter_events_for_symbol(events, symbol)
         if (
-            event["source"] == "forexfactory"
+            "forexfactory" in set(event.get("sources", [event.get("source")] ))
             and event["event_type"] == "economic"
             and parse_iso8601(event["timestamp"]) > now
         )
