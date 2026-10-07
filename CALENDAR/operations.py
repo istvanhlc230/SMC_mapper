@@ -48,6 +48,7 @@ def acquire_explicit(
                     gap_events = providers.fetch_forexfactory(gap_start, gap_end, detail_failures=detail_failures)
                 else:
                     gap_events = _fetch_provider_events(provider, symbol, gap_start, gap_end)
+                gap_events = domain.filter_events_for_interval(gap_events, gap_start, gap_end)
                 events.extend(gap_events)
             failed_detail_ids = {f"forexfactory:{item}" for item in detail_failures}
             domain.merge_events(
