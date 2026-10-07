@@ -75,7 +75,7 @@ def acquire_explicit(
                 successful += 1
             provider_results.append({
                 "provider": provider,
-                "status": status,
+                "status": "NO_MATCH" if provider == "yahoo_finance" and not events else status,
                 "events_acquired": len(events),
                 "coverage": "UPDATED",
                 **({"detail_failures": len(detail_failures)} if detail_failures else {}),
