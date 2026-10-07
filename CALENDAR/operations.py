@@ -315,6 +315,7 @@ def refresh_calendar_scope(
     )
     existing_ids = {event["event_id"] for event in existing_events}
     refreshed_for_symbol: List[Dict[str, Any]] = []
+    reported_events: List[Dict[str, Any]] = []
     refresh_detail_failure_ids: set[str] = set()
     provider_results: List[Dict[str, Any]] = []
     failures: List[Dict[str, str]] = []
@@ -338,6 +339,10 @@ def refresh_calendar_scope(
                     f"forexfactory:{item}" for item in detail_failures
                 )
             refreshed_for_symbol.extend(selected)
+            for event in selected:
+                existing = next((item for item in existing_events if item["event_id"] == event["event_id"]), None)
+                if existing is None or existing["timestamp"] != event["timestamp"]:
+                    reported_events.append(event)
             provider_results.append({
                 "provider": provider,
                 "status": "PARTIAL" if detail_failures else ("NO_MATCH" if not selected else "OK"),
@@ -370,7 +375,7 @@ def refresh_calendar_scope(
         domain.validate_calendar_document(document)
         storage.save_calendar_atomic(document)
     return {
-        "events": refreshed_for_symbol,
+        "events": reported_events,
         "provider_results": provider_results,
         "failures": failures,
         "summary": summary,
