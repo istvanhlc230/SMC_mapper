@@ -131,6 +131,7 @@ DEFAULT_CANDLE_RETENTION
 WRITE_RETRY_LIMIT
 WRITE_RETRY_DELAY_SECONDS
 DECIMAL_PERSISTENCE_PLACES
+CALENDAR_BASED_TIMEFRAMES
 ```
 
 Rules:
@@ -145,7 +146,7 @@ If a constant is configurable later, keep its use behind one function/owner inst
 
 ### V1 policy values requiring one authoritative implementation decision
 
-The exact V1 `SUPPORTED_TIMEFRAMES` set is not defined by the current mapper-facing contract. Do not invent or duplicate a timeframe list in multiple functions. Until the supported set is explicitly approved, keep it behind the single `SUPPORTED_TIMEFRAMES` / `TIMEFRAME_SECONDS` owner in this module.
+`SUPPORTED_TIMEFRAMES` is the single supported-timeframe owner. `TIMEFRAME_SECONDS` contains only fixed-duration timeframes. `W1` and `MN1` are calendar-based and are owned by `CALENDAR_BASED_TIMEFRAMES` plus the canonical calendar-boundary helpers. Do not duplicate timeframe definitions in multiple functions.
 
 The exact V1 candle-retention capacity is likewise an operational storage policy rather than canonical SMC semantics. It must be represented by the single `DEFAULT_CANDLE_RETENTION` owner and must not become a CLI or mapper semantic parameter.
 
@@ -641,7 +642,7 @@ Rules:
 - normalize the accepted spelling/casing;
 - reject empty or structurally invalid timeframe values;
 - return one canonical timeframe string;
-- use `TIMEFRAME_SECONDS` only when completion arithmetic requires a known duration;
+- use `TIMEFRAME_SECONDS` only for fixed-duration timeframes; use the canonical calendar-boundary helpers for `W1` and `MN1`;
 - do not reject an otherwise valid boundary-supplied timeframe solely because `SUPPORTED_TIMEFRAMES` is empty.
 
 ## 5.5 parse_calendar_date
@@ -885,8 +886,9 @@ Purpose:
 Rules:
 
 - return UTC;
-- use the approved `TIMEFRAME_SECONDS` duration map;
-- for an interval-start timestamp, compute `completion_time = timestamp + TIMEFRAME_SECONDS[timeframe]`;
+- use `TIMEFRAME_SECONDS` for fixed-duration timeframes;
+- use `canonical_interval_end(timestamp, timeframe)` for `W1` and `MN1`;
+- for an interval-start timestamp, completion is the exclusive end of its canonical interval;
 - do not depend on local timezone;
 - do not use wall-clock time to alter historical completion boundaries;
 - the boundary is deterministic for a given normalized timestamp and timeframe.
