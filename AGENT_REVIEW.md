@@ -1,27 +1,28 @@
-# CURRENT AUDIT OVERRIDE — 2026-10-08
+# CURRENT AUDIT OVERRIDE — 2026-10-08 (Calendar + Market Data)
 
-## Credential / provider audit
+## Release-gate audit
 
-STATUS: PASS for the current credential contract.
+Scope: Calendar and Market Data only. Mapper/Monitor are intentionally out of scope.
 
-- Canonical local key location: `PROVIDERS/lse.apikey`.
-- No `apikeys/` directory is part of the credential contract.
-- `PROVIDERS/*.apikey` is Git-ignored.
-- No `.apikey.example` credential file is required.
-- Python credential lookup is centralized in `PROVIDERS/credentials.py`.
-- Calendar LSE acquisition uses the shared credential loader and does not read the environment directly.
-- Key files require exactly one non-empty UTF-8 line; empty, multi-line, and placeholder values fail closed.
-- Credential values are not emitted by the loader's errors.
+### Corrections applied
+- Consolidated `specifications/market_data_specification.md` to one canonical §0–§25 set; removed the duplicated §7–§25 block.
+- Canonical credential layout is now `PROVIDERS/<provider>.apikey`; no `apikeys/` directory is used.
+- Shared credential loading rejects missing, empty, placeholder, and all multi-line credentials without exposing secrets.
+- Market Data CLI now selects the canonical direct LSE provider instead of the obsolete Yahoo Charts provider.
+- LSE Market Data acquisition now paginates forward using canonical timeframe boundaries and rejects non-progressing pagination.
+- Market Data normalization now rejects provider timestamps that are not exact canonical timeframe starts.
+- Persisted Market Data validation now supports W1/MN1 and validates calendar-derived completion boundaries for completed/current candles.
+- Calendar LSE credentials now use the shared provider loader.
+- Removed obsolete Calendar prev/next week/month public scopes from implementation, help, and specification.
+- ForexFactory events now persist the canonical provider Detail URL in `details.url`; Yahoo news continues to persist its provider link.
+- `next` now recognizes merged economic events whose ForexFactory contribution is present in `sources`, even when the merged primary `source` is LSE.
+- Calendar and Market Data CI contract tests were synchronized with the corrected provider/scope/URL contracts.
 
-## Scope audit
+### Static audit result
+PASS for specification/code consistency across the corrected Calendar + Market Data release scope.
 
-STATUS: PASS for the canonical public Calendar scope set. Public `prev_week`, `next_week`, `prev_month`, and `next_month` aliases were removed from parser/domain/help/specification contracts.
-
-## History rewrite
-
-The clean rewrite branch is based on `d3aeb915bdaf3e0d5d159ce2e0ce5d2b28b4418e`, the last clean ancestor before the credential-bearing commits. The obsolete `apikeys/lse.apikey.example` path is absent from the clean tree. The three previously identified secret-bearing commits are not replayed.
-
-The branch is ready to replace `main` with a force-with-lease update. The local `PROVIDERS/lse.apikey` file is intentionally untracked and must remain local.
+### Runtime validation
+Fresh CI status for the latest main commit is not yet exposed by the connected GitHub status endpoint, so runtime execution evidence remains pending. No Mapper/Monitor failure is counted against this release gate.
 
 ---
 
