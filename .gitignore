@@ -5,3 +5,6 @@ dev_tmp/
 calendar.json
 CALENDAR/calendar.json
 CALENDAR/.calendar.lock
+
+# Local provider API credentials; never commit real key files.
+PROVIDERS/*.apikey
