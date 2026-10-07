@@ -122,10 +122,6 @@ SCOPE
   today                               Exact current UTC calendar day.
   tomorrow                            Exact next UTC calendar day.
   yesterday                           Exact previous UTC calendar day.
-  prev_week                            Exact previous ForexFactory-style UTC week.
-  next_week                            Exact next ForexFactory-style UTC week.
-  prev_month                           Exact previous UTC calendar month.
-  next_month                           Exact next UTC calendar month.
   latest                              Return the most recent past/current event for
                                       SYMBOL from the committed calendar cache.
   next                                Return the nearest future scheduled economic
