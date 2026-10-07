@@ -2,7 +2,6 @@
 """External Calendar providers and provider-specific normalization."""
 
 import hashlib
-import os
 import json
 import re
 import urllib.error
@@ -12,7 +11,8 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
-from .config import (FOREXFACTORY_DETAIL_URL, FOREXFACTORY_URL, FX_CURRENCY_CODES, HTTP_TIMEOUT, YAHOO_SEARCH_URL, USER_AGENT, USD_BASE_YAHOO_SYMBOLS, LSE_API_URL, LSE_API_KEY_ENV, CalendarInputError, ProviderError, YahooForexPairUnavailable)
+from .config import (FOREXFACTORY_DETAIL_URL, FOREXFACTORY_URL, FX_CURRENCY_CODES, HTTP_TIMEOUT, YAHOO_SEARCH_URL, USER_AGENT, USD_BASE_YAHOO_SYMBOLS, LSE_API_URL, CalendarInputError, ProviderError, YahooForexPairUnavailable)
+from PROVIDERS.credentials import ProviderCredentialError, get_provider_api_key
 from .domain import format_iso8601, is_currency, is_fx_pair, normalize_symbol, parse_iso8601
 from .parsing import extract_days_payload, parse_calendar_days, parse_forexfactory_html_events
 
@@ -114,9 +114,10 @@ class CalendarProvider:
 
 def _fetch_lse_rows(symbol: str, start: datetime, end: datetime) -> List[Dict[str, Any]]:
     """Fetch LSE economic-calendar rows for the currencies relevant to a symbol."""
-    api_key = os.environ.get(LSE_API_KEY_ENV, "").strip()
-    if not api_key:
-        raise ProviderError("LSE_API_KEY is not configured.")
+    try:
+        api_key = get_provider_api_key("lse")
+    except ProviderCredentialError as exc:
+        raise ProviderError(str(exc)) from exc
     regions: List[str] = []
     if is_currency(symbol):
         regions = [symbol]
