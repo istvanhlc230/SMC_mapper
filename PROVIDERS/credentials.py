@@ -50,13 +50,12 @@ def get_provider_api_key(
             f"API key file cannot be read for provider '{provider}'"
         ) from exc
 
-    non_empty_lines = [line.strip() for line in raw_lines if line.strip()]
-    if len(non_empty_lines) != 1:
+    if len(raw_lines) != 1 or not raw_lines[0].strip():
         raise ProviderCredentialError(
             f"API key is not configured for provider '{provider}'"
         )
 
-    key_value = non_empty_lines[0]
+    key_value = raw_lines[0].strip()
     placeholder_values = {
         f"PASTE_{provider.upper()}_API_KEY_HERE",
         "YOUR_API_KEY_HERE",
