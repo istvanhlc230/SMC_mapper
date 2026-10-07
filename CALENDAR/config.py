@@ -5,7 +5,7 @@
 FOREXFACTORY_URL = "https://www.forexfactory.com/calendar"
 # FOREXFACTORY_DETAIL_URL — provider event-detail JSON endpoint template.
 FOREXFACTORY_DETAIL_URL = "https://www.forexfactory.com/calendar/details/1-{event_id}"
-# YAHOO_SEARCH_URL — Yahoo Finance search endpoint.
+# LSE_API_URL — London Strategic Edge economic-calendar REST endpoint.\nLSE_API_URL = "https://api.londonstrategicedge.com/vault/ref/economic_calendar"\n# LSE_API_KEY_ENV — environment variable containing the LSE API key.\nLSE_API_KEY_ENV = "LSE_API_KEY"\n# YAHOO_SEARCH_URL — Yahoo Finance search endpoint.
 YAHOO_SEARCH_URL = "https://query1.finance.yahoo.com/v1/finance/search"
 # USER_AGENT — HTTP User-Agent sent to providers.
 USER_AGENT = (
@@ -17,7 +17,7 @@ HTTP_TIMEOUT = 15.0
 # SCHEMA_VERSION — persistent calendar.json schema version.
 SCHEMA_VERSION = 2
 # __version__ — Calendar CLI implementation version, independent from SCHEMA_VERSION.
-__version__ = "2.4.13"
+__version__ = "2.5.0"
 
 # SUPPORTED_CURRENCIES — standalone currencies accepted by the CLI.
 SUPPORTED_CURRENCIES = {
