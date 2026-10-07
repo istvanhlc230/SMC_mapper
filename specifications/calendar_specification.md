@@ -398,10 +398,6 @@ Public forms:
     python calendar.py SYMBOL today refresh
     python calendar.py SYMBOL tomorrow refresh
     python calendar.py SYMBOL yesterday refresh
-    python calendar.py SYMBOL prev_week refresh
-    python calendar.py SYMBOL next_week refresh
-    python calendar.py SYMBOL prev_month refresh
-    python calendar.py SYMBOL next_month refresh
     python calendar.py SYMBOL YYYY.MM.DD refresh
     python calendar.py SYMBOL YYYY.MM.DD-YYYY.MM.DD refresh
     python calendar.py SYMBOL YYYY.MM.DD@HH:MM refresh
