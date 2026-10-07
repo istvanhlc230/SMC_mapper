@@ -362,6 +362,7 @@ jobs:
           with patch("MARKET_DATA.provider.datetime") as provider_datetime:
               provider_datetime.now.return_value = frozen_now
               provider_datetime.fromtimestamp = datetime.fromtimestamp
+              provider_datetime.fromisoformat = datetime.fromisoformat
               provider_datetime.side_effect = datetime
               provider_datetime.min = datetime.min
               provider_datetime.max = datetime.max
