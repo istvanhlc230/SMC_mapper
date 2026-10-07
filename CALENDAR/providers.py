@@ -226,6 +226,8 @@ class ForexFactoryCalendarProvider(CalendarProvider):
     def fetch_events(self, symbol, start, end, **kwargs):
         detail_failures = kwargs.get("detail_failures")
         include_details = kwargs.get("include_details", True)
+        if detail_failures is None:
+            return fetch_forexfactory(start, end, include_details=include_details)
         return fetch_forexfactory(
             start,
             end,
