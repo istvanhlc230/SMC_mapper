@@ -211,6 +211,54 @@ def fetch_lse_calendar(symbol: str, start: datetime, end: datetime) -> List[Dict
     return [event for event in events if start <= parse_iso8601(event["timestamp"]) < end]
 
 
+class LSECalendarProvider(CalendarProvider):
+    """LSE economic-calendar adapter implementing the common provider interface."""
+    name = "lse"
+
+    def fetch_events(self, symbol, start, end, **kwargs):
+        return fetch_lse_calendar(symbol, start, end)
+
+
+class ForexFactoryCalendarProvider(CalendarProvider):
+    """ForexFactory economic-calendar adapter implementing the common provider interface."""
+    name = "forexfactory"
+
+    def fetch_events(self, symbol, start, end, **kwargs):
+        detail_failures = kwargs.get("detail_failures")
+        include_details = kwargs.get("include_details", True)
+        return fetch_forexfactory(
+            start,
+            end,
+            detail_failures=detail_failures,
+            include_details=include_details,
+        )
+
+
+class YahooFinanceNewsProvider(CalendarProvider):
+    """Yahoo Finance news adapter implementing the common provider interface."""
+    name = "yahoo_finance"
+
+    def fetch_events(self, symbol, start, end, **kwargs):
+        events = fetch_yahoo_news(symbol)
+        return [
+            event for event in events
+            if start <= parse_iso8601(event["timestamp"]) < end
+        ]
+
+
+def get_calendar_provider(name: str) -> CalendarProvider:
+    """Return the concrete Calendar provider adapter for a canonical provider name."""
+    providers_by_name = {
+        "lse": LSECalendarProvider(),
+        "forexfactory": ForexFactoryCalendarProvider(),
+        "yahoo_finance": YahooFinanceNewsProvider(),
+    }
+    try:
+        return providers_by_name[name]
+    except KeyError as exc:
+        raise ProviderError(f"Unsupported Calendar provider: {name}") from exc
+
+
 def fetch_url(url: str) -> str:
     """Calendar operation: fetch_url performs the focused fetch url step in the Calendar implementation."""
     request = urllib.request.Request(
