@@ -2163,12 +2163,12 @@ Test malformed values, completion, identity, UTC, OHLC integrity, and Decimal ha
 Implement:
 
 ```text
-YahooChartsProvider.fetch_range
-YahooChartsProvider.fetch_latest_completed
-YahooChartsProvider.fetch_current
+LSEMarketDataProvider.fetch_range
+LSEMarketDataProvider.fetch_latest_completed
+LSEMarketDataProvider.fetch_current
 ```
 
-Keep all Yahoo-specific parsing inside the provider adapter.
+Keep all LSE-specific parsing inside the provider adapter.
 
 ## Phase 6 — merge and retention
 
@@ -4018,12 +4018,12 @@ Test malformed values, completion, identity, UTC, OHLC integrity, and Decimal ha
 Implement:
 
 ```text
-YahooChartsProvider.fetch_range
-YahooChartsProvider.fetch_latest_completed
-YahooChartsProvider.fetch_current
+LSEMarketDataProvider.fetch_range
+LSEMarketDataProvider.fetch_latest_completed
+LSEMarketDataProvider.fetch_current
 ```
 
-Keep all Yahoo-specific parsing inside the provider adapter.
+Keep all LSE-specific parsing inside the provider adapter.
 
 ## Phase 6 — merge and retention
 
@@ -4278,7 +4278,7 @@ No provider cache file is part of the permanent repository structure. Provider r
 |---|---|
 | market_data.py | root executable entry point only |
 | MARKET_DATA/models.py | domain models and provider-neutral constants |
-| MARKET_DATA/provider.py | provider abstraction and Yahoo transport |
+| MARKET_DATA/provider.py | provider abstraction and LSE transport |
 | MARKET_DATA/normalization.py | UTC conversion, completion, Decimal conversion, validation and identity |
 | MARKET_DATA/persistence.py | symbol paths, JSON validation, serialization and atomic save |
 | MARKET_DATA/service.py | acquisition planning, merge, retention and timeframe/symbol orchestration |
