@@ -602,12 +602,15 @@ Provider-query construction is deterministic from the requested interval. The re
 still filtered against canonical UTC event timestamps after acquisition, so provider query inclusivity
 cannot widen the persisted/result interval.
 
-The calendar-page Detail control is presentation/navigation UI, not a canonical event URL field. For
-each acquired ForexFactory event, Calendar fetches the provider Detail JSON response identified by
+The provider Detail URL is a canonical optional `details.url` field for ForexFactory events. For
+numeric provider event IDs, Calendar uses the same canonical Detail endpoint that it calls for Detail JSON
+enrichment. An explicit provider URL/link field, when supplied, takes precedence. The URL is persisted
+with the event so machine-readable output and cleartext presentation can expose provider navigation.
+For each acquired ForexFactory event, Calendar fetches the provider Detail JSON response identified by
 the provider event ID. Detail requests use bounded parallelism (maximum six concurrent requests) to avoid
 serial N-request latency while preserving the normalized event order in the persisted result. Its ordered
 `specs` collection is stored under `details.specs`, with provider HTML preserved so Source and Next
-Release links and future Detail fields are retained. No Detail URL is extracted, persisted, or synthesized.
+Release links and future Detail fields are retained.
 
 A complete coverage interval is not considered Detail-enriched when an existing ForexFactory event
 inside the requested interval has no `details.specs`. Such an interval is reacquired so the existing
@@ -786,7 +789,7 @@ Acceptance requires:
 - rendered ForexFactory impact classification must not silently collapse known HIGH/MEDIUM/LOW events to UNKNOWN;
 - relative ForexFactory navigation aliases are documented but are not accepted as public Calendar CLI scopes;
 - `latest` is read-only and returns `NO_LATEST_EVENT` when the committed snapshot contains no visible event at or before current UTC time;
-- ForexFactory normalized events include `details.specs` from the provider Detail JSON payload; the visible calendar Detail navigation is not stored and no URL is synthesized from the event ID;
+- ForexFactory normalized events include `details.url` for the canonical provider Detail endpoint when the provider event ID is numeric, plus `details.specs` from the provider Detail JSON payload;
 - malformed or unavailable ForexFactory Detail JSON is surfaced as a provider failure and never silently converted into fabricated Detail content;
 - `--cleartext` renders normalized event details as human-readable fields rather than a raw JSON dictionary, without changing canonical data or machine-readable output.
 
