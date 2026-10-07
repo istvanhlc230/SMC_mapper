@@ -1400,8 +1400,9 @@ jobs:
                   dt("2026-10-05T00:00:00Z"),
                   dt("2026-10-06T00:00:00Z"),
               )
-              assert first["provider_results"][0]["status"] == "PARTIAL"
-              assert first["provider_results"][0]["detail_failures"] == 1
+              first_ff = next(item for item in first["provider_results"] if item["provider"] == "forexfactory")
+              assert first_ff["status"] == "PARTIAL"
+              assert first_ff["detail_failures"] == 1
               assert partial_doc["coverage"][0]["status"] == "PARTIAL"
               assert "forexfactory|USD" not in partial_doc["watermarks"]
               assert len(partial_doc["events"]) == 3
@@ -1413,7 +1414,8 @@ jobs:
                   dt("2026-10-06T00:00:00Z"),
               )
               assert call_count["value"] == 2
-              assert second["provider_results"][0]["status"] == "OK"
+              second_ff = next(item for item in second["provider_results"] if item["provider"] == "forexfactory")
+              assert second_ff["status"] == "OK"
               assert partial_doc["coverage"][0]["status"] == "COMPLETE"
               assert "forexfactory|USD" in partial_doc["watermarks"]
 
