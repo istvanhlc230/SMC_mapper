@@ -369,5 +369,32 @@ jobs:
               ]
               assert current_provider.fetch_current("EURUSD", "H4") is None
 
+          # W1 and MN1 use calendar boundaries, not fixed durations.
+          from MARKET_DATA.normalization import (
+              canonical_interval_end,
+              canonical_interval_start,
+              derive_completion_time,
+          )
+          assert canonical_interval_start(dt("2026-10-07T12:00:00Z"), "W1") == dt("2026-10-05T00:00:00Z")
+          assert canonical_interval_end(dt("2026-10-05T00:00:00Z"), "W1") == dt("2026-10-12T00:00:00Z")
+          assert canonical_interval_start(dt("2026-02-28T12:00:00Z"), "MN1") == dt("2026-02-01T00:00:00Z")
+          assert canonical_interval_end(dt("2026-02-01T00:00:00Z"), "MN1") == dt("2026-03-01T00:00:00Z")
+          assert canonical_interval_end(dt("2024-02-01T00:00:00Z"), "MN1") == dt("2024-03-01T00:00:00Z")
+          assert derive_completion_time(dt("2026-10-05T00:00:00Z"), "W1") == dt("2026-10-12T00:00:00Z")
+          assert derive_completion_time(dt("2026-10-01T00:00:00Z"), "MN1") == dt("2026-11-01T00:00:00Z")
+
+          calendar_state = {
+              "available_start": "2026-09-01T00:00:00Z",
+              "available_end": "2026-10-05T00:00:00Z",
+              "candles": [],
+              "current": None,
+          }
+          w1_incremental = resolve_acquisition_range(incremental_request, "W1", calendar_state)
+          assert w1_incremental[0] == dt("2026-10-12T00:00:00Z")
+
+          calendar_state["available_end"] = "2026-09-01T00:00:00Z"
+          mn1_incremental = resolve_acquisition_range(incremental_request, "MN1", calendar_state)
+          assert mn1_incremental[0] == dt("2026-10-01T00:00:00Z")
+
           print("MARKET_DATA_RANGE_TESTS_OK")
           PY
