@@ -531,6 +531,13 @@ jobs:
               key_dir = Path(temp_dir)
               (key_dir / "lse.apikey").write_text(" synthetic-lse-key \n", encoding="utf-8")
               assert get_provider_api_key("lse", api_keys_directory=key_dir) == "synthetic-lse-key"
+              (key_dir / "lse.apikey").write_text("line-one\nline-two\n", encoding="utf-8")
+              try:
+                  get_provider_api_key("lse", api_keys_directory=key_dir)
+              except ProviderCredentialError:
+                  pass
+              else:
+                  raise AssertionError("multi-line provider credential must fail closed")
               try:
                   get_provider_api_key("missing_provider", api_keys_directory=key_dir)
               except ProviderCredentialError as exc:
