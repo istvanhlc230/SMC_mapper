@@ -42,7 +42,7 @@ single fallback chain.
 
 Provider interface:
 
-    fetch_events(symbol, start, end) -> normalized events
+    fetch_events(symbol, start, end, **provider_options) -> normalized events
 
 Required providers:
 
@@ -69,6 +69,12 @@ Yahoo Finance:
 - Yahoo news is event_type=news, never economic;
 - provider symbol remains separate from canonical symbol;
 - Yahoo remains a news source even when LSE and ForexFactory supply economic events.
+
+Concrete adapters:
+
+    LSECalendarProvider
+    ForexFactoryCalendarProvider
+    YahooFinanceNewsProvider
 
 All three adapters implement the same CalendarProvider contract. Provider transport,
 pagination, provider-specific parsing and provider-specific field names stay inside
