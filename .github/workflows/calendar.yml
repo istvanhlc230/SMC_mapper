@@ -1160,7 +1160,9 @@ jobs:
           now = dt("2026-10-04T12:00:00Z")
           original_now = domain.utc_now
           original_fetch = providers.fetch_yahoo_news
+          original_resolve = domain.resolve_applicable_providers
           try:
+              domain.resolve_applicable_providers = lambda _symbol: ["yahoo_finance"]
               domain.utc_now = lambda: now
               providers.fetch_yahoo_news = lambda symbol: [
                   {
@@ -1203,6 +1205,7 @@ jobs:
           finally:
               domain.utc_now = original_now
               providers.fetch_yahoo_news = original_fetch
+              domain.resolve_applicable_providers = original_resolve
 
           cached = [{
               "event_id": "yahoo:cached",
