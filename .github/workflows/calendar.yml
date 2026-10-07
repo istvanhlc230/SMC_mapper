@@ -957,7 +957,7 @@ jobs:
               }
               assert calendar.normalize_provider_event(structured_raw)["details"]["impact"] == expected_impact
 
-          assert calendar.__version__ == "2.4.13"
+          assert calendar.__version__ == "2.5.0"
           assert f"Calendar CLI v{calendar.__version__}" in calendar.HELP_TEXT
 
           # Cleartext output must render normalized details as readable fields,
