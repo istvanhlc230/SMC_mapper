@@ -74,7 +74,13 @@ def build_candle_id(symbol: str, timeframe: str, timestamp: datetime) -> str:
     return f"{symbol}_{timeframe}_{stamp}"
 
 def normalize_provider_candle(provider_candle: ProviderCandle, timeframe: str, symbol: str = "") -> NormalizedCandle:
-    timestamp = canonical_interval_start(provider_candle.timestamp, timeframe)
+    source_timestamp = _utc(provider_candle.timestamp)
+    canonical_start = canonical_interval_start(source_timestamp, timeframe)
+    if source_timestamp != canonical_start:
+        raise ValueError(
+            f"provider timestamp does not match {timeframe} interval boundary: {source_timestamp.isoformat()}"
+        )
+    timestamp = canonical_start
     completion_time = derive_completion_time(timestamp, timeframe)
     open_price = _decimal(provider_candle.open_price, "open")
     high_price = _decimal(provider_candle.high_price, "high")
