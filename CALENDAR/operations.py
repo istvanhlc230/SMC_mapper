@@ -11,15 +11,9 @@ from .config import ProviderError, YahooForexPairUnavailable
 
 # Operation state is request-local: acquisition/refresh variables describe the current transaction and are persisted only through storage.
 
-def _fetch_provider_events(provider: str, symbol: str, start: datetime, end: datetime) -> List[Dict[str, Any]]:
-    """Fetch normalized events from one provider adapter."""
-    if provider == "lse":
-        return providers.fetch_lse_calendar(symbol, start, end)
-    if provider == "forexfactory":
-        return providers.fetch_forexfactory(start, end)
-    if provider == "yahoo_finance":
-        return providers.fetch_yahoo_news(symbol)
-    raise ProviderError(f"Unsupported Calendar provider: {provider}")
+def _fetch_provider_events(provider: str, symbol: str, start: datetime, end: datetime, **kwargs) -> List[Dict[str, Any]]:
+    """Fetch normalized events through the common Calendar provider interface."""
+    return providers.get_calendar_provider(provider).fetch_events(symbol, start, end, **kwargs)
 
 
 def acquire_explicit(
@@ -45,7 +39,7 @@ def acquire_explicit(
             detail_failures: List[str] = []
             for gap_start, gap_end in gaps:
                 if provider == "forexfactory":
-                    gap_events = providers.fetch_forexfactory(gap_start, gap_end, detail_failures=detail_failures)
+                    gap_events = _fetch_provider_events(provider, symbol, gap_start, gap_end, detail_failures=detail_failures)
                 else:
                     gap_events = _fetch_provider_events(provider, symbol, gap_start, gap_end)
                 gap_events = domain.filter_events_for_interval(gap_events, gap_start, gap_end)
@@ -323,7 +317,7 @@ def refresh_calendar_scope(
     for provider in domain.resolve_applicable_providers(symbol):
         try:
             if provider == "forexfactory":
-                fetched = providers.fetch_forexfactory(refresh_window_start, refresh_window_end, include_details=False)
+                fetched = _fetch_provider_events(provider, symbol, refresh_window_start, refresh_window_end, include_details=False)
             else:
                 fetched = _fetch_provider_events(provider, symbol, refresh_window_start, refresh_window_end)
             fetched_for_symbol = domain.filter_events_for_symbol(fetched, symbol)
