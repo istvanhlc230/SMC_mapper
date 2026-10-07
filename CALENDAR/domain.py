@@ -117,31 +117,6 @@ def resolve_scope_interval(scope: str) -> Tuple[datetime, datetime]:
         start = today + timedelta(days=offsets[scope])
         return start, start + timedelta(days=1)
 
-    if scope in {"prev_week", "next_week"}:
-        # Calendar relative weeks follow the ForexFactory Sunday-to-Saturday
-        # calendar week convention, resolved in UTC.
-        today = utc_now().replace(hour=0, minute=0, second=0, microsecond=0)
-        current_week_start = today - timedelta(days=(today.weekday() + 1) % 7)
-        week_offsets = {"prev_week": -1, "next_week": 1}
-        start = current_week_start + timedelta(days=7 * week_offsets[scope])
-        return start, start + timedelta(days=7)
-
-    if scope in {"prev_month", "next_month"}:
-        # Relative months resolve to complete UTC calendar months.
-        today = utc_now().replace(hour=0, minute=0, second=0, microsecond=0)
-        current_month_start = today.replace(day=1)
-        if scope == "prev_month":
-            start = (current_month_start - timedelta(days=1)).replace(day=1)
-        elif current_month_start.month == 12:
-            start = current_month_start.replace(year=current_month_start.year + 1, month=1)
-        else:
-            start = current_month_start.replace(month=current_month_start.month + 1)
-        if start.month == 12:
-            end = start.replace(year=start.year + 1, month=1)
-        else:
-            end = start.replace(month=start.month + 1)
-        return start, end
-
     if scope == "current":
         raise CalendarInputError("'current' is not a historical scope.")
 
@@ -250,7 +225,6 @@ def parse_scope(scope: str) -> str:
     """Calendar operation: parse_scope validates the canonical and open-start scope forms."""
     if scope in {
         "current", "latest", "next", "today", "tomorrow", "yesterday",
-        "prev_week", "next_week", "prev_month", "next_month",
     }:
         return scope
     if is_open_start_scope(scope):
