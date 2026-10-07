@@ -16,7 +16,7 @@ def _fetch_provider_events(provider: str, symbol: str, start: datetime, end: dat
     if provider == "lse":
         return providers.fetch_lse_calendar(symbol, start, end)
     if provider == "forexfactory":
-        return providers.fetch_forexfactory(symbol, start, end) if False else providers.fetch_forexfactory(start, end)
+        return providers.fetch_forexfactory(start, end)
     if provider == "yahoo_finance":
         return providers.fetch_yahoo_news(symbol)
     raise ProviderError(f"Unsupported Calendar provider: {provider}")
@@ -303,31 +303,15 @@ def refresh_calendar_scope(
     end: datetime,
     debug: bool = False,
 ) -> Dict[str, Any]:
-    """Calendar operation: refresh_calendar_scope performs the focused refresh calendar scope step in the Calendar implementation."""
+    """Refresh all provider facts for the requested interval without changing coverage."""
     refresh_window_start, refresh_window_end = _refresh_provider_window(start, end)
-    # Existing IDs are collected from the provider-side envelope, not only the
-    # logical query interval, so late mutable Detail data on an event just outside
-    # the incremental boundary can still be refreshed by stable provider identity.
     existing_events = domain.filter_events_for_interval(
         domain.filter_events_for_symbol(document["events"], symbol),
         refresh_window_start,
         refresh_window_end,
     )
     existing_ids = {event["event_id"] for event in existing_events}
-    # logical_existing_ids identify records that were already visible in the
-    # requested query interval; these may be returned even when the provider
-    # reschedules them outside the interval during refresh.
-    logical_existing_events = domain.filter_events_for_interval(
-        domain.filter_events_for_symbol(document["events"], symbol),
-        start,
-        end,
-    )
-    logical_existing_ids = {
-        event["event_id"] for event in logical_existing_events
-    }
-    # refreshed_for_symbol collects selected provider records that may replace or add cache entries.
     refreshed_for_symbol: List[Dict[str, Any]] = []
-    # refresh_detail_failure_ids records stable IDs whose Detail retrieval failed.
     refresh_detail_failure_ids: set[str] = set()
     provider_results: List[Dict[str, Any]] = []
     failures: List[Dict[str, str]] = []
@@ -335,127 +319,59 @@ def refresh_calendar_scope(
     for provider in domain.resolve_applicable_providers(symbol):
         try:
             if provider == "forexfactory":
-                fetched = providers.fetch_forexfactory(
-                    refresh_window_start,
-                    refresh_window_end,
-                    include_details=False,
-                )
+                fetched = providers.fetch_forexfactory(refresh_window_start, refresh_window_end, include_details=False)
             else:
-                fetched = providers.fetch_yahoo_news(symbol)
-
+                fetched = _fetch_provider_events(provider, symbol, refresh_window_start, refresh_window_end)
             fetched_for_symbol = domain.filter_events_for_symbol(fetched, symbol)
             selected = [
                 event for event in fetched_for_symbol
-                if (
-                    start <= domain.parse_iso8601(event["timestamp"]) < end
-                    or event["event_id"] in existing_ids
-                )
+                if start <= domain.parse_iso8601(event["timestamp"]) < end
+                or event["event_id"] in existing_ids
             ]
             detail_failures: List[str] = []
             if provider == "forexfactory":
-                # Preserve the stable event IDs of failed Detail requests for the merge stage.
-                # A provider helper may return no failure collection when all Detail work succeeded;
-                # normalize that case to an empty set before recording failed IDs.
                 detail_failures = providers._enrich_forexfactory_details(selected) or []
                 refresh_detail_failure_ids.update(
-                    f"forexfactory:{provider_event_id}"
-                    for provider_event_id in detail_failures
+                    f"forexfactory:{item}" for item in detail_failures
                 )
-
             refreshed_for_symbol.extend(selected)
             provider_results.append({
                 "provider": provider,
-                "status": (
-                    "PARTIAL"
-                    if detail_failures
-                    else ("NO_MATCH" if not selected else "OK")
-                    if provider == "yahoo_finance"
-                    else "OK"
-                ),
+                "status": "PARTIAL" if detail_failures else ("NO_MATCH" if not selected else "OK"),
                 "events_fetched": len(fetched),
                 "events_refreshed": len(selected),
                 **({"detail_failures": len(detail_failures)} if detail_failures else {}),
             })
         except YahooForexPairUnavailable as exc:
             if debug:
-                print(
-                    f"DEBUG | {provider} YahooForexPairUnavailable: {exc}",
-                    file=sys.stderr,
-                )
-            provider_results.append({
-                "provider": provider,
-                "status": "SKIPPED_NO_FOREX_PAIR",
-                "reason": str(exc),
-            })
+                print(f"DEBUG | {provider} YahooForexPairUnavailable: {exc}", file=sys.stderr)
+            provider_results.append({"provider": provider, "status": "SKIPPED_NO_FOREX_PAIR", "reason": str(exc)})
         except ProviderError as exc:
             if debug:
-                print(
-                    f"DEBUG | {provider} ProviderError traceback:",
-                    file=sys.stderr,
-                )
+                print(f"DEBUG | {provider} ProviderError traceback:", file=sys.stderr)
                 traceback.print_exc()
             failures.append({"provider": provider, "error": str(exc)})
-            provider_results.append({
-                "provider": provider,
-                "status": "ERROR",
-                "error": str(exc),
-            })
+            provider_results.append({"provider": provider, "status": "ERROR", "error": str(exc)})
 
     if not refreshed_for_symbol and failures:
-        return {
-            "events": [],
-            "provider_results": provider_results,
-            "failures": failures,
-            "summary": {"added": 0, "changed": 0, "unchanged": 0},
-        }
+        return {"events": [], "provider_results": provider_results, "failures": failures,
+                "summary": {"added": 0, "changed": 0, "unchanged": 0}}
 
-    # Refresh is deliberately not a coverage/watermark operation. It only
-    # updates provider facts already in or newly discovered for the requested scope.
     summary = _refresh_event_records(
         document,
         refreshed_for_symbol,
         symbol,
         preserve_detail_failure_ids=refresh_detail_failure_ids,
     )
-    if refreshed_for_symbol and (
-        summary["added"] or summary["changed"]
-    ):
+    if refreshed_for_symbol and (summary["added"] or summary["changed"]):
         domain.validate_calendar_document(document)
         storage.save_calendar_atomic(document)
-        if debug:
-            print(
-                f"DEBUG | Persisted Calendar file: {storage.CALENDAR_FILE}",
-                file=sys.stderr,
-            )
-
-    refreshed_ids = {event["event_id"] for event in refreshed_for_symbol}
-    # Overlap-only records are merged silently. A record is returned when its
-    # refreshed timestamp is inside the logical scope or its stable ID belonged
-    # to an existing event already visible in that scope before refresh.
-    refreshed_visible = [
-        event
-        for event in domain.filter_events_for_symbol(document["events"], symbol)
-        if (
-            event["event_id"] in refreshed_ids
-            and (
-                start <= domain.parse_iso8601(event["timestamp"]) < end
-                or event["event_id"] in logical_existing_ids
-            )
-        )
-    ]
-    refreshed_visible.sort(
-        key=lambda event: (
-            domain.parse_iso8601(event["timestamp"]),
-            event["source"],
-            event["event_id"],
-        )
-    )
-
     return {
-        "events": refreshed_visible,
+        "events": refreshed_for_symbol,
         "provider_results": provider_results,
         "failures": failures,
         "summary": summary,
     }
 
-# debug=diagnostic flag.
+
+
