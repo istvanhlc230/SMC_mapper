@@ -1280,7 +1280,9 @@ jobs:
           original_now = domain.utc_now
           original_fetch = providers.fetch_yahoo_news
           original_save = storage.save_calendar_atomic
+          original_resolve = domain.resolve_applicable_providers
           try:
+              domain.resolve_applicable_providers = lambda _symbol: ["yahoo_finance"]
               domain.utc_now = lambda: dt("2026-10-04T12:00:00Z")
               providers.fetch_yahoo_news = lambda symbol: []
               storage.save_calendar_atomic = lambda document: None
