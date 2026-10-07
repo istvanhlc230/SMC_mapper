@@ -1041,3 +1041,25 @@ The Calendar CLI supports open-start `--range -END` queries and refreshes. The s
 latest recorded visible event for SYMBOL in the committed cache. Date and datetime END forms are supported;
 `HH.MM` is accepted as a compatibility alias for the datetime END and normalized to `HH:MM`.
 
+## Provider API credential storage
+
+Calendar providers that require API credentials use the same provider-independent local credential mechanism as Market Data.
+
+Credential files live under the repository-root:
+
+    apikeys/
+        <provider>.apikey
+
+Rules:
+- each provider has its own credential file;
+- each file contains only that provider's API key;
+- `apikeys/*.apikey` is Git-ignored and must never be committed;
+- tracked `apikeys/*.apikey.example` files contain placeholders only;
+- the shared credential loader is responsible for file reading and optional environment-variable override;
+- Calendar provider adapters do not parse credential files themselves;
+- missing credentials are provider-local configuration failures and must not expose secret values;
+- credentials must never enter `calendar.json`, provider event records, stdout, stderr diagnostics, logs, tests, or CI artifacts;
+- providers that do not require an API key simply do not request one;
+- adding a future provider requires only its provider identifier and credential filename; the storage architecture remains unchanged.
+
+The credential loader is shared infrastructure and is intentionally independent of the Calendar/Market Data provider implementations. This keeps future providers such as additional economic-calendar, news, or market-data services on the same secret-storage contract.
