@@ -4390,3 +4390,31 @@ For each timeframe:
 - no start point is fabricated when the timeframe has no retained completed history;
 - this mode is historical acquisition and is not equivalent to `--current`.
 
+## API credential storage and provider isolation
+
+Market Data provider credentials are stored locally as separate files under the repository-root `apikeys/` directory.
+
+Required layout:
+
+    apikeys/
+        lse.apikey
+        <provider>.apikey
+
+Rules:
+- one credential file belongs to exactly one provider;
+- the file contains only the API key value, with surrounding whitespace ignored;
+- the key file is local secret material and must never be persisted into Market Data JSON, Calendar JSON, logs, stdout, stderr diagnostics, source code, tests, or CI configuration;
+- `apikeys/*.apikey` is Git-ignored;
+- `apikeys/*.apikey.example` may be tracked and contains placeholders only;
+- shell/environment configuration may override the local file when explicitly supplied, so CI and deployment environments can inject secrets without writing them to the repository;
+- provider adapters must obtain credentials through the shared credential loader rather than implementing provider-specific file parsing;
+- the shared loader accepts a stable provider identifier such as `lse` and resolves `apikeys/lse.apikey`;
+- missing, empty, or whitespace-only credentials fail closed with a provider-specific configuration error;
+- the loader must never include the credential value in exception text or diagnostic output;
+- tests must inject/mimic credentials and must never contain a real API key.
+
+The credential mechanism is provider-independent so future Market Data providers can add their own `<provider>.apikey` file without changing the storage architecture.
+
+The current LSE adapter therefore uses provider identifier `lse`; the legacy direct `os.environ["LSE_API_KEY"]` lookup is not the canonical credential mechanism. An explicitly supplied `LSE_API_KEY` environment value remains a supported override for deployment/CI compatibility, but the local file is the default source.
+
+This is a security boundary, not a Market Data persistence feature. No API credential is part of the mapper-facing data contract.
