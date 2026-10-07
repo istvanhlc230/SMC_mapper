@@ -346,6 +346,59 @@ Rules:
 
 ---
 
+# Canonical W1 / MN1 interval and completion policy
+
+## W1 — calendar week
+
+`W1` is a **UTC calendar-week candle**.
+
+- interval start: Monday 00:00:00 UTC;
+- interval end: the following Monday 00:00:00 UTC;
+- completion: the candle becomes completed exactly at its interval end;
+- the interval is half-open: `[Monday 00:00, next Monday 00:00)`;
+- week boundaries are calendar-derived and must not be calculated as a fixed-duration approximation;
+- provider timestamps are normalized to this canonical Monday boundary before persistence;
+- a provider record that does not represent the complete canonical week must not be promoted to a completed W1 candle;
+- the current W1 snapshot represents the current calendar week and remains incomplete until the next Monday 00:00 UTC.
+
+## MN1 — calendar month
+
+`MN1` is a **UTC calendar-month candle**.
+
+- interval start: the first day of the calendar month at 00:00:00 UTC;
+- interval end: the first day of the following calendar month at 00:00:00 UTC;
+- completion: the candle becomes completed exactly at its interval end;
+- the interval is half-open: `[month start, next month start)`;
+- month length is calendar-derived; 28/29/30/31-day months must never be represented by a fixed 30-day duration;
+- provider timestamps are normalized to this canonical month boundary before persistence;
+- a provider record that does not represent the complete canonical month must not be promoted to a completed MN1 candle;
+- the current MN1 snapshot represents the current calendar month and remains incomplete until the first day of the next month at 00:00 UTC.
+
+## Calendar-based completion is provider-independent
+
+The completion boundary for W1 and MN1 is determined by the canonical UTC calendar interval, not by Yahoo response metadata, provider-local timezone, or the number of records returned.
+
+Provider metadata may be retained as diagnostic information, but it cannot override the canonical completion boundary.
+
+## Acquisition and incremental semantics
+
+For W1 and MN1, normal incremental acquisition advances from the persisted candle's canonical interval end, not by adding a fixed number of seconds.
+
+The canonical next acquisition boundary is:
+
+- W1: next Monday 00:00 UTC;
+- MN1: first day of the next calendar month at 00:00 UTC.
+
+Open-start `--range -END` remains inclusive at the persisted `available_end` timestamp for reconciliation/deduplication.
+
+## Current snapshot semantics
+
+`--current` returns at most the current canonical W1 or MN1 interval.
+
+- If the current interval has no provider data, no current snapshot is persisted.
+- If provider data exists but is incomplete/malformed for the canonical interval, the provider must fail closed rather than fabricate a candle.
+- At the exact interval boundary, the previous interval becomes completed and the new interval becomes current.
+
 # 4. FUNCTION NAMING CONTRACT
 
 Use verbs that describe the actual responsibility.
