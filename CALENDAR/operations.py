@@ -68,7 +68,7 @@ def acquire_explicit(
                     "updated_at": domain.format_iso8601(now),
                 })
             if not detail_failures:
-                domain.update_watermark(document, provider, symbol, now, events)
+                domain.update_watermark(document, provider, symbol, min(end, now), events)
                 successful += 1
             provider_results.append({
                 "provider": provider,
