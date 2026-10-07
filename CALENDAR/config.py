@@ -7,8 +7,6 @@ FOREXFACTORY_URL = "https://www.forexfactory.com/calendar"
 FOREXFACTORY_DETAIL_URL = "https://www.forexfactory.com/calendar/details/1-{event_id}"
 # LSE_API_URL — London Strategic Edge economic-calendar REST endpoint.
 LSE_API_URL = "https://api.londonstrategicedge.com/vault/ref/economic_calendar"
-# LSE_API_KEY_ENV — environment variable containing the LSE API key.
-LSE_API_KEY_ENV = "LSE_API_KEY"
 # YAHOO_SEARCH_URL — Yahoo Finance search endpoint.
 YAHOO_SEARCH_URL = "https://query1.finance.yahoo.com/v1/finance/search"
 # USER_AGENT — HTTP User-Agent sent to providers.
@@ -138,8 +136,9 @@ SYMBOL
   Provider selection is automatic.
 
 PROVIDERS
-  ForexFactory -> primary economic-calendar events.
-  Yahoo Finance -> complementary news.
+  LSE -> economic-calendar events.
+  ForexFactory -> independent economic-calendar events.
+  Yahoo Finance -> complementary current/history news.
 
 CURRENT
   current is a read-only cache query. It never calls ForexFactory or Yahoo Finance
@@ -159,8 +158,8 @@ REFRESH MODIFIER
   ForexFactory Detail data can be refreshed.
   The normal query result for the same scope is returned after refresh.
   JSON output includes a refresh summary with added/changed/unchanged counts.
-  refresh is valid with current, today, tomorrow, yesterday, prev_week,
-  next_week, prev_month, next_month, explicit date/datetime scopes, and both open-start --range -END and open-end --range START- forms. latest and next
+  refresh is valid with current, today, tomorrow, yesterday, explicit date/datetime
+  scopes, and both open-start --range -END and open-end --range START- forms. latest and next
   cannot be combined with refresh.
   CLI refresh may block on provider I/O; the Monitor must invoke the underlying
   refresh operation asynchronously and outside its candle-close processing path.
@@ -171,16 +170,6 @@ RELATIVE DAYS
   today = current UTC day; tomorrow = next UTC day; yesterday = previous UTC day.
   They use the same acquisition/query interval semantics as YYYY.MM.DD and
   are valid for normal query, explicit refresh, and scoped delete.
-
-RELATIVE WEEKS AND MONTHS
-  prev_week and next_week are exact ForexFactory-style UTC calendar-week scopes.
-  The week starts Sunday at 00:00 UTC and ends at the following Sunday 00:00 UTC.
-  prev_week selects the immediately preceding week; next_week selects the
-  immediately following week.
-  prev_month and next_month are exact UTC calendar-month scopes. They select the
-  immediately preceding or following complete calendar month.
-  These scopes are resolved at execution time and are valid for normal query,
-  refresh, and scoped delete.
 
 LATEST
   latest is a read-only most-recent-event lookup.
