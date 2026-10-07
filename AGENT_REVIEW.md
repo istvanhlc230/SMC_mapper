@@ -1,3 +1,30 @@
+# CURRENT AUDIT OVERRIDE — 2026-10-08
+
+## Credential / provider audit
+
+STATUS: PASS for the current credential contract.
+
+- Canonical local key location: `PROVIDERS/lse.apikey`.
+- No `apikeys/` directory is part of the credential contract.
+- `PROVIDERS/*.apikey` is Git-ignored.
+- No `.apikey.example` credential file is required.
+- Python credential lookup is centralized in `PROVIDERS/credentials.py`.
+- Calendar LSE acquisition uses the shared credential loader and does not read the environment directly.
+- Key files require exactly one non-empty UTF-8 line; empty, multi-line, and placeholder values fail closed.
+- Credential values are not emitted by the loader's errors.
+
+## Scope audit
+
+STATUS: PASS for the canonical public Calendar scope set. Public `prev_week`, `next_week`, `prev_month`, and `next_month` aliases were removed from parser/domain/help/specification contracts.
+
+## History rewrite
+
+The clean rewrite branch is based on `d3aeb915bdaf3e0d5d159ce2e0ce5d2b28b4418e`, the last clean ancestor before the credential-bearing commits. The obsolete `apikeys/lse.apikey.example` path is absent from the clean tree. The three previously identified secret-bearing commits are not replayed.
+
+The branch is ready to replace `main` with a force-with-lease update. The local `PROVIDERS/lse.apikey` file is intentionally untracked and must remain local.
+
+---
+
 
 ## Post-audit correction — Calendar 2.4.11 + Market Data integrity
 
