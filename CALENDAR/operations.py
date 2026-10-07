@@ -11,6 +11,17 @@ from .config import ProviderError, YahooForexPairUnavailable
 
 # Operation state is request-local: acquisition/refresh variables describe the current transaction and are persisted only through storage.
 
+def _fetch_provider_events(provider: str, symbol: str, start: datetime, end: datetime) -> List[Dict[str, Any]]:
+    """Fetch normalized events from one provider adapter."""
+    if provider == "lse":
+        return providers.fetch_lse_calendar(symbol, start, end)
+    if provider == "forexfactory":
+        return providers.fetch_forexfactory(symbol, start, end) if False else providers.fetch_forexfactory(start, end)
+    if provider == "yahoo_finance":
+        return providers.fetch_yahoo_news(symbol)
+    raise ProviderError(f"Unsupported Calendar provider: {provider}")
+
+
 def acquire_explicit(
     document: Dict[str, Any],
     symbol: str,
@@ -18,124 +29,60 @@ def acquire_explicit(
     end: datetime,
     debug: bool = False,
 ) -> Dict[str, Any]:
-    """Calendar operation: acquire_explicit performs the focused acquire explicit step in the Calendar implementation."""
+    """Acquire all applicable provider sources and merge their facts."""
     now = domain.utc_now()
     provider_results: List[Dict[str, Any]] = []
     failures: List[Dict[str, str]] = []
     successful = 0
     for provider in domain.resolve_applicable_providers(symbol):
         try:
-            if provider == "forexfactory":
-                gaps = domain.find_uncovered_intervals(document, provider, symbol, start, end)
-                events: List[Dict[str, Any]] = []
-                detail_failures: List[str] = []
-                gap_results: List[Tuple[datetime, datetime, List[str]]] = []
-                for gap_start, gap_end in gaps:
-                    gap_detail_failures: List[str] = []
-                    gap_events = providers.fetch_forexfactory(
-                        gap_start,
-                        gap_end,
-                        detail_failures=gap_detail_failures,
-                    )
-                    events.extend(gap_events)
-                    detail_failures.extend(gap_detail_failures)
-                    gap_results.append((gap_start, gap_end, gap_detail_failures))
-                if gaps:
-                    # Detail failures arrive as provider IDs; the domain layer uses
-                    # stable Calendar IDs, so convert them before merging.
-                    failed_detail_event_ids = {
-                        f"forexfactory:{provider_event_id}"
-                        for provider_event_id in detail_failures
-                    }
-                    domain.merge_events(
-                        document,
-                        events,
-                        clear_suppressed_symbol=symbol,
-                        preserve_detail_failure_ids=failed_detail_event_ids,
-                    )
-                    for gap_start, gap_end, gap_detail_failures in gap_results:
-                        domain.merge_coverage(document, {
-                            "provider": provider, "symbol": symbol,
-                            "start": domain.format_iso8601(gap_start),
-                            "end": domain.format_iso8601(gap_end),
-                            "status": "PARTIAL" if gap_detail_failures else "COMPLETE",
-                            "updated_at": domain.format_iso8601(now),
-                        })
-                    # A Detail-partial acquisition is not a fully successful
-                    # provider acquisition. Keep the existing watermark so
-                    # current-mode acquisition retries the incomplete window.
-                    if not detail_failures:
-                        domain.update_watermark(document, provider, symbol, now, events)
-                    provider_results.append({
-                        "provider": provider,
-                        "status": "PARTIAL" if detail_failures else "OK",
-                        "events_acquired": len(events),
-                        "coverage": "UPDATED",
-                        **({"detail_failures": len(detail_failures)} if detail_failures else {}),
-                    })
+            gaps = domain.find_uncovered_intervals(document, provider, symbol, start, end)
+            if not gaps:
+                provider_results.append({"provider": provider, "status": "OK", "events_acquired": 0, "coverage": "CACHED"})
+                successful += 1
+                continue
+            events: List[Dict[str, Any]] = []
+            detail_failures: List[str] = []
+            for gap_start, gap_end in gaps:
+                if provider == "forexfactory":
+                    gap_events = providers.fetch_forexfactory(gap_start, gap_end, detail_failures=detail_failures)
                 else:
-                    provider_results.append({"provider": provider, "status": "OK", "events_acquired": 0, "coverage": "CACHED"})
-                successful += 1
-            else:
-                fetched_events = providers.fetch_yahoo_news(symbol)
-                in_range = domain.filter_events_for_interval(
-                    fetched_events,
-                    start,
-                    end,
-                )
-                # Explicit Yahoo acquisition persists only the requested
-                # interval. The current cursor is advanced only to the
-                # requested end (capped at now), never to the wall-clock
-                # acquisition time of an older historical request.
-                domain.merge_events(document, in_range)
-                if start < now:
-                    domain.update_watermark(
-                        document,
-                        provider,
-                        symbol,
-                        min(end, now),
-                        in_range,
-                    )
-                # A successful Yahoo acquisition is complete even when it returns
-                # matching events. PARTIAL is reserved for genuinely incomplete
-                # provider work, not for a non-empty successful result.
-                # Yahoo's rolling feed is an acquisition-success boundary,
-                # not a guarantee of complete historical news coverage. Record the
-                # completed requested fetch as coverage while keeping that limitation
-                # explicit in the provider result.
-                if start < now:
-                    domain.merge_coverage(document, {
-                        "provider": provider,
-                        "symbol": symbol,
-                        "start": domain.format_iso8601(start),
-                        "end": domain.format_iso8601(min(end, now)),
-                        "status": "COMPLETE",
-                        "updated_at": domain.format_iso8601(now),
-                    })
-                provider_results.append({
+                    gap_events = _fetch_provider_events(provider, symbol, gap_start, gap_end)
+                events.extend(gap_events)
+            failed_detail_ids = {f"forexfactory:{item}" for item in detail_failures}
+            domain.merge_events(
+                document,
+                events,
+                clear_suppressed_symbol=symbol,
+                preserve_detail_failure_ids=failed_detail_ids,
+            )
+            status = "PARTIAL" if detail_failures else "OK"
+            for gap_start, gap_end in gaps:
+                domain.merge_coverage(document, {
                     "provider": provider,
-                    "status": "NO_MATCH" if not in_range else "OK",
-                    "events_acquired": len(in_range),
-                    "historical_coverage": "NOT_GUARANTEED",
+                    "symbol": symbol,
+                    "start": domain.format_iso8601(gap_start),
+                    "end": domain.format_iso8601(gap_end),
+                    "status": status,
+                    "updated_at": domain.format_iso8601(now),
                 })
+            if not detail_failures:
+                domain.update_watermark(document, provider, symbol, now, events)
                 successful += 1
-        except YahooForexPairUnavailable as exc:
-            if debug:
-                print(
-                    f"DEBUG | {provider} YahooForexPairUnavailable: {exc}",
-                    file=sys.stderr,
-                )
             provider_results.append({
                 "provider": provider,
-                "status": "SKIPPED_NO_FOREX_PAIR",
-                "reason": str(exc),
+                "status": status,
+                "events_acquired": len(events),
+                "coverage": "UPDATED",
+                **({"detail_failures": len(detail_failures)} if detail_failures else {}),
             })
+        except YahooForexPairUnavailable as exc:
+            if debug:
+                print(f"DEBUG | {provider} YahooForexPairUnavailable: {exc}", file=sys.stderr)
+            provider_results.append({"provider": provider, "status": "SKIPPED_NO_FOREX_PAIR", "reason": str(exc)})
         except ProviderError as exc:
             if debug:
-                print(
-                    f"DEBUG | {provider} ProviderError traceback:",
-                    file=sys.stderr,
-                )
+                print(f"DEBUG | {provider} ProviderError traceback:", file=sys.stderr)
                 traceback.print_exc()
             failures.append({"provider": provider, "error": str(exc)})
             provider_results.append({"provider": provider, "status": "ERROR", "error": str(exc)})
@@ -143,11 +90,9 @@ def acquire_explicit(
         domain.validate_calendar_document(document)
         storage.save_calendar_atomic(document)
         if debug:
-            print(
-                f"DEBUG | Persisted Calendar file: {storage.CALENDAR_FILE}",
-                file=sys.stderr,
-            )
+            print(f"DEBUG | Persisted Calendar file: {storage.CALENDAR_FILE}", file=sys.stderr)
     return {"provider_results": provider_results, "failures": failures}
+
 
 def delete_symbol_interval(
     document: Dict[str, Any],
