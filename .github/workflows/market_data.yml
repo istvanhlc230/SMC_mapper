@@ -328,7 +328,7 @@ jobs:
                   }]
               }
           }
-          malformed_provider = YahooChartsProvider()
+          malformed_provider = LSEMarketDataProvider()
           try:
               malformed_provider._parse(malformed_payload, "EURUSD", "1m")
           except ValueError:
@@ -347,31 +347,24 @@ jobs:
               else:
                   raise AssertionError(f"invalid persisted Decimal accepted: {invalid_decimal}")
 
-          # H4 current aggregation must fail closed when an hourly source interval is missing.
-          from MARKET_DATA.provider import YahooChartsProvider
+          # Current candles are requested directly from LSE at the requested timeframe.
           current_provider = LSEMarketDataProvider()
-          current_hourly = [
-              ProviderCandle(dt("2026-10-10T04:00:00Z"), "UTC", dt("2026-10-10T04:00:00Z"), "1","2","0","1",100),
-              ProviderCandle(dt("2026-10-10T05:00:00Z"), "UTC", dt("2026-10-10T05:00:00Z"), "1","2","0","1",100),
+          current_provider._request = lambda symbol, timeframe, start_time, end_time: [
+              {
+                  "timestamp": "2026-10-10T04:00:00Z",
+                  "open": "1", "high": "2", "low": "0", "close": "1.5",
+                  "volume": 100,
+              }
           ]
-          current_provider._request = lambda symbol, interval, start_time, end_time: {}
-          current_provider._parse = lambda payload, symbol, interval: current_hourly
-          # Freeze the provider's wall clock inside the test so the 04:00 H4
-          # current window expects the contiguous 04:00 and 05:00 source hours.
           from unittest.mock import patch
           frozen_now = dt("2026-10-10T05:30:00Z")
           with patch("MARKET_DATA.provider.datetime") as provider_datetime:
               provider_datetime.now.return_value = frozen_now
               provider_datetime.fromtimestamp = datetime.fromtimestamp
               provider_datetime.side_effect = datetime
-              provider_datetime.combine = datetime.combine
               provider_datetime.min = datetime.min
               provider_datetime.max = datetime.max
               assert current_provider.fetch_current("EURUSD", "H4") is not None
-              current_provider._parse = lambda payload, symbol, interval: [
-                  current_hourly[1]
-              ]
-              assert current_provider.fetch_current("EURUSD", "H4") is None
 
           # W1 and MN1 use calendar boundaries, not fixed durations.
           from MARKET_DATA.normalization import (
