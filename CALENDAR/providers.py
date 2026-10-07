@@ -2,6 +2,7 @@
 """External Calendar providers and provider-specific normalization."""
 
 import hashlib
+import os
 import json
 import re
 import urllib.error
@@ -11,7 +12,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
-from .config import (FOREXFACTORY_DETAIL_URL, FOREXFACTORY_URL, FX_CURRENCY_CODES, HTTP_TIMEOUT, YAHOO_SEARCH_URL, USER_AGENT, USD_BASE_YAHOO_SYMBOLS, CalendarInputError, ProviderError, YahooForexPairUnavailable)
+from .config import (FOREXFACTORY_DETAIL_URL, FOREXFACTORY_URL, FX_CURRENCY_CODES, HTTP_TIMEOUT, YAHOO_SEARCH_URL, USER_AGENT, USD_BASE_YAHOO_SYMBOLS, LSE_API_URL, LSE_API_KEY_ENV, CalendarInputError, ProviderError, YahooForexPairUnavailable)
 from .domain import format_iso8601, is_currency, is_fx_pair, normalize_symbol, parse_iso8601
 from .parsing import extract_days_payload, parse_calendar_days, parse_forexfactory_html_events
 
@@ -102,6 +103,113 @@ def resolve_yahoo_symbol(symbol: str) -> Optional[str]:
     except YahooForexPairUnavailable:
         return None
     return provider_symbol
+
+class CalendarProvider:
+    """Common provider interface for normalized Calendar event acquisition."""
+    name = ""
+
+    def fetch_events(self, symbol: str, start: datetime, end: datetime) -> List[Dict[str, Any]]:
+        raise NotImplementedError
+
+
+def _fetch_lse_rows(symbol: str, start: datetime, end: datetime) -> List[Dict[str, Any]]:
+    """Fetch LSE economic-calendar rows for the currencies relevant to a symbol."""
+    api_key = os.environ.get(LSE_API_KEY_ENV, "").strip()
+    if not api_key:
+        raise ProviderError("LSE_API_KEY is not configured.")
+    regions: List[str] = []
+    if is_currency(symbol):
+        regions = [symbol]
+    elif is_fx_pair(symbol):
+        regions = [symbol[:3], symbol[3:]]
+    else:
+        return []
+    params = urllib.parse.urlencode({
+        "region": ",".join(regions),
+        "start": format_iso8601(start),
+        "end": format_iso8601(end),
+        "order": "asc",
+        "limit": 5000,
+    })
+    request = urllib.request.Request(
+        f"{LSE_API_URL}?{params}",
+        headers={"x-api-key": api_key, "User-Agent": USER_AGENT, "Accept": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=HTTP_TIMEOUT) as response:
+            if response.status != 200:
+                raise ProviderError(f"LSE HTTP {response.status}")
+            payload = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        raise ProviderError(f"LSE HTTP {exc.code}") from exc
+    except (urllib.error.URLError, TimeoutError, UnicodeDecodeError, OSError, json.JSONDecodeError) as exc:
+        raise ProviderError(f"LSE request failed: {exc}") from exc
+    if not isinstance(payload, list):
+        raise ProviderError("Malformed LSE economic-calendar response.")
+    return [row for row in payload if isinstance(row, dict)]
+
+
+def _lse_value(row: Dict[str, Any], *names: str) -> Any:
+    """Return the first non-empty value from provider field aliases."""
+    for name in names:
+        value = row.get(name)
+        if value not in (None, ""):
+            return value
+    return None
+
+
+def normalize_lse_event(raw: Dict[str, Any]) -> Dict[str, Any]:
+    """Normalize one LSE economic-calendar row into the Calendar event contract."""
+    provider_id = _lse_value(raw, "id", "event_id", "eventId", "uuid")
+    title = _lse_value(raw, "event", "name", "title")
+    timestamp_value = _lse_value(raw, "datetime", "timestamp", "ts", "date")
+    currency = str(_lse_value(raw, "currency", "ccy", "region_code", "region", "country_code") or "").strip().upper()
+    if not provider_id or not title or not timestamp_value or not currency:
+        raise ProviderError("Malformed LSE economic-calendar event.")
+    raw_timestamp = str(timestamp_value).strip()
+    try:
+        if raw_timestamp.endswith("Z") or "+" in raw_timestamp[10:]:
+            timestamp = parse_iso8601(raw_timestamp)
+        else:
+            timestamp = parse_iso8601(raw_timestamp.replace(" ", "T", 1) + "Z")
+    except Exception as exc:
+        raise ProviderError("LSE economic-calendar event has an invalid timestamp.") from exc
+    impact = str(_lse_value(raw, "impact", "importance", "impact_name") or "UNKNOWN").strip().upper()
+    if impact in {"HIGH", "H", "3"}: impact = "HIGH"
+    elif impact in {"MEDIUM", "MED", "M", "2"}: impact = "MEDIUM"
+    elif impact in {"LOW", "L", "1"}: impact = "LOW"
+    elif impact not in {"HOLIDAY"}: impact = "UNKNOWN"
+    details = {
+        "currency": currency,
+        "impact": impact,
+        "actual": _lse_value(raw, "actual"),
+        "forecast": _lse_value(raw, "forecast", "consensus"),
+        "previous": _lse_value(raw, "previous"),
+        "provider_event_id": str(provider_id),
+    }
+    url = _lse_value(raw, "url", "link", "source_url")
+    if url: details["url"] = str(url)
+    known = {"id","event_id","eventId","uuid","event","name","title","datetime","timestamp","ts","date","currency","ccy","region_code","region","country_code","impact","importance","impact_name","actual","forecast","consensus","previous","url","link","source_url"}
+    extras = {str(k): v for k,v in raw.items() if k not in known and v not in (None, "")}
+    if extras: details["provider_fields"] = extras
+    return {
+        "event_id": f"lse:{provider_id}",
+        "symbol": currency,
+        "asset_type": "forex",
+        "event_type": "economic",
+        "source": "lse",
+        "sources": ["lse"],
+        "timestamp": format_iso8601(timestamp),
+        "title": str(title).strip(),
+        "details": details,
+    }
+
+
+def fetch_lse_calendar(symbol: str, start: datetime, end: datetime) -> List[Dict[str, Any]]:
+    """Fetch and normalize LSE economic-calendar events."""
+    events = [normalize_lse_event(row) for row in _fetch_lse_rows(symbol, start, end)]
+    return [event for event in events if start <= parse_iso8601(event["timestamp"]) < end]
+
 
 def fetch_url(url: str) -> str:
     """Calendar operation: fetch_url performs the focused fetch url step in the Calendar implementation."""
@@ -349,6 +457,7 @@ def normalize_provider_event(raw: Dict[str, Any]) -> Dict[str, Any]:
         "asset_type": "forex",
         "event_type": "economic",
         "source": "forexfactory",
+        "sources": ["forexfactory"],
         "timestamp": format_iso8601(timestamp),
         "title": title,
         "details": {
@@ -430,6 +539,7 @@ def fetch_yahoo_news(symbol: str) -> List[Dict[str, Any]]:
                 "asset_type": "forex" if is_fx_pair(symbol) else "ticker",
                 "event_type": "news",
                 "source": "yahoo_finance",
+                "sources": ["yahoo_finance"],
                 "timestamp": format_iso8601(timestamp),
                 "title": title,
                 "details": {
