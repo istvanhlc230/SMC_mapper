@@ -244,20 +244,24 @@ jobs:
           )
           assert [c.timestamp for c in ranged] == [dt("2026-01-01T05:00:00Z")]
 
-          # H4 aggregation must reject missing hourly source intervals.
-          from MARKET_DATA.provider import YahooChartsProvider
-          aggregate_provider = YahooChartsProvider()
-          hourly = [
-              ProviderCandle(dt("2026-10-10T00:00:00Z"), "UTC", dt("2026-10-10T00:00:00Z"), "1","2","0","1",100),
-              ProviderCandle(dt("2026-10-10T01:00:00Z"), "UTC", dt("2026-10-10T01:00:00Z"), "1","2","0","1",100),
-              ProviderCandle(dt("2026-10-10T03:00:00Z"), "UTC", dt("2026-10-10T03:00:00Z"), "1","2","0","1",100),
-              ProviderCandle(dt("2026-10-10T04:00:00Z"), "UTC", dt("2026-10-10T04:00:00Z"), "1","2","0","1",100),
+          # LSE must be queried directly for each requested timeframe; no
+          # lower-timeframe aggregation is permitted.
+          direct_provider = LSEMarketDataProvider()
+          direct_provider._request = lambda symbol, timeframe, start_time, end_time: [
+              {
+                  "timestamp": "2026-10-10T04:00:00Z",
+                  "open": "1", "high": "2", "low": "0", "close": "1.5",
+                  "volume": 10,
+              }
           ]
-          aggregate_provider._parse = lambda payload, symbol, interval: hourly
-          aggregate_provider._request = lambda symbol, interval, start_time, end_time: {}
-          assert aggregate_provider._aggregate_hourly(
-              "EURUSD", dt("2026-10-10T00:00:00Z"), dt("2026-10-10T05:00:00Z"), 4
-          ) == []
+          direct = direct_provider.fetch_range(
+              "EURUSD", "H4",
+              dt("2026-10-10T00:00:00Z"),
+              dt("2026-10-10T05:00:00Z"),
+          )
+          assert len(direct) == 1
+          assert direct[0].provider_metadata["interval"] == "H4"
+          assert direct[0].provider_metadata["provider"] == "lse"
 
           # Persisted negative volume and duplicate current/completed identity must fail.
           import tempfile
@@ -345,7 +349,7 @@ jobs:
 
           # H4 current aggregation must fail closed when an hourly source interval is missing.
           from MARKET_DATA.provider import YahooChartsProvider
-          current_provider = YahooChartsProvider()
+          current_provider = LSEMarketDataProvider()
           current_hourly = [
               ProviderCandle(dt("2026-10-10T04:00:00Z"), "UTC", dt("2026-10-10T04:00:00Z"), "1","2","0","1",100),
               ProviderCandle(dt("2026-10-10T05:00:00Z"), "UTC", dt("2026-10-10T05:00:00Z"), "1","2","0","1",100),
