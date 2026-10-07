@@ -746,58 +746,14 @@ def create_provider(provider_name: str) -> MarketDataProvider:
     ...
 ```
 
-V1:
+V1 accepts the internal provider name `lse` and returns `LSEMarketDataProvider`.
+No provider CLI option is required.
 
-- return the concrete Yahoo Charts provider;
-- keep provider selection behind this single function;
-- provider selection must not leak into normalization or persistence.
+## 6.3 LSE provider pagination
 
-The provider name is internal implementation policy in V1. Do not add a provider CLI option unless the product specification explicitly changes.
-
-## 6.3 LSEMarketDataProvider
-
-Use concrete class:
-
-```python
-class YahooChartsProvider:
-    ...
-```
-
-Responsibilities:
-
-- provider API access only;
-- provider request pagination/chunking;
-- provider timestamp interpretation;
-- provider completion hints/data;
-- provider field mapping into `ProviderCandle`;
-- provider retry/error handling.
-
-The class must not:
-
-- build the persisted JSON document;
-- perform canonical SMC logic;
-- decide POI or structural state.
-
-Required provider methods:
-
-```fetch_range
-fetch_latest_completed
-fetch_current
-```
-
-Keep provider-specific parsing private to the provider adapter where possible.
-
-## 6.4 Provider pagination
-
-If Yahoo Charts requires multiple requests for one logical range:
-
-- pagination belongs inside `YahooChartsProvider.fetch_range`;
-- the caller sees one logical iterable/range;
-- page order must be reconciled deterministically;
-- duplicate provider records must not produce duplicate normalized candles;
-- provider request chunking must not change persisted logical results.
-
----
+If an LSE request needs multiple pages for one logical range, pagination remains
+inside `LSEMarketDataProvider.fetch_range`. The caller receives one logical list.
+Provider pagination must not change persisted results.
 
 ## 6.5 Portable provider class contract
 
