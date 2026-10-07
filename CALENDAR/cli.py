@@ -489,7 +489,6 @@ def parse_calendar_cli_request(cli_arguments: List[str]) -> Dict[str, Any]:
         scope = domain.parse_scope(cli_range)
         if scope in {
             "current", "latest", "next", "today", "tomorrow", "yesterday",
-            "prev_week", "next_week", "prev_month", "next_month",
         }:
             raise CalendarInputError(
                 "--range requires an explicit date/datetime range, an open-start -END range, "
