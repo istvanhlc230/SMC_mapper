@@ -395,5 +395,165 @@ jobs:
           mn1_incremental = resolve_acquisition_range(incremental_request, "MN1", calendar_state)
           assert mn1_incremental[0] == dt("2026-10-01T00:00:00Z")
 
+          # --lastclosed is exclusive of every historical range form, including open-start.
+          try:
+              parse_market_data_request([
+                  "--symbol", "EURUSD",
+                  "--timeframes", "M1",
+                  "--lastclosed",
+                  "--range", "-2026.10.20",
+              ])
+          except ValueError as exc:
+              assert "lastclosed cannot be combined" in str(exc)
+          else:
+              raise AssertionError("lastclosed + open-start range must be rejected")
+
+          # LSE range acquisition must page forward until the requested interval is exhausted.
+          from MARKET_DATA.provider import LSEMarketDataProvider
+          paged_provider = LSEMarketDataProvider()
+          page_requests = []
+          page_rows = [
+              [{"timestamp": "2026-10-10T05:00:00Z", "open": "1", "high": "2", "low": "0", "close": "1.5", "volume": 1}],
+              [{"timestamp": "2026-10-10T05:01:00Z", "open": "1", "high": "2", "low": "0", "close": "1.5", "volume": 2}],
+              [],
+          ]
+          def paged_request(symbol, timeframe, start_time, end_time):
+              page_requests.append((symbol, timeframe, start_time, end_time))
+              return page_rows.pop(0)
+          paged_provider._request = paged_request
+          paged_candles = paged_provider.fetch_range(
+              "EURUSD",
+              "M1",
+              dt("2026-10-10T05:00:00Z"),
+              dt("2026-10-10T05:02:00Z"),
+          )
+          assert [c.timestamp for c in paged_candles] == [
+              dt("2026-10-10T05:00:00Z"),
+              dt("2026-10-10T05:01:00Z"),
+          ]
+          assert [item[2] for item in page_requests] == [
+              dt("2026-10-10T05:00:00Z"),
+              dt("2026-10-10T05:01:00Z"),
+          ]
+
+          # W1/MN1 persisted states must use calendar completion boundaries and
+          # must remain loadable; they are not fixed-duration TIMEFRAME_SECONDS entries.
+          from MARKET_DATA.persistence import load_market_data
+          with tempfile.TemporaryDirectory() as temp_dir:
+              calendar_path = Path(temp_dir) / "EURUSD" / "EURUSD_marketdata.json"
+              calendar_path.parent.mkdir(parents=True)
+              calendar_document = {
+                  "symbol": "EURUSD",
+                  "timeframes": {
+                      "W1": {
+                          "available_start": "2026-10-05T00:00:00Z",
+                          "available_end": "2026-10-05T00:00:00Z",
+                          "candles": [{
+                              "candle_id": "EURUSD_W1_2026-10-05T00:00:00Z",
+                              "timestamp": "2026-10-05T00:00:00Z",
+                              "completion_time": "2026-10-12T00:00:00Z",
+                              "open": "1",
+                              "high": "2",
+                              "low": "0",
+                              "close": "1",
+                              "volume": {}
+                          }],
+                          "current": {
+                              "candle_id": "EURUSD_W1_2026-10-12T00:00:00Z",
+                              "timestamp": "2026-10-12T00:00:00Z",
+                              "completion_time": "2026-10-19T00:00:00Z",
+                              "open": "1",
+                              "high": "2",
+                              "low": "0",
+                              "close": "1",
+                              "volume": {}
+                          }
+                      },
+                      "MN1": {
+                          "available_start": "2026-09-01T00:00:00Z",
+                          "available_end": "2026-09-01T00:00:00Z",
+                          "candles": [{
+                              "candle_id": "EURUSD_MN1_2026-09-01T00:00:00Z",
+                              "timestamp": "2026-09-01T00:00:00Z",
+                              "completion_time": "2026-10-01T00:00:00Z",
+                              "open": "1",
+                              "high": "2",
+                              "low": "0",
+                              "close": "1",
+                              "volume": {}
+                          }],
+                          "current": {
+                              "candle_id": "EURUSD_MN1_2026-10-01T00:00:00Z",
+                              "timestamp": "2026-10-01T00:00:00Z",
+                              "completion_time": "2026-11-01T00:00:00Z",
+                              "open": "1",
+                              "high": "2",
+                              "low": "0",
+                              "close": "1",
+                              "volume": {}
+                          }
+                      }
+                  }
+              }
+              calendar_path.write_text(json.dumps(calendar_document), encoding="utf-8")
+              loaded_calendar_document = load_market_data(calendar_path, "EURUSD")
+              assert set(loaded_calendar_document["timeframes"]) == {"W1", "MN1"}
+
+              invalid_calendar_document = json.loads(json.dumps(calendar_document))
+              invalid_calendar_document["timeframes"]["W1"]["candles"][0]["completion_time"] = "2026-10-11T00:00:00Z"
+              calendar_path.write_text(json.dumps(invalid_calendar_document), encoding="utf-8")
+              try:
+                  load_market_data(calendar_path, "EURUSD")
+              except ValueError as exc:
+                  assert "completion_time does not match timeframe boundary" in str(exc)
+              else:
+                  raise AssertionError("invalid W1 completed boundary must fail")
+
+              invalid_calendar_document = json.loads(json.dumps(calendar_document))
+              invalid_calendar_document["timeframes"]["MN1"]["candles"][0]["completion_time"] = "2026-09-30T00:00:00Z"
+              calendar_path.write_text(json.dumps(invalid_calendar_document), encoding="utf-8")
+              try:
+                  load_market_data(calendar_path, "EURUSD")
+              except ValueError as exc:
+                  assert "completion_time does not match timeframe boundary" in str(exc)
+              else:
+                  raise AssertionError("invalid MN1 completed boundary must fail")
+
+
+          # Provider credentials are file-based, provider-isolated, and never exposed by errors.
+          from pathlib import Path
+          from tempfile import TemporaryDirectory
+          from PROVIDERS.credentials import (
+              ProviderCredentialError,
+              get_provider_api_key,
+          )
+          with TemporaryDirectory() as temp_dir:
+              key_dir = Path(temp_dir)
+              (key_dir / "lse.apikey").write_text(" synthetic-lse-key \n", encoding="utf-8")
+              assert get_provider_api_key("lse", api_keys_directory=key_dir) == "synthetic-lse-key"
+              try:
+                  get_provider_api_key("missing_provider", api_keys_directory=key_dir)
+              except ProviderCredentialError as exc:
+                  assert "synthetic-lse-key" not in str(exc)
+              else:
+                  raise AssertionError("missing provider key must fail closed")
+              for invalid_provider in (".", "..", "../escape", "bad/provider"):
+                  try:
+                      get_provider_api_key(invalid_provider, api_keys_directory=key_dir)
+                  except ProviderCredentialError:
+                      pass
+                  else:
+                      raise AssertionError("unsafe provider credential identifier must fail")
+          import os
+          os.environ["LSE_API_KEY"] = "synthetic-env-key"
+          try:
+              with TemporaryDirectory() as temp_dir:
+                  assert get_provider_api_key(
+                      "lse",
+                      api_keys_directory=Path(temp_dir),
+                  ) == "synthetic-env-key"
+          finally:
+              os.environ.pop("LSE_API_KEY", None)
+
           print("MARKET_DATA_RANGE_TESTS_OK")
           PY
