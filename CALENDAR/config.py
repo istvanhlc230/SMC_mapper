@@ -5,7 +5,11 @@
 FOREXFACTORY_URL = "https://www.forexfactory.com/calendar"
 # FOREXFACTORY_DETAIL_URL — provider event-detail JSON endpoint template.
 FOREXFACTORY_DETAIL_URL = "https://www.forexfactory.com/calendar/details/1-{event_id}"
-# LSE_API_URL — London Strategic Edge economic-calendar REST endpoint.\nLSE_API_URL = "https://api.londonstrategicedge.com/vault/ref/economic_calendar"\n# LSE_API_KEY_ENV — environment variable containing the LSE API key.\nLSE_API_KEY_ENV = "LSE_API_KEY"\n# YAHOO_SEARCH_URL — Yahoo Finance search endpoint.
+# LSE_API_URL — London Strategic Edge economic-calendar REST endpoint.
+LSE_API_URL = "https://api.londonstrategicedge.com/vault/ref/economic_calendar"
+# LSE_API_KEY_ENV — environment variable containing the LSE API key.
+LSE_API_KEY_ENV = "LSE_API_KEY"
+# YAHOO_SEARCH_URL — Yahoo Finance search endpoint.
 YAHOO_SEARCH_URL = "https://query1.finance.yahoo.com/v1/finance/search"
 # USER_AGENT — HTTP User-Agent sent to providers.
 USER_AGENT = (
