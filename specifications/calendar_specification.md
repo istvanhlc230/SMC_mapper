@@ -194,10 +194,6 @@ Public query forms:
     python calendar.py SYMBOL today [refresh]
     python calendar.py SYMBOL tomorrow [refresh]
     python calendar.py SYMBOL yesterday [refresh]
-    python calendar.py SYMBOL prev_week [refresh]
-    python calendar.py SYMBOL next_week [refresh]
-    python calendar.py SYMBOL prev_month [refresh]
-    python calendar.py SYMBOL next_month [refresh]
     python calendar.py SYMBOL latest
     python calendar.py SYMBOL next
 
@@ -211,10 +207,6 @@ Delete forms:
     python calendar.py delete SYMBOL today
     python calendar.py delete SYMBOL tomorrow
     python calendar.py delete SYMBOL yesterday
-    python calendar.py delete SYMBOL prev_week
-    python calendar.py delete SYMBOL next_week
-    python calendar.py delete SYMBOL prev_month
-    python calendar.py delete SYMBOL next_month
     python calendar.py delete SYMBOL --time HH:MM
     python calendar.py delete SYMBOL YYYY.MM.DD --time HH:MM
 
@@ -327,30 +319,6 @@ Semantics:
 - open-start range with trailing `refresh` forces provider acquisition over the resolved interval;
 - the resolved interval is the same logical query interval used for refresh matching and result presentation;
 - the range does not create or alter coverage/watermarks merely by parsing or querying.
-
-## 3.4 Relative week and month scopes
-
-The public CLI accepts four relative UTC calendar scopes:
-
-    python calendar.py SYMBOL prev_week
-    python calendar.py SYMBOL next_week
-    python calendar.py SYMBOL prev_month
-    python calendar.py SYMBOL next_month
-
-Semantics:
-
-- prev_week = the immediately preceding ForexFactory-style calendar week;
-- next_week = the immediately following ForexFactory-style calendar week;
-- the relative week starts Sunday at 00:00:00 UTC and ends at the following Sunday 00:00:00 UTC;
-- prev_month = the complete UTC calendar month immediately before the current month;
-- next_month = the complete UTC calendar month immediately after the current month.
-
-These scopes are resolved at execution time using the same utc_now() clock as the
-Calendar domain. They are aliases only; they do not persist relative-state and do not
-mean current, latest, or next.
-
-They use the normal exact interval query/acquisition semantics and are valid with the
-trailing refresh modifier and for symbol-scoped delete.
 
 ## 4. current semantics
 
@@ -1047,19 +1015,19 @@ Calendar providers that require API credentials use the same provider-independen
 
 Credential files live under the repository-root:
 
-    apikeys/
+    PROVIDERS/
+        credentials.py
         <provider>.apikey
 
 Rules:
 - each provider has its own credential file;
 - each file contains only that provider's API key;
-- `apikeys/*.apikey` is Git-ignored and must never be committed;
-- tracked `apikeys/*.apikey.example` files contain placeholders only;
+- `PROVIDERS/*.apikey` is Git-ignored and must never be committed;
 - the shared credential loader is responsible for file reading and optional environment-variable override;
 - Calendar provider adapters do not parse credential files themselves;
-- missing credentials are provider-local configuration failures and must not expose secret values;
+- missing, empty, whitespace-only, or multi-line credentials fail closed;
 - credentials must never enter `calendar.json`, provider event records, stdout, stderr diagnostics, logs, tests, or CI artifacts;
 - providers that do not require an API key simply do not request one;
 - adding a future provider requires only its provider identifier and credential filename; the storage architecture remains unchanged.
 
-The credential loader is shared infrastructure and is intentionally independent of the Calendar/Market Data provider implementations. This keeps future providers such as additional economic-calendar, news, or market-data services on the same secret-storage contract.
+The shared loader is intentionally independent of the Calendar/Market Data provider implementations. An explicitly supplied provider environment variable remains a supported deployment/CI override, while the provider-local file is the canonical local source.
