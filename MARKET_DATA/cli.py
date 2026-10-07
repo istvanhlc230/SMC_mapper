@@ -247,7 +247,7 @@ def parse_market_data_request(argv: Sequence[str] | None = None):
 
 def run(request):
     """Execute the requested Market Data acquisition."""
-    provider = create_provider("yahoo_charts")
+    provider = create_provider("lse")
     try:
         update_market_data(request, provider)
         return 0
