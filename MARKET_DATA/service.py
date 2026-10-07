@@ -4,7 +4,7 @@ from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from typing import Any, Sequence
 from .models import DEFAULT_CANDLE_RETENTION, DEFAULT_DATA_DIRECTORY, TIMEFRAME_SECONDS, MarketDataRequest, NormalizedCandle
-from .normalization import canonical_next_interval_start, is_candle_complete, normalize_provider_candle, normalize_provider_candles
+from .normalization import canonical_interval_end, canonical_next_interval_start, is_candle_complete, normalize_provider_candle, normalize_provider_candles
 from .persistence import ensure_timeframe_state, get_market_data_path, load_market_data, save_market_data_atomic, update_available_bounds
 
 def _candle_dict(candle: NormalizedCandle):
