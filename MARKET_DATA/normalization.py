@@ -1,6 +1,6 @@
 """Canonical timestamp, completion, numeric normalization and candle validation."""
 from __future__ import annotations
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from decimal import Decimal, InvalidOperation
 from typing import Iterable
 from .models import TIMEFRAME_SECONDS, NormalizedCandle, ProviderCandle, VolumeState
@@ -19,12 +19,44 @@ def _decimal(value, field_name: str) -> Decimal:
         raise ValueError(f"non-finite numeric value for {field_name}")
     return result
 
-def derive_completion_time(timestamp: datetime, timeframe: str) -> datetime:
+def canonical_interval_start(timestamp: datetime, timeframe: str) -> datetime:
+    """Return the canonical UTC interval start for a timeframe."""
     timestamp = _utc(timestamp)
-    if timeframe not in TIMEFRAME_SECONDS:
-        raise ValueError(f"unsupported timeframe duration: {timeframe}")
-    from datetime import timedelta
-    return timestamp + timedelta(seconds=TIMEFRAME_SECONDS[timeframe])
+    if timeframe in TIMEFRAME_SECONDS:
+        seconds = TIMEFRAME_SECONDS[timeframe]
+        epoch = int(timestamp.timestamp())
+        return datetime.fromtimestamp(epoch - (epoch % seconds), tz=timezone.utc)
+    if timeframe == "W1":
+        return (timestamp - timedelta(days=timestamp.weekday())).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+    if timeframe == "MN1":
+        return timestamp.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    raise ValueError(f"unsupported timeframe: {timeframe}")
+
+
+def canonical_interval_end(timestamp: datetime, timeframe: str) -> datetime:
+    """Return the exclusive UTC end of the canonical timeframe interval."""
+    start = canonical_interval_start(timestamp, timeframe)
+    if timeframe in TIMEFRAME_SECONDS:
+        return start + timedelta(seconds=TIMEFRAME_SECONDS[timeframe])
+    if timeframe == "W1":
+        return start + timedelta(days=7)
+    if timeframe == "MN1":
+        if start.month == 12:
+            return start.replace(year=start.year + 1, month=1, day=1)
+        return start.replace(month=start.month + 1, day=1)
+    raise ValueError(f"unsupported timeframe: {timeframe}")
+
+
+def canonical_next_interval_start(timestamp: datetime, timeframe: str) -> datetime:
+    """Return the canonical start of the interval immediately after timestamp."""
+    return canonical_interval_end(timestamp, timeframe)
+
+
+def derive_completion_time(timestamp: datetime, timeframe: str) -> datetime:
+    """Return the deterministic completion boundary of a canonical candle."""
+    return canonical_interval_end(timestamp, timeframe)
 
 def is_candle_complete(
     provider_candle: ProviderCandle,
@@ -42,7 +74,7 @@ def build_candle_id(symbol: str, timeframe: str, timestamp: datetime) -> str:
     return f"{symbol}_{timeframe}_{stamp}"
 
 def normalize_provider_candle(provider_candle: ProviderCandle, timeframe: str, symbol: str = "") -> NormalizedCandle:
-    timestamp = _utc(provider_candle.timestamp)
+    timestamp = canonical_interval_start(provider_candle.timestamp, timeframe)
     completion_time = derive_completion_time(timestamp, timeframe)
     open_price = _decimal(provider_candle.open_price, "open")
     high_price = _decimal(provider_candle.high_price, "high")
