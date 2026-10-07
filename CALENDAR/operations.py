@@ -57,13 +57,14 @@ def acquire_explicit(
                 preserve_detail_failure_ids=failed_detail_ids,
             )
             status = "PARTIAL" if detail_failures else "OK"
+            coverage_status = "PARTIAL" if detail_failures else "COMPLETE"
             for gap_start, gap_end in gaps:
                 domain.merge_coverage(document, {
                     "provider": provider,
                     "symbol": symbol,
                     "start": domain.format_iso8601(gap_start),
                     "end": domain.format_iso8601(gap_end),
-                    "status": status,
+                    "status": coverage_status,
                     "updated_at": domain.format_iso8601(now),
                 })
             if not detail_failures:
