@@ -35,10 +35,54 @@ jobs:
               return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
           assert calendar.validate_symbol("EURUSD") == "EURUSD"
-          assert calendar.__version__ == "2.4.13"
+          assert calendar.__version__ == "2.5.0"
           assert calendar.validate_symbol("USDGBP") == "USDGBP"
           assert calendar.validate_symbol("HUF") == "HUF"
           assert calendar.validate_symbol("NVDA") == "NVDA"
+          # All three provider adapters are part of the Calendar contract.
+          assert domain.resolve_applicable_providers("EURUSD") == [
+              "lse", "forexfactory", "yahoo_finance"
+          ]
+          assert domain.resolve_applicable_providers("NVDA") == [
+              "lse", "forexfactory", "yahoo_finance"
+          ]
+
+          # LSE and ForexFactory facts with the same economic identity are enriched,
+          # not stored as duplicate events.
+          lse_event = {
+              "event_id": "lse:1",
+              "symbol": "USD",
+              "asset_type": "forex",
+              "event_type": "economic",
+              "source": "lse",
+              "sources": ["lse"],
+              "timestamp": "2026-10-06T12:30:00Z",
+              "title": "US CPI",
+              "details": {
+                  "currency": "USD", "impact": "HIGH",
+                  "actual": "3.1", "forecast": "3.0", "previous": None,
+              },
+          }
+          ff_event = {
+              "event_id": "forexfactory:2",
+              "symbol": "USD",
+              "asset_type": "forex",
+              "event_type": "economic",
+              "source": "forexfactory",
+              "sources": ["forexfactory"],
+              "timestamp": "2026-10-06T12:30:00Z",
+              "title": "US CPI",
+              "details": {
+                  "currency": "USD", "impact": "HIGH",
+                  "actual": None, "forecast": "3.0", "previous": "3.2", "specs": [],
+              },
+          }
+          merge_doc = domain.build_empty_calendar_document()
+          domain.merge_events(merge_doc, [lse_event])
+          domain.merge_events(merge_doc, [ff_event])
+          assert len(merge_doc["events"]) == 1
+          assert set(merge_doc["events"][0]["sources"]) == {"lse", "forexfactory"}
+          assert merge_doc["events"][0]["details"]["previous"] == "3.2"
           import CALENDAR.cli as calendar_cli
           fixed_utc_now = domain.utc_now
           try:
