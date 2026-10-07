@@ -1,173 +1,238 @@
-"""Yahoo Charts provider adapter."""
+"""London Strategic Edge Market Data provider adapter."""
 from __future__ import annotations
-import json, time, urllib.parse, urllib.request
+
+import json
+import os
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any
+
 from .models import DEFAULT_PROVIDER_NAME, ProviderCandle, TIMEFRAME_SECONDS
 
-_INTERVALS = {"M1":"1m","M5":"5m","M15":"15m","M30":"30m","H1":"1h","D1":"1d","W1":"1wk","MN1":"1mo"}
+LSE_CANDLES_URL = "https://api.londonstrategicedge.com/vault/candles"
+LSE_API_KEY_ENV = "LSE_API_KEY"
+TIMEFRAME_INTERVALS = {
+    "M1": "1m",
+    "M5": "5m",
+    "M15": "15m",
+    "M30": "30m",
+    "H1": "1h",
+    "H4": "4h",
+    "D1": "1d",
+    "W1": "1w",
+    "MN1": "1mo",
+}
+
 
 def _iso(value: datetime) -> str:
-    return value.astimezone(timezone.utc).isoformat().replace("+00:00","Z")
+    """Format a UTC datetime for the LSE API."""
+    return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _provider_symbol(symbol: str) -> str:
+    """Map the canonical project symbol to the LSE symbol spelling."""
+    token = symbol.strip().upper()
+    if len(token) == 6 and token.isalpha():
+        return f"{token[:3]}/{token[3:]}"
+    return token
+
+
+def _parse_timestamp(value: Any) -> datetime:
+    """Parse an LSE timestamp into an aware UTC datetime."""
+    if isinstance(value, (int, float)):
+        return datetime.fromtimestamp(value, tz=timezone.utc)
+    raw = str(value).strip()
+    if raw.endswith("Z"):
+        raw = raw[:-1] + "+00:00"
+    elif " " in raw and "T" not in raw:
+        raw = raw.replace(" ", "T", 1)
+    parsed = datetime.fromisoformat(raw)
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _decimal_value(value: Any, field_name: str) -> Any:
+    """Validate an LSE numeric field before handing it to normalization."""
+    if value is None:
+        raise ValueError(f"LSE candle missing {field_name}")
+    try:
+        return Decimal(str(value))
+    except Exception as exc:
+        raise ValueError(f"invalid LSE {field_name}") from exc
+
 
 class MarketDataProvider:
-    def fetch_range(self, symbol: str, timeframe: str, start_time: datetime, end_time: datetime) -> list[ProviderCandle]: raise NotImplementedError
-    def fetch_latest_completed(self, symbol: str, timeframe: str) -> ProviderCandle | None: raise NotImplementedError
-    def fetch_current(self, symbol: str, timeframe: str) -> ProviderCandle | None: raise NotImplementedError
+    """Provider-neutral Market Data acquisition contract."""
 
-class YahooChartsProvider(MarketDataProvider):
-    def __init__(self, timeout_seconds: int = 20, retries: int = 3):
-        self.timeout_seconds, self.retries = timeout_seconds, retries
+    def fetch_range(
+        self,
+        symbol: str,
+        timeframe: str,
+        start_time: datetime,
+        end_time: datetime,
+    ) -> list[ProviderCandle]:
+        raise NotImplementedError
 
-    def _request(self, symbol: str, interval: str, start_time: datetime, end_time: datetime) -> dict[str, Any]:
-        query = urllib.parse.urlencode({"period1": int(start_time.timestamp()), "period2": int(end_time.timestamp()), "interval": interval, "events":"history", "includeAdjustedClose":"true"})
-        url = "https://query1.finance.yahoo.com/v8/finance/chart/" + urllib.parse.quote(symbol, safe="") + "?" + query
-        last_error = None
+    def fetch_latest_completed(
+        self,
+        symbol: str,
+        timeframe: str,
+    ) -> ProviderCandle | None:
+        raise NotImplementedError
+
+    def fetch_current(
+        self,
+        symbol: str,
+        timeframe: str,
+    ) -> ProviderCandle | None:
+        raise NotImplementedError
+
+
+class LSEMarketDataProvider(MarketDataProvider):
+    """Direct LSE candle provider; no timeframe aggregation is performed."""
+
+    def __init__(self, timeout_seconds: int = 30, retries: int = 3):
+        self.timeout_seconds = timeout_seconds
+        self.retries = retries
+
+    def _request(
+        self,
+        symbol: str,
+        timeframe: str,
+        start_time: datetime,
+        end_time: datetime,
+    ) -> list[dict[str, Any]]:
+        api_key = os.environ.get(LSE_API_KEY_ENV, "").strip()
+        if not api_key:
+            raise RuntimeError("LSE_API_KEY is not configured")
+        interval = TIMEFRAME_INTERVALS.get(timeframe)
+        if interval is None:
+            raise ValueError(f"LSE does not have a mapping for {timeframe}")
+        params = urllib.parse.urlencode({
+            "symbol": _provider_symbol(symbol),
+            "timeframe": interval,
+            "start": _iso(start_time),
+            "end": _iso(end_time),
+            "order": "asc",
+            "limit": 5000,
+        })
+        url = f"{LSE_CANDLES_URL}?{params}"
+        last_error: Exception | None = None
         for attempt in range(self.retries):
             try:
-                request = urllib.request.Request(url, headers={"User-Agent":"Mozilla/5.0"})
+                request = urllib.request.Request(
+                    url,
+                    headers={
+                        "x-api-key": api_key,
+                        "User-Agent": "SMC_Mapper/LSEMarketDataProvider",
+                        "Accept": "application/json",
+                    },
+                )
                 with urllib.request.urlopen(request, timeout=self.timeout_seconds) as response:
-                    return json.loads(response.read().decode("utf-8"))
-            except Exception as exc:
+                    payload = json.loads(response.read().decode("utf-8"))
+                if not isinstance(payload, list):
+                    raise RuntimeError("LSE candles response is not a list")
+                return payload
+            except urllib.error.HTTPError as exc:
+                last_error = RuntimeError(f"LSE HTTP {exc.code}")
+            except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError) as exc:
                 last_error = exc
-                if attempt + 1 < self.retries: time.sleep(0.5 * (attempt + 1))
-        raise RuntimeError(f"Yahoo Charts acquisition failed: {last_error}")
+            if attempt + 1 < self.retries:
+                time.sleep(0.5 * (attempt + 1))
+        raise RuntimeError(f"LSE candle acquisition failed: {last_error}")
 
-    def _parse(self, payload: dict[str, Any], symbol: str, interval: str) -> list[ProviderCandle]:
-        chart = payload.get("chart", {})
-        error = chart.get("error")
-        if error: raise RuntimeError(f"Yahoo Charts error: {error}")
-        result = (chart.get("result") or [None])[0]
-        if not result: return []
-        timestamps = result.get("timestamp") or []
-        quote = ((result.get("indicators") or {}).get("quote") or [{}])[0]
-        volume = quote.get("volume") or []
-        records=[]
-        for index, raw_timestamp in enumerate(timestamps):
-            try:
-                values = [
-                    quote.get(key, [None] * len(timestamps))[index]
-                    for key in ("open", "high", "low", "close")
-                ]
-                if any(value is None for value in values):
-                    raise ValueError("malformed Yahoo candle: missing OHLC field")
-                stamp=datetime.fromtimestamp(raw_timestamp, tz=timezone.utc)
-                records.append(ProviderCandle(stamp, "UTC", stamp, *values, volume[index] if index < len(volume) else None, provider_metadata={"provider":"yahoo_charts","interval":interval}))
-            except (ValueError, TypeError, IndexError):
-                raise ValueError("malformed Yahoo candle")
-        return records
+    def _parse(self, rows: list[dict[str, Any]], symbol: str, timeframe: str) -> list[ProviderCandle]:
+        """Convert direct LSE candle rows to provider-neutral candles."""
+        records: list[ProviderCandle] = []
+        for row in rows:
+            if not isinstance(row, dict):
+                raise ValueError("malformed LSE candle record")
+            timestamp = _parse_timestamp(row.get("timestamp", row.get("ts")))
+            open_price = _decimal_value(row.get("open"), "open")
+            high_price = _decimal_value(row.get("high"), "high")
+            low_price = _decimal_value(row.get("low"), "low")
+            close_price = _decimal_value(row.get("close"), "close")
+            volume = row.get("volume")
+            records.append(
+                ProviderCandle(
+                    source_timestamp=row.get("timestamp", row.get("ts")),
+                    source_timezone="UTC",
+                    timestamp=timestamp,
+                    open_price=open_price,
+                    high_price=high_price,
+                    low_price=low_price,
+                    close_price=close_price,
+                    total_volume=volume,
+                    provider_metadata={
+                        "provider": "lse",
+                        "interval": timeframe,
+                        "provider_symbol": _provider_symbol(symbol),
+                    },
+                )
+            )
+        return sorted(records, key=lambda item: item.timestamp)
 
     def fetch_range(self, symbol, timeframe, start_time, end_time):
-        if timeframe == "H4":
-            return self._aggregate_hourly(symbol, start_time, end_time, 4)
-        interval=_INTERVALS.get(timeframe)
-        if interval is None: raise ValueError(f"Yahoo Charts does not support {timeframe} directly")
-        return self._parse(self._request(symbol, interval, start_time, end_time), symbol, interval)
+        """Fetch exactly the requested LSE timeframe without aggregation."""
+        return self._parse(
+            self._request(symbol, timeframe, start_time, end_time),
+            symbol,
+            timeframe,
+        )
 
-    def _aggregate_hourly(self, symbol, start_time, end_time, hours):
-        records=self._parse(self._request(symbol,"1h",start_time,end_time),symbol,"1h")
-        if not records: return []
-        from .models import TIMEFRAME_SECONDS
-        buckets={}
-        for candle in records:
-            epoch=int(candle.timestamp.timestamp())
-            bucket=epoch-(epoch % (hours*3600))
-            buckets.setdefault(bucket,[]).append(candle)
-        output=[]
-        for bucket, group in sorted(buckets.items()):
-            group = sorted(group, key=lambda candle: candle.timestamp)
-            if len(group) != hours:
-                continue
-            expected = [
-                datetime.fromtimestamp(bucket, tz=timezone.utc)
-                + timedelta(hours=offset)
-                for offset in range(hours)
-            ]
-            if [candle.timestamp for candle in group] != expected:
-                continue
-            stamp=datetime.fromtimestamp(bucket,tz=timezone.utc)
-            total=sum((Decimal(str(x.total_volume or 0)) for x in group), Decimal("0"))
-            output.append(ProviderCandle(stamp,"UTC",stamp,group[0].open_price,max(x.high_price for x in group),min(x.low_price for x in group),group[-1].close_price,total,provider_metadata={"provider":"yahoo_charts","aggregated_from":"1h"}))
-        return output
-
-    def _window_start(self, timeframe: str, now: datetime) -> datetime:
-        from .models import TIMEFRAME_SECONDS
+    def _lookup_window(self, timeframe: str, now: datetime) -> datetime:
+        """Return a bounded same-timeframe lookup start for latest/current reads."""
         from .normalization import canonical_interval_start
-        return canonical_interval_start(now, timeframe)
-
-    def fetch_latest_completed(self, symbol, timeframe):
-        now = datetime.now(timezone.utc)
-        from .models import TIMEFRAME_SECONDS
-        start = self._window_start(timeframe, now)
+        start = canonical_interval_start(now, timeframe)
         if timeframe in TIMEFRAME_SECONDS:
-            start -= timedelta(seconds=TIMEFRAME_SECONDS[timeframe] * 3)
-        elif timeframe == "W1":
-            start -= timedelta(days=21)
-        elif timeframe == "MN1":
+            return start - timedelta(seconds=TIMEFRAME_SECONDS[timeframe] * 3)
+        if timeframe == "W1":
+            return start - timedelta(days=21)
+        if timeframe == "MN1":
             for _ in range(3):
                 if start.month == 1:
                     start = start.replace(year=start.year - 1, month=12, day=1)
                 else:
                     start = start.replace(month=start.month - 1, day=1)
-        records = self.fetch_range(symbol, timeframe, start, now)
+            return start
+        raise ValueError(f"unsupported timeframe: {timeframe}")
+
+    def fetch_latest_completed(self, symbol, timeframe):
+        """Fetch the latest completed candle directly from LSE."""
+        now = datetime.now(timezone.utc)
+        records = self.fetch_range(symbol, timeframe, self._lookup_window(timeframe, now), now)
         if not records:
             return None
         from .normalization import derive_completion_time
-        completed = [record for record in records if derive_completion_time(record.timestamp, timeframe) <= now]
+        completed = [
+            record for record in records
+            if derive_completion_time(record.timestamp, timeframe) <= now
+        ]
         return max(completed, key=lambda record: record.timestamp) if completed else None
 
     def fetch_current(self, symbol, timeframe):
+        """Fetch the current candle directly from LSE."""
         now = datetime.now(timezone.utc)
-        start = self._window_start(timeframe, now)
-        if timeframe == "H4":
-            hourly = self._parse(
-                self._request(
-                    symbol,
-                    "1h",
-                    start,
-                    now + timedelta(seconds=1),
-                ),
-                symbol,
-                "1h",
-            )
-            hourly = sorted(
-                [item for item in hourly if item.timestamp >= start],
-                key=lambda item: item.timestamp,
-            )
-            expected = [
-                start + timedelta(hours=offset)
-                for offset in range(4)
-                if start + timedelta(hours=offset) <= now
-            ]
-            if not hourly or [item.timestamp for item in hourly] != expected:
-                return None
-            return ProviderCandle(
-                start,
-                "UTC",
-                start,
-                hourly[0].open_price,
-                max(item.high_price for item in hourly),
-                min(item.low_price for item in hourly),
-                hourly[-1].close_price,
-                sum(
-                    (Decimal(str(item.total_volume or 0)) for item in hourly),
-                    Decimal("0"),
-                ),
-                provider_metadata={
-                    "provider": "yahoo_charts",
-                    "aggregated_from": "1h",
-                    "complete": False,
-                },
-            )
+        from .normalization import canonical_interval_start, derive_completion_time
+        start = canonical_interval_start(now, timeframe)
         records = self.fetch_range(symbol, timeframe, start, now + timedelta(seconds=1))
         if not records:
             return None
-        from .normalization import derive_completion_time
-        incomplete = [record for record in records if derive_completion_time(record.timestamp, timeframe) > now]
-        return max(incomplete, key=lambda record: record.timestamp) if incomplete else None
+        current = [
+            record for record in records
+            if record.timestamp >= start
+            and derive_completion_time(record.timestamp, timeframe) > now
+        ]
+        return max(current, key=lambda record: record.timestamp) if current else None
 
 
 def create_provider(provider_name: str) -> MarketDataProvider:
-    if provider_name != DEFAULT_PROVIDER_NAME: raise ValueError(f"unsupported provider: {provider_name}")
-    return YahooChartsProvider()
+    """Create the configured Market Data provider."""
+    if provider_name != DEFAULT_PROVIDER_NAME:
+        raise ValueError(f"unsupported provider: {provider_name}")
+    return LSEMarketDataProvider()
