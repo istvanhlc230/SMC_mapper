@@ -59,17 +59,19 @@ def acquire_explicit(
             )
             status = "PARTIAL" if detail_failures else "OK"
             coverage_status = "PARTIAL" if detail_failures else "COMPLETE"
-            for gap_start, gap_end in gaps:
-                domain.merge_coverage(document, {
-                    "provider": provider,
-                    "symbol": symbol,
-                    "start": domain.format_iso8601(gap_start),
-                    "end": domain.format_iso8601(gap_end),
-                    "status": coverage_status,
-                    "updated_at": domain.format_iso8601(now),
-                })
+            if start < now:
+                for gap_start, gap_end in gaps:
+                    domain.merge_coverage(document, {
+                        "provider": provider,
+                        "symbol": symbol,
+                        "start": domain.format_iso8601(gap_start),
+                        "end": domain.format_iso8601(gap_end),
+                        "status": coverage_status,
+                        "updated_at": domain.format_iso8601(now),
+                    })
             if not detail_failures:
-                domain.update_watermark(document, provider, symbol, min(end, now), events)
+                if start < now:
+                    domain.update_watermark(document, provider, symbol, min(end, now), events)
                 successful += 1
             provider_results.append({
                 "provider": provider,
