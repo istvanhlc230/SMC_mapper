@@ -1375,7 +1375,9 @@ jobs:
           original_ff_fetch = providers.fetch_forexfactory
           original_now = domain.utc_now
           original_save = storage.save_calendar_atomic
+          original_resolve = domain.resolve_applicable_providers
           try:
+              domain.resolve_applicable_providers = lambda _symbol: ["forexfactory"]
               domain.utc_now = lambda: dt("2026-10-05T12:00:00Z")
               storage.save_calendar_atomic = lambda document: None
               call_count = {"value": 0}
@@ -1423,6 +1425,7 @@ jobs:
               providers.fetch_forexfactory = original_ff_fetch
               domain.utc_now = original_now
               storage.save_calendar_atomic = original_save
+              domain.resolve_applicable_providers = original_resolve
 
           # Public provider failures remain observable through aggregate status,
           # but ERROR records and exception text never cross the normal stdout boundary.
