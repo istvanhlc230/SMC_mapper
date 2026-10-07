@@ -4,7 +4,7 @@ import json, time, urllib.parse, urllib.request
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any
-from .models import DEFAULT_PROVIDER_NAME, ProviderCandle
+from .models import DEFAULT_PROVIDER_NAME, ProviderCandle, TIMEFRAME_SECONDS
 
 _INTERVALS = {"M1":"1m","M5":"5m","M15":"15m","M30":"30m","H1":"1h","D1":"1d","W1":"1wk","MN1":"1mo"}
 
@@ -93,14 +93,22 @@ class YahooChartsProvider(MarketDataProvider):
 
     def _window_start(self, timeframe: str, now: datetime) -> datetime:
         from .models import TIMEFRAME_SECONDS
-        seconds = TIMEFRAME_SECONDS[timeframe]
-        epoch = int(now.timestamp())
-        return datetime.fromtimestamp(epoch - (epoch % seconds), tz=timezone.utc)
+        from .normalization import canonical_interval_start
+        return canonical_interval_start(now, timeframe)
 
     def fetch_latest_completed(self, symbol, timeframe):
         now = datetime.now(timezone.utc)
         from .models import TIMEFRAME_SECONDS
-        start = self._window_start(timeframe, now) - timedelta(seconds=TIMEFRAME_SECONDS[timeframe] * 3)
+        from .normalization import canonical_interval_end
+        start = self._window_start(timeframe, now)
+        for _ in range(3):
+            previous = start - timedelta(days=1)
+            if timeframe == "MN1":
+                if start.month == 1:
+                    previous = start.replace(year=start.year - 1, month=12, day=1)
+                else:
+                    previous = start.replace(month=start.month - 1, day=1)
+            start = previous if timeframe != "W1" else start - timedelta(days=7)
         records = self.fetch_range(symbol, timeframe, start, now)
         if not records:
             return None
