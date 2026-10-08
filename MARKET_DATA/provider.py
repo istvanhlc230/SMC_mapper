@@ -95,7 +95,8 @@ class MarketDataProvider:
 class LSEMarketDataProvider(MarketDataProvider):
     """Direct LSE candle provider; no timeframe aggregation is performed."""
 
-    def __init__(self, timeout_seconds: int = 30, retries: int = 3):\n        """Initialize the LSE provider with request timeout and retry limits."""
+    def __init__(self, timeout_seconds: int = 30, retries: int = 3):
+        """Initialize the LSE provider with request timeout and retry limits."""
         self.timeout_seconds = timeout_seconds
         self.retries = retries
 
