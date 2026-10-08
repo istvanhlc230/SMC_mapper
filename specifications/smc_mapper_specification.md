@@ -64,7 +64,7 @@ V1 implements the process boundary with Python `market_data.py`. Future platform
 
 The Mapper operates on canonical UTC only.
 
-The Market Data boundary supplies:
+The Market Data process supplies:
 
 - `timestamp` — canonical UTC candle timestamp;
 - `completion_time` — canonical UTC completion boundary.
@@ -597,7 +597,7 @@ When `--starttime` is omitted:
 
 - if exactly one existing analysis matches the supplied timeframe configuration, the mapper resumes that analysis from its persisted `last_processed_candle_time`;
 - if multiple existing analyses match the supplied timeframe configuration but have different analysis start boundaries, the request is ambiguous and must fail explicitly; `--starttime` is required to select one;
-- if no existing analysis matches the supplied timeframe configuration, the mapper creates a new analysis using the earliest available completed entry-timeframe candle in `<SYMBOL>_marketdata.json` as its persisted initial analysis boundary. This boundary comes from actual persisted data and is not invented.
+- if no existing analysis matches the supplied timeframe configuration, the mapper creates a new analysis using the earliest available completed entry-timeframe candle returned by the Market Data process for the requested bootstrap range as its persisted initial analysis boundary. This boundary comes from actual market data and is not invented.
 
 For an existing analysis, the next eligible completed entry-timeframe candle after `last_processed_candle_time` is the incremental processing start.
 
@@ -628,9 +628,9 @@ Examples:
 
 Date-only input is a UTC calendar-date shorthand, not local time.
 
-If omitted, use the latest completed entry-timeframe candle available in `<SYMBOL>_marketdata.json` after the required update.
+If omitted, use the latest completed entry-timeframe candle returned by the Market Data process after the required update.
 
-If supplied, use the latest completed candle in `<SYMBOL>_marketdata.json` whose canonical completion boundary is less than or equal to the requested end time.
+If supplied, use the latest completed candle returned by the Market Data process whose canonical completion boundary is less than or equal to the requested end time.
 
 For an existing analysis resumed from `last_processed_candle_time`, an end-time earlier than that checkpoint is an invalid incremental request. The mapper must fail explicitly rather than process the analysis backwards or silently create a second identity.
 
@@ -665,11 +665,11 @@ Invalid mapper configuration or normalized candle data must fail explicitly.
 
 No separate mapper configuration file is required.
 
-Mapper behavior is controlled by CLI parameters, explicit defaults, normalized market-data JSON metadata, and the canonical SMC skill.
+Mapper behavior is controlled by CLI parameters, explicit defaults, Market Data machine-output metadata and candle records, and the canonical SMC skill.
 
 Market-data provider configuration belongs to the Market Data CLI and is not a mapper semantic dependency.
 
-`market_data.py` provides the CLI interface for market-data acquisition, normalization, incremental update, retention and persistence into `<SYMBOL>_marketdata.json`. It is a separate process.
+`market_data.py` provides the CLI interface for market-data acquisition, normalization, incremental update, retention and persistence into `<SYMBOL>_marketdata.json` and machine-output through STDOUT. It is a separate process.
 
 No mapper configuration file is to be introduced for timeframe selection, history retention or analysis window.
 
@@ -807,7 +807,7 @@ Logical shape:
 
 `history_no` is stored once at symbol level and applies independently to each analysis's applicable closed Dealing Range history.
 
-A Market Data CLI execution updates only `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json`. A mapper execution updates only its relevant analysis entry inside `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_structures.json`.
+A Market Data CLI execution updates only its internal `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json` and emits the requested machine-output stream. A mapper execution updates only its relevant analysis entry inside `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_structures.json`.
 
 Downstream consumers identify each stored analysis from its deterministic analysis key and validate the stored `analysis_mode`, `htf`, `ltf`, `entry_timeframe`, and required `analysis_start`. `requested_start` is provenance metadata and may be null/absent for an analysis created without an explicit `--starttime`.
 
@@ -829,7 +829,7 @@ Each analysis entry contains its own `last_processed_candle_time` as mapper proc
 
 HTF and LTF candle data may cover different temporal ranges.
 
-The Market Data CLI owns acquisition and persists the actual available range for each timeframe in `<SYMBOL>_marketdata.json`. The mapper reads only the range required by its current analysis and must not fabricate unavailable candles.
+The Market Data CLI owns acquisition and persists the actual available range for each timeframe in `<SYMBOL>_marketdata.json`. The mapper requests only the range required by its current analysis from the Market Data process and must not fabricate unavailable candles.
 
 Example:
 
@@ -840,7 +840,7 @@ The longer LTF history must not be truncated merely because the HTF history is s
 
 The absence of HTF data before its available start does not imply that HTF structure did not exist.
 
-Availability metadata is read from `<SYMBOL>_marketdata.json`. If the required range cannot be satisfied, the mapper must represent the resulting data/context unavailability explicitly and fail closed where canonical rules require unavailable context.
+Availability is determined from the Market Data process response and exit status. If the required range cannot be satisfied, the mapper must represent the resulting data/context unavailability explicitly and fail closed where canonical rules require unavailable context.
 
 The mapper does not perform provider-specific acquisition.
 
@@ -864,7 +864,7 @@ If a canonical decision depends on unavailable HTF context, the decision must re
 
 ## 4.3 Bootstrap and warm-up
 
-The mapper constructs structural state by processing normalized candle ranges read from `<SYMBOL>_marketdata.json`.
+The mapper constructs structural state by processing normalized candle ranges received from the Market Data process.
 
 For an initial build, or whenever a complete bootstrap is explicitly required:
 
@@ -872,9 +872,9 @@ earliest required effective candle -> latest completed entry-timeframe candle
 
 The mapper must not use a latest-window shortcut that bypasses required structural bootstrap.
 
-The launcher invokes the Market Data CLI for the required bootstrap range in deterministic batch form and updates `<SYMBOL>_marketdata.json`. The mapper then reads the required bootstrap range from that file.
+The launcher invokes the Market Data CLI for the required bootstrap range in deterministic batch form. The mapper then consumes the machine-readable STDOUT stream for that request.
 
-For incremental execution after a valid persisted checkpoint, the monitor/orchestrator invokes the Market Data CLI for only the subsequently completed entry-timeframe range after the checkpoint, in chronological order, updates `<SYMBOL>_marketdata.json`, and then invokes the mapper against the resulting persisted range as defined by §10.1.
+For incremental execution after a valid persisted checkpoint, the monitor/orchestrator invokes the Market Data CLI for only the subsequently completed entry-timeframe range after the checkpoint, in chronological order, updates internal Market Data persistence and then invokes the mapper against the resulting machine-output range as defined by §10.1.
 
 The mapper does not obtain market data from the monitor and does not access a concrete provider.
 
@@ -884,7 +884,7 @@ In two-timeframe analysis, the mapper establishes an LTF bootstrap coverage refe
 
 When a confirmed HTF Dealing Range exists, the applicable HTF Protected Structural Extreme is the preferred LTF bootstrap coverage reference. This reference determines the minimum historical LTF coverage needed for deterministic structural buildup. It is a data-coverage/reference point only; it is not an LTF structural start and does not create or promote any LTF structure.
 
-When LTF bootstrap is required, the monitor/orchestrator invokes the Market Data CLI once for one deterministic LTF range covering the anchor through the activation/current boundary, subject to any additional LTF warm-up required by the canonical LTF rules, updates `<SYMBOL>_marketdata.json`, and then invokes the mapper against the persisted range.
+When LTF bootstrap is required, the monitor/orchestrator invokes the Market Data CLI once for one deterministic LTF range covering the anchor through the activation/current boundary, subject to any additional LTF warm-up required by the canonical LTF rules, updates internal Market Data persistence and then invokes the mapper against the returned machine-output range.
 
 If the requested LTF coverage begins later than the anchor because the source has no completed LTF data at or after the requested anchor, the mapper uses the first actually available completed LTF candle after the reference as the effective LTF bootstrap start. No attempt is made by the mapper to access the provider directly.
 
@@ -994,9 +994,9 @@ In single-timeframe mode, no HTF/LTF execution relationship exists.
 
 When an HTF and LTF are both supplied:
 
-1. the monitor/orchestrator ensures the required HTF range is present in `<SYMBOL>_marketdata.json`; the mapper reads it and establishes the current HTF canonical structural context first;
+1. the monitor/orchestrator requests the required HTF range from Market Data; the mapper consumes that returned range and establishes the current HTF canonical structural context first;
 2. the mapper determines the applicable HTF execution context and any LTF bootstrap/activation requirement;
-3. the monitor/orchestrator ensures the LTF range required by the applicable analysis state is present in `<SYMBOL>_marketdata.json`; the mapper reads that persisted range;
+3. the monitor/orchestrator requests the LTF range required by the applicable analysis state from Market Data; the mapper consumes that returned range;
 4. HTF and LTF candles are processed chronologically on the shared time axis;
 5. each LTF candle is evaluated using only HTF canonical context that already exists at that LTF evaluation time;
 6. a later HTF event must never reinterpret an earlier LTF event.
@@ -1047,7 +1047,7 @@ If an LTF lifecycle crosses an HTF range transition, the canonical LTF lifecycle
 
 ## 6.5 Canonical HTF-interaction routes
 
-Where a canonical LTF route explicitly requires HTF interaction, the mapper consumes the applicable HTF context from its structural state and reads any required additional LTF analysis range from `<SYMBOL>_marketdata.json`; the monitor/orchestrator ensures that range is present before mapper execution.
+Where a canonical LTF route explicitly requires HTF interaction, the mapper consumes the applicable HTF context from its structural state and requests/consumes any required additional LTF analysis range from the Market Data process; the monitor/orchestrator ensures that request is executed before mapper processing.
 
 This includes the canonical LTF Structural Glitch / CHoCH route after HTF POI interaction or HTF core-liquidity takeout, as defined by `05_CHOCH_mechanics.md`.
 
@@ -1445,7 +1445,7 @@ The Mapper must not create a second target ontology, select a target for alertin
 
 The CLI interfaces must strictly separate persistent market data from user-visible diagnostics.
 
-- Normalized candle data is persisted to `<SYMBOL>_marketdata.json` and is not emitted as a mapper data pipe.
+- Normalized candle data is persisted internally by Market Data and is emitted through the machine-readable STDOUT protocol as the Mapper data pipe.
 - Debug and diagnostic information is written to `stderr` only.
 - Debug `stderr` is terminal-only. The launcher/monitor must not capture, parse, forward, merge, persist, or pass it to `smc_mapper.py`, `smc_monitor.py`, or the market-data JSON.
 - `stderr` must never be merged into a machine-readable data channel.
@@ -1497,7 +1497,7 @@ The module may later be split internally, but the following ownership boundaries
 
 The mapper must not import or runtime-call market_data.py, smc_monitor.py, smc_htf_ltf_monitor.py, smc_analyzer.py, or legacy engine modules.
 
-The monitor may launch both the Market Data CLI and mapper as separate processes. The mapper receives normalized market-data state only through <SYMBOL>_marketdata.json.
+The monitor may launch both the Market Data CLI and mapper as separate processes. The mapper receives normalized market-data state only through the Market Data machine-readable STDOUT protocol.
 
 ## 14.2 Dependency direction
 
@@ -1774,7 +1774,7 @@ At minimum, the finished mapper implementation must have focused tests covering:
 Definition of done:
 
 - smc_mapper.py implements the contracts in this specification;
-- mapper consumes only persisted normalized Market Data JSON and never a concrete provider;
+- mapper consumes only normalized Market Data machine output and never a concrete provider;
 - Market Data and mapper JSON stores remain strictly separated by ownership;
 - canonical SMC decisions are governed by .agents/skills/smc/;
 - Market Data current snapshot never enters canonical structural input;
