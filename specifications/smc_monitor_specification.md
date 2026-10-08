@@ -508,7 +508,7 @@ Launch:
 python market_data.py ...
 ~~~
 
-The process result contains exit status plus diagnostics. The machine-readable result is persisted market-data JSON.
+The process result contains exit status, machine CSV STDOUT, and diagnostic STDERR. The machine-readable candle result is the Market Data CSV STDOUT protocol.
 
 When debug is enabled, the Monitor may propagate --debug to market_data.py so provider/process diagnostics remain visible on stderr. It must never parse those diagnostics as data.
 
@@ -2053,7 +2053,7 @@ Do not:
 - create a second target ontology;
 - create a second mapper checkpoint;
 - write directly to either JSON store;
-- parse Market Data or Mapper stdout as candle data;
+- parse any non-contract stdout as candle data;
 - call provider APIs directly;
 - use current candles as canonical mapper input;
 - infer new mapper analyses;
