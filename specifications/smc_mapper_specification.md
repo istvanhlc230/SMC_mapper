@@ -823,7 +823,7 @@ Each analysis entry contains its own `last_processed_candle_time` as mapper proc
 
 HTF and LTF candle data may cover different temporal ranges.
 
-The Market Data CLI owns acquisition and persists the actual available range for each timeframe in `<SYMBOL>_marketdata.json`. The mapper requests only the range required by its current analysis from the Market Data process and must not fabricate unavailable candles.
+The Market Data CLI owns acquisition and determines the actual available/returned range for each requested timeframe. The Mapper obtains that range only from the validated Market Data machine-output response and must not fabricate unavailable candles.
 
 Example:
 
