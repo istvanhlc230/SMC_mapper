@@ -797,7 +797,7 @@ def query_relative_events(
     )
 
 
-def query_current_events(
+def query_ongoing_events(
     events: List[Dict[str, Any]],
     symbol: str,
     now: datetime,
