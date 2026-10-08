@@ -180,7 +180,7 @@ SGDMYR=X, SGDJPY=X, SGDHKD=X, SGDIDR=X, and SGDCNY=X.
 This is a provider reference snapshot, not a permanent whitelist. The snapshot
 is descriptive only; provider verification is authoritative at runtime.
 
-## Debug contract
+## 2.1 Debug contract
 
 `--debug` is an optional CLI diagnostic flag.
 
@@ -428,7 +428,7 @@ Refresh behavior:
 3. force provider acquisition even when the requested interval is already covered;
 4. for ForexFactory, use a one-day provider-side envelope around the requested interval so mutable events near
    a scope boundary can still be matched by stable provider event ID;
-5. select fresh events whose new timestamp falls inside the logical interval or whose stable provider event ID
+6. select fresh events whose new timestamp falls inside the logical interval or whose stable provider event ID
    matches an existing event visible for the symbol in the provider-side envelope. The envelope is required so
    late mutable Detail data for an event just before the incremental boundary can still be refreshed by identity;
 7. compare fresh records with existing records by stable `event_id`;
@@ -583,15 +583,6 @@ LSE details may include:
     url
     provider_fields
 
-ForexFactory details include:
-
-    currency
-    impact
-    actual
-    forecast
-    previous
-    specs
-
 Yahoo details may include:
 
     publisher
@@ -723,6 +714,20 @@ When Yahoo provides no stable UUID, a deterministic digest of provider symbol, t
 Cross-provider title similarity never causes deduplication.
 
 Identity/time conflicts are data-integrity failures.
+## 10. Failure and atomicity
+
+Provider failure is not an empty success.
+
+For multi-provider FX:
+- one provider may succeed while the other fails;
+- result is PARTIAL;
+- UNAVAILABLE is used only when all applicable providers fail.
+
+All writes use a shared Calendar lock plus temporary-file write, flush, fsync, and atomic replacement.
+
+A write failure leaves the previously committed file unchanged.
+
+## 10. Failure and atomicity
 
 ## 10.1 ForexFactory Detail failure and retry contract
 
@@ -757,19 +762,6 @@ For this state:
 - `PARTIAL` remains reserved for an acquisition that completed with incomplete provider coverage or another explicitly partial provider result.
 
 For Yahoo Finance specifically, an empty successful news collection is `NO_MATCH`. A verified Yahoo Forex-pair unavailability remains the separate `SKIPPED_NO_FOREX_PAIR` state.
-
-## 10. Failure and atomicity
-
-Provider failure is not an empty success.
-
-For multi-provider FX:
-- one provider may succeed while the other fails;
-- result is PARTIAL;
-- UNAVAILABLE is used only when all applicable providers fail.
-
-All writes use a shared Calendar lock plus temporary-file write, flush, fsync, and atomic replacement.
-
-A write failure leaves the previously committed file unchanged.
 
 ## 11. Monitor boundary
 
