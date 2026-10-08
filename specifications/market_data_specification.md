@@ -1940,7 +1940,7 @@ Never:
 - persist debug output;
 - use `--cleartext` as an inter-process data protocol.
 
-Errors use STDERR and a non-zero exit status. The machine-output stream must remain parseable even when debug is enabled.
+Errors use STDERR and a non-zero exit status. The machine-output stream must remain parseable when the request succeeds and debug is enabled. A failed request must not be consumed as a candle stream.
 
 ## 16.3 Error categories
 
