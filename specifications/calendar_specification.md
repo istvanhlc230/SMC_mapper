@@ -330,71 +330,31 @@ Semantics:
 
 ## 4. current semantics
 
-`current` is a read-only incremental query over the committed `calendar.json` snapshot.
+`current` is a read-only active-event lookup over the committed `calendar.json` snapshot.
 
-For each applicable provider:
+An event is considered active from its canonical `timestamp` through the end of that UTC minute because
+the canonical event contract contains a point timestamp and no provider-independent duration field.
+`current` returns all visible events satisfying:
 
-    load provider|canonical_symbol watermark
-              |
-              +-- missing -> no incremental events for that provider
-              |
-              +-- present -> return cached events newer than the watermark
-                              and no later than now
+    timestamp <= current UTC time < timestamp + 1 minute
 
-`current` MUST NOT contact ForexFactory or Yahoo Finance. It MUST NOT modify
-coverage, watermarks, or `calendar.json`. This makes `current` safe to call from
-the Monitor's time-sensitive processing loop.
-
-The watermark is only the local incremental-result boundary. It is not a provider
-refresh trigger. Late provider Detail data is obtained only when a `refresh`
-modifier is explicitly requested, either by the CLI or by the Monitor's background
-Calendar refresh operation.
-
-A provider with no committed watermark has no local incremental boundary and
-therefore contributes no events to a plain `current` query. No synthetic
-bootstrap timestamp is created.
-
-`current` never means:
-- current-minute event lookup;
-- next event;
-- latest event;
-- nearest event.
+`current` MUST NOT contact providers. It MUST NOT modify coverage, watermarks, or `calendar.json`.
 
 ## 4.1 latest semantics
 
 `latest` is a read-only most-recent-event lookup over the committed `calendar.json` snapshot.
+It keeps only visible events with `timestamp <= current UTC time` and returns exactly the most recent
+event, or `NO_LATEST_EVENT`.
 
-For `python calendar.py SYMBOL latest`:
+## 4.2 next and prev semantics
 
-1. load and validate the committed Calendar document under the Calendar lock;
-2. filter events according to the normal SYMBOL visibility rules, including `suppressed_for`;
-3. keep only events with `timestamp <= current UTC time`;
-4. sort by timestamp descending, then source and event identity for deterministic ordering;
-5. return exactly the first event, or `NO_LATEST_EVENT` when none exists.
+`next` and `prev` are read-only event-relative lookups over the committed snapshot.
 
-`latest` does not call ForexFactory or Yahoo Finance, does not acquire data, and does not modify coverage, watermarks, or `calendar.json`.
-
-`latest` is distinct from `current`: both are read-only cache queries, but `current` applies provider-specific incremental watermark boundaries while `latest` selects the most recent past/current event.
-
-## 4.2 next semantics
-
-`next` is a read-only nearest-future-event lookup over the committed `calendar.json` snapshot.
-
-For `python calendar.py SYMBOL next`:
-
-1. load and validate the committed Calendar document under the Calendar lock;
-2. filter events according to the normal SYMBOL visibility rules, including `suppressed_for`;
-3. keep only events with `timestamp > current UTC time`;
-4. sort by timestamp, then source and event identity for deterministic ordering;
-5. return exactly the first event, or `NO_NEXT_EVENT` when none exists.
-
-`next` does not call ForexFactory or Yahoo Finance, does not acquire data, and does not modify coverage, watermarks, or `calendar.json`.
-
-`next` is distinct from `current`: both are read-only cache queries, but `next` selects the nearest future event while `current` applies provider-specific incremental watermark boundaries.
-
-No synthetic bootstrap timestamp is permitted.
-
-Explicit date or datetime-range acquisition establishes bootstrap state.
+- `next` returns exactly the nearest future scheduled economic event;
+- `prev` returns exactly the nearest past scheduled economic event;
+- both consider only events represented by ForexFactory as scheduled economic events;
+- Yahoo Finance published/current news is not a scheduled future-event source;
+- neither operation contacts providers or changes persistent state.
 
 ## 4.3 Refresh modifier semantics
 
@@ -402,7 +362,6 @@ Explicit date or datetime-range acquisition establishes bootstrap state.
 
 Public forms:
 
-    python calendar.py SYMBOL current refresh
     python calendar.py SYMBOL current day refresh
     python calendar.py SYMBOL current week refresh
     python calendar.py SYMBOL current month refresh
@@ -418,7 +377,7 @@ Public forms:
     python calendar.py SYMBOL --time HH:MM refresh
 
 The former `refresh SYMBOL SCOPE` command grammar is removed.
-`latest refresh` and `next refresh` are invalid.
+`latest refresh` is invalid; `current`, `next`, `prev`, and `news` are also invalid refresh scopes.
 
 Refresh behavior:
 
@@ -900,117 +859,6 @@ If no applicable provider has a successful watermark, the result status is NO_LA
 The help text must expose --date, --time, and --last-update once in the FLAGS section and keep usage examples concise without duplicating equivalent --time forms.
 
 Implementation version is 2.6.1; persistent schema remains V2.
-## 2.4.6 current refresh and diagnostic-output correction
-
-**Status: IMPLEMENTED — validation pending**
-
-`current` is an always-refreshing operation when an applicable provider already has a
-committed successful watermark. The watermark remains an incremental output cursor,
-not a provider-call suppression mechanism. Every `current` invocation therefore
-re-acquires from the applicable providers so mutable provider fields, especially
-late ForexFactory Detail specifications, can be merged into the existing cache.
-
-Provider acquisition failures are internal diagnostic state. Normal `current` output
-does not expose failed provider records or exception text. The aggregate status still
-reflects the internal provider outcomes (`PARTIAL`/`UNAVAILABLE`) so callers can detect
-that the refresh was incomplete. With `--debug`, diagnostic exception information is
-emitted to stderr only.
-
-A second state-consistency correction preserves previously committed ForexFactory
-`details.specs` when a later Detail request fails. A failed Detail request can no longer
-replace an existing non-empty Detail specification list with an empty list. The event's
-other freshly acquired normalized fields remain mergeable, the acquisition remains
-`PARTIAL`, and the prior successful watermark is retained so the incomplete Detail
-window is retried.
-
-Validation requirements:
-- compile the root entrypoint and all `CALENDAR/` modules;
-- verify `current` invokes each applicable provider on every invocation with an existing
-  watermark, including when no new event timestamp exists;
-- verify a later Detail acquisition replaces previously missing/old `details.specs`;
-- verify a Detail failure preserves previously committed non-empty `details.specs`;
-- verify provider `ERROR`, `error`, `reason`, and Detail-failure diagnostics are absent from
-  normal `current` stdout;
-- verify `--debug` retains provider exception diagnostics on stderr;
-- verify aggregate status still reports `UNAVAILABLE` for all-provider failure and
-  `PARTIAL` for mixed successful/failed acquisition;
-- run fresh GitHub Actions validation before marking this change PASS.
-
-## 2.4.7 current bootstrap refresh correction
-
-**Status: IMPLEMENTED — validation pending**
-
-`current` now refreshes an applicable provider even when its provider+canonical-symbol
-watermark is missing. Missing watermark means bootstrap acquisition, not `BOOTSTRAP_REQUIRED`
-termination.
-
-For ForexFactory the bootstrap current window is `(now - 1 day)` rounded down to UTC midnight
-through `(now + 1 day)` rounded down to UTC midnight, with Detail enrichment enabled. For Yahoo
-Finance the normal provider news acquisition is executed. Successful provider acquisition updates
-the provider watermark to the current UTC timestamp; a successful zero-result Yahoo acquisition
-therefore also commits its watermark and does not repeatedly bootstrap on the next invocation.
-
-Because bootstrap has no previous incremental cursor, bootstrap-acquired events are persisted but
-not returned in the incremental `events` array. The aggregate provider status remains normal
-(`OK`, `NO_MATCH`, or `PARTIAL`).
-
-Validation requirements:
-- verify `SYMBOL current` performs provider acquisition on first use with no watermark;
-- verify first-use successful acquisition persists a watermark;
-- verify successful Yahoo `NO_MATCH` bootstrap also persists its watermark;
-- verify a second `current` call uses the normal existing-watermark refresh path;
-- verify no `BOOTSTRAP_REQUIRED` provider status is emitted by `current`;
-- run fresh GitHub Actions validation before marking this change PASS.
-## 2.4.8 read-only current and trailing refresh modifier
-
-**Status: IMPLEMENTED — validation pending**
-
-The public `current` query is now cache-only. It reads committed provider-specific watermark boundaries
-and returns matching cached events without provider/network I/O or persistent-state mutation.
-
-Provider acquisition is requested with the trailing `refresh` modifier. The previous standalone
-`refresh SYMBOL SCOPE` command grammar is removed. The modifier applies the requested scope timespan;
-`current refresh` derives its logical interval from the current incremental watermark state and uses
-a bounded first-use interval when no watermark exists.
-
-Monitor-triggered refresh is a background operation and must not block the candle-close processing path.
-The refresh summary reports additions/changes/unchanged counts rather than introducing a separate
-refresh query status.
-
-Validation requirements:
-- verify plain `current` performs no provider call;
-- verify `current refresh` performs the refresh operation;
-- verify trailing `refresh` parsing for current/relative/date/datetime scopes;
-- verify old standalone `refresh SYMBOL SCOPE` syntax is rejected;
-- run fresh GitHub Actions validation before marking this change PASS.
-
-
-## 2.4.9 CLI refresh result-boundary correction
-
-**Status: IMPLEMENTED — validation pending**
-
-The refresh operation is the authoritative source of the public post-refresh `events` result.
-The CLI no longer reconstructs refresh output from the committed cache after the refresh operation.
-
-This correction is required because a post-refresh cache query can incorrectly hide valid refresh results:
-- first-use refresh events may exist before refresh establishes coverage/watermark state;
-- rescheduled events may have moved outside the original logical interval while remaining visible by stable event ID;
-- `current refresh` has an explicit logical interval even when no prior watermark exists.
-
-The CLI therefore passes `refresh_result["events"]` directly to presentation and machine-readable output.
-Plain `current` remains cache-only.
-
-Implementation version: 2.4.9; persistent schema remains V2.
-
-Validation requirements:
-- compile the Calendar entrypoint and all `CALENDAR/` modules;
-- verify explicit first-use refresh events are returned by the CLI;
-- verify first-use `current refresh` events are returned by the CLI;
-- verify rescheduled refresh events remain in CLI output by stable event ID;
-- verify the refresh result is not filtered by committed coverage/watermark state;
-- run fresh GitHub Actions validation before marking this change PASS.
-
-
 ## 2.4.10 Open-start range correction
 
 **Status: IMPLEMENTED — validation pending**
