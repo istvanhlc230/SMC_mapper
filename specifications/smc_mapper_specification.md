@@ -148,7 +148,7 @@ market_data.py
                     +-----> other compatible consumers
 ```
 
-Canonical SMC logic consumes only the machine-readable normalized candle stream.
+Canonical SMC logic consumes only completed candles from the machine-readable normalized candle stream. The Mapper must reject `completed=0` records for structural analysis.
 
 Provider-specific API access, transport, retry, pagination, authentication, timestamp parsing, completion detection, and raw-field mapping belong to Market Data.
 
@@ -1497,7 +1497,7 @@ The module may later be split internally, but the following ownership boundaries
 
 The mapper must not import or runtime-call market_data.py, smc_monitor.py, smc_htf_ltf_monitor.py, smc_analyzer.py, or legacy engine modules.
 
-The monitor may launch both the Market Data CLI and mapper as separate processes. The mapper receives normalized market-data state only through the Market Data machine-readable STDOUT protocol.
+The monitor may launch both the Market Data CLI and mapper as separate processes. The mapper receives normalized market-data state only through the Market Data machine-readable STDOUT protocol and processes only records marked `completed=1`.
 
 ## 14.2 Dependency direction
 
