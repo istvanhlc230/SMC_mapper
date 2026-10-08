@@ -39,7 +39,7 @@ Detailed contract: sections **0–18**.
 Primary ownership:
 - Mapper CLI and timeframe modes;
 - analysis identity and boundaries;
-- persisted Market Data consumption;
+- Market Data machine-process input and validation;
 - HTF/LTF synchronization and bootstrap;
 - canonical processing orchestration;
 - Dealing Range and POI structural state;
@@ -87,11 +87,11 @@ Use these owner sections when implementing cross-component behavior:
 
 | Concern | Owner section |
 |---|---|
-| Market Data JSON schema | Market Data §12 |
+| Market Data JSON persistence schema | Market Data §12 (internal persistence only) |
 | Market Data acquisition/update flow | Market Data §§13–15 |
 | Mapper input/time boundaries | Mapper §2 |
 | Mapper analysis identity/state | Mapper §3 |
-| Mapper/Monitor handoff | Mapper §10 and Monitor §§4–5 |
+| Market Data process boundary | Market Data §0.4/§5.7 and Mapper §1/§10; Monitor §2.2/§5 |\n| Mapper/Monitor handoff | Mapper §10 and Monitor §§4–5 |
 | Mapper checkpoint persistence | Mapper §16 and Monitor §14 |
 | Current market reference | Monitor §7 |
 | Canonical state consumption | Monitor §8 |
