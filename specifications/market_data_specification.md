@@ -49,38 +49,42 @@ Reusable code or algorithms may be extracted when they are compatible with this 
 
 ---
 
-## 0.4 Mapper/Monitor-facing service interface
+## 0.4 Mapper/Monitor-facing process interface
 
-The persisted JSON file is an implementation detail of Market Data persistence. Mapper and Monitor must not open, parse, or depend on the `*_marketdata.json` file format.
+The Mapper/Monitor-facing boundary is the standalone Market Data process and its machine-readable STDOUT protocol. The persisted JSON file is an implementation detail of Market Data persistence. Mapper and Monitor must not open, parse, or depend on the `*_marketdata.json` file format.
 
-The authoritative programmatic boundary is the Market Data service layer. Consumers request normalized candles from the service and receive provider-independent `NormalizedCandle` objects.
+`market_data.py` is an independently executable process, analogous to the standalone Calendar CLI. The external data contract is transported through STDOUT as a stable, machine-readable, CSV-like candle stream.
 
-Required public service operation:
+The external contract is intentionally not a Python service API. `MARKET_DATA/service.py` may remain an internal implementation module, but it is not a Mapper/Monitor interface and no consumer may depend on it.
 
-    def get_candles(
-    request: MarketDataRequest,
-    provider: MarketDataProvider | None = None,
-    ) -> dict[str, list[NormalizedCandle]]:
-        ...
+The machine-output contract is conceptually:
 
-Contract:
+```text
+time,open,high,low,close,tick_volume,spread,real_volume
+<epoch_seconds>,<open>,<high>,<low>,<close>,<tick_volume>,<spread>,<real_volume>
+...
+```
 
-- `request.symbol` identifies the canonical symbol;
-- `request.timeframes` identifies the requested timeframes;
-- historical `start_time`/`end_time` use the same half-open interval semantics as the CLI;
-- when no historical range is specified, the service returns the retained completed history for each requested timeframe;
-- `last_closed_only` returns exactly the latest completed candle for each requested timeframe when available;
-- `current` may refresh Market Data persistence, but `get_candles` returns completed candles only; current in-progress state is not silently mixed into the completed candle series;
-- the returned candles are `NormalizedCandle` objects, not JSON dictionaries and not provider-specific records;
-- the service may satisfy the request from persistence, acquire missing data through the provider, merge it, and then return the normalized result;
-- the caller must not need to know whether data came from the persisted document or a provider;
-- provider selection is owned by Market Data, not by Mapper/Monitor;
-- returned lists are ordered by canonical candle timestamp and contain no duplicate candle identity;
-- no caller may depend on the JSON persistence structure to obtain the same data.
+Contract rules:
 
-The API therefore remains stable if the persistence file format changes. JSON serialization is a storage boundary; `NormalizedCandle` is the consumer-facing domain boundary.
+- the first line is the fixed protocol header;
+- one subsequent line represents one candle;
+- `time` is UTC Unix epoch seconds and represents the canonical candle interval start;
+- OHLC values use a deterministic decimal textual representation;
+- `tick_volume`, `spread`, and `real_volume` are numeric fields; unavailable volume branches use the defined empty representation rather than fabricated values;
+- records are ordered by ascending candle timestamp within each requested timeframe;
+- no duplicate candle identity is emitted;
+- only completed candles are emitted by the machine-output contract;
+- current/in-progress snapshots are never silently mixed into the completed candle stream;
+- the selected symbol/timeframe context is part of the CLI request and does not need to be repeated on every candle row;
+- diagnostics and errors never enter machine STDOUT;
+- machine STDOUT is the only data transport consumed by a downstream process;
+- the protocol is designed from primitive, cross-language values so a future MQL4/MQL5 implementation can represent it without Python-specific types;
+- the exact wire-level empty-value and error rules are defined in §5.7 and §16.
 
-`market_data.py` remains the executable CLI entry point. It must not be imported by Mapper as a data protocol. Mapper imports the service/model contract from `MARKET_DATA`.
+The Mapper does not know whether the Market Data process obtained candles from LSE, persistence/cache, a future broker adapter, MT4/MT5, replay data, or another provider.
+
+The CLI executable remains the process entry point. A future in-process implementation may exist, but it is not part of the V1 external contract.
 
 # 1. MODULE DESIGN
 
@@ -709,32 +713,61 @@ Purpose:
 - parse the shared Calendar/Market Data time representation `HH:MM`;
 - reject malformed times and seconds.
 
-## 5.7 CLI output contract
+## 5.7 CLI output and machine protocol contract
 
-The CLI and the programmatic service API are separate consumption boundaries.
+The CLI has two distinct STDOUT modes.
 
-### Default behavior
+### Default mode — machine output
 
-Without `--cleartext`, the CLI performs the requested acquisition/update and preserves the machine-safe persistence behavior. It does not emit candle data for another process to parse.
+Without `--cleartext`, successful execution emits the machine-readable candle protocol to STDOUT.
 
-### `--cleartext`
+The machine output is the Mapper/Monitor integration boundary. It is not a human presentation format and must remain stable.
 
-`--cleartext` is an optional human-readable STDOUT presentation mode. It never changes acquisition, normalization, persistence, retention, or query semantics.
+Required header:
 
-When specified, the CLI prints the requested completed candles after the Market Data update has succeeded. Output is informational and is not a stable inter-process API.
+```text
+time,open,high,low,close,tick_volume,spread,real_volume
+```
 
-Required presentation fields:
+Each data row contains:
 
-- symbol;
-- timeframe;
-- candle timestamp in UTC;
-- OHLC;
-- available volume branches;
-- completion state.
+1. `time` — UTC Unix epoch seconds, canonical candle interval start;
+2. `open`;
+3. `high`;
+4. `low`;
+5. `close`;
+6. `tick_volume`;
+7. `spread`;
+8. `real_volume`.
 
-The exact spacing/layout may evolve without changing the Market Data service contract. Consumers that need candles programmatically must call `get_candles()` and must not parse `--cleartext` output.
+Rules:
 
-`--cleartext` is therefore analogous to Calendar presentation output, but it is explicitly not the Mapper integration mechanism.
+- only completed candles are emitted;
+- rows are strictly ordered by timestamp;
+- no duplicate candle identity is emitted;
+- no debug, status, progress, provider diagnostics, or other text may be written to STDOUT;
+- unavailable optional volume values use the canonical empty representation; they must not be replaced with estimated or fabricated values;
+- a successful query with no matching completed candles emits the header and no data rows;
+- the protocol uses UTF-8 text and newline-delimited records;
+- field separation follows CSV conventions; fields must be escaped/quoted according to CSV rules when required;
+- the protocol is intentionally limited to simple cross-language values and must remain representable by a future MQL4/MQL5 adapter;
+- protocol changes require a specification revision and corresponding regression tests.
+
+The machine protocol is a process interface, not the persistence JSON schema.
+
+### `--cleartext` presentation mode
+
+`--cleartext` switches STDOUT from machine protocol to human-readable presentation.
+
+It never changes acquisition, normalization, persistence, retention, or query semantics.
+
+When specified, the CLI prints the requested completed candles in the existing human-readable style. The exact spacing/layout may evolve without changing the machine protocol.
+
+A downstream process must never parse `--cleartext`.
+
+### Output selection
+
+No separate `--machine` option is required. Machine output is the default successful STDOUT behavior; `--cleartext` explicitly selects human presentation.
 
 # 6. PROVIDER ABSTRACTION
 
@@ -1873,22 +1906,32 @@ Responsibilities:
 - map defined runtime failures to a non-zero exit status;
 - emit diagnostics only when debug is enabled.
 
-## 16.2 Debug
+## 16.2 Debug and process streams
 
-Debug output:
+Machine data and diagnostics have strict stream separation.
+
+Default successful execution:
 
 ```text
-stderr -> terminal only
+stdout -> machine candle protocol
+stderr -> empty
+```
+
+With `--debug`:
+
+```text
+stdout -> machine candle protocol (or cleartext presentation when --cleartext is used)
+stderr -> diagnostics/debug information
 ```
 
 Never:
 
-- write debug to JSON;
-- print candle transport data to stdout as an implicit inter-process protocol;
-- forward stderr to Mapper as data;
-- use stdout as a machine-readable data API.
+- write debug/status/progress text to machine STDOUT;
+- forward STDERR into Mapper/Monitor data input;
+- persist debug output;
+- use `--cleartext` as an inter-process data protocol.
 
-Normal successful execution must be user-silent unless the explicit `--cleartext` presentation option is supplied.
+Errors use STDERR and a non-zero exit status. The machine-output stream must remain parseable even when debug is enabled.
 
 ## 16.3 Error categories
 
@@ -2091,7 +2134,7 @@ To add MetaTrader, broker API, replay data, or another provider later:
 3. register the provider in `create_provider`;
 4. do not change normalization, merge, retention, or persistence semantics unless the provider genuinely exposes a new approved data capability.
 
-The mapper-facing JSON schema must remain unchanged.
+The machine-output protocol and its candle field semantics must remain unchanged. Persistence JSON remains an internal Market Data storage format and is not a Mapper/Monitor transport contract.
 
 ## 20.2 New market-data source capability
 
@@ -2410,7 +2453,7 @@ For `--current`, current-snapshot refresh is independent of historical completed
 
 For `--lastclosed`, the completed-candle acquisition branch returns exactly one latest completed candle per requested timeframe.
 
-The output of this process is only the normalized market-data JSON state. Canonical SMC analysis begins downstream in `smc_mapper.py`.
+The output of this process has two boundaries: normalized market-data persistence and the machine-readable STDOUT candle stream. Canonical SMC analysis begins downstream in `smc_mapper.py`. The STDOUT stream is the Mapper/Monitor process boundary; persistence JSON remains internal to Market Data.
 
 ---
 
@@ -2433,7 +2476,8 @@ The output of this process is only the normalized market-data JSON state. Canoni
 - debug output is stderr-only;
 - no legacy runtime dependency exists;
 - unit tests cover the module boundaries;
-- the resulting JSON is directly consumable by `smc_mapper.py` without adapter logic inside the mapper;
+- the machine-readable STDOUT candle protocol is directly consumable by `smc_mapper.py` through a thin parser/adapter at the process boundary;
+- the Mapper/Monitor do not depend on the Market Data persistence JSON schema or Python service module;
 - every acquisition mode follows the documented decision table;
 - no incomplete candle can enter `candles[]`;
 - no completed candle can coexist with the same candle ID in `current`;
