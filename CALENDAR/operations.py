@@ -98,7 +98,7 @@ def delete_symbol_interval(
     start: datetime,
     end: datetime,
 ) -> None:
-    """Calendar operation: delete_symbol_interval performs the focused delete symbol interval step in the Calendar implementation."""
+    """Internal helper for delete symbol interval."""
     applicable_providers = set(domain.resolve_applicable_providers(symbol))
     currencies = ({symbol} if domain.is_currency(symbol) else
                   {symbol[:3], symbol[3:]} if domain.is_fx_pair(symbol) else set())
@@ -178,7 +178,7 @@ def _refresh_provider_window(
     start: datetime,
     end: datetime,
 ) -> Tuple[datetime, datetime]:
-    """Internal helper: _refresh_provider_window performs the focused refresh provider window step in the Calendar implementation."""
+    """Internal helper for refresh provider window."""
     expanded_start = (
         start.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=1)
     )
