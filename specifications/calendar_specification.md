@@ -386,10 +386,7 @@ Refresh behavior:
 3. force provider acquisition even when the requested interval is already covered;
 4. for ForexFactory, use a one-day provider-side envelope around the requested interval so mutable events near
    a scope boundary can still be matched by stable provider event ID;
-5. for `current refresh`, derive the logical refresh interval from the earliest applicable committed
-   `last_successful_at` through current UTC time. If no applicable watermark exists, use a bounded one-day
-   interval ending at now;
-6. select fresh events whose new timestamp falls inside the logical interval or whose stable provider event ID
+5. select fresh events whose new timestamp falls inside the logical interval or whose stable provider event ID
    matches an existing event visible for the symbol in the provider-side envelope. The envelope is required so
    late mutable Detail data for an event just before the incremental boundary can still be refreshed by identity;
 7. compare fresh records with existing records by stable `event_id`;
