@@ -155,9 +155,10 @@ REFRESH MODIFIER
   merges changed/new records, and preserves existing coverage and watermarks.
   The normal query result for the same scope is returned after refresh.
   JSON output includes a refresh summary with added/changed/unchanged counts.
-  refresh is valid with current day/week/month, today, tomorrow, yesterday,
-  explicit date/datetime scopes, and both open-start --range -END and open-end --range START- forms.
-  current, latest, next, prev, and news cannot be combined with refresh.
+  refresh is valid only as a trailing modifier. For the single-event/current scopes,
+  only current refresh is permitted; latest, next, prev, and news reject refresh.
+  current day/week/month, today, tomorrow, yesterday, explicit date/datetime scopes,
+  and both open-start --range -END and open-end --range START- forms also permit refresh.
   CLI refresh may block on provider I/O; the Monitor must invoke the underlying
   refresh operation asynchronously and outside its candle-close processing path.
 
