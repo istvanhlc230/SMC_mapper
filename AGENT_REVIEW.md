@@ -1252,3 +1252,28 @@ The approved CLI contract is:
 ## Validation
 Static cross-module re-audit: PASS.
 GitHub Actions status for the final commit was not yet reported by the GitHub status endpoint at audit time, so runtime CI is not claimed PASS.
+
+
+# Specification/code defragmentation — 2026-10-08
+
+## Scope
+Calendar + Market Data release scope only.
+
+## Corrections
+- Removed redundant `specifications/calendar_design.md`; `calendar_specification.md` is the sole Calendar normative specification.
+- Consolidated Calendar credential, CLI date/last-update, refresh-status, no-match, source-documentation, and attribution contracts into their canonical sections.
+- Removed historical patch-style specification fragments and obsolete implementation-version notes.
+- Normalized Calendar section numbering and refresh algorithm step numbering.
+- Removed duplicated ForexFactory details contract text.
+- Refactored `MARKET_DATA/service.py` candle merge logic around one identity-conflict helper and expanded the previously fragmented one-line functions into explicit typed functions without changing the transaction semantics.
+
+## Static re-audit
+PASS:
+- no `calendar_design.md` remains;
+- no obsolete public `prev_week`/`next_week`/`prev_month`/`next_month` scopes remain in the canonical Calendar specification;
+- Calendar specification has one canonical definition for each consolidated contract;
+- Market Data candle identity conflict handling has one implementation path;
+- current-refresh contract remains synchronized with CLI/workflow documentation.
+
+## Runtime
+Runtime CI execution is not claimed PASS here; it must be validated by the commit-triggered GitHub Actions workflow.
