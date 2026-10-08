@@ -5,12 +5,12 @@ from decimal import Decimal, InvalidOperation
 from typing import Iterable
 from .models import TIMEFRAME_SECONDS, NormalizedCandle, ProviderCandle, VolumeState
 
-def _to_to_utc(value: datetime) -> datetime:
+def _to_utc(value: datetime) -> datetime:
     if value.tzinfo is None or value.utcoffset() is None:
         raise ValueError("timestamp must be timezone-aware")
     return value.astimezone(timezone.utc)
 
-def _parse_parse_decimal(value, field_name: str) -> Decimal:
+def _parse_decimal(value, field_name: str) -> Decimal:
     try:
         result = Decimal(str(value))
     except (InvalidOperation, ValueError, TypeError) as exc:
