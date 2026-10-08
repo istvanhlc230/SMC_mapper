@@ -1530,7 +1530,7 @@ At minimum distinguish:
 ~~~text
 CLI/input error
 structures JSON load/validation error
-market-data JSON load/validation error
+market-data machine-output validation error
 market-data acquisition/process error
 mapper process error
 mapper persistence/contract validation error
