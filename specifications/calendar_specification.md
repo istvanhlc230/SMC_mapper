@@ -91,7 +91,9 @@ Provider enrichment/merge:
 - fields missing from the existing canonical event may be filled by another provider;
 - non-conflicting provider details are added rather than discarded;
 - provider provenance is retained so it is possible to see which sources contributed;
-- a provider-specific URL is retained when available;
+- provider-specific source metadata is retained when available. A provider-specific URL may be
+retained for providers that explicitly expose one, such as Yahoo Finance news; ForexFactory
+Event Detail is represented by its provider Detail specification payload under details.specs.
 - conflicting values are not silently overwritten solely because one provider was queried later;
   the canonical merge keeps the existing value and records the additional provider value in
   provider-specific metadata when the schema supports it;
@@ -822,7 +824,7 @@ Acceptance requires:
 - rendered ForexFactory impact classification must not silently collapse known HIGH/MEDIUM/LOW events to UNKNOWN;
 - relative ForexFactory navigation aliases are documented but are not accepted as public Calendar CLI scopes;
 - `latest` is read-only and returns `NO_LATEST_EVENT` when the committed snapshot contains no visible event at or before current UTC time;
-- ForexFactory normalized events include `details.url` for the canonical provider Detail endpoint when the provider event ID is numeric, plus `details.specs` from the provider Detail JSON payload;
+- ForexFactory normalized events include `details.specs` from the provider Detail JSON payload; no event URL is synthesized from the provider event ID;
 - malformed or unavailable ForexFactory Detail JSON is surfaced as a provider failure and never silently converted into fabricated Detail content;
 - `--cleartext` renders normalized event details as human-readable fields rather than a raw JSON dictionary, without changing canonical data or machine-readable output.
 
