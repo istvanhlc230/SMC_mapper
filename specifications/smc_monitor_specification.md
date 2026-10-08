@@ -67,9 +67,9 @@ The Monitor must not create an alternative canonical SMC ontology.
 
 ~~~text
 market_data.py
-        ↓
-<DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json
-        ↓
+        ├── machine CSV STDOUT ──→ smc_mapper.py
+        └── machine CSV STDOUT ──→ smc_monitor.py
+
 smc_mapper.py
         ↓
 <DATA_ROOT>/<SYMBOL>/<SYMBOL>_structures.json
@@ -93,7 +93,7 @@ The Monitor must not:
 - invoke legacy monitor/analyzer/engine runtime artifacts;
 - write canonical SMC state into Market Data or Structures JSON.
 
-The Monitor may read persisted external contracts only.
+The Monitor may read persisted Structures and Calendar contracts only. Market Data is consumed through its process-output contract.
 
 # 1. CLI AND INPUT RESOLUTION
 
