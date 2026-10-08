@@ -780,6 +780,25 @@ A downstream process must never parse `--cleartext`.
 
 No separate `--machine` option is required. Machine output is the default successful STDOUT behavior; `--cleartext` explicitly selects human presentation.
 
+## 5.8 Process-output serializer functions
+
+The process-output serializer is owned by `MARKET_DATA/protocol.py`.
+
+Required functions:
+
+```python
+def serialize_machine_csv(candles_by_timeframe) -> str:
+    ...
+
+def format_cleartext(symbol, candles_by_timeframe) -> str:
+    ...
+```
+
+`serialize_machine_csv` must validate the complete result before returning the machine stream. It owns CSV escaping, fixed header order, UTC epoch conversion, deterministic decimal formatting, completion flag encoding, duplicate identity rejection, and per-timeframe timestamp ordering.
+
+`format_cleartext` is presentation-only. Its spacing, wrapping, and column widths may change without a protocol revision. It must never be used as an inter-process input format.
+
+
 # 6. PROVIDER ABSTRACTION
 
 ## 6.1 MarketDataProvider base class
