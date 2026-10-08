@@ -503,11 +503,6 @@ def normalize_provider_event(raw: Dict[str, Any]) -> Dict[str, Any]:
         raise ProviderError("ForexFactory event has an empty title.")
 
     provider_event_id = str(raw["id"]).strip()
-    provider_event_url = (
-        FOREXFACTORY_DETAIL_URL.format(event_id=provider_event_id)
-        if re.fullmatch(r"\d+", provider_event_id)
-        else None
-    )
 
     return {
         "event_id": f"forexfactory:{provider_event_id}",
@@ -534,16 +529,6 @@ def normalize_provider_event(raw: Dict[str, Any]) -> Dict[str, Any]:
                 if raw.get("previous") not in (None, "") else None
             ),
             "specs": [],
-            "url": (
-                str(next(
-                    (
-                        raw.get(field)
-                        for field in ("url", "link", "event_url", "eventUrl", "href")
-                        if raw.get(field) not in (None, "")
-                    ),
-                    provider_event_url or ""
-                )).strip() or None
-            ),
         },
     }
 
