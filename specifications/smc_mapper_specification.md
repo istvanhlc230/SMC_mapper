@@ -66,8 +66,10 @@ The Mapper operates on canonical UTC only.
 
 The Market Data process supplies:
 
-- `timestamp` — canonical UTC candle timestamp;
-- `completion_time` — canonical UTC completion boundary.
+- `timestamp` — canonical UTC candle interval-start timestamp;
+- OHLC values;
+- optional primitive volume fields from the machine protocol;
+- `completed` — process-protocol completion state.
 
 Datasource-native timestamps are not canonical Mapper input.
 
@@ -186,6 +188,22 @@ If an analysis requires candles outside the retained window, the Market Data CLI
 Each timeframe section is independently created, extended, deduplicated by canonical candle identity, chronologically ordered, and retention-managed. Updating one timeframe must not alter another timeframe's completed candle series or current snapshot.
 
 The available_start and available_end fields refer only to the persisted completed-candle series, not to the current snapshot.
+
+## 1.2.1 Machine protocol field semantics
+
+The machine protocol header is:
+
+    timeframe,time,open,high,low,close,tick_volume,spread,real_volume,completed
+
+The Mapper parses the CSV stream without importing Market Data Python classes.
+
+`time` is the canonical UTC interval-start epoch. `completed` is `1` only for a completed candle and `0` only for a current/in-progress snapshot.
+
+The protocol does not redundantly transmit `completion_time`. The Mapper deterministically derives the canonical completion boundary from `timeframe + timestamp` using the canonical timeframe rules defined by the Market Data contract. This derived boundary is used for explicit end-time eligibility.
+
+`tick_volume`, `spread`, and `real_volume` are independent optional fields. Empty fields mean unavailable; the Mapper must not infer one from another or from Market Data's internal `volume.total`.
+
+The Mapper must reject malformed required fields, invalid timestamps, malformed OHLC, duplicate candle identities, non-ascending timestamps within a timeframe, and any record with `completed=0` for structural processing.
 
 ## 1.3 Normalized candle representation
 
@@ -1489,7 +1507,7 @@ The module may later be split internally, but the following ownership boundaries
 
 1. CLI/input parsing
 2. analysis identity and configuration resolution
-3. market-data JSON loading/validation
+3. market-data machine-stream parsing/validation
 4. coverage and analysis-window selection
 5. synchronized HTF/LTF orchestration
 6. canonical SMC processing
@@ -1546,12 +1564,14 @@ The following conceptual models are sufficient for the V1 mapper boundary:
     MarketDataCandleView
         candle_id
         timestamp
-        completion_time
         open
         high
         low
         close
-        volume
+        tick_volume
+        spread
+        real_volume
+        completed
 
     MarketDataSeries
         symbol
@@ -1636,10 +1656,12 @@ Identity resolution must remain deterministic. `build_analysis_key` uses the nor
 
 The mapper process-input parser must validate the Market Data machine protocol without importing Market Data classes. It must accept the CSV-like stream and group records by the explicit `timeframe` field.
 
+The Mapper derives `completion_time` deterministically from the canonical candle `timestamp` and `timeframe`; it is not a wire field.
+
 For explicit analysis-window selection, a candle is eligible when:
 
-- `completion_time >= start boundary`; and
-- `completion_time <= end boundary`.
+- derived `completion_time >= start boundary`; and
+- derived `completion_time <= end boundary`.
 
 At this boundary:
 
