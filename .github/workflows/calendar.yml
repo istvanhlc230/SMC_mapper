@@ -35,7 +35,7 @@ jobs:
               return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
           assert calendar.validate_symbol("EURUSD") == "EURUSD"
-          assert calendar.__version__ == "2.6.0"
+          assert calendar.__version__ == "2.6.1"
           assert calendar.validate_symbol("USDGBP") == "USDGBP"
           assert calendar.validate_symbol("HUF") == "HUF"
           assert calendar.validate_symbol("NVDA") == "NVDA"
@@ -99,12 +99,11 @@ jobs:
           finally:
               domain.utc_now = fixed_utc_now
 
-          # Relative query grammar: actual/current/next/prev/news.
+          # Relative query grammar: current/latest/next/prev/news.
           fixed_utc_now = domain.utc_now
           try:
               domain.utc_now = lambda: dt("2026-10-07T12:30:00Z")
               for args, expected in (
-                  (["EURUSD", "actual"], "actual"),
                   (["EURUSD", "current"], "current"),
                   (["EURUSD", "next"], "next"),
                   (["EURUSD", "prev"], "prev"),
@@ -758,33 +757,13 @@ jobs:
               operations.refresh_calendar_scope = original_refresh_scope
               storage.load_calendar_document = original_load
 
-          # current refresh on first use must also expose its logical refresh
-          # result even though no prior watermark exists.
-          original_refresh_current = operations.refresh_current_scope
-          original_load = storage.load_calendar_document
+          # current is an active-event lookup; refresh is not valid for it.
           try:
-              current_event = dict(refresh_event)
-              current_event["event_id"] = "forexfactory:cli-current-first-use"
-              operations.refresh_current_scope = lambda document, symbol, debug=False: {
-                  "events": [current_event],
-                  "provider_results": [{"provider": "forexfactory", "status": "OK"}],
-                  "failures": [],
-                  "summary": {"added": 1, "changed": 0, "unchanged": 0},
-              }
-              storage.load_calendar_document = lambda: domain.build_empty_calendar_document()
-              out = io.StringIO()
-              with contextlib.redirect_stdout(out):
-                  assert calendar.run_query(
-                      "USD", "current", cleartext=False, refresh=True
-                  ) == 0
-              parsed = json.loads(out.getvalue())
-              assert parsed["status"] == "OK"
-              assert [event["event_id"] for event in parsed["events"]] == [
-                  "forexfactory:cli-current-first-use"
-              ]
-          finally:
-              operations.refresh_current_scope = original_refresh_current
-              storage.load_calendar_document = original_load
+              calendar_cli.parse_calendar_cli_request(["EURUSD", "current", "refresh"])
+          except calendar.CalendarInputError:
+              pass
+          else:
+              raise AssertionError("refresh must be rejected for current")
 
           # A rescheduled event that was visible in the logical refresh scope
           # must remain in the CLI result by stable provider ID even after its
@@ -1525,7 +1504,7 @@ jobs:
                       "USD", "current", cleartext=False, refresh=False
                   ) == 0
               parsed_current = json.loads(out.getvalue())
-              assert parsed_current["status"] == "NO_RELEVANT_EVENT"
+              assert parsed_current["status"] == "NO_CURRENT_EVENT"
           finally:
               providers.fetch_yahoo_news = original_yahoo_news
               storage.load_calendar_document = original_load
@@ -1551,30 +1530,13 @@ jobs:
               operations.acquire_explicit = original_acquire_explicit
               storage.load_calendar_document = original_load
 
-          # current refresh uses the trailing modifier and a dedicated current
-          # refresh operation rather than automatic provider acquisition.
-          original_refresh_current = operations.refresh_current_scope
-          original_load = storage.load_calendar_document
+          # current refresh is rejected by the public CLI grammar; period scopes keep refresh.
           try:
-              operations.refresh_current_scope = lambda document, symbol, debug=False: {
-                  "events": [],
-                  "provider_results": [{"provider": "forexfactory", "status": "OK"}],
-                  "failures": [],
-                  "summary": {"added": 1, "changed": 0, "unchanged": 2},
-              }
-              storage.load_calendar_document = lambda: domain.build_empty_calendar_document()
-              out = io.StringIO()
-              with contextlib.redirect_stdout(out):
-                  assert calendar.run_query(
-                      "USD", "current", cleartext=False, refresh=True
-                  ) == 0
-              parsed_current_refresh = json.loads(out.getvalue())
-              assert parsed_current_refresh["refresh"] == {
-                  "added": 1, "changed": 0, "unchanged": 2
-              }
-          finally:
-              operations.refresh_current_scope = original_refresh_current
-              storage.load_calendar_document = original_load
+              calendar_cli.parse_calendar_cli_request(["EURUSD", "current", "refresh"])
+          except calendar.CalendarInputError:
+              pass
+          else:
+              raise AssertionError("current refresh must remain invalid")
 
           # current refresh must also update Detail data for an existing event
           # whose timestamp is just before the incremental watermark. The provider
