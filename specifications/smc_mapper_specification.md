@@ -207,39 +207,15 @@ The Mapper must reject malformed required fields, invalid timestamps, malformed 
 
 ## 1.3 Normalized candle representation
 
-Each normalized completed candle must contain at minimum:
+The Mapper's external candle view is the machine-protocol record, not the Market Data persistence model. It contains the required OHLC fields plus the optional `tick_volume`, `spread`, and `real_volume` fields defined by the process contract.
 
-- candle_id
-- timestamp
-- completion_time
-- open
-- high
-- low
-- close
+The Mapper derives the canonical completion boundary from `timestamp + timeframe`; `completion_time` is therefore a derived analysis value and is not part of the wire record.
 
-When the provider supplies total candle volume, preserve it as normalized volume.total.
+The optional volume fields are availability signals. Empty fields remain unavailable; the Mapper must not fabricate, rename, or infer one optional field from another.
 
-When genuine orderflow data is available, preserve it independently under volume.orderflow.
+The Market Data persistence branches `volume.total`, `volume.ohlc`, and `volume.orderflow` are not Mapper process-input fields. POI volume enrichment may run only when the required volume evidence is actually available through the process contract. Otherwise the result is the defined no-supported-volume-path case.
 
-OHLC-derived directional volume is an analytical estimate and may be stored independently under volume.ohlc. It must never overwrite or be represented as observed orderflow.
-
-A normalized candle may therefore contain parallel volume information:
-
-    volume.total
-    volume.ohlc = { buy, sell }
-    volume.orderflow = { buy, sell }
-
-Source-level volume delta is not persisted. When required by mapper analytics:
-
-    delta = buy - sell
-
-Each branch is optional and exists only when its corresponding data or deterministic estimate is available. Presence or absence is the availability signal; no single exclusive candle-level method field is required.
-
-Persisted numeric volume values use the deterministic decimal-compatible representation defined by the Market Data persistence contract.
-
-candles[] contains only completed normalized candles and is immutable after persistence. The separate current snapshot may change while its candle is in progress.
-
-The mapper reads canonical structural input only from candles[]. The timeframe current snapshot is never part of canonical structural processing.
+The Mapper reads canonical structural input only from records marked `completed=1`. A current/in-progress record is never part of canonical structural processing.
 
 ## 1.4 Candle identity
 
@@ -1669,8 +1645,8 @@ At this boundary:
 - candles are canonical market-data input;
 - current is excluded from canonical processing;
 - candle completion_time is the eligibility boundary for explicit --endtime;
-- volume branches are total, ohlc.buy/sell, and orderflow.buy/sell;
-- source-level delta is derived as buy - sell when needed;
+- optional protocol volume fields retain their independent meanings; no orderflow branch is assumed to exist unless a future compatible protocol explicitly supplies it;
+- source-level delta may be derived only from an explicitly available buy/sell pair supplied by the applicable canonical volume contract;
 - persisted numeric values must be parsed deterministically and validated before use.
 
 ## 15.4 Structures persistence
