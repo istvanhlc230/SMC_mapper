@@ -1281,3 +1281,27 @@ Runtime CI execution is not claimed PASS here; it must be validated by the commi
 
 ## Post-defragmentation correction
 The final structural re-audit found and removed one duplicated empty `## 10. Failure and atomicity` heading introduced during section reordering. No behavioral code change was required. Final Calendar specification numbering is now unique for the affected sections.
+
+
+# Calendar + Market Data corrective audit — 2026-10-08
+
+## Findings corrected
+
+The latest source-level audit found several defects that were not represented by the previous static PASS:
+
+- Market Data `persistence.py` called a non-existent `_serialize()` helper from `serialize_market_data()`. This was corrected to the existing canonical `_serialize_json_value()` serializer.
+- Market Data normalization contained malformed duplicate docstrings with unterminated triple-quote structure. The duplicate/malformed documentation was removed.
+- Market Data provider methods contained duplicate docstrings introduced by the documentation pass.
+- Market Data CI still monkey-patched obsolete provider helper names (`_request` and `_parse`) even though the production provider exposes `_request_candle_page` and `_parse_lse_candle_rows`. The workflow was synchronized.
+- Market Data CI now includes a direct persistence-serialization smoke assertion so a missing serializer helper cannot regress without failing CI.
+- ForexFactory normalization still synthesized/persisted an event Detail URL from the numeric provider event ID, contradicting the current Detail-spec contract. The synthetic URL path was removed.
+- Calendar CI assertions that expected the obsolete ForexFactory `details.url` were changed to assert that no such URL is persisted.
+- Calendar specification references that still described a canonical ForexFactory event URL were removed; provider Detail remains represented by `details.specs` and preserved provider HTML.
+
+## Audit result
+
+Static source/specification/CI contract: PASS for the corrected findings.
+
+## Validation gate
+
+The corrections are committed to `main`. A fresh Calendar and Market Data GitHub Actions run must complete successfully before runtime PASS is claimed.
