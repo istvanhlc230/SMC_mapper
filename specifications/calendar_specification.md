@@ -190,12 +190,21 @@ Public query forms:
     python calendar.py SYMBOL --range -YYYY.MM.DD [refresh]
     python calendar.py SYMBOL --range -YYYY.MM.DD@HH:MM [refresh]
     python calendar.py SYMBOL YYYY.MM.DD --time HH:MM [refresh]
+    python calendar.py SYMBOL actual [refresh]
     python calendar.py SYMBOL current [refresh]
-    python calendar.py SYMBOL today [refresh]
-    python calendar.py SYMBOL tomorrow [refresh]
-    python calendar.py SYMBOL yesterday [refresh]
-    python calendar.py SYMBOL latest
+    python calendar.py SYMBOL current day [refresh]
+    python calendar.py SYMBOL current week [refresh]
+    python calendar.py SYMBOL current month [refresh]
     python calendar.py SYMBOL next
+    python calendar.py SYMBOL next day [refresh]
+    python calendar.py SYMBOL next week [refresh]
+    python calendar.py SYMBOL next month [refresh]
+    python calendar.py SYMBOL prev
+    python calendar.py SYMBOL prev day [refresh]
+    python calendar.py SYMBOL prev week [refresh]
+    python calendar.py SYMBOL prev month [refresh]
+    python calendar.py SYMBOL latest
+    python calendar.py SYMBOL news
 
 Delete forms:
 
@@ -233,8 +242,8 @@ watermark is created.
 
 Removed from the public grammar:
 - next_day
-- week
-- month
+- standalone week
+- standalone month
 Date syntax is YYYY.MM.DD. Time syntax is HH:MM. @ separates date/time. - separates interval endpoints. No .. syntax exists.
 
 --time HH:MM is a CLI shorthand for an exact one-minute datetime query on the current UTC calendar day. With no explicit date scope, Calendar resolves it as <current UTC date>@HH:MM. With a date-only scope, SYMBOL YYYY.MM.DD --time HH:MM resolves to YYYY.MM.DD@HH:MM. --time must not be combined with an existing @HH:MM point or a date/range scope that already contains time. The shorthand is normalized to the canonical YYYY.MM.DD@HH:MM scope before domain parsing, so the underlying query/refresh/delete interval semantics remain unchanged. The current UTC date is obtained from the same Calendar utc_now() clock used by the domain layer; no local-machine date is assumed.
@@ -1030,3 +1039,34 @@ Rules:
 - adding a future provider requires only its provider identifier and credential filename; the storage architecture remains unchanged.
 
 The shared loader is intentionally independent of the Calendar/Market Data provider implementations. An explicitly supplied provider environment variable remains a supported deployment/CI override, while the provider-local file is the canonical local source.
+
+
+## 4.4 actual/current/relative event query semantics
+
+`actual` is the canonical name for the full current UTC calendar day. It is a read-only cache query over the exact interval from today's UTC midnight through the next UTC midnight. `today` remains a compatibility alias for the same exact-day scope.
+
+`current` retains the incremental cache semantics defined in §4: it returns provider-specific incremental events newer than the committed provider watermark and no later than now. It is not an alias for `actual`.
+
+The relative event query grammar is:
+
+    current day
+    current week
+    current month
+    next
+    next day
+    next week
+    next month
+    prev
+    prev day
+    prev week
+    prev month
+
+`current day` is an exact current UTC calendar-day query. `current week` is the current ISO week, Monday 00:00 UTC through the following Monday 00:00 UTC. `current month` is the current UTC calendar month through the first instant of the following month.
+
+`next` and `prev` without a period modifier are event-relative lookups and return exactly one event: `next` returns the nearest future scheduled economic event; `prev` returns the nearest past scheduled economic event. These lookups are limited to scheduled economic events from ForexFactory; Yahoo Finance published news is never treated as a future/past scheduled economic event.
+
+`next day` and `prev day` are day-relative list queries. They return all visible events in the immediately following or preceding UTC calendar day. `next week` and `prev week` return all visible events in the immediately following or preceding ISO week. `next month` and `prev month` return all visible events in the immediately following or preceding UTC calendar month.
+
+`news` is a read-only active-news-state query. It checks the committed cache for currently active scheduled economic events. An event is active when its timestamp falls in the current UTC minute (`timestamp <= now < timestamp + 1 minute`). Yahoo Finance published news is not considered an active scheduled news event. The result is `NEWS_ACTIVE` with the matching events or `NO_ACTIVE_NEWS` with an empty event list. `news` never performs provider I/O or modifies persistent state.
+
+Relative queries are cache-only unless the trailing `refresh` modifier is explicitly used. `latest`, `next`, `prev`, and `news` without a relative period are read-only and cannot use `refresh`; period queries may use `refresh` using their resolved UTC interval.
