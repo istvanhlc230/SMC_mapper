@@ -7,8 +7,8 @@ from pathlib import Path
 from typing import Any
 
 DEFAULT_DATA_DIRECTORY = Path("data")
-SUPPORTED_TIMEFRAMES = ("M1","M5","M15","M30","H1","H4","D1","W1","MN1")
-TIMEFRAME_SECONDS = {"M1":60,"M5":300,"M15":900,"M30":1800,"H1":3600,"H4":14400,"D1":86400}
+# SUPPORTED_TIMEFRAMES — canonical timeframes accepted by the Market Data CLI and process contract.\nSUPPORTED_TIMEFRAMES = (\n    "M1", "M5", "M15", "M30", "H1", "H4", "D1", "W1", "MN1"\n)
+# TIMEFRAME_SECONDS — fixed-duration timeframe lengths in seconds; calendar-based W1/MN1 are excluded.\nTIMEFRAME_SECONDS = {\n    "M1": 60, "M5": 300, "M15": 900, "M30": 1800,\n    "H1": 3600, "H4": 14400, "D1": 86400,\n}
 DEFAULT_PROVIDER_NAME = "lse"
 DEFAULT_CANDLE_RETENTION = 5000
 WRITE_RETRY_LIMIT = 5
