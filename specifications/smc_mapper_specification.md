@@ -392,7 +392,7 @@ At minimum, each timeframe section tracks:
 
 This is important because HTF and LTF may have different available history.
 
-The mapper distinguishes requested analysis range from available/retained market-data range and reads the required range from the corresponding timeframe section of `<SYMBOL>_marketdata.json`. The serialized candle/volume representation consumed here is the external Market Data contract; its JSON serialization owner is `market_data_specification.md`, not the mapper.
+The mapper distinguishes requested analysis range from available/retained market-data range using the Market Data process response. It selects the required range from the corresponding `timeframe` records in the machine-output stream. The CSV-like candle representation consumed here is the external Market Data process contract; its wire-format owner is `market_data_specification.md`, not the mapper.
 
 If the requested range is outside the retained market-data window, the monitor/orchestrator triggers Market Data CLI reacquisition before mapper processing.
 
