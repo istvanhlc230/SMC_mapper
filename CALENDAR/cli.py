@@ -91,7 +91,7 @@ def execute_calendar_query(
 
         if scope == "current":
             # Current is a read-only active-event lookup. It never performs provider I/O.
-            events = domain.query_current_events(
+            events = domain.query_ongoing_events(
                 document["events"], symbol, domain.utc_now()
             )
             status = "OK" if events else "NO_CURRENT_EVENT"
