@@ -1191,3 +1191,36 @@ Specification/code audit:
 Static audit result: PASS for the implemented grammar and cross-module consistency.
 
 Runtime CI status: PENDING. GitHub combined-status endpoint currently reports no status entries for the latest commit, so runtime PASS is not claimed.
+
+
+# Calendar current/relative query semantic correction — 2026-10-08
+
+## Scope
+Calendar + Market Data release scope only. Mapper/Monitor remain outside the release gate.
+
+## Approved semantic model
+- latest = latest committed past event;
+- current = currently active committed event(s) in the current UTC activity minute;
+- current day/week/month = complete current UTC period;
+- next = nearest future scheduled economic event;
+- next day/week/month = complete next UTC period;
+- prev = nearest past scheduled economic event;
+- prev day/week/month = complete previous UTC period;
+- news = active scheduled economic news event(s);
+- actual is removed from the public grammar.
+
+## Corrections
+- Removed actual from Calendar domain scope parsing, CLI dispatch, help, specification, and relative-query regression coverage.
+- Replaced the old incremental-cache meaning of current with a read-only active-event lookup.
+- current now returns events satisfying timestamp <= now < timestamp + 1 minute.
+- current refresh is rejected; period scopes such as current day/week/month retain the trailing refresh modifier.
+- Removed obsolete specification text describing current as watermark-based or always-refreshing.
+- Added regression coverage for current active-event selection and current refresh rejection.
+- Updated Calendar version to 2.6.1.
+- Updated AGENT.md so approved plans automatically enter the audit → correction → re-audit → test cycle without requiring separate approval for each correction.
+
+## Static audit
+PASS — specification, domain, CLI, help, and CI grammar are aligned.
+
+## Runtime validation
+PENDING — the latest Calendar CI run must be checked before claiming final PASS.
