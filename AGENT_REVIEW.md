@@ -1230,3 +1230,25 @@ PENDING — GitHub currently reports no status entries for the latest main commi
 Latest implementation/specification synchronization commit at the time of this review update:
 f24c5ff198d7744fa58ff428f18f5e7d0beb40b9
 
+
+
+# Calendar current refresh correction — 2026-10-08
+
+## Status
+STATIC AUDIT: PASS
+
+## Correction
+The approved CLI contract is:
+- `SYMBOL current refresh` is valid and is the only refresh form among `current/latest/next/prev/news`.
+- `latest refresh`, `next refresh`, `prev refresh`, and `news refresh` remain invalid.
+- Existing period/date/range refresh forms remain unchanged.
+
+## Implementation
+- `CALENDAR/cli.py`: parser validation now permits `current refresh`; execution already had the existing `refresh_current_scope()` path and required no redesign.
+- `CALENDAR/config.py`: help text synchronized.
+- `specifications/calendar_specification.md`: public grammar synchronized.
+- `.github/workflows/calendar.yml`: regression contract updated for accepted/rejected refresh forms.
+
+## Validation
+Static cross-module re-audit: PASS.
+GitHub Actions status for the final commit was not yet reported by the GitHub status endpoint at audit time, so runtime CI is not claimed PASS.
