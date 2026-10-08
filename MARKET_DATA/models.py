@@ -17,7 +17,7 @@ DECIMAL_PERSISTENCE_PLACES = 18
 CALENDAR_BASED_TIMEFRAMES = ("W1", "MN1")
 
 @dataclass(frozen=True)
-class MarketDataRequest:
+class MarketDataRequest:\n    """Validated command-line request passed through the Market Data acquisition layer."""
     symbol: str
     timeframes: list[str]
     start_time: datetime | None
@@ -28,7 +28,7 @@ class MarketDataRequest:
     cleartext: bool = False
 
 @dataclass(frozen=True)
-class ProviderCandle:
+class ProviderCandle:\n    """Provider-normalized candle before canonical Market Data persistence."""
     source_timestamp: Any
     source_timezone: str | None
     timestamp: datetime
@@ -43,7 +43,7 @@ class ProviderCandle:
     provider_metadata: dict[str, Any] | None = None
 
 @dataclass(frozen=True)
-class VolumeState:
+class VolumeState:\n    """Explicit availability state for optional provider volume fields."""
     has_total: bool
     total: Decimal | None
     has_ohlc: bool
@@ -54,7 +54,7 @@ class VolumeState:
     orderflow_sell: Decimal | None
 
 @dataclass(frozen=True)
-class NormalizedCandle:
+class NormalizedCandle:\n    """Canonical candle representation used by Market Data process serialization."""
     candle_id: str
     timestamp: datetime
     completion_time: datetime
@@ -65,7 +65,7 @@ class NormalizedCandle:
     volume: VolumeState
 
 @dataclass
-class TimeframeState:
+class TimeframeState:\n    """Persisted state and current snapshot for one canonical timeframe."""
     timeframe: str
     available_start: datetime | None
     available_end: datetime | None
@@ -73,6 +73,6 @@ class TimeframeState:
     current: NormalizedCandle | None
 
 @dataclass
-class MarketDataDocument:
+class MarketDataDocument:\n    """Provider-independent in-memory representation of one symbol data document."""
     symbol: str
     timeframes: list[TimeframeState]
