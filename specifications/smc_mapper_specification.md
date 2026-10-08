@@ -657,7 +657,7 @@ Before canonical analysis, the mapper validates the supplied configuration and n
 - OHLC integrity;
 - two-timeframe HTF/LTF mode requirements.
 
-Provider-specific availability checks, provider/API failures, and acquisition errors belong to the Market Data CLI process. The mapper sees only the normalized persisted JSON result after the monitor/orchestrator has completed the required Market Data update.
+Provider-specific availability checks, provider/API failures, and acquisition errors belong to the Market Data CLI process. The mapper sees only the normalized machine-output result after the Market Data process has completed the required acquisition/update request.
 
 Invalid mapper configuration or normalized candle data must fail explicitly.
 
@@ -673,7 +673,7 @@ Market-data provider configuration belongs to the Market Data CLI and is not a m
 
 No mapper configuration file is to be introduced for timeframe selection, history retention or analysis window.
 
-Timeframe selection is controlled only by `--htf` and/or `--ltf` according to the timeframe-relationship and synchronization contracts in this specification. The supported-timeframe catalog and timeframe-duration ownership remain with the Market Data contract; the mapper must not introduce a second hard-coded `SUPPORTED_TIMEFRAMES` list. The mapper may validate timeframe syntax and HTF/LTF duration ordering, then fail with explicit data-availability/error status when the requested timeframe is not present in the persisted market-data document.
+Timeframe selection is controlled only by `--htf` and/or `--ltf` according to the timeframe-relationship and synchronization contracts in this specification. The supported-timeframe catalog and timeframe-duration ownership remain with the Market Data contract; the mapper must not introduce a second hard-coded `SUPPORTED_TIMEFRAMES` list. The mapper may validate timeframe syntax and HTF/LTF duration ordering, then fail with explicit data-availability/error status when the requested timeframe is not present in the Market Data machine-output response.
 
 Volume analysis is controlled by the optional mapper CLI parameter:
 
@@ -744,7 +744,7 @@ Options:
 
 The Market Data and Monitor CLIs are specified only in their owner documents:
 
-- `market_data.py` → `specifications/market_data_specification.md` §5
+- `market_data.py` → `specifications/market_data_specification.md` §0.4 and §5
 - `smc_monitor.py` → `specifications/smc_monitor_specification.md` §1
 
 The Mapper must not duplicate those CLI contracts here.
@@ -1390,18 +1390,21 @@ When no supported volume analytical path is available, no POI-derived volume ana
 
 # 10. MONITOR ORCHESTRATION AND CHECKPOINT PERSISTENCE
 
-## 10.1 Mapper persistence boundary
+## 10.1 Mapper process-input boundary
 
-The Mapper is invoked by the Monitor as a separate process.
+The Mapper is invoked by the Monitor as a separate process and receives its market-data input from the standalone Market Data process.
 
 On invocation:
 
-1. read the symbol-scoped persisted Market Data JSON;
-2. resolve the requested analysis identity;
-3. process only eligible completed candles;
-4. persist the complete symbol-scoped Structures JSON atomically;
-5. advance `last_processed_candle_time` only within the same successful persistence transaction;
-6. return a process status.
+1. launch/receive the Market Data process output for the requested symbol, timeframe, and range;
+2. parse and validate the machine-readable CSV-like STDOUT protocol;
+3. group returned records by timeframe and process only records marked `completed=1`;
+4. resolve the requested analysis identity;
+5. persist the complete symbol-scoped Structures JSON atomically;
+6. advance `last_processed_candle_time` only within the same successful persistence transaction;
+7. return a process status.
+
+The Mapper must reject malformed machine output and must never fall back to `<SYMBOL>_marketdata.json`.
 
 The Mapper does not schedule itself, refresh current snapshots, resolve targets, apply RR, emit alerts, or manage positions.
 
@@ -1453,7 +1456,7 @@ The CLI interfaces must strictly separate persistent market data from user-visib
 - With `--debug`, diagnostics are visible directly on the terminal.
 - A process wrapper may capture diagnostics transiently for error reporting, but must never parse or persist them as data.
 - Debug mode must never alter canonical calculations or normalized market-data semantics.
-- Normal runtime must produce no user-visible CLI output.
+- Normal runtime must produce no human-readable status output. Market-data machine input/output remains a process stream and is not a diagnostic/status channel.
 
 ## 12.2 Diagnostic data boundary
 
@@ -1626,13 +1629,12 @@ Identity resolution must remain deterministic. `build_analysis_key` uses the nor
 ## 15.3 Market-data boundary
 
     get_symbol_data_directory(symbol, data_directory) -> Path
-    get_market_data_path(symbol, data_directory) -> Path
     get_structures_path(symbol, data_directory) -> Path
-    load_market_data(path, symbol) -> MarketDataDocument
-    validate_market_data_document(market_data, symbol) -> success/failure
-    select_completed_candles(market_data, timeframe, start_time, end_time) -> candle array
+    parse_market_data_stdout(stream) -> MarketDataSeries
+    validate_market_data_stream(series, symbol, requested_timeframes) -> success/failure
+    select_completed_candles(series, timeframe, start_time, end_time) -> candle array
 
-The mapper reader must validate the persisted Market Data contract without importing Market Data classes. It must accept the serialized timeframes object keyed by timeframe.
+The mapper process-input parser must validate the Market Data machine protocol without importing Market Data classes. It must accept the CSV-like stream and group records by the explicit `timeframe` field.
 
 For explicit analysis-window selection, a candle is eligible when:
 
@@ -1677,7 +1679,7 @@ This function is downstream of canonical POI formation and lifecycle. It cannot 
     run(request) -> exit_status
     main(argv) -> exit_status
 
-Normal execution is user-silent; diagnostics are emitted only with --debug according to Section 12.
+Normal execution emits no human-readable status text; market-data input is consumed from the Market Data process STDOUT and diagnostics are emitted only on STDERR according to Section 12.
 
 ---
 
