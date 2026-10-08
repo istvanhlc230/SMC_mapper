@@ -8,24 +8,24 @@ from typing import Any
 from .models import DECIMAL_PERSISTENCE_PLACES, SUPPORTED_TIMEFRAMES, WRITE_RETRY_DELAY_SECONDS, WRITE_RETRY_LIMIT
 from .normalization import build_candle_id, canonical_interval_start, canonical_interval_end
 
-def _timestamp(value: str | None) -> datetime | None:
+def _parse_persisted_parse_persisted_timestamp(value: str | None) -> datetime | None:
     if value is None: return None
     parsed=datetime.fromisoformat(value.replace("Z","+00:00"))
     if parsed.tzinfo is None: raise ValueError("persisted timestamp must be timezone-aware")
     return parsed.astimezone(timezone.utc)
 
-def _safe_symbol(symbol: str) -> str:
+def _validate_symbol_path_component(symbol: str) -> str:
     if not symbol or symbol in {".",".."} or any(x in symbol for x in ("/","\\","\x00")) or ":" in symbol: raise ValueError("unsafe symbol path component")
     return symbol
 
-def get_symbol_data_directory(symbol: str, data_directory: Path) -> Path: return Path(data_directory) / _safe_symbol(symbol)
-def get_market_data_path(symbol: str, data_directory: Path) -> Path: return get_symbol_data_directory(symbol,data_directory) / f"{_safe_symbol(symbol)}_marketdata.json"
-def create_empty_market_data(symbol: str) -> dict[str,Any]: return {"symbol":symbol,"timeframes":{}}
+def get_symbol_data_directory(symbol: str, data_directory: Path) -> Path:\n    """Return the symbol-specific persistence directory.""" return Path(data_directory) / _validate_symbol_path_component(symbol)
+def get_market_data_path(symbol: str, data_directory: Path) -> Path:\n    """Return the canonical Market Data JSON path for a symbol.""" return get_symbol_data_directory(symbol,data_directory) / f"{_validate_symbol_path_component(symbol)}_marketdata.json"
+def create_empty_market_data(symbol: str) -> dict[str,Any]:\n    """Create an empty persisted Market Data document for one symbol.""" return {"symbol":symbol,"timeframes":{}}
 
-def ensure_timeframe_state(market_data, timeframe):
+def ensure_timeframe_state(market_data, timeframe):\n    """Return the persisted state object for one timeframe, creating it when absent."""
     return market_data["timeframes"].setdefault(timeframe,{"available_start":None,"available_end":None,"candles":[],"current":None})
 
-def update_available_bounds(timeframe_state):
+def update_available_bounds(timeframe_state):\n    """Refresh retained candle boundary metadata from the stored candle list."""
     candles=timeframe_state["candles"]
     timeframe_state["available_start"]=candles[0]["timestamp"] if candles else None
     timeframe_state["available_end"]=candles[-1]["timestamp"] if candles else None
@@ -56,7 +56,7 @@ def _validate_persisted_non_negative_decimal(value: Any, field_name: str) -> Non
 def _validate_candle_record(candle, timeframe):
     required={"candle_id","timestamp","completion_time","open","high","low","close","volume"}
     if not required <= set(candle): raise ValueError("malformed persisted candle")
-    stamp=_timestamp(candle["timestamp"]); completion=_timestamp(candle["completion_time"])
+    stamp=_parse_persisted_timestamp(candle["timestamp"]); completion=_parse_persisted_timestamp(candle["completion_time"])
     if completion is None or stamp is None or completion <= stamp: raise ValueError("invalid persisted candle time")
     expected_start=canonical_interval_start(stamp,timeframe)
     expected_completion=canonical_interval_end(stamp,timeframe)
@@ -86,8 +86,8 @@ def _validate_current_snapshot(
     current_id = current["candle_id"]
     if any(candle["candle_id"] == current_id for candle in candles):
         raise ValueError("current candle identity must not also exist in candles")
-    stamp = _timestamp(current["timestamp"])
-    completion = _timestamp(current["completion_time"])
+    stamp = _parse_persisted_timestamp(current["timestamp"])
+    completion = _parse_persisted_timestamp(current["completion_time"])
     if stamp is None or completion is None:
         raise ValueError("invalid current snapshot timestamps")
     expected_start = canonical_interval_start(stamp, timeframe)
@@ -98,7 +98,7 @@ def _validate_current_snapshot(
         raise ValueError("current completion_time does not match timeframe boundary")
 
 
-def load_market_data(path: Path, symbol: str) -> dict[str,Any]:
+def load_market_data(path: Path, symbol: str) -> dict[str,Any]:\n    """Load and validate one persisted Market Data document."""
     if not path.exists(): return create_empty_market_data(symbol)
     try: market_data=json.loads(path.read_text(encoding="utf-8"))
     except Exception as exc: raise ValueError(f"invalid market-data JSON: {path}") from exc
@@ -114,17 +114,17 @@ def load_market_data(path: Path, symbol: str) -> dict[str,Any]:
             expected_id = build_candle_id(
                 symbol,
                 timeframe,
-                _timestamp(candle["timestamp"]),
+                _parse_persisted_timestamp(candle["timestamp"]),
             )
             if candle["candle_id"] != expected_id:
                 raise ValueError("persisted candle_id does not match symbol, timeframe and timestamp")
-            if candle["candle_id"] in ids or (last is not None and _timestamp(candle["timestamp"]) <= last):
+            if candle["candle_id"] in ids or (last is not None and _parse_persisted_timestamp(candle["timestamp"]) <= last):
                 raise ValueError("invalid candle ordering or duplicate identity")
-            ids.add(candle["candle_id"]); last=_timestamp(candle["timestamp"])
+            ids.add(candle["candle_id"]); last=_parse_persisted_timestamp(candle["timestamp"])
         expected_start = state["candles"][0]["timestamp"] if state["candles"] else None
         expected_end = state["candles"][-1]["timestamp"] if state["candles"] else None
-        available_start = _timestamp(state["available_start"])
-        available_end = _timestamp(state["available_end"])
+        available_start = _parse_persisted_timestamp(state["available_start"])
+        available_end = _parse_persisted_timestamp(state["available_end"])
         if state["available_start"] != expected_start or state["available_end"] != expected_end:
             raise ValueError(f"invalid availability bounds: {timeframe}")
         if (expected_start is None and available_start is not None) or (
@@ -138,22 +138,22 @@ def load_market_data(path: Path, symbol: str) -> dict[str,Any]:
             _validate_current_snapshot(current, state["candles"], timeframe)
     return market_data
 
-def serialize_decimal(value: Decimal) -> str:
+def serialize_decimal(value: Decimal) -> str:\n    """Serialize a Decimal using the fixed persistence precision contract."""
     if not value.is_finite(): raise ValueError("cannot serialize non-finite Decimal")
     quantum=Decimal(1).scaleb(-DECIMAL_PERSISTENCE_PLACES)
     return format(value.quantize(quantum,rounding=ROUND_HALF_EVEN),"f")
 
-def _serialize(value):
+def _serialize_json_value(value):
     if isinstance(value,Decimal): return serialize_decimal(value)
     if isinstance(value,datetime): return value.astimezone(timezone.utc).isoformat().replace("+00:00","Z")
-    if isinstance(value,dict): return {key:_serialize(item) for key,item in value.items()}
-    if isinstance(value,list): return [_serialize(item) for item in value]
+    if isinstance(value,dict): return {key:_serialize_json_value(item) for key,item in value.items()}
+    if isinstance(value,list): return [_serialize_json_value(item) for item in value]
     return value
 
-def serialize_market_data(market_data):
+def serialize_market_data(market_data):\n    """Serialize the validated Market Data document as deterministic JSON.""
     return json.dumps(_serialize(market_data),ensure_ascii=False,sort_keys=True,indent=2)+"\n"
 
-def save_market_data_atomic(path: Path, market_data, retry_limit=WRITE_RETRY_LIMIT):
+def save_market_data_atomic(path: Path, market_data, retry_limit=WRITE_RETRY_LIMIT):\n    """Atomically persist Market Data JSON with bounded write retries.""
     path.parent.mkdir(parents=True,exist_ok=True)
     payload=serialize_market_data(market_data)
     last_error=None
