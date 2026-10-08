@@ -257,7 +257,7 @@ jobs:
           # LSE must be queried directly for each requested timeframe; no
           # lower-timeframe aggregation is permitted.
           direct_provider = LSEMarketDataProvider()
-          direct_provider._request = lambda symbol, timeframe, start_time, end_time: [
+          direct_provider._request_candle_page = lambda symbol, timeframe, start_time, end_time: [
               {
                   "timestamp": "2026-10-10T04:00:00Z",
                   "open": "1", "high": "2", "low": "0", "close": "1.5",
@@ -331,11 +331,17 @@ jobs:
           }]
           malformed_provider = LSEMarketDataProvider()
           try:
-              malformed_provider._parse(malformed_rows, "EURUSD", "M1")
+              malformed_provider._parse_lse_candle_rows(malformed_rows, "EURUSD", "M1")
           except ValueError:
               pass
           else:
               raise AssertionError("missing LSE OHLC must fail")
+
+          # Persistence serialization must use the canonical Decimal serializer rather than an obsolete helper name.
+          from MARKET_DATA.persistence import _validate_persisted_decimal, serialize_market_data
+          serialized = serialize_market_data({"symbol": "EURUSD", "timeframes": {}})
+          assert serialized.endswith("\n")
+          assert "\"timeframes\": {}" in serialized
 
           # Persisted Decimal values must use the approved plain base-10 representation.
           from MARKET_DATA.persistence import _validate_persisted_decimal
@@ -350,7 +356,7 @@ jobs:
 
           # Current candles are requested directly from LSE at the requested timeframe.
           current_provider = LSEMarketDataProvider()
-          current_provider._request = lambda symbol, timeframe, start_time, end_time: [
+          current_provider._request_candle_page = lambda symbol, timeframe, start_time, end_time: [
               {
                   "timestamp": "2026-10-10T04:00:00Z",
                   "open": "1", "high": "2", "low": "0", "close": "1.5",
@@ -420,7 +426,7 @@ jobs:
           def paged_request(symbol, timeframe, start_time, end_time):
               page_requests.append((symbol, timeframe, start_time, end_time))
               return page_rows.pop(0)
-          paged_provider._request = paged_request
+          paged_provider._request_candle_page = paged_request
           paged_candles = paged_provider.fetch_range(
               "EURUSD",
               "M1",
