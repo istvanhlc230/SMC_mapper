@@ -807,7 +807,7 @@ def query_active_news(
         [
             event for event in filter_events_for_symbol(events, symbol)
             if (
-                "forexfactory" in set(event.get("sources", [event.get("source")]))
+                set(event.get("sources", [event.get("source")])).intersection({"lse", "forexfactory"})
                 and event["event_type"] == "economic"
                 and parse_iso8601(event["timestamp"]) <= now < parse_iso8601(event["timestamp"]) + timedelta(minutes=1)
             )
