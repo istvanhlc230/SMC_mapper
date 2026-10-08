@@ -111,9 +111,9 @@ def resolve_scope_interval(scope: str) -> Tuple[datetime, datetime]:
 
     # Relative day scopes use Calendar's canonical UTC clock rather than the
     # host-local date, so midnight boundaries remain deterministic.
-    if scope in {"actual", "today", "tomorrow", "yesterday"}:
+    if scope in {"today", "tomorrow", "yesterday"}:
         today = utc_now().replace(hour=0, minute=0, second=0, microsecond=0)
-        offsets = {"actual": 0, "today": 0, "yesterday": -1, "tomorrow": 1}
+        offsets = {"today": 0, "yesterday": -1, "tomorrow": 1}
         start = today + timedelta(days=offsets[scope])
         return start, start + timedelta(days=1)
 
@@ -262,7 +262,7 @@ def resolve_open_start_scope(
 def parse_scope(scope: str) -> str:
     """Calendar operation: parse_scope validates the canonical and open-start scope forms."""
     if scope in {
-        "current", "actual", "latest", "next", "prev", "news",
+        "current", "latest", "next", "prev", "news",
         "today", "tomorrow", "yesterday",
         "current day", "current week", "current month",
         "next day", "next week", "next month",
@@ -797,12 +797,28 @@ def query_relative_events(
     )
 
 
+def query_current_events(
+    events: List[Dict[str, Any]],
+    symbol: str,
+    now: datetime,
+) -> List[Dict[str, Any]]:
+    """Return all events whose canonical one-minute activity window contains NOW."""
+    visible = filter_events_for_symbol(events, symbol)
+    return sorted(
+        [
+            event for event in visible
+            if parse_iso8601(event["timestamp"]) <= now < parse_iso8601(event["timestamp"]) + timedelta(minutes=1)
+        ],
+        key=lambda event: (parse_iso8601(event["timestamp"]), event["source"], event["event_id"]),
+    )
+
+
 def query_active_news(
     events: List[Dict[str, Any]],
     symbol: str,
     now: datetime,
 ) -> List[Dict[str, Any]]:
-    """Return scheduled ForexFactory events active in the current UTC minute."""
+    """Return scheduled economic news events active in the current UTC minute."""
     return sorted(
         [
             event for event in filter_events_for_symbol(events, symbol)
