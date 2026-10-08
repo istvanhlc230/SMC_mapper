@@ -13,7 +13,7 @@ from .config import FX_CURRENCY_CODES, ProviderError
 # Parser state is input-local: parsed rows and normalized values are produced from provider responses without persistent module state.
 
 def _normalize_forexfactory_impact_value(value: str) -> str:
-    """Internal helper for normalize forexfactory impact value."""
+    """Internal helper: Normalize forexfactory impact value."""
     lowered = value.strip().lower()
     if "high" in lowered:
         return "high"
@@ -26,7 +26,7 @@ def _normalize_forexfactory_impact_value(value: str) -> str:
     return ""
 
 def _classify_forexfactory_impact(classes: set[str]) -> str:
-    """Internal helper for classify forexfactory impact."""
+    """Internal helper: Classify forexfactory impact."""
     for class_name in classes:
         lowered = class_name.lower()
         if lowered.endswith("--high") or lowered in {"high", "impact-red", "icon--ff-impact-red"}:
@@ -61,7 +61,7 @@ class ForexFactoryHTMLCalendarParser(HTMLParser):
     """Parse rendered ForexFactory calendar rows without inventing event timestamps."""
 
     def __init__(self) -> None:
-        """Internal helper for init ."""
+        """Internal helper: Handle init  ."""
         super().__init__(convert_charrefs=True)
         # rows contains provider-rendered event rows collected from one response.
         self.rows: List[Dict[str, Any]] = []
@@ -80,7 +80,7 @@ class ForexFactoryHTMLCalendarParser(HTMLParser):
         # silently creating a false event timestamp.
 
     def handle_starttag(self, tag: str, attrs: List[Tuple[str, Optional[str]]]) -> None:
-        """Internal helper for handle starttag."""
+        """Handle starttag."""
         attributes = dict(attrs)
         classes = set(str(attributes.get("class") or "").split())
 
@@ -139,7 +139,7 @@ class ForexFactoryHTMLCalendarParser(HTMLParser):
                 self.current_row["impact"] = impact
 
     def handle_endtag(self, tag: str) -> None:
-        """Internal helper for handle endtag."""
+        """Handle endtag."""
         if self.current_row is None:
             return
 
@@ -184,12 +184,12 @@ class ForexFactoryHTMLCalendarParser(HTMLParser):
             self.rows.append(row)
 
     def handle_data(self, data: str) -> None:
-        """Internal helper for handle data."""
+        """Handle data."""
         if self.current_row is not None:
             self.text_buffer.append(data)
 
 def _extract_forexfactory_timezone(html: str) -> timezone:
-    """Internal helper for extract forexfactory timezone."""
+    """Internal helper: Extract forexfactory timezone."""
     match = re.search(
         r"Calendar\s+Time\s+Zone:\s*([A-Za-z_]+(?:/[A-Za-z0-9_.+-]+)+)",
         html,
@@ -221,7 +221,7 @@ def _parse_forexfactory_date(
     reference_start: datetime,
     reference_end: datetime,
 ) -> datetime:
-    """Internal helper for parse forexfactory date."""
+    """Internal helper: Parse forexfactory date."""
     cleaned = " ".join(date_text.split())
     match = re.search(
         r"(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2})",
@@ -270,7 +270,7 @@ def parse_forexfactory_html_events(
     start: datetime,
     end: datetime,
 ) -> List[Dict[str, Any]]:
-    """Internal helper for parse forexfactory html events."""
+    """Parse forexfactory html events."""
     parser = ForexFactoryHTMLCalendarParser()
     parser.feed(html)
     parser.close()
@@ -325,7 +325,7 @@ def parse_forexfactory_html_events(
     return normalized_events
 
 def extract_days_payload(html: str) -> str:
-    """Internal helper for extract days payload."""
+    """Extract days payload."""
     match = re.search(r"[\"']days[\"']\s*:\s*\[", html, re.IGNORECASE)
     if not match:
         raise ProviderError("ForexFactory response has no structured days payload.")
@@ -343,7 +343,7 @@ def extract_days_payload(html: str) -> str:
     return html[payload_start:payload_start + end_offset]
 
 def parse_calendar_days(payload: str) -> List[Dict[str, Any]]:
-    """Internal helper for parse calendar days."""
+    """Parse calendar days."""
     try:
         parsed = json.loads(payload)
     except json.JSONDecodeError as exc:
