@@ -363,6 +363,15 @@ def get_candles(
         records = [] if state is None else state.get("candles", [])
         candles = [_record_to_normalized_candle(record) for record in records]
 
+        if request.current:
+            current_record = None if state is None else state.get("current")
+            result[timeframe] = (
+                []
+                if current_record is None
+                else [_record_to_normalized_candle(current_record)]
+            )
+            continue
+
         if request.last_closed_only:
             candles = candles[-1:]
         elif request.start_time is not None:
