@@ -1277,3 +1277,7 @@ PASS:
 
 ## Runtime
 Runtime CI execution is not claimed PASS here; it must be validated by the commit-triggered GitHub Actions workflow.
+
+
+## Post-defragmentation correction
+The final structural re-audit found and removed one duplicated empty `## 10. Failure and atomicity` heading introduced during section reordering. No behavioral code change was required. Final Calendar specification numbering is now unique for the affected sections.
