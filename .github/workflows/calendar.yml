@@ -1538,13 +1538,24 @@ jobs:
               operations.acquire_explicit = original_acquire_explicit
               storage.load_calendar_document = original_load
 
-          # current refresh is rejected by the public CLI grammar; period scopes keep refresh.
-          try:
-              calendar_cli.parse_calendar_cli_request(["EURUSD", "current", "refresh"])
-          except calendar.CalendarInputError:
-              pass
-          else:
-              raise AssertionError("current refresh must remain invalid")
+          # current refresh is the only permitted refresh form among current/latest/next/prev/news.
+          current_refresh_request = calendar_cli.parse_calendar_cli_request(
+              ["EURUSD", "current", "refresh"]
+          )
+          assert current_refresh_request["scope"] == "current"
+          assert current_refresh_request["refresh"] is True
+
+          for rejected_scope in ("latest", "next", "prev", "news"):
+              try:
+                  calendar_cli.parse_calendar_cli_request(
+                      ["EURUSD", rejected_scope, "refresh"]
+                  )
+              except calendar.CalendarInputError:
+                  pass
+              else:
+                  raise AssertionError(
+                      f"{rejected_scope} refresh must remain invalid"
+                  )
 
           # current refresh must also update Detail data for an existing event
           # whose timestamp is just before the incremental watermark. The provider
