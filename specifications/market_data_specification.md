@@ -69,9 +69,10 @@ Contract rules:
 
 - the first line is the fixed protocol header;
 - one subsequent line represents one candle;
+- the complete successful machine result is validated/serialized before it is written to STDOUT, so a failed serialization never exposes a partial successful machine stream;
 - `time` is UTC Unix epoch seconds and represents the canonical candle interval start;
 - OHLC values use a deterministic decimal textual representation;
-- `tick_volume`, `spread`, and `real_volume` are numeric fields; unavailable volume branches use the defined empty representation rather than fabricated values;
+- `tick_volume`, `spread`, and `real_volume` are independent optional provider fields; V1 LSE normalization does not infer or rename generic `volume.total` into any of them, so these fields are emitted empty unless a provider explicitly supplies the corresponding semantic field;
 - records are ordered by ascending candle timestamp within each requested timeframe;
 - no duplicate candle identity is emitted;
 - completed historical/lastclosed requests emit completed candles with `completed=1`;
@@ -104,6 +105,7 @@ MARKET_DATA/provider.py
 MARKET_DATA/normalization.py
 MARKET_DATA/persistence.py
 MARKET_DATA/service.py
+MARKET_DATA/protocol.py
 MARKET_DATA/cli.py
 
 The root file is only the executable entry point. Domain models, provider acquisition, normalization, persistence and orchestration are owned by the corresponding MARKET_DATA modules. The internal module boundaries are deliberately small and functional; do not split further without a real ownership boundary.
@@ -1911,7 +1913,9 @@ def run(request: MarketDataRequest) -> int:
 Responsibilities:
 
 - instantiate the configured provider;
-- call `update_market_data`;
+- call the internal acquisition/update service;
+- construct the complete requested process-output result;
+- serialize the complete result before writing STDOUT;
 - map defined runtime failures to a non-zero exit status;
 - emit diagnostics only when debug is enabled.
 
