@@ -16,10 +16,10 @@ Responsibilities:
 
 1. load selected symbols and all stored mapper analyses for those symbols;
 2. schedule analysis updates according to each analysis entry timeframe;
-3. ensure required persisted market-data coverage exists before mapper execution;
+3. plan and request the required Market Data coverage through the standalone process before mapper execution;
 4. invoke market_data.py and smc_mapper.py as separate processes;
 5. reload persisted state after successful mapper updates;
-6. obtain the latest current market reference from persisted Market Data current state;
+6. obtain the latest current market reference from a validated Market Data `--current` process result;
 7. request Calendar Update Engine work asynchronously when News coverage needs refresh;
 8. read validated Calendar facts from the committed local calendar.json snapshot;
 9. evaluate downstream News warning policy;
