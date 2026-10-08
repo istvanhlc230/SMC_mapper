@@ -136,6 +136,17 @@ def execute_calendar_query(
             presentation.output_query_result(status, symbol, events, [], cleartext)
             return 0
 
+        if scope == "actual":
+            start, end = domain.resolve_scope_interval("actual")
+            events = domain.filter_events_for_interval(
+                domain.filter_events_for_symbol(document["events"], symbol),
+                start,
+                end,
+            )
+            status = "OK" if events else "NO_RELEVANT_EVENT"
+            presentation.output_query_result(status, symbol, events, [], cleartext)
+            return 0
+
         if scope == "latest":
             events = domain.query_latest_event(
                 document["events"], symbol, domain.utc_now()
@@ -149,6 +160,34 @@ def execute_calendar_query(
                 document["events"], symbol, domain.utc_now()
             )
             status = "OK" if events else "NO_NEXT_EVENT"
+            presentation.output_query_result(status, symbol, events, [], cleartext)
+            return 0
+
+        if scope == "prev":
+            events = domain.query_prev_event(
+                document["events"], symbol, domain.utc_now()
+            )
+            status = "OK" if events else "NO_PREV_EVENT"
+            presentation.output_query_result(status, symbol, events, [], cleartext)
+            return 0
+
+        if scope == "news":
+            events = domain.query_active_news(
+                document["events"], symbol, domain.utc_now()
+            )
+            status = "NEWS_ACTIVE" if events else "NO_ACTIVE_NEWS"
+            presentation.output_query_result(status, symbol, events, [], cleartext)
+            return 0
+
+        if scope in {
+            "current day", "current week", "current month",
+            "next day", "next week", "next month",
+            "prev day", "prev week", "prev month",
+        }:
+            events = domain.query_relative_events(
+                document["events"], symbol, scope
+            )
+            status = "OK" if events else "NO_RELEVANT_EVENT"
             presentation.output_query_result(status, symbol, events, [], cleartext)
             return 0
 
@@ -269,12 +308,17 @@ def execute_calendar_delete(
                     "Use bare 'delete' only for full cache deletion."
                 )
             if (
-                scope in {"current", "latest", "next"}
+                scope in {
+                    "current", "actual", "latest", "next", "prev", "news",
+                    "current day", "current week", "current month",
+                    "next day", "next week", "next month",
+                    "prev day", "prev week", "prev month",
+                }
                 or domain.is_open_start_scope(scope)
                 or domain.is_open_end_scope(scope)
             ):
                 raise CalendarInputError(
-                    "current, latest, next, open-start, and open-end ranges cannot be used as delete scopes."
+                    "Relative scopes, latest, next, prev, news, open-start, and open-end ranges cannot be used as delete scopes."
                 )
             start, end = domain.resolve_scope_interval(scope)
             operations.delete_symbol_interval(document, symbol, start, end)
@@ -473,11 +517,10 @@ def parse_calendar_cli_request(cli_arguments: List[str]) -> Dict[str, Any]:
             "refresh": False,
         }
 
-    if len(positional) not in {1, 2}:
+    if len(positional) not in {1, 2, 3}:
         raise CalendarInputError(
             "Expected SYMBOL + SCOPE, optionally followed by refresh, "
-            "SYMBOL --range -END optionally followed by refresh, "
-            "or SYMBOL with --date/--time and optional refresh."
+            "or a relative scope such as next day, next week, prev month."
         )
 
     symbol = domain.validate_symbol(positional[0])
@@ -488,7 +531,11 @@ def parse_calendar_cli_request(cli_arguments: List[str]) -> Dict[str, Any]:
             raise CalendarInputError("--range cannot be combined with --date or --time.")
         scope = domain.parse_scope(cli_range)
         if scope in {
-            "current", "latest", "next", "today", "tomorrow", "yesterday",
+            "current", "actual", "latest", "next", "prev", "news",
+            "today", "tomorrow", "yesterday",
+            "current day", "current week", "current month",
+            "next day", "next week", "next month",
+            "prev day", "prev week", "prev month",
         }:
             raise CalendarInputError(
                 "--range requires an explicit date/datetime range, an open-start -END range, "
@@ -512,10 +559,14 @@ def parse_calendar_cli_request(cli_arguments: List[str]) -> Dict[str, Any]:
             raise CalendarInputError(
                 "--date/--time cannot be combined with an explicit query scope."
             )
-        scope = domain.parse_scope(normalize_current_day_time_range_scope(positional[1]))
+        if len(positional) == 2:
+            scope_text = normalize_current_day_time_range_scope(positional[1])
+        else:
+            scope_text = f"{positional[1]} {positional[2]}"
+        scope = domain.parse_scope(scope_text)
 
-    if refresh and scope in {"latest", "next"}:
-        raise CalendarInputError("refresh is not valid for latest or next.")
+    if refresh and scope in {"latest", "next", "prev", "news"}:
+        raise CalendarInputError("refresh is not valid for latest, next, prev, or news.")
 
     return {
         "operation": "QUERY",
