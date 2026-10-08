@@ -28,7 +28,7 @@ The mapper has no direct connection to any concrete market-data provider and has
 
 `market_data.py` is a standalone Market Data CLI process. It owns provider access, provider abstraction, normalization, completion handling, timestamp normalization, availability detection, deterministic range retrieval, incremental updates, retention and persistence to `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json`.
 
-The durable market-data boundary is the symbol-scoped file `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json`.
+The Market Data process boundary is the standalone `market_data.py` executable and its machine-readable STDOUT candle protocol.
 
 The normal data flow is:
 
@@ -38,28 +38,27 @@ Provider(s)
     v
 market_data.py (CLI)
     |
-    v
-<SYMBOL>_marketdata.json
+    +----> internal persistence/cache
     |
-    v
-smc_mapper.py
-    |
-    v
-<SYMBOL>_structures.json
-    |
-    v
-smc_monitor.py
+    +----> machine STDOUT (CSV-like candle stream)
+                  |
+                  v
+             smc_mapper.py
+                  |
+                  v
+       <SYMBOL>_structures.json
+                  |
+                  v
+             smc_monitor.py
 ```
 
-The normalized candle contract is the portability boundary. The mapper must not know whether the Market Data CLI obtained data from Yahoo, MT4/MT5, Pine/replay, a broker adapter, or another provider.
+The machine-readable candle stream is the Mapper's market-data portability boundary. The Mapper must not know whether the Market Data process obtained data from LSE, a future MT4/MT5 adapter, a broker, replay data, cache, or another provider.
 
-The Market Data CLI may internally use a bounded cache/buffer, but that is only an optimization. The persisted market-data JSON is the mapper's normalized data source.
+The persisted market-data JSON is an internal Market Data storage format. It is not the Mapper process-input contract and must not be opened, parsed, or depended on by the Mapper.
 
-The mapper must never call a concrete provider, perform provider-specific API requests, depend on provider-specific response formats, request market data from the monitor, or import `market_data.py` for runtime data access.
+The Mapper must never call a concrete provider, perform provider-specific API requests, depend on provider-specific response formats, request market data from the monitor, or import `market_data.py` as a Python data API.
 
-V1 uses a Yahoo Charts provider adapter as the initial concrete Market Data implementation. Future adapters may include MetaTrader / MT4 / MT5, Pine Script data integration, broker feeds, and historical/replay sources.
-
-Provider-specific API details remain outside the canonical SMC engine.
+V1 implements the process boundary with Python `market_data.py`. Future platform implementations may provide the same machine-readable candle contract without changing Mapper/SMC logic. MT4/MT5 are portability targets only; no MT4/MT5 implementation is part of V1.
 
 ## 0.3 Time-domain contract
 
@@ -89,9 +88,9 @@ The analysis key must use the resolved canonical UTC boundary, not the original 
 
 At the Mapper contract boundary, datetime input must be timezone-aware ISO-8601 and date-only input is accepted only as the deterministic UTC calendar-date shorthand defined in §§2.7–2.8. Explicit local-time input must be converted to canonical UTC before the Mapper contract is invoked.
 
-## 0.4 Symbol data-directory and automatic file discovery
+## 0.4 Symbol data-directory and process input
 
-All durable outputs for one symbol live under one directory beneath the common data root:
+Durable outputs for one symbol remain under one directory beneath the common data root:
 
 ```text
 <DATA_ROOT>/
@@ -100,60 +99,62 @@ All durable outputs for one symbol live under one directory beneath the common d
     └── <SYMBOL>_structures.json
 ```
 
-The Mapper automatically resolves `<DATA_ROOT>/<SYMBOL>/` from its normalized symbol and reads `<SYMBOL>_marketdata.json` and `<SYMBOL>_structures.json` from that directory. Normal runtime does not require ad-hoc per-file path input from the Monitor or caller. The symbol directory is created by the component that owns a write when persistence is required.
+Market Data owns creation and maintenance of `<SYMBOL>_marketdata.json`. Mapper owns `<SYMBOL>_structures.json`.
 
-The Mapper must not search another symbol's directory and must reject a persisted document whose stored symbol identity does not match the requested symbol. The existing common data root is unchanged; no data-path CLI option is introduced.
+Mapper market-data input is obtained by launching the standalone Market Data process with the required symbol/timeframe/range parameters and reading its machine-readable STDOUT. The Mapper does not discover or open the Market Data persistence file.
 
-### Process-launch requirement
+### Process boundary
 
 ```text
-market_data.py
+Mapper
     |
-    +--> <SYMBOL>_marketdata.json
-    |
-    +--> stderr -> terminal (debug only)
-
-smc_mapper.py
-    |
-    +--> reads <SYMBOL>_marketdata.json
-    |
-    +--> stderr -> terminal (debug only)
+    | launches market_data.py
+    | reads machine STDOUT
+    v
+CSV-like completed-candle stream
 ```
 
-`stderr` must never be redirected into mapper or monitor data input.
+Rules:
 
-With `--debug`, only the relevant process's diagnostics become visible on the terminal. Debug information is never written into the market-data JSON and never becomes mapper or monitor input.
+- Mapper consumes machine STDOUT only;
+- Market Data diagnostics and errors are emitted on STDERR and are never treated as candle data;
+- Mapper must fail the data acquisition operation if the machine protocol is malformed;
+- Mapper must not fall back to reading the Market Data JSON file;
+- `--cleartext` must never be used by Mapper;
+- the process contract is independent of the internal Python module layout;
+- the candle protocol uses only simple cross-language values and is intentionally suitable for a future MQL4/MQL5 implementation;
+- symbol-directory persistence remains an internal Market Data concern.
 
----
+The symbol directory is still the common durable storage location for Market Data and Mapper outputs, but the Mapper does not use the Market Data JSON file as its runtime input.
 
 # 1. EXTERNAL MARKET-DATA CONTRACT
 
-## 1.1 Provider boundary
+## 1.1 Market Data process boundary
 
-The Market Data CLI, outside the canonical mapper, receives provider-specific market data, converts it into a provider-independent normalized candle representation, and persists the normalized candles into `<SYMBOL>_marketdata.json`.
+The standalone Market Data CLI receives provider-specific market data, converts it into the provider-independent completed-candle representation, and emits the requested completed candles through the machine-readable STDOUT protocol defined by `market_data_specification.md`.
 
+```text
 Provider-specific data
         |
         v
-market_data.py (CLI)
-  acquisition / normalization
+market_data.py
+ acquisition / normalization / persistence
         |
-        v
-<SYMBOL>_marketdata.json
+        +-----> internal <SYMBOL>_marketdata.json
         |
-        +-------> smc_mapper.py
-        |
-        +-------> smc_monitor.py
+        +-----> machine STDOUT
+                    |
+                    +-----> smc_mapper.py
+                    +-----> other compatible consumers
+```
 
-Canonical SMC logic must consume only normalized candle data.
+Canonical SMC logic consumes only the machine-readable normalized candle stream.
 
-Provider-specific API access, transport, retry, pagination, authentication, timestamp parsing, completion detection, and raw-field mapping belong to the Market Data CLI.
+Provider-specific API access, transport, retry, pagination, authentication, timestamp parsing, completion detection, and raw-field mapping belong to Market Data.
 
-The detailed internal structure, interfaces, function names, variable naming, implementation order, test boundaries, and extension points for `market_data.py` are defined in `market_data_specification.md`. This file is the mapper-facing boundary; the market-data implementation specification is the detailed owner for `market_data.py` internals.
+The detailed internal structure, interfaces, function names, variable naming, implementation order, test boundaries, and extension points for `market_data.py` are defined in `market_data_specification.md`. This file defines the Mapper-facing contract; it does not define Market Data internal Python APIs.
 
-The concrete implementation resides initially in one standalone executable Python module, `market_data.py`. It may later be split internally without changing the persisted market-data schema or CLI contract.
-
-The Market Data CLI must support deterministic range retrieval and incremental update rather than requiring one provider request per candle.
+The machine protocol is the stable external boundary. Internal JSON schema, Python dataclasses, provider classes, and service functions may change without requiring Mapper changes, provided the external protocol remains compatible.
 
 ## 1.2 Persisted market-data store
 
@@ -174,7 +175,7 @@ Logical shape:
 
 Only normalized market-data state belongs here. No canonical structure, mapper history, POIs, trade state, monitor state, or debug text may be stored.
 
-Completed candles are stored in candles[]. They are the only market-data records eligible for canonical mapper processing. The optional current field stores only the latest in-progress candle snapshot for that timeframe and is never canonical structural input.
+Completed candles are stored in candles[]. They are the only market-data records eligible for canonical Mapper processing and are emitted through the machine protocol when requested. The optional current field stores only the latest in-progress candle snapshot for that timeframe and is never canonical structural input.
 
 A current snapshot may be refreshed while the candle is forming. It may contain the provider-available OHLC and total volume for that in-progress interval. It must never be copied into candles[] until the interval is confirmed completed.
 
