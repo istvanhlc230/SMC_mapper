@@ -27,12 +27,12 @@ TIMEFRAME_INTERVALS = {
 }
 
 
-def _iso(value: datetime) -> str:
+def _format_lse_timestamp(value: datetime) -> str:
     """Format a UTC datetime for the LSE API."""
     return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
-def _provider_symbol(symbol: str) -> str:
+def _map_symbol_to_lse(symbol: str) -> str:
     """Map the canonical project symbol to the LSE symbol spelling."""
     token = symbol.strip().upper()
     if len(token) == 6 and token.isalpha():
@@ -40,7 +40,7 @@ def _provider_symbol(symbol: str) -> str:
     return token
 
 
-def _parse_timestamp(value: Any) -> datetime:
+def _parse_lse_timestamp(value: Any) -> datetime:
     """Parse an LSE timestamp into an aware UTC datetime."""
     if isinstance(value, (int, float)):
         return datetime.fromtimestamp(value, tz=timezone.utc)
@@ -55,7 +55,7 @@ def _parse_timestamp(value: Any) -> datetime:
     return parsed.astimezone(timezone.utc)
 
 
-def _decimal_value(value: Any, field_name: str) -> Any:
+def _parse_lse_decimal(value: Any, field_name: str) -> Any:
     """Validate an LSE numeric field before handing it to normalization."""
     if value is None:
         raise ValueError(f"LSE candle missing {field_name}")
@@ -95,11 +95,11 @@ class MarketDataProvider:
 class LSEMarketDataProvider(MarketDataProvider):
     """Direct LSE candle provider; no timeframe aggregation is performed."""
 
-    def __init__(self, timeout_seconds: int = 30, retries: int = 3):
+    def __init__(self, timeout_seconds: int = 30, retries: int = 3):\n        """Initialize the LSE provider with request timeout and retry limits."""
         self.timeout_seconds = timeout_seconds
         self.retries = retries
 
-    def _request(
+    def _request_candle_page(
         self,
         symbol: str,
         timeframe: str,
@@ -114,10 +114,10 @@ class LSEMarketDataProvider(MarketDataProvider):
         if interval is None:
             raise ValueError(f"LSE does not have a mapping for {timeframe}")
         params = urllib.parse.urlencode({
-            "symbol": _provider_symbol(symbol),
+            "symbol": _map_symbol_to_lse(symbol),
             "timeframe": interval,
-            "start": _iso(start_time),
-            "end": _iso(end_time),
+            "start": _format_lse_timestamp(start_time),
+            "end": _format_lse_timestamp(end_time),
             "order": "asc",
             "limit": 5000,
         })
@@ -146,17 +146,17 @@ class LSEMarketDataProvider(MarketDataProvider):
                 time.sleep(0.5 * (attempt + 1))
         raise RuntimeError(f"LSE candle acquisition failed: {last_error}")
 
-    def _parse(self, rows: list[dict[str, Any]], symbol: str, timeframe: str) -> list[ProviderCandle]:
+    def _parse_lse_candle_rows(self, rows: list[dict[str, Any]], symbol: str, timeframe: str) -> list[ProviderCandle]:
         """Convert direct LSE candle rows to provider-neutral candles."""
         records: list[ProviderCandle] = []
         for row in rows:
             if not isinstance(row, dict):
                 raise ValueError("malformed LSE candle record")
-            timestamp = _parse_timestamp(row.get("timestamp", row.get("ts")))
-            open_price = _decimal_value(row.get("open"), "open")
-            high_price = _decimal_value(row.get("high"), "high")
-            low_price = _decimal_value(row.get("low"), "low")
-            close_price = _decimal_value(row.get("close"), "close")
+            timestamp = _parse_lse_timestamp(row.get("timestamp", row.get("ts")))
+            open_price = _parse_lse_decimal(row.get("open"), "open")
+            high_price = _parse_lse_decimal(row.get("high"), "high")
+            low_price = _parse_lse_decimal(row.get("low"), "low")
+            close_price = _parse_lse_decimal(row.get("close"), "close")
             volume = row.get("volume")
             records.append(
                 ProviderCandle(
@@ -171,7 +171,7 @@ class LSEMarketDataProvider(MarketDataProvider):
                     provider_metadata={
                         "provider": "lse",
                         "interval": timeframe,
-                        "provider_symbol": _provider_symbol(symbol),
+                        "provider_symbol": _map_symbol_to_lse(symbol),
                     },
                 )
             )
@@ -187,10 +187,10 @@ class LSEMarketDataProvider(MarketDataProvider):
         page_start = start_time
         records: list[ProviderCandle] = []
         while page_start < end_time:
-            page_rows = self._request(symbol, timeframe, page_start, end_time)
+            page_rows = self._request_candle_page(symbol, timeframe, page_start, end_time)
             if not page_rows:
                 break
-            page_records = self._parse(page_rows, symbol, timeframe)
+            page_records = self._parse_lse_candle_rows(page_rows, symbol, timeframe)
             records.extend(
                 record for record in page_records
                 if start_time <= record.timestamp < end_time
