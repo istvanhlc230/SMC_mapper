@@ -10,15 +10,15 @@ from .config import CalendarInputError, DataIntegrityError, DATE_RE, FX_CURRENCY
 # Module state: domain functions operate on the caller-owned Calendar document; no provider I/O or persistent module state is kept here.
 
 def utc_now() -> datetime:
-    """Calendar operation: utc_now performs the focused utc now step in the Calendar implementation."""
+    """Internal helper for utc now."""
     return datetime.now(timezone.utc)
 
 def format_iso8601(value: datetime) -> str:
-    """Calendar operation: format_iso8601 performs the focused format iso8601 step in the Calendar implementation."""
+    """Internal helper for format iso8601."""
     return value.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 def parse_iso8601(value: str) -> datetime:
-    """Calendar operation: parse_iso8601 performs the focused parse iso8601 step in the Calendar implementation."""
+    """Internal helper for parse iso8601."""
     normalized = value[:-1] + "+00:00" if value.endswith("Z") else value
     try:
         parsed = datetime.fromisoformat(normalized)
@@ -29,19 +29,19 @@ def parse_iso8601(value: str) -> datetime:
     return parsed.astimezone(timezone.utc)
 
 def normalize_symbol(value: str) -> str:
-    """Calendar operation: normalize_symbol performs the focused normalize symbol step in the Calendar implementation."""
+    """Internal helper for normalize symbol."""
     return value.strip().upper()
 
 def is_currency(value: str) -> bool:
-    """Calendar operation: is_currency performs the focused is currency step in the Calendar implementation."""
+    """Internal helper for is currency."""
     return value in SUPPORTED_CURRENCIES
 
 def canonicalize_fx_token(value: str) -> str:
-    """Calendar operation: canonicalize_fx_token performs the focused canonicalize fx token step in the Calendar implementation."""
+    """Internal helper for canonicalize fx token."""
     return re.sub(r"[/_-]", "", value.strip().upper())
 
 def is_fx_pair(value: str) -> bool:
-    """Calendar operation: is_fx_pair performs the focused is fx pair step in the Calendar implementation."""
+    """Internal helper for is fx pair."""
     token = canonicalize_fx_token(value)
     return (
         len(token) == 6
@@ -50,14 +50,14 @@ def is_fx_pair(value: str) -> bool:
     )
 
 def is_ticker(value: str) -> bool:
-    """Calendar operation: is_ticker performs the focused is ticker step in the Calendar implementation."""
+    """Internal helper for is ticker."""
     token = normalize_symbol(value)
     if is_currency(token) or is_fx_pair(token):
         return False
     return bool(re.fullmatch(r"[A-Z0-9][A-Z0-9._-]{0,14}", token))
 
 def validate_symbol(value: str) -> str:
-    """Calendar operation: validate_symbol performs the focused validate symbol step in the Calendar implementation."""
+    """Internal helper for validate symbol."""
     token = canonicalize_fx_token(value)
     if is_currency(token):
         return token
@@ -75,7 +75,7 @@ def validate_symbol(value: str) -> str:
     )
 
 def parse_time(value: str) -> Tuple[int, int]:
-    """Calendar operation: parse_time performs the focused parse time step in the Calendar implementation."""
+    """Internal helper for parse time."""
     if not re.fullmatch(TIME_RE, value):
         raise CalendarInputError(f"Invalid time '{value}'. Expected HH:MM.")
     hour, minute = (int(part) for part in value.split(":"))
@@ -84,7 +84,7 @@ def parse_time(value: str) -> Tuple[int, int]:
     return hour, minute
 
 def parse_date(value: str) -> datetime:
-    """Calendar operation: parse_date performs the focused parse date step in the Calendar implementation."""
+    """Internal helper for parse date."""
     if not re.fullmatch(DATE_RE, value):
         raise CalendarInputError(
             f"Invalid date '{value}'. Expected YYYY.MM.DD."
@@ -96,7 +96,7 @@ def parse_date(value: str) -> datetime:
         raise CalendarInputError(f"Invalid calendar date '{value}'.") from exc
 
 def parse_point(value: str) -> Tuple[datetime, bool]:
-    """Calendar operation: parse_point performs the focused parse point step in the Calendar implementation."""
+    """Internal helper for parse point."""
     if "@" not in value:
         return parse_date(value), False
     date_part, time_part = value.split("@", 1)
@@ -301,7 +301,7 @@ def parse_scope(scope: str) -> str:
     return scope
 
 def build_empty_calendar_document() -> Dict[str, Any]:
-    """Calendar operation: build_empty_calendar_document performs the focused build empty calendar document step in the Calendar implementation."""
+    """Internal helper for build empty calendar document."""
     return {
         "schema_version": SCHEMA_VERSION,
         "events": [],
@@ -310,7 +310,7 @@ def build_empty_calendar_document() -> Dict[str, Any]:
     }
 
 def _validate_calendar_event(event: Dict[str, Any], event_ids: set[str]) -> None:
-    """Internal helper: _validate_calendar_event performs the focused validate calendar event step in the Calendar implementation."""
+    """Internal helper for validate calendar event."""
     if not isinstance(event, dict):
         raise DataIntegrityError("Invalid event record.")
     required = {"event_id", "symbol", "asset_type", "event_type", "source", "timestamp", "title", "details"}
@@ -356,7 +356,7 @@ def _validate_calendar_event(event: Dict[str, Any], event_ids: set[str]) -> None
             raise DataIntegrityError("News event must have a Yahoo Finance source.")
 
 def _validate_forexfactory_details(details: Dict[str, Any]) -> None:
-    """Internal helper: _validate_forexfactory_details performs the focused validate forexfactory details step in the Calendar implementation."""
+    """Internal helper for validate forexfactory details."""
     if details.get("currency") not in FX_CURRENCY_CODES and details.get("currency") != "ALL":
         raise DataIntegrityError("Invalid ForexFactory currency.")
     if details.get("impact") not in {"HIGH", "MEDIUM", "LOW", "HOLIDAY", "UNKNOWN"}:
@@ -381,7 +381,7 @@ def _validate_forexfactory_details(details: Dict[str, Any]) -> None:
             raise DataIntegrityError("ForexFactory detail spec html must be a string.")
 
 def _validate_coverage_records(records: List[Dict[str, Any]]) -> None:
-    """Internal helper: _validate_coverage_records performs the focused validate coverage records step in the Calendar implementation."""
+    """Internal helper for validate coverage records."""
     seen = set()
     for coverage in records:
         if not isinstance(coverage, dict):
@@ -403,7 +403,7 @@ def _validate_coverage_records(records: List[Dict[str, Any]]) -> None:
         seen.add(key)
 
 def _validate_watermarks(watermarks: Dict[str, Any]) -> None:
-    """Internal helper: _validate_watermarks performs the focused validate watermarks step in the Calendar implementation."""
+    """Internal helper for validate watermarks."""
     for key, watermark in watermarks.items():
         if not isinstance(watermark, dict):
             raise DataIntegrityError("Invalid watermark record.")
@@ -516,7 +516,7 @@ def merge_events(
     )
 
 def merge_coverage(document: Dict[str, Any], item: Dict[str, Any]) -> None:
-    """Calendar operation: merge_coverage performs the focused merge coverage step in the Calendar implementation."""
+    """Internal helper for merge coverage."""
     candidates = [coverage.copy() for coverage in document["coverage"]]
     candidates.append(item.copy())
     candidates.sort(
@@ -561,7 +561,7 @@ def find_uncovered_intervals(
     start: datetime,
     end: datetime,
 ) -> List[Tuple[datetime, datetime]]:
-    """Calendar operation: find_uncovered_intervals performs the focused find uncovered intervals step in the Calendar implementation."""
+    """Internal helper for find uncovered intervals."""
     if end <= start:
         raise CalendarInputError("Coverage interval must have end after start.")
 
@@ -619,7 +619,7 @@ def find_uncovered_intervals(
     return gaps
 
 def watermark_key(provider: str, symbol: str) -> str:
-    """Calendar operation: watermark_key performs the focused watermark key step in the Calendar implementation."""
+    """Internal helper for watermark key."""
     return f"{provider}|{symbol}"
 
 def resolve_applicable_providers(symbol: str) -> List[str]:
@@ -656,7 +656,7 @@ def filter_events_for_interval(
     start: datetime,
     end: datetime,
 ) -> List[Dict[str, Any]]:
-    """Calendar operation: filter_events_for_interval performs the focused filter events for interval step in the Calendar implementation."""
+    """Internal helper for filter events for interval."""
     return [
         event for event in events
         if start <= parse_iso8601(event["timestamp"]) < end
@@ -669,7 +669,7 @@ def update_watermark(
     successful_at: datetime,
     events: List[Dict[str, Any]],
 ) -> None:
-    """Calendar operation: update_watermark performs the focused update watermark step in the Calendar implementation."""
+    """Internal helper for update watermark."""
     key = watermark_key(provider, symbol)
     old = document["watermarks"].get(key, {})
     old_successful_at = (
@@ -703,7 +703,7 @@ def query_current_events(
     since: datetime,
     until: datetime,
 ) -> List[Dict[str, Any]]:
-    """Calendar operation: query_current_events performs the focused query current events step in the Calendar implementation."""
+    """Internal helper for query current events."""
     return [
         event for event in events
         if since < parse_iso8601(event["timestamp"]) <= until
@@ -714,7 +714,7 @@ def query_latest_event(
     symbol: str,
     now: datetime,
 ) -> List[Dict[str, Any]]:
-    """Calendar operation: query_latest_event performs the focused query latest event step in the Calendar implementation."""
+    """Internal helper for query latest event."""
     visible_past = [
         event
         for event in filter_events_for_symbol(events, symbol)
@@ -738,7 +738,7 @@ def query_next_event(
     symbol: str,
     now: datetime,
 ) -> List[Dict[str, Any]]:
-    """Calendar operation: query_next_event performs the focused query next event step in the Calendar implementation."""
+    """Internal helper for query next event."""
     # Yahoo Finance supplies published/current news, not scheduled future events.
     # Future-event lookup therefore only considers canonical scheduled economic
     # events from ForexFactory.
