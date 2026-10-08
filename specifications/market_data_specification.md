@@ -343,7 +343,7 @@ Portable rules:
 
 Python may use `Decimal` internally for deterministic financial arithmetic; `Decimal` is not part of the portable interface.
 
-## 3.8 Model vs. JSON representation boundary
+## 3.8 Model vs. persistence JSON boundary
 
 Core processing uses the explicit domain models above.
 
@@ -354,11 +354,11 @@ The persisted JSON contract has four deliberate boundaries:
 3. completed candles and current snapshot are represented separately;
 4. optional volume branches are omitted when unavailable.
 
-The Mapper consumes only this serialized contract and must not need provider-specific reconstruction logic. Persistence helpers may use plain Python dictionaries/lists while translating to and from the approved JSON schema.
+The machine-output protocol is the consumer-facing contract. Persistence helpers may use plain Python dictionaries/lists while translating to and from the approved JSON schema. Mapper/Monitor consumers must not depend on the persistence representation.
 
 No canonical SMC semantic meaning may depend on the JSON container type.
 
-The persisted JSON form of VolumeState is explicitly normalized for the external mapper boundary:
+The persisted JSON form of VolumeState is explicitly normalized for the internal persistence boundary:
 
     "volume": {
       "total": "...",
@@ -477,7 +477,6 @@ sort_candles
 apply_candle_retention
 build_current_snapshot
 merge_current_snapshot
-get_candles
 clear_completed_current_snapshot
 load_market_data
 create_empty_market_data
@@ -616,7 +615,7 @@ No machine-local timezone is ever assumed.
 - Historical `--range` scopes, including open-start `-END` ranges, are mutually exclusive with `current` and `lastclosed` modes.
 - With no explicit mode, normal incremental completed-candle acquisition is used.
 - `lastclosed` must use the provider's latest-completed acquisition path and completion validation.
-- The implementation request fields are `last_closed_only` and `current`; these names are authoritative for service orchestration.
+- The implementation request fields are `last_closed_only` and `current`; these names are authoritative for Market Data CLI orchestration.
 - A candle is eligible for `lastclosed` only when its canonical `completion_time` has passed.
 - `lastclosed` must never promote an in-progress candle merely because it is the provider's newest record.
 - `current` must use the provider current-candle path and must persist the candle only as the separate `current` snapshot while it remains incomplete.
@@ -1550,7 +1549,7 @@ The example values are illustrative only; the field names, null/omission rules, 
 
 The current field uses the same serialized candle shape when present, but it is an in-progress runtime snapshot. It does not contribute to available_start/available_end and is never a completed-candle substitute.
 
-The mapper may deserialize this schema into its own read-only view model. It must not import Market Data domain classes merely to read the JSON boundary.
+The Market Data implementation may deserialize this schema into its own internal read-only view model. No external consumer may treat this persistence schema as the Mapper process-input contract.
 
 ### JSON validity invariants
 
@@ -2303,7 +2302,7 @@ no-op
 reacquisition outside retention
 atomic persistence
 multi-timeframe isolation
-mapper-readable JSON boundary
+machine-readable STDOUT protocol
 ```
 
 Do not add SMC analysis logic.
