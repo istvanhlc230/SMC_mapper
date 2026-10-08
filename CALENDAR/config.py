@@ -19,7 +19,7 @@ HTTP_TIMEOUT = 15.0
 # SCHEMA_VERSION — persistent calendar.json schema version.
 SCHEMA_VERSION = 2
 # __version__ — Calendar CLI implementation version, independent from SCHEMA_VERSION.
-__version__ = "2.6.0"
+__version__ = "2.6.1"
 
 # SUPPORTED_CURRENCIES — standalone currencies accepted by the CLI.
 SUPPORTED_CURRENCIES = {
@@ -116,10 +116,8 @@ SCOPE
   YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM  Half-open UTC datetime range.
   HH:MM-HH:MM                       Current UTC day time range. Canonicalized
                                       to YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM.
-  actual                              Exact current UTC calendar day.
-  current                             Read current incremental events from
-                                      the committed Calendar cache. No provider
-                                      call occurs unless trailing refresh is used.
+  current                             Return events currently active in the UTC
+                                      activity minute. Read-only; no provider call.
   current day                        Exact current UTC calendar day.
   current week                       Current ISO week (Monday-Sunday UTC).
   current month                      Current UTC calendar month.
@@ -133,7 +131,7 @@ SCOPE
   next day/week/month                 Return all events in the next UTC day/week/month.
   prev                                Return the nearest past scheduled economic event.
   prev day/week/month                 Return all events in the previous UTC day/week/month.
-  news                                Report whether a scheduled ForexFactory event
+  news                                Report whether a scheduled economic news event
                                       is active in the current UTC minute.
 
 SYMBOL
@@ -146,11 +144,9 @@ PROVIDERS
   Yahoo Finance -> complementary current/history news.
 
 CURRENT
-  current is a read-only cache query. It never calls ForexFactory or Yahoo Finance
-  and never changes calendar.json, coverage, or watermarks.
-  For each applicable provider, events newer than that provider's committed
-  last_successful_at and no later than current UTC time are returned.
-  A missing watermark means there is no current incremental result for that provider.
+  current is an active-event query over the committed Calendar cache.
+  An event is active from its canonical timestamp through the end of that UTC minute.
+  current never calls providers and never changes calendar.json, coverage, or watermarks.
 
 REFRESH MODIFIER
   refresh is a trailing modifier, not an independent command or scope.
@@ -163,9 +159,9 @@ REFRESH MODIFIER
   ForexFactory Detail data can be refreshed.
   The normal query result for the same scope is returned after refresh.
   JSON output includes a refresh summary with added/changed/unchanged counts.
-  refresh is valid with actual, current, current day/week/month, today, tomorrow, yesterday,
+  refresh is valid with current day/week/month, today, tomorrow, yesterday,
   explicit date/datetime scopes, and both open-start --range -END and open-end --range START- forms.
-  latest, next, prev, and news cannot be combined with refresh.
+  current, latest, next, prev, and news cannot be combined with refresh.
   CLI refresh may block on provider I/O; the Monitor must invoke the underlying
   refresh operation asynchronously and outside its candle-close processing path.
 
