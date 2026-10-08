@@ -104,6 +104,28 @@ news source for stock/ticker news.
 
 No --forex, --ticker, or --provider flags exist.
 
+## 1.1 Provider API credential storage
+
+Calendar providers that require API credentials use the same provider-independent local credential mechanism as Market Data.
+
+Credential files live under the repository-root:
+
+    PROVIDERS/
+        credentials.py
+        <provider>.apikey
+
+Rules:
+- each provider has its own credential file;
+- each file contains only that provider's API key;
+- `PROVIDERS/*.apikey` is Git-ignored and must never be committed;
+- the shared credential loader is responsible for file reading and optional environment-variable override;
+- Calendar provider adapters do not parse credential files themselves;
+- missing, empty, whitespace-only, or multi-line credentials fail closed;
+- credentials must never enter `calendar.json`, provider event records, stdout, stderr diagnostics, logs, tests, or CI artifacts;
+- providers that do not require an API key simply do not request one;
+- adding a future provider requires only its provider identifier and credential filename; the storage architecture remains unchanged.
+
+The shared loader is intentionally independent of the Calendar/Market Data provider implementations. An explicitly supplied provider environment variable remains a supported deployment/CI override, while the provider-local file is the canonical local source.
 ## 2. Yahoo Forex resolution
 
 Canonical symbol examples:
@@ -288,7 +310,6 @@ forces provider acquisition over the same resolved interval.
 The canonical time spelling is `HH:MM`. For compatibility with the approved CLI example, the open-start
 datetime form also accepts `HH.MM` and normalizes it to `HH:MM`.
 
-
 --time is mutually exclusive with an explicit datetime, datetime range, date range, current, latest, or next scope. Invalid HH:MM values fail through the existing Calendar time parser.
 
 ## 3.2 Relative day scopes
@@ -328,6 +349,24 @@ Semantics:
 - the resolved interval is the same logical query interval used for refresh matching and result presentation;
 - the range does not create or alter coverage/watermarks merely by parsing or querying.
 
+## 3.4 Explicit date flags and last-update lookup
+
+The public CLI also accepts explicit date/time flags:
+
+- SYMBOL --date YYYY.MM.DD selects the exact UTC calendar day;
+- SYMBOL --date YYYY.MM.DD --time HH:MM selects the exact UTC minute;
+- SYMBOL --time HH:MM remains the current-UTC-day shorthand;
+- the same --date / --time scope construction is supported by explicit refresh SYMBOL and scoped delete SYMBOL;
+- --date and --time cannot be combined with an already explicit positional scope;
+- date/time flags are normalized to the existing canonical scope grammar before domain resolution.
+
+The read-only SYMBOL --last-update operation returns the latest successful provider acquisition timestamp (watermarks[provider|symbol].last_successful_at) for every applicable provider. It does not call providers, change coverage, change watermarks, or write calendar.json.
+
+If no applicable provider has a successful watermark, the result status is NO_LAST_UPDATE. Missing individual provider watermarks are returned as null / N/A rather than fabricated timestamps.
+
+The help text must expose --date, --time, and --last-update once in the FLAGS section and keep usage examples concise without duplicating equivalent --time forms.
+
+Implementation version is 2.6.1; persistent schema remains V2.
 ## 4. current semantics
 
 `current` is a read-only active-event lookup over the committed `calendar.json` snapshot.
@@ -416,6 +455,28 @@ Yahoo Finance refresh follows the same compare-and-replace model over the provid
 feed. Yahoo news represents already published/current news, not scheduled future events. Historical completeness
 remains subject to the Yahoo rolling-feed limitation.
 
+### Refresh provider/status contract
+
+The trailing `refresh` modifier uses the same isolated-provider acquisition semantics
+as normal Calendar acquisition.
+
+The refresh result exposes:
+- provider-level acquisition results in the `providers` collection;
+- `events` containing the normal query result for the requested scope after the
+  refresh merge;
+- `refresh.added`, `refresh.changed`, and `refresh.unchanged` counts.
+
+Provider failure semantics remain fail-closed:
+- all applicable providers fail -> aggregate status `UNAVAILABLE`;
+- a mixture of successful and failed providers -> aggregate status `PARTIAL`;
+- `SKIPPED_NO_FOREX_PAIR` remains distinguishable and is never treated as a
+  successful empty acquisition;
+- Detail-partial ForexFactory acquisition remains `PARTIAL`;
+- provider diagnostics remain subject to the normal `--debug` stderr contract.
+
+The modifier does not introduce a separate `REFRESHED`, `UNCHANGED`, or
+`BOOTSTRAP_REQUIRED` query status. Change detection is represented by the
+refresh summary.
 ## 5. Explicit-range acquisition
 
 For an explicit date/time range:
@@ -621,8 +682,6 @@ The Calendar CLI implementation version is exposed in `calendar.py` as `__versio
 by `python calendar.py --help`. The software version is independent from `SCHEMA_VERSION`;
 changing the implementation version does not by itself change the persistent JSON schema.
 
-
-
 If a local `calendar.json` has a schema version that differs from the expected `SCHEMA_VERSION` (e.g., version 1 vs 2), the script strictly rejects the file with `Unsupported calendar schema version.` to guarantee data integrity.
 The script must never silently destroy or automatically migrate an old cache to fulfill a query. The user must explicitly purge the obsolete state using the bare `python calendar.py delete`
 command or by manually removing the file. Bare delete is an explicit full-cache reset and is
@@ -684,6 +743,20 @@ If one or more Detail requests fail after the base calendar rows were acquired:
 
 Coverage state, not the presence or absence of `details.specs`, is the authoritative retry indicator.
 A legitimately empty Detail response is not itself a failure.
+
+## 10.2 Successful no-match provider result semantics
+
+A provider may successfully complete an acquisition and return zero matching events for the requested canonical symbol and interval. This is a valid empty result, not a partial provider failure.
+
+For this state:
+- provider status is `NO_MATCH`;
+- no provider failure is recorded;
+- normal successful acquisition state may be persisted, including the provider watermark where the acquisition semantics permit it;
+- the aggregate query status is `NO_RELEVANT_EVENT` when all applicable providers return `NO_MATCH`;
+- `NO_MATCH` must not be converted to `PARTIAL` merely because the provider has no matching events;
+- `PARTIAL` remains reserved for an acquisition that completed with incomplete provider coverage or another explicitly partial provider result.
+
+For Yahoo Finance specifically, an empty successful news collection is `NO_MATCH`. A verified Yahoo Forex-pair unavailability remains the separate `SKIPPED_NO_FOREX_PAIR` state.
 
 ## 10. Failure and atomicity
 
@@ -763,7 +836,6 @@ Acceptance requires:
 - malformed or unavailable ForexFactory Detail JSON is surfaced as a provider failure and never silently converted into fabricated Detail content;
 - `--cleartext` renders normalized event details as human-readable fields rather than a raw JSON dictionary, without changing canonical data or machine-readable output.
 
-
 ## 14. Source layout and portability
 
 The repository-root `calendar.py` remains the stable CLI entrypoint. Internal Calendar modules are grouped under `CALENDAR/` by responsibility, and the default persistent cache is `CALENDAR/calendar.json`. `SMC_DATA_ROOT` remains an explicit override.
@@ -774,144 +846,13 @@ The domain layer keeps event, interval, coverage, watermark, merge, filtering, a
 
 The rendered HTML fallback requires a concrete provider clock. Missing, `Tentative`, or `All Day` time text is not converted to `00:00` or another synthetic timestamp. Such a row causes provider parsing to fail closed; invalid hour/minute values are also rejected explicitly.
 
-
-## 10.2 Successful no-match provider result semantics
-
-A provider may successfully complete an acquisition and return zero matching events for the requested canonical symbol and interval. This is a valid empty result, not a partial provider failure.
-
-For this state:
-- provider status is `NO_MATCH`;
-- no provider failure is recorded;
-- normal successful acquisition state may be persisted, including the provider watermark where the acquisition semantics permit it;
-- the aggregate query status is `NO_RELEVANT_EVENT` when all applicable providers return `NO_MATCH`;
-- `NO_MATCH` must not be converted to `PARTIAL` merely because the provider has no matching events;
-- `PARTIAL` remains reserved for an acquisition that completed with incomplete provider coverage or another explicitly partial provider result.
-
-For Yahoo Finance specifically, an empty successful news collection is `NO_MATCH`. A verified Yahoo Forex-pair unavailability remains the separate `SKIPPED_NO_FOREX_PAIR` state.
-
-
-## 10.3 Source activity documentation
+## 14.2 Source activity documentation
 
 Calendar Python source must document the activity of its functions and meaningful state variables without changing runtime behavior. Function docstrings/comments must identify the function's role in the Calendar flow, including whether it is a public operation or an internal helper. Important module-level state variables must have concise comments describing what they represent and how they are used. Local variables should be documented through nearby comments when their role is non-obvious or when they carry acquisition, persistence, coverage, watermark, provider-result, or presentation state. Trivial loop/index variables do not require comments. Documentation must remain synchronized with the implementation and must not introduce generated noise or duplicate the specification.
 
-
-## 10.4 Source attribution
+## 14.3 Source attribution
 
 Calendar Python source files must retain the following attribution header:
 `# (c) Istvan Jakab <istvanhlc230@gmail.com>`
 
 The attribution is informational source ownership/authorship metadata and must not affect runtime behavior.
-
-## 2.4.3 Calendar CLI time shorthand
-
-The Calendar CLI now supports a time-only --time HH:MM shorthand while preserving the canonical YYYY.MM.DD@HH:MM internal scope grammar.
-
-- SYMBOL --time HH:MM resolves to the current UTC calendar day at the supplied minute;
-- SYMBOL YYYY.MM.DD --time HH:MM resolves to the supplied date at the supplied minute;
-- the same shorthand is available for explicit refresh SYMBOL and symbol-scoped delete SYMBOL;
-- --time is rejected when an explicit scope already contains time or represents a range/current/latest/next operation;
-- the shorthand is normalized before domain interval resolution, so persistence, provider routing, coverage, watermark and query semantics remain unchanged;
-- the current date comes from the Calendar UTC clock, not the machine-local date;
-- help text and source comments document the behavior.
-
-Implementation version: 2.4.3; persistent schema remains 2.
-
-Validation requirement: run the Calendar CLI parser matrix and fresh GitHub Actions validation before marking this change PASS.
-
-## 10.5 Refresh provider/status contract
-
-The trailing `refresh` modifier uses the same isolated-provider acquisition semantics
-as normal Calendar acquisition.
-
-The refresh result exposes:
-- provider-level acquisition results in the `providers` collection;
-- `events` containing the normal query result for the requested scope after the
-  refresh merge;
-- `refresh.added`, `refresh.changed`, and `refresh.unchanged` counts.
-
-Provider failure semantics remain fail-closed:
-- all applicable providers fail -> aggregate status `UNAVAILABLE`;
-- a mixture of successful and failed providers -> aggregate status `PARTIAL`;
-- `SKIPPED_NO_FOREX_PAIR` remains distinguishable and is never treated as a
-  successful empty acquisition;
-- Detail-partial ForexFactory acquisition remains `PARTIAL`;
-- provider diagnostics remain subject to the normal `--debug` stderr contract.
-
-The modifier does not introduce a separate `REFRESHED`, `UNCHANGED`, or
-`BOOTSTRAP_REQUIRED` query status. Change detection is represented by the
-refresh summary.
-
-## 2.4.4 Calendar date flag and last-update lookup
-
-The public CLI also accepts explicit date/time flags:
-
-- SYMBOL --date YYYY.MM.DD selects the exact UTC calendar day;
-- SYMBOL --date YYYY.MM.DD --time HH:MM selects the exact UTC minute;
-- SYMBOL --time HH:MM remains the current-UTC-day shorthand;
-- the same --date / --time scope construction is supported by explicit refresh SYMBOL and scoped delete SYMBOL;
-- --date and --time cannot be combined with an already explicit positional scope;
-- date/time flags are normalized to the existing canonical scope grammar before domain resolution.
-
-The read-only SYMBOL --last-update operation returns the latest successful provider acquisition timestamp (watermarks[provider|symbol].last_successful_at) for every applicable provider. It does not call providers, change coverage, change watermarks, or write calendar.json.
-
-If no applicable provider has a successful watermark, the result status is NO_LAST_UPDATE. Missing individual provider watermarks are returned as null / N/A rather than fabricated timestamps.
-
-The help text must expose --date, --time, and --last-update once in the FLAGS section and keep usage examples concise without duplicating equivalent --time forms.
-
-Implementation version is 2.6.1; persistent schema remains V2.
-## 2.4.10 Open-start range correction
-
-**Status: IMPLEMENTED — validation pending**
-
-The Calendar CLI supports open-start `--range -END` queries and refreshes. The start is resolved from the
-latest recorded visible event for SYMBOL in the committed cache. Date and datetime END forms are supported;
-`HH.MM` is accepted as a compatibility alias for the datetime END and normalized to `HH:MM`.
-
-## Provider API credential storage
-
-Calendar providers that require API credentials use the same provider-independent local credential mechanism as Market Data.
-
-Credential files live under the repository-root:
-
-    PROVIDERS/
-        credentials.py
-        <provider>.apikey
-
-Rules:
-- each provider has its own credential file;
-- each file contains only that provider's API key;
-- `PROVIDERS/*.apikey` is Git-ignored and must never be committed;
-- the shared credential loader is responsible for file reading and optional environment-variable override;
-- Calendar provider adapters do not parse credential files themselves;
-- missing, empty, whitespace-only, or multi-line credentials fail closed;
-- credentials must never enter `calendar.json`, provider event records, stdout, stderr diagnostics, logs, tests, or CI artifacts;
-- providers that do not require an API key simply do not request one;
-- adding a future provider requires only its provider identifier and credential filename; the storage architecture remains unchanged.
-
-The shared loader is intentionally independent of the Calendar/Market Data provider implementations. An explicitly supplied provider environment variable remains a supported deployment/CI override, while the provider-local file is the canonical local source.
-
-
-## 4.4 current/latest/relative event query semantics
-
-The public relative query grammar is:
-
-- current: return all committed events currently active in the current UTC activity minute;
-- current day/week/month: return all committed events in the corresponding UTC period;
-- next: return the nearest future scheduled economic event;
-- next day/week/month: return all events in the next corresponding UTC period;
-- prev: return the nearest past scheduled economic event;
-- prev day/week/month: return all events in the previous corresponding UTC period;
-- latest: return the most recent committed event at or before now;
-- news: report scheduled economic news events active in the current UTC activity minute.
-
-The current query is read-only. It does not acquire providers, mutate coverage, update watermarks,
-or write calendar.json. An event is considered active from its canonical timestamp through the end
-of that UTC minute because the canonical Calendar event contract contains a point timestamp and no
-provider-independent duration field.
-
-Current refresh is explicitly permitted as `SYMBOL current refresh`; current day/week/month are period scopes and may also use the trailing refresh modifier. Latest, next, prev, and news are event-state/look-up queries and do not accept refresh.
-
-Next and prev consider only scheduled economic events represented by ForexFactory; Yahoo Finance
-published news is not a future scheduled-event source.
-
-The obsolete standalone scope is not part of the public grammar.
