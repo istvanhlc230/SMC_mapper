@@ -1067,4 +1067,4 @@ next, prev, and news are event-state/look-up queries and do not accept refresh.
 Next and prev consider only scheduled economic events represented by ForexFactory; Yahoo Finance
 published news is not a future scheduled-event source.
 
-The obsolete standalone actual scope is not part of the public grammar.
+The obsolete standalone scope is not part of the public grammar.
