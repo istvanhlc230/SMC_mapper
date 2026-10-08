@@ -9,6 +9,7 @@ from typing import Sequence
 
 from .models import MarketDataRequest, SUPPORTED_TIMEFRAMES
 from .provider import create_provider
+from .protocol import format_cleartext, serialize_machine_csv
 from .service import get_candles
 
 
@@ -37,10 +38,18 @@ def _normalize_cli_argv(argv):
 def build_argument_parser():
     """Define the Market Data CLI without performing I/O."""
     parser = argparse.ArgumentParser(
-        description="Acquire, normalize and persist market data."
+        description=(
+            "Acquire and persist Market Data. Successful default output is machine-readable CSV on STDOUT; "
+            "--cleartext selects human-readable tabular output."
+        )
     )
     parser.add_argument("--symbol", required=True)
-    parser.add_argument("--timeframes", nargs="+", required=True)
+    parser.add_argument(
+        "--timeframes",
+        nargs="+",
+        required=True,
+        help="One or more supported timeframes (for example H1 or H1 M15).",
+    )
     parser.add_argument(
         "--range",
         dest="scope",
@@ -61,11 +70,15 @@ def build_argument_parser():
         action="store_true",
         help="Acquire exactly the latest completed/closed candle.",
     )
-    parser.add_argument("--debug", action="store_true")
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Write diagnostic traceback/details to STDERR on failure.",
+    )
     parser.add_argument(
         "--cleartext",
         action="store_true",
-        help="Print completed candles in human-readable form after the update.",
+        help="Use human-readable wrapped table output instead of machine CSV STDOUT.",
     )
     return parser
 
@@ -251,39 +264,33 @@ def parse_market_data_request(argv: Sequence[str] | None = None):
     return request
 
 
-def _format_cleartext_candles(symbol: str, candles_by_timeframe) -> str:
-    """Format completed candles for human-readable CLI output."""
-    lines = [f"MARKET DATA | OK | {symbol}"]
-    for timeframe, candles in candles_by_timeframe.items():
-        lines.append(f"TIMEFRAME | {timeframe} | CANDLES {len(candles)}")
-        lines.append("-" * 72)
-        for candle in candles:
-            timestamp = candle.timestamp.astimezone(timezone.utc).isoformat().replace(
-                "+00:00", "Z"
-            )
-            line = (
-                f"{timestamp} | O {candle.open_price} | H {candle.high_price} | "
-                f"L {candle.low_price} | C {candle.close_price}"
-            )
-            volume = candle.volume
-            if volume.has_total:
-                line += f" | V {volume.total}"
-            if volume.has_orderflow:
-                line += (
-                    f" | OB {volume.orderflow_buy} | OS {volume.orderflow_sell}"
-                )
-            lines.append(line + " | CLOSED")
-    return "\n".join(lines)
-
-
-
 def run(request):
-    """Execute the requested Market Data acquisition."""
+    """Execute acquisition and emit only the selected process-output protocol."""
     provider = create_provider("lse")
     try:
         candles_by_timeframe = get_candles(request, provider)
+        output_entries = {}
+        for timeframe, candles in candles_by_timeframe.items():
+            output_entries[timeframe] = [
+                (
+                    candle,
+                    candle.completion_time <= datetime.now(timezone.utc),
+                )
+                for candle in candles
+            ]
+
+        if request.current:
+            for timeframe, entries in output_entries.items():
+                incomplete = [entry for entry in entries if not entry[1]]
+                output_entries[timeframe] = incomplete[-1:] or entries[-1:]
+        elif request.last_closed_only:
+            for timeframe, entries in output_entries.items():
+                output_entries[timeframe] = entries[-1:]
+
         if request.cleartext:
-            print(_format_cleartext_candles(request.symbol, candles_by_timeframe))
+            print(format_cleartext(request.symbol, output_entries), end="\n")
+        else:
+            print(serialize_machine_csv(output_entries), end="")
         return 0
     except Exception as exc:
         print(f"ERROR: {exc}", file=__import__("sys").stderr)
