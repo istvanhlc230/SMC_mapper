@@ -909,8 +909,7 @@ or write calendar.json. An event is considered active from its canonical timesta
 of that UTC minute because the canonical Calendar event contract contains a point timestamp and no
 provider-independent duration field.
 
-Current refresh is explicitly permitted as `SYMBOL current refresh`; current day/week/month are period scopes and may also use the trailing refresh modifier. Latest,
-next, prev, and news are event-state/look-up queries and do not accept refresh.
+Current refresh is explicitly permitted as `SYMBOL current refresh`; current day/week/month are period scopes and may also use the trailing refresh modifier. Latest, next, prev, and news are event-state/look-up queries and do not accept refresh.
 
 Next and prev consider only scheduled economic events represented by ForexFactory; Yahoo Finance
 published news is not a future scheduled-event source.
