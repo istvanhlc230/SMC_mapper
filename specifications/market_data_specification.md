@@ -347,9 +347,9 @@ Rules:
 
 ---
 
-# Canonical W1 / MN1 interval and completion policy
+## 3.9 Canonical W1 / MN1 interval and completion policy
 
-## W1 — calendar week
+### W1 — calendar week
 
 `W1` is a **UTC calendar-week candle**.
 
@@ -362,7 +362,7 @@ Rules:
 - a provider record that does not represent the complete canonical week must not be promoted to a completed W1 candle;
 - the current W1 snapshot represents the current calendar week and remains incomplete until the next Monday 00:00 UTC.
 
-## MN1 — calendar month
+### MN1 — calendar month
 
 `MN1` is a **UTC calendar-month candle**.
 
@@ -375,13 +375,13 @@ Rules:
 - a provider record that does not represent the complete canonical month must not be promoted to a completed MN1 candle;
 - the current MN1 snapshot represents the current calendar month and remains incomplete until the first day of the next month at 00:00 UTC.
 
-## Calendar-based completion is provider-independent
+### Calendar-based completion is provider-independent
 
 The completion boundary for W1 and MN1 is determined by the canonical UTC calendar interval, not by provider metadata or the number of records returned.
 
 Provider metadata may be retained as diagnostic information, but it cannot override the canonical completion boundary.
 
-## Acquisition and incremental semantics
+### Acquisition and incremental semantics
 
 For W1 and MN1, normal incremental acquisition advances from the persisted candle's canonical interval end, not by adding a fixed number of seconds.
 
@@ -392,7 +392,7 @@ The canonical next acquisition boundary is:
 
 Open-start `--range -END` remains inclusive at the persisted `available_end` timestamp for reconciliation/deduplication.
 
-## Current snapshot semantics
+### Current snapshot semantics
 
 `--current` returns at most the current canonical W1 or MN1 interval.
 
