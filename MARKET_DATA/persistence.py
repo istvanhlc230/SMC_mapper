@@ -9,12 +9,14 @@ from .models import DECIMAL_PERSISTENCE_PLACES, SUPPORTED_TIMEFRAMES, WRITE_RETR
 from .normalization import build_candle_id, canonical_interval_start, canonical_interval_end
 
 def _parse_persisted_timestamp(value: str | None) -> datetime | None:
+    """Parse a persisted UTC timestamp into an aware datetime."""
     if value is None: return None
     parsed=datetime.fromisoformat(value.replace("Z","+00:00"))
     if parsed.tzinfo is None: raise ValueError("persisted timestamp must be timezone-aware")
     return parsed.astimezone(timezone.utc)
 
 def _validate_symbol_path_component(symbol: str) -> str:
+    """Validate a symbol before using it as a filesystem path component."""
     if not symbol or symbol in {".",".."} or any(x in symbol for x in ("/","\\","\x00")) or ":" in symbol: raise ValueError("unsafe symbol path component")
     return symbol
 
@@ -59,6 +61,7 @@ def _validate_persisted_non_negative_decimal(value: Any, field_name: str) -> Non
         raise ValueError(f"persisted {field_name} must be non-negative")
 
 def _validate_candle_record(candle, timeframe):
+    """Validate one persisted candle against the timeframe storage contract.""
     required={"candle_id","timestamp","completion_time","open","high","low","close","volume"}
     if not required <= set(candle): raise ValueError("malformed persisted candle")
     stamp=_parse_persisted_timestamp(candle["timestamp"]); completion=_parse_persisted_timestamp(candle["completion_time"])
@@ -158,6 +161,7 @@ def _serialize_json_value(value):
     return value
 
 def serialize_market_data(market_data):
+    """Serialize the Market Data document as deterministic JSON.""
     """Serialize the validated Market Data document as deterministic JSON.""
     return json.dumps(_serialize(market_data),ensure_ascii=False,sort_keys=True,indent=2)+"\n"
 
