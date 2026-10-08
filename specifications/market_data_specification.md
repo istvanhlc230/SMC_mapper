@@ -200,6 +200,7 @@ class MarketDataRequest:
     last_closed_only: bool
     current: bool
     debug: bool
+    cleartext: bool = False
 ```
 
 Variable name: `request`.
@@ -472,6 +473,7 @@ sort_candles
 apply_candle_retention
 build_current_snapshot
 merge_current_snapshot
+get_candles
 clear_completed_current_snapshot
 load_market_data
 create_empty_market_data
@@ -513,6 +515,7 @@ Required options:
 --current
 --lastclosed
 --debug
+--cleartext
 --help
 ```
 
