@@ -1668,16 +1668,15 @@ normalize_symbol(symbol)
 parse_decimal(value)
 
 get_symbol_data_directory(symbol, data_directory)
-get_market_data_path(symbol, data_directory)
 get_structures_path(symbol, data_directory)
 
 load_structures(path, symbol)
-load_market_data(path, symbol)
+parse_market_data_stdout(stdout, symbol, requested_timeframes)
 
 discover_analysis_views(structures)
 validate_analysis_view(analysis)
 
-plan_market_data_updates(analysis_views, market_data, now)
+plan_market_data_updates(analysis_views, now)
 get_due_analyses(registry, now)
 
 invoke_market_data(plan, debug)
