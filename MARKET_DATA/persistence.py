@@ -164,8 +164,7 @@ def _serialize_json_value(value):
     return value
 
 def serialize_market_data(market_data):
-    """Serialize the Market Data document as deterministic JSON.""
-    """Serialize the validated Market Data document as deterministic JSON.""
+    """Serialize the validated Market Data document as deterministic JSON."""
     return json.dumps(_serialize_json_value(market_data), ensure_ascii=False, sort_keys=True, indent=2) + "\n"
 
 def save_market_data_atomic(path: Path, market_data, retry_limit=WRITE_RETRY_LIMIT):
