@@ -482,7 +482,7 @@ def parse_calendar_cli_request(cli_arguments: List[str]) -> Dict[str, Any]:
             raise CalendarInputError("--range cannot be combined with --date or --time.")
         scope = domain.parse_scope(cli_range)
         if scope in {
-            "current", "actual", "latest", "next", "prev", "news",
+            "current", "latest", "next", "prev", "news",
             "today", "tomorrow", "yesterday",
             "current day", "current week", "current month",
             "next day", "next week", "next month",
