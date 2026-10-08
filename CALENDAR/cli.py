@@ -516,8 +516,8 @@ def parse_calendar_cli_request(cli_arguments: List[str]) -> Dict[str, Any]:
             scope_text = f"{positional[1]} {positional[2]}"
         scope = domain.parse_scope(scope_text)
 
-    if refresh and scope in {"current", "latest", "next", "prev", "news"}:
-        raise CalendarInputError("refresh is not valid for current, latest, next, prev, or news.")
+    if refresh and scope in {"latest", "next", "prev", "news"}:
+        raise CalendarInputError("refresh is not valid for latest, next, prev, or news.")
 
     return {
         "operation": "QUERY",
