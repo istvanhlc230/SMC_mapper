@@ -593,7 +593,7 @@ Yahoo details may include:
 Provider-specific fields not mapped to canonical fields may be retained under provider_fields.
 No provider severity or economic value is invented.
 
-## 7.5 ForexFactory HTML fallback
+## 7.1 ForexFactory HTML fallback
 
 The Calendar must not fail solely because the legacy embedded days JSON payload is absent from the
 ForexFactory HTML response.
@@ -639,7 +639,7 @@ inside the requested interval has no `details.specs`. Such an interval is reacqu
 provider facts can be enriched with Detail specifications. This is an enrichment rule within schema
 version 2, not a schema migration.
 
-## 7.6 Human-readable CLI presentation
+## 7.2 Human-readable CLI presentation
 
 `--cleartext` is presentation-only and must not modify the canonical event data or persistent schema.
 
