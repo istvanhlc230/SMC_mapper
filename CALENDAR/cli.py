@@ -13,41 +13,6 @@ from .config import HELP_TEXT, CalendarInputError, DataIntegrityError
 
 # CLI state is request-local: parsed arguments determine one operation and its diagnostic/presentation flags.
 
-def _query_current_cached(
-    document: Dict[str, Any],
-    symbol: str,
-    now: datetime,
-) -> List[Dict[str, Any]]:
-    """Return current incremental events from committed cache without provider I/O."""
-    boundaries: Dict[str, Optional[datetime]] = {}
-    for provider in domain.resolve_applicable_providers(symbol):
-        watermark = document["watermarks"].get(
-            domain.watermark_key(provider, symbol)
-        )
-        boundaries[provider] = (
-            domain.parse_iso8601(watermark["last_successful_at"])
-            if watermark and watermark.get("last_successful_at")
-            else None
-        )
-
-    cached: List[Dict[str, Any]] = []
-    for event in domain.filter_events_for_symbol(document["events"], symbol):
-        timestamp = domain.parse_iso8601(event["timestamp"])
-        boundary = boundaries.get(event["source"])
-        if boundary is None:
-            continue
-        if boundary < timestamp <= now:
-            cached.append(event)
-
-    return sorted(
-        {event["event_id"]: event for event in cached}.values(),
-        key=lambda event: (
-            domain.parse_iso8601(event["timestamp"]),
-            event["event_id"],
-        ),
-    )
-
-
 def execute_calendar_query(
     symbol: str,
     scope: str,
@@ -125,25 +90,11 @@ def execute_calendar_query(
             return 0 if status != "UNAVAILABLE" else 2
 
         if scope == "current":
-            # Plain current is intentionally read-only. Provider acquisition is
-            # requested explicitly by the trailing refresh modifier instead.
-            events = _query_current_cached(
-                document,
-                symbol,
-                domain.utc_now(),
+            # Current is a read-only active-event lookup. It never performs provider I/O.
+            events = domain.query_current_events(
+                document["events"], symbol, domain.utc_now()
             )
-            status = "OK" if events else "NO_RELEVANT_EVENT"
-            presentation.output_query_result(status, symbol, events, [], cleartext)
-            return 0
-
-        if scope == "actual":
-            start, end = domain.resolve_scope_interval("actual")
-            events = domain.filter_events_for_interval(
-                domain.filter_events_for_symbol(document["events"], symbol),
-                start,
-                end,
-            )
-            status = "OK" if events else "NO_RELEVANT_EVENT"
+            status = "OK" if events else "NO_CURRENT_EVENT"
             presentation.output_query_result(status, symbol, events, [], cleartext)
             return 0
 
@@ -309,7 +260,7 @@ def execute_calendar_delete(
                 )
             if (
                 scope in {
-                    "current", "actual", "latest", "next", "prev", "news",
+                    "current", "latest", "next", "prev", "news",
                     "current day", "current week", "current month",
                     "next day", "next week", "next month",
                     "prev day", "prev week", "prev month",
@@ -565,8 +516,8 @@ def parse_calendar_cli_request(cli_arguments: List[str]) -> Dict[str, Any]:
             scope_text = f"{positional[1]} {positional[2]}"
         scope = domain.parse_scope(scope_text)
 
-    if refresh and scope in {"latest", "next", "prev", "news"}:
-        raise CalendarInputError("refresh is not valid for latest, next, prev, or news.")
+    if refresh and scope in {"current", "latest", "next", "prev", "news"}:
+        raise CalendarInputError("refresh is not valid for current, latest, next, prev, or news.")
 
     return {
         "operation": "QUERY",
