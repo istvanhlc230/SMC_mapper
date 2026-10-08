@@ -1881,11 +1881,11 @@ stderr -> terminal only
 Never:
 
 - write debug to JSON;
-- print candle transport data to stdout;
+- print candle transport data to stdout as an implicit inter-process protocol;
 - forward stderr to Mapper as data;
 - use stdout as a machine-readable data API.
 
-Normal successful execution must be user-silent.
+Normal successful execution must be user-silent unless the explicit `--cleartext` presentation option is supplied.
 
 ## 16.3 Error categories
 
