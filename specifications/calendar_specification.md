@@ -364,6 +364,7 @@ event, or `NO_LATEST_EVENT`.
 
 Public forms:
 
+    python calendar.py SYMBOL current refresh
     python calendar.py SYMBOL current day refresh
     python calendar.py SYMBOL current week refresh
     python calendar.py SYMBOL current month refresh
@@ -379,7 +380,7 @@ Public forms:
     python calendar.py SYMBOL --time HH:MM refresh
 
 The former `refresh SYMBOL SCOPE` command grammar is removed.
-`latest refresh` is invalid; `current`, `next`, `prev`, and `news` are also invalid refresh scopes.
+`current refresh` is valid and is the only refresh form permitted among `current`, `latest`, `next`, `prev`, and `news`. `latest refresh`, `next refresh`, `prev refresh`, and `news refresh` are invalid.
 
 Refresh behavior:
 
@@ -908,7 +909,7 @@ or write calendar.json. An event is considered active from its canonical timesta
 of that UTC minute because the canonical Calendar event contract contains a point timestamp and no
 provider-independent duration field.
 
-Current day/week/month are period scopes and may use the trailing refresh modifier. Current, latest,
+Current refresh is explicitly permitted as `SYMBOL current refresh`; current day/week/month are period scopes and may also use the trailing refresh modifier. Latest,
 next, prev, and news are event-state/look-up queries and do not accept refresh.
 
 Next and prev consider only scheduled economic events represented by ForexFactory; Yahoo Finance
