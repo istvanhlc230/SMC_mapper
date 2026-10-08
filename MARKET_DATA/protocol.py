@@ -25,7 +25,7 @@ MACHINE_PROTOCOL_HEADER = (
 
 def _decimal_text(value: Decimal) -> str:
     """Return a locale-independent decimal representation."""
-    return str(value)
+    return format(value, "f")
 
 
 def _machine_row(timeframe: str, candle: NormalizedCandle, completed: bool) -> list[str]:
