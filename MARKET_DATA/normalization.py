@@ -6,11 +6,13 @@ from typing import Iterable
 from .models import TIMEFRAME_SECONDS, NormalizedCandle, ProviderCandle, VolumeState
 
 def _to_utc(value: datetime) -> datetime:
+    """Convert a timezone-aware datetime to UTC."""
     if value.tzinfo is None or value.utcoffset() is None:
         raise ValueError("timestamp must be timezone-aware")
     return value.astimezone(timezone.utc)
 
 def _parse_decimal(value, field_name: str) -> Decimal:
+    """Parse and validate one finite Decimal input field."""
     try:
         result = Decimal(str(value))
     except (InvalidOperation, ValueError, TypeError) as exc:
@@ -70,11 +72,13 @@ def is_candle_complete(
     return _to_utc(now or datetime.now(timezone.utc)) >= completion_time
 
 def build_candle_id(symbol: str, timeframe: str, timestamp: datetime) -> str:
+    """Build the stable candle identity from symbol, timeframe and interval start.""
     """Build the stable candle identity from symbol, timeframe and interval start."""
     stamp = _to_utc(timestamp).isoformat().replace("+00:00", "Z")
     return f"{symbol}_{timeframe}_{stamp}"
 
 def normalize_provider_candle(provider_candle: ProviderCandle, timeframe: str, symbol: str = "") -> NormalizedCandle:
+    """Normalize one provider candle into the canonical Market Data candle model.""
     """Normalize one provider candle into the canonical Market Data candle model."""
     source_timestamp = _to_utc(provider_candle.timestamp)
     canonical_start = canonical_interval_start(source_timestamp, timeframe)
@@ -97,11 +101,13 @@ def normalize_provider_candle(provider_candle: ProviderCandle, timeframe: str, s
     return candle
 
 def normalize_provider_candles(provider_candles: Iterable[ProviderCandle], timeframe: str, symbol: str = "") -> list[NormalizedCandle]:
+    """Normalize and chronologically order a provider candle collection.""
     """Normalize and chronologically order a provider candle collection."""
     candles = [normalize_provider_candle(item, timeframe, symbol) for item in provider_candles]
     return sorted(candles, key=lambda item: item.timestamp)
 
 def validate_normalized_candle(candle: NormalizedCandle) -> None:
+    """Validate canonical OHLC, completion-time and volume invariants.""
     """Validate canonical OHLC, completion-time and volume invariants."""
     values = (candle.open_price, candle.high_price, candle.low_price, candle.close_price)
     if any(not value.is_finite() for value in values):
