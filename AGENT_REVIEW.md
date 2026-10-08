@@ -1305,3 +1305,24 @@ Static source/specification/CI contract: PASS for the corrected findings.
 ## Validation gate
 
 The corrections are committed to `main`. A fresh Calendar and Market Data GitHub Actions run must complete successfully before runtime PASS is claimed.
+
+# Corrective audit follow-up — 2026-10-08
+
+## Additional correction
+
+A second source-level pass after the initial corrective commits found that the first serializer patch had not actually replaced the obsolete _serialize() call and left a malformed duplicate serializer docstring. Both are now corrected.
+
+Final corrective source state:
+- serialize_market_data() calls _serialize_json_value();
+- the serializer docstring is a single valid triple-quoted docstring;
+- Market Data normalization/provider documentation has no malformed duplicate docstrings;
+- ForexFactory no longer synthesizes an event URL;
+- Calendar and Market Data CI contracts reference the current implementation helper names and Detail-spec contract.
+
+## Final static audit
+
+PASS — no remaining source/specification/CI mismatch was found for the corrected findings.
+
+## Runtime gate
+
+The latest corrective commits are on main. GitHub's connected status endpoint has not yet exposed workflow status for the newest commit, so CI/runtime PASS is intentionally not claimed here.
