@@ -727,8 +727,6 @@ All writes use a shared Calendar lock plus temporary-file write, flush, fsync, a
 
 A write failure leaves the previously committed file unchanged.
 
-## 10. Failure and atomicity
-
 ## 10.1 ForexFactory Detail failure and retry contract
 
 ForexFactory base-event acquisition is considered provider-successful only when the acquired interval
