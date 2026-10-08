@@ -50,8 +50,8 @@ def _parse_timestamp(value: Any) -> datetime:
     elif " " in raw and "T" not in raw:
         raw = raw.replace(" ", "T", 1)
     parsed = datetime.fromisoformat(raw)
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=timezone.utc)
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise ValueError("LSE timestamp must include an explicit timezone")
     return parsed.astimezone(timezone.utc)
 
 
@@ -61,7 +61,7 @@ def _decimal_value(value: Any, field_name: str) -> Any:
         raise ValueError(f"LSE candle missing {field_name}")
     try:
         return Decimal(str(value))
-    except Exception as exc:
+    except (ValueError, TypeError, ArithmeticError) as exc:
         raise ValueError(f"invalid LSE {field_name}") from exc
 
 
