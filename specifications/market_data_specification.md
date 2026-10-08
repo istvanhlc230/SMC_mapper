@@ -36,7 +36,6 @@ The module is a **data acquisition and normalization boundary**, not an SMC anal
 - apply canonical HTF/LTF SMC semantics;
 - depend on `smc_mapper.py` or `smc_monitor.py`;
 - import or call `smc_htf_ltf_monitor.py`, `smc_analyzer.py`, or any legacy engine as a runtime dependency;
-- emit candle data through stdout as an inter-process data channel;
 - persist debug text;
 - fabricate missing candles;
 - silently repair malformed provider data;
@@ -49,6 +48,39 @@ Legacy files such as `smc_htf_ltf_monitor.py`, `smc_analyzer.py`, and old engine
 Reusable code or algorithms may be extracted when they are compatible with this specification, but the resulting implementation must be self-contained and must not retain a runtime/import/schema/behavioral dependency on legacy files.
 
 ---
+
+## 0.4 Mapper/Monitor-facing service interface
+
+The persisted JSON file is an implementation detail of Market Data persistence. Mapper and Monitor must not open, parse, or depend on the `*_marketdata.json` file format.
+
+The authoritative programmatic boundary is the Market Data service layer. Consumers request normalized candles from the service and receive provider-independent `NormalizedCandle` objects.
+
+Required public service operation:
+
+    def get_candles(
+    request: MarketDataRequest,
+    provider: MarketDataProvider | None = None,
+    ) -> dict[str, list[NormalizedCandle]]:
+        ...
+
+Contract:
+
+- `request.symbol` identifies the canonical symbol;
+- `request.timeframes` identifies the requested timeframes;
+- historical `start_time`/`end_time` use the same half-open interval semantics as the CLI;
+- when no historical range is specified, the service returns the retained completed history for each requested timeframe;
+- `last_closed_only` returns exactly the latest completed candle for each requested timeframe when available;
+- `current` may refresh Market Data persistence, but `get_candles` returns completed candles only; current in-progress state is not silently mixed into the completed candle series;
+- the returned candles are `NormalizedCandle` objects, not JSON dictionaries and not provider-specific records;
+- the service may satisfy the request from persistence, acquire missing data through the provider, merge it, and then return the normalized result;
+- the caller must not need to know whether data came from the persisted document or a provider;
+- provider selection is owned by Market Data, not by Mapper/Monitor;
+- returned lists are ordered by canonical candle timestamp and contain no duplicate candle identity;
+- no caller may depend on the JSON persistence structure to obtain the same data.
+
+The API therefore remains stable if the persistence file format changes. JSON serialization is a storage boundary; `NormalizedCandle` is the consumer-facing domain boundary.
+
+`market_data.py` remains the executable CLI entry point. It must not be imported by Mapper as a data protocol. Mapper imports the service/model contract from `MARKET_DATA`.
 
 # 1. MODULE DESIGN
 
@@ -673,6 +705,33 @@ Purpose:
 
 - parse the shared Calendar/Market Data time representation `HH:MM`;
 - reject malformed times and seconds.
+
+## 5.7 CLI output contract
+
+The CLI and the programmatic service API are separate consumption boundaries.
+
+### Default behavior
+
+Without `--cleartext`, the CLI performs the requested acquisition/update and preserves the machine-safe persistence behavior. It does not emit candle data for another process to parse.
+
+### `--cleartext`
+
+`--cleartext` is an optional human-readable STDOUT presentation mode. It never changes acquisition, normalization, persistence, retention, or query semantics.
+
+When specified, the CLI prints the requested completed candles after the Market Data update has succeeded. Output is informational and is not a stable inter-process API.
+
+Required presentation fields:
+
+- symbol;
+- timeframe;
+- candle timestamp in UTC;
+- OHLC;
+- available volume branches;
+- completion state.
+
+The exact spacing/layout may evolve without changing the Market Data service contract. Consumers that need candles programmatically must call `get_candles()` and must not parse `--cleartext` output.
+
+`--cleartext` is therefore analogous to Calendar presentation output, but it is explicitly not the Mapper integration mechanism.
 
 # 6. PROVIDER ABSTRACTION
 
