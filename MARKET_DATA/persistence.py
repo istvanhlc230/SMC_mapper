@@ -64,7 +64,7 @@ def _validate_persisted_non_negative_decimal(value: Any, field_name: str) -> Non
         raise ValueError(f"persisted {field_name} must be non-negative")
 
 def _validate_candle_record(candle, timeframe):
-    """Validate one persisted candle against the timeframe storage contract.""
+    """Validate one persisted candle against the timeframe storage contract."""
     required={"candle_id","timestamp","completion_time","open","high","low","close","volume"}
     if not required <= set(candle): raise ValueError("malformed persisted candle")
     stamp=_parse_persisted_timestamp(candle["timestamp"]); completion=_parse_persisted_timestamp(candle["completion_time"])
@@ -169,7 +169,7 @@ def serialize_market_data(market_data):
     return json.dumps(_serialize(market_data),ensure_ascii=False,sort_keys=True,indent=2)+"\n"
 
 def save_market_data_atomic(path: Path, market_data, retry_limit=WRITE_RETRY_LIMIT):
-    """Atomically persist Market Data JSON with bounded write retries.""
+    """Atomically persist Market Data JSON with bounded write retries."""
     path.parent.mkdir(parents=True,exist_ok=True)
     payload=serialize_market_data(market_data)
     last_error=None
