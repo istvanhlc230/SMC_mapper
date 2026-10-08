@@ -241,25 +241,21 @@ The Monitor never modifies last_processed_candle_time.
 
 Mapper remains the sole structures writer.
 
-## 2.2 Market Data JSON
+## 2.2 Market Data process output
 
-For each selected symbol, load:
+Market Data is a standalone process boundary. The Monitor must not open or parse `<SYMBOL>_marketdata.json` as runtime input.
+
+For market-data acquisition and current-reference operations, the Monitor launches `market_data.py` and consumes its machine-readable CSV STDOUT. The Monitor must not use `--cleartext` for this purpose.
+
+The protocol header is:
 
 ~~~text
-<DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json
+timeframe,time,open,high,low,close,tick_volume,spread,real_volume,completed
 ~~~
 
-The Monitor may consume:
+The Monitor may consume completed rows (`completed=1`) for coverage/update decisions and current rows (`completed=0`) for current market reference observation.
 
-- completed candle coverage;
-- completed candle timestamps;
-- timeframe availability;
-- current in-progress snapshot;
-- current snapshot OHLC/volume where needed for current reference observation.
-
-The current snapshot is never canonical structural input.
-
-Market Data JSON serialization remains owned by market_data.py.
+The Monitor validates the process exit code and machine protocol before using the result. STDERR is diagnostics only. A non-zero Market Data exit blocks the dependent operation.
 
 ## 2.3 Read-only consumer model
 
@@ -347,7 +343,7 @@ plan required Market Data ranges
         ↓
 invoke market_data.py
         ↓
-reload persisted market-data state
+consume Market Data machine CSV result
         ↓
 identify analyses requiring mapper update
         ↓
@@ -368,7 +364,7 @@ evaluate targets / RR / alerts
 schedule next cycle
 ~~~
 
-Persisted JSON files are the machine-readable process boundary.
+The Market Data CSV STDOUT is the machine-readable process boundary. Structures JSON remains the persisted mapper-state boundary; Calendar JSON remains the Calendar read boundary.
 
 ## 4.2 Analysis update eligibility
 
@@ -850,7 +846,7 @@ def refresh_current_market_view(
     ...
 ~~~
 
-Current refresh must use the Market Data process/JSON boundary.
+Current refresh must use the Market Data process boundary and consume the current CSV row.
 
 A current snapshot update never advances a mapper checkpoint.
 
@@ -1955,7 +1951,7 @@ test_current_snapshot_refresh_does_not_advance_checkpoint
 ### Process boundary
 
 ~~~text
-test_invoke_market_data_uses_json_not_stdout
+test_invoke_market_data_consumes_machine_stdout
 test_invoke_mapper_uses_persisted_structures_json
 test_failed_market_data_blocks_dependent_mapper
 test_failed_mapper_does_not_advance_monitor_checkpoint
