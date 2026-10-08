@@ -1207,20 +1207,26 @@ Calendar + Market Data release scope only. Mapper/Monitor remain outside the rel
 - prev = nearest past scheduled economic event;
 - prev day/week/month = complete previous UTC period;
 - news = active scheduled economic news event(s);
-- actual is removed from the public grammar.
+- actual is removed from the public query grammar.
 
 ## Corrections
-- Removed actual from Calendar domain scope parsing, CLI dispatch, help, specification, and relative-query regression coverage.
+- Removed the obsolete actual scope from Calendar domain parsing, CLI dispatch, help, specification, and relative-query tests.
 - Replaced the old incremental-cache meaning of current with a read-only active-event lookup.
-- current now returns events satisfying timestamp <= now < timestamp + 1 minute.
-- current refresh is rejected; period scopes such as current day/week/month retain the trailing refresh modifier.
+- current returns events satisfying timestamp <= now < timestamp + 1 minute.
+- current refresh is rejected; current day/week/month retain the trailing refresh modifier.
 - Removed obsolete specification text describing current as watermark-based or always-refreshing.
+- Renamed the ongoing-event domain helper to avoid collision with the existing historical query_current_events helper.
 - Added regression coverage for current active-event selection and current refresh rejection.
 - Updated Calendar version to 2.6.1.
-- Updated AGENT.md so approved plans automatically enter the audit → correction → re-audit → test cycle without requiring separate approval for each correction.
+- Updated AGENT.md so an approved plan automatically enters audit → correction → re-audit → test without separate approval for each correction.
 
 ## Static audit
-PASS — specification, domain, CLI, help, and CI grammar are aligned.
+PASS — current source, specification, CLI grammar, help text, and regression contract are aligned.
 
 ## Runtime validation
-PENDING — the latest Calendar CI run must be checked before claiming final PASS.
+PENDING — GitHub currently reports no status entries for the latest main commits, so runtime PASS is not claimed.
+
+## Validation snapshot
+Latest implementation/specification synchronization commit at the time of this review update:
+f24c5ff198d7744fa58ff428f18f5e7d0beb40b9
+
