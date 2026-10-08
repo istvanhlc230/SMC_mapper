@@ -153,10 +153,6 @@ REFRESH MODIFIER
   Example: python calendar.py EURUSD today refresh
   It forces provider re-acquisition for the timespan represented by the scope,
   merges changed/new records, and preserves existing coverage and watermarks.
-  current refresh uses the current incremental timespan (earliest applicable
-  watermark through now); when no watermark exists it uses a bounded one-day
-  interval ending at now. Provider-side overlap is then applied so mutable
-  ForexFactory Detail data can be refreshed.
   The normal query result for the same scope is returned after refresh.
   JSON output includes a refresh summary with added/changed/unchanged counts.
   refresh is valid with current day/week/month, today, tomorrow, yesterday,
