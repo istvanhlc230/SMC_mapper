@@ -111,7 +111,11 @@ def load_market_data(path: Path, symbol: str) -> dict[str,Any]:
             raise ValueError(f"unsupported persisted timeframe: {timeframe}")
         for candle in state["candles"]:
             _validate_candle_record(candle, timeframe)
-                    expected_id = build_candle_id(symbol, timeframe, _timestamp(candle["timestamp"]))
+            expected_id = build_candle_id(
+                symbol,
+                timeframe,
+                _timestamp(candle["timestamp"]),
+            )
             if candle["candle_id"] != expected_id:
                 raise ValueError("persisted candle_id does not match symbol, timeframe and timestamp")
             if candle["candle_id"] in ids or (last is not None and _timestamp(candle["timestamp"]) <= last):
