@@ -8,7 +8,7 @@ from typing import Any
 from .models import DECIMAL_PERSISTENCE_PLACES, SUPPORTED_TIMEFRAMES, WRITE_RETRY_DELAY_SECONDS, WRITE_RETRY_LIMIT
 from .normalization import build_candle_id, canonical_interval_start, canonical_interval_end
 
-def _parse_persisted_parse_persisted_timestamp(value: str | None) -> datetime | None:
+def _parse_persisted_timestamp(value: str | None) -> datetime | None:
     if value is None: return None
     parsed=datetime.fromisoformat(value.replace("Z","+00:00"))
     if parsed.tzinfo is None: raise ValueError("persisted timestamp must be timezone-aware")
@@ -18,14 +18,19 @@ def _validate_symbol_path_component(symbol: str) -> str:
     if not symbol or symbol in {".",".."} or any(x in symbol for x in ("/","\\","\x00")) or ":" in symbol: raise ValueError("unsafe symbol path component")
     return symbol
 
-def get_symbol_data_directory(symbol: str, data_directory: Path) -> Path:\n    """Return the symbol-specific persistence directory.""" return Path(data_directory) / _validate_symbol_path_component(symbol)
-def get_market_data_path(symbol: str, data_directory: Path) -> Path:\n    """Return the canonical Market Data JSON path for a symbol.""" return get_symbol_data_directory(symbol,data_directory) / f"{_validate_symbol_path_component(symbol)}_marketdata.json"
-def create_empty_market_data(symbol: str) -> dict[str,Any]:\n    """Create an empty persisted Market Data document for one symbol.""" return {"symbol":symbol,"timeframes":{}}
+def get_symbol_data_directory(symbol: str, data_directory: Path) -> Path:
+    """Return the symbol-specific persistence directory.""" return Path(data_directory) / _validate_symbol_path_component(symbol)
+def get_market_data_path(symbol: str, data_directory: Path) -> Path:
+    """Return the canonical Market Data JSON path for a symbol.""" return get_symbol_data_directory(symbol,data_directory) / f"{_validate_symbol_path_component(symbol)}_marketdata.json"
+def create_empty_market_data(symbol: str) -> dict[str,Any]:
+    """Create an empty persisted Market Data document for one symbol.""" return {"symbol":symbol,"timeframes":{}}
 
-def ensure_timeframe_state(market_data, timeframe):\n    """Return the persisted state object for one timeframe, creating it when absent."""
+def ensure_timeframe_state(market_data, timeframe):
+    """Return the persisted state object for one timeframe, creating it when absent."""
     return market_data["timeframes"].setdefault(timeframe,{"available_start":None,"available_end":None,"candles":[],"current":None})
 
-def update_available_bounds(timeframe_state):\n    """Refresh retained candle boundary metadata from the stored candle list."""
+def update_available_bounds(timeframe_state):
+    """Refresh retained candle boundary metadata from the stored candle list."""
     candles=timeframe_state["candles"]
     timeframe_state["available_start"]=candles[0]["timestamp"] if candles else None
     timeframe_state["available_end"]=candles[-1]["timestamp"] if candles else None
@@ -98,7 +103,8 @@ def _validate_current_snapshot(
         raise ValueError("current completion_time does not match timeframe boundary")
 
 
-def load_market_data(path: Path, symbol: str) -> dict[str,Any]:\n    """Load and validate one persisted Market Data document."""
+def load_market_data(path: Path, symbol: str) -> dict[str,Any]:
+    """Load and validate one persisted Market Data document."""
     if not path.exists(): return create_empty_market_data(symbol)
     try: market_data=json.loads(path.read_text(encoding="utf-8"))
     except Exception as exc: raise ValueError(f"invalid market-data JSON: {path}") from exc
@@ -138,7 +144,8 @@ def load_market_data(path: Path, symbol: str) -> dict[str,Any]:\n    """Load and
             _validate_current_snapshot(current, state["candles"], timeframe)
     return market_data
 
-def serialize_decimal(value: Decimal) -> str:\n    """Serialize a Decimal using the fixed persistence precision contract."""
+def serialize_decimal(value: Decimal) -> str:
+    """Serialize a Decimal using the fixed persistence precision contract."""
     if not value.is_finite(): raise ValueError("cannot serialize non-finite Decimal")
     quantum=Decimal(1).scaleb(-DECIMAL_PERSISTENCE_PLACES)
     return format(value.quantize(quantum,rounding=ROUND_HALF_EVEN),"f")
@@ -150,10 +157,12 @@ def _serialize_json_value(value):
     if isinstance(value,list): return [_serialize_json_value(item) for item in value]
     return value
 
-def serialize_market_data(market_data):\n    """Serialize the validated Market Data document as deterministic JSON.""
+def serialize_market_data(market_data):
+    """Serialize the validated Market Data document as deterministic JSON.""
     return json.dumps(_serialize(market_data),ensure_ascii=False,sort_keys=True,indent=2)+"\n"
 
-def save_market_data_atomic(path: Path, market_data, retry_limit=WRITE_RETRY_LIMIT):\n    """Atomically persist Market Data JSON with bounded write retries.""
+def save_market_data_atomic(path: Path, market_data, retry_limit=WRITE_RETRY_LIMIT):
+    """Atomically persist Market Data JSON with bounded write retries.""
     path.parent.mkdir(parents=True,exist_ok=True)
     payload=serialize_market_data(market_data)
     last_error=None
