@@ -9,7 +9,7 @@ from typing import Sequence
 
 from .models import MarketDataRequest, SUPPORTED_TIMEFRAMES
 from .provider import create_provider
-from .service import update_market_data
+from .service import get_candles
 
 
 DATE_RE = r"\d{4}\.\d{2}\.\d{2}"
@@ -62,6 +62,11 @@ def build_argument_parser():
         help="Acquire exactly the latest completed/closed candle.",
     )
     parser.add_argument("--debug", action="store_true")
+    parser.add_argument(
+        "--cleartext",
+        action="store_true",
+        help="Print completed candles in human-readable form after the update.",
+    )
     return parser
 
 
@@ -240,16 +245,45 @@ def parse_market_data_request(argv: Sequence[str] | None = None):
         args.lastclosed,
         current,
         args.debug,
+        args.cleartext,
     )
     validate_request(request)
     return request
+
+
+def _format_cleartext_candles(symbol: str, candles_by_timeframe) -> str:
+    """Format completed candles for human-readable CLI output."""
+    lines = [f"MARKET DATA | OK | {symbol}"]
+    for timeframe, candles in candles_by_timeframe.items():
+        lines.append(f"TIMEFRAME | {timeframe} | CANDLES {len(candles)}")
+        lines.append("-" * 72)
+        for candle in candles:
+            timestamp = candle.timestamp.astimezone(timezone.utc).isoformat().replace(
+                "+00:00", "Z"
+            )
+            line = (
+                f"{timestamp} | O {candle.open_price} | H {candle.high_price} | "
+                f"L {candle.low_price} | C {candle.close_price}"
+            )
+            volume = candle.volume
+            if volume.has_total:
+                line += f" | V {volume.total}"
+            if volume.has_orderflow:
+                line += (
+                    f" | OB {volume.orderflow_buy} | OS {volume.orderflow_sell}"
+                )
+            lines.append(line + " | CLOSED")
+    return "\n".join(lines)
+
 
 
 def run(request):
     """Execute the requested Market Data acquisition."""
     provider = create_provider("lse")
     try:
-        update_market_data(request, provider)
+        candles_by_timeframe = get_candles(request, provider)
+        if request.cleartext:
+            print(_format_cleartext_candles(request.symbol, candles_by_timeframe))
         return 0
     except Exception as exc:
         print(f"ERROR: {exc}", file=__import__("sys").stderr)
