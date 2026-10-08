@@ -221,6 +221,7 @@ class LSEMarketDataProvider(MarketDataProvider):
 
     def fetch_latest_completed(self, symbol, timeframe):
         """Fetch the latest completed candle directly from LSE."""
+        """Fetch the latest completed candle directly from LSE."""
         now = datetime.now(timezone.utc)
         records = self.fetch_range(symbol, timeframe, self._lookup_window(timeframe, now), now)
         if not records:
@@ -233,6 +234,7 @@ class LSEMarketDataProvider(MarketDataProvider):
         return max(completed, key=lambda record: record.timestamp) if completed else None
 
     def fetch_current(self, symbol, timeframe):
+        """Fetch the current in-progress candle directly from LSE."""
         """Fetch the current candle directly from LSE."""
         now = datetime.now(timezone.utc)
         from .normalization import canonical_interval_start, derive_completion_time
