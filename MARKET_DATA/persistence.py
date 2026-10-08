@@ -6,7 +6,7 @@ from decimal import Decimal, ROUND_HALF_EVEN
 from pathlib import Path
 from typing import Any
 from .models import DECIMAL_PERSISTENCE_PLACES, SUPPORTED_TIMEFRAMES, WRITE_RETRY_DELAY_SECONDS, WRITE_RETRY_LIMIT
-from .normalization import canonical_interval_start, canonical_interval_end
+from .normalization import build_candle_id, canonical_interval_start, canonical_interval_end
 
 def _timestamp(value: str | None) -> datetime | None:
     if value is None: return None
@@ -111,12 +111,24 @@ def load_market_data(path: Path, symbol: str) -> dict[str,Any]:
             raise ValueError(f"unsupported persisted timeframe: {timeframe}")
         for candle in state["candles"]:
             _validate_candle_record(candle, timeframe)
-            if candle["candle_id"] in ids or (last is not None and _timestamp(candle["timestamp"]) <= last): raise ValueError("invalid candle ordering or duplicate identity")
+                    expected_id = build_candle_id(symbol, timeframe, _timestamp(candle["timestamp"]))
+            if candle["candle_id"] != expected_id:
+                raise ValueError("persisted candle_id does not match symbol, timeframe and timestamp")
+            if candle["candle_id"] in ids or (last is not None and _timestamp(candle["timestamp"]) <= last):
+                raise ValueError("invalid candle ordering or duplicate identity")
             ids.add(candle["candle_id"]); last=_timestamp(candle["timestamp"])
         expected_start = state["candles"][0]["timestamp"] if state["candles"] else None
         expected_end = state["candles"][-1]["timestamp"] if state["candles"] else None
+        available_start = _timestamp(state["available_start"])
+        available_end = _timestamp(state["available_end"])
         if state["available_start"] != expected_start or state["available_end"] != expected_end:
             raise ValueError(f"invalid availability bounds: {timeframe}")
+        if (expected_start is None and available_start is not None) or (
+            expected_start is not None and available_start is None
+        ) or (expected_end is None and available_end is not None) or (
+            expected_end is not None and available_end is None
+        ):
+            raise ValueError(f"invalid availability timestamp: {timeframe}")
         current = state["current"]
         if current is not None:
             _validate_current_snapshot(current, state["candles"], timeframe)
