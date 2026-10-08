@@ -245,7 +245,7 @@ def execute_calendar_delete(
     symbol: Optional[str],
     scope: Optional[str],
 ) -> int:
-    """Calendar operation: run_delete performs the focused run delete step in the Calendar implementation."""
+    """Internal helper for run delete."""
     # A bare DELETE is an explicit full-cache reset; it bypasses legacy-schema
     # validation so an incompatible calendar.json cannot block the reset.
     with storage.acquire_calendar_lock():
@@ -589,7 +589,7 @@ run_query = execute_calendar_query
 run_delete = execute_calendar_delete
 
 def main() -> None:
-    """Calendar operation: main performs the focused main step in the Calendar implementation."""
+    """Internal helper for main."""
     raise SystemExit(execute_calendar_cli())
 
 if __name__ == "__main__":
