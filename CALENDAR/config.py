@@ -163,9 +163,9 @@ REFRESH MODIFIER
   ForexFactory Detail data can be refreshed.
   The normal query result for the same scope is returned after refresh.
   JSON output includes a refresh summary with added/changed/unchanged counts.
-  refresh is valid with current, today, tomorrow, yesterday, explicit date/datetime
-  scopes, and both open-start --range -END and open-end --range START- forms. latest and next
-  cannot be combined with refresh.
+  refresh is valid with actual, current, current day/week/month, today, tomorrow, yesterday,
+  explicit date/datetime scopes, and both open-start --range -END and open-end --range START- forms.
+  latest, next, prev, and news cannot be combined with refresh.
   CLI refresh may block on provider I/O; the Monitor must invoke the underlying
   refresh operation asynchronously and outside its candle-close processing path.
 
