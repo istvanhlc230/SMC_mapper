@@ -21,11 +21,14 @@ def _validate_symbol_path_component(symbol: str) -> str:
     return symbol
 
 def get_symbol_data_directory(symbol: str, data_directory: Path) -> Path:
-    """Return the symbol-specific persistence directory.""" return Path(data_directory) / _validate_symbol_path_component(symbol)
+    """Return the symbol-specific persistence directory."""
+    return Path(data_directory) / _validate_symbol_path_component(symbol)
 def get_market_data_path(symbol: str, data_directory: Path) -> Path:
-    """Return the canonical Market Data JSON path for a symbol.""" return get_symbol_data_directory(symbol,data_directory) / f"{_validate_symbol_path_component(symbol)}_marketdata.json"
-def create_empty_market_data(symbol: str) -> dict[str,Any]:
-    """Create an empty persisted Market Data document for one symbol.""" return {"symbol":symbol,"timeframes":{}}
+    """Return the canonical Market Data JSON path for a symbol."""
+    return get_symbol_data_directory(symbol,data_directory) / f"{_validate_symbol_path_component(symbol)}_marketdata.json"
+def create_empty_market_data(symbol: str) -> dict[str, Any]:
+    """Create an empty persisted Market Data document for one symbol."""
+    return {"symbol":symbol,"timeframes":{}}
 
 def ensure_timeframe_state(market_data, timeframe):
     """Return the persisted state object for one timeframe, creating it when absent."""
