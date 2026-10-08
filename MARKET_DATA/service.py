@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from datetime import datetime, timezone
+from decimal import Decimal
 from typing import Any, Sequence
 
 from .models import (
