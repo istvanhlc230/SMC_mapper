@@ -1171,3 +1171,23 @@ Corrected the latest re-audit findings for the Market Data implementation.
 
 ### Audit status
 PASS
+
+
+## Calendar relative-query audit — 2026-10-08
+
+Scope: Calendar only; Mapper/Monitor remain out of release scope.
+
+Specification/code audit:
+- RESTORED actual as the canonical current-UTC-day query; today remains a compatibility alias.
+- Added relative CLI grammar: current day/week/month, next, next day/week/month, prev, prev day/week/month.
+- next and prev remain event-relative single-event lookups.
+- Added news active-event query with NEWS_ACTIVE / NO_ACTIVE_NEWS status.
+- Added CLI parsing, domain interval resolution, query functions, help text, version 2.6.0, and CI contract tests.
+- Relative period queries are cache-only unless trailing refresh is used.
+- next, prev, latest, and news reject refresh.
+- Relative scopes are rejected for deletion.
+- Active news uses economic events from LSE and/or ForexFactory whose timestamp is within the current UTC minute; Yahoo published news is not treated as a scheduled active event.
+
+Static audit result: PASS for the implemented grammar and cross-module consistency.
+
+Runtime CI status: PENDING. GitHub combined-status endpoint currently reports no status entries for the latest commit, so runtime PASS is not claimed.
