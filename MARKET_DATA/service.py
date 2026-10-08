@@ -10,6 +10,7 @@ from .models import (
     DEFAULT_DATA_DIRECTORY,
     MarketDataRequest,
     NormalizedCandle,
+    VolumeState,
 )
 from .normalization import (
     canonical_next_interval_start,
@@ -310,6 +311,70 @@ def update_timeframe(
     update_available_bounds(state)
     return state != original
 
+
+def _record_to_normalized_candle(record: dict[str, Any]) -> NormalizedCandle:
+    """Convert one validated persisted candle record to the consumer-facing model."""
+    volume = record.get("volume") or {}
+    ohlc = volume.get("ohlc") or {}
+    orderflow = volume.get("orderflow") or {}
+    volume_state = VolumeState(
+        has_total="total" in volume,
+        total=Decimal(volume["total"]) if "total" in volume else None,
+        has_ohlc="ohlc" in volume,
+        ohlc_buy=Decimal(ohlc["buy"]) if "ohlc" in volume else None,
+        ohlc_sell=Decimal(ohlc["sell"]) if "ohlc" in volume else None,
+        has_orderflow="orderflow" in volume,
+        orderflow_buy=Decimal(orderflow["buy"]) if "orderflow" in volume else None,
+        orderflow_sell=Decimal(orderflow["sell"]) if "orderflow" in volume else None,
+    )
+    timestamp = datetime.fromisoformat(record["timestamp"].replace("Z", "+00:00"))
+    completion_time = datetime.fromisoformat(
+        record["completion_time"].replace("Z", "+00:00")
+    )
+    return NormalizedCandle(
+        candle_id=record["candle_id"],
+        timestamp=timestamp,
+        completion_time=completion_time,
+        open_price=Decimal(record["open"]),
+        high_price=Decimal(record["high"]),
+        low_price=Decimal(record["low"]),
+        close_price=Decimal(record["close"]),
+        volume=volume_state,
+    )
+
+
+def get_candles(
+    request: MarketDataRequest,
+    provider: Any | None = None,
+) -> dict[str, list[NormalizedCandle]]:
+    """Return completed candles through the provider-independent Market Data API."""
+    if provider is None:
+        from .provider import create_provider
+        provider = create_provider("lse")
+
+    update_market_data(request, provider)
+    path = get_market_data_path(request.symbol, DEFAULT_DATA_DIRECTORY)
+    market_data = load_market_data(path, request.symbol)
+    result: dict[str, list[NormalizedCandle]] = {}
+
+    for timeframe in request.timeframes:
+        state = market_data["timeframes"].get(timeframe)
+        records = [] if state is None else state.get("candles", [])
+        candles = [_record_to_normalized_candle(record) for record in records]
+
+        if request.last_closed_only:
+            candles = candles[-1:]
+        elif request.start_time is not None:
+            candles = [
+                candle
+                for candle in candles
+                if candle.timestamp >= request.start_time
+                and (request.end_time is None or candle.timestamp < request.end_time)
+            ]
+
+        result[timeframe] = candles
+
+    return result
 
 def update_market_data(
     request: MarketDataRequest,
