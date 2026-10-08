@@ -282,7 +282,7 @@ def run(request):
         if request.current:
             for timeframe, entries in output_entries.items():
                 incomplete = [entry for entry in entries if not entry[1]]
-                output_entries[timeframe] = incomplete[-1:] or entries[-1:]
+                output_entries[timeframe] = incomplete[-1:]
         elif request.last_closed_only:
             for timeframe, entries in output_entries.items():
                 output_entries[timeframe] = entries[-1:]
