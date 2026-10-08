@@ -116,9 +116,13 @@ SCOPE
   YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM  Half-open UTC datetime range.
   HH:MM-HH:MM                       Current UTC day time range. Canonicalized
                                       to YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM.
+  actual                              Exact current UTC calendar day.
   current                             Read current incremental events from
                                       the committed Calendar cache. No provider
                                       call occurs unless trailing refresh is used.
+  current day                        Exact current UTC calendar day.
+  current week                       Current ISO week (Monday-Sunday UTC).
+  current month                      Current UTC calendar month.
   today                               Exact current UTC calendar day.
   tomorrow                            Exact next UTC calendar day.
   yesterday                           Exact previous UTC calendar day.
@@ -126,6 +130,11 @@ SCOPE
                                       SYMBOL from the committed calendar cache.
   next                                Return the nearest future scheduled economic
                                       event for SYMBOL from ForexFactory cache.
+  next day/week/month                 Return all events in the next UTC day/week/month.
+  prev                                Return the nearest past scheduled economic event.
+  prev day/week/month                 Return all events in the previous UTC day/week/month.
+  news                                Report whether a scheduled ForexFactory event
+                                      is active in the current UTC minute.
 
 SYMBOL
   Supported FX pair, standalone supported currency, or Yahoo ticker.
