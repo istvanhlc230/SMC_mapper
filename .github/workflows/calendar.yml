@@ -324,7 +324,7 @@ jobs:
           normalized_ff = calendar.normalize_provider_event(ff_rows[0])
           assert normalized_ff["timestamp"] == "2026-10-05T07:00:00Z"
           assert normalized_ff["details"]["impact"] == "HIGH"
-          assert normalized_ff["details"]["url"] == "https://www.forexfactory.com/calendar/details/1-146900"
+          assert "url" not in normalized_ff["details"]
 
           detail_json = json.dumps({
               "data": {
@@ -386,7 +386,7 @@ jobs:
               assert len(acquired) == 1
               assert acquired[0]["event_id"] == "forexfactory:146901"
               assert [x["title"] for x in acquired[0]["details"]["specs"]] == ["Source", "Why Traders Care"]
-              assert acquired[0]["details"]["url"] == "https://www.forexfactory.com/calendar/details/1-146901"
+              assert "url" not in acquired[0]["details"]
           finally:
               providers.fetch_url = original_fetch_url
               providers.fetch_forexfactory_event_detail = original_detail_fetch
