@@ -899,7 +899,7 @@ The mapper executes the following dependency-ordered pipeline for every analysis
 1. Validate CLI inputs and the normalized market-data contract.
 2. Resolve the analysis mode, entry timeframe, requested/effective analysis boundaries, and deterministic analysis identity.
 3. Load the matching persisted analysis state, or create the required initial state.
-4. Verify required persisted market-data coverage and determine whether bootstrap, warm-up, or incremental processing is required.
+4. Verify the required market-data coverage returned by the Market Data process and determine whether bootstrap, warm-up, or incremental processing is required.
 5. Process completed candles only, in chronological order, using the canonical SMC skill as the sole semantic authority.
 6. In single-timeframe mode, evaluate the selected timeframe without HTF pullback validation.
 7. In two-timeframe mode, establish and maintain point-in-time HTF context and evaluate LTF candles only against HTF facts already canonical at the LTF evaluation time.
