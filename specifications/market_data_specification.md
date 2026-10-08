@@ -60,8 +60,8 @@ The external contract is intentionally not a Python service API. `MARKET_DATA/se
 The machine-output contract is conceptually:
 
 ```text
-time,open,high,low,close,tick_volume,spread,real_volume
-<epoch_seconds>,<open>,<high>,<low>,<close>,<tick_volume>,<spread>,<real_volume>
+time,open,high,low,close,tick_volume,spread,real_volume,completed
+<epoch_seconds>,<open>,<high>,<low>,<close>,<tick_volume>,<spread>,<real_volume>,<0|1>
 ...
 ```
 
@@ -74,8 +74,9 @@ Contract rules:
 - `tick_volume`, `spread`, and `real_volume` are numeric fields; unavailable volume branches use the defined empty representation rather than fabricated values;
 - records are ordered by ascending candle timestamp within each requested timeframe;
 - no duplicate candle identity is emitted;
-- only completed candles are emitted by the machine-output contract;
-- current/in-progress snapshots are never silently mixed into the completed candle stream;
+- completed historical/lastclosed requests emit completed candles with `completed=1`;
+- `--current` emits at most the current in-progress snapshot with `completed=0`;
+- current/in-progress snapshots are never silently represented as completed candles;
 - the selected symbol/timeframe context is part of the CLI request and does not need to be repeated on every candle row;
 - diagnostics and errors never enter machine STDOUT;
 - machine STDOUT is the only data transport consumed by a downstream process;
@@ -725,7 +726,7 @@ The machine output is the Mapper/Monitor integration boundary. It is not a human
 Required header:
 
 ```text
-time,open,high,low,close,tick_volume,spread,real_volume
+time,open,high,low,close,tick_volume,spread,real_volume,completed
 ```
 
 Each data row contains:
@@ -737,19 +738,21 @@ Each data row contains:
 5. `close`;
 6. `tick_volume`;
 7. `spread`;
-8. `real_volume`.
+8. `real_volume`;
+9. `completed` — `1` for a completed candle and `0` for the current/in-progress snapshot.
 
 Rules:
 
-- only completed candles are emitted;
+- historical and `--lastclosed` rows have `completed=1`;
+- `--current` emits at most one row per requested timeframe with `completed=0`;
 - rows are strictly ordered by timestamp;
 - no duplicate candle identity is emitted;
 - no debug, status, progress, provider diagnostics, or other text may be written to STDOUT;
 - unavailable optional volume values use the canonical empty representation; they must not be replaced with estimated or fabricated values;
-- a successful query with no matching completed candles emits the header and no data rows;
+- a successful query with no matching records emits the header and no data rows;
 - the protocol uses UTF-8 text and newline-delimited records;
 - field separation follows CSV conventions; fields must be escaped/quoted according to CSV rules when required;
-- the protocol is intentionally limited to simple cross-language values and must remain representable by a future MQL4/MQL5 adapter;
+- the protocol is intentionally limited to simple cross-language values and must remain representable by a future MQL4/MQL5 adapter; the `completed` flag is protocol metadata and does not require a platform-specific candle class;
 - protocol changes require a specification revision and corresponding regression tests.
 
 The machine protocol is a process interface, not the persistence JSON schema.
