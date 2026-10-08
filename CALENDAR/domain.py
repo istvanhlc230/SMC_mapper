@@ -111,14 +111,17 @@ def resolve_scope_interval(scope: str) -> Tuple[datetime, datetime]:
 
     # Relative day scopes use Calendar's canonical UTC clock rather than the
     # host-local date, so midnight boundaries remain deterministic.
-    if scope in {"today", "tomorrow", "yesterday"}:
+    if scope in {"actual", "today", "tomorrow", "yesterday"}:
         today = utc_now().replace(hour=0, minute=0, second=0, microsecond=0)
-        offsets = {"yesterday": -1, "today": 0, "tomorrow": 1}
+        offsets = {"actual": 0, "today": 0, "yesterday": -1, "tomorrow": 1}
         start = today + timedelta(days=offsets[scope])
         return start, start + timedelta(days=1)
 
-    if scope == "current":
-        raise CalendarInputError("'current' is not a historical scope.")
+    if scope in {"current", "latest", "next", "prev", "news"}:
+        raise CalendarInputError("'" + scope + "' is not a historical scope.")
+
+    if scope in {"current day", "current week", "current month", "next day", "next week", "next month", "prev day", "prev week", "prev month"}:
+        return resolve_relative_scope_interval(scope)
 
     if "@" in scope:
         parts = scope.split("-", 1)
@@ -150,6 +153,41 @@ def resolve_scope_interval(scope: str) -> Tuple[datetime, datetime]:
     start = parse_date(scope)
     return start, start + timedelta(days=1)
 
+
+def resolve_relative_scope_interval(scope: str, now: Optional[datetime] = None) -> Tuple[datetime, datetime]:
+    """Resolve current/next/prev day, week, and month scopes to UTC intervals."""
+    current = (now or utc_now()).replace(hour=0, minute=0, second=0, microsecond=0)
+    if scope == "current day":
+        return current, current + timedelta(days=1)
+    if scope == "next day":
+        start = current + timedelta(days=1)
+        return start, start + timedelta(days=1)
+    if scope == "prev day":
+        start = current - timedelta(days=1)
+        return start, start + timedelta(days=1)
+
+    week_start = current - timedelta(days=current.weekday())
+    if scope == "current week":
+        return week_start, week_start + timedelta(days=7)
+    if scope == "next week":
+        start = week_start + timedelta(days=7)
+        return start, start + timedelta(days=7)
+    if scope == "prev week":
+        start = week_start - timedelta(days=7)
+        return start, start + timedelta(days=7)
+
+    month_start = current.replace(day=1)
+    if scope in {"current month", "next month", "prev month"}:
+        if scope == "current month":
+            start = month_start
+        elif scope == "next month":
+            start = (month_start.replace(day=28) + timedelta(days=4)).replace(day=1)
+        else:
+            start = (month_start - timedelta(days=1)).replace(day=1)
+        end = (start.replace(day=28) + timedelta(days=4)).replace(day=1)
+        return start, end
+
+    raise CalendarInputError("Unsupported relative scope: " + scope)
 
 def is_open_start_scope(scope: str) -> bool:
     """Identify the CLI-only open-start range form."""
@@ -224,8 +262,14 @@ def resolve_open_start_scope(
 def parse_scope(scope: str) -> str:
     """Calendar operation: parse_scope validates the canonical and open-start scope forms."""
     if scope in {
-        "current", "latest", "next", "today", "tomorrow", "yesterday",
+        "current", "actual", "latest", "next", "prev", "news",
+        "today", "tomorrow", "yesterday",
+        "current day", "current week", "current month",
+        "next day", "next week", "next month",
+        "prev day", "prev week", "prev month",
     }:
+        if " " in scope:
+            resolve_relative_scope_interval(scope)
         return scope
     if is_open_start_scope(scope):
         endpoint = scope[1:]
@@ -719,6 +763,57 @@ def query_next_event(
             ),
         )
     ]
+
+def query_prev_event(
+    events: List[Dict[str, Any]],
+    symbol: str,
+    now: datetime,
+) -> List[Dict[str, Any]]:
+    """Return the nearest past scheduled economic event for SYMBOL."""
+    visible_past = [
+        event
+        for event in filter_events_for_symbol(events, symbol)
+        if (
+            "forexfactory" in set(event.get("sources", [event.get("source")]))
+            and event["event_type"] == "economic"
+            and parse_iso8601(event["timestamp"]) < now
+        )
+    ]
+    if not visible_past:
+        return []
+    return [max(visible_past, key=lambda event: (parse_iso8601(event["timestamp"]), event["source"], event["event_id"]))]
+
+
+def query_relative_events(
+    events: List[Dict[str, Any]],
+    symbol: str,
+    scope: str,
+) -> List[Dict[str, Any]]:
+    """Return all visible events in a resolved relative calendar period."""
+    start, end = resolve_relative_scope_interval(scope)
+    return sorted(
+        filter_events_for_interval(filter_events_for_symbol(events, symbol), start, end),
+        key=lambda event: (parse_iso8601(event["timestamp"]), event["source"], event["event_id"]),
+    )
+
+
+def query_active_news(
+    events: List[Dict[str, Any]],
+    symbol: str,
+    now: datetime,
+) -> List[Dict[str, Any]]:
+    """Return scheduled ForexFactory events active in the current UTC minute."""
+    return sorted(
+        [
+            event for event in filter_events_for_symbol(events, symbol)
+            if (
+                "forexfactory" in set(event.get("sources", [event.get("source")]))
+                and event["event_type"] == "economic"
+                and parse_iso8601(event["timestamp"]) <= now < parse_iso8601(event["timestamp"]) + timedelta(minutes=1)
+            )
+        ],
+        key=lambda event: (parse_iso8601(event["timestamp"]), event["source"], event["event_id"]),
+    )
 
 def status_from_provider_results(provider_results: List[Dict[str, Any]]) -> str:
     """Aggregate isolated provider results into the public Calendar status."""
