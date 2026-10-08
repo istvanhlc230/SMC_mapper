@@ -35,7 +35,7 @@ jobs:
               return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
           assert calendar.validate_symbol("EURUSD") == "EURUSD"
-          assert calendar.__version__ == "2.5.0"
+          assert calendar.__version__ == "2.6.0"
           assert calendar.validate_symbol("USDGBP") == "USDGBP"
           assert calendar.validate_symbol("HUF") == "HUF"
           assert calendar.validate_symbol("NVDA") == "NVDA"
@@ -96,6 +96,59 @@ jobs:
                   ["delete", "EURUSD", "10:00-11:00"]
               )
               assert delete_request["scope"] == "2026.10.06@10:00-2026.10.06@11:00"
+          finally:
+              domain.utc_now = fixed_utc_now
+
+          # Relative query grammar: actual/current/next/prev/news.
+          fixed_utc_now = domain.utc_now
+          try:
+              domain.utc_now = lambda: dt("2026-10-07T12:30:00Z")
+              for args, expected in (
+                  (["EURUSD", "actual"], "actual"),
+                  (["EURUSD", "current"], "current"),
+                  (["EURUSD", "next"], "next"),
+                  (["EURUSD", "prev"], "prev"),
+                  (["EURUSD", "news"], "news"),
+                  (["EURUSD", "next", "day"], "next day"),
+                  (["EURUSD", "next", "week"], "next week"),
+                  (["EURUSD", "next", "month"], "next month"),
+                  (["EURUSD", "prev", "day"], "prev day"),
+                  (["EURUSD", "prev", "week"], "prev week"),
+                  (["EURUSD", "prev", "month"], "prev month"),
+                  (["EURUSD", "current", "day"], "current day"),
+                  (["EURUSD", "current", "week"], "current week"),
+                  (["EURUSD", "current", "month"], "current month"),
+              ):
+                  request = calendar_cli.parse_calendar_cli_request(args)
+                  assert request["scope"] == expected
+              assert calendar_cli.parse_calendar_cli_request(
+                  ["EURUSD", "next", "day", "refresh"]
+              )["refresh"] is True
+              for invalid in (
+                  ["EURUSD", "next", "refresh"],
+                  ["EURUSD", "prev", "refresh"],
+                  ["EURUSD", "news", "refresh"],
+              ):
+                  try:
+                      calendar_cli.parse_calendar_cli_request(invalid)
+                  except calendar.CalendarInputError:
+                      pass
+                  else:
+                      raise AssertionError(f"refresh must be rejected for {invalid[1]}")
+              start, end = domain.resolve_relative_scope_interval(
+                  "current week", dt("2026-10-07T12:30:00Z")
+              )
+              assert (start, end) == (
+                  dt("2026-10-05T00:00:00Z"),
+                  dt("2026-10-12T00:00:00Z"),
+              )
+              start, end = domain.resolve_relative_scope_interval(
+                  "next month", dt("2026-10-07T12:30:00Z")
+              )
+              assert (start, end) == (
+                  dt("2026-11-01T00:00:00Z"),
+                  dt("2026-12-01T00:00:00Z"),
+              )
           finally:
               domain.utc_now = fixed_utc_now
 
