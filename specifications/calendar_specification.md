@@ -403,7 +403,11 @@ Explicit date or datetime-range acquisition establishes bootstrap state.
 
 Public forms:
 
+    python calendar.py SYMBOL actual refresh
     python calendar.py SYMBOL current refresh
+    python calendar.py SYMBOL current day refresh
+    python calendar.py SYMBOL current week refresh
+    python calendar.py SYMBOL current month refresh
     python calendar.py SYMBOL today refresh
     python calendar.py SYMBOL tomorrow refresh
     python calendar.py SYMBOL yesterday refresh
