@@ -340,6 +340,8 @@ the canonical event contract contains a point timestamp and no provider-independ
 
 `current` MUST NOT contact providers. It MUST NOT modify coverage, watermarks, or `calendar.json`.
 
+If no visible event is active, the public status is `NO_CURRENT_EVENT`.
+
 ## 4.1 latest semantics
 
 `latest` is a read-only most-recent-event lookup over the committed `calendar.json` snapshot.
