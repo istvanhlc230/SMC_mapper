@@ -35,3 +35,10 @@ The synchronization commands must appear at the end of the developer agent's fin
 - Push the completed commit to `origin main`.
 - Do not force-push over unrelated user work.
 - Report the final commit SHA and whether push succeeded.
+
+## Automatic approved-plan audit/fix cycle
+
+- When a user approves a design or planned semantic change, automatically perform the full audit → correction → re-audit cycle without asking for separate approval for each correction.
+- Audit the relevant specification and implementation before coding, correct every in-scope finding, then re-audit and test until PASS.
+- Do not mark PASS until the implementation, specification, tests, and validation evidence are mutually consistent.
+- For approved behavioral changes, update the relevant specification first, then implementation and regression tests, followed by another audit.
