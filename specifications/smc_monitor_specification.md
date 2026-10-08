@@ -185,10 +185,12 @@ class ProcessResult:
 
 Rules:
 
-- stdout and stderr are diagnostics/process output, never candle-data transport;
-- the Monitor may retain them transiently for diagnostics/error reporting;
-- debug stderr may be shown on the terminal only;
-- no subprocess output is persisted as canonical state.
+- `stdout` and `stderr` are separate process streams whose interpretation is defined by the invoked component contract;
+- for `market_data.py`, `stdout` is the machine-readable candle transport and `stderr` is diagnostics;
+- for `smc_mapper.py`, stdout is not a Market Data input channel;
+- the Monitor may retain process output transiently for validation, diagnostics, or downstream contract handling as defined by the invoked process;
+- debug STDERR may be shown on the terminal only;
+- no subprocess diagnostic output is persisted as canonical state.
 
 ## 1.6 Request model
 
@@ -1611,7 +1613,7 @@ Side effects belong in:
 
 ~~~text
 load_structures
-load_market_data
+parse_market_data_stdout
 invoke_market_data
 request_calendar_update_async
 load_calendar_snapshot
@@ -1808,7 +1810,7 @@ invoke_market_data
 invoke_mapper
 ~~~
 
-Verify persisted JSON is the machine-readable boundary.
+Verify the Market Data CSV STDOUT is the machine-readable boundary.
 
 ## Phase 6 — current market reference
 
@@ -2083,7 +2085,7 @@ plan Market Data coverage
  ↓
 invoke market_data.py
  ↓
-reload market data
+consume validated Market Data machine output
  ↓
 invoke affected Mapper analyses
  ↓
