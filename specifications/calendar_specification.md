@@ -626,10 +626,10 @@ Provider-query construction is deterministic from the requested interval. The re
 still filtered against canonical UTC event timestamps after acquisition, so provider query inclusivity
 cannot widen the persisted/result interval.
 
-The provider Detail URL is a canonical optional `details.url` field for ForexFactory events. For
-numeric provider event IDs, Calendar uses the same canonical Detail endpoint that it calls for Detail JSON
-enrichment. An explicit provider URL/link field, when supplied, takes precedence. The URL is persisted
-with the event so machine-readable output and cleartext presentation can expose provider navigation.
+ForexFactory event Detail is not persisted as a synthetic or derived event URL. Calendar
+fetches the provider Detail JSON response identified by the provider event ID and stores its specification
+records under `details.specs`. Provider HTML inside each specification is preserved verbatim so embedded
+Source, Next Release, and other provider links remain available without inventing a canonical event URL.
 For each acquired ForexFactory event, Calendar fetches the provider Detail JSON response identified by
 the provider event ID. Detail requests use bounded parallelism (maximum six concurrent requests) to avoid
 serial N-request latency while preserving the normalized event order in the persisted result. Its ordered
