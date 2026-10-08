@@ -69,11 +69,13 @@ def is_candle_complete(
     completion_time = derive_completion_time(provider_candle.timestamp, timeframe)
     return _to_utc(now or datetime.now(timezone.utc)) >= completion_time
 
-def build_candle_id(symbol: str, timeframe: str, timestamp: datetime) -> str:\n    """Build the stable candle identity from symbol, timeframe and interval start."""
+def build_candle_id(symbol: str, timeframe: str, timestamp: datetime) -> str:
+    """Build the stable candle identity from symbol, timeframe and interval start."""
     stamp = _to_utc(timestamp).isoformat().replace("+00:00", "Z")
     return f"{symbol}_{timeframe}_{stamp}"
 
-def normalize_provider_candle(provider_candle: ProviderCandle, timeframe: str, symbol: str = "") -> NormalizedCandle:\n    """Normalize one provider candle into the canonical Market Data candle model."""
+def normalize_provider_candle(provider_candle: ProviderCandle, timeframe: str, symbol: str = "") -> NormalizedCandle:
+    """Normalize one provider candle into the canonical Market Data candle model."""
     source_timestamp = _to_utc(provider_candle.timestamp)
     canonical_start = canonical_interval_start(source_timestamp, timeframe)
     if source_timestamp != canonical_start:
@@ -94,11 +96,13 @@ def normalize_provider_candle(provider_candle: ProviderCandle, timeframe: str, s
     validate_normalized_candle(candle)
     return candle
 
-def normalize_provider_candles(provider_candles: Iterable[ProviderCandle], timeframe: str, symbol: str = "") -> list[NormalizedCandle]:\n    """Normalize and chronologically order a provider candle collection."""
+def normalize_provider_candles(provider_candles: Iterable[ProviderCandle], timeframe: str, symbol: str = "") -> list[NormalizedCandle]:
+    """Normalize and chronologically order a provider candle collection."""
     candles = [normalize_provider_candle(item, timeframe, symbol) for item in provider_candles]
     return sorted(candles, key=lambda item: item.timestamp)
 
-def validate_normalized_candle(candle: NormalizedCandle) -> None:\n    """Validate canonical OHLC, completion-time and volume invariants."""
+def validate_normalized_candle(candle: NormalizedCandle) -> None:
+    """Validate canonical OHLC, completion-time and volume invariants."""
     values = (candle.open_price, candle.high_price, candle.low_price, candle.close_price)
     if any(not value.is_finite() for value in values):
         raise ValueError("candle contains non-finite OHLC")
