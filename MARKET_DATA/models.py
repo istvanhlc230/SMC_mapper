@@ -7,8 +7,15 @@ from pathlib import Path
 from typing import Any
 
 DEFAULT_DATA_DIRECTORY = Path("data")
-# SUPPORTED_TIMEFRAMES — canonical timeframes accepted by the Market Data CLI and process contract.\nSUPPORTED_TIMEFRAMES = (\n    "M1", "M5", "M15", "M30", "H1", "H4", "D1", "W1", "MN1"\n)
-# TIMEFRAME_SECONDS — fixed-duration timeframe lengths in seconds; calendar-based W1/MN1 are excluded.\nTIMEFRAME_SECONDS = {\n    "M1": 60, "M5": 300, "M15": 900, "M30": 1800,\n    "H1": 3600, "H4": 14400, "D1": 86400,\n}
+# SUPPORTED_TIMEFRAMES — canonical timeframes accepted by the Market Data CLI and process contract.
+SUPPORTED_TIMEFRAMES = (
+    "M1", "M5", "M15", "M30", "H1", "H4", "D1", "W1", "MN1"
+)
+# TIMEFRAME_SECONDS — fixed-duration timeframe lengths in seconds; calendar-based W1/MN1 are excluded.
+TIMEFRAME_SECONDS = {
+    "M1": 60, "M5": 300, "M15": 900, "M30": 1800,
+    "H1": 3600, "H4": 14400, "D1": 86400,
+}
 DEFAULT_PROVIDER_NAME = "lse"
 DEFAULT_CANDLE_RETENTION = 5000
 WRITE_RETRY_LIMIT = 5
@@ -17,7 +24,8 @@ DECIMAL_PERSISTENCE_PLACES = 18
 CALENDAR_BASED_TIMEFRAMES = ("W1", "MN1")
 
 @dataclass(frozen=True)
-class MarketDataRequest:\n    """Validated command-line request passed through the Market Data acquisition layer."""
+class MarketDataRequest:
+    """Validated command-line request passed through the Market Data acquisition layer."""
     symbol: str
     timeframes: list[str]
     start_time: datetime | None
@@ -28,7 +36,8 @@ class MarketDataRequest:\n    """Validated command-line request passed through t
     cleartext: bool = False
 
 @dataclass(frozen=True)
-class ProviderCandle:\n    """Provider-normalized candle before canonical Market Data persistence."""
+class ProviderCandle:
+    """Provider-normalized candle before canonical Market Data persistence."""
     source_timestamp: Any
     source_timezone: str | None
     timestamp: datetime
@@ -43,7 +52,8 @@ class ProviderCandle:\n    """Provider-normalized candle before canonical Market
     provider_metadata: dict[str, Any] | None = None
 
 @dataclass(frozen=True)
-class VolumeState:\n    """Explicit availability state for optional provider volume fields."""
+class VolumeState:
+    """Explicit availability state for optional provider volume fields."""
     has_total: bool
     total: Decimal | None
     has_ohlc: bool
@@ -54,7 +64,8 @@ class VolumeState:\n    """Explicit availability state for optional provider vol
     orderflow_sell: Decimal | None
 
 @dataclass(frozen=True)
-class NormalizedCandle:\n    """Canonical candle representation used by Market Data process serialization."""
+class NormalizedCandle:
+    """Canonical candle representation used by Market Data process serialization."""
     candle_id: str
     timestamp: datetime
     completion_time: datetime
@@ -65,7 +76,8 @@ class NormalizedCandle:\n    """Canonical candle representation used by Market D
     volume: VolumeState
 
 @dataclass
-class TimeframeState:\n    """Persisted state and current snapshot for one canonical timeframe."""
+class TimeframeState:
+    """Persisted state and current snapshot for one canonical timeframe."""
     timeframe: str
     available_start: datetime | None
     available_end: datetime | None
@@ -73,6 +85,7 @@ class TimeframeState:\n    """Persisted state and current snapshot for one canon
     current: NormalizedCandle | None
 
 @dataclass
-class MarketDataDocument:\n    """Provider-independent in-memory representation of one symbol data document."""
+class MarketDataDocument:
+    """Provider-independent in-memory representation of one symbol data document."""
     symbol: str
     timeframes: list[TimeframeState]
