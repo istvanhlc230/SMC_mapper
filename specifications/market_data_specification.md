@@ -625,8 +625,9 @@ Rules:
 
 - trim surrounding whitespace;
 - reject empty input;
-- preserve the provider-compatible instrument spelling unless the provider adapter requires an explicit mapping;
-- do not silently change symbols.
+- trim and normalize the canonical symbol to uppercase;
+- reject path separators and NUL characters;
+- the provider adapter may map the canonical symbol to provider-specific spelling without changing the persisted canonical symbol.
 
 ## 5.4 normalize_timeframe
 
@@ -672,32 +673,6 @@ Purpose:
 
 - parse the shared Calendar/Market Data time representation `HH:MM`;
 - reject malformed times and seconds.
-
-## 5.7 resolve_boundary
-
-Signature:
-
-```python
-def resolve_boundary(
-    date_value: str | None,
-    time_value: str | None,
-    *,
-    boundary_name: str,
-    now: datetime,
-) -> datetime | None:
-    ...
-```
-
-Purpose:
-
-- combine independently supplied date/time components;
-- apply the Calendar-compatible defaults;
-- return a timezone-aware UTC boundary;
-- represent a date-only end boundary as the following day's exclusive midnight.
-
-No provider I/O is allowed.
-
----
 
 # 6. PROVIDER ABSTRACTION
 
@@ -755,7 +730,7 @@ If an LSE request needs multiple pages for one logical range, pagination remains
 inside `LSEMarketDataProvider.fetch_range`. The caller receives one logical list.
 Provider pagination must not change persisted results.
 
-## 6.5 Portable provider class contract
+## 6.4 Portable provider class contract
 
 The provider abstraction is a simple base-class contract that can be implemented in Python, MQL4, and MQL5.
 
