@@ -512,7 +512,7 @@ The process result contains exit status plus diagnostics. The machine-readable r
 
 When debug is enabled, the Monitor may propagate --debug to market_data.py so provider/process diagnostics remain visible on stderr. It must never parse those diagnostics as data.
 
-The Monitor must never parse stdout as candle data.
+The Monitor must parse only the validated Market Data CSV protocol as candle data; it must never parse STDERR diagnostics as data.
 
 A non-zero exit status blocks dependent mapper execution for the affected data path.
 
