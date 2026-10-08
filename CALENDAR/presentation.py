@@ -14,31 +14,31 @@ from .config import DataIntegrityError
 
 class _DetailTextParser(HTMLParser):
     def __init__(self) -> None:
-        """Internal helper for init  ."""
+        """Internal helper: Handle init  ."""
         super().__init__(convert_charrefs=True)
         self.parts: List[str] = []
 
     def handle_starttag(self, tag: str, attrs: List[Tuple[str, Optional[str]]]) -> None:
-        """Internal helper for handle starttag."""
+        """Handle starttag."""
         if tag.lower() == "br":
             self.parts.append("\n")
 
     def handle_startendtag(self, tag: str, attrs: List[Tuple[str, Optional[str]]]) -> None:
-        """Internal helper for handle startendtag."""
+        """Handle startendtag."""
         if tag.lower() == "br":
             self.parts.append("\n")
 
     def handle_endtag(self, tag: str) -> None:
-        """Internal helper for handle endtag."""
+        """Handle endtag."""
         if tag.lower() in {"p", "div", "li", "tr", "table", "h1", "h2", "h3", "h4", "h5", "h6"}:
             self.parts.append("\n")
 
     def handle_data(self, data: str) -> None:
-        """Internal helper for handle data."""
+        """Handle data."""
         self.parts.append(data)
 
 def _detail_html_to_text(value: str) -> str:
-    """Internal helper for detail html to text."""
+    """Internal helper: Handle html to text."""
     # ForexFactory may return Detail HTML with markup escaped one or more times.
     # Decode to a stable representation before parsing so literal and escaped
     # provider markup are treated identically. HTMLParser then handles tags
@@ -109,7 +109,7 @@ def output_query_result(
     provider_results: List[Dict[str, Any]],
     cleartext: bool = False,
 ) -> None:
-    """Internal helper for output query result."""
+    """Format cleartext details."""
     public_provider_results = sanitize_provider_results(provider_results)
 
     if cleartext:
