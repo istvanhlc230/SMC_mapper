@@ -417,6 +417,7 @@ Planning rules:
 - entry-timeframe coverage extends through all missing completed candles after the durable checkpoint;
 - a two-timeframe plan requests both HTF and LTF in one Market Data invocation;
 - where HTF and LTF require different historical coverage, the requested range starts at the earliest required boundary across the two feeds; the Mapper still treats each returned timeframe series independently and must not assume equal availability;
+- for an incremental two-timeframe update, the requested start includes the canonical HTF interval start containing the entry-timeframe checkpoint, because Market Data range selection uses candle interval-start timestamps while Mapper eligibility uses derived completion boundaries; the Mapper filters overlap candles by completion time and persisted state;
 - bootstrap uses the persisted `analysis_start` plus canonical warm-up needs;
 - latest-completed probes may be used to determine whether a range update and Mapper invocation are necessary;
 - no provider-specific acquisition logic belongs here.
