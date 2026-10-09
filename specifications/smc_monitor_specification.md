@@ -366,7 +366,7 @@ evaluate targets / RR / alerts
 schedule next cycle
 ~~~
 
-The Market Data CSV STDOUT is the machine-readable process boundary. Structures JSON remains the persisted mapper-state boundary; Calendar JSON remains the Calendar read boundary.
+The Monitor keeps the validated Market Data CSV result in memory for the dependent Mapper invocation and supplies the same stream to the Mapper through STDIN. No intermediate market-data file is introduced. The Market Data CSV STDOUT is the machine-readable process boundary. Structures JSON remains the persisted mapper-state boundary; Calendar JSON remains the Calendar read boundary.
 
 ## 4.2 Analysis update eligibility
 
@@ -384,7 +384,7 @@ Function:
 ~~~python
 def plan_market_data_updates(
     analysis_views: list[StoredAnalysisView],
-    market_data: dict[str, Any],
+    market_data_coverage: dict[str, Any],
     now: datetime,
 ) -> list[MarketDataUpdatePlan]:
     ...
@@ -576,6 +576,7 @@ Signature:
 def invoke_mapper(
     analysis: StoredAnalysisView,
     end_time: datetime,
+    market_data_stdout: str,
     debug: bool = False,
 ) -> ProcessResult:
     ...
@@ -590,7 +591,7 @@ python smc_mapper.py --symbol SYMBOL [--htf HTF] [--ltf LTF]
                      [--volume-method ...] [--debug]
 ~~~
 
-The Monitor must pass the stored timeframe configuration, the persisted `analysis_start`, and the resolved operational `end_time`. It must always pass `--starttime analysis_start` so the intended stored analysis is selected deterministically when multiple analyses share the same timeframe configuration. The Monitor does not pass `effective_start` because that is an execution-window concept.
+The Monitor must pass the stored timeframe configuration, the persisted `analysis_start`, and the resolved operational `end_time`. It must always pass `--starttime analysis_start` so the intended stored analysis is selected deterministically when multiple analyses share the same timeframe configuration. The Monitor does not pass `effective_start` because that is an execution-window concept. It passes the validated `market_data_stdout` result as the Mapper process STDIN; the Mapper does not launch Market Data itself. The stream must correspond to the requested symbol, timeframe configuration, and range.
 
 The Monitor must not:
 
@@ -599,7 +600,7 @@ The Monitor must not:
 - set or edit mapper checkpoints;
 - calculate BOS, CHoCH, IDM, retracement, or POI lifecycle.
 
-The machine-readable result is the persisted structures JSON.
+The machine-readable result is the persisted structures JSON. The Market Data CSV is process input only and must not be appended to Mapper arguments, written to an intermediate repository file, or merged with diagnostic STDERR.
 
 When debug is enabled, the Monitor may propagate --debug to smc_mapper.py so mapper diagnostics remain visible on stderr. It must never parse those diagnostics as data.
 
@@ -1488,7 +1489,7 @@ When a persisted checkpoint is later than the requested operational end boundary
 
 # 15. PERSISTENCE OWNERSHIP
 
-The Monitor does not own any persistent JSON schema.
+The Monitor does not own any persistent JSON schema and must not read the Market Data persistence JSON. Market Data state used for scheduling is transiently derived from validated process-output records.
 
 ## 15.1 Market Data
 
@@ -1680,7 +1681,7 @@ plan_market_data_updates(analysis_views, now)
 get_due_analyses(registry, now)
 
 invoke_market_data(plan, debug)
-invoke_mapper(analysis, end_time, debug)
+invoke_mapper(analysis, end_time, market_data_stdout, debug)
 
 refresh_current_market_view(symbol, timeframe)
 
@@ -1786,7 +1787,6 @@ Implement:
 
 ~~~text
 load_structures
-load_market_data
 discover_analysis_views
 validate_analysis_view
 ~~~
