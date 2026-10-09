@@ -79,11 +79,11 @@ Current skill:
 - `08_implementation.md` contains the deterministic execution representation.
 
 Classification:
-**CLOSED / VERIFIED — SOURCE-DIRECT LTF STRUCTURAL GLITCH + IDM-DEPENDENT CHoCH GATE**.
+**CLOSED / VERIFIED — POST-HTF-INTERACTION LTF-CHOCH CONTEXT + VALID-PULLBACK REFERENCE SUBSTITUTION + IDM-DEPENDENT CHoCH GATE**.
 
 Resolved canonicalization:
 - HTF POI/core-liquidity interaction activates the LTF-CHoCH context;
-- the 2026 source explicitly describes the post-HTF-interaction “small glitch in the structure cycle” in which the most recently formed valid LTF pullback/inducement is the operative CHoCH reference rather than the ordinary LTF external boundary;
+- the 2026 source informally describes this as a “small glitch in the structure cycle”; the canonical context name is LTF-CHoCH Context After HTF Interaction, and the valid pullback/inducement replacing the ordinary LTF external boundary is the Valid-Pullback Reference Substitution mechanism;
 - arbitrary local pivots and invalid pullbacks cannot replace that reference;
 - the LTF break mode depends on both active-range IDM context and the exact tested-level provenance: a wick through the active Major IDM level is `MAJOR_IDM_SWEEP`, not CHoCH; a wick may enter `CHoCH_ELIGIBLE` only when the tested LTF structural reference is eligible and demonstrably distinct from an active Major IDM level; when only Minor IDM is available, the prior protected external boundary remains the active Major IDM reference, a wick through that boundary is `MAJOR_IDM_SWEEP`, a wick through the substituted LTF Minor IDM is an LTF inducement sweep / `IDM_TAKEN` rather than CHoCH, and a completed body close beyond the active LTF CHoCH reference is required for `CHoCH_ELIGIBLE`;
 - the body-close condition is therefore not universal across all LTF CHoCH events;
@@ -91,10 +91,10 @@ Resolved canonicalization:
 - the LTF reference is not reclassified as Major IDM merely because it is used by the LTF-CHoCH route.
 
 Source reconciliation basis:
-- `knowledgebase/sources/truesmc2026.txt`, Part 5 lower-timeframe example, approximately 00:08:47–00:10:36 and 00:13:13–00:13:31, for the Structural Glitch reference substitution;
+- `knowledgebase/sources/truesmc2026.txt`, Part 5 lower-timeframe example, approximately 00:08:47–00:10:36 and 00:13:13–00:13:31, for Valid-Pullback Reference Substitution;
 - `knowledgebase/sources/truesmc2026.txt` CHoCH example around 00:12:18–00:12:33, for the Major-Inducement wick/body distinction.
 
-Do not silently infer the Structural Glitch route from generic CHoCH rules, and do not generalize the Minor-Inducement body-close condition to every LTF CHoCH.
+Do not silently infer the LTF-CHoCH Context Route from generic CHoCH rules, and do not generalize the Minor-Inducement body-close condition to every LTF CHoCH.
 
 ### 3.2 Status update — Order Flow / SMT
 
