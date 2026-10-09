@@ -1,3 +1,48 @@
+# POI Identification Secret lifecycle reconciliation — 2026-10-09
+
+## Audit result
+
+**Documentation consistency: PASS. Runtime implementation: NOT VERIFIED.**
+
+### Primary source evidence
+
+Audited `knowledgebase/sources/truesmc2026.txt`, Part 6 | POI Identification Secret:
+- 00:00:42–00:01:33: maximum of two dealing-range POIs (Decisional and Extreme); other ordinary formations are traps except the Origin OB.
+- 00:03:29–00:04:09: Origin OB validity is independent of parent-OF mitigation and it is the last line of defense when the applicable Extreme OB fails.
+- 00:09:06–00:09:33: the worked example again excludes other ordinary formations as traps/weak OBs rather than valid reversal zones.
+
+### Normative reconciliation completed
+
+- The active canonical tradable set has at most two slots: Decisional POI and Extreme POI. Origin OB is a latent reserve, never a third active slot.
+- Ordinary OF/OB formations created before the applicable active IDM is physically taken out (`IDM_TAKEN`) are `SMT / INDUCEMENT_TRAP`. This includes formations before IDM formation and formations between IDM formation and takeout.
+- Trap records may be stored for provenance, auditability, and history, and may be displayed when useful if trap/exclusion status is clear. They can never be active tradable POIs, authorize entries, or be promoted retrospectively after a later takeout.
+- Origin OB is the only named formation-time exception: it may pre-exist `IDM_TAKEN` as a latent reserve without becoming an ordinary trap, but cannot activate until the active-IDM/takeout gate and the existing canonical Origin OB validity/fallback conditions pass. It then occupies the Extreme slot. No arbitrary historical OF/OB receives this exception.
+- `IDM_TAKEN` only opens the remaining validation path for ordinary post-takeout candidates; it does not itself validate/activate a POI, satisfy Rule of Two, or authorize entry.
+- Extreme execution-location failure remains distinct from canonical `POI_FAILURE`, the separately defined CHoCH-based lifecycle state.
+- Monitor remains a consumer of canonical Mapper decisions and must not calculate a separate POI lifecycle.
+
+### Files changed
+
+- `.agents/skills/smc/06_execution.md`
+- `.agents/skills/smc/08_implementation.md`
+- `.agents/skills/smc/countertrend_scenarios.md`
+- `.agents/skills/smc/source_reconciliation.md`
+- `specifications/smc_mapper_specification.md`
+- `specifications/smc_monitor_specification.md`
+- `AGENT_REVIEW.md`
+
+### Consistency audit
+
+The audit checked the canonical execution rule, implementation mappings, countertrend scenario composition, Mapper's POI eligibility contract, Monitor's downstream consumption contract, and source-reconciliation evidence for the following conflict classes: a universal post-`IDM_TAKEN` formation-time rule that would make Origin OB fallback impossible; accidental promotion of ordinary pre-takeout traps; a third active Rule-of-Two slot; blanket prohibition on trap storage/display; automatic tradability following `IDM_TAKEN`; and conflation of Extreme execution failure with `POI_FAILURE`.
+
+**Static cross-document result: PASS** for the rules listed above. Historical audit entries below remain a review history, not normative methodology; this current entry records the reconciled contract.
+
+### Remaining implementation gap / validation boundary
+
+This was a documentation audit on the PR branch. Runtime classification, serialization/persistence, chart/display labels, active POI-slot assignment, Origin OB fallback activation, and entry authorization were not verified by running the application or its tests in this pass. Do not infer runtime PASS from this documentation PASS. Follow-up implementation validation must verify that ordinary pre-takeout OF/OB traps stay non-tradable after takeout, stored/displayed traps retain explicit exclusion status, Origin OB activates only as the canonical Extreme fallback, no third active POI is emitted, and Extreme execution failure does not manufacture `POI_FAILURE`.
+
+---
+
 # CURRENT AUDIT OVERRIDE — 2026-10-08 (Calendar + Market Data)
 
 ## Release-gate audit
