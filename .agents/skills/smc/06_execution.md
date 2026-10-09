@@ -201,7 +201,7 @@ Normative requirements:
 - Before a valid active IDM exists, OF/OB formations may be retained as observations or candidates for provenance, but they must not be designated, emitted, or consumed as tradable POIs and must not authorize an entry.
 - Any OF/OB formation that occurred before the applicable active IDM formed is an `SMT / INDUCEMENT_TRAP`; a later IDM takeout does not retroactively promote that pre-IDM formation into an eligible tradable POI in the same active dealing-range lineage.
 - After IDM formation but before its physical takeout, no OF/OB may be activated as a tradable POI and no trade may be authorized from it.
-- Only after the applicable active IDM is physically taken out may post-IDM OF/OB candidates proceed through their remaining canonical eligibility checks. The takeout is necessary but not sufficient: it does not itself validate an OF/OB, create a POI, satisfy Rule of Two, or authorize entry.
+- Only an OF/OB formation that occurs **after** the applicable active IDM has been physically taken out (`IDM_TAKEN`) may proceed through the remaining canonical eligibility checks. An OF/OB formed after IDM formation but before takeout remains non-tradable permanently within that active dealing-range lineage; the later takeout must not retroactively promote it. The takeout is necessary but not sufficient: it does not itself validate an OF/OB, create a POI, satisfy Rule of Two, or authorize entry.
 - The gate is satisfied only by the canonical `IDM_TAKEN` event for the applicable active IDM. A visual touch, an unrelated liquidity sweep, an inactive/historical IDM, or a merely inferred takeout is insufficient.
 - Candidate observation, OF/OB validation, active POI designation, and entry authorization are distinct decisions. Early observation or validation must never bypass the POI activation/trading gate.
 - If IDM identity, formation, active status, or takeout provenance is unresolved, execution must fail closed: no tradable OF/OB POI and no entry authorization.
@@ -742,8 +742,14 @@ An Engineering Liquidity sweep does not itself create an entry. With direct cand
 
 #### Module 4 — Extreme POI Mitigation entry
 
+The module must consume the global IDM formation-and-takeout gate defined in **“Mandatory IDM formation-and-takeout gate for every OF/OB POI”** above. The Extreme POI itself must have formed after the applicable active IDM was physically taken out (`IDM_TAKEN`); a pre-takeout candidate cannot be activated retrospectively.
+
 ```text
-VALID EXTREME POI
+VALID ACTIVE IDM FORMED
+   ↓
+IDM_TAKEN
+   ↓
+POST-TAKEOUT EXTREME POI FORMED + CANONICALLY VALIDATED
    ↓
 POI MITIGATION
    ↓
