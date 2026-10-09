@@ -722,7 +722,7 @@ REVERSAL / DIRECTIONAL CONFIRMATION
 ENTRY_AUTHORIZED
 ```
 
-Extreme POI mitigation does not itself create an entry. The Extreme POI must remain canonical under the Rule-of-Two and its own `EXTREME_ORDER_FLOW` or `EXTREME_ORDER_BLOCK` validity conditions. A Rejection Block follows its separate PD-array lifecycle and is not treated as an Extreme POI. With direct candle confirmation, the `ENTRY_REFERENCE_PRICE` is the completed confirmation-candle close.
+Extreme POI mitigation does not itself create an entry. The Extreme POI must remain canonical under the Rule-of-Two and its own `EXTREME_ORDER_FLOW` or `EXTREME_ORDER_BLOCK` validity conditions. This is the fallback execution mechanism when the Decisional POI is not the applicable location; fallback does not relax Rule-of-Two or POI validation. A Rejection Block follows its separate PD-array lifecycle and is not treated as an Extreme POI. With direct candle confirmation, the `ENTRY_REFERENCE_PRICE` is the completed confirmation-candle close.
 
 #### Unfilled orders, cancellation, and re-entry
 
@@ -735,10 +735,6 @@ ORDER_FILLED ≠ POSITION_OPEN
 ```
 
 A later structural or execution event may invalidate a pending order according to the dedicated order-lifecycle policy; such invalidation must not rewrite the historical entry authorization event.
-### Module 4 — Extreme POI Mitigation
-
-The Extreme POI module is the canonical fallback execution mechanism when the Decisional POI is not the applicable execution location. The Extreme POI must independently satisfy `EXTREME_ORDER_FLOW` or `EXTREME_ORDER_BLOCK` validity; fallback execution does not relax POI validation. A Rejection Block follows its separate PD-array execution lifecycle and must retain its own type/provenance even when represented alongside POI execution data.
-
 ## 40.5. Candlestick Reversal Triggers
 
 Candlestick reversal patterns are **execution confirmation/trigger objects only**. They are downstream consumers of structural and execution eligibility and have zero structural authority.
@@ -967,27 +963,10 @@ Do not fail over from ELIGIBLE_ORDER_FLOW to Extreme Order Block solely because 
 
 ### Risk, Targets, and RR
 
-Risk management, target resolution, and Reward-to-Risk (RR) gating are downstream execution/trading-policy constraints. Canonical True SMC does NOT define a universal target-selection priority or a universal target-selection winner.
+This layer provides validated structural/liquidity facts and entry-module context only. Ownership of downstream decisions is delegated as follows:
 
-The execution layer operates under the strict unidirectional pipeline:
+- Stop anchors, configured stop buffers, target-candidate handling, target-policy resolution, RR gating, and target-reached lifecycle → `07_risk.md`.
+- Configurable account risk, session/news gates, position sizing policy, and trade-count limits → `trading_policy.md`.
+- Broker order types, submission constraints, fills, position reconciliation, and backtest execution → `platform_execution.md`.
 
-```text
-CANONICAL STRUCTURAL / LIQUIDITY TARGET CANDIDATES
-        ↓
-CONFIGURED TARGET POLICY
-        ↓
-RESOLVED TARGET
-        ↓
-RR EVALUATION
-```
-
-Required interface semantics:
-- The confirmed external range extreme is a **canonical target candidate / structural input**, but is not automatically a universal target-selection winner.
-- For LTF execution, multiple source-backed target conventions exist (e.g., HTF external liquidity vs. LTF structural/BOS destination); the downstream target policy selects the applicable convention.
-- For countertrend execution, no universal TP coordinate or implicit fallback target exists; destination selection is setup-specific target policy.
-- Break-even (`BE`), profit-lock, and trailing stop rules are stop-management concepts, not structural targets.
-- Target candidate, resolved target, and RR evaluation remain separate semantic objects.
-- RR evaluation consumes a resolved target only after the configured target policy resolves one.
-- If no valid target is resolved (`NO_RESOLVED_TARGET`), no target may be manufactured merely to satisfy an RR gate, and no automatic TP submission may occur.
-- Minimum RR thresholds (e.g., 1:2) and RR gating are configurable project policy, not universal canonical methodology. Risk management must consume structural state; it must not redefine structure.
-
+These consumers must use the canonical output of this layer without redefining POI, OF/OB, IDM, BOS, CHoCH, or entry authorization. No universal target winner, numeric stop buffer, or minimum RR may be invented here.
