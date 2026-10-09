@@ -878,7 +878,7 @@ When required canonical state is unresolved or unavailable, downstream alerting 
 
 If the Mapper exposes canonical ENTRY_AUTHORIZED state under the canonical implementation contract, the Monitor may consume that state only as a downstream result; it must not reconstruct or bypass canonical entry gates.
 
-The canonical authorization it consumes must already respect the mandatory OF/OB POI gate: a valid active IDM must have formed and the applicable active IDM must have been physically taken out (`IDM_TAKEN`) before an OF/OB POI can be active for trading. A pre-IDM OF/OB formation remains an `SMT / INDUCEMENT_TRAP`; an OF/OB candidate between IDM formation and takeout is not an executable POI. IDM takeout alone is not sufficient authorization.
+The canonical authorization it consumes must already respect the mandatory OF/OB POI gate: a valid active IDM must have formed and the applicable active IDM must have been physically taken out (`IDM_TAKEN`) before an OF/OB POI can be active for trading. A pre-IDM OF/OB formation remains an `SMT / INDUCEMENT_TRAP`; any OF/OB formed between IDM formation and takeout remains non-tradable and cannot be promoted retrospectively. Only a formation created after the applicable `IDM_TAKEN` event may be considered for active tradable POI authorization. IDM takeout alone is not sufficient authorization.
 
 If the Mapper's canonical entry authorization or the required IDM/takeout provenance is unresolved or unavailable, the Monitor must fail closed and must not issue an entry-authorization alert based on a visually inferred or independently reconstructed POI.
 
