@@ -1207,6 +1207,17 @@ The complete canonical OF/OB semantic family is:
 
 These identifiers distinguish object identity, qualification, execution role, and the latent range-origin Order Block reserve.
 
+## 8.1 Mandatory IDM gate for active OF/OB POIs
+
+The Mapper must enforce the canonical Layer-6 rule from `.agents/skills/smc/06_execution.md`: an active tradable Order Flow or Order Block POI cannot be designated or used to authorize an entry until a valid active IDM has formed and that applicable IDM has been physically taken out (`IDM_TAKEN`).
+
+- OF/OB formations predating the applicable active IDM remain `SMT / INDUCEMENT_TRAP` observations for that active dealing-range lineage. A later IDM takeout must not retroactively promote them.
+- OF/OB candidates formed after IDM formation but before its takeout may be retained as non-tradable candidates, but must not be emitted as active tradable POIs.
+- After the applicable `IDM_TAKEN` event, post-IDM candidates may be evaluated against all remaining canonical OF/OB validity, mitigation, POI ontology, Rule-of-Two, and execution constraints.
+- IDM takeout is necessary but not sufficient: it does not automatically validate a candidate, create an active POI, or authorize an entry.
+- The Mapper must preserve candidate/validation records separately from active tradable POI records. If active IDM identity, formation, takeout event, or event-time provenance is unresolved, it must fail closed and emit no executable OF/OB POI or entry authorization.
+- This is a consumption/implementation contract for the skill-owned rule; it must not create an alternate IDM or POI lifecycle.
+
 Canonical POI lifecycle is consumed verbatim from Layer 6:
 
     POI_TOUCH
