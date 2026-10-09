@@ -743,6 +743,16 @@ Options:
       Show this help message and exit.
 ```
 
+For every invocation other than `--help`, the Mapper reads one complete machine-readable Market Data CSV stream from STDIN. Empty input, malformed protocol, unexpected timeframe rows, incomplete/current rows, or a symbol/timeframe/range mismatch is an explicit input failure. The Mapper never launches `market_data.py` and never opens `<SYMBOL>_marketdata.json`.
+
+A direct shell invocation may connect the processes with a pipe:
+
+```text
+python market_data.py --symbol SYMBOL --timeframes TF [TF ...] --range RANGE | python smc_mapper.py --symbol SYMBOL [--htf HTF] [--ltf LTF] --starttime START --endtime END
+```
+
+The Monitor uses the same contract by capturing and validating the Market Data STDOUT, then passing the analysis-scoped stream as Mapper STDIN.
+
 The Market Data and Monitor CLIs are specified only in their owner documents:
 
 - `market_data.py` → `specifications/market_data_specification.md` §0.4 and §5
