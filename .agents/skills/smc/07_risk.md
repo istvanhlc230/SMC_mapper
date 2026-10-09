@@ -464,7 +464,7 @@ TARGET_HIT ≠ VALID_BOS
 CHoCH_CONFIRMED ↛ mandatory MARKET_CLOSE_ON_CHOCH
 ```
 
-## 5.6 Architectural Separation
+## 5.5 Architectural Separation
 
 Risk remains a downstream consumer of structural and execution state. No risk rule may manufacture IDM, CONFIRMED_STRUCTURAL_SWING, Protected Structural Extreme, VALID_BOS, CHoCH_CONFIRMED, Trading Range, or POI ontology.
 
