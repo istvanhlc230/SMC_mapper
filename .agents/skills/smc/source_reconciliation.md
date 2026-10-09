@@ -259,6 +259,23 @@ Canonical interpretation owned by `.agents/skills/smc/06_execution.md`:
 - Origin OB is the one named latent-reserve exception to the ordinary formation-time rule, not a general historical-candidate escape hatch. It must remain non-active until the active IDM/takeout gate and its existing canonical validity/fallback activation conditions pass. When it becomes applicable, it occupies the Extreme slot. Its activation must not be equated with, or cause, the CHoCH-based canonical `POI_FAILURE` lifecycle state.
 - For ordinary post-takeout OF/OB formations, `IDM_TAKEN` only opens the remaining canonical validation path; it does not itself validate or activate a POI, satisfy Rule of Two, or authorize entry.
 
+#### Hybrid Decisional zones, dual execution, and Origin OB fallback
+
+Additional source evidence and canonical clarification from Part 6:
+
+- [SOURCE_DIRECT] At **00:01:35–00:02:34**, Part 6 defines Decisional OF as the last opposing move before reversal displacement causing BOS and places the Decisional OB inside that Decisional OF. This is explicit parent-zone/refinement geometry, not two unrelated structural targets.
+- [SOURCE_DIRECT] At **00:03:29–00:04:09**, Part 6 says Origin OB validity is independent of parent OF mitigation and identifies Origin OB as the last line of defense if the applicable Extreme OB fails.
+- [SOURCE_DIRECT] At **00:07:43–00:09:04**, the bearish worked example identifies the Decisional OB inside the Decisional OF and the Extreme OB within its Extreme OF lineage.
+- [SOURCE_DIRECT] At **00:10:35–00:11:25**, the execution example describes the Decisional OB failing and a later execution opportunity at Extreme OF without Extreme OB mitigation. This supports separate OF/OB mitigation states, but is not itself the exact parent-reaction-fails-before-child-reach scenario.
+- [SOURCE_RECONCILED] The Rule of Two counts independent structural roles/targets, not nested zone outlines. Decisional OF plus its contained Decisional OB refinement share one Decisional slot; the Extreme zone is the second slot. Three visible outlines therefore do not imply three independent POI slots.
+- [PROJECT_CANONICAL] If parent Decisional OF is canonically mitigated and its reaction fails before reaching the nested Decisional OB, the child OB remains executable only while its own OB validation, unmitigated state, identity, active-IDM/takeout gate, and all execution gates remain satisfied. Parent OF state does not automatically propagate into child OB state.
+- [SOURCE_RECONCILED] Origin OB is a sequential last-resort stage after the applicable Extreme path fails; it does not coexist as a third independent active slot. It must remain independently valid/unmitigated, satisfy its FVG/imbalance and other OB pillars, and pass existing canonical activation gates.
+
+Canonical interpretation owned by .agents/skills/smc/06_execution.md:
+- Separate parent/child geometry from structural-slot count; do not suppress a valid inner Decisional OB merely because its parent OF was mitigated.
+- Preserve the Rule of Two, pre-takeout trap gate, no-retrospective-promotion rule, and all OB pillars.
+- Origin OB is sequential fallback, not nested Decisional refinement and not a third independent active target.
+
 ### C8 — Engineering Liquidity identification and lifecycle
 
 Canonicalize Engineering Liquidity as a core-liquidity reference derived from the valid pullback immediately preceding the active Extreme OF or Extreme OB.
@@ -353,7 +370,8 @@ Required outcome:
 - [SOURCE_DIRECT] Extreme OF is resolved first; Extreme OB is the furthest unmitigated valid Order Block within the active Extreme OF lineage; a global search across all origin-side OBs is not canonical;
 - [SOURCE_DIRECT] if a candidate OB candle lacks the required FVG association, the source reconciliation describes advancing to the next eligible candle and re-evaluating FVG association; the selected candle must independently satisfy all OB validation pillars;
 - [PROJECT_CANONICAL] for this project, the fallback pointer is resolved deterministically to the immediately next chronological candle; no arbitrary forward skipping is permitted, and the next candle must independently satisfy the OB validation pillars;
-- [SOURCE_DIRECT] Order Block validity is based on its own validation pillars and is not automatically invalidated by an unmitigated/failed Order Flow;
+- [SOURCE_DIRECT] Order Block validity is based on its own validation pillars and is not automatically invalidated by an unmitigated/failed parent Order Flow;
+- [SOURCE_RECONCILED] parent OF mitigation/reaction failure does not automatically mitigate the contained child OB; child execution remains allowed only when its own mitigation/validity state and all canonical gates remain satisfied;
 - [SOURCE_DIRECT] Origin OB is a separate latent reserve, independent of parent-OF mitigation, and the last line of defense when the applicable Extreme OB fails; it is not an ordinary SMT trap or a third active Rule-of-Two slot;
 - [SOURCE_RECONCILED] Origin OB formation may predate `IDM_TAKEN`, but the reserve can be activated for trading only after the canonical active-IDM/takeout gate and existing Origin OB validity/fallback activation conditions pass;
 - [SOURCE_RECONCILED] Extreme execution-location failure is distinct from canonical `POI_FAILURE`, which remains the separately defined CHoCH-based execution lifecycle state;
