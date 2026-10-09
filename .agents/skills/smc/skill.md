@@ -36,9 +36,9 @@ Read the referenced documents in this order when the full methodology is require
 
 5. `05_CHOCH_mechanics.md`
    - Dedicated CHoCH mechanics and lifecycle
-   - Major IDM / Major IDM Sweep interaction and lifecycle
+   - CHoCH-facing Major IDM interaction outcomes
    - LTF-CHoCH context route after HTF POI/core-liquidity interaction
-   - Consumes shared structural state; does not redefine it
+   - Consumes Layer 3 Major IDM semantics/lifecycle; does not redefine IDM formation or governance
 
 ## 2. Execution and risk
 
@@ -86,110 +86,34 @@ Read the referenced documents in this order when the full methodology is require
 - Human approval gate, contract ledger, change set, and independent validation
 - Process authority only; it does not define SMC methodology
 
-## 5. Global structural terminology and namespace boundary
+## 5. Semantic ownership and precedence
 
-The canonical structural hierarchy is:
+This index deliberately does not restate methodology rules. Each canonical concept has one primary semantic owner; other documents may define consumer contracts but must not introduce competing definitions.
 
-OHLC / CANDLE PRIMITIVES
-        ↓
-MICROSTRUCTURE
-        ↓
-MINOR STRUCTURE
-  (Candle-Level Valid Pullback / Minor Structural Swing / Minor IDM)
-        ↓
-MAJOR / EXTERNAL STRUCTURE
-  (Confirmed Structural Swing / Protected External Boundary / Major IDM)
-        ↓
-EXTERNAL STRUCTURAL BREAK
-  (Structural Swing Break / VALID_BOS)
-
-Terminology rules:
-- Microstructure owns candle-level geometry and observations.
-- Minor Structure owns validated sequential structure produced from Layer-1 observations.
-- Major / External Structure owns CONFIRMED_STRUCTURAL_SWING, Protected External Boundary / Protected Structural Extreme, Major IDM, and the structural lifecycle.
-- BOS is an external/major structural break, not a generic candle break or Minor Structural Swing break.
-- CHoCH is a structural lifecycle transition whose governing reference is context-dependent; the LTF-CHoCH Context After HTF Interaction uses Valid-Pullback Reference Substitution without promoting a Minor object into Major Structure.
-- Unqualified implementation-domain types such as Swing, Break, or Structure must not be used where a canonical layer-specific semantic type is required.
-- Existing canonical names (CONFIRMED_STRUCTURAL_SWING, STRUCTURAL_SWING_BREAK, VALID_BOS, MINOR_IDM, MAJOR_IDM) remain authoritative and must not be replaced by parallel synonyms.
-- Generic words such as “structure”, “swing”, or “break” may appear in descriptive prose only when the semantic owner is unambiguous. Normative rules and implementation contracts must use the specific canonical object/event name.
-
-This is a terminology boundary, not a new SMC rule. It prevents Microstructure, Minor Structure, and Major/External Structure from being conflated while preserving the semantic-owner model.
-
-## 6. Documentation authority
-
-Semantic ownership is:
-
-```text
-MICRO STRUCTURE
-    → 01_micro_structure.md
-
-MINOR STRUCTURE
-    → 02_minor_structure.md
-
-STRUCTURAL SEMANTIC AUTHORITY
-    → 03_structural_semantic_authority.md
-
-BOS MECHANICS
-    → 04_BOS_mechanics.md
-
-CHoCH MECHANICS
-    → 05_CHOCH_mechanics.md
-
-EXECUTION
-    → 06_execution.md
-
-RISK
-    → 07_risk.md
-
-NUMERIC / CONFIGURABLE PARAMETERS
-    → methodology_parameters.md
-
-IMPLEMENTATION REPRESENTATION / EXECUTABLE SCORING MAPPING
-    → 08_implementation.md
-
-TRADING POLICY
-    → trading_policy.md
-
-PLATFORM EXECUTION / BACKTEST
-    → platform_execution.md
-
-COUNTERTREND SCENARIOS
-    → countertrend_scenarios.md
-```
-
-A rule must have one primary semantic owner.
-
-
-## 7. Precedence rule
+| Semantic area | Primary owner |
+|---|---|
+| Candle-level observations | `01_micro_structure.md` |
+| Sequential / Minor Structure and Minor IDM formation | `02_minor_structure.md` |
+| Major Structure, Major IDM governance, retracement qualification, and structural lifecycle | `03_structural_semantic_authority.md` |
+| BOS classification and mechanics | `04_BOS_mechanics.md` |
+| CHoCH classification and mechanics | `05_CHOCH_mechanics.md` |
+| POI, OF/OB/RB, execution liquidity, and entry authorization | `06_execution.md` |
+| Structural stop anchors and downstream risk/target lifecycle | `07_risk.md` |
+| Numeric/configurable methodology values | `methodology_parameters.md` |
+| Deterministic implementation representation and validation | `08_implementation.md` |
+| Configurable account/trading-plan rules | `trading_policy.md` |
+| Venue order/fill/position/backtest contracts | `platform_execution.md` |
+| Composition of the three source-defined countertrend scenarios | `countertrend_scenarios.md` |
+| Source-to-canonical change control | `source_reconciliation.md` |
 
 When documents conflict:
 
 ```text
 CURRENT SEMANTIC OWNER
         >
-CROSS-REFERENCE
+CROSS-REFERENCE / CONSUMER CONTRACT
         >
-OLDER / SUPERSEDED WORDING
+OLDER OR SUPERSEDED WORDING
 ```
 
-Do not use generic SMC knowledge to override the project's canonical semantic-owner documents.
-
-## 8. Canonical document set
-
-```text
-.agents/skills/smc/
-├── skill.md
-├── 01_micro_structure.md
-├── 02_minor_structure.md
-├── 03_structural_semantic_authority.md
-├── 04_BOS_mechanics.md
-├── 05_CHOCH_mechanics.md
-├── 06_execution.md
-├── 07_risk.md
-├── 08_implementation.md
-├── methodology_parameters.md
-├── trading_policy.md
-├── platform_execution.md
-├── countertrend_scenarios.md
-└── source_reconciliation.md
-```
+`knowledgebase/` is source evidence, not a replacement for the current canonical owner. Generic SMC knowledge must not override the project's source reconciliation and canonical semantic-owner documents.
