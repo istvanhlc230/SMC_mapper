@@ -99,7 +99,7 @@ Required representation:
 
 #### Mandatory active-IDM formation and takeout gate
 
-An ordinary OF/OB may be designated as an active tradable POI, exposed as an executable POI, or used to authorize an entry only after a canonical valid active IDM has formed and that applicable active IDM has been physically taken out (`IDM_TAKEN`). The active canonical POI set has at most two slots: Decisional POI and Extreme POI. Origin Order Block is not a third slot.
+An ordinary OF/OB may be designated as an active tradable POI, exposed as an executable POI, or used to authorize an entry only after a canonical valid active IDM has formed and that applicable active IDM has been physically taken out (IDM_TAKEN). The active canonical set has at most two independent structural slots: Decisional and Extreme. If a broad Decisional Order Flow and its contained Decisional Order Block refinement are both emitted or displayed, they map to the same Decisional slot; their two geometry records plus an Extreme zone do not constitute three structural targets. The child OB may remain independently executable under the dual-execution protocol. Origin Order Block remains a latent sequential fallback, not a third independent slot.
 
 - An ordinary OF/OB formed before the applicable active IDM was formed is classified as `SMT / INDUCEMENT_TRAP` for that active dealing-range lineage.
 - An ordinary OF/OB formed after IDM formation but before the physical `IDM_TAKEN` event is also classified as `SMT / INDUCEMENT_TRAP`. Neither class may be retrospectively promoted after the takeout.
@@ -839,9 +839,12 @@ Required implementation behavior:
 - `DECISIONAL_ORDER_BLOCK` is the validated Order Block that actually causes the canonical `VALID_BOS` event; it is not selected solely because it is the first validated Order Block after inducement;
 - the earlier `first validated Order Block after inducement` shortcut is superseded;
 - `EXTREME_ORDER_BLOCK` is selected as the furthest unmitigated validated Order Block within the active `EXTREME_ORDER_FLOW` lineage; it is not selected by a global search across all origin-side Order Blocks;
-- OB validity is evaluated from the canonical OB validation pillars independently of parent Order Flow mitigation/failure state;
-- a valid Decisional Order Block may remain executable even while its associated Order Flow is unmitigated, subject to Rule-of-Two and all execution gates;
-- later OF mitigation/failure must not retroactively rewrite the causal Decisional Order Block identity.
+- OB validity and mitigation are evaluated from the canonical OB's own pillars and state, independently of parent Order Flow mitigation/failure state;
+- parent OF mitigation or reaction failure does not automatically mitigate or invalidate its nested Decisional OB child;
+- when broad Decisional OF is mitigated, gives a reaction, and that reaction fails before reaching the nested valid Decisional OB, the child OB remains active and independently executable only if its own OB state remains unmitigated/valid and all IDM/takeout, causal-BOS, premium/discount, and execution gates still pass;
+- a valid Decisional Order Block may also remain executable while its associated Order Flow is unmitigated, subject to Rule-of-Two and all execution gates;
+- later OF mitigation/failure must not retroactively rewrite the causal Decisional Order Block identity;
+- parent OF plus child Decisional OB map to one Decisional slot; alongside Extreme this may produce three chart zones, but never three independent structural POI slots.
 
 ### Stop Placement implementation mapping
 
@@ -876,8 +879,8 @@ Required invariants:
 - trap records may be retained and displayed with explicit trap/exclusion status but never enter the active tradable POI set or authorize entry;
 - `IDM_TAKEN` only opens the remaining validation path for ordinary post-takeout candidates; all canonical OF/OB validation, mitigation, Rule-of-Two, and execution gates still apply;
 - Rejection Block is a separately typed PD-array/execution concept; source examples may use POI as a broad execution-location term, but RB is not an OF/OB-equivalent POI class or an automatic Rule-of-Two slot;
-- Rule of Two permits at most two active tradable POI slots: Decisional POI and Extreme POI (Extreme Order Flow / Extreme Order Block);
-- Origin Order Block is a latent reserve and source-defined last-line fallback; its pre-takeout formation is the sole exception to the ordinary formation-time gate, and it may occupy the Extreme slot only after the existing canonical validity/fallback activation conditions pass; it is never a third active POI;
+- Rule of Two permits at most two independent active structural POI slots: Decisional and Extreme. A Decisional OF parent and its nested Decisional OB refinement may both be charted and independently executable as representations of the same Decisional slot; with the Extreme zone this is at most two structural targets, not three;
+- Origin Order Block is a latent sequential last-line-of-defense reserve, with independent OB validity (including its required FVG/imbalance association) regardless of parent Extreme OF mitigation. It is not an independent third active slot and may be used only after the existing canonical IDM/takeout, Origin OB validity, applicable Extreme-path failure, and fallback activation conditions pass;
 - Extreme execution failure is distinct from the CHoCH-based canonical `POI_FAILURE` lifecycle state;
 - when an applicable Rule-of-Two dealing-range execution context exists, the active canonical tradable POI set has at most two slots (Decisional POI and Extreme POI); if neither slot has a valid canonical POI, the executable set may be empty and execution fails closed with no executable POI / `NO_EVIDENCE`; no synthetic POI is created to fill a slot;
 - Decisional buy POI is in discount, and Decisional sell POI is in premium as a hard execution eligibility gate;
