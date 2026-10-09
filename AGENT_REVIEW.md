@@ -15,7 +15,7 @@ The skill, Mapper specification, Monitor consumer specification, countertrend co
 
 ## Calendar / Market Data validation
 
-The latest previously completed successful run pair was Calendar Python tests #769 and Market Data Python tests #384; both compilation and their unit/runtime contract steps passed on commit 9fbe0a32130582a18f668878b75cee566c50b7c1. The new POI documentation edits will trigger fresh CI and must be revalidated.
+On the POI documentation commit 9749d4893e4a66d63a7fa3dfcc784994fd60524f, GitHub Actions completed Calendar Python tests #776 and Market Data Python tests #391 successfully; both compilation and their unit/runtime contract steps passed. This record update creates a new branch head and may retrigger the same checks, so the latest PR-head results are rechecked separately before final reporting.
 
 ---
 
