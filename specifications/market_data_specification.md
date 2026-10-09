@@ -60,8 +60,8 @@ The external contract is intentionally not a Python service API. `MARKET_DATA/se
 The machine-output contract is conceptually:
 
 ```text
-timeframe,time,open,high,low,close,tick_volume,spread,real_volume,completed
-<H1>,<epoch_seconds>,<open>,<high>,<low>,<close>,<tick_volume>,<spread>,<real_volume>,<0|1>
+timeframe,time,open,high,low,close,tick_volume,spread,real_volume,volume_total,orderflow_buy,orderflow_sell,completed
+<H1>,<epoch_seconds>,<open>,<high>,<low>,<close>,<tick_volume>,<spread>,<real_volume>,<volume_total>,<orderflow_buy>,<orderflow_sell>,<0|1>
 ...
 ```
 
@@ -730,7 +730,7 @@ The machine output is the Mapper/Monitor integration boundary. It is not a human
 Required header:
 
 ```text
-timeframe,time,open,high,low,close,tick_volume,spread,real_volume,completed
+timeframe,time,open,high,low,close,tick_volume,spread,real_volume,volume_total,orderflow_buy,orderflow_sell,completed
 ```
 
 Each data row contains:
@@ -741,10 +741,13 @@ Each data row contains:
 4. `high`;
 5. `low`;
 6. `close`;
-7. `tick_volume`;
-8. `spread`;
-9. `real_volume`;
-10. `completed` — `1` for a completed candle and `0` for the current/in-progress snapshot.
+7. `tick_volume` — optional provider field, not interchangeable with total traded volume;
+8. `spread` — optional provider field;
+9. `real_volume` — optional provider field, not inferred from another volume field;
+10. `volume_total` — optional normalized `volume.total` value;
+11. `orderflow_buy` — optional observed orderflow buy volume;
+12. `orderflow_sell` — optional observed orderflow sell volume;
+13. `completed` — `1` for a completed candle and `0` for the current/in-progress snapshot.
 
 Rules:
 
@@ -755,7 +758,10 @@ Rules:
 - no debug, status, progress, provider diagnostics, or other text may be written to STDOUT;
 - unavailable optional numeric values are represented by an empty CSV field (`""`); they must not be replaced with zero, estimated, or fabricated values;
 - `open`, `high`, `low`, and `close` are always present for an emitted candle; malformed or missing OHLC causes the record/query to fail closed;
-- `tick_volume`, `spread`, and `real_volume` may be empty independently;
+- `tick_volume`, `spread`, `real_volume`, and `volume_total` may be empty independently;
+- `orderflow_buy` and `orderflow_sell` represent observed orderflow only. They must both be present and valid for an orderflow pair to be usable; if the provider supplies only one side, emit both fields empty rather than fabricating the missing side;
+- `volume_total` maps only to the normalized `volume.total` branch. It must not be inferred from `tick_volume` or `real_volume`;
+- `orderflow_buy` / `orderflow_sell` map only to normalized `volume.orderflow.buy` / `volume.orderflow.sell`. OHLC-derived estimates are not serialized as observed orderflow;
 - a successful query with no matching records emits the header and no data rows;
 - the protocol uses UTF-8 text and newline-delimited records;
 - CSV escaping/quoting follows standard CSV rules; the canonical numeric fields contain no thousands separators;
