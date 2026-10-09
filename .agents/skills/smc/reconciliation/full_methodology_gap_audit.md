@@ -269,54 +269,23 @@ The remaining items were re-audited against the current canonical skill and impl
 
 The audit therefore finds **no unresolved canonical-methodology contradiction requiring new SMC rules at this time**. Target selection/use and trade-management behavior are implementation concerns built on chart-analysis outputs, not missing canonical SMC rules.
 
-## 4. Current runtime versus canonical skill
+## 4. Current repository/runtime synchronization status
 
-The current `main` runtime does not implement the full skill.
+This section was rechecked against the current `main` tree on 2026-10-09. The earlier runtime inventory below has been superseded because those historical filenames are not present in the current tree.
 
-### `smc_analyzer.py`
+### Verified repository facts
 
-Current content provides:
-- OHLC normalization;
-- completed-candle filtering;
-- intrabar evidence state;
-- lifecycle/event/outcome enums;
-- `TargetCandidate` / `TargetLeg` / `TargetPlan` models;
-- a StructuralPOICandidate data class.
+- `smc_analyzer.py` is not present in the current tracked `main` tree.
+- `smc_htf_ltf_monitor.py` is not present in the current tracked `main` tree.
+- `tests/test_smc_htf_ltf_monitor.py` is not present in the current tracked `main` tree.
+- The canonical SMC semantic-owner documents remain present under `.agents/skills/smc/`.
+- The tracked `CALENDAR/` and `MARKET_DATA/` packages are data-service components; their presence does not establish that the structural mapper runtime is implemented.
 
-It does not currently contain the full structural detector/classifier/state-transition engine described by `03`/`04`/`05`/`08`. The runtime still contains legacy `SWING_CANDIDATE` representation even though the canonical documentation removed that terminology; this is a runtime synchronization issue, not a reason to alter canonical methodology.
+### Current disposition
 
-### `smc_htf_ltf_monitor.py`
+**RUNTIME-TO-SKILL SYNCHRONIZATION = NOT VERIFIED.** The prior claim that `smc_analyzer.py` is the current runtime owner is stale and must not be used as a current repository fact. A current structural runtime entry point and its tests must be identified from files actually present in `main` before runtime equivalence can be audited.
 
-Current behavior is a simple manually configured zone monitor:
-- loads zones from `zones.json`;
-- fetches the latest candle from Yahoo Finance;
-- detects zone touch;
-- arms an LTF check;
-- accepts a directional candle close relative to the zone midpoint;
-- sets SL to the zone boundary;
-- calculates RR against a manually configured target;
-- raises a Termux alert.
-
-This is materially different from canonical execution.
-
-Examples of current non-canonical shortcuts:
-- no IDM detection;
-- no BOS detection;
-- no CHoCH classification;
-- no structural retracement qualification;
-- no 2-candle reduced retracement handling;
-- no OF/OB/FVG validation;
-- no Engineering Liquidity identification;
-- no Rule-of-Two selection engine;
-- no canonical candle-pattern evaluator;
-- no source-backed position sizing;
-- no session/news gate;
-- no broker execution;
-- no real position/open-order lifecycle.
-
-### Repository-level synchronization
-
-The current runtime owner is `smc_analyzer.py`. The canonical `08_implementation.md` no longer depends on a missing `SMC_mapper.py` owner reference. Remaining synchronization work is therefore between the canonical lifecycle and the current analyzer implementation.
+The methodology specification remains separately auditable: absence of a runtime file does not invalidate or alter canonical SMC semantics. Conversely, the canonical skill's completeness does not establish that those rules are implemented in executable code.
 
 ## 5. Full-platform sufficiency assessment
 
@@ -404,7 +373,7 @@ The normal retracement parameterization is canonicalized elsewhere:
 
 
 
-## 3.14 Status update — Direct validator re-audit of the eight remaining canonical issues
+## Addendum A — Direct validator re-audit of the eight remaining canonical issues
 
 The previous AUDIT PART 2 = COMPLETE disposition was superseded by a direct validator re-audit against the indexed knowledgebase evidence.
 
@@ -448,7 +417,7 @@ The knowledgebase remains evidence only; .agents/skills/smc/ remains canonical a
 No remaining contradiction from the eight-item validator set is left open. Any exact source-sequence boundary not explicitly deterministic in the underlying source remains an implementation/documentation boundary rather than an invented numeric rule.
 
 
-## 3.14 Major IDM continuity after BOS — corrected
+## Addendum B — Major IDM continuity after BOS — corrected
 
 A direct source re-audit identified a semantic error in the previous canonical representation of post-BOS Major IDM lifecycle. The skill previously modeled the prior protected external boundary as a `FALLBACK_MAJOR_IDM` proxy and treated a later post-BOS pullback as a separate `REAL_MAJOR_IDM` object.
 
@@ -465,7 +434,7 @@ The previous `FALLBACK_MAJOR_IDM` / `REAL_MAJOR_IDM` distinction was therefore r
 Validation requirement: no remaining canonical rule may treat `FALLBACK_MAJOR_IDM` as an event class, score category, CHoCH exception, or independent IDM type.
 
 
-## POST-BOS MAJOR IDM RE-AUDIT — 2026-09-27
+## Addendum C — Post-BOS Major IDM re-audit — 2026-09-27
 
 The previously recorded "open source-definition gap" for post-BOS Major IDM qualification was re-audited against the complete categorized knowledgebase and the current canonical layers.
 
@@ -507,7 +476,7 @@ When no new post-BOS valid pullback / verified pullback extreme has established 
 
 The prior audit statement claiming that the authoritative source material did not define the qualification predicate is superseded by this re-audit.
 
-## 3.14 Current clarification — LTF CHoCH reference and Major IDM provenance
+## Addendum D — Current clarification — LTF CHoCH reference and Major IDM provenance
 
 The apparent conflict between `05_CHOCH_mechanics.md` §§3.5.3A and 3.5.4 is resolved by explicitly separating the active LTF range's IDM context from the provenance of the specific price level being tested. The distinction must use existing canonical terminology; it does not introduce `REAL_MAJOR_IDM` or `FALLBACK_MAJOR_IDM` object classes.
 
