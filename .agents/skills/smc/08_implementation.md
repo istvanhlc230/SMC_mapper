@@ -879,7 +879,7 @@ Required invariants:
 - Rule of Two permits at most two active tradable POI slots: Decisional POI and Extreme POI (Extreme Order Flow / Extreme Order Block);
 - Origin Order Block is a latent reserve and source-defined last-line fallback; its pre-takeout formation is the sole exception to the ordinary formation-time gate, and it may occupy the Extreme slot only after the existing canonical validity/fallback activation conditions pass; it is never a third active POI;
 - Extreme execution failure is distinct from the CHoCH-based canonical `POI_FAILURE` lifecycle state;
-- when an applicable Rule-of-Two dealing-range execution context exists, the active canonical tradable POI set has cardinality 1..2; if no valid canonical POI exists, execution fails closed with no executable POI / `NO_EVIDENCE`; no synthetic POI is created;
+- when an applicable Rule-of-Two dealing-range execution context exists, the active canonical tradable POI set has at most two slots (Decisional POI and Extreme POI); if neither slot has a valid canonical POI, the executable set may be empty and execution fails closed with no executable POI / `NO_EVIDENCE`; no synthetic POI is created to fill a slot;
 - Decisional buy POI is in discount, and Decisional sell POI is in premium as a hard execution eligibility gate;
 - Decisional sell POI is in premium;
 - Origin Order Block remains independently valid after parent OF mitigation when its own pillars remain valid;
