@@ -270,7 +270,7 @@ A compliant implementation preserves:
 - Pullback-derived liquidity references following the active pullback and verified extreme provenance. Layer 2 owns formation of the Minor IDM from that reference; Layer 3 owns IDM_TAKEN, Major IDM governance, and the downstream external structural consequences.
 - Structural lifecycle events being handed to Layer 3 rather than recreated in Layer 2.
 
-## 11. Canonical precedence
+## 10. Canonical precedence
 
 Semantic ownership governs documentation:
 
