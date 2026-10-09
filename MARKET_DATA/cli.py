@@ -227,7 +227,9 @@ def validate_request(request):
         raise ValueError("--current is mutually exclusive with --lastclosed")
     if request.current and request.start_time is not None:
         raise ValueError("current cannot be combined with a historical range")
-    if request.last_closed_only and request.start_time is not None:
+    if request.last_closed_only and (
+        request.start_time is not None or request.end_time is not None
+    ):
         raise ValueError("lastclosed cannot be combined with a historical range")
 
 

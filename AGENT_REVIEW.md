@@ -1,3 +1,128 @@
+# Order Flow fallback when no qualifying Order Block exists — 2026-10-09
+
+**Static documentation consistency: PASS. Mapper/Monitor runtime POI behavior: NOT VERIFIED.**
+
+## Clarified selection contract
+
+- Part 6 defines a canonical POI as either a valid Order Flow or a valid Order Block and calls the Decisional OF/OB first-choice POIs.
+- For either the Decisional or Extreme role, when no validated, unmitigated OB qualifies, the matching eligible, unmitigated OF remains the POI if it passes its own canonical and role-specific gates. Do not emit an empty ordinary POI slot or `NO_EVIDENCE` merely because the OB refinement is unavailable while a qualifying OF exists.
+- This does not make a mitigated/ineligible OF usable, waive the IDM/`IDM_TAKEN` gate, relax the Decisional premium/discount constraint, or add a Rule-of-Two slot.
+- Origin OB remains a distinct latent reserve and may be used only through its existing sequential Extreme-path fallback and independent validity/activation gates.
+- Source evidence and authority distinctions are documented in `.agents/skills/smc/source_reconciliation.md`. The precise if/then fallback is labelled as source-reconciled canonical interpretation, not misquoted as a verbatim transcript line.
+
+## Scope and validation boundary
+
+Updated the canonical execution skill, implementation mapping, countertrend composition, source-reconciliation record, Mapper specification, and Monitor consumption specification. This was a documentation/specification clarification; Mapper/Monitor runtime POI behavior was not exercised or claimed PASS. The new branch head requires its own CI checks.
+
+---
+
+# Hybrid Decisional OF/OB and Origin OB fallback clarification — 2026-10-09
+
+**Final static consistency audit: PASS** (all targeted cross-document checks passed; no known contradictory normative statements remain). **Mapper/Monitor runtime POI behavior: NOT VERIFIED.**
+
+The preceding content head 41fac551f0bb94556392e7665676410af88594d6 passed Calendar Python tests #777 and Market Data Python tests #392. This review-record commit will become the new PR head, so its newly triggered CI runs must be checked separately.
+
+## Clarified canonical contract
+
+- Rule of Two limits the dealing range to at most two independent structural slots: Decisional and Extreme. It does not limit the chart to two visible rectangles.
+- A broad Decisional OF and its contained Decisional OB refinement share one Decisional slot. Both geometries may be shown alongside the Extreme zone without declaring three independent targets.
+- Dual execution: if the parent Decisional OF is canonically mitigated, gives a reaction, and that reaction fails before reaching the nested Decisional OB, the child OB remains valid, active, and independently executable only if its own OB pillars, own unmitigated state, causal BOS identity, active-IDM/takeout gate, and all other execution gates remain satisfied. Parent OF mitigation/failure must not automatically propagate to the child OB.
+- Origin OB is separate from nested Decisional refinement. It is the sequential last line of defense after the applicable Extreme path fails, its own validity including FVG/imbalance association remains satisfied, and all existing IDM/takeout and fallback activation gates pass. It is not a third independent simultaneous POI slot.
+- Valid Order Flow mitigation requires the canonical Valid Pullback in the governing timeframe and structural context. A touch or penetration is insufficient; no extra macro-only requirement is invented.
+- Source evidence is recorded in .agents/skills/smc/source_reconciliation.md. The exact dual-execution sequence is labeled as a project-canonical reconciliation, not falsely attributed as a verbatim transcript event.
+
+## Documentation/runtime boundary
+
+The skill, Mapper specification, Monitor consumer specification, countertrend composition, and source-reconciliation record now define parent/child slot mapping and sequential fallback. Runtime enforcement, chart representation, parent-to-child state propagation, and automated entry gating still require implementation verification; do not infer runtime PASS from normative alignment.
+
+## Calendar / Market Data validation
+
+On the POI documentation commit 9749d4893e4a66d63a7fa3dfcc784994fd60524f, GitHub Actions completed Calendar Python tests #776 and Market Data Python tests #391 successfully; both compilation and their unit/runtime contract steps passed. This record update creates a new branch head and may retrigger the same checks, so the latest PR-head results are rechecked separately before final reporting.
+
+---
+
+# Calendar / Market Data CI regression repair — 2026-10-09
+
+## Findings and fixes
+
+### Calendar — sparse event record crashed symbol filtering
+
+**Root cause:** `CALENDAR/domain.py::filter_events_for_symbol()` unconditionally indexed `event["details"]`. The ongoing-event contract test supplies compact event observations without `details`, so filtering failed with `KeyError: 'details'` before testing the event's active window.
+
+**Fix:** The filter now reads `details` defensively, obtains `currency` only when details is a dictionary, and supports an exact-symbol/currency fallback for compact records with missing currency metadata. Yahoo news symbol comparison also uses a safe lookup. Canonical persisted records still pass through strict schema validation; this change prevents a query helper from crashing on compact observations.
+
+**Follow-on CI finding:** Once the KeyError was fixed, Calendar run #763 exposed a contradictory assertion in `.github/workflows/calendar.yml`. An older test required `SYMBOL current refresh` to be rejected, while a later test in the same workflow correctly requires it to be accepted. The current Calendar specification §3.4 and the latest explicit project rule allow `current refresh` as the sole refresh form among `current/latest/next/prev/news`. The stale assertion was replaced with checks that plain `current` parses as a non-refresh lookup; the positive `current refresh` regression remains in the workflow. This is a test-contract correction, not a relaxation of runtime rules.
+
+### Market Data — open-start range bypassed --lastclosed exclusion
+
+**Root cause:** `MARKET_DATA/cli.py::validate_request()` checked only whether `start_time` was set. Open-start `--range -END` is represented by `start_time=None` and `end_time` set, so the incompatible `--lastclosed + --range -END` request passed the guard.
+
+**Fix:** The exclusion now checks both interval boundaries. This implements the existing Market Data specification §5.2 contract that `--lastclosed` is mutually exclusive with every historical range, including open-start forms.
+
+## Validation status
+
+- Market Data Python tests **#378: PASS** after the implementation fix.
+- Calendar Python tests **#763: FAILED** after the KeyError fix at the stale contradictory `current refresh` assertion; that assertion has now been corrected on the branch and the workflow is being rerun.
+- Dedicated local test execution was not available from this connected editing environment. Final acceptance depends on the latest GitHub Actions results.
+- Changed implementation files: `CALENDAR/domain.py`, `MARKET_DATA/cli.py`.
+- Changed test contract: `.github/workflows/calendar.yml`.
+
+---
+
+# POI Identification Secret lifecycle reconciliation — 2026-10-09
+
+## Audit result
+
+**Documentation consistency: PASS. Runtime implementation: NOT VERIFIED.**
+
+### Primary source evidence
+
+Audited `knowledgebase/sources/truesmc2026.txt`, Part 6 | POI Identification Secret:
+- 00:00:42–00:01:33: maximum of two dealing-range POIs (Decisional and Extreme); other ordinary formations are traps except the Origin OB.
+- 00:03:29–00:04:09: Origin OB validity is independent of parent-OF mitigation and it is the last line of defense when the applicable Extreme OB fails.
+- 00:09:06–00:09:33: the worked example again excludes other ordinary formations as traps/weak OBs rather than valid reversal zones.
+
+### Normative reconciliation completed
+
+- The active canonical tradable set has at most two slots: Decisional POI and Extreme POI. Origin OB is a latent reserve, never a third active slot.
+- Ordinary OF/OB formations created before the applicable active IDM is physically taken out (`IDM_TAKEN`) are `SMT / INDUCEMENT_TRAP`. This includes formations before IDM formation and formations between IDM formation and takeout.
+- Trap records may be stored for provenance, auditability, and history, and may be displayed when useful if trap/exclusion status is clear. They can never be active tradable POIs, authorize entries, or be promoted retrospectively after a later takeout.
+- Origin OB is the only named formation-time exception: it may pre-exist `IDM_TAKEN` as a latent reserve without becoming an ordinary trap, but cannot activate until the active-IDM/takeout gate and the existing canonical Origin OB validity/fallback conditions pass. It then occupies the Extreme slot. No arbitrary historical OF/OB receives this exception.
+- `IDM_TAKEN` only opens the remaining validation path for ordinary post-takeout candidates; it does not itself validate/activate a POI, satisfy Rule of Two, or authorize entry.
+- Extreme execution-location failure remains distinct from canonical `POI_FAILURE`, the separately defined CHoCH-based lifecycle state.
+- Monitor remains a consumer of canonical Mapper decisions and must not calculate a separate POI lifecycle.
+
+### Files changed
+
+- `.agents/skills/smc/06_execution.md`
+- `.agents/skills/smc/08_implementation.md`
+- `.agents/skills/smc/countertrend_scenarios.md`
+- `.agents/skills/smc/source_reconciliation.md`
+- `specifications/smc_mapper_specification.md`
+- `specifications/smc_monitor_specification.md`
+- `AGENT_REVIEW.md`
+
+### Consistency audit
+
+The audit checked the canonical execution rule, implementation mappings, countertrend scenario composition, Mapper's POI eligibility contract, Monitor's downstream consumption contract, and source-reconciliation evidence for the following conflict classes: a universal post-`IDM_TAKEN` formation-time rule that would make Origin OB fallback impossible; accidental promotion of ordinary pre-takeout traps; a third active Rule-of-Two slot; blanket prohibition on trap storage/display; automatic tradability following `IDM_TAKEN`; and conflation of Extreme execution failure with `POI_FAILURE`.
+
+**Static cross-document result: PASS** for the rules listed above. Historical audit entries below remain a review history, not normative methodology; this current entry records the reconciled contract.
+
+### Cross-scope CI signal observed on the audit head
+
+GitHub Actions associated with audit head `bf5bf37560b375cf4ea44183d1e04148b2e5d25e` reported two unrelated test-job failures:
+
+- **Calendar Python tests** (run #760): compilation passed, but the Calendar unit/runtime contract step failed with `KeyError: 'details'` in `CALENDAR/domain.py:648`, called from `filter_events_for_symbol()` during `query_ongoing_events()`.
+- **Market Data Python tests** (run #375): compilation passed, but the range-contract test failed at the assertion `lastclosed + open-start range must be rejected`. The log also reports `ERROR: future range start is not allowed: 2099.01.01-` immediately before the assertion.
+
+These test failures are outside the POI documentation change and no Calendar/Market Data runtime files were changed here. They leave the observed PR CI signal red and should not be treated as successful validation or as evidence about POI runtime behavior. They were not fixed because they are outside the requested scope.
+
+### Remaining implementation gap / validation boundary
+
+This was a documentation audit on the PR branch. Runtime classification, serialization/persistence, chart/display labels, active POI-slot assignment, Origin OB fallback activation, and entry authorization were not verified by running the application or its tests in this pass. Do not infer runtime PASS from this documentation PASS. Follow-up implementation validation must verify that ordinary pre-takeout OF/OB traps stay non-tradable after takeout, stored/displayed traps retain explicit exclusion status, Origin OB activates only as the canonical Extreme fallback, no third active POI is emitted, and Extreme execution failure does not manufacture `POI_FAILURE`.
+
+---
+
 # CURRENT AUDIT OVERRIDE — 2026-10-08 (Calendar + Market Data)
 
 ## Release-gate audit

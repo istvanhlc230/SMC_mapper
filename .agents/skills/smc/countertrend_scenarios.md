@@ -10,12 +10,24 @@ Countertrend scenarios are not a fourth structural regime. They are execution sc
 
 All three scenarios must use existing canonical entry modules and must not create alternate IDM, POI, BOS, or CHoCH definitions.
 
+The canonical ordinary-OF/OB gate applies across these scenarios: an ordinary OF/OB formed before the applicable active IDM is physically taken out (`IDM_TAKEN`) is an `SMT / INDUCEMENT_TRAP`, whether it predates IDM formation or forms between IDM formation and takeout. A later takeout never promotes such a trap. Trap records may be retained for provenance and displayed with clear exclusion status, but may not become active tradable POIs or authorize entries. An already formed, source-valid Origin Order Block is the sole named reserve exception: it remains latent and can be used only as the canonical Extreme fallback after the IDM gate and existing Origin OB validity/fallback conditions are satisfied; it is not an extra Rule-of-Two slot. These scenarios consume that canonical Mapper decision and do not create a separate POI lifecycle.
+
+## Canonical POI geometry and fallback semantics
+
+When a countertrend execution references a Decisional POI expressed as a broad Order Flow with its causally associated Order Block refinement inside it, the two outlines represent one Decisional structural slot. The nested OB is independently validated and may remain executable after a parent OF mitigation/reaction failure that never reaches the child OB, provided the child OB itself remains valid and unmitigated and all canonical IDM/takeout and entry gates pass. A displayed parent OF + child OB + Extreme zone therefore does not create three independent structural targets.
+
+Order Flow mitigation still requires the applicable canonical Valid Pullback in the timeframe and structural context governing that OF; a touch or penetration alone does not establish mitigation. The child OB is judged by its own canonical OB validation and mitigation state.
+
+Order Flow is itself a canonical POI form, not merely background geometry for a mandatory OB. If no validated, unmitigated OB qualifies for the applicable Decisional or Extreme role, use the matching eligible, unmitigated OF if it passes all its own gates; do not leave the ordinary POI slot empty solely because the OB refinement is unavailable. This selection fallback does not relax IDM/takeout or role constraints.
+
+Origin Order Block is separate from the nested Decisional refinement: it remains a latent sequential last-line-of-defense reserve for the Extreme path, consumed only after the canonical Extreme failure and Origin OB activation conditions. It is not an additional simultaneous Rule-of-Two slot.
+
 ## 2. Scenario CT1 — Internal Structure Toward Inducement Takeout
 
 Source concept:
 - while the prevailing HTF trend remains active;
 - price has not yet taken the active inducement;
-- pre-inducement Order Flow / Order Block formations are not tradable POIs in the countertrend path;
+- every ordinary OF/OB formation created before the applicable active IDM is physically taken out (`IDM_TAKEN`) is excluded as an SMT/inducement trap, including formations created before IDM formation and between IDM formation and takeout;
 - lower-timeframe internal structure is followed toward the inducement.
 
 Canonical flow:
@@ -27,7 +39,7 @@ ACTIVE INDUCEMENT EXISTS
         ↓
 LTF INTERNAL STRUCTURE DEVELOPS TOWARD IDM
         ↓
-PRE-IDM OF/OB
+ORDINARY OF/OB FORMED BEFORE IDM_TAKEN
         ↓
 SMT / INDUCEMENT-TRAP EXCLUSION
         ↓
@@ -38,7 +50,7 @@ EXISTING ENTRY MODULE
 
 The countertrend position is an execution opportunity toward the canonical inducement target. The LTF structure does not alter the HTF bias merely by forming.
 
-No arbitrary pre-inducement POI may be used as the countertrend entry location.
+No ordinary pre-takeout trap may be used as the countertrend entry location. Any retained or displayed trap must carry explicit exclusion status; the Origin Order Block remains a latent reserve and is usable only through the canonical fallback decision.
 
 ## 3. Scenario CT2 — Inducement Liquidity Run
 
@@ -135,7 +147,9 @@ The scenario can identify the source-defined destination class (e.g., inducement
 ```text
 COUNTERTREND SCENARIO ≠ NEW STRUCTURAL REGIME ENUM
 
-PRE-IDM OF/OB ≠ TRADABLE POI
+ORDINARY PRE-TAKEOUT OF/OB ≠ TRADABLE POI
+
+ORIGIN_ORDER_BLOCK RESERVE ≠ ACTIVE THIRD POI
 
 IDM_TAKEN ≠ AUTOMATIC COUNTERTREND ENTRY
 

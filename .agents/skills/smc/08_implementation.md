@@ -79,26 +79,43 @@ The implementation must preserve the canonical distinction between Order Flow ob
 ORDER_FLOW_CANDIDATE
     ↓
 ELIGIBILITY
-    ├─ PRE-IDM → SMT / INDUCEMENT_TRAP
+    ├─ ORDINARY PRE-TAKEOUT → SMT / INDUCEMENT_TRAP
     ├─ MITIGATED → INVALID_FOR_EXECUTION
-    └─ ELIGIBLE + UNMITIGATED → ELIGIBLE_ORDER_FLOW
+    └─ POST-TAKEOUT + ELIGIBLE + UNMITIGATED → ELIGIBLE_ORDER_FLOW
+
+ORIGIN_ORDER_BLOCK → LATENT RESERVE → CANONICAL FALLBACK GATE
 ```
 
 Required representation:
 
 - `ORDER_FLOW_CANDIDATE` stores the whole relevant opposing corrective move, including multiple internal legs while its protected endpoint remains intact;
 - `ELIGIBLE_ORDER_FLOW` requires canonical eligibility conditions and unmitigated status;
-- `SMT / INDUCEMENT_TRAP` is a non-tradable contextual exclusion and must not be emitted as a Eligible Order Flow;
+- `SMT / INDUCEMENT_TRAP` is a non-tradable contextual exclusion and must not be emitted as an Eligible Order Flow;
 - touching an OF does not mark it mitigated unless a canonical Valid Pullback confirms the mitigation;
 - `DECISIONAL_ORDER_FLOW` is selected from the eligible Order Flow lineage associated with the displacement that causes `VALID_BOS`;
 - `EXTREME_ORDER_FLOW` is the furthest unmitigated eligible OF at the origin of the active dealing range;
 - when the current Extreme Order Flow is mitigated, selection shifts to the next furthest eligible unmitigated OF;
 - a Decisional or Extreme Order Flow remains a POI candidate only after the POI ontology and Rule-of-Two constraints are satisfied.
+- For either role, Order Flow and Order Block are alternative canonical POI forms. If no validated, unmitigated OB qualifies, use the matching eligible, unmitigated OF when it passes its own gates; OB absence alone must not result in an empty ordinary POI slot or `NO_EVIDENCE` while a qualifying OF exists.
+- The OF fallback remains subject to its own mitigation/eligibility, active IDM/`IDM_TAKEN`, role, premium/discount, Rule-of-Two, and entry gates. It does not activate or bypass the separately governed Origin OB sequence.
+
+#### Mandatory active-IDM formation and takeout gate
+
+An ordinary OF/OB may be designated as an active tradable POI, exposed as an executable POI, or used to authorize an entry only after a canonical valid active IDM has formed and that applicable active IDM has been physically taken out (IDM_TAKEN). The active canonical set has at most two independent structural slots: Decisional and Extreme. If a broad Decisional Order Flow and its contained Decisional Order Block refinement are both emitted or displayed, they map to the same Decisional slot; their two geometry records plus an Extreme zone do not constitute three structural targets. The child OB may remain independently executable under the dual-execution protocol. Origin Order Block remains a latent sequential fallback, not a third independent slot.
+
+- An ordinary OF/OB formed before the applicable active IDM was formed is classified as `SMT / INDUCEMENT_TRAP` for that active dealing-range lineage.
+- An ordinary OF/OB formed after IDM formation but before the physical `IDM_TAKEN` event is also classified as `SMT / INDUCEMENT_TRAP`. Neither class may be retrospectively promoted after the takeout.
+- Trap records may be retained for provenance, auditability, and historical context, and may be displayed when useful if the trap/exclusion status is clear. They must not be represented as active tradable POIs, authorize entries, or enter the active set.
+- Only ordinary OF/OB formations created after the applicable `IDM_TAKEN` event may proceed through the remaining canonical OF/OB validation, mitigation, POI ontology, Rule-of-Two, and execution gates. The takeout only opens that path; it does not validate a candidate, satisfy Rule of Two, create an active POI, or authorize an entry.
+- **Origin Order Block exception:** a source-valid `ORIGIN_ORDER_BLOCK` may have formed before `IDM_TAKEN` without being classified as an ordinary SMT trap, but it must remain a latent reserve. It may become the applicable fallback execution location only after the active IDM/takeout gate and the existing canonical Origin OB validity/fallback activation conditions are satisfied. It then occupies the Extreme slot rather than creating a third active POI. No other pre-takeout candidate is exempt.
+- This exception changes only the reserve's formation-time eligibility; it does not permit Origin OB activation before the IDM gate, bypass remaining validation, or authorize entry automatically. Extreme execution failure remains distinct from canonical `POI_FAILURE`, which is the separately defined CHoCH-based lifecycle state.
+- Candidate observation, OB pillar validation, active POI designation, and entry authorization remain distinct. The gate must bind to the canonical active IDM identity and event-time provenance; unrelated touches, historical/inactive IDMs, and ambiguous takeout evidence do not satisfy it.
+- If required gate/provenance state cannot be resolved, fail closed. Do not activate an ordinary candidate or Origin OB fallback without evidence that its respective canonical conditions are satisfied.
 
 Forbidden shortcuts:
 
 ```text
-PRE-IDM FORMATION → ELIGIBLE_ORDER_FLOW
+PRE-TAKEOUT ORDINARY OF/OB → ACTIVE TRADABLE POI
 ORDER FLOW TOUCH → ORDER_FLOW_MITIGATED
 ARBITRARY LOCAL MOVE → ELIGIBLE_ORDER_FLOW
 ELIGIBLE_ORDER_FLOW → VALID_BOS
@@ -824,9 +841,12 @@ Required implementation behavior:
 - `DECISIONAL_ORDER_BLOCK` is the validated Order Block that actually causes the canonical `VALID_BOS` event; it is not selected solely because it is the first validated Order Block after inducement;
 - the earlier `first validated Order Block after inducement` shortcut is superseded;
 - `EXTREME_ORDER_BLOCK` is selected as the furthest unmitigated validated Order Block within the active `EXTREME_ORDER_FLOW` lineage; it is not selected by a global search across all origin-side Order Blocks;
-- OB validity is evaluated from the canonical OB validation pillars independently of parent Order Flow mitigation/failure state;
-- a valid Decisional Order Block may remain executable even while its associated Order Flow is unmitigated, subject to Rule-of-Two and all execution gates;
-- later OF mitigation/failure must not retroactively rewrite the causal Decisional Order Block identity.
+- OB validity and mitigation are evaluated from the canonical OB's own pillars and state, independently of parent Order Flow mitigation/failure state;
+- parent OF mitigation or reaction failure does not automatically mitigate or invalidate its nested Decisional OB child;
+- when broad Decisional OF is mitigated, gives a reaction, and that reaction fails before reaching the nested valid Decisional OB, the child OB remains active and independently executable only if its own OB state remains unmitigated/valid and all IDM/takeout, causal-BOS, premium/discount, and execution gates still pass;
+- a valid Decisional Order Block may also remain executable while its associated Order Flow is unmitigated, subject to Rule-of-Two and all execution gates;
+- later OF mitigation/failure must not retroactively rewrite the causal Decisional Order Block identity;
+- parent OF plus child Decisional OB map to one Decisional slot; alongside Extreme this may produce three chart zones, but never three independent structural POI slots.
 
 ### Stop Placement implementation mapping
 
@@ -857,10 +877,14 @@ Required invariants:
 
 ### POI / Entry
 - POI ontology accepts Eligible Order Flow and Validated Order Block;
+- ordinary tradable OF/OB POI designation and entry authorization require a valid active IDM and physical takeout of that same applicable IDM (`IDM_TAKEN`); ordinary pre-IDM and post-IDM/pre-takeout formations are `SMT / INDUCEMENT_TRAP`, with no retrospective promotion;
+- trap records may be retained and displayed with explicit trap/exclusion status but never enter the active tradable POI set or authorize entry;
+- `IDM_TAKEN` only opens the remaining validation path for ordinary post-takeout candidates; all canonical OF/OB validation, mitigation, Rule-of-Two, and execution gates still apply;
 - Rejection Block is a separately typed PD-array/execution concept; source examples may use POI as a broad execution-location term, but RB is not an OF/OB-equivalent POI class or an automatic Rule-of-Two slot;
-- Rule of Two limits canonical tradable POIs to Decisional POI and Extreme POI (Extreme Order Flow / Extreme Order Block);
-- Origin Order Block is a latent reserve POI (mitigation transfer target when Extreme POI is mitigated), never a 3rd active POI;
-- when an applicable Rule-of-Two dealing-range execution context exists, the active canonical tradable POI set has cardinality 1..2; if no valid canonical POI exists, execution fails closed with no executable POI / `NO_EVIDENCE`; no synthetic POI is created;
+- Rule of Two permits at most two independent active structural POI slots: Decisional and Extreme. A Decisional OF parent and its nested Decisional OB refinement may both be charted and independently executable as representations of the same Decisional slot; with the Extreme zone this is at most two structural targets, not three;
+- Origin Order Block is a latent sequential last-line-of-defense reserve, with independent OB validity (including its required FVG/imbalance association) regardless of parent Extreme OF mitigation. It is not an independent third active slot and may be used only after the existing canonical IDM/takeout, Origin OB validity, applicable Extreme-path failure, and fallback activation conditions pass;
+- Extreme execution failure is distinct from the CHoCH-based canonical `POI_FAILURE` lifecycle state;
+- when an applicable Rule-of-Two dealing-range execution context exists, the active canonical tradable POI set has at most two slots (Decisional POI and Extreme POI); if neither slot has a valid canonical POI, the executable set may be empty and execution fails closed with no executable POI / `NO_EVIDENCE`; no synthetic POI is created to fill a slot;
 - Decisional buy POI is in discount, and Decisional sell POI is in premium as a hard execution eligibility gate;
 - Decisional sell POI is in premium;
 - Origin Order Block remains independently valid after parent OF mitigation when its own pillars remain valid;

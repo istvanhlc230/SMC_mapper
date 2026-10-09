@@ -645,9 +645,21 @@ def filter_events_for_symbol(events: List[Dict[str, Any]], symbol: str) -> List[
         sources = set(event.get("sources", [event.get("source")]))
         event_type = event.get("event_type") or ("economic" if sources.intersection({"lse", "forexfactory"}) else "news" if "yahoo_finance" in sources else "")
         if event_type == "economic" and sources.intersection({"lse", "forexfactory"}):
-            if event["details"].get("currency") in currencies:
+            details = event.get("details")
+            event_currency = details.get("currency") if isinstance(details, dict) else None
+            event_symbol = event.get("symbol")
+            # Canonical persisted events have details.currency. Compact/legacy
+            # event observations may omit details; retain exact-symbol matches
+            # rather than crashing while evaluating ongoing-event queries.
+            if event_currency in currencies or (
+                event_currency is None and event_symbol in currencies | {symbol}
+            ):
                 result.append(event)
-        elif event_type == "news" and "yahoo_finance" in sources and event["symbol"] == symbol:
+        elif (
+            event_type == "news"
+            and "yahoo_finance" in sources
+            and event.get("symbol") == symbol
+        ):
             result.append(event)
     return result
 

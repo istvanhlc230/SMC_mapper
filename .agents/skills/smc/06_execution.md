@@ -45,11 +45,11 @@ These concepts may exist as structural observations, validators, liquidity, or h
 
 ### Rule of Two POIs (Execution Constraint)
 
-When an applicable Rule-of-Two dealing-range execution context exists, the active canonical tradable POI set has cardinality **1 to 2**:
+When an applicable Rule-of-Two dealing-range execution context exists, the active canonical tradable POI set has **at most two slots**:
 1. **Decisional POI** (must reside in Discount for Buys, Premium for Sells)
 2. **Extreme POI** (Extreme Order Flow / Extreme Order Block)
 
-If no valid canonical POI exists, the execution path fails closed with no executable POI / NO_EVIDENCE; no synthetic POI is created to satisfy the minimum.
+If no valid canonical POI exists for either slot, the executable POI set may be empty and execution fails closed with no executable POI / NO_EVIDENCE; no synthetic POI is created to fill a slot.
 
 ```text
 DECISIONAL POI
@@ -57,7 +57,7 @@ DECISIONAL POI
  EXTREME POI
 ```
 
-No synthetic POI may be created merely to satisfy the Rule of Two. Origin Order Block remains a latent reserve rather than a third active slot, and Rejection Block remains separately typed rather than an automatic Rule-of-Two slot. Multiple arbitrary POIs must not be created merely because multiple zones are visually present. Any logic that permits three simultaneously active canonical POIs is strictly forbidden.
+No synthetic POI may be created merely to satisfy the Rule of Two. Origin Order Block remains a latent reserve rather than a third active slot, and Rejection Block remains separately typed rather than an automatic Rule-of-Two slot. Multiple unrelated structural POIs must not be created merely because multiple zones are visually present. The Rule of Two counts independent structural roles, not every chart outline: a broad Decisional Order Flow and its contained, causally associated Decisional Order Block refinement share one Decisional slot. They may be displayed beside the Extreme zone as three outlines without representing three independent structural targets. The prohibition remains against three simultaneous independent structural POI slots.
 
 ### Latent Origin Reserve and Rejection Block
 
@@ -117,6 +117,10 @@ SELL → POI must be in PREMIUM
 
 A Decisional POI outside its required premium/discount side is not a valid Decisional POI and must not be promoted to a canonical entry merely because the underlying zone is otherwise valid.
 
+### Order Flow fallback when no qualifying Order Block exists
+
+A valid Order Flow and a valid Order Block are alternative canonical POI forms; an Order Block is not a mandatory prerequisite for using its corresponding Order Flow. For either the Decisional or Extreme role, when no validated, unmitigated Order Block qualifies, use the matching eligible, unmitigated Order Flow as the POI if that OF independently passes its canonical eligibility and role-specific execution gates. The absence of a qualifying OB alone must not leave the ordinary Decisional/Extreme slot empty or produce `NO_EVIDENCE` while a qualifying OF exists. This does not make a mitigated or otherwise ineligible OF usable, waive the active IDM/`IDM_TAKEN` gate, relax the Decisional premium/discount rule, or create another Rule-of-Two slot. If neither ordinary POI form qualifies for that role, fail closed; the separately governed Origin OB reserve may be considered only through its own sequential fallback conditions.
+
 ### Extreme POI
 
 The Extreme POI is the secondary/fallback execution location of the same dealing-range framework. It is used when the Decisional POI is unavailable, fails its execution conditions, or is otherwise not the applicable module according to the canonical entry sequence.
@@ -127,7 +131,7 @@ The Extreme POI must still be an `EXTREME_ORDER_FLOW` or `EXTREME_ORDER_BLOCK`. 
 
 An `ORIGIN_ORDER_BLOCK` is the furthest unmitigated, validated Order Block at the origin of the active dealing range. Its existence and validity are independent of whether its parent `ELIGIBLE_ORDER_FLOW` is mitigated.
 
-It remains a latent reserve rather than a third active Rule-of-Two POI. Its **existence and validity** do not depend on whether the originating `ELIGIBLE_ORDER_FLOW` is mitigated. However, the source-defined **fallback relevance** of the Origin Order Block is reached only after the original Extreme Order Flow at the dealing-range origin has been mitigated and the applicable `EXTREME_ORDER_BLOCK` has failed. At that point, an unmitigated valid `ORIGIN_ORDER_BLOCK` may become the next applicable execution location.
+It remains a latent, sequential reserve rather than a third independent Rule-of-Two slot. Its existence and validity do not depend on whether the originating Extreme OF is mitigated. However, its source-defined fallback relevance is reached only after the applicable Extreme execution path has failed: the original Extreme OF at the dealing-range origin has been mitigated and the applicable Extreme OB has failed. Origin OB is the source-defined last line of defense in that sequence. It may then become the next applicable execution location only if it remains unmitigated and valid, including its own required FVG/imbalance association, and the existing canonical IDM/takeout and fallback activation gates pass. This is a sequential fallback stage, not permission to keep three independent active structural POIs.
 
 The execution failure of an `EXTREME_ORDER_BLOCK` is distinct from canonical `POI_FAILURE`: `POI_FAILURE` is a CHoCH-based execution lifecycle state defined separately below. Extreme Order Block execution failure must not manufacture CHoCH or any structural state.
 
@@ -151,32 +155,77 @@ When the corrective move contains multiple internal legs and its protected endpo
 
 ### Valid / unmitigated Order Flow
 
-An OF candidate is execution-eligible only when it remains unmitigated under the canonical pullback-based mitigation rule and it is not excluded by the active inducement boundary.
+An ordinary OF candidate is execution-eligible only when it remains unmitigated under the canonical pullback-based mitigation rule, is not an ordinary pre-`IDM_TAKEN` trap in the active lineage, and satisfies the remaining canonical OF gates.
 
 ```text
 ORDER_FLOW_CANDIDATE
    ├─ MITIGATED → INVALID_FOR_EXECUTION
-   ├─ BEFORE_ACTIVE_INDUCEMENT → SMT / INDUCEMENT_TRAP
-   └─ UNMITIGATED + ELIGIBLE → ELIGIBLE_ORDER_FLOW
+   ├─ ORDINARY FORMATION BEFORE IDM_TAKEN → SMT / INDUCEMENT_TRAP
+   └─ POST-TAKEOUT + UNMITIGATED + ELIGIBLE → ELIGIBLE_ORDER_FLOW
 ```
 
-A physical touch or penetration alone does **not** confirm OF mitigation. The mitigation state is confirmed only through a canonical Valid Pullback interaction. If the interaction is not validated by a Valid Pullback, the OF remains unmitigated.
+`ORIGIN_ORDER_BLOCK` is not an Order Flow candidate or an exception that changes OF classification; it is handled separately as a latent reserve under the Origin OB fallback rules below.
 
-### SMT / pre-inducement exclusion
+A physical touch or penetration alone does **not** confirm OF mitigation. The mitigation state is confirmed only through the applicable canonical Valid Pullback interaction, assessed at the timeframe and structural context governing that OF. Use the Layer-2 candle-level Valid Pullback rules; do not silently replace them with an arbitrary local pivot or impose a separate macro-only requirement unless another explicit canonical rule defines that scope. If the interaction is not validated by a Valid Pullback, the OF remains unmitigated.
 
-For the active dealing-range execution process, an Order Flow or equivalent formation that occurs **before the active inducement** is classified as an `SMT / INDUCEMENT_TRAP` observation and is not eligible to become a tradable OF.
+### SMT / pre-takeout exclusion and Origin OB reserve exception
 
-Pre-inducement status is contextual to the active dealing range and inducement lifecycle. It must not be inferred from candle appearance alone.
+For the active dealing-range lineage, every **ordinary OF/OB formation created before the applicable active IDM is physically taken out (`IDM_TAKEN`)** is classified as an `SMT / INDUCEMENT_TRAP` observation. This includes an ordinary formation created before the active IDM formed and one created after IDM formation but before its physical takeout. Neither may be promoted into a tradable POI later in that same active lineage.
+
+The source-defined `ORIGIN_ORDER_BLOCK` is the sole exception to this **formation-time classification gate**. It is a named latent reserve, not an ordinary pre-takeout OF/OB candidate: retain its identity and provenance as `ORIGIN_ORDER_BLOCK`, but do not make it active until its own canonical validity and fallback activation conditions are satisfied. This exception does not exempt its active use from the valid-active-IDM / `IDM_TAKEN` gate, and it does not permit any other historical candidate to be promoted.
+
+Trap status is contextual to the active dealing-range lineage and IDM lifecycle; it must not be inferred from candle appearance alone.
 
 ```text
-PRE-IDM FORMATION
-    ↓
+ORDINARY OF/OB FORMATION BEFORE IDM_TAKEN
+        ↓
 SMT / INDUCEMENT_TRAP
-    ↓
-NOT A TRADABLE OF
+        ↓
+NON-TRADABLE FOR THE ENTIRE ACTIVE LINEAGE
+
+SOURCE-VALID ORIGIN_ORDER_BLOCK
+        ↓
+LATENT RESERVE — NOT A TRAP, NOT AN ACTIVE POI
+        ↓
+CANONICAL FALLBACK CONDITIONS SATISFIED
+        ↓
+MAY OCCUPY THE EXTREME POI SLOT
 ```
 
+Trap records may be retained for provenance, auditability, and historical context. They may also be displayed when useful, provided the trap/exclusion status is clear. They must never appear as active tradable POIs, authorize entries, or become tradable through retrospective promotion after `IDM_TAKEN`.
+
 This exclusion preserves the source-defined distinction between liquidity delivery toward inducement and post-inducement executable order flow.
+
+### Mandatory IDM formation-and-takeout gate for every OF/OB POI
+
+A valid active Inducement (IDM) must first be formed from canonical structure, and that same applicable active IDM must then be physically taken out, before any Order Flow (OF) or Order Block (OB) may be designated as an active tradable POI or used to authorize a trade. This is a hard execution gate, not a preference, confidence score, or optional filter.
+
+The sequence is:
+
+```text
+VALID ACTIVE IDM FORMED
+        ↓
+IDM PHYSICALLY TAKEN OUT (IDM_TAKEN)
+        ↓
+OF / OB CANDIDATES MAY BE EVALUATED FOR POI ELIGIBILITY
+        ↓
+ALL OTHER CANONICAL VALIDATION + RULE-OF-TWO GATES
+        ↓
+POTENTIALLY TRADABLE POI
+```
+
+Normative requirements:
+
+- Before a valid active IDM exists, ordinary OF/OB formations may be retained as observations and classified records for provenance, but they must not be designated as active tradable POIs or authorize an entry. The source-defined Origin OB may also be retained as a latent reserve, not as an active POI.
+- Every ordinary OF/OB formation created before the applicable active IDM formed is an `SMT / INDUCEMENT_TRAP` for that active dealing-range lineage; a later takeout never promotes it.
+- Every ordinary OF/OB formation created after IDM formation but before its physical takeout is also an `SMT / INDUCEMENT_TRAP` for that active lineage; it remains non-tradable permanently within that lineage after the later takeout.
+- Only an ordinary OF/OB formation created **after** the applicable active IDM has been physically taken out (`IDM_TAKEN`) may proceed through the remaining canonical eligibility checks. The takeout opens the validation path; it does not itself validate an OF/OB, create a POI, satisfy Rule of Two, or authorize entry.
+- **Origin Order Block exception:** a source-valid `ORIGIN_ORDER_BLOCK` may have formed before `IDM_TAKEN` without being classified as an ordinary SMT trap, but it must remain a latent reserve. It may become the applicable fallback execution location only after the active-IDM/takeout gate and the existing canonical Origin OB validity/fallback activation conditions are satisfied. When activated, it occupies the applicable Extreme POI slot; it is never a third active POI. No other historical OF/OB candidate receives this exception.
+- Trap records may be stored for provenance, auditability, and historical context, and may be displayed when useful if their trap/exclusion status is explicit. Storage or display does not make a trap active, authorize entry, or permit retrospective promotion.
+- The gate is satisfied only by the canonical `IDM_TAKEN` event for the applicable active IDM. A visual touch, unrelated liquidity sweep, inactive/historical IDM, or inferred takeout is insufficient.
+- Candidate observation, OF/OB validation, active POI designation, and entry authorization are distinct decisions. If required IDM identity, formation, status, or takeout provenance is unresolved, execution fails closed.
+
+The active-use gate applies to `DECISIONAL_ORDER_FLOW`, `EXTREME_ORDER_FLOW`, `DECISIONAL_ORDER_BLOCK`, `EXTREME_ORDER_BLOCK`, and an activated `ORIGIN_ORDER_BLOCK`. The Origin OB exception changes only the formation-time eligibility rule for that named latent reserve; it does not permit premature activation or waive downstream canonical validation.
 
 ### Decisional Order Flow
 
@@ -218,7 +267,8 @@ ELIGIBLE_ORDER_FLOW ≠ IDM
 ELIGIBLE_ORDER_FLOW ≠ LIQUIDITY
 ELIGIBLE_ORDER_FLOW ≠ VALID_BOS
 SMT ≠ ELIGIBLE_ORDER_FLOW
-PRE-IDM OF ≠ TRADABLE_POI
+ORDINARY PRE-TAKEOUT OF/OB ≠ TRADABLE_POI
+ORIGIN_ORDER_BLOCK RESERVE ≠ ACTIVE THIRD POI
 OF TOUCH ≠ ORDER_FLOW_MITIGATED
 ```
 ## 37.6 Engineering Liquidity Identification and Lifecycle
@@ -367,16 +417,31 @@ An `EXTREME_ORDER_BLOCK` is selected from the furthest unmitigated validated Ord
 
 #### Independent OB validity
 
-Order Block validity is determined by its own canonical validation pillars. It is not automatically invalidated merely because the parent/containing Order Flow is unmitigated or because another Order Flow has failed.
+Order Block validity and mitigation are evaluated on the OB's own canonical state and validation pillars. A parent/containing Order Flow being unmitigated, mitigated, or having a failed reaction does **not** by itself invalidate or mark its child OB as mitigated. Conversely, a valid OB does not retroactively repair an invalid parent OF. Each object retains its own identity and evidence.
 
-```text
 ORDER_BLOCK_PILLARS_VALID → VALIDATED_ORDER_BLOCK
-ORDER_FLOW_STATE_CHANGE ↛ AUTOMATIC OB INVALIDATION
-ORDER_FLOW_UNMITIGATED ↛ ORDER_BLOCK_INVALID
-ORDER_FLOW_FAILURE ↛ ORDER_BLOCK_INVALID
-```
+PARENT_OF_STATE_CHANGE ↛ AUTOMATIC CHILD_OB INVALIDATION
+PARENT_OF_MITIGATION ↛ AUTOMATIC CHILD_OB MITIGATION
+PARENT_OF_REACTION_FAILURE ↛ AUTOMATIC CHILD_OB INVALIDATION
 
-The source update explicitly permits use of a valid Decisional Order Block even while the associated Order Flow remains unmitigated. This does not remove the Rule-of-Two constraint or create additional active POIs.
+The source directly places the Decisional OB inside the Decisional OF and defines the OB through its own validation pillars. The following Decisional OF/OB dual-execution protocol makes that nested relationship explicit for implementation. It does not create a third structural slot or waive the active-IDM-formation-and-takeout gate.
+
+#### Decisional OF / OB dual-execution protocol
+
+When a valid broad Decisional Order Flow contains its causally associated, valid Decisional Order Block refinement, both representations may be shown. They occupy one Decisional structural slot: the OF is the parent execution zone and the OB is a narrower, independently validated child execution zone.
+
+If price canonically mitigates the broad Decisional OF and produces a reaction, but that reaction fails before price reaches or mitigates the nested Decisional OB, the child OB remains valid and independently executable **provided** the OB itself remains unmitigated, its own validation pillars and causal BOS identity remain valid, its active-lineage IDM_TAKEN gate is satisfied, and all applicable execution and entry gates pass. Do not propagate parent OF mitigation or reaction failure into the child OB as an automatic state transition.
+
+The child OB's independent eligibility does not make it a second Decisional structural slot. The Extreme zone remains the separate Extreme slot, so the chart can show Decisional OF + nested Decisional OB + Extreme zone without violating Rule of Two. If price has itself mitigated or invalidated the child OB under its own canonical lifecycle, this protocol does not preserve it.
+
+DECISIONAL OF (PARENT)
+   - canonical OF mitigation changes the parent OF state
+   - nested Decisional OB (CHILD)
+       - not reached / not mitigated + valid: remains independently executable
+       - its own canonical mitigation/invalidation: apply the OB's own lifecycle
+
+DECISIONAL SLOT + EXTREME SLOT ≠ THREE INDEPENDENT STRUCTURAL POI SLOTS
+
 
 #### OB candidate → FVG selection shift
 
@@ -712,8 +777,16 @@ An Engineering Liquidity sweep does not itself create an entry. With direct cand
 
 #### Module 4 — Extreme POI Mitigation entry
 
+The module must consume the global IDM formation-and-takeout gate defined in **“Mandatory IDM formation-and-takeout gate for every OF/OB POI”** above. An **ordinary** Extreme OF/OB candidate must have formed after the applicable active IDM was physically taken out (`IDM_TAKEN`); a pre-takeout ordinary candidate cannot be activated retrospectively. The only formation-time exception is a pre-existing, canonically valid `ORIGIN_ORDER_BLOCK` latent reserve. It may enter this route only after the active-IDM/takeout gate and the existing Origin OB fallback conditions make it the applicable Extreme execution location. It then occupies the Extreme slot, not a third slot. Extreme execution failure remains distinct from the CHoCH-based `POI_FAILURE` lifecycle state.
+
 ```text
-VALID EXTREME POI
+VALID ACTIVE IDM FORMED
+   ↓
+IDM_TAKEN
+   ↓
+ORDINARY POST-TAKEOUT EXTREME POI + CANONICAL VALIDATION
+   OR
+VALID LATENT ORIGIN OB + CANONICAL FALLBACK ACTIVATION
    ↓
 POI MITIGATION
    ↓
