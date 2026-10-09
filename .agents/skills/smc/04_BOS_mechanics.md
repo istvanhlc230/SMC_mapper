@@ -209,13 +209,13 @@ Layer 4 consumes these upstream outputs. It does not know or independently evalu
 - HTF pullback validity.
 
 Those criteria are owned exclusively by Layer 3.
-### 3.4.7 — Major IDM interaction
+### 3.4.6 — Major IDM interaction
 
 Major IDM is a liquidity reference, not a continuation-BOS reference. When the exact tested external level carries active Major IDM provenance, a wick takeout is classified as `MAJOR_IDM_SWEEP`, not continuation `VALID_BOS`.
 
 The sweep does not roll the Trading Range or lock the Protected Structural Extreme. The related `IDM_TAKEN` and swing-candidate consequences are owned by `03_structural_semantic_authority.md` §3.2.3. CHoCH-facing wick/body classification is owned by `05_CHOCH_mechanics.md` §§3.5.3–3.5.4. Layer 4 consumes these semantic outputs and must not recreate IDM identity or lifecycle.
 
-### 3.4.8 — Protected Structural Extreme Lock
+### 3.4.7 — Protected Structural Extreme Lock
 
 The corrective extreme remains dynamic until `VALID_BOS`.
 
@@ -254,7 +254,7 @@ No later body close is required after a valid wick BOS.
 A `MAJOR_IDM_SWEEP` does not lock the extreme because it is not a continuation `VALID_BOS`.
 
 This module does not redefine the full `CONFIRMED_STRUCTURAL_SWING` / Protected Structural Extreme lifecycle; ownership remains in `03_structural_semantic_authority.md` Section 3.3 and the bootstrap lifecycle in Section 3.2.1A.
-### 3.4.9 — Trading Range Rollover
+### 3.4.8 — Trading Range Rollover
 
 Only `VALID_BOS` closes the previous governing Trading Range and starts the next structural lifecycle.
 
@@ -278,13 +278,13 @@ The following do not independently roll the range:
 
 Post-BOS retracement and liquidity collection belong to the new range lifecycle.
 
-### 3.4.10 — Post-BOS Major IDM continuity
+### 3.4.9 — Post-BOS Major IDM continuity
 
 Post-BOS Major IDM establishment, active-reference continuity, and supersession are owned by `03_structural_semantic_authority.md` §3.2.3. Layer 4 consumes the qualified `MAJOR_IDM` reference and does not independently create or replace it.
 
 Implementation guard: `NEW_SVP` alone does not establish `MAJOR_IDM`; the owner-defined Layer-2 valid-pullback / verified-extreme handoff is required.
 
-### 3.4.11 — POI Lifecycle Boundary
+### 3.4.10 — POI Lifecycle Boundary
 
 BOS closes a Trading Range, but the structural engine does not directly delete POIs.
 
@@ -298,7 +298,7 @@ POI LIFECYCLE SUBSYSTEM
 
 Historical POI expiration is owned by the separate POI lifecycle/execution semantics. Structural BOS methodology must not silently redefine POI registry behavior.
 
-### 3.4.12 — Anti-Retroactive and Exclusivity Invariants
+### 3.4.11 — Anti-Retroactive and Exclusivity Invariants
 
 ```text
 MAJOR_IDM_SWEEP
@@ -321,7 +321,7 @@ A past event classification is immutable.
 
 If `t1` is classified as `MAJOR_IDM_SWEEP`, later candles cannot rewrite `t1` as BOS. Each event is evaluated against the structural state and provenance active at its own event time.
 
-### 3.4.13 — BOS State-Transition Contract
+### 3.4.12 — BOS State-Transition Contract
 
 `EXT_CONT_BREAK` applies exclusively to continuation boundaries.
 
@@ -335,7 +335,7 @@ evaluate stored qualification
 
 The transition outcome is deterministic once event identity, retracement qualification, and level provenance are known.
 
-### 3.4.14 — BOS / CHoCH Boundary
+### 3.4.13 — BOS / CHoCH Boundary
 
 BOS and CHoCH are mutually exclusive structural outcomes for the same evaluated external event.
 
@@ -351,7 +351,7 @@ CHoCH PIPELINE (CHoCH_CONFIRMED)
 
 A MAJOR_IDM event can produce `MAJOR_IDM_SWEEP`; it cannot be simultaneously classified as `VALID_BOS` or `CHoCH_CONFIRMED`. A bootstrap anchor break is outside both structural pipelines and is classified only as `BOOTSTRAP_REVERSAL` while the mapping remains in bootstrap.
 
-### 3.4.15 — Canonical Authority Hierarchy (MC-01)
+### 3.4.14 — Canonical Authority Hierarchy (MC-01)
 
 For the canonical True SMC implementation, the implementation-level structural specification governs where it provides a more specific rule than earlier generic pedagogical formulations.
 
