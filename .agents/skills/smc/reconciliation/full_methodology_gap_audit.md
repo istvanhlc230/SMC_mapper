@@ -85,7 +85,7 @@ Resolved canonicalization:
 - HTF POI/core-liquidity interaction activates the LTF-CHoCH context;
 - the 2026 source explicitly describes the post-HTF-interaction “small glitch in the structure cycle” in which the most recently formed valid LTF pullback/inducement is the operative CHoCH reference rather than the ordinary LTF external boundary;
 - arbitrary local pivots and invalid pullbacks cannot replace that reference;
-- the break mode is IDM-dependent: a Major-Inducement LTF path may use the canonical wick-break CHoCH route; when only Minor IDM exists, the external protected boundary functions as Major IDM, a wick is `MAJOR_IDM_SWEEP`, and CHoCH requires a completed body close beyond the applicable LTF reference;
+- the LTF break mode depends on both active-range IDM context and the exact tested-level provenance: a wick through the active Major IDM level is `MAJOR_IDM_SWEEP`, not CHoCH; a wick may enter `CHoCH_ELIGIBLE` only when the tested LTF structural reference is eligible and demonstrably distinct from an active Major IDM level; when only Minor IDM is available, the prior protected external boundary remains the active Major IDM reference, a wick through that boundary is `MAJOR_IDM_SWEEP`, a wick through the substituted LTF Minor IDM is an LTF inducement sweep / `IDM_TAKEN` rather than CHoCH, and a completed body close beyond the active LTF CHoCH reference is required for `CHoCH_ELIGIBLE`;
 - the body-close condition is therefore not universal across all LTF CHoCH events;
 - the route remains the same CHoCH concept represented in an HTF→LTF execution context, not a new lifecycle state;
 - the LTF reference is not reclassified as Major IDM merely because it is used by the LTF-CHoCH route.
@@ -506,3 +506,17 @@ When no new post-BOS valid pullback / verified pullback extreme has established 
 **POST-BOS MAJOR IDM SOURCE GAP = CLOSED.**
 
 The prior audit statement claiming that the authoritative source material did not define the qualification predicate is superseded by this re-audit.
+
+## 3.14 Current clarification — LTF CHoCH reference and Major IDM provenance
+
+The apparent conflict between `05_CHOCH_mechanics.md` §§3.5.3A and 3.5.4 is resolved by explicitly separating the active LTF range's IDM context from the provenance of the specific price level being tested. The distinction must use existing canonical terminology; it does not introduce `REAL_MAJOR_IDM` or `FALLBACK_MAJOR_IDM` object classes.
+
+Canonical implementation rules:
+- Major IDM provenance may be pullback-derived or governing-external-boundary-derived, under `03_structural_semantic_authority.md`.
+- A wick through the exact level carrying active Major IDM provenance is `MAJOR_IDM_SWEEP`, not `CHoCH_ELIGIBLE` or `CHoCH_CONFIRMED`.
+- A wick may enter `CHoCH_ELIGIBLE` only when the tested opposing/LTF structural reference is eligible and its level is demonstrably distinct from the active Major IDM reference; all remaining CHoCH prerequisites still apply.
+- When only Minor IDM is available and no newer pullback-derived Major IDM has qualified, the prior protected external boundary remains the active Major IDM reference. A wick through that boundary is `MAJOR_IDM_SWEEP`. A wick through the substituted LTF Minor IDM is an LTF inducement sweep / `IDM_TAKEN`, not CHoCH and not automatically a Major IDM sweep; completed body close beyond the active LTF CHoCH reference is required to enter `CHoCH_ELIGIBLE`.
+- If tested-level provenance is unavailable or ambiguous, block CHoCH structural classification and do not infer either CHoCH or `MAJOR_IDM_SWEEP` from geometry alone.
+- `CHoCH_ELIGIBLE` remains distinct from `CHoCH_CONFIRMED`; eligibility never bypasses the complete CHoCH prerequisite gate.
+
+This clarification refines the provenance boundary in the prior LTF-CHoCH reconciliation; it does not change the ordinary external-boundary rule or create a new lifecycle state.
