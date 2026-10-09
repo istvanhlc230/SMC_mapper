@@ -108,7 +108,7 @@ Terminology rules:
 - Minor Structure owns validated sequential structure produced from Layer-1 observations.
 - Major / External Structure owns CONFIRMED_STRUCTURAL_SWING, Protected External Boundary / Protected Structural Extreme, Major IDM, and the structural lifecycle.
 - BOS is an external/major structural break, not a generic candle break or Minor Structural Swing break.
-- CHoCH is a structural lifecycle transition whose governing reference is context-dependent; the LTF Structural Glitch does not promote a Minor object into Major Structure.
+- CHoCH is a structural lifecycle transition whose governing reference is context-dependent; the LTF-CHoCH Context After HTF Interaction uses Valid-Pullback Reference Substitution without promoting a Minor object into Major Structure.
 - Unqualified implementation-domain types such as Swing, Break, or Structure must not be used where a canonical layer-specific semantic type is required.
 - Existing canonical names (CONFIRMED_STRUCTURAL_SWING, STRUCTURAL_SWING_BREAK, VALID_BOS, MINOR_IDM, MAJOR_IDM) remain authoritative and must not be replaced by parallel synonyms.
 - Generic words such as “structure”, “swing”, or “break” may appear in descriptive prose only when the semantic owner is unambiguous. Normative rules and implementation contracts must use the specific canonical object/event name.
