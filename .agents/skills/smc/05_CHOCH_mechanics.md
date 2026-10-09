@@ -227,7 +227,7 @@ ALL APPLICABLE CHoCH PREREQUISITES
         NEW TREND / REGIME SHIFT
 ```
 
-The special LTF reference replaces the normal HTF external boundary **only while the LTF-CHoCH context is active**. Once CHoCH_CONFIRMED occurs, the normal post-CHoCH lifecycle in 3.5.5 applies and the prior LTF context is cleared.
+The special LTF reference replaces the normal LTF external boundary **only while the LTF-CHoCH context is active**. Once CHoCH_CONFIRMED occurs, the normal post-CHoCH lifecycle in 3.5.5 applies and the prior LTF context is cleared.
 
 This route does not create a new top-level lifecycle state and does not convert the LTF inducement into a Major IDM. The LTF reference is a temporary CHoCH reference object for the active context.
 
@@ -257,8 +257,7 @@ WICK BREACH
 MAJOR_IDM_SWEEP
 ```
 
-A Major IDM wick sweep is neither `CHoCH_ELIGIBLE` nor `CHoCH_CONFIRMED`, is not `VALID_BOS`, and does not roll the Trading Range or lock the Protected Structural Extreme. The sweep satisfies the applicable IDM-takeout requirement (`IDM_TAKEN`) when the Major IDM reference is physically penetrated, and that `IDM_TAKEN` establishes the associated swing-point candidate / provisional structural extreme. Macro retracement qualification is still required before the candidate becomes `CONFIRMED_STRUCTURAL_SWING` on the continuation-BOS path. The sweep does not by itself create `VALID_BOS` or `CHoCH_CONFIRMED`.
-
+A wick breach of the exact level carrying Major IDM provenance is `MAJOR_IDM_SWEEP`, not `CHoCH_ELIGIBLE` or `CHoCH_CONFIRMED`. It is also not `VALID_BOS`, does not roll the Trading Range, and does not lock the Protected Structural Extreme. The associated `IDM_TAKEN` and swing-candidate consequences are owned by `03_structural_semantic_authority.md` §3.2.3; this section defines only the CHoCH-facing classification.
 #### B. Body Close Beyond Major IDM
 
 ```text
@@ -273,18 +272,7 @@ A body close beyond a Major IDM boundary enters the CHoCH qualification gate. It
 
 #### C. Major IDM lifecycle
 
-After BOS, if no new Layer-2 **Candle-Level Valid Pullback → Verified Pullback Extreme** has established the next Major IDM, the previous protected external boundary remains the active Major IDM reference. When that post-BOS validated pullback state is reached, it establishes and supersedes the previous active Major IDM from that point forward.
-
-```text
-VALID_BOS
-    ↓
-POST-BOS PRICE ACTION
-    ├─ NEW MAJOR IDM QUALIFIED → NEW MAJOR IDM ACTIVE
-    └─ MINOR IDM ONLY → PREVIOUS PROTECTED BOUNDARY REMAINS MAJOR IDM
-```
-
-Historical IDM provenance is immutable; later candles do not retroactively rewrite earlier event classification.
-
+Major IDM qualification, active-reference continuity, supersession, and immutable provenance are owned by `03_structural_semantic_authority.md` §3.2.3. CHoCH classification consumes that owner's provenance for the exact tested level; this section does not define a parallel IDM lifecycle.
 ## 3.6 Canonical invariants
 
 ```text
