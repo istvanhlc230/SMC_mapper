@@ -57,7 +57,7 @@ DECISIONAL POI
  EXTREME POI
 ```
 
-No synthetic POI may be created merely to satisfy the Rule of Two. Origin Order Block remains a latent reserve rather than a third active slot, and Rejection Block remains separately typed rather than an automatic Rule-of-Two slot. Multiple arbitrary POIs must not be created merely because multiple zones are visually present. Any logic that permits three simultaneously active canonical POIs is strictly forbidden.
+No synthetic POI may be created merely to satisfy the Rule of Two. Origin Order Block remains a latent reserve rather than a third active slot, and Rejection Block remains separately typed rather than an automatic Rule-of-Two slot. Multiple unrelated structural POIs must not be created merely because multiple zones are visually present. The Rule of Two counts independent structural roles, not every chart outline: a broad Decisional Order Flow and its contained, causally associated Decisional Order Block refinement share one Decisional slot. They may be displayed beside the Extreme zone as three outlines without representing three independent structural targets. The prohibition remains against three simultaneous independent structural POI slots.
 
 ### Latent Origin Reserve and Rejection Block
 
@@ -127,7 +127,7 @@ The Extreme POI must still be an `EXTREME_ORDER_FLOW` or `EXTREME_ORDER_BLOCK`. 
 
 An `ORIGIN_ORDER_BLOCK` is the furthest unmitigated, validated Order Block at the origin of the active dealing range. Its existence and validity are independent of whether its parent `ELIGIBLE_ORDER_FLOW` is mitigated.
 
-It remains a latent reserve rather than a third active Rule-of-Two POI. Its **existence and validity** do not depend on whether the originating `ELIGIBLE_ORDER_FLOW` is mitigated. However, the source-defined **fallback relevance** of the Origin Order Block is reached only after the original Extreme Order Flow at the dealing-range origin has been mitigated and the applicable `EXTREME_ORDER_BLOCK` has failed. It is the source-defined **last line of defense** in that fallback sequence. At that point, an unmitigated valid `ORIGIN_ORDER_BLOCK` may become the next applicable execution location.
+It remains a latent, sequential reserve rather than a third independent Rule-of-Two slot. Its existence and validity do not depend on whether the originating Extreme OF is mitigated. However, its source-defined fallback relevance is reached only after the applicable Extreme execution path has failed: the original Extreme OF at the dealing-range origin has been mitigated and the applicable Extreme OB has failed. Origin OB is the source-defined last line of defense in that sequence. It may then become the next applicable execution location only if it remains unmitigated and valid, including its own required FVG/imbalance association, and the existing canonical IDM/takeout and fallback activation gates pass. This is a sequential fallback stage, not permission to keep three independent active structural POIs.
 
 The execution failure of an `EXTREME_ORDER_BLOCK` is distinct from canonical `POI_FAILURE`: `POI_FAILURE` is a CHoCH-based execution lifecycle state defined separately below. Extreme Order Block execution failure must not manufacture CHoCH or any structural state.
 
@@ -162,7 +162,7 @@ ORDER_FLOW_CANDIDATE
 
 `ORIGIN_ORDER_BLOCK` is not an Order Flow candidate or an exception that changes OF classification; it is handled separately as a latent reserve under the Origin OB fallback rules below.
 
-A physical touch or penetration alone does **not** confirm OF mitigation. The mitigation state is confirmed only through a canonical Valid Pullback interaction. If the interaction is not validated by a Valid Pullback, the OF remains unmitigated.
+A physical touch or penetration alone does **not** confirm OF mitigation. The mitigation state is confirmed only through the applicable canonical Valid Pullback interaction, assessed at the timeframe and structural context governing that OF. Use the Layer-2 candle-level Valid Pullback rules; do not silently replace them with an arbitrary local pivot or impose a separate macro-only requirement unless another explicit canonical rule defines that scope. If the interaction is not validated by a Valid Pullback, the OF remains unmitigated.
 
 ### SMT / pre-takeout exclusion and Origin OB reserve exception
 
@@ -413,16 +413,31 @@ An `EXTREME_ORDER_BLOCK` is selected from the furthest unmitigated validated Ord
 
 #### Independent OB validity
 
-Order Block validity is determined by its own canonical validation pillars. It is not automatically invalidated merely because the parent/containing Order Flow is unmitigated or because another Order Flow has failed.
+Order Block validity and mitigation are evaluated on the OB's own canonical state and validation pillars. A parent/containing Order Flow being unmitigated, mitigated, or having a failed reaction does **not** by itself invalidate or mark its child OB as mitigated. Conversely, a valid OB does not retroactively repair an invalid parent OF. Each object retains its own identity and evidence.
 
-```text
 ORDER_BLOCK_PILLARS_VALID → VALIDATED_ORDER_BLOCK
-ORDER_FLOW_STATE_CHANGE ↛ AUTOMATIC OB INVALIDATION
-ORDER_FLOW_UNMITIGATED ↛ ORDER_BLOCK_INVALID
-ORDER_FLOW_FAILURE ↛ ORDER_BLOCK_INVALID
-```
+PARENT_OF_STATE_CHANGE ↛ AUTOMATIC CHILD_OB INVALIDATION
+PARENT_OF_MITIGATION ↛ AUTOMATIC CHILD_OB MITIGATION
+PARENT_OF_REACTION_FAILURE ↛ AUTOMATIC CHILD_OB INVALIDATION
 
-The source update explicitly permits use of a valid Decisional Order Block even while the associated Order Flow remains unmitigated. This does not remove the Rule-of-Two constraint or create additional active POIs, and it does not waive the mandatory active-IDM-formation-and-takeout gate above.
+The source directly places the Decisional OB inside the Decisional OF and defines the OB through its own validation pillars. The following Decisional OF/OB dual-execution protocol makes that nested relationship explicit for implementation. It does not create a third structural slot or waive the active-IDM-formation-and-takeout gate.
+
+#### Decisional OF / OB dual-execution protocol
+
+When a valid broad Decisional Order Flow contains its causally associated, valid Decisional Order Block refinement, both representations may be shown. They occupy one Decisional structural slot: the OF is the parent execution zone and the OB is a narrower, independently validated child execution zone.
+
+If price canonically mitigates the broad Decisional OF and produces a reaction, but that reaction fails before price reaches or mitigates the nested Decisional OB, the child OB remains valid and independently executable **provided** the OB itself remains unmitigated, its own validation pillars and causal BOS identity remain valid, its active-lineage IDM_TAKEN gate is satisfied, and all applicable execution and entry gates pass. Do not propagate parent OF mitigation or reaction failure into the child OB as an automatic state transition.
+
+The child OB's independent eligibility does not make it a second Decisional structural slot. The Extreme zone remains the separate Extreme slot, so the chart can show Decisional OF + nested Decisional OB + Extreme zone without violating Rule of Two. If price has itself mitigated or invalidated the child OB under its own canonical lifecycle, this protocol does not preserve it.
+
+DECISIONAL OF (PARENT)
+   - canonical OF mitigation changes the parent OF state
+   - nested Decisional OB (CHILD)
+       - not reached / not mitigated + valid: remains independently executable
+       - its own canonical mitigation/invalidation: apply the OB's own lifecycle
+
+DECISIONAL SLOT + EXTREME SLOT ≠ THREE INDEPENDENT STRUCTURAL POI SLOTS
+
 
 #### OB candidate → FVG selection shift
 
