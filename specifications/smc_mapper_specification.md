@@ -212,7 +212,7 @@ The protocol does not redundantly transmit `completion_time`. The Mapper determi
 
 `tick_volume`, `spread`, and `real_volume` are independent optional provider fields. `volume_total` explicitly transports normalized `volume.total`; `orderflow_buy` and `orderflow_sell` explicitly transport genuine normalized `volume.orderflow.buy/sell`. Empty fields mean unavailable. The Mapper must never infer `volume_total` from tick/real volume or treat an OHLC estimate as observed orderflow.
 
-The Mapper must reject malformed required fields, invalid timestamps, malformed OHLC, duplicate candle identities, non-ascending timestamps within a timeframe, and any record with `completed=0` for structural processing.
+The Mapper must reject malformed required fields, invalid timestamps, malformed OHLC, duplicate candle identities, non-ascending timestamps within a timeframe, and any record with `completed=0` for structural processing. A row with only one of `orderflow_buy` and `orderflow_sell` populated is malformed and must be rejected; a valid unavailable orderflow pair has both fields empty.
 
 ## 1.3 Normalized candle representation
 
@@ -1775,6 +1775,7 @@ At minimum, the finished mapper implementation must have focused tests covering:
 - deterministic Dealing Range identity/history reconciliation and history_no retention;
 - canonical POI lifecycle pass-through without introducing mapper-specific lifecycle states;
 - POI volume provenance and branch separation for NONE/OHLC/ORDERFLOW/BOTH;
+- machine-protocol parsing of `volume_total` and the observed orderflow pair, including empty optional fields, rejection of partial orderflow pairs, and no inference from `tick_volume` / `real_volume`;
 - source-level delta derivation from buy/sell with no persisted candle-level delta dependency;
 - deterministic OHLC directional-volume aggregation and zero-volume behavior;
 - structures JSON atomic persistence and checkpoint ordering;
