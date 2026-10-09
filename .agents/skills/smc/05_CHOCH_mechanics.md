@@ -123,7 +123,7 @@ OTHERWISE
 
 If the tested external level has Major IDM provenance, the wick is `MAJOR_IDM_SWEEP`, not CHoCH. A later reclassification must not be inferred from wick geometry alone.
 
-The wick/body geometry does not determine structural identity by itself. Level provenance and the active liquidity state determine the final classification.
+The wick/body geometry does not determine structural identity by itself. Level provenance and the active liquidity state determine the final classification. If the tested level's provenance cannot be established, do not infer either `CHoCH_ELIGIBLE` or `MAJOR_IDM_SWEEP` from geometry alone; keep the structural classification blocked until the required canonical provenance inputs are available.
 ### 3.5.3A — LTF-CHoCH Context After HTF Interaction
 
 The knowledgebase defines a specific lower-timeframe CHoCH route after price has interacted with a higher-timeframe Point of Interest or a core-liquidity level. This route is a **context-gated representation of the same CHoCH concept**, not a new lifecycle state.
@@ -158,7 +158,14 @@ GOVERNING LTF CHoCH REFERENCE
 
 The reference is the most recently formed **valid** LTF pullback. An arbitrary local pivot, invalid pullback, SMT, or visually convenient high/low cannot replace it.
 
-The reference is the most recently formed valid LTF pullback/inducement required by the Structural Glitch context. Its break mechanism is resolved from the IDM classification of the active LTF dealing range; recency determines the reference, while IDM provenance determines whether wick or body-close confirmation applies.
+The reference is the most recently formed valid LTF pullback / its verified pullback extreme. This is a temporary CHoCH reference only; the reference is not promoted into Major Structure. Reference selection and Major IDM identity must remain separate.
+
+The classification must evaluate two distinct facts:
+
+- **Active LTF IDM context:** whether a pullback-derived Major IDM has qualified in the active LTF range, or whether the prior protected external boundary remains the active Major IDM reference because only Minor IDM is available.
+- **Tested-level provenance:** whether the exact LTF reference being physically broken itself carries the active Major IDM provenance.
+
+The presence of a Major IDM somewhere in the LTF range does **not**, by itself, prove that the tested LTF reference carries Major IDM provenance. Conversely, a distinct LTF reference must not be assumed merely because its label differs; its level identity and provenance must be deterministically established.
 
 #### LTF Structural Glitch — reference substitution and IDM-dependent break mode
 
@@ -166,13 +173,14 @@ The 2026 True SMC source explicitly describes a **small glitch in the structure 
 
 Source evidence: `truesmc2026.txt`, Part 5 / lower-timeframe execution example, approximately 00:08:47–00:10:36 and again 00:13:13–00:13:31.
 
-The glitch changes the **reference location**, not the underlying CHoCH concept. The break mode remains determined by the IDM state of the active LTF dealing range:
+Apply these rules in order:
 
-1. **Major IDM is present:** the applicable protected LTF structural boundary can be violated by wick/shadow and enter the normal CHoCH qualification path. A later body close is not required merely because the event occurs on the LTF.
-2. **Only Minor IDM is present:** the external protected swing functions as the Major IDM. A wick penetration of that Major IDM is a `MAJOR_IDM_SWEEP`, not CHoCH. In this case, CHoCH requires a completed body close beyond the applicable LTF CHoCH reference.
-3. **Inside the Structural Glitch context:** the normal external-boundary reference is temporarily replaced by the most recently formed valid LTF pullback/IDM reference. The same IDM-dependent wick/body rule is applied to that active LTF reference; a Minor-Inducement reference therefore remains body-close-gated, while a Major-Inducement reference can qualify through a wick break.
+1. **The tested LTF reference itself carries Major IDM provenance:** a wick breach is `MAJOR_IDM_SWEEP`, not `CHoCH_ELIGIBLE` or `CHoCH_CONFIRMED`. A completed body close beyond the Major IDM reference enters `CHoCH_ELIGIBLE`, subject to all applicable CHoCH prerequisites.
+2. **A distinct pullback-derived Major IDM is active elsewhere in the LTF range:** if the tested LTF reference is an eligible structural reference and is demonstrably distinct from the active Major IDM level, a wick break may enter `CHoCH_ELIGIBLE`. The separate Major IDM's existence alone is insufficient; the tested reference's distinct identity and non-Major-IDM provenance must be established.
+3. **Only Minor IDM is available and no newer pullback-derived Major IDM has qualified:** the prior protected external boundary remains the active Major IDM reference. A wick of that external boundary is `MAJOR_IDM_SWEEP`, not CHoCH. The substituted LTF reference may instead be the Minor IDM reference: a wick through that Minor reference is an LTF inducement sweep / `IDM_TAKEN`, not CHoCH and not automatically `MAJOR_IDM_SWEEP`; the applicable completed body close beyond the active LTF CHoCH reference is required to enter `CHoCH_ELIGIBLE`.
+4. **Tested-reference provenance is missing or ambiguous:** fail closed. Do not emit `CHoCH_ELIGIBLE`, `CHoCH_CONFIRMED`, or `MAJOR_IDM_SWEEP` by assumption. Resolve the canonical reference/provenance inputs before classifying the structural outcome.
 
-This is the reconciled canonical rule: the **Structural Glitch is source-direct for reference substitution**, while the **wick/body mode is derived from the canonical Major/Minor IDM CHoCH semantics**. The rule must not be simplified to “all LTF CHoCH requires body close.”
+This preserves the source-supported LTF reference substitution while applying the ordinary CHoCH provenance rule to the **specific level being tested**. The LTF context does not override §3.5.4: a wick of the Major IDM itself is always a Major IDM sweep. It also does not impose a universal body-close requirement when a distinct eligible LTF reference and a separate active Major IDM are deterministically established.
 
 Bullish HTF context / bearish LTF reversal:
 
@@ -234,7 +242,7 @@ WICK BREACH
 MAJOR_IDM_SWEEP
 ```
 
-A Major IDM wick sweep is not CHoCH_CONFIRMED, not VALID_BOS, and does not roll the Trading Range or lock the Protected Structural Extreme. The sweep satisfies the applicable IDM-takeout requirement (`IDM_TAKEN`) when the Major IDM reference is physically penetrated, and that `IDM_TAKEN` establishes the associated swing-point candidate / provisional structural extreme. Macro retracement qualification is still required before the candidate becomes `CONFIRMED_STRUCTURAL_SWING` on the continuation-BOS path. The sweep does not by itself create `VALID_BOS` or `CHoCH_CONFIRMED`.
+A Major IDM wick sweep is neither `CHoCH_ELIGIBLE` nor `CHoCH_CONFIRMED`, is not `VALID_BOS`, and does not roll the Trading Range or lock the Protected Structural Extreme. The sweep satisfies the applicable IDM-takeout requirement (`IDM_TAKEN`) when the Major IDM reference is physically penetrated, and that `IDM_TAKEN` establishes the associated swing-point candidate / provisional structural extreme. Macro retracement qualification is still required before the candidate becomes `CONFIRMED_STRUCTURAL_SWING` on the continuation-BOS path. The sweep does not by itself create `VALID_BOS` or `CHoCH_CONFIRMED`.
 
 #### B. Body Close Beyond Major IDM
 
