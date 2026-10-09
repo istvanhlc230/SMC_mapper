@@ -97,15 +97,16 @@ Required representation:
 
 #### Mandatory active-IDM formation and takeout gate
 
-No OF or OB may be designated as an active tradable POI, exposed as an executable POI, or used to authorize an entry until a canonical valid active IDM has formed and that applicable active IDM has been physically taken out (`IDM_TAKEN`). This gate applies to all OF/OB POI roles, including Decisional, Extreme, and Origin Order Block when activated for trading.
+An ordinary OF/OB may be designated as an active tradable POI, exposed as an executable POI, or used to authorize an entry only after a canonical valid active IDM has formed and that applicable active IDM has been physically taken out (`IDM_TAKEN`). The active canonical POI set has at most two slots: Decisional POI and Extreme POI. Origin Order Block is not a third slot.
 
-- Before valid IDM formation, OF/OB may be recorded as observations/candidates only; they are not tradable POIs.
-- An OF/OB formation that predates the applicable active IDM is permanently classified as `SMT / INDUCEMENT_TRAP` for that active dealing-range lineage and must never be promoted by a later takeout.
-- Between IDM formation and `IDM_TAKEN`, no OF/OB candidate may be activated as a tradable POI and no entry may be authorized.
-- Only OF/OB formations that occur after the applicable `IDM_TAKEN` event may proceed through the remaining canonical OF/OB validation, mitigation, POI ontology, Rule-of-Two, and execution gates. Candidates formed between IDM formation and takeout remain non-tradable permanently within that active dealing-range lineage; takeout is necessary, not sufficient.
-- Candidate observation or successful OB pillar validation does not bypass this gate. Keep candidate/validation state distinct from active tradable-POI state.
-- The gate must be bound to the canonical active IDM identity and its event-time provenance. A touch of an unrelated level, a historical/inactive IDM, or missing/ambiguous takeout evidence does not satisfy it.
-- If the gate state cannot be resolved deterministically at the candidate's evaluation time, fail closed: do not activate an OF/OB POI or authorize an entry.
+- An ordinary OF/OB formed before the applicable active IDM was formed is classified as `SMT / INDUCEMENT_TRAP` for that active dealing-range lineage.
+- An ordinary OF/OB formed after IDM formation but before the physical `IDM_TAKEN` event is also classified as `SMT / INDUCEMENT_TRAP`. Neither class may be retrospectively promoted after the takeout.
+- Trap records may be retained for provenance, auditability, and historical context, and may be displayed when useful if the trap/exclusion status is clear. They must not be represented as active tradable POIs, authorize entries, or enter the active set.
+- Only ordinary OF/OB formations created after the applicable `IDM_TAKEN` event may proceed through the remaining canonical OF/OB validation, mitigation, POI ontology, Rule-of-Two, and execution gates. The takeout only opens that path; it does not validate a candidate, satisfy Rule of Two, create an active POI, or authorize an entry.
+- **Origin Order Block exception:** a source-valid `ORIGIN_ORDER_BLOCK` may have formed before `IDM_TAKEN` without being classified as an ordinary SMT trap, but it must remain a latent reserve. It may become the applicable fallback execution location only after the active IDM/takeout gate and the existing canonical Origin OB validity/fallback activation conditions are satisfied. It then occupies the Extreme slot rather than creating a third active POI. No other pre-takeout candidate is exempt.
+- This exception changes only the reserve's formation-time eligibility; it does not permit Origin OB activation before the IDM gate, bypass remaining validation, or authorize entry automatically. Extreme execution failure remains distinct from canonical `POI_FAILURE`, which is the separately defined CHoCH-based lifecycle state.
+- Candidate observation, OB pillar validation, active POI designation, and entry authorization remain distinct. The gate must bind to the canonical active IDM identity and event-time provenance; unrelated touches, historical/inactive IDMs, and ambiguous takeout evidence do not satisfy it.
+- If required gate/provenance state cannot be resolved, fail closed. Do not activate an ordinary candidate or Origin OB fallback without evidence that its respective canonical conditions are satisfied.
 
 Forbidden shortcuts:
 
@@ -869,11 +870,13 @@ Required invariants:
 
 ### POI / Entry
 - POI ontology accepts Eligible Order Flow and Validated Order Block;
-- active tradable OF/OB POI designation and entry authorization are prohibited until a valid active IDM has formed and the applicable IDM has been physically taken out (`IDM_TAKEN`); pre-IDM formations remain `SMT / INDUCEMENT_TRAP`, and all OF/OB formations created before the takeout remain non-tradable and cannot be promoted retrospectively;
-- IDM takeout is necessary but not sufficient: all canonical OF/OB validation, mitigation, Rule-of-Two, and execution gates still apply;
+- ordinary tradable OF/OB POI designation and entry authorization require a valid active IDM and physical takeout of that same applicable IDM (`IDM_TAKEN`); ordinary pre-IDM and post-IDM/pre-takeout formations are `SMT / INDUCEMENT_TRAP`, with no retrospective promotion;
+- trap records may be retained and displayed with explicit trap/exclusion status but never enter the active tradable POI set or authorize entry;
+- `IDM_TAKEN` only opens the remaining validation path for ordinary post-takeout candidates; all canonical OF/OB validation, mitigation, Rule-of-Two, and execution gates still apply;
 - Rejection Block is a separately typed PD-array/execution concept; source examples may use POI as a broad execution-location term, but RB is not an OF/OB-equivalent POI class or an automatic Rule-of-Two slot;
-- Rule of Two limits canonical tradable POIs to Decisional POI and Extreme POI (Extreme Order Flow / Extreme Order Block);
-- Origin Order Block is a latent reserve POI (mitigation transfer target when Extreme POI is mitigated), never a 3rd active POI;
+- Rule of Two permits at most two active tradable POI slots: Decisional POI and Extreme POI (Extreme Order Flow / Extreme Order Block);
+- Origin Order Block is a latent reserve and source-defined last-line fallback; its pre-takeout formation is the sole exception to the ordinary formation-time gate, and it may occupy the Extreme slot only after the existing canonical validity/fallback activation conditions pass; it is never a third active POI;
+- Extreme execution failure is distinct from the CHoCH-based canonical `POI_FAILURE` lifecycle state;
 - when an applicable Rule-of-Two dealing-range execution context exists, the active canonical tradable POI set has cardinality 1..2; if no valid canonical POI exists, execution fails closed with no executable POI / `NO_EVIDENCE`; no synthetic POI is created;
 - Decisional buy POI is in discount, and Decisional sell POI is in premium as a hard execution eligibility gate;
 - Decisional sell POI is in premium;
