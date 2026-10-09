@@ -18,6 +18,8 @@ When a countertrend execution references a Decisional POI expressed as a broad O
 
 Order Flow mitigation still requires the applicable canonical Valid Pullback in the timeframe and structural context governing that OF; a touch or penetration alone does not establish mitigation. The child OB is judged by its own canonical OB validation and mitigation state.
 
+Order Flow is itself a canonical POI form, not merely background geometry for a mandatory OB. If no validated, unmitigated OB qualifies for the applicable Decisional or Extreme role, use the matching eligible, unmitigated OF if it passes all its own gates; do not leave the ordinary POI slot empty solely because the OB refinement is unavailable. This selection fallback does not relax IDM/takeout or role constraints.
+
 Origin Order Block is separate from the nested Decisional refinement: it remains a latent sequential last-line-of-defense reserve for the Extreme path, consumed only after the canonical Extreme failure and Origin OB activation conditions. It is not an additional simultaneous Rule-of-Two slot.
 
 ## 2. Scenario CT1 — Internal Structure Toward Inducement Takeout

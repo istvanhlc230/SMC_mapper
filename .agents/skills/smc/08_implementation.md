@@ -96,6 +96,8 @@ Required representation:
 - `EXTREME_ORDER_FLOW` is the furthest unmitigated eligible OF at the origin of the active dealing range;
 - when the current Extreme Order Flow is mitigated, selection shifts to the next furthest eligible unmitigated OF;
 - a Decisional or Extreme Order Flow remains a POI candidate only after the POI ontology and Rule-of-Two constraints are satisfied.
+- For either role, Order Flow and Order Block are alternative canonical POI forms. If no validated, unmitigated OB qualifies, use the matching eligible, unmitigated OF when it passes its own gates; OB absence alone must not result in an empty ordinary POI slot or `NO_EVIDENCE` while a qualifying OF exists.
+- The OF fallback remains subject to its own mitigation/eligibility, active IDM/`IDM_TAKEN`, role, premium/discount, Rule-of-Two, and entry gates. It does not activate or bypass the separately governed Origin OB sequence.
 
 #### Mandatory active-IDM formation and takeout gate
 

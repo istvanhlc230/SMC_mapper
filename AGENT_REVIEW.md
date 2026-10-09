@@ -1,3 +1,21 @@
+# Order Flow fallback when no qualifying Order Block exists — 2026-10-09
+
+**Static documentation consistency: PASS. Mapper/Monitor runtime POI behavior: NOT VERIFIED.**
+
+## Clarified selection contract
+
+- Part 6 defines a canonical POI as either a valid Order Flow or a valid Order Block and calls the Decisional OF/OB first-choice POIs.
+- For either the Decisional or Extreme role, when no validated, unmitigated OB qualifies, the matching eligible, unmitigated OF remains the POI if it passes its own canonical and role-specific gates. Do not emit an empty ordinary POI slot or `NO_EVIDENCE` merely because the OB refinement is unavailable while a qualifying OF exists.
+- This does not make a mitigated/ineligible OF usable, waive the IDM/`IDM_TAKEN` gate, relax the Decisional premium/discount constraint, or add a Rule-of-Two slot.
+- Origin OB remains a distinct latent reserve and may be used only through its existing sequential Extreme-path fallback and independent validity/activation gates.
+- Source evidence and authority distinctions are documented in `.agents/skills/smc/source_reconciliation.md`. The precise if/then fallback is labelled as source-reconciled canonical interpretation, not misquoted as a verbatim transcript line.
+
+## Scope and validation boundary
+
+Updated the canonical execution skill, implementation mapping, countertrend composition, source-reconciliation record, Mapper specification, and Monitor consumption specification. This was a documentation/specification clarification; Mapper/Monitor runtime POI behavior was not exercised or claimed PASS. The new branch head requires its own CI checks.
+
+---
+
 # Hybrid Decisional OF/OB and Origin OB fallback clarification — 2026-10-09
 
 **Final static consistency audit: PASS** (all targeted cross-document checks passed; no known contradictory normative statements remain). **Mapper/Monitor runtime POI behavior: NOT VERIFIED.**

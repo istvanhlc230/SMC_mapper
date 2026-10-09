@@ -117,6 +117,10 @@ SELL → POI must be in PREMIUM
 
 A Decisional POI outside its required premium/discount side is not a valid Decisional POI and must not be promoted to a canonical entry merely because the underlying zone is otherwise valid.
 
+### Order Flow fallback when no qualifying Order Block exists
+
+A valid Order Flow and a valid Order Block are alternative canonical POI forms; an Order Block is not a mandatory prerequisite for using its corresponding Order Flow. For either the Decisional or Extreme role, when no validated, unmitigated Order Block qualifies, use the matching eligible, unmitigated Order Flow as the POI if that OF independently passes its canonical eligibility and role-specific execution gates. The absence of a qualifying OB alone must not leave the ordinary Decisional/Extreme slot empty or produce `NO_EVIDENCE` while a qualifying OF exists. This does not make a mitigated or otherwise ineligible OF usable, waive the active IDM/`IDM_TAKEN` gate, relax the Decisional premium/discount rule, or create another Rule-of-Two slot. If neither ordinary POI form qualifies for that role, fail closed; the separately governed Origin OB reserve may be considered only through its own sequential fallback conditions.
+
 ### Extreme POI
 
 The Extreme POI is the secondary/fallback execution location of the same dealing-range framework. It is used when the Decisional POI is unavailable, fails its execution conditions, or is otherwise not the applicable module according to the canonical entry sequence.
