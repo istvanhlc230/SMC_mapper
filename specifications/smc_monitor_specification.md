@@ -413,9 +413,6 @@ Rules:
 
 Compatible requests may be grouped for efficiency. Incompatible ranges must be issued separately rather than being silently widened or narrowed.
 
-Function:
-
-~~~python
 ## 4.4 No-new-candle path
 
 When no completed candle changed:
