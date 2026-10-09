@@ -173,10 +173,40 @@ PRE-IDM FORMATION
     ↓
 SMT / INDUCEMENT_TRAP
     ↓
-NOT A TRADABLE OF
+NEVER A TRADABLE OF / POI IN THAT ACTIVE LINEAGE
 ```
 
 This exclusion preserves the source-defined distinction between liquidity delivery toward inducement and post-inducement executable order flow.
+
+### Mandatory IDM formation-and-takeout gate for every OF/OB POI
+
+A valid active Inducement (IDM) must first be formed from canonical structure, and that same applicable active IDM must then be physically taken out, before any Order Flow (OF) or Order Block (OB) may be designated as an active tradable POI or used to authorize a trade. This is a hard execution gate, not a preference, confidence score, or optional filter.
+
+The sequence is:
+
+```text
+VALID ACTIVE IDM FORMED
+        ↓
+IDM PHYSICALLY TAKEN OUT (IDM_TAKEN)
+        ↓
+OF / OB CANDIDATES MAY BE EVALUATED FOR POI ELIGIBILITY
+        ↓
+ALL OTHER CANONICAL VALIDATION + RULE-OF-TWO GATES
+        ↓
+POTENTIALLY TRADABLE POI
+```
+
+Normative requirements:
+
+- Before a valid active IDM exists, OF/OB formations may be retained as observations or candidates for provenance, but they must not be designated, emitted, or consumed as tradable POIs and must not authorize an entry.
+- Any OF/OB formation that occurred before the applicable active IDM formed is an `SMT / INDUCEMENT_TRAP`; a later IDM takeout does not retroactively promote that pre-IDM formation into an eligible tradable POI in the same active dealing-range lineage.
+- After IDM formation but before its physical takeout, no OF/OB may be activated as a tradable POI and no trade may be authorized from it.
+- Only after the applicable active IDM is physically taken out may post-IDM OF/OB candidates proceed through their remaining canonical eligibility checks. The takeout is necessary but not sufficient: it does not itself validate an OF/OB, create a POI, satisfy Rule of Two, or authorize entry.
+- The gate is satisfied only by the canonical `IDM_TAKEN` event for the applicable active IDM. A visual touch, an unrelated liquidity sweep, an inactive/historical IDM, or a merely inferred takeout is insufficient.
+- Candidate observation, OF/OB validation, active POI designation, and entry authorization are distinct decisions. Early observation or validation must never bypass the POI activation/trading gate.
+- If IDM identity, formation, active status, or takeout provenance is unresolved, execution must fail closed: no tradable OF/OB POI and no entry authorization.
+
+This gate applies equally to `DECISIONAL_ORDER_FLOW`, `EXTREME_ORDER_FLOW`, `DECISIONAL_ORDER_BLOCK`, `EXTREME_ORDER_BLOCK`, and an `ORIGIN_ORDER_BLOCK` when considered for active tradable use. A latent reserve may be recorded as such, but it cannot be activated for trading before the gate passes.
 
 ### Decisional Order Flow
 
@@ -376,7 +406,7 @@ ORDER_FLOW_UNMITIGATED ↛ ORDER_BLOCK_INVALID
 ORDER_FLOW_FAILURE ↛ ORDER_BLOCK_INVALID
 ```
 
-The source update explicitly permits use of a valid Decisional Order Block even while the associated Order Flow remains unmitigated. This does not remove the Rule-of-Two constraint or create additional active POIs.
+The source update explicitly permits use of a valid Decisional Order Block even while the associated Order Flow remains unmitigated. This does not remove the Rule-of-Two constraint or create additional active POIs, and it does not waive the mandatory active-IDM-formation-and-takeout gate above.
 
 #### OB candidate → FVG selection shift
 
