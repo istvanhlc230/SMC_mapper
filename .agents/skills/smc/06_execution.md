@@ -151,14 +151,16 @@ When the corrective move contains multiple internal legs and its protected endpo
 
 ### Valid / unmitigated Order Flow
 
-An OF candidate is execution-eligible only when it remains unmitigated under the canonical pullback-based mitigation rule and it is not excluded by the active inducement boundary.
+An ordinary OF candidate is execution-eligible only when it remains unmitigated under the canonical pullback-based mitigation rule, is not an ordinary pre-`IDM_TAKEN` trap in the active lineage, and satisfies the remaining canonical OF gates.
 
 ```text
 ORDER_FLOW_CANDIDATE
    ├─ MITIGATED → INVALID_FOR_EXECUTION
-   ├─ BEFORE_ACTIVE_INDUCEMENT → SMT / INDUCEMENT_TRAP
-   └─ UNMITIGATED + ELIGIBLE → ELIGIBLE_ORDER_FLOW
+   ├─ ORDINARY FORMATION BEFORE IDM_TAKEN → SMT / INDUCEMENT_TRAP
+   └─ POST-TAKEOUT + UNMITIGATED + ELIGIBLE → ELIGIBLE_ORDER_FLOW
 ```
+
+`ORIGIN_ORDER_BLOCK` is not an Order Flow candidate or an exception that changes OF classification; it is handled separately as a latent reserve under the Origin OB fallback rules below.
 
 A physical touch or penetration alone does **not** confirm OF mitigation. The mitigation state is confirmed only through a canonical Valid Pullback interaction. If the interaction is not validated by a Valid Pullback, the OF remains unmitigated.
 
@@ -261,7 +263,8 @@ ELIGIBLE_ORDER_FLOW ≠ IDM
 ELIGIBLE_ORDER_FLOW ≠ LIQUIDITY
 ELIGIBLE_ORDER_FLOW ≠ VALID_BOS
 SMT ≠ ELIGIBLE_ORDER_FLOW
-PRE-IDM OF ≠ TRADABLE_POI
+ORDINARY PRE-TAKEOUT OF/OB ≠ TRADABLE_POI
+ORIGIN_ORDER_BLOCK RESERVE ≠ ACTIVE THIRD POI
 OF TOUCH ≠ ORDER_FLOW_MITIGATED
 ```
 ## 37.6 Engineering Liquidity Identification and Lifecycle
