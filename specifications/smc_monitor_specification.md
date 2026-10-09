@@ -252,7 +252,7 @@ For market-data acquisition and current-reference operations, the Monitor launch
 The protocol header is:
 
 ~~~text
-timeframe,time,open,high,low,close,tick_volume,spread,real_volume,completed
+timeframe,time,open,high,low,close,tick_volume,spread,real_volume,volume_total,orderflow_buy,orderflow_sell,completed
 ~~~
 
 The Monitor may consume completed rows (`completed=1`) for coverage/update decisions and current rows (`completed=0`) for current market reference observation.
