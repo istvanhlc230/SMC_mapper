@@ -12,6 +12,7 @@ Conservative stop placement is beyond the furthest relevant boundary of the pare
 
 A stop placement or stop touch does not itself create structural truth:
 
+```
 EXECUTION_STOPPED_OUT ≠ POI_PREMISE_INVALIDATED
 EXECUTION_STOPPED_OUT ≠ ZONE_FAILURE
 EXECUTION_STOPPED_OUT ≠ VALID_BOS
