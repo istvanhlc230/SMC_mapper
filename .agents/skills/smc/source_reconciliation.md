@@ -236,7 +236,8 @@ Required outcome:
 - [SOURCE_DIRECT] the Order Flow candidate is the last opposing move before dominant continuation/displacement on the active impulsive leg;
 - [SOURCE_COMPOSED] a multi-leg corrective move is represented as the whole relevant corrective leg while its protected endpoint remains intact;
 - [SOURCE_DIRECT] a physical touch does not by itself establish OF mitigation;
-- [SOURCE_DIRECT] pre-inducement formations are execution-excluded SMT/inducement traps;
+- [SOURCE_DIRECT] ordinary pre-inducement and other unselected range formations are execution-excluded SMT/inducement traps; the source expressly distinguishes the Origin OB reserve;
+- [SOURCE_RECONCILED] the physical takeout boundary includes ordinary formations created between active IDM formation and `IDM_TAKEN`, so the classification contract does not stop at the narrower phrase “pre-IDM”;
 - [SOURCE_DIRECT] Decisional OF is selected from the eligible OF lineage associated with the displacement causing canonical VALID_BOS;
 - [SOURCE_DIRECT] Extreme OF is the furthest unmitigated eligible OF at the origin and shifts to the next such OF when mitigated;
 - [SOURCE_DIRECT] SMT and OF remain distinct ontology classes.
@@ -336,7 +337,7 @@ Required outcome:
 Canonicalize the three source-defined countertrend scenarios as composition contracts without redefining their underlying structural semantics.
 
 Required outcome:
-- [SOURCE_COMPOSED] Internal Structure Toward Inducement Takeout consumes the prevailing HTF context, active IDM, LTF internal structure, and pre-IDM SMT exclusion;
+- [SOURCE_COMPOSED] Internal Structure Toward Inducement Takeout consumes the prevailing HTF context, active IDM, LTF internal structure, and ordinary pre-takeout SMT exclusion;
 - [SOURCE_COMPOSED] Inducement Liquidity Run consumes IDM_TAKEN and permits continued delivery toward additional canonical liquidity/POI before reversal;
 - [SOURCE_COMPOSED] Core Liquidity Sweep Failure / POI Failure consumes initial liquidity interaction, reaction failure, deeper canonical POI/core-liquidity delivery, and the existing CHoCH route when its prerequisites pass;
 - [SOURCE_COMPOSED] countertrend scenarios use existing entry modules and target/risk policies;
