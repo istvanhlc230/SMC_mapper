@@ -1833,6 +1833,7 @@ At minimum, the finished mapper implementation must have focused tests covering:
 - independent HTF/LTF ranges and HTF_CONTEXT_UNAVAILABLE behavior;
 - point-in-time HTF context, proving later HTF events do not reinterpret earlier LTF events;
 - bootstrap versus incremental resume from last_processed_candle_time;
+- two-timeframe incremental overlap includes an HTF candle that starts before but completes after the entry-timeframe checkpoint, without duplicating previously incorporated structural events;
 - deterministic Dealing Range identity/history reconciliation and history_no retention;
 - canonical POI lifecycle pass-through without introducing mapper-specific lifecycle states;
 - POI volume provenance and branch separation for NONE/OHLC/ORDERFLOW/BOTH;
