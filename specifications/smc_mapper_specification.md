@@ -743,7 +743,7 @@ Options:
       Show this help message and exit.
 ```
 
-For every invocation other than `--help`, the Mapper reads one complete machine-readable Market Data CSV stream from STDIN. Empty input, malformed protocol, unexpected timeframe rows, incomplete/current rows, or a symbol/timeframe/range mismatch is an explicit input failure. The Mapper never launches `market_data.py` and never opens `<SYMBOL>_marketdata.json`.
+For every invocation other than `--help`, the Mapper reads one complete machine-readable Market Data CSV stream from STDIN. Empty input, malformed protocol, unexpected timeframe rows, incomplete/current rows, or a timeframe/range mismatch is an explicit input failure. Because the CSV rows do not repeat the symbol, the Monitor/orchestrator must guarantee that the supplied stream was acquired for the same symbol as the Mapper's `--symbol` argument. The Mapper never launches `market_data.py` and never opens `<SYMBOL>_marketdata.json`.
 
 A direct shell invocation may connect the processes with a pipe:
 
