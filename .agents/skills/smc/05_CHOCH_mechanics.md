@@ -10,7 +10,7 @@
 
 ### Structural namespace boundary
 
-CHoCH is a structural lifecycle transition, not a synonym for every break. Its governing reference may be a Major/External protected boundary or, under the canonical LTF Structural Glitch context, the latest valid LTF pullback/IDM reference.
+CHoCH is a structural lifecycle transition, not a synonym for every break. Its governing reference may be a Major/External protected boundary or, under the canonical LTF-CHoCH Context After HTF Interaction, the latest valid LTF pullback/IDM reference.
 
 The LTF route does not rename or promote that Minor reference into Major Structure. Break mode is determined by the active IDM provenance and the applicable CHoCH gate.
 
@@ -45,7 +45,7 @@ The ordinary CHoCH reference object is the active Dealing Range's **Protected Op
 - Bullish lifecycle → Protected Swing Low.
 - Bearish lifecycle → Protected Swing High.
 
-Minor Structure, arbitrary local highs/lows, IDM levels, liquidity nodes, and continuation CONFIRMED_STRUCTURAL_SWING cannot independently create CHoCH **on the ordinary external-boundary route**. The canonical LTF Structural Glitch is the explicit exception: while that context is active, the most recently formed valid LTF pullback / active LTF IDM reference temporarily becomes the governing CHoCH reference under §3.5.3A. This is reference substitution, not promotion of the Minor object into Major Structure.
+Minor Structure, arbitrary local highs/lows, IDM levels, liquidity nodes, and continuation CONFIRMED_STRUCTURAL_SWING cannot independently create CHoCH **on the ordinary external-boundary route**. The canonical LTF-CHoCH Context After HTF Interaction is the explicit exception: while that context is active, the most recently formed valid LTF pullback / active LTF IDM reference temporarily becomes the governing CHoCH reference under §3.5.3A. This is reference substitution, not promotion of the Minor object into Major Structure.
 
 ```text
 ORDINARY ROUTE
@@ -53,7 +53,7 @@ Protected Opposing Structural Extreme
         ↓
 CHoCH Physical-Break Gate
 
-LTF STRUCTURAL GLITCH
+LTF-CHOCH CONTEXT AFTER HTF INTERACTION
 Most Recent Valid LTF Pullback / Active LTF IDM
         ↓
 CHoCH Physical-Break Gate
@@ -61,7 +61,7 @@ CHoCH Physical-Break Gate
 
 A physical violation only opens the CHoCH classification gate; it does not itself establish `CHoCH_CONFIRMED`.
 
-**Bootstrap exclusion and precedence:** `BOOTSTRAP_ORIGIN_ANCHOR` is not an eligible CHoCH reference. When `ACTIVE_FIRST_BOS_BOOTSTRAP = TRUE` for the current mapping domain, physical breach of that initialization anchor is classified first as `BOOTSTRAP_ANCHOR_BREAK → BOOTSTRAP_REVERSAL`, not as `EXT_OPP_BREAK`, `CHoCH_ELIGIBLE`, or `CHoCH_CONFIRMED`, regardless of whether the runtime state is `BOOTSTRAP`, `CONFIRMATION_LOCKED`, or `POST_CHOCH`. This bootstrap preclassification has precedence over the normal CHoCH classifier for that mapping domain. An independently scoped LTF Structural Glitch context remains governed by §3.5.3A in its own applicable mapping context, but it cannot reinterpret the bootstrap anchor itself as a CHoCH boundary. The bootstrap reversal only changes the active mapping lineage; it does not manufacture structural state.
+**Bootstrap exclusion and precedence:** `BOOTSTRAP_ORIGIN_ANCHOR` is not an eligible CHoCH reference. When `ACTIVE_FIRST_BOS_BOOTSTRAP = TRUE` for the current mapping domain, physical breach of that initialization anchor is classified first as `BOOTSTRAP_ANCHOR_BREAK → BOOTSTRAP_REVERSAL`, not as `EXT_OPP_BREAK`, `CHoCH_ELIGIBLE`, or `CHoCH_CONFIRMED`, regardless of whether the runtime state is `BOOTSTRAP`, `CONFIRMATION_LOCKED`, or `POST_CHOCH`. This bootstrap preclassification has precedence over the normal CHoCH classifier for that mapping domain. An independently scoped LTF-CHoCH Context After HTF Interaction remains governed by §3.5.3A in its own applicable mapping context, but it cannot reinterpret the bootstrap anchor itself as a CHoCH boundary. The bootstrap reversal only changes the active mapping lineage; it does not manufacture structural state.
 
 ### 3.5.2 — Opposing Boundary Break: Physical Threshold
 
@@ -175,9 +175,9 @@ The classification must evaluate two distinct facts:
 
 The presence of a Major IDM somewhere in the LTF range does **not**, by itself, prove that the tested LTF reference carries Major IDM provenance. Conversely, a distinct LTF reference must not be assumed merely because its label differs; its level identity and provenance must be deterministically established.
 
-#### LTF Structural Glitch — reference substitution and IDM-dependent break mode
+#### Valid-Pullback Reference Substitution — IDM-Dependent Break Mode
 
-The 2026 True SMC source explicitly describes a **small glitch in the structure cycle** after price has mitigated a higher-timeframe valid reversal zone / POI. In that context, the LTF CHoCH is not delayed until the ordinary LTF external boundary is broken. Instead, the **most recently formed valid LTF pullback / its inducement** becomes the operative CHoCH reference.
+The 2026 True SMC source uses the informal phrase **“small glitch in the structure cycle”** for the behavior that can follow mitigation of a higher-timeframe valid reversal zone / POI; that phrase is source wording, not the canonical name. The canonical context is **LTF-CHoCH Context After HTF Interaction**, and its reference-selection mechanism is **Valid-Pullback Reference Substitution**. In this context, the LTF CHoCH is not delayed until the ordinary LTF external boundary is broken. Instead, the **most recently formed valid LTF pullback / its inducement** becomes the operative CHoCH reference.
 
 Source evidence: `truesmc2026.txt`, Part 5 / lower-timeframe execution example, approximately 00:08:47–00:10:36 and again 00:13:13–00:13:31.
 
@@ -195,7 +195,7 @@ Bullish HTF context / bearish LTF reversal:
 ```text
 HTF POI / CORE-LIQUIDITY INTERACTION
         ↓
-LTF STRUCTURAL GLITCH
+LTF-CHOCH CONTEXT AFTER HTF INTERACTION
         ↓
 MOST RECENT VALID LTF PULLBACK / IDM
         ↓
@@ -240,7 +240,7 @@ LTF VALID PULLBACK ≠ CHoCH
 LTF INDUCEMENT SWEEP ≠ CHoCH
 LTF CHoCH CONTEXT ≠ NEW LIFECYCLE STATE
 LTF CHoCH REFERENCE IS NOT PROMOTED TO MAJOR_IDM
-LTF STRUCTURAL GLITCH ≠ UNIVERSAL BODY-CLOSE RULE
+LTF-CHOCH CONTEXT AFTER HTF INTERACTION ≠ UNIVERSAL BODY-CLOSE RULE
 LTF CHoCH CONFIRMATION MODE = IDM-TYPE DEPENDENT
 ```
 ### 3.5.4 — Major IDM / CHoCH interaction
