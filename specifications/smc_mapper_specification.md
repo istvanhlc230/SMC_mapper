@@ -1743,12 +1743,13 @@ This function is downstream of canonical POI formation and lifecycle. It cannot 
 
 ## 15.7 Entrypoint
 
-The root `smc_mapper.py` contains only the executable guard and calls the package-owned run path.
+Owner modules:
 
-    run(request) -> exit_status
-    main(argv) -> exit_status
+- `SMC_MAPPER/cli.py` owns `main(argv) -> exit_status`: parse/validate the CLI request, read the supplied machine protocol from STDIN, and call the processing entry point.
+- `SMC_MAPPER/processor.py` owns `run(request, market_data_stream) -> exit_status`: validate the supplied stream, load the selected analysis state, process, and persist.
+- The root `smc_mapper.py` contains only the import of `SMC_MAPPER.cli.main` and the executable guard.
 
-Normal execution emits no human-readable status text; market-data input is consumed from STDIN as the exact machine protocol captured from Market Data STDOUT by the Monitor/orchestrator. Mapper diagnostics are emitted only on STDERR according to Section 12.
+Normal execution emits no human-readable status text; market-data input is consumed from STDIN as the exact analysis-scoped machine protocol captured from Market Data STDOUT by the Monitor/orchestrator. Mapper diagnostics are emitted only on STDERR according to Section 12.
 
 ---
 
