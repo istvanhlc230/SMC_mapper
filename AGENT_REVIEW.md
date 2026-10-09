@@ -1,3 +1,31 @@
+# Calendar / Market Data CI regression repair — 2026-10-09
+
+## Findings and fixes
+
+### Calendar — sparse event record crashed symbol filtering
+
+**Root cause:** `CALENDAR/domain.py::filter_events_for_symbol()` unconditionally indexed `event["details"]`. The ongoing-event contract test supplies compact event observations without `details`, so filtering failed with `KeyError: 'details'` before testing the event's active window.
+
+**Fix:** The filter now reads `details` defensively, obtains `currency` only when details is a dictionary, and supports an exact-symbol/currency fallback for compact records with missing currency metadata. Yahoo news symbol comparison also uses a safe lookup. Canonical persisted records still pass through strict schema validation; this change prevents a query helper from crashing on compact observations.
+
+**Follow-on CI finding:** Once the KeyError was fixed, Calendar run #763 exposed a contradictory assertion in `.github/workflows/calendar.yml`. An older test required `SYMBOL current refresh` to be rejected, while a later test in the same workflow correctly requires it to be accepted. The current Calendar specification §3.4 and the latest explicit project rule allow `current refresh` as the sole refresh form among `current/latest/next/prev/news`. The stale assertion was replaced with checks that plain `current` parses as a non-refresh lookup; the positive `current refresh` regression remains in the workflow. This is a test-contract correction, not a relaxation of runtime rules.
+
+### Market Data — open-start range bypassed --lastclosed exclusion
+
+**Root cause:** `MARKET_DATA/cli.py::validate_request()` checked only whether `start_time` was set. Open-start `--range -END` is represented by `start_time=None` and `end_time` set, so the incompatible `--lastclosed + --range -END` request passed the guard.
+
+**Fix:** The exclusion now checks both interval boundaries. This implements the existing Market Data specification §5.2 contract that `--lastclosed` is mutually exclusive with every historical range, including open-start forms.
+
+## Validation status
+
+- Market Data Python tests **#378: PASS** after the implementation fix.
+- Calendar Python tests **#763: FAILED** after the KeyError fix at the stale contradictory `current refresh` assertion; that assertion has now been corrected on the branch and the workflow is being rerun.
+- Dedicated local test execution was not available from this connected editing environment. Final acceptance depends on the latest GitHub Actions results.
+- Changed implementation files: `CALENDAR/domain.py`, `MARKET_DATA/cli.py`.
+- Changed test contract: `.github/workflows/calendar.yml`.
+
+---
+
 # POI Identification Secret lifecycle reconciliation — 2026-10-09
 
 ## Audit result
