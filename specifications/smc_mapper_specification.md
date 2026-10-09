@@ -1480,26 +1480,57 @@ Implementation code must be written for human readability, maintenance, and cros
 
 # 14. IMPLEMENTATION ARCHITECTURE AND MODULE CONTRACT
 
-## 14.1 V1 module boundary
+## 14.1 V1 executable and internal package
 
-V1 is implemented as one standalone executable module:
+V1 exposes one root executable entry point, `smc_mapper.py`. The implementation is split into focused Python modules under `SMC_MAPPER/`; canonical layer implementations must not be collapsed into one large script.
 
-    smc_mapper.py
+Required source layout:
 
-The module may later be split internally, but the following ownership boundaries must remain stable:
+```text
+smc_mapper.py
+SMC_MAPPER/
+    __init__.py
+    models.py
+    cli.py
+    market_data_input.py
+    identity.py
+    layer1_micro_structure.py
+    layer2_minor_structure.py
+    layer3_structural_semantics.py
+    layer4_bos.py
+    layer5_choch.py
+    layer6_execution_poi.py
+    htf_ltf_synchronization.py
+    dealing_range_history.py
+    volume_analytics.py
+    processor.py
+    persistence.py
+```
 
-1. CLI/input parsing
-2. analysis identity and configuration resolution
-3. market-data machine-stream parsing/validation
-4. coverage and analysis-window selection
-5. synchronized HTF/LTF orchestration
-6. canonical SMC processing
-7. canonical Dealing Range / POI state reconciliation
-8. optional POI volume enrichment
-9. structures JSON persistence
-10. process entrypoint and diagnostics
+Module responsibilities:
 
-The mapper must not import or runtime-call market_data.py, smc_monitor.py, smc_htf_ltf_monitor.py, smc_analyzer.py, or legacy engine modules.
+| Module | Sole responsibility |
+|---|---|
+| `smc_mapper.py` | Thin executable entry point; calls the package CLI/run path and returns its exit status. |
+| `models.py` | Explicit cross-layer candle, request, analysis identity/state, structural-state, and persistence DTOs; no canonical decision logic. |
+| `cli.py` | Mapper argument parsing and request validation; no file/network/process I/O. |
+| `market_data_input.py` | Parse and validate the fixed Market Data CSV STDIN protocol; no provider or JSON-store access. |
+| `identity.py` | Resolve analysis mode, normalized UTC boundaries, deterministic analysis key, and unambiguous resume selection. |
+| `layer1_micro_structure.py` | Implement only canonical Layer-1 candle/micro-structure semantics from the skill. |
+| `layer2_minor_structure.py` | Implement only canonical Layer-2 pullback, verified-extreme, and Minor IDM semantics from the skill. |
+| `layer3_structural_semantics.py` | Implement only canonical Layer-3 structural lifecycle, Major IDM, swing promotion, and retracement qualification semantics from the skill. |
+| `layer4_bos.py` | Implement only canonical Layer-4 BOS mechanics and consume Layer-3-owned state. |
+| `layer5_choch.py` | Implement only canonical Layer-5 CHoCH mechanics and tested-level provenance rules. |
+| `layer6_execution_poi.py` | Implement only canonical Layer-6 POI/OF/OB/RB, mitigation, lifecycle, and execution-eligibility semantics. |
+| `htf_ltf_synchronization.py` | Synchronize independent timeframe streams and expose only point-in-time HTF context to LTF processing. |
+| `dealing_range_history.py` | Reconcile mapper-owned Dealing Range lifecycle records and apply symbol-configured storage retention without changing canonical state. |
+| `volume_analytics.py` | Calculate optional POI-scoped OHLC/orderflow analytics after canonical POI resolution; never feed results back into structure. |
+| `processor.py` | Orchestrate chronological candle processing and cross-layer state flow; it must not redefine layer semantics. |
+| `persistence.py` | Load/validate/serialize/atomically save Structures JSON and commit the checkpoint with the same transaction. |
+
+Layer 7 runtime target/RR policy and monitor alert evaluation are not Mapper modules. The Mapper may preserve canonical structural/target-reference facts needed downstream, but it does not resolve runtime targets, apply RR policy, or emit alerts. Layer-8 state/observability requirements are implemented at the relevant module boundaries without creating a competing semantic layer.
+
+The layer modules are new project components, not legacy `*_engine.py` artifacts. The finished product must not import or depend on `smc_htf_ltf_monitor.py`, `smc_analyzer.py`, or legacy engine/test files.
 
 The Monitor launches Market Data and Mapper as separate processes. It passes the validated Market Data machine-readable STDOUT to Mapper STDIN; Mapper processes only records marked `completed=1`. Mapper does not spawn Market Data itself.
 
@@ -1507,7 +1538,20 @@ The Monitor launches Market Data and Mapper as separate processes. It passes the
 
 The implementation dependency direction is:
 
-    CLI + STDIN protocol -> identity -> coverage/window selection -> canonical processing -> enrichment -> persistence -> checkpoint
+```text
+smc_mapper.py
+  -> SMC_MAPPER.cli
+      -> SMC_MAPPER.identity
+      -> SMC_MAPPER.market_data_input
+      -> SMC_MAPPER.processor
+           -> Layer 1 -> Layer 2 -> Layer 3 -> Layer 4 / Layer 5 -> Layer 6
+           -> HTF/LTF synchronization
+           -> Dealing Range history reconciliation
+           -> optional volume analytics (downstream-only)
+      -> SMC_MAPPER.persistence
+```
+
+This diagram expresses module responsibility, not a license to bypass canonical state prerequisites. The exact layer-to-layer semantic dependencies remain those defined by `.agents/skills/smc/`. Persistence and optional analytics must not feed decisions backward into canonical layers.
 
 Canonical SMC logic must not depend on:
 
@@ -1674,7 +1718,7 @@ Persistence helpers may translate domain objects to/from plain Python dictionari
     process_analysis(analysis, htf_series, ltf_series) -> changed
     process_candle(analysis, candle, htf_context) -> changed
 
-These are orchestration boundaries. They must delegate semantic decisions to the canonical SMC skill implementation rather than create mapper-specific substitutes for BOS, CHoCH, IDM, retracement qualification, Dealing Range, or POI rules.
+These are orchestration boundaries. The canonical skill is the normative documentation authority, not an importable runtime library. The Layer-1-to-Layer-6 modules implement its rules in executable form and must not create mapper-specific substitutes for BOS, CHoCH, IDM, retracement qualification, Dealing Range, or POI rules. The processor sequences those implementations but does not redefine their semantics.
 
 ## 15.6 POI enrichment
 
@@ -1780,7 +1824,8 @@ At minimum, the finished mapper implementation must have focused tests covering:
 - deterministic OHLC directional-volume aggregation and zero-volume behavior;
 - structures JSON atomic persistence and checkpoint ordering;
 - MQL-portable domain-state behavior independent of Python-specific collection mechanics;
-- absence of runtime/import dependencies on legacy modules and Market Data/Monitor modules.
+- absence of runtime/import dependencies on legacy modules and Market Data/Monitor modules;
+- canonical Layer-1-to-Layer-6 behavior is implemented in separate modules with the ownership defined in §14.1, and no layer module bypasses another layer's canonical prerequisite/state contract.
 
 Definition of done:
 
