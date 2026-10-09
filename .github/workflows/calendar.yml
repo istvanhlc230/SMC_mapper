@@ -1104,7 +1104,7 @@ jobs:
               out = io.StringIO()
               with contextlib.redirect_stdout(out):
                   assert calendar.run_query("EURUSD", "next", cleartext=True) == 0 # 14. cleartext produces output
-              assert "Next USD" in out.getvalue()
+              assert "Merged Next" in out.getvalue()
               assert not acquired_calls # 13. next does not trigger acquisition
 
               out = io.StringIO()
