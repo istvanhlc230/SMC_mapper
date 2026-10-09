@@ -1,5 +1,9 @@
 # Hybrid Decisional OF/OB and Origin OB fallback clarification — 2026-10-09
 
+**Final static consistency audit: PASS** (all targeted cross-document checks passed; no known contradictory normative statements remain). **Mapper/Monitor runtime POI behavior: NOT VERIFIED.**
+
+The preceding content head 41fac551f0bb94556392e7665676410af88594d6 passed Calendar Python tests #777 and Market Data Python tests #392. This review-record commit will become the new PR head, so its newly triggered CI runs must be checked separately.
+
 ## Clarified canonical contract
 
 - Rule of Two limits the dealing range to at most two independent structural slots: Decisional and Extreme. It does not limit the chart to two visible rectangles.
