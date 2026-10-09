@@ -1,3 +1,24 @@
+# Hybrid Decisional OF/OB and Origin OB fallback clarification — 2026-10-09
+
+## Clarified canonical contract
+
+- Rule of Two limits the dealing range to at most two independent structural slots: Decisional and Extreme. It does not limit the chart to two visible rectangles.
+- A broad Decisional OF and its contained Decisional OB refinement share one Decisional slot. Both geometries may be shown alongside the Extreme zone without declaring three independent targets.
+- Dual execution: if the parent Decisional OF is canonically mitigated, gives a reaction, and that reaction fails before reaching the nested Decisional OB, the child OB remains valid, active, and independently executable only if its own OB pillars, own unmitigated state, causal BOS identity, active-IDM/takeout gate, and all other execution gates remain satisfied. Parent OF mitigation/failure must not automatically propagate to the child OB.
+- Origin OB is separate from nested Decisional refinement. It is the sequential last line of defense after the applicable Extreme path fails, its own validity including FVG/imbalance association remains satisfied, and all existing IDM/takeout and fallback activation gates pass. It is not a third independent simultaneous POI slot.
+- Valid Order Flow mitigation requires the canonical Valid Pullback in the governing timeframe and structural context. A touch or penetration is insufficient; no extra macro-only requirement is invented.
+- Source evidence is recorded in .agents/skills/smc/source_reconciliation.md. The exact dual-execution sequence is labeled as a project-canonical reconciliation, not falsely attributed as a verbatim transcript event.
+
+## Documentation/runtime boundary
+
+The skill, Mapper specification, Monitor consumer specification, countertrend composition, and source-reconciliation record now define parent/child slot mapping and sequential fallback. Runtime enforcement, chart representation, parent-to-child state propagation, and automated entry gating still require implementation verification; do not infer runtime PASS from normative alignment.
+
+## Calendar / Market Data validation
+
+The latest previously completed successful run pair was Calendar Python tests #769 and Market Data Python tests #384; both compilation and their unit/runtime contract steps passed on commit 9fbe0a32130582a18f668878b75cee566c50b7c1. The new POI documentation edits will trigger fresh CI and must be revalidated.
+
+---
+
 # Calendar / Market Data CI regression repair — 2026-10-09
 
 ## Findings and fixes
