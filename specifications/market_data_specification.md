@@ -2416,6 +2416,10 @@ test_decimal_persistence_is_plain_string
 test_decimal_persistence_round_half_even
 test_json_bounds_match_completed_series
 test_timeframe_update_has_no_direct_file_side_effect
+test_machine_csv_header_contains_volume_total_and_orderflow_fields
+test_machine_csv_preserves_volume_total_without_tick_real_inference
+test_machine_csv_emits_orderflow_only_as_a_complete_observed_pair
+test_machine_csv_keeps_unavailable_optional_volume_fields_empty
 ```
 
 Provider-dependent tests must use provider test doubles/mocks; core tests must not require live provider access. Core normalization, merge, retention and persistence tests must not require live provider access.
