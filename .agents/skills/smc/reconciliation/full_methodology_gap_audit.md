@@ -489,3 +489,51 @@ Canonical implementation rules:
 - `CHoCH_ELIGIBLE` remains distinct from `CHoCH_CONFIRMED`; eligibility never bypasses the complete CHoCH prerequisite gate.
 
 This clarification refines the provenance boundary in the prior LTF-CHoCH reconciliation; it does not change the ordinary external-boundary rule or create a new lifecycle state.
+
+
+## Current skill defragmentation and layer-by-layer verification — 2026-10-09
+
+### Corrections applied
+
+- `skill.md` is reduced to an index and semantic-owner map; methodology rules are not duplicated in the index.
+- Layer 2 heading numbering is sequential through its validation and precedence sections.
+- Layer 3 remains the sole semantic owner of Major IDM identity, provenance, lifecycle, `IDM_TAKEN`, and structural-candidate promotion.
+- Layer 4 BOS mechanics now consumes the Layer-3 Major IDM lifecycle instead of repeating that lifecycle. Its section numbering is sequential (`3.4.1`–`3.4.14`).
+- Layer 5 CHoCH mechanics now consumes Layer-3 IDM provenance and defines only the CHoCH-facing tested-level classification. The incorrect reference to the normal HTF external boundary was corrected to the normal LTF external boundary.
+- Layer 6 no longer repeats the Extreme POI Mitigation module or the detailed target/RR policy. It supplies canonical execution inputs and delegates stop/target/RR ownership to the appropriate downstream documents.
+- Layer 7's missing opening Markdown fence and non-sequential final heading number were corrected.
+- Layer 8's §46 material is now a compact interface/guard. The detailed CHoCH decision matrix is concentrated in §49.3; §49.6 is a short invariant guard rather than a second decision tree.
+- The stale runtime inventory was replaced by a verified current-tree status: the previously named structural runtime files are absent from current `main`; runtime-to-skill equivalence is therefore not claimed.
+- Repeated `3.14` audit addenda were renamed as distinct addenda.
+
+### Layer-by-layer acceptance matrix
+
+| Boundary | Result | Verified contract |
+|---|---|---|
+| Layer 1 → Layer 2 | PASS | Layer 1 provides OHLC observations and evidence boundaries; Layer 2 creates sequential pullback semantics. |
+| Layer 2 → Layer 3 | PASS | Valid pullback → verified extreme → pullback-derived liquidity reference → Minor IDM; Layer 3 consumes rather than redefines that chain. |
+| Layer 3 → Layer 4 | PASS | Layer 3 owns swing promotion, retracement qualification, and Major IDM; Layer 4 consumes stored qualification for BOS. |
+| Layer 3 / 5 CHoCH interaction | PASS | CHoCH uses the exact tested level's provenance; Major IDM wick = `MAJOR_IDM_SWEEP`; ambiguous provenance fails closed; eligibility does not equal confirmation. |
+| Layer 5 → Layer 6 | PASS | POI failure consumes confirmed CHoCH/control shift and does not manufacture a structural event. |
+| Layer 6 → Layer 7 | PASS | Entry authorization and structural/liquidity candidates flow downstream; stop, target-policy, RR, and position lifecycle ownership is downstream. |
+| Layer 7 → Platform | PASS | Trading/account policy and venue order/fill/position lifecycle remain separate. |
+| Canonical skill → implementation representation | PASS at documentation boundary | Layer 8 provides one detailed CHoCH decision matrix and cross-references semantic owners. Runtime implementation equivalence remains unverified because no current structural runtime entry point was identified. |
+
+### Automated documentation checks
+
+The 19 current SMC skill/reconciliation documents were fetched again after the edits. Checks performed:
+
+- No stale normative `LTF Structural Glitch` label remains in the inspected skill/reconciliation documents.
+- No duplicate Markdown heading text was found in the inspected documents.
+- Fenced code blocks are balanced in every inspected document.
+- Layer 2 and Layer 4 section-numbering gaps identified by this audit are fixed.
+- The Major IDM wick/CHoCH decision matrix in Layer 8 matches the Layer 5 tested-level provenance contract.
+- `REAL_MAJOR_IDM` / `FALLBACK_MAJOR_IDM` do not appear as live ontology classes in the Layer-4/Layer-5 rule-owner contracts.
+
+### Disposition
+
+**DOCUMENTATION DEF RAGMENTATION = PASS for the inspected SMC skill layer and ownership contracts.**
+
+**EXECUTABLE RUNTIME CONFORMANCE = NOT VERIFIED.** No Python runtime implementation or test suite was changed in this pass. Do not infer that runtime behavior matches the canonical skill until the current structural runtime entry point is identified and tested against these contracts.
+
+This audit is a documentation synchronization record. It does not add or change True SMC methodology rules.
