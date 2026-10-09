@@ -395,23 +395,33 @@ Model:
 ~~~python
 @dataclass(frozen=True)
 class MarketDataUpdatePlan:
+    analysis_key: str
     symbol: str
-    timeframe: str
+    timeframes: list[str]
     start_time: datetime | None
     end_time: datetime | None
-    last_candle_only: bool
-    live: bool
+    last_closed_only: bool
 ~~~
 
-Rules:
+Plan invariants:
+
+- one V1 plan belongs to one stored analysis identity;
+- `timeframes` contains exactly the selected analysis timeframe set: the one selected timeframe in single-timeframe mode, or both HTF and LTF in two-timeframe mode;
+- `last_closed_only=True` is a latest-completed-candle probe and requires both range boundaries to be null;
+- `last_closed_only=False` is a historical/range request and requires a resolved UTC range;
+- a current/in-progress snapshot is not requested through this plan; current market reference refresh uses the separate `refresh_current_market_view` path;
+- V1 does not coalesce different analysis plans into one Market Data output stream. This keeps each Mapper STDIN stream scoped to one symbol, one analysis timeframe set, and one requested range.
+
+Planning rules:
 
 - entry-timeframe coverage extends through all missing completed candles after the durable checkpoint;
-- two-timeframe analyses may require HTF updates;
+- a two-timeframe plan requests both HTF and LTF in one Market Data invocation;
+- where HTF and LTF require different historical coverage, the requested range starts at the earliest required boundary across the two feeds; the Mapper still treats each returned timeframe series independently and must not assume equal availability;
 - bootstrap uses the persisted `analysis_start` plus canonical warm-up needs;
-- current-price monitoring may request live current snapshots;
+- latest-completed probes may be used to determine whether a range update and Mapper invocation are necessary;
 - no provider-specific acquisition logic belongs here.
 
-Compatible requests may be grouped for efficiency. Incompatible ranges must be issued separately rather than being silently widened or narrowed.
+In V1, a plan is analysis-scoped and its output must contain exactly the timeframe set required by that analysis. Do not widen or combine requests from different analysis identities. A two-timeframe analysis may use one common requested range covering the union of its HTF/LTF coverage needs; actual returned availability remains independent by timeframe.
 
 ## 4.4 No-new-candle path
 
