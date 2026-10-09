@@ -162,19 +162,31 @@ ORDER_FLOW_CANDIDATE
 
 A physical touch or penetration alone does **not** confirm OF mitigation. The mitigation state is confirmed only through a canonical Valid Pullback interaction. If the interaction is not validated by a Valid Pullback, the OF remains unmitigated.
 
-### SMT / pre-inducement exclusion
+### SMT / pre-takeout exclusion and Origin OB reserve exception
 
-For the active dealing-range execution process, an Order Flow or equivalent formation that occurs **before the active inducement** is classified as an `SMT / INDUCEMENT_TRAP` observation and is not eligible to become a tradable OF.
+For the active dealing-range lineage, every **ordinary OF/OB formation created before the applicable active IDM is physically taken out (`IDM_TAKEN`)** is classified as an `SMT / INDUCEMENT_TRAP` observation. This includes an ordinary formation created before the active IDM formed and one created after IDM formation but before its physical takeout. Neither may be promoted into a tradable POI later in that same active lineage.
 
-Pre-inducement status is contextual to the active dealing range and inducement lifecycle. It must not be inferred from candle appearance alone.
+The source-defined `ORIGIN_ORDER_BLOCK` is the sole exception to this **formation-time classification gate**. It is a named latent reserve, not an ordinary pre-takeout OF/OB candidate: retain its identity and provenance as `ORIGIN_ORDER_BLOCK`, but do not make it active until its own canonical validity and fallback activation conditions are satisfied. This exception does not exempt its active use from the valid-active-IDM / `IDM_TAKEN` gate, and it does not permit any other historical candidate to be promoted.
+
+Trap status is contextual to the active dealing-range lineage and IDM lifecycle; it must not be inferred from candle appearance alone.
 
 ```text
-PRE-IDM FORMATION
-    ↓
+ORDINARY OF/OB FORMATION BEFORE IDM_TAKEN
+        ↓
 SMT / INDUCEMENT_TRAP
-    ↓
-NEVER A TRADABLE OF / POI IN THAT ACTIVE LINEAGE
+        ↓
+NON-TRADABLE FOR THE ENTIRE ACTIVE LINEAGE
+
+SOURCE-VALID ORIGIN_ORDER_BLOCK
+        ↓
+LATENT RESERVE — NOT A TRAP, NOT AN ACTIVE POI
+        ↓
+CANONICAL FALLBACK CONDITIONS SATISFIED
+        ↓
+MAY OCCUPY THE EXTREME POI SLOT
 ```
+
+Trap records may be retained for provenance, auditability, and historical context. They may also be displayed when useful, provided the trap/exclusion status is clear. They must never appear as active tradable POIs, authorize entries, or become tradable through retrospective promotion after `IDM_TAKEN`.
 
 This exclusion preserves the source-defined distinction between liquidity delivery toward inducement and post-inducement executable order flow.
 
@@ -198,15 +210,16 @@ POTENTIALLY TRADABLE POI
 
 Normative requirements:
 
-- Before a valid active IDM exists, OF/OB formations may be retained as observations or candidates for provenance, but they must not be designated, emitted, or consumed as tradable POIs and must not authorize an entry.
-- Any OF/OB formation that occurred before the applicable active IDM formed is an `SMT / INDUCEMENT_TRAP`; a later IDM takeout does not retroactively promote that pre-IDM formation into an eligible tradable POI in the same active dealing-range lineage.
-- After IDM formation but before its physical takeout, no OF/OB may be activated as a tradable POI and no trade may be authorized from it.
-- Only an OF/OB formation that occurs **after** the applicable active IDM has been physically taken out (`IDM_TAKEN`) may proceed through the remaining canonical eligibility checks. An OF/OB formed after IDM formation but before takeout remains non-tradable permanently within that active dealing-range lineage; the later takeout must not retroactively promote it. The takeout is necessary but not sufficient: it does not itself validate an OF/OB, create a POI, satisfy Rule of Two, or authorize entry.
-- The gate is satisfied only by the canonical `IDM_TAKEN` event for the applicable active IDM. A visual touch, an unrelated liquidity sweep, an inactive/historical IDM, or a merely inferred takeout is insufficient.
-- Candidate observation, OF/OB validation, active POI designation, and entry authorization are distinct decisions. Early observation or validation must never bypass the POI activation/trading gate.
-- If IDM identity, formation, active status, or takeout provenance is unresolved, execution must fail closed: no tradable OF/OB POI and no entry authorization.
+- Before a valid active IDM exists, ordinary OF/OB formations may be retained as observations and classified records for provenance, but they must not be designated as active tradable POIs or authorize an entry. The source-defined Origin OB may also be retained as a latent reserve, not as an active POI.
+- Every ordinary OF/OB formation created before the applicable active IDM formed is an `SMT / INDUCEMENT_TRAP` for that active dealing-range lineage; a later takeout never promotes it.
+- Every ordinary OF/OB formation created after IDM formation but before its physical takeout is also an `SMT / INDUCEMENT_TRAP` for that active lineage; it remains non-tradable permanently within that lineage after the later takeout.
+- Only an ordinary OF/OB formation created **after** the applicable active IDM has been physically taken out (`IDM_TAKEN`) may proceed through the remaining canonical eligibility checks. The takeout opens the validation path; it does not itself validate an OF/OB, create a POI, satisfy Rule of Two, or authorize entry.
+- **Origin Order Block exception:** a source-valid `ORIGIN_ORDER_BLOCK` may have formed before `IDM_TAKEN` without being classified as an ordinary SMT trap, but it must remain a latent reserve. It may become the applicable fallback execution location only after the active-IDM/takeout gate and the existing canonical Origin OB validity/fallback activation conditions are satisfied. When activated, it occupies the applicable Extreme POI slot; it is never a third active POI. No other historical OF/OB candidate receives this exception.
+- Trap records may be stored for provenance, auditability, and historical context, and may be displayed when useful if their trap/exclusion status is explicit. Storage or display does not make a trap active, authorize entry, or permit retrospective promotion.
+- The gate is satisfied only by the canonical `IDM_TAKEN` event for the applicable active IDM. A visual touch, unrelated liquidity sweep, inactive/historical IDM, or inferred takeout is insufficient.
+- Candidate observation, OF/OB validation, active POI designation, and entry authorization are distinct decisions. If required IDM identity, formation, status, or takeout provenance is unresolved, execution fails closed.
 
-This gate applies equally to `DECISIONAL_ORDER_FLOW`, `EXTREME_ORDER_FLOW`, `DECISIONAL_ORDER_BLOCK`, `EXTREME_ORDER_BLOCK`, and an `ORIGIN_ORDER_BLOCK` when considered for active tradable use. A latent reserve may be recorded as such, but it cannot be activated for trading before the gate passes.
+The active-use gate applies to `DECISIONAL_ORDER_FLOW`, `EXTREME_ORDER_FLOW`, `DECISIONAL_ORDER_BLOCK`, `EXTREME_ORDER_BLOCK`, and an activated `ORIGIN_ORDER_BLOCK`. The Origin OB exception changes only the formation-time eligibility rule for that named latent reserve; it does not permit premature activation or waive downstream canonical validation.
 
 ### Decisional Order Flow
 
@@ -742,14 +755,16 @@ An Engineering Liquidity sweep does not itself create an entry. With direct cand
 
 #### Module 4 — Extreme POI Mitigation entry
 
-The module must consume the global IDM formation-and-takeout gate defined in **“Mandatory IDM formation-and-takeout gate for every OF/OB POI”** above. The Extreme POI itself must have formed after the applicable active IDM was physically taken out (`IDM_TAKEN`); a pre-takeout candidate cannot be activated retrospectively.
+The module must consume the global IDM formation-and-takeout gate defined in **“Mandatory IDM formation-and-takeout gate for every OF/OB POI”** above. An **ordinary** Extreme OF/OB candidate must have formed after the applicable active IDM was physically taken out (`IDM_TAKEN`); a pre-takeout ordinary candidate cannot be activated retrospectively. The only formation-time exception is a pre-existing, canonically valid `ORIGIN_ORDER_BLOCK` latent reserve. It may enter this route only after the active-IDM/takeout gate and the existing Origin OB fallback conditions make it the applicable Extreme execution location. It then occupies the Extreme slot, not a third slot. Extreme execution failure remains distinct from the CHoCH-based `POI_FAILURE` lifecycle state.
 
 ```text
 VALID ACTIVE IDM FORMED
    ↓
 IDM_TAKEN
    ↓
-POST-TAKEOUT EXTREME POI FORMED + CANONICALLY VALIDATED
+ORDINARY POST-TAKEOUT EXTREME POI + CANONICAL VALIDATION
+   OR
+VALID LATENT ORIGIN OB + CANONICAL FALLBACK ACTIVATION
    ↓
 POI MITIGATION
    ↓
