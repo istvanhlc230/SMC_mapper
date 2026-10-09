@@ -45,11 +45,11 @@ These concepts may exist as structural observations, validators, liquidity, or h
 
 ### Rule of Two POIs (Execution Constraint)
 
-When an applicable Rule-of-Two dealing-range execution context exists, the active canonical tradable POI set has cardinality **1 to 2**:
+When an applicable Rule-of-Two dealing-range execution context exists, the active canonical tradable POI set has **at most two slots**:
 1. **Decisional POI** (must reside in Discount for Buys, Premium for Sells)
 2. **Extreme POI** (Extreme Order Flow / Extreme Order Block)
 
-If no valid canonical POI exists, the execution path fails closed with no executable POI / NO_EVIDENCE; no synthetic POI is created to satisfy the minimum.
+If no valid canonical POI exists for either slot, the executable POI set may be empty and execution fails closed with no executable POI / NO_EVIDENCE; no synthetic POI is created to fill a slot.
 
 ```text
 DECISIONAL POI
