@@ -455,7 +455,13 @@ def _resolve_impact(raw: Dict[str, Any]) -> str:
     """Normalize explicit ForexFactory impact metadata without title inference."""
     impact_text = ""
     for field_name in ("impactTitle", "impactName", "impact"):
-        candidate = str(raw.get(field_name, "")).strip()
+        raw_value = raw.get(field_name)
+        # Provider payloads commonly include null placeholders for fields
+        # that are not populated. Do not stringify None into the non-empty
+        # token "none", which would mask a valid impactClass fallback.
+        if raw_value is None:
+            continue
+        candidate = str(raw_value).strip()
         if candidate:
             impact_text = candidate.lower()
             break
