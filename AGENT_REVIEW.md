@@ -37,6 +37,15 @@ The audit checked the canonical execution rule, implementation mappings, counter
 
 **Static cross-document result: PASS** for the rules listed above. Historical audit entries below remain a review history, not normative methodology; this current entry records the reconciled contract.
 
+### Cross-scope CI signal observed on the audit head
+
+GitHub Actions associated with audit head `bf5bf37560b375cf4ea44183d1e04148b2e5d25e` reported two unrelated test-job failures:
+
+- **Calendar Python tests** (run #760): compilation passed, but the Calendar unit/runtime contract step failed with `KeyError: 'details'` in `CALENDAR/domain.py:648`, called from `filter_events_for_symbol()` during `query_ongoing_events()`.
+- **Market Data Python tests** (run #375): compilation passed, but the range-contract test failed at the assertion `lastclosed + open-start range must be rejected`. The log also reports `ERROR: future range start is not allowed: 2099.01.01-` immediately before the assertion.
+
+These test failures are outside the POI documentation change and no Calendar/Market Data runtime files were changed here. They leave the observed PR CI signal red and should not be treated as successful validation or as evidence about POI runtime behavior. They were not fixed because they are outside the requested scope.
+
 ### Remaining implementation gap / validation boundary
 
 This was a documentation audit on the PR branch. Runtime classification, serialization/persistence, chart/display labels, active POI-slot assignment, Origin OB fallback activation, and entry authorization were not verified by running the application or its tests in this pass. Do not infer runtime PASS from this documentation PASS. Follow-up implementation validation must verify that ordinary pre-takeout OF/OB traps stay non-tradable after takeout, stored/displayed traps retain explicit exclusion status, Origin OB activates only as the canonical Extreme fallback, no third active POI is emitted, and Extreme execution failure does not manufacture `POI_FAILURE`.
