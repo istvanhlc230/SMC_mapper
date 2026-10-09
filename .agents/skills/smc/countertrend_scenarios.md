@@ -10,6 +10,8 @@ Countertrend scenarios are not a fourth structural regime. They are execution sc
 
 All three scenarios must use existing canonical entry modules and must not create alternate IDM, POI, BOS, or CHoCH definitions.
 
+The canonical ordinary-OF/OB gate applies across these scenarios: an ordinary OF/OB formed before the applicable active IDM is physically taken out (`IDM_TAKEN`) is an `SMT / INDUCEMENT_TRAP`, whether it predates IDM formation or forms between IDM formation and takeout. A later takeout never promotes such a trap. Trap records may be retained for provenance and displayed with clear exclusion status, but may not become active tradable POIs or authorize entries. An already formed, source-valid Origin Order Block is the sole named reserve exception: it remains latent and can be used only as the canonical Extreme fallback after the IDM gate and existing Origin OB validity/fallback conditions are satisfied; it is not an extra Rule-of-Two slot. These scenarios consume that canonical Mapper decision and do not create a separate POI lifecycle.
+
 ## 2. Scenario CT1 — Internal Structure Toward Inducement Takeout
 
 Source concept:
@@ -27,7 +29,7 @@ ACTIVE INDUCEMENT EXISTS
         ↓
 LTF INTERNAL STRUCTURE DEVELOPS TOWARD IDM
         ↓
-PRE-IDM OF/OB
+ORDINARY OF/OB FORMED BEFORE IDM_TAKEN
         ↓
 SMT / INDUCEMENT-TRAP EXCLUSION
         ↓
@@ -135,7 +137,9 @@ The scenario can identify the source-defined destination class (e.g., inducement
 ```text
 COUNTERTREND SCENARIO ≠ NEW STRUCTURAL REGIME ENUM
 
-PRE-IDM OF/OB ≠ TRADABLE POI
+ORDINARY PRE-TAKEOUT OF/OB ≠ TRADABLE POI
+
+ORIGIN_ORDER_BLOCK RESERVE ≠ ACTIVE THIRD POI
 
 IDM_TAKEN ≠ AUTOMATIC COUNTERTREND ENTRY
 
