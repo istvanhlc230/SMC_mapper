@@ -38,25 +38,29 @@ Provider(s)
     v
 market_data.py (CLI)
     |
-    +----> internal persistence/cache
+    +----> internal <SYMBOL>_marketdata.json persistence
     |
-    +----> machine STDOUT (CSV-like candle stream)
+    +----> machine CSV STDOUT
                   |
+                  v
+          smc_monitor.py
+          validates/captures stream
+                  |
+                  | passes captured CSV as Mapper STDIN
                   v
              smc_mapper.py
                   |
-                  v
-       <SYMBOL>_structures.json
-                  |
-                  v
-             smc_monitor.py
+                  +----> <SYMBOL>_structures.json
+                              |
+                              v
+                        smc_monitor.py
 ```
 
 The machine-readable candle stream is the Mapper's market-data portability boundary. The Mapper must not know whether the Market Data process obtained data from LSE, a future MT4/MT5 adapter, a broker, replay data, cache, or another provider.
 
 The persisted market-data JSON is an internal Market Data storage format. It is not the Mapper process-input contract and must not be opened, parsed, or depended on by the Mapper.
 
-The Mapper must never call a concrete provider, perform provider-specific API requests, depend on provider-specific response formats, request market data from the monitor, or import `market_data.py` as a Python data API.
+The Mapper must never call a concrete provider, perform provider-specific API requests, depend on provider-specific response formats, dynamically request additional data during canonical processing, or import `market_data.py` as a Python data API. It consumes only the validated input stream supplied by the orchestrator for that invocation.
 
 V1 implements the process boundary with Python `market_data.py`. Future platform implementations may provide the same machine-readable candle contract without changing Mapper/SMC logic. MT4/MT5 are portability targets only; no MT4/MT5 implementation is part of V1.
 
@@ -873,7 +877,7 @@ The Monitor/orchestrator invokes the Market Data CLI for the required bootstrap 
 
 For incremental execution after a valid persisted checkpoint, the Monitor/orchestrator invokes the Market Data CLI for only the subsequently completed entry-timeframe range after the checkpoint, in chronological order, allows Market Data to update its internal persistence, then passes the resulting machine-output stream to the Mapper through STDIN as defined by §10.1.
 
-The mapper does not obtain market data from the monitor and does not access a concrete provider.
+The mapper obtains its market-data stream from the Monitor/orchestrator through STDIN and does not access a concrete provider.
 
 ### Two-timeframe LTF bootstrap
 
@@ -881,7 +885,7 @@ In two-timeframe analysis, the mapper establishes an LTF bootstrap coverage refe
 
 When a confirmed HTF Dealing Range exists, the applicable HTF Protected Structural Extreme is the preferred LTF bootstrap coverage reference. This reference determines the minimum historical LTF coverage needed for deterministic structural buildup. It is a data-coverage/reference point only; it is not an LTF structural start and does not create or promote any LTF structure.
 
-When LTF bootstrap is required, the monitor/orchestrator invokes the Market Data CLI once for one deterministic LTF range covering the anchor through the activation/current boundary, subject to any additional LTF warm-up required by the canonical LTF rules, updates internal Market Data persistence and then invokes the mapper against the returned machine-output range.
+When LTF bootstrap is required, the Monitor/orchestrator invokes the Market Data CLI once for one deterministic LTF range covering the anchor through the activation/current boundary, subject to any additional LTF warm-up required by the canonical LTF rules, allows Market Data to update its internal persistence, then passes the returned machine-output range to the Mapper through STDIN.
 
 If the requested LTF coverage begins later than the anchor because the source has no completed LTF data at or after the requested anchor, the mapper uses the first actually available completed LTF candle after the reference as the effective LTF bootstrap start. No attempt is made by the mapper to access the provider directly.
 
