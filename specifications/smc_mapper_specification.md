@@ -1544,14 +1544,17 @@ smc_mapper.py
       -> SMC_MAPPER.identity
       -> SMC_MAPPER.market_data_input
       -> SMC_MAPPER.processor
-           -> Layer 1 -> Layer 2 -> Layer 3 -> Layer 4 / Layer 5 -> Layer 6
-           -> HTF/LTF synchronization
+           -> Layer 1 -> Layer 2 -> Layer 3
+                -> Layer 4 BOS
+                -> Layer 5 CHoCH (with applicable point-in-time HTF context)
+                -> Layer 6 POI/execution consumes the applicable canonical outcomes
+           -> HTF/LTF synchronization supplies point-in-time context
            -> Dealing Range history reconciliation
            -> optional volume analytics (downstream-only)
       -> SMC_MAPPER.persistence
 ```
 
-This diagram expresses module responsibility, not a license to bypass canonical state prerequisites. The exact layer-to-layer semantic dependencies remain those defined by `.agents/skills/smc/`. Persistence and optional analytics must not feed decisions backward into canonical layers.
+This diagram expresses module responsibility, not a license to bypass canonical state prerequisites. The exact layer-to-layer semantic dependencies remain those defined by `.agents/skills/smc/`. Layer 4 and Layer 5 consume Layer-3-owned structural state without redefining it; Layer 6 consumes canonical structural outcomes without creating them. Persistence and optional analytics must not feed decisions backward into canonical layers.
 
 Canonical SMC logic must not depend on:
 
@@ -1662,6 +1665,8 @@ The following function boundaries are implementation contracts. Canonical layer-
 
 ## 15.1 CLI and validation
 
+Owner module: `SMC_MAPPER/cli.py`.
+
     build_argument_parser() -> parser
     parse_mapper_request(argv) -> MapperRequest
     validate_mapper_request(request) -> success/failure
@@ -1671,12 +1676,16 @@ These functions validate mapper CLI semantics only. They must not execute canoni
 
 ## 15.2 Analysis identity
 
+Owner module: `SMC_MAPPER/identity.py`.
+
     build_analysis_key(identity) -> string
     resolve_analysis_identity(request, structures, market_data) -> AnalysisIdentity
 
 Identity resolution must remain deterministic. `build_analysis_key` uses the normalized timeframe configuration plus persisted `analysis_start`. It must never use current wall-clock time. When no explicit start was supplied, `analysis_start` is first resolved from persisted completed data, then the key is built from that resolved boundary.
 
 ## 15.3 Market-data boundary
+
+Owner module: `SMC_MAPPER/market_data_input.py` for protocol parsing/validation; `SMC_MAPPER/identity.py` for analysis identity and window-boundary normalization.
 
     get_symbol_data_directory(symbol, data_directory) -> Path
     get_structures_path(symbol, data_directory) -> Path
@@ -1705,6 +1714,8 @@ At this boundary:
 
 ## 15.4 Structures persistence
 
+Owner module: `SMC_MAPPER/persistence.py`.
+
     create_empty_structures(symbol, history_no) -> StructuresDocument
     load_structures(path, symbol) -> StructuresDocument
     save_structures_atomic(path, structures) -> success/failure
@@ -1715,6 +1726,8 @@ Persistence helpers may translate domain objects to/from plain Python dictionari
 
 ## 15.5 Canonical processing
 
+Owner module: `SMC_MAPPER/processor.py` for orchestration; semantic decisions belong to the corresponding `layer*_*.py` owner module.
+
     process_analysis(analysis, htf_series, ltf_series) -> changed
     process_candle(analysis, candle, htf_context) -> changed
 
@@ -1722,11 +1735,15 @@ These are orchestration boundaries. The canonical skill is the normative documen
 
 ## 15.6 POI enrichment
 
+Owner module: `SMC_MAPPER/volume_analytics.py`.
+
     enrich_poi_volume(poi, source_candles, volume_method) -> changed
 
 This function is downstream of canonical POI formation and lifecycle. It cannot create, remove, retype, invalidate, or revive a canonical POI.
 
 ## 15.7 Entrypoint
+
+The root `smc_mapper.py` contains only the executable guard and calls the package-owned run path.
 
     run(request) -> exit_status
     main(argv) -> exit_status
