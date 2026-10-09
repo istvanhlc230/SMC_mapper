@@ -211,25 +211,10 @@ Layer 4 consumes these upstream outputs. It does not know or independently evalu
 Those criteria are owned exclusively by Layer 3.
 ### 3.4.7 — Major IDM interaction
 
-Major IDM is a liquidity reference, not a continuation-BOS reference. If the tested external level carries Major IDM provenance, a wick takeout is classified as `MAJOR_IDM_SWEEP`, not as a continuation BOS.
+Major IDM is a liquidity reference, not a continuation-BOS reference. When the exact tested external level carries active Major IDM provenance, a wick takeout is classified as `MAJOR_IDM_SWEEP`, not continuation `VALID_BOS`.
 
-```text
-MAJOR_IDM
-+
-WICK BREACH
-    ↓
-MAJOR_IDM_SWEEP
-```
+The sweep does not roll the Trading Range or lock the Protected Structural Extreme. The related `IDM_TAKEN` and swing-candidate consequences are owned by `03_structural_semantic_authority.md` §3.2.3. CHoCH-facing wick/body classification is owned by `05_CHOCH_mechanics.md` §§3.5.3–3.5.4. Layer 4 consumes these semantic outputs and must not recreate IDM identity or lifecycle.
 
-The sweep:
-- is not `VALID_BOS`;
-- does not roll the Trading Range;
-- does not lock the Protected Structural Extreme;
-- **does satisfy `IDM_TAKEN` when the active Major IDM reference is physically penetrated**;
-- **the resulting `IDM_TAKEN` establishes the associated swing-point candidate / provisional structural extreme; macro retracement qualification is required before `CONFIRMED_STRUCTURAL_SWING` is established**;
-- does not promote the swing candidate to `CONFIRMED_STRUCTURAL_SWING` until the applicable macro retracement qualification succeeds. That qualification is then the stored prerequisite for continuation `VALID_BOS`.
-
-Major IDM remains a single canonical IDM class. It may be pullback-derived or the prior protected external boundary when only Minor IDM exists.
 ### 3.4.8 — Protected Structural Extreme Lock
 
 The corrective extreme remains dynamic until `VALID_BOS`.
@@ -295,25 +280,9 @@ Post-BOS retracement and liquidity collection belong to the new range lifecycle.
 
 ### 3.4.10 — Post-BOS Major IDM continuity
 
-After `VALID_BOS`, the new structural lifecycle consumes Layer-2 valid-pullback state directly.
+Post-BOS Major IDM establishment, active-reference continuity, and supersession are owned by `03_structural_semantic_authority.md` §3.2.3. Layer 4 consumes the qualified `MAJOR_IDM` reference and does not independently create or replace it.
 
-```text
-VALID_BOS
-    ↓
-NEW STRUCTURAL LIFECYCLE
-    ↓
-POST-BOS LAYER-2 VALID PULLBACK
-    ↓
-VERIFIED PULLBACK EXTREME
-    ↓
-MAJOR IDM ACTIVE
-```
-
-Every completed post-BOS Layer-2 Candle-Level Valid Pullback → Verified Pullback Extreme establishes a Major IDM event. The newest such event is the active Major IDM; earlier Major IDM events remain historical and immutable.
-
-If no post-BOS valid pullback / verified pullback extreme exists, the prior protected low in a bullish range, or prior protected high in a bearish range, remains the Major IDM reference.
-
-`NEW_SVP` does not itself equal `MAJOR_IDM`; the Layer-2 valid-pullback / verified-extreme state is the qualification chain.
+Implementation guard: `NEW_SVP` alone does not establish `MAJOR_IDM`; the owner-defined Layer-2 valid-pullback / verified-extreme handoff is required.
 
 ### 3.4.11 — POI Lifecycle Boundary
 
