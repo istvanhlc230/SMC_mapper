@@ -255,7 +255,7 @@ The protocol header is:
 timeframe,time,open,high,low,close,tick_volume,spread,real_volume,volume_total,orderflow_buy,orderflow_sell,completed
 ~~~
 
-The Monitor may consume completed rows (`completed=1`) for coverage/update decisions and current rows (`completed=0`) for current market reference observation.
+The Monitor may consume completed rows (`completed=1`) for coverage/update decisions and current rows (`completed=0`) for current market reference observation. `volume_total` is the only protocol field used as normalized total-volume input; `orderflow_buy` and `orderflow_sell` are observed orderflow only when both are present. The Monitor must not infer volume fields from `tick_volume` or `real_volume`; current-price observation uses OHLC/price fields and does not require volume analytics.
 
 The Monitor validates the process exit code and machine protocol before using the result. STDERR is diagnostics only. A non-zero Market Data exit blocks the dependent operation.
 
@@ -514,7 +514,7 @@ The process result contains exit status, machine CSV STDOUT, and diagnostic STDE
 
 When debug is enabled, the Monitor may propagate --debug to market_data.py so provider/process diagnostics remain visible on stderr. It must never parse those diagnostics as data.
 
-The Monitor must parse only the validated Market Data CSV protocol as candle data; it must never parse STDERR diagnostics as data.
+The Monitor must parse only the validated Market Data CSV protocol as candle data; it must never parse STDERR diagnostics as data. When the stream is passed to Mapper, pass the validated machine CSV as STDIN without modifying rows or writing an intermediate file; Mapper independently validates the protocol again.
 
 A non-zero exit status blocks dependent mapper execution for the affected data path.
 
