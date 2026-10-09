@@ -1820,6 +1820,7 @@ At minimum, the finished mapper implementation must have focused tests covering:
 - canonical POI lifecycle pass-through without introducing mapper-specific lifecycle states;
 - POI volume provenance and branch separation for NONE/OHLC/ORDERFLOW/BOTH;
 - machine-protocol parsing of `volume_total` and the observed orderflow pair, including empty optional fields, rejection of partial orderflow pairs, and no inference from `tick_volume` / `real_volume`;
+- `market_data_input.py` parses the fixed CSV header and validates the exact field count and order;
 - source-level delta derivation from buy/sell with no persisted candle-level delta dependency;
 - deterministic OHLC directional-volume aggregation and zero-volume behavior;
 - structures JSON atomic persistence and checkpoint ordering;
