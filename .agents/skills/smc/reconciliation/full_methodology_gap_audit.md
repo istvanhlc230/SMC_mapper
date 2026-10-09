@@ -265,27 +265,32 @@ The remaining items were re-audited against the current canonical skill and impl
 | Fixed-R target | **IMPLEMENTATION / TRADING POLICY** | Non-structural policy mechanism, outside canonical target provenance. |
 | BE / profit lock / trailing | **TRADE-MANAGEMENT IMPLEMENTATION** | Post-target management actions, outside canonical target semantics. |
 | Broker order-type / pending-order lifecycle details | **PLATFORM IMPLEMENTATION GAP** | The platform contract defines the boundary; venue-specific order semantics, cancellation/expiry/re-entry policy, and broker integration still require implementation/configuration. |
-| `smc_analyzer.py` runtime | **IMPLEMENTATION GAP** | The file contains foundational models but not the full canonical structural detector/classifier/state-transition engine. This is a runtime implementation task, not a methodology gap. |
+| Structural mapper runtime | **NOT YET ASSESSED** | Do not infer a required runtime filename. Identify the actual structural-mapping implementation, if present, from the current project tree before judging implementation completeness. The absence of a guessed or historical filename is not itself an implementation defect. |
 
 The audit therefore finds **no unresolved canonical-methodology contradiction requiring new SMC rules at this time**. Target selection/use and trade-management behavior are implementation concerns built on chart-analysis outputs, not missing canonical SMC rules.
 
 ## 4. Current repository/runtime synchronization status
 
-This section was rechecked against the current `main` tree on 2026-10-09. The earlier runtime inventory below has been superseded because those historical filenames are not present in the current tree.
+This section was rechecked against the recursive tracked `main` tree on 2026-10-10. Runtime scope is determined from actual project components, not from historical or guessed filenames.
 
-### Verified repository facts
+### Scope clarification — explicitly excluded filenames
 
-- `smc_analyzer.py` is not present in the current tracked `main` tree.
-- `smc_htf_ltf_monitor.py` is not present in the current tracked `main` tree.
-- `tests/test_smc_htf_ltf_monitor.py` is not present in the current tracked `main` tree.
+- `smc_htf_ltf_monitor.py` and `tests/test_smc_htf_ltf_monitor.py` are **not project components and must not be created or treated as required files**.
+- Their absence is intentional and is **not** a project deficiency, a failed acceptance criterion, or evidence about runtime-to-skill conformance.
+- `smc_analyzer.py` is likewise not presumed to be a required filename or current runtime owner. Its absence alone does not establish an implementation gap.
+
+### Verified current-tree facts
+
 - The canonical SMC semantic-owner documents remain present under `.agents/skills/smc/`.
-- The tracked `CALENDAR/` and `MARKET_DATA/` packages are data-service components; their presence does not establish that the structural mapper runtime is implemented.
+- The current tracked Python paths include `calendar.py`, `market_data.py`, the `CALENDAR/`, `MARKET_DATA/`, and `PROVIDERS/` packages.
+- The recursive current tree contains no tracked Python test paths and no separately identifiable structural-mapper runtime module by filename.
+- `CALENDAR/` and `MARKET_DATA/` are data-service components; their presence does not establish that the structural mapper runtime is implemented.
 
 ### Current disposition
 
-**RUNTIME-TO-SKILL SYNCHRONIZATION = NOT VERIFIED.** The prior claim that `smc_analyzer.py` is the current runtime owner is stale and must not be used as a current repository fact. A current structural runtime entry point and its tests must be identified from files actually present in `main` before runtime equivalence can be audited.
+**RUNTIME-TO-SKILL SYNCHRONIZATION = NOT VERIFIED — SCOPE-BASED, NOT FILENAME-BASED.** The current tree inspection did not identify a dedicated structural-mapper runtime entry point or a corresponding test suite. This is a limit on what this audit can verify, not a claim that either explicitly excluded filename should exist. The next runtime audit must first identify the actual current component(s) responsible for structural mapping, if implemented, and assess their behavior against the canonical contracts.
 
-The methodology specification remains separately auditable: absence of a runtime file does not invalidate or alter canonical SMC semantics. Conversely, the canonical skill's completeness does not establish that those rules are implemented in executable code.
+The methodology specification remains separately auditable. Neither the absence of an unrequired filename nor the lack of a separately named test file changes canonical SMC semantics; conversely, documentation completeness alone does not prove executable conformance.
 
 ## 5. Full-platform sufficiency assessment
 
@@ -503,7 +508,7 @@ This clarification refines the provenance boundary in the prior LTF-CHoCH reconc
 - Layer 6 no longer repeats the Extreme POI Mitigation module or the detailed target/RR policy. It supplies canonical execution inputs and delegates stop/target/RR ownership to the appropriate downstream documents.
 - Layer 7's missing opening Markdown fence and non-sequential final heading number were corrected.
 - Layer 8's §46 material is now a compact interface/guard. The detailed CHoCH decision matrix is concentrated in §49.3; §49.6 is a short invariant guard rather than a second decision tree.
-- The stale runtime inventory was replaced by a verified current-tree status: the previously named structural runtime files are absent from current `main`; runtime-to-skill equivalence is therefore not claimed.
+- Runtime scope is recorded from the actual current tree. `smc_htf_ltf_monitor.py` and `tests/test_smc_htf_ltf_monitor.py` are explicitly out of scope and must not be created or required; `smc_analyzer.py` is not presumed to be a required entry point. Runtime conformance remains unverified because the actual structural-mapper runtime and corresponding verification path were not identified.
 - Repeated `3.14` audit addenda were renamed as distinct addenda.
 
 ### Layer-by-layer acceptance matrix
@@ -517,7 +522,7 @@ This clarification refines the provenance boundary in the prior LTF-CHoCH reconc
 | Layer 5 → Layer 6 | PASS | POI failure consumes confirmed CHoCH/control shift and does not manufacture a structural event. |
 | Layer 6 → Layer 7 | PASS | Entry authorization and structural/liquidity candidates flow downstream; stop, target-policy, RR, and position lifecycle ownership is downstream. |
 | Layer 7 → Platform | PASS | Trading/account policy and venue order/fill/position lifecycle remain separate. |
-| Canonical skill → implementation representation | PASS at documentation boundary | Layer 8 provides one detailed CHoCH decision matrix and cross-references semantic owners. Runtime implementation equivalence remains unverified because no current structural runtime entry point was identified. |
+| Canonical skill → implementation representation | PASS at documentation boundary | Layer 8 provides one detailed CHoCH decision matrix and cross-references semantic owners. Executable runtime equivalence remains unverified because the actual structural-mapper runtime and its verification path have not been identified; this is unrelated to the absence of explicitly excluded filenames. |
 
 ### Automated documentation checks
 
