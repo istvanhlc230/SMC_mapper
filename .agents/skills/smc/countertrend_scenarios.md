@@ -17,7 +17,7 @@ The canonical ordinary-OF/OB gate applies across these scenarios: an ordinary OF
 Source concept:
 - while the prevailing HTF trend remains active;
 - price has not yet taken the active inducement;
-- pre-inducement Order Flow / Order Block formations are not tradable POIs in the countertrend path;
+- every ordinary OF/OB formation created before the applicable active IDM is physically taken out (`IDM_TAKEN`) is excluded as an SMT/inducement trap, including formations created before IDM formation and between IDM formation and takeout;
 - lower-timeframe internal structure is followed toward the inducement.
 
 Canonical flow:
@@ -40,7 +40,7 @@ EXISTING ENTRY MODULE
 
 The countertrend position is an execution opportunity toward the canonical inducement target. The LTF structure does not alter the HTF bias merely by forming.
 
-No arbitrary pre-inducement POI may be used as the countertrend entry location.
+No ordinary pre-takeout trap may be used as the countertrend entry location. Any retained or displayed trap must carry explicit exclusion status; the Origin Order Block remains a latent reserve and is usable only through the canonical fallback decision.
 
 ## 3. Scenario CT2 — Inducement Liquidity Run
 
