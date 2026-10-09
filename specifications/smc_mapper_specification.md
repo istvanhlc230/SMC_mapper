@@ -919,7 +919,7 @@ Canonical ownership remains:
 
 - structural and retracement/IDM rules: canonical skill Layer 3;
 - BOS rules and required upstream gates: canonical skill Layer 4;
-- CHoCH and LTF Structural Glitch routes: canonical skill Layer 5;
+- CHoCH mechanics, including the LTF-CHoCH Context After HTF Interaction and Valid-Pullback Reference Substitution: canonical skill Layer 5;
 - canonical POI/Rule-of-Two semantics and lifecycle: canonical skill Layer 6;
 - downstream risk/target policy: canonical downstream Layer 7 boundary;
 - implementation/state and observability contracts: canonical downstream Layer 8 boundary where applicable.
@@ -1043,7 +1043,7 @@ If an LTF lifecycle crosses an HTF range transition, the canonical LTF lifecycle
 
 Where a canonical LTF route explicitly requires HTF interaction, the mapper consumes the applicable HTF context from its structural state and requests/consumes any required additional LTF analysis range from the Market Data process; the monitor/orchestrator ensures that request is executed before mapper processing.
 
-This includes the canonical LTF Structural Glitch / CHoCH route after HTF POI interaction or HTF core-liquidity takeout, as defined by `05_CHOCH_mechanics.md`.
+This includes the canonical LTF-CHoCH Context After HTF Interaction, implemented through Valid-Pullback Reference Substitution, after HTF POI interaction or HTF core-liquidity takeout, as defined by `05_CHOCH_mechanics.md`.
 
 The mapper must align the persisted candle range with the applicable point-in-time HTF context but must not invent a new CHoCH, BOS, IDM, POI, or entry rule.
 
