@@ -493,7 +493,7 @@ This clarification refines the provenance boundary in the prior LTF-CHoCH reconc
 
 ## Current skill defragmentation and layer-by-layer verification — 2026-10-09
 
-### Corrections applied
+### Defragmentation changes
 
 - `skill.md` is reduced to an index and semantic-owner map; methodology rules are not duplicated in the index.
 - Layer 2 heading numbering is sequential through its validation and precedence sections.
@@ -523,7 +523,7 @@ This clarification refines the provenance boundary in the prior LTF-CHoCH reconc
 
 The 19 current SMC skill/reconciliation documents were fetched again after the edits. Checks performed:
 
-- No stale normative `LTF Structural Glitch` label remains in the inspected skill/reconciliation documents.
+- No outdated glitch-based CHoCH label remains as a normative term in the inspected skill/reconciliation documents.
 - No duplicate Markdown heading text was found in the inspected documents.
 - Fenced code blocks are balanced in every inspected document.
 - Layer 2 and Layer 4 section-numbering gaps identified by this audit are fixed.
