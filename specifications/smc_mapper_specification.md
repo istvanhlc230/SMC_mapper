@@ -193,7 +193,7 @@ The available_start and available_end fields refer only to the persisted complet
 
 The machine protocol header is:
 
-    timeframe,time,open,high,low,close,tick_volume,spread,real_volume,completed
+    timeframe,time,open,high,low,close,tick_volume,spread,real_volume,volume_total,orderflow_buy,orderflow_sell,completed
 
 The Mapper parses the CSV stream without importing Market Data Python classes.
 
@@ -201,19 +201,19 @@ The Mapper parses the CSV stream without importing Market Data Python classes.
 
 The protocol does not redundantly transmit `completion_time`. The Mapper deterministically derives the canonical completion boundary from `timeframe + timestamp` using the canonical timeframe rules defined by the Market Data contract. This derived boundary is used for explicit end-time eligibility.
 
-`tick_volume`, `spread`, and `real_volume` are independent optional fields. Empty fields mean unavailable; the Mapper must not infer one from another or from Market Data's internal `volume.total`.
+`tick_volume`, `spread`, and `real_volume` are independent optional provider fields. `volume_total` explicitly transports normalized `volume.total`; `orderflow_buy` and `orderflow_sell` explicitly transport genuine normalized `volume.orderflow.buy/sell`. Empty fields mean unavailable. The Mapper must never infer `volume_total` from tick/real volume or treat an OHLC estimate as observed orderflow.
 
 The Mapper must reject malformed required fields, invalid timestamps, malformed OHLC, duplicate candle identities, non-ascending timestamps within a timeframe, and any record with `completed=0` for structural processing.
 
 ## 1.3 Normalized candle representation
 
-The Mapper's external candle view is the machine-protocol record, not the Market Data persistence model. It contains the required OHLC fields plus the optional `tick_volume`, `spread`, and `real_volume` fields defined by the process contract.
+The Mapper's external candle view is the machine-protocol record, not the Market Data persistence model. It contains the required OHLC fields plus the optional `tick_volume`, `spread`, `real_volume`, `volume_total`, `orderflow_buy`, and `orderflow_sell` fields defined by the process contract.
 
 The Mapper derives the canonical completion boundary from `timestamp + timeframe`; `completion_time` is therefore a derived analysis value and is not part of the wire record.
 
 The optional volume fields are availability signals. Empty fields remain unavailable; the Mapper must not fabricate, rename, or infer one optional field from another.
 
-The Market Data persistence branches `volume.total`, `volume.ohlc`, and `volume.orderflow` are not Mapper process-input fields. POI volume enrichment may run only when the required volume evidence is actually available through the process contract. Otherwise the result is the defined no-supported-volume-path case.
+The process protocol explicitly carries `volume.total` as `volume_total` and genuine `volume.orderflow.buy/sell` as `orderflow_buy/orderflow_sell`. It does not carry the Market Data persistence JSON or a precomputed `volume.ohlc` branch. When `--volume-method` enables OHLC analytics, the Mapper derives directional estimates from `volume_total` and the same candle's OHLC values using §9.4. When it enables ORDERFLOW analytics, both observed orderflow fields must be present.
 
 The Mapper reads canonical structural input only from records marked `completed=1`. A current/in-progress record is never part of canonical structural processing.
 
@@ -437,11 +437,9 @@ The canonical engine must never receive malformed or ambiguous candle data.
 
 ---
 
-When total traded volume is available from the provider, market_data.py preserves it as volume.total on the underlying normalized candle.
+When total traded volume is available from the provider, market_data.py preserves it as `volume.total` internally and transports it as `volume_total` on the machine protocol. When genuine orderflow is available, it is preserved independently under `volume.orderflow` and transported as `orderflow_buy` / `orderflow_sell`. The Market Data persistence JSON remains private to Market Data.
 
-When genuine orderflow is available, it is preserved independently under volume.orderflow. When deterministic OHLC directional estimation is available, it may be preserved independently under volume.ohlc.
-
-The mapper must preserve the applicable POI volume information when storing POI references to source candles. Parallel volume types must not overwrite one another.
+The Mapper calculates its POI-scoped OHLC directional estimate from the transported `volume_total` and OHLC fields; it does not require a wire-level `volume.ohlc` object. The Mapper must preserve the applicable POI volume analytics and source-candle provenance. Parallel volume types must not overwrite one another.
 
 Volume provenance is represented by the data branch that is actually present. A single exclusive volume source or volume method field is not required on the candle.
 
@@ -1292,7 +1290,7 @@ The persisted POI provenance retains the source candle identities used for the a
 
 ## 9.3 Volume method
 
-The normalized market-data record may contain multiple volume types in parallel. Availability is determined from the actual presence of the relevant data, not from one exclusive provenance or method field.
+The Market Data persistence record may contain multiple volume types in parallel. At the Mapper process boundary, availability is determined only from the explicit `volume_total` and observed `orderflow_buy/orderflow_sell` fields; the Mapper does not read the internal Market Data JSON.
 
 The user may explicitly select the analytical method with:
 
@@ -1547,6 +1545,9 @@ The following conceptual models are sufficient for the V1 mapper boundary:
         tick_volume
         spread
         real_volume
+        volume_total
+        orderflow_buy
+        orderflow_sell
         completed
 
     MarketDataSeries
@@ -1645,8 +1646,8 @@ At this boundary:
 - candles are canonical market-data input;
 - current is excluded from canonical processing;
 - candle completion_time is the eligibility boundary for explicit --endtime;
-- optional protocol volume fields retain their independent meanings; no orderflow branch is assumed to exist unless a future compatible protocol explicitly supplies it;
-- source-level delta may be derived only from an explicitly available buy/sell pair supplied by the applicable canonical volume contract;
+- optional protocol volume fields retain their independent meanings; `volume_total` supplies the normalized total-volume input for OHLC estimation, while an observed orderflow pair is available only when both `orderflow_buy` and `orderflow_sell` are present;
+- delta is derived as buy minus sell from the selected branch; no source-level delta field is required;
 - persisted numeric values must be parsed deterministically and validated before use.
 
 ## 15.4 Structures persistence
