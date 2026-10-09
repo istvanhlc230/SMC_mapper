@@ -972,7 +972,11 @@ jobs:
                   "forecast": None,
                   "previous": None,
               }
-              assert calendar.normalize_provider_event(structured_raw)["details"]["impact"] == expected_impact
+              actual_impact = calendar.normalize_provider_event(structured_raw)["details"]["impact"]
+              assert actual_impact == expected_impact, (
+                  f"ForexFactory impactClass {raw_class!r}: "
+                  f"expected {expected_impact!r}, got {actual_impact!r}"
+              )
 
           assert calendar.__version__ == "2.5.0"
           assert f"Calendar CLI v{calendar.__version__}" in calendar.HELP_TEXT
