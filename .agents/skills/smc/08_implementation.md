@@ -88,12 +88,24 @@ Required representation:
 
 - `ORDER_FLOW_CANDIDATE` stores the whole relevant opposing corrective move, including multiple internal legs while its protected endpoint remains intact;
 - `ELIGIBLE_ORDER_FLOW` requires canonical eligibility conditions and unmitigated status;
-- `SMT / INDUCEMENT_TRAP` is a non-tradable contextual exclusion and must not be emitted as a Eligible Order Flow;
+- `SMT / INDUCEMENT_TRAP` is a non-tradable contextual exclusion and must not be emitted as an Eligible Order Flow;
 - touching an OF does not mark it mitigated unless a canonical Valid Pullback confirms the mitigation;
 - `DECISIONAL_ORDER_FLOW` is selected from the eligible Order Flow lineage associated with the displacement that causes `VALID_BOS`;
 - `EXTREME_ORDER_FLOW` is the furthest unmitigated eligible OF at the origin of the active dealing range;
 - when the current Extreme Order Flow is mitigated, selection shifts to the next furthest eligible unmitigated OF;
 - a Decisional or Extreme Order Flow remains a POI candidate only after the POI ontology and Rule-of-Two constraints are satisfied.
+
+#### Mandatory active-IDM formation and takeout gate
+
+No OF or OB may be designated as an active tradable POI, exposed as an executable POI, or used to authorize an entry until a canonical valid active IDM has formed and that applicable active IDM has been physically taken out (`IDM_TAKEN`). This gate applies to all OF/OB POI roles, including Decisional, Extreme, and Origin Order Block when activated for trading.
+
+- Before valid IDM formation, OF/OB may be recorded as observations/candidates only; they are not tradable POIs.
+- An OF/OB formation that predates the applicable active IDM is permanently classified as `SMT / INDUCEMENT_TRAP` for that active dealing-range lineage and must never be promoted by a later takeout.
+- Between IDM formation and `IDM_TAKEN`, no OF/OB candidate may be activated as a tradable POI and no entry may be authorized.
+- After `IDM_TAKEN`, only post-IDM candidates may proceed through the remaining canonical OF/OB validation, mitigation, POI ontology, Rule-of-Two, and execution gates. Takeout is necessary, not sufficient.
+- Candidate observation or successful OB pillar validation does not bypass this gate. Keep candidate/validation state distinct from active tradable-POI state.
+- The gate must be bound to the canonical active IDM identity and its event-time provenance. A touch of an unrelated level, a historical/inactive IDM, or missing/ambiguous takeout evidence does not satisfy it.
+- If the gate state cannot be resolved deterministically at the candidate's evaluation time, fail closed: do not activate an OF/OB POI or authorize an entry.
 
 Forbidden shortcuts:
 
@@ -857,6 +869,8 @@ Required invariants:
 
 ### POI / Entry
 - POI ontology accepts Eligible Order Flow and Validated Order Block;
+- active tradable OF/OB POI designation and entry authorization are prohibited until a valid active IDM has formed and the applicable IDM has been physically taken out (`IDM_TAKEN)); pre-IDM formations remain `SMT / INDUCEMENT_TRAP`, and pre-takeout candidates remain non-tradable;
+- IDM takeout is necessary but not sufficient: all canonical OF/OB validation, mitigation, Rule-of-Two, and execution gates still apply;
 - Rejection Block is a separately typed PD-array/execution concept; source examples may use POI as a broad execution-location term, but RB is not an OF/OB-equivalent POI class or an automatic Rule-of-Two slot;
 - Rule of Two limits canonical tradable POIs to Decisional POI and Extreme POI (Extreme Order Flow / Extreme Order Block);
 - Origin Order Block is a latent reserve POI (mitigation transfer target when Extreme POI is mitigated), never a 3rd active POI;
