@@ -241,6 +241,23 @@ Required outcome:
 - [SOURCE_DIRECT] Extreme OF is the furthest unmitigated eligible OF at the origin and shifts to the next such OF when mitigated;
 - [SOURCE_DIRECT] SMT and OF remain distinct ontology classes.
 
+#### POI Identification Secret — `IDM_TAKEN` gate and Origin OB reserve exception
+
+Primary source: `knowledgebase/sources/truesmc2026.txt`, **Part 6 | POI Identification Secret**.
+
+Source evidence and authority labels:
+- [SOURCE_DIRECT] At **00:00:42–00:01:33**, Part 6 states that a dealing range has at most two POIs—the Decisional and Extreme POIs—and excludes other OF/OB formations as SMT/inducement traps except for the Origin OB.
+- [SOURCE_DIRECT] At **00:03:29–00:04:09**, Part 6 identifies the Origin OB as the furthest unmitigated OB at the dealing-range origin, says its validity is independent of parent-OF mitigation, and names it the last line of defense when the applicable Extreme OB fails.
+- [SOURCE_DIRECT] At **00:09:06–00:09:33**, the worked example again classifies other range formations as traps/weak OBs rather than valid reversal zones.
+- [SOURCE_RECONCILED] The implementation's `IDM_TAKEN` event formalizes the physical inducement-takeout boundary for the active lineage. The ordinary-candidate exclusion therefore covers formations created both before active IDM formation and between IDM formation and takeout. This temporal wording is the canonical event contract; it should not be misrepresented as a literal transcript token.
+
+Canonical interpretation owned by `.agents/skills/smc/06_execution.md`:
+- The active canonical tradable POI set contains at most two slots: Decisional POI and Extreme POI. Origin OB never adds a third simultaneous active slot.
+- An ordinary OF/OB formed before the applicable active IDM is taken out is `SMT / INDUCEMENT_TRAP`, whether the formation predates IDM formation or lies between formation and takeout. It remains non-tradable for the active lineage after a later takeout; there is no retrospective promotion.
+- Trap observations may be retained for provenance, auditability, and history, and may be displayed when useful with clear trap/exclusion status. Storage or display is not activation, tradability, or entry authorization.
+- Origin OB is the one named latent-reserve exception to the ordinary formation-time rule, not a general historical-candidate escape hatch. It must remain non-active until the active IDM/takeout gate and its existing canonical validity/fallback activation conditions pass. When it becomes applicable, it occupies the Extreme slot. Its activation must not be equated with, or cause, the CHoCH-based canonical `POI_FAILURE` lifecycle state.
+- For ordinary post-takeout OF/OB formations, `IDM_TAKEN` only opens the remaining canonical validation path; it does not itself validate or activate a POI, satisfy Rule of Two, or authorize entry.
+
 ### C8 — Engineering Liquidity identification and lifecycle
 
 Canonicalize Engineering Liquidity as a core-liquidity reference derived from the valid pullback immediately preceding the active Extreme OF or Extreme OB.
@@ -336,6 +353,9 @@ Required outcome:
 - [SOURCE_DIRECT] if a candidate OB candle lacks the required FVG association, the source reconciliation describes advancing to the next eligible candle and re-evaluating FVG association; the selected candle must independently satisfy all OB validation pillars;
 - [PROJECT_CANONICAL] for this project, the fallback pointer is resolved deterministically to the immediately next chronological candle; no arbitrary forward skipping is permitted, and the next candle must independently satisfy the OB validation pillars;
 - [SOURCE_DIRECT] Order Block validity is based on its own validation pillars and is not automatically invalidated by an unmitigated/failed Order Flow;
+- [SOURCE_DIRECT] Origin OB is a separate latent reserve, independent of parent-OF mitigation, and the last line of defense when the applicable Extreme OB fails; it is not an ordinary SMT trap or a third active Rule-of-Two slot;
+- [SOURCE_RECONCILED] Origin OB formation may predate `IDM_TAKEN`, but the reserve can be activated for trading only after the canonical active-IDM/takeout gate and existing Origin OB validity/fallback activation conditions pass;
+- [SOURCE_RECONCILED] Extreme execution-location failure is distinct from canonical `POI_FAILURE`, which remains the separately defined CHoCH-based execution lifecycle state;
 - [SOURCE_DIRECT] a valid Decisional OB may be used while the associated OF remains unmitigated, provided Rule-of-Two and execution gates remain satisfied;
 - [PROJECT_CANONICAL] historical Decisional OB identity is immutable once tied to the causal BOS event.
 
