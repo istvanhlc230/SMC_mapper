@@ -875,7 +875,7 @@ The mapper must not use a latest-window shortcut that bypasses required structur
 
 The Monitor/orchestrator invokes the Market Data CLI for the required bootstrap range in deterministic batch form, then supplies the captured machine-readable STDOUT as Mapper STDIN.
 
-For incremental execution after a valid persisted checkpoint, the Monitor/orchestrator invokes the Market Data CLI for only the subsequently completed entry-timeframe range after the checkpoint, in chronological order, allows Market Data to update its internal persistence, then passes the resulting machine-output stream to the Mapper through STDIN as defined by §10.1.
+For incremental execution after a valid persisted checkpoint, the Monitor/orchestrator invokes the Market Data CLI for the analysis's exact timeframe set and a common UTC range that covers all newly required data, then passes the resulting machine-output stream to the Mapper through STDIN as defined by §10.1. In single-timeframe mode, the request begins at the next entry-timeframe interval after the checkpoint. In two-timeframe mode, the requested start is the earliest canonical interval start needed by either feed: the next LTF interval after the checkpoint and the HTF interval containing the checkpoint. This HTF overlap is required because Market Data range selection is based on candle interval-start timestamps while Mapper eligibility is based on derived completion boundaries. The Mapper filters overlap candles by canonical completion time and persisted state; overlap must not duplicate structural events.
 
 The mapper obtains its market-data stream from the Monitor/orchestrator through STDIN and does not access a concrete provider.
 
