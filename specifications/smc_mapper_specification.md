@@ -24,11 +24,11 @@ This specification defines the mapper contract and its boundaries with the stand
 
 ## 0.2 Implementation ownership boundaries
 
-The mapper has no direct connection to any concrete market-data provider and has no runtime import dependency on `market_data.py`.
+The mapper has no direct connection to any concrete market-data provider and has no runtime import dependency on `market_data.py`. The Monitor/orchestrator owns process invocation: it launches `market_data.py`, validates the successful machine-output result, and supplies that exact CSV stream to the Mapper process through STDIN. The Mapper does not launch Market Data itself.
 
 `market_data.py` is a standalone Market Data CLI process. It owns provider access, provider abstraction, normalization, completion handling, timestamp normalization, availability detection, deterministic range retrieval, incremental updates, retention and persistence to `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json`.
 
-The Market Data process boundary is the standalone `market_data.py` executable and its machine-readable STDOUT candle protocol.
+The Market Data process boundary is the standalone `market_data.py` executable and its machine-readable STDOUT candle protocol; the Mapper consumes that protocol on its STDIN.
 
 The normal data flow is:
 
@@ -103,24 +103,29 @@ Durable outputs for one symbol remain under one directory beneath the common dat
 
 Market Data owns creation and maintenance of `<SYMBOL>_marketdata.json`. Mapper owns `<SYMBOL>_structures.json`.
 
-Mapper market-data input is obtained by launching the standalone Market Data process with the required symbol/timeframe/range parameters and reading its machine-readable STDOUT. The Mapper does not discover or open the Market Data persistence file.
+Mapper market-data input is the machine-readable STDOUT captured by the Monitor/orchestrator from a successful Market Data process invocation and passed to the Mapper through STDIN. The Mapper does not launch Market Data, discover or open the Market Data persistence file, or accept an alternate JSON input path.
 
 ### Process boundary
 
 ```text
-Mapper
+Monitor / orchestrator
     |
     | launches market_data.py
-    | reads machine STDOUT
+    | validates and captures machine STDOUT
+    | passes captured stream as Mapper STDIN
     v
-CSV-like completed-candle stream
+smc_mapper.py
+    |
+    | parses completed-candle stream
+    v
+canonical structural processing
 ```
 
 Rules:
 
-- Mapper consumes machine STDOUT only;
+- Mapper consumes the Market Data machine protocol from STDIN only;
 - Market Data diagnostics and errors are emitted on STDERR and are never treated as candle data;
-- Mapper must fail the data acquisition operation if the machine protocol is malformed;
+- Mapper must fail the input/analysis operation if the machine protocol on STDIN is malformed;
 - Mapper must not fall back to reading the Market Data JSON file;
 - `--cleartext` must never be used by Mapper;
 - the process contract is independent of the internal Python module layout;
@@ -864,9 +869,9 @@ earliest required effective candle -> latest completed entry-timeframe candle
 
 The mapper must not use a latest-window shortcut that bypasses required structural bootstrap.
 
-The launcher invokes the Market Data CLI for the required bootstrap range in deterministic batch form. The mapper then consumes the machine-readable STDOUT stream for that request.
+The Monitor/orchestrator invokes the Market Data CLI for the required bootstrap range in deterministic batch form, then supplies the captured machine-readable STDOUT as Mapper STDIN.
 
-For incremental execution after a valid persisted checkpoint, the monitor/orchestrator invokes the Market Data CLI for only the subsequently completed entry-timeframe range after the checkpoint, in chronological order, updates internal Market Data persistence and then invokes the mapper against the resulting machine-output range as defined by §10.1.
+For incremental execution after a valid persisted checkpoint, the Monitor/orchestrator invokes the Market Data CLI for only the subsequently completed entry-timeframe range after the checkpoint, in chronological order, allows Market Data to update its internal persistence, then passes the resulting machine-output stream to the Mapper through STDIN as defined by §10.1.
 
 The mapper does not obtain market data from the monitor and does not access a concrete provider.
 
@@ -1384,12 +1389,12 @@ When no supported volume analytical path is available, no POI-derived volume ana
 
 ## 10.1 Mapper process-input boundary
 
-The Mapper is invoked by the Monitor as a separate process and receives its market-data input from the standalone Market Data process.
+The Mapper is invoked by the Monitor as a separate process and receives its market-data input through STDIN. The Monitor owns the separate Market Data process invocation and passes its captured machine-readable STDOUT to the Mapper.
 
 On invocation:
 
-1. launch/receive the Market Data process output for the requested symbol, timeframe, and range;
-2. parse and validate the machine-readable CSV-like STDOUT protocol;
+1. read the supplied machine stream from STDIN;
+2. parse and validate the machine-readable CSV-like protocol;
 3. group returned records by timeframe and process only records marked `completed=1`;
 4. resolve the requested analysis identity;
 5. persist the complete symbol-scoped Structures JSON atomically;
@@ -1492,13 +1497,13 @@ The module may later be split internally, but the following ownership boundaries
 
 The mapper must not import or runtime-call market_data.py, smc_monitor.py, smc_htf_ltf_monitor.py, smc_analyzer.py, or legacy engine modules.
 
-The monitor may launch both the Market Data CLI and mapper as separate processes. The mapper receives normalized market-data state only through the Market Data machine-readable STDOUT protocol and processes only records marked `completed=1`.
+The Monitor launches Market Data and Mapper as separate processes. It passes the validated Market Data machine-readable STDOUT to Mapper STDIN; Mapper processes only records marked `completed=1`. Mapper does not spawn Market Data itself.
 
 ## 14.2 Dependency direction
 
 The implementation dependency direction is:
 
-    CLI -> identity -> persisted input -> coverage -> canonical processing -> enrichment -> persistence -> checkpoint
+    CLI + STDIN protocol -> identity -> coverage/window selection -> canonical processing -> enrichment -> persistence -> checkpoint
 
 Canonical SMC logic must not depend on:
 
@@ -1678,7 +1683,7 @@ This function is downstream of canonical POI formation and lifecycle. It cannot 
     run(request) -> exit_status
     main(argv) -> exit_status
 
-Normal execution emits no human-readable status text; market-data input is consumed from the Market Data process STDOUT and diagnostics are emitted only on STDERR according to Section 12.
+Normal execution emits no human-readable status text; market-data input is consumed from STDIN as the exact machine protocol captured from Market Data STDOUT by the Monitor/orchestrator. Mapper diagnostics are emitted only on STDERR according to Section 12.
 
 ---
 
