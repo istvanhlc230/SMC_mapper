@@ -152,6 +152,10 @@ jobs:
           assert "12345" in rendered_table
           assert "Completed" not in rendered_table
 
+          current_table = format_table("EURUSD", {"M1": [(sample_candle, False)]})
+          assert "CURRENT SNAPSHOT" in current_table
+          assert "Completed" not in current_table
+
           # Missing total volume is shown as unavailable, never as a fabricated zero.
           from dataclasses import replace
           candle_without_volume = replace(
