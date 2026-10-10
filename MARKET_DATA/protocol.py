@@ -41,11 +41,43 @@ def _optional_decimal_text(value: Decimal | None, field_name: str) -> str:
 
 
 def _machine_row(timeframe: str, candle: NormalizedCandle, completed: bool) -> list[str]:
-    """Build one portable machine-protocol candle row."""
+    """Validate and build one portable machine-protocol candle row."""
+    if (
+        candle.timestamp.tzinfo is None
+        or candle.timestamp.utcoffset() is None
+        or candle.completion_time.tzinfo is None
+        or candle.completion_time.utcoffset() is None
+    ):
+        raise ValueError("machine-protocol candle timestamps must be timezone-aware")
+    if candle.completion_time <= candle.timestamp:
+        raise ValueError("candle completion_time must be after timestamp")
+
+    prices = (
+        candle.open_price,
+        candle.high_price,
+        candle.low_price,
+        candle.close_price,
+    )
+    if any(not isinstance(value, Decimal) or not value.is_finite() for value in prices):
+        raise ValueError("machine-protocol OHLC values must be finite Decimals")
+    if (
+        candle.high_price < candle.low_price
+        or not candle.low_price <= candle.open_price <= candle.high_price
+        or not candle.low_price <= candle.close_price <= candle.high_price
+    ):
+        raise ValueError("machine-protocol candle has invalid OHLC")
+
+    if not isinstance(completed, bool):
+        raise ValueError("machine-protocol completion state must be boolean")
+
     volume_total = ""
     if candle.volume.has_total:
-        if candle.volume.total is None or not candle.volume.total.is_finite():
-            raise ValueError("volume.total is marked available but has no finite value")
+        if (
+            candle.volume.total is None
+            or not candle.volume.total.is_finite()
+            or candle.volume.total < 0
+        ):
+            raise ValueError("volume.total is marked available but has no finite non-negative value")
         volume_total = _decimal_text(candle.volume.total)
 
     orderflow_buy = ""
@@ -56,8 +88,10 @@ def _machine_row(timeframe: str, candle: NormalizedCandle, completed: bool) -> l
             or candle.volume.orderflow_sell is None
             or not candle.volume.orderflow_buy.is_finite()
             or not candle.volume.orderflow_sell.is_finite()
+            or candle.volume.orderflow_buy < 0
+            or candle.volume.orderflow_sell < 0
         ):
-            raise ValueError("orderflow must contain a complete finite buy/sell pair")
+            raise ValueError("orderflow must contain a complete finite non-negative buy/sell pair")
         orderflow_buy = _decimal_text(candle.volume.orderflow_buy)
         orderflow_sell = _decimal_text(candle.volume.orderflow_sell)
 
