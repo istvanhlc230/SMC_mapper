@@ -824,7 +824,7 @@ def format_table(
     ...
 ```
 
-`serialize_machine_csv` must validate the complete result before returning the machine stream. It owns CSV escaping, fixed header order, UTC epoch conversion, deterministic decimal formatting, completion flag encoding, duplicate identity rejection, and per-timeframe timestamp ordering.
+`serialize_machine_csv` must validate the complete result before returning the machine stream. It owns CSV escaping, fixed header order, timezone-aware timestamps, UTC epoch conversion, finite OHLC and volume values, OHLC formation validation, deterministic decimal formatting, a complete observed orderflow pair, completion flag encoding, duplicate identity rejection, and per-timeframe timestamp ordering. Optional `tick_volume`, `spread`, `real_volume`, and `volume_total` fields are emitted only from their corresponding normalized fields; unavailable values remain empty and are never inferred from one another.
 
 `format_table` is presentation-only. Its spacing, wrapping, and column widths may change without a protocol revision. It must never be used as an inter-process input format.
 
@@ -2426,6 +2426,7 @@ test_table_marks_current_snapshot_and_shows_unavailable_volume_as_na
 test_table_displays_l2_depth_only_when_provider_returns_snapshot
 test_table_omits_l2_section_when_depth_is_unavailable
 test_cli_l2_lookup_failure_does_not_block_candle_table
+test_cli_rejects_l2_snapshot_with_unsorted_levels
 test_table_omits_l2_snapshot_after_explicit_historical_end
 test_lse_depth_unavailable_returns_none
 test_run_default_mode_preserves_machine_csv
