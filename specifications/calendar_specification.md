@@ -605,8 +605,8 @@ version 2, not a schema migration.
 ## 7.2 Tabular CLI presentation
 
 `--table` is presentation-only and must not modify canonical event data or the persistent schema.
-The former `--cleartext` flag is retired and must return a clear input error directing users to
-`--table`; it is not a compatibility alias.
+The former `--cleartext` flag is not accepted and is not a compatibility alias. It is rejected
+through the standard unknown-CLI-option validation; no special replacement message is emitted.
 
 Table output begins with aggregate status and provider statuses, followed by an event summary table
 with UTC timestamp, currency, impact, all contributing sources, and event title. Each event then has a separate
