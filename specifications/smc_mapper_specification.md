@@ -543,7 +543,7 @@ The requested period filters which events/structures are presented as belonging 
 
 A candle is eligible for canonical processing only when the normalized completion contract confirms that it is completed. An incomplete/current candle is never processed as canonical history.
 
-The requested interval uses candle interval-start timestamps and half-open semantics: `start_time <= candle.timestamp < end_time`. Completion status is checked separately. A date-only end includes the entire named UTC date by resolving to the following day's midnight as the exclusive boundary.
+The requested output window uses candle interval-start timestamps and half-open semantics: `start_time <= candle.timestamp < end_time`. This filter controls output-window membership only; canonical processing still begins at the earliest completed candle supplied and continues through the resolved requested end. Completion status is checked separately. A date-only end includes the entire named UTC date by resolving to the following day's midnight as the exclusive boundary.
 
 The Mapper distinguishes requested period, actual completed-candle coverage per timeframe, canonical processing coverage, and requested output window. There is no persisted analysis identity, checkpoint, resume point, or historical-update mode. Every invocation reconstructs canonical state from the full retained candle history supplied through the requested end.
 
@@ -1509,7 +1509,7 @@ Owner modules: `SMC_MAPPER/market_data_input.py` for protocol parsing/validation
 
 The process-input parser validates the Market Data machine protocol without importing Market Data classes. It groups records by the explicit `timeframe` field.
 
-The Mapper derives `completion_time` deterministically from canonical candle `timestamp` and `timeframe`; it is not a wire field. Requested-period eligibility is based on candle interval-start timestamp and half-open UTC boundaries: `start_time <= timestamp < end_time`. Completion status is checked separately. Available coverage metadata describes completed-candle coverage only, and the current snapshot is excluded from canonical processing.
+The Mapper derives `completion_time` deterministically from canonical candle `timestamp` and `timeframe`; it is not a wire field. Requested output-window membership is based on candle interval-start timestamp and half-open UTC boundaries: `start_time <= timestamp < end_time`. Canonical processing selection is independent of the requested start and includes all supplied completed candles through the resolved end. Completion status is checked separately. Available coverage metadata describes completed-candle coverage only, and the current snapshot is excluded from canonical processing.
 
 ## 15.4 Output serialization
 
