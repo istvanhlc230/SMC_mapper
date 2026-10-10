@@ -49,9 +49,18 @@ Required providers:
 London Strategic Edge (LSE):
 - primary economic-calendar provider;
 - queried through the LSE economic_calendar API;
+- its `region` filter accepts provider region/country codes (for example `EU`,
+  `US`, and `GB`), not ISO 4217 currency codes;
+- Calendar maps each supported currency code to the matching LSE region code and
+  de-duplicates regions for pairs; it must not submit raw currency codes such as
+  `EUR` or `USD` as region filters;
+- an unmapped currency fails the LSE provider acquisition explicitly rather than
+  sending an invalid region query;
 - scheduled economic events are normalized to the common Calendar event contract;
 - provider fields such as actual, forecast, previous, impact, currency and provider
   event identity are retained when available;
+- provider HTTP error details may be surfaced only in `--debug` diagnostics, with
+  credentials and request URL query data excluded;
 - provider URL/source metadata is retained when available;
 - LSE does not provide stock-news events for the Calendar news role.
 
