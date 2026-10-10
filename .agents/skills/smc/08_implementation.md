@@ -521,7 +521,7 @@ Regression tests must cover:
 - absent required HTF history produces `HTF_CONTEXT_UNAVAILABLE`, not `HTF_VALID_PULLBACK = FALSE`;
 - a monthly HTF may validate W1 structure when the monthly timeframe is the applicable immediate HTF context and a three-month series is not part of the established hierarchy; use the Market Data-defined `MN1` input token for monthly data, and do not assume `3MN` is supported;
 - single-timeframe-only inputs and equal HTF/LTF values are rejected; both distinct timeframes with `HTF > LTF` are required;
-- if an Outside Bar's internal sequence is not established by lower-timeframe or equivalent independent evidence, record `INTRABAR_SEQUENCE_EVIDENCE = UNAVAILABLE` and block dependent structural classification;
+- if an Outside Bar's internal sequence is not established by lower-timeframe or equivalent independent evidence, record `INTRABAR_SEQUENCE_EVIDENCE = UNAVAILABLE`, terminally invalidate any Layer-2 pullback candidate that requires that order, and prohibit later candles from retroactively resolving it;
 - below `HTF_CONDITIONAL_THRESHOLD` does not qualify;
 - a continuation break without stored `MAJOR_RETRACEMENT_QUALIFIED` remains non-BOS / `IMPULSE_EXTENSION` as applicable.
 
