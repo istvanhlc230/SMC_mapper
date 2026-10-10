@@ -832,7 +832,12 @@ def create_provider(provider_name: str) -> MarketDataProvider:
 V1 accepts the internal provider name `lse` and returns `LSEMarketDataProvider`.
 No provider CLI option is required.
 
-## 6.3 LSE provider pagination
+## 6.3 LSE transport and provider pagination
+
+The LSE HTTP adapter requests IPv4-first transport because some client networks do
+not have a working IPv6 route. The shared transport attempts resolved IPv4 addresses
+before IPv6 and retains IPv6 as a fallback; this must not disable IPv6 globally or
+alter provider authentication, TLS hostname verification, or proxy configuration.
 
 If an LSE request needs multiple pages for one logical range, pagination remains
 inside `LSEMarketDataProvider.fetch_range`. The caller receives one logical list.
