@@ -2298,6 +2298,8 @@ clear_completed_current_snapshot
 
 Test repeated downloads, conflicts, retention and completed/current transitions.
 
+The service-layer candle-record conversion is a canonicalization boundary, not merely a field copier. Before a normalized candle enters merge, retention, availability-bound calculation, or a current snapshot, its `timestamp` and `completion_time` must be timezone-aware UTC ISO strings ending in `Z`; OHLC and available volume values must use the same fixed-precision Decimal strings as JSON persistence. Do not mix Python `datetime`/`Decimal` objects with already-persisted string fields in the same mutable candle record. Reject naive timestamps rather than interpreting them in the machine's local timezone.
+
 ## Phase 7 — timeframe orchestration
 
 Implement:
