@@ -136,7 +136,6 @@ Each symbol uses one dedicated data directory for Market Data and Structures:
 ~~~text
 <DATA_ROOT>/<SYMBOL>/
     <SYMBOL>_marketdata.json
-    <SYMBOL>_structures.json
 ~~~
 
 The single global Calendar data file is:
@@ -344,7 +343,8 @@ Function:
 
 ~~~python
 def plan_market_data_updates(
-    analysis_views: list[StoredAnalysisView],
+    symbols: list[str],
+    timeframe_configuration: TimeframeConfiguration,
     market_data_coverage: dict[str, Any],
     now: datetime,
 ) -> list[MarketDataUpdatePlan]:
@@ -356,7 +356,6 @@ Model:
 ~~~python
 @dataclass(frozen=True)
 class MarketDataUpdatePlan:
-    analysis_key: str
     symbol: str
     timeframes: list[str]
     start_time: datetime | None
@@ -366,45 +365,39 @@ class MarketDataUpdatePlan:
 
 Plan invariants:
 
-- one V1 plan belongs to one stored analysis identity;
-- `timeframes` contains exactly the selected analysis timeframe set: the one selected timeframe in single-timeframe mode, or both HTF and LTF in two-timeframe mode;
-- `last_closed_only=True` is a latest-completed-candle probe and requires both range boundaries to be null;
-- `last_closed_only=False` is a historical/range request and requires a resolved UTC range;
-- a current/in-progress snapshot is not requested through this plan; current market reference refresh uses the separate `refresh_current_market_view` path;
-- V1 does not coalesce different analysis plans into one Market Data output stream. This keeps each Mapper STDIN stream scoped to one symbol, one analysis timeframe set, and one requested range.
+- one plan belongs to one symbol and the Monitor's explicit timeframe configuration;
+- `timeframes` contains exactly the selected timeframe set: one timeframe in single-timeframe mode or both HTF and LTF in two-timeframe mode;
+- `last_closed_only=True` is a latest-completed-candle probe and requires null range boundaries;
+- current/in-progress snapshots are handled by the separate current-snapshot path;
+- no provider-specific acquisition logic belongs in the Monitor.
 
 Planning rules:
 
-- entry-timeframe coverage extends through all missing completed candles after the durable checkpoint;
-- a two-timeframe plan requests both HTF and LTF in one Market Data invocation;
-- where HTF and LTF require different historical coverage, the requested range starts at the earliest required boundary across the two feeds; the Mapper still treats each returned timeframe series independently and must not assume equal availability;
-- for an incremental two-timeframe update, the requested start includes the canonical HTF interval start containing the entry-timeframe checkpoint, because Market Data range selection uses candle interval-start timestamps while Mapper eligibility uses derived completion boundaries; the Mapper filters overlap candles by completion time and persisted state;
-- bootstrap uses the persisted `analysis_start` plus canonical warm-up needs;
-- latest-completed probes may be used to determine whether a range update and Mapper invocation are necessary;
-- no provider-specific acquisition logic belongs here.
-
-In V1, a plan is analysis-scoped and its output must contain exactly the timeframe set required by that analysis. Do not widen or combine requests from different analysis identities. A two-timeframe analysis may use one common requested range covering the union of its HTF/LTF coverage needs; actual returned availability remains independent by timeframe.
+- Market Data's retained cache determines whether a provider update is needed;
+- the Monitor uses returned completed-candle coverage to determine whether a fresh Mapper run is due;
+- Mapper receives enough retained history for the requested output period plus all required warm-up/context candles;
+- in two-timeframe mode, the stream includes all HTF/LTF overlap needed for point-in-time context;
+- `-END` historical scopes resolve from each timeframe's earliest retained completed candle, not its latest candle;
+- no plan uses a Mapper checkpoint; no durable Mapper checkpoint exists.
 
 ## 4.4 No-new-candle path
 
-When no completed candle changed:
+When no new completed entry-timeframe candle is observed:
 
 - do not invoke Mapper solely for that reason;
-- a current-snapshot change may still trigger downstream target/alert evaluation;
-- the mapper checkpoint does not change.
+- a current-snapshot change may still trigger downstream target/alert evaluation using the current runtime result;
+- no checkpoint or persisted Mapper state is changed.
 
 ## 4.5 Missed-cycle path
 
 When multiple completed entry-timeframe candles accumulated:
 
-- retrieve the required range in one Market Data operation when possible;
-- invoke Mapper once for the resulting chronological range;
-- rely on the Mapper's durable checkpoint after atomic persistence;
-- evaluate downstream state only from the updated persisted structures state.
+- allow Market Data to update its own candle cache;
+- retrieve the complete required history from that cache in one operation when possible;
+- invoke Mapper once for the resulting chronological stream;
+- evaluate downstream state only from the newly validated Mapper JSON result.
 
-The Monitor must not invoke the Mapper once per missed candle unless an explicit implementation limitation requires it.
-
----
+The Monitor must not invoke Mapper once per missed candle unless an explicit implementation limitation requires it.
 
 ## 4.6 Calendar / News planning
 
@@ -443,7 +436,7 @@ Required planning function:
 ~~~python
 def plan_news_acquisition(
     symbol: str,
-    analysis_views: list[StoredAnalysisView],
+    monitored_symbols: list[MonitoredSymbol],
     now: datetime,
 ) -> tuple[date, date] | None:
     ...
@@ -572,24 +565,15 @@ When debug is enabled, the Monitor may propagate `--debug` so Mapper diagnostics
 
 Each subprocess receives explicit arguments and the environment required for execution.
 
-stdout/stderr are captured as separate streams and interpreted according to the invoked process contract. Market Data stdout is CSV input for Mapper; Mapper stdout is its committed Structures JSON response. STDERR is diagnostics/errors only and is never parsed as canonical data.
+stdout/stderr are captured as separate streams and interpreted according to the invoked process contract. Market Data stdout is CSV input for Mapper; Mapper stdout is its per-invocation JSON result. STDERR is diagnostics/errors only and is never parsed as canonical data.
 
 No process may consume another process's debug output as machine data.
 
-## 5.5 Successful persistence dependency
+## 5.5 Successful result dependency
 
-For downstream evaluation, Mapper success requires:
+For downstream evaluation, Mapper success requires a successful process exit, exactly one valid JSON document from STDOUT, required result fields, symbol/timeframe configuration matching the request, and requested-period/coverage metadata consistent with the supplied Market Data stream.
 
-1. successful process exit;
-2. exactly one valid JSON document captured from Mapper STDOUT;
-3. valid reload of the expected structures JSON;
-4. semantic consistency between the returned JSON document and the atomically persisted Structures JSON;
-5. presence of the relevant analysis entry;
-6. a checkpoint consistent with the completed candles the Mapper incorporated.
-
-If stdout is empty, contains extra non-JSON text, contains malformed JSON, or disagrees with the persisted file, the Monitor treats the invocation as failed and does not use a newer state for downstream evaluation. The Monitor never writes or repairs the Mapper's Structures JSON.
-
-The Monitor does not independently advance checkpoint state.
+If STDOUT is empty, contains extra non-JSON text, or contains malformed/mismatched JSON, the Monitor treats the invocation as failed and does not use that result for downstream evaluation. No persisted Structures file is loaded or compared. The Monitor does not advance a Mapper checkpoint.
 
 ---
 
@@ -621,10 +605,10 @@ The Monitor must not execute redundant Mapper processing when no new completed e
 Function:
 
 ~~~python
-def get_due_analyses(
-    registry: list[MonitoredAnalysis],
+def get_due_symbols(
+    registry: list[MonitoredSymbol],
     now: datetime,
-) -> list[MonitoredAnalysis]:
+) -> list[MonitoredSymbol]:
     ...
 ~~~
 
@@ -1475,11 +1459,11 @@ At minimum distinguish:
 
 ~~~text
 CLI/input error
-structures JSON load/validation error
+Mapper JSON STDOUT validation error
 market-data machine-output validation error
 market-data acquisition/process error
 mapper process error
-mapper persistence/contract validation error
+Mapper result-contract validation error
 current-price unavailable
 target unresolved
 target not cleared
@@ -1875,23 +1859,23 @@ test_local_time_does_not_change_due_evaluation
 ### Analysis discovery
 
 ~~~text
-test_discover_analysis_views_preserves_all_analyses
-test_monitor_does_not_infer_analysis_from_market_data
-test_analysis_registry_is_symbol_isolated
-test_analysis_registry_is_checkpoint_isolated
+test_monitor_uses_explicit_timeframe_configuration
+test_monitor_does_not_infer_timeframes_from_market_data
+test_runtime_mapping_context_is_symbol_isolated
+test_transient_last_mapped_time_is_not_persisted
 ~~~
 
 ### Market Data orchestration
 
 ~~~text
-test_plan_market_data_updates_from_checkpoint
-test_plan_market_data_bootstrap_range
-test_plan_market_data_separates_incompatible_ranges
-test_two_timeframe_update_includes_htf_interval_overlapping_checkpoint
-test_market_data_plan_contains_only_analysis_timeframes
+test_plan_market_data_from_explicit_timeframe_configuration
+test_plan_market_data_bootstrap_from_cached_history
+test_plan_market_data_separates_symbol_ranges
+test_two_timeframe_range_includes_required_htf_ltf_context
+test_market_data_plan_contains_only_configured_timeframes
 test_no_new_completed_candle_skips_mapper
-test_missed_multiple_candles_use_one_range_update
-test_current_snapshot_refresh_does_not_advance_checkpoint
+test_missed_multiple_candles_use_one_full_recompute
+test_current_snapshot_refresh_does_not_trigger_mapper
 ~~~
 
 ### Process boundary
@@ -1900,10 +1884,10 @@ test_current_snapshot_refresh_does_not_advance_checkpoint
 test_invoke_market_data_consumes_machine_stdout
 test_invoke_mapper_passes_market_data_stdout_to_stdin
 test_invoke_mapper_parses_json_stdout
-test_invoke_mapper_stdout_matches_persisted_structures_json
-test_invoke_mapper_uses_persisted_structures_json
+test_invoke_mapper_validates_result_metadata
+test_invoke_mapper_never_reads_structures_file
 test_failed_market_data_blocks_dependent_mapper
-test_failed_mapper_does_not_advance_monitor_checkpoint
+test_failed_mapper_result_is_not_used_for_downstream_evaluation
 ~~~
 
 ### Calendar / News warning
@@ -1986,7 +1970,7 @@ test_analysis_isolation
 test_monitor_serializes_symbol_orchestration
 test_monitor_does_not_write_structures_json
 test_monitor_does_not_write_market_data_json
-test_atomic_mapper_persistence_is_required_before_downstream_evaluation
+test_mapper_json_stdout_validation_is_required_before_downstream_evaluation
 ~~~
 
 Core Monitor tests must not require live provider access. Provider/process behavior should use doubles.
@@ -2000,12 +1984,12 @@ Do not:
 - implement canonical SMC rules inside the Monitor;
 - create a Monitor-specific POI lifecycle;
 - create a second target ontology;
-- create a second mapper checkpoint;
+- create a Mapper checkpoint or persistent Structures cache;
 - write directly to either JSON store;
 - parse any non-contract stdout as candle data;
 - call provider APIs directly;
 - use current candles as canonical mapper input;
-- infer new mapper analyses;
+- infer timeframe configuration from Market Data or previous Mapper output;
 - automatically buy, sell, submit orders, or manage positions;
 - silently downgrade missing canonical/context information;
 - manufacture targets to satisfy RR;
