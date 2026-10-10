@@ -255,6 +255,28 @@ jobs:
           }
           domain.validate_calendar_document(legacy_provider_fields_doc)
 
+          # The persistence loader normalizes existing cache data before schema validation.
+          original_json_loader = storage._load_json_file
+          try:
+              storage_migration_doc = domain.build_empty_calendar_document()
+              storage_migration_event = dict(lse_event)
+              storage_migration_event["details"] = dict(lse_event["details"])
+              storage_migration_event["details"]["provider_fields"] = {
+                  "time": "10:00 AM",
+                  "updated_at": "legacy timestamp",
+              }
+              storage_migration_doc["events"] = [storage_migration_event]
+              storage._load_json_file = lambda: storage_migration_doc
+              loaded_migration_doc = storage.load_calendar_document()
+              assert loaded_migration_doc["events"][0]["details"]["provider_fields"] == {
+                  "lse": {
+                      "time": "10:00 AM",
+                      "updated_at": "legacy timestamp",
+                  }
+              }
+          finally:
+              storage._load_json_file = original_json_loader
+
           # An incoming refresh replaces only the same provider's values; no flattened keys return.
           incoming_lse_event = dict(lse_event)
           incoming_lse_event["details"] = dict(lse_event["details"])
