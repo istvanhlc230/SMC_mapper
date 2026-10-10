@@ -3,7 +3,9 @@
 
 import sys
 import traceback
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
+from time import perf_counter
 from typing import Any, Dict, List, Optional, Tuple
 
 from . import domain, providers, storage
@@ -338,27 +340,59 @@ def refresh_calendar_scope(
     provider_results: List[Dict[str, Any]] = []
     failures: List[Dict[str, str]] = []
 
-    for provider in domain.resolve_applicable_providers(symbol):
+    applicable_providers = domain.resolve_applicable_providers(symbol)
+
+    def fetch_provider_snapshot(
+        provider: str,
+    ) -> Tuple[List[Dict[str, Any]], List[str], float]:
+        """Fetch one provider's base events and retain timing/partial-row metadata."""
+        fetch_started_at = perf_counter()
+        unresolved_event_time_ids: List[str] = []
+        if provider == "forexfactory":
+            fetched = _fetch_provider_events(
+                provider,
+                symbol,
+                refresh_window_start,
+                refresh_window_end,
+                include_details=False,
+                unresolved_event_time_ids=unresolved_event_time_ids,
+            )
+        else:
+            fetched = _fetch_provider_events(
+                provider,
+                symbol,
+                refresh_window_start,
+                refresh_window_end,
+            )
+        return fetched, unresolved_event_time_ids, perf_counter() - fetch_started_at
+
+    # Provider base requests are independent. Run them concurrently so their
+    # network latency overlaps instead of accumulating serially.
+    with ThreadPoolExecutor(
+        max_workers=max(1, len(applicable_providers)),
+        thread_name_prefix="calendar-provider",
+    ) as provider_executor:
+        provider_futures = {
+            provider: provider_executor.submit(fetch_provider_snapshot, provider)
+            for provider in applicable_providers
+        }
+
+    for provider in applicable_providers:
         try:
-            unresolved_event_time_ids: List[str] = []
-            if provider == "forexfactory":
-                fetched = _fetch_provider_events(
-                    provider,
-                    symbol,
-                    refresh_window_start,
-                    refresh_window_end,
-                    include_details=False,
-                    unresolved_event_time_ids=unresolved_event_time_ids,
+            fetched, unresolved_event_time_ids, fetch_elapsed = provider_futures[provider].result()
+            if debug:
+                print(
+                    f"DEBUG | {provider} base fetch completed in {fetch_elapsed:.2f}s "
+                    f"({len(fetched)} event(s)).",
+                    file=sys.stderr,
                 )
-                if unresolved_event_time_ids and debug:
-                    print(
-                        "DEBUG | forexfactory skipped "
-                        f"{len(unresolved_event_time_ids)} event row(s) without a concrete time; "
-                        "the provider interval remains PARTIAL.",
-                        file=sys.stderr,
-                    )
-            else:
-                fetched = _fetch_provider_events(provider, symbol, refresh_window_start, refresh_window_end)
+            if unresolved_event_time_ids and debug:
+                print(
+                    "DEBUG | forexfactory skipped "
+                    f"{len(unresolved_event_time_ids)} event row(s) without a concrete time; "
+                    "the provider interval remains PARTIAL.",
+                    file=sys.stderr,
+                )
             fetched_for_symbol = domain.filter_events_for_symbol(fetched, symbol)
             selected = [
                 event for event in fetched_for_symbol

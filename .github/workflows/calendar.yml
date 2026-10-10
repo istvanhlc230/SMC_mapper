@@ -27,6 +27,7 @@ jobs:
           import sys
           import subprocess
           import tempfile
+          import threading
           from datetime import datetime, timedelta, timezone
 
           import calendar
@@ -706,6 +707,38 @@ jobs:
           finally:
               providers.fetch_forexfactory_event_detail = original_detail_fetch
               providers.ThreadPoolExecutor = original_executor
+
+          # Forced refresh overlaps independent provider requests instead of serially awaiting each network source.
+          concurrent_refresh_providers = domain.resolve_applicable_providers("EURUSD")
+          original_concurrent_fetch = operations._fetch_provider_events
+          concurrent_started = set()
+          concurrent_started_lock = threading.Lock()
+          all_concurrent_providers_started = threading.Event()
+
+          def synchronized_provider_fetch(provider, symbol, start, end, **kwargs):
+              with concurrent_started_lock:
+                  concurrent_started.add(provider)
+                  if len(concurrent_started) == len(concurrent_refresh_providers):
+                      all_concurrent_providers_started.set()
+              assert all_concurrent_providers_started.wait(timeout=5), (
+                  "forced refresh serialized independent provider network requests"
+              )
+              return []
+
+          try:
+              operations._fetch_provider_events = synchronized_provider_fetch
+              concurrent_refresh_result = operations.refresh_calendar_scope(
+                  domain.build_empty_calendar_document(),
+                  "EURUSD",
+                  dt("2026-10-10T00:00:00Z"),
+                  dt("2026-10-11T00:00:00Z"),
+              )
+              assert concurrent_started == set(concurrent_refresh_providers)
+              assert {
+                  result["provider"] for result in concurrent_refresh_result["provider_results"]
+              } == set(concurrent_refresh_providers)
+          finally:
+              operations._fetch_provider_events = original_concurrent_fetch
 
           # Scope-based refresh force-fetches provider data, compares stable event IDs,
           # replaces mutable values, permits provider rescheduling, and preserves

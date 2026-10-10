@@ -1470,3 +1470,21 @@ The user's live refresh failed in the HTML fallback because the page had an even
 - Market Data GitHub Actions run [#546](https://github.com/istvanhlc230/SMC_mapper/actions/runs/38069762117): SUCCESS.
 - Both workflows passed against implementation/specification/workflow snapshot `e1db791393145f365aa4eb47c04f5dcd71bc61d4`, including the embedded regression tests for the observed `151380` case, partial forced refresh, and persistence of partial acquisition state.
 - The regression uses a synthetic provider response and does not require or expose the user's API key. A successful live authenticated ForexFactory response is not re-tested here.
+
+
+## Calendar forced-refresh latency — 2026-10-10
+
+### Finding
+- Forced refresh fetched the independent LSE, ForexFactory, and Yahoo Finance base responses serially, causing network wait times to accumulate.
+- The current user's affected command is a forced refresh path, so this was an actionable latency issue rather than a parser issue.
+
+### Change
+- Calendar now fetches applicable provider base responses concurrently, bounded to the maximum of three independent providers.
+- Normalization, symbol/interval selection, ForexFactory Detail enrichment, event merge, and persistence remain sequenced after base acquisition.
+- With `--debug`, each provider reports its base-fetch elapsed time to stderr; JSON stdout remains unchanged.
+- Added a synchronization-based regression that fails if provider base requests are serialized.
+- Updated the Calendar version and normative specification to 2.6.6.
+
+### Validation
+- Static source and regression review: pending automated CI.
+- No live user API key or credential was used or included in tests.
