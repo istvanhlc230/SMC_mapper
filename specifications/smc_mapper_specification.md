@@ -1549,6 +1549,11 @@ At minimum, the finished mapper implementation must have focused tests covering:
 - UTC parsing, interval-start-based half-open period eligibility, and rejection of a standalone date-time without a range hyphen;
 - rejection of current/in-progress candles as canonical input;
 - independent HTF/LTF ranges and HTF_CONTEXT_UNAVAILABLE behavior;
+- rejection of missing timeframe arguments, equal HTF/LTF, and HTF < LTF; no single-timeframe analysis mode;
+- 38.2%–below-50% qualification only when the entire mapped retracement is represented by one valid pullback on the applicable immediate HTF;
+- an HTF inside bar/invalid pullback yields NOT QUALIFIED, while missing HTF history yields HTF_CONTEXT_UNAVAILABLE rather than a false negative;
+- pairing examples are not rigid: when 3MN is unavailable, an applicable configured 1MN context may validate W1 structure;
+- an Outside Bar with ambiguous internal order is UNAVAILABLE unless supplied lower-timeframe/equivalent evidence establishes its path;
 - point-in-time HTF context, proving later HTF events do not reinterpret earlier LTF events;
 - full recomputation from supplied history yields deterministic output;
 - historical candle corrections are reflected in a fresh invocation without reading prior Mapper output;
