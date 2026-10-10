@@ -37,9 +37,17 @@ def acquire_explicit(
                 continue
             events: List[Dict[str, Any]] = []
             detail_failures: List[str] = []
+            unresolved_event_time_ids: List[str] = []
             for gap_start, gap_end in gaps:
                 if provider == "forexfactory":
-                    gap_events = _fetch_provider_events(provider, symbol, gap_start, gap_end, detail_failures=detail_failures)
+                    gap_events = _fetch_provider_events(
+                        provider,
+                        symbol,
+                        gap_start,
+                        gap_end,
+                        detail_failures=detail_failures,
+                        unresolved_event_time_ids=unresolved_event_time_ids,
+                    )
                 else:
                     gap_events = _fetch_provider_events(provider, symbol, gap_start, gap_end)
                 gap_events = domain.filter_events_for_interval(gap_events, gap_start, gap_end)
@@ -51,8 +59,16 @@ def acquire_explicit(
                 clear_suppressed_symbol=symbol,
                 preserve_detail_failure_ids=failed_detail_ids,
             )
-            status = "PARTIAL" if detail_failures else "OK"
-            coverage_status = "PARTIAL" if detail_failures else "COMPLETE"
+            has_partial_provider_data = bool(detail_failures or unresolved_event_time_ids)
+            status = "PARTIAL" if has_partial_provider_data else "OK"
+            coverage_status = "PARTIAL" if has_partial_provider_data else "COMPLETE"
+            if unresolved_event_time_ids and debug:
+                print(
+                    "DEBUG | forexfactory skipped "
+                    f"{len(unresolved_event_time_ids)} event row(s) without a concrete time; "
+                    "the provider interval remains PARTIAL.",
+                    file=sys.stderr,
+                )
             if start < now:
                 for gap_start, gap_end in gaps:
                     domain.merge_coverage(document, {
@@ -63,7 +79,7 @@ def acquire_explicit(
                         "status": coverage_status,
                         "updated_at": domain.format_iso8601(now),
                     })
-            if not detail_failures:
+            if not has_partial_provider_data:
                 if start < now:
                     domain.update_watermark(document, provider, symbol, min(end, now), events)
                 successful += 1
@@ -73,6 +89,7 @@ def acquire_explicit(
                 "events_acquired": len(events),
                 "coverage": "UPDATED",
                 **({"detail_failures": len(detail_failures)} if detail_failures else {}),
+                **({"unresolved_event_times": len(unresolved_event_time_ids)} if unresolved_event_time_ids else {}),
             })
         except YahooForexPairUnavailable as exc:
             if debug:
@@ -316,8 +333,23 @@ def refresh_calendar_scope(
 
     for provider in domain.resolve_applicable_providers(symbol):
         try:
+            unresolved_event_time_ids: List[str] = []
             if provider == "forexfactory":
-                fetched = _fetch_provider_events(provider, symbol, refresh_window_start, refresh_window_end, include_details=False)
+                fetched = _fetch_provider_events(
+                    provider,
+                    symbol,
+                    refresh_window_start,
+                    refresh_window_end,
+                    include_details=False,
+                    unresolved_event_time_ids=unresolved_event_time_ids,
+                )
+                if unresolved_event_time_ids and debug:
+                    print(
+                        "DEBUG | forexfactory skipped "
+                        f"{len(unresolved_event_time_ids)} event row(s) without a concrete time; "
+                        "the provider interval remains PARTIAL.",
+                        file=sys.stderr,
+                    )
             else:
                 fetched = _fetch_provider_events(provider, symbol, refresh_window_start, refresh_window_end)
             fetched_for_symbol = domain.filter_events_for_symbol(fetched, symbol)
@@ -337,12 +369,14 @@ def refresh_calendar_scope(
                 existing = next((item for item in existing_events if item["event_id"] == event["event_id"]), None)
                 if existing is None or existing["timestamp"] != event["timestamp"]:
                     reported_events.append(event)
+            has_partial_provider_data = bool(detail_failures or unresolved_event_time_ids)
             provider_results.append({
                 "provider": provider,
-                "status": "PARTIAL" if detail_failures else ("NO_MATCH" if not selected else "OK"),
+                "status": "PARTIAL" if has_partial_provider_data else ("NO_MATCH" if not selected else "OK"),
                 "events_fetched": len(fetched),
                 "events_refreshed": len(selected),
                 **({"detail_failures": len(detail_failures)} if detail_failures else {}),
+                **({"unresolved_event_times": len(unresolved_event_time_ids)} if unresolved_event_time_ids else {}),
             })
         except YahooForexPairUnavailable as exc:
             if debug:
