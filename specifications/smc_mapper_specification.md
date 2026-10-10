@@ -760,7 +760,7 @@ The mapper must not use a latest-window shortcut that bypasses required structur
 
 The Monitor/orchestrator invokes the Market Data CLI for the required bootstrap range in deterministic batch form, then supplies the captured machine-readable STDOUT as Mapper STDIN.
 
-For incremental execution after a valid persisted checkpoint, the Monitor/orchestrator invokes the Market Data CLI for the analysis's exact timeframe set and a common UTC range that covers all newly required data, then passes the resulting machine-output stream to the Mapper through STDIN as defined by §10.1. In single-timeframe mode, the request begins at the next entry-timeframe interval after the checkpoint. In two-timeframe mode, the requested start is the earliest canonical interval start needed by either feed: the next LTF interval after the checkpoint and the HTF interval containing the checkpoint. This HTF overlap is required because Market Data range selection is based on candle interval-start timestamps while Mapper eligibility is based on derived completion boundaries. The Mapper filters overlap candles by canonical completion time and persisted state; overlap must not duplicate structural events.
+Every invocation rebuilds canonical state from the full required candle history supplied for the requested period. The Monitor/orchestrator obtains that history from the Market Data cache (which may fetch only missing candles) and passes the validated stream through STDIN. In two-timeframe mode, the stream must include all HTF/LTF overlap and warm-up candles needed for point-in-time context. The Mapper does not compare against prior checkpoints or incrementally append structural events.
 
 The mapper obtains its market-data stream from the Monitor/orchestrator through STDIN and does not access a concrete provider.
 
@@ -789,15 +789,15 @@ The LTF bootstrap reference is not an LTF structural-start ontology. The first L
 The mapper executes the following dependency-ordered pipeline for every analysis invocation:
 
 1. Validate CLI inputs and the normalized market-data contract.
-2. Resolve the analysis mode, entry timeframe, requested/effective analysis boundaries, and deterministic analysis identity.
-3. Load the matching persisted analysis state, or create the required initial state.
-4. Verify the required market-data coverage returned by the Market Data process and determine whether bootstrap, warm-up, or incremental processing is required.
+2. Resolve the analysis mode, requested period, available coverage, and required processing/output boundaries.
+3. Initialize fresh in-memory canonical state for this invocation.
+4. Verify the supplied stream covers the requested period and all required bootstrap/warm-up context.
 5. Process completed candles only, in chronological order, using the canonical SMC skill as the sole semantic authority.
 6. In single-timeframe mode, evaluate the selected timeframe without HTF pullback validation.
 7. In two-timeframe mode, establish and maintain point-in-time HTF context and evaluate LTF candles only against HTF facts already canonical at the LTF evaluation time.
 8. Reconcile canonical structural lifecycle, Dealing Range state/history, and canonical POI state according to the skill-owned semantics.
 9. Enrich already-canonical POIs with optional non-canonical volume analytics when requested and available.
-10. Persist the updated mapper analysis atomically and advance the mapper checkpoint only after successful persistence.
+10. Serialize the completed in-memory result to the selected STDOUT presentation mode; do not persist canonical state.
 
 The mapper must never use a later event, incomplete candle, analytical volume result, storage-retention event, or downstream monitor state to retroactively redefine canonical structure.
 
@@ -858,7 +858,7 @@ For every processed candle:
 - downstream analytical enrichment cannot mutate canonical structural truth;
 - persistence metadata such as `last_processed_candle_time` carries implementation provenance only and has no canonical SMC meaning.
 
-A successful invocation persists the resulting state before the checkpoint is advanced. A failed or unresolved canonical dependency must not be converted into a successful structural state.
+A successful invocation returns the validated in-memory result. A failed or unresolved canonical dependency must not be converted into a successful structural result.
 
 ---
 
@@ -979,7 +979,7 @@ It must not introduce a general HTF-parent/LTF-child semantic ontology.
 
 ## 7.1 Closed Dealing Range history
 
-`history_no` is one collective symbol-level configuration value, stored once in `<SYMBOL>_structures.json`.
+`history_no` is a per-invocation configuration value, defaulting to 5000, and is not persisted.
 
 In two-timeframe mode, it applies independently to the HTF CLOSED DEALING RANGE history retained inside each distinct mapper analysis entry. The LTF does not have a separate `history_no`.
 
@@ -1274,33 +1274,30 @@ When no supported volume analytical path is available, no POI-derived volume ana
 
 ---
 
-# 10. MONITOR ORCHESTRATION AND CHECKPOINT PERSISTENCE
+# 10. MONITOR ORCHESTRATION AND RESULT DELIVERY
 
 ## 10.1 Mapper process-input boundary
 
-The Mapper is invoked by the Monitor as a separate process and receives its market-data input through STDIN. The Monitor owns the separate Market Data process invocation and passes its captured machine-readable STDOUT to the Mapper.
+The Mapper is invoked by the Monitor as a separate process and receives market-data input through STDIN. The Monitor owns the separate Market Data process invocation and passes its captured machine-readable STDOUT to the Mapper.
 
 On invocation:
 
 1. read the supplied machine stream from STDIN;
 2. parse and validate the machine-readable CSV-like protocol;
 3. group returned records by timeframe and process only records marked `completed=1`;
-4. resolve the requested analysis identity;
-5. persist the complete symbol-scoped Structures JSON atomically;
-6. advance `last_processed_candle_time` only within the same successful persistence transaction;
-7. return a process status.
+4. resolve the positional period and required canonical warm-up/context coverage;
+5. initialize and compute canonical state in memory from the supplied history;
+6. serialize one successful result to STDOUT as JSON by default or cleartext when explicitly requested.
 
 The Mapper must reject malformed machine output and must never fall back to `<SYMBOL>_marketdata.json`.
 
-The Mapper does not schedule itself, refresh current snapshots, resolve targets, apply RR, emit alerts, or manage positions.
+The Mapper does not schedule itself, refresh current snapshots, resolve targets, apply RR, emit alerts, manage positions, or write any persistent file.
 
-## 10.2 Multiple analyses in one Structures file
+## 10.2 Stateless repeated invocation
 
-One symbol-scoped Structures JSON may contain multiple independent mapper analyses.
+Every invocation recomputes canonical state from the supplied completed-candle history. A historical correction in Market Data is reflected naturally by the next invocation. The Mapper never loads previous Mapper output, merges with old structures, advances a checkpoint, or depends on a previous process run.
 
-The Mapper updates only the selected analysis entry and must preserve all unrelated analysis entries. Scheduling, multi-symbol orchestration, and process serialization are Monitor-owned concerns.
-
----
+The Monitor owns runtime scheduling cadence and supplies all timeframe/context data needed for each fresh computation. It may retain the latest parsed Mapper result in memory for downstream evaluation during the current runtime, but must not treat that transient result as a persistent canonical cache or as input to later Mapper computations.
 
 # 11. DOWNSTREAM TARGET, RR, AND ALERT ELIGIBILITY
 
@@ -1390,7 +1387,7 @@ SMC_MAPPER/
     dealing_range_history.py
     volume_analytics.py
     processor.py
-    persistence.py
+    output.py
 ```
 
 Module responsibilities:
@@ -1401,7 +1398,7 @@ Module responsibilities:
 | `models.py` | Explicit cross-layer candle, request, analysis identity/state, structural-state, and persistence DTOs; no canonical decision logic. |
 | `cli.py` | Mapper argument parsing and request validation; no file/network/process I/O. |
 | `market_data_input.py` | Parse and validate the fixed Market Data CSV STDIN protocol; no provider or JSON-store access. |
-| `identity.py` | Resolve analysis mode, normalized UTC boundaries, deterministic analysis key, and unambiguous resume selection. |
+| `identity.py` | Parse positional period expressions and normalize UTC processing/output boundaries. |
 | `layer1_micro_structure.py` | Implement only canonical Layer-1 candle/micro-structure semantics from the skill. |
 | `layer2_minor_structure.py` | Implement only canonical Layer-2 pullback, verified-extreme, and Minor IDM semantics from the skill. |
 | `layer3_structural_semantics.py` | Implement only canonical Layer-3 structural lifecycle, Major IDM, swing promotion, and retracement qualification semantics from the skill. |
@@ -1412,7 +1409,7 @@ Module responsibilities:
 | `dealing_range_history.py` | Reconcile mapper-owned Dealing Range lifecycle records and apply symbol-configured storage retention without changing canonical state. |
 | `volume_analytics.py` | Calculate optional POI-scoped OHLC/orderflow analytics after canonical POI resolution; never feed results back into structure. |
 | `processor.py` | Orchestrate chronological candle processing and cross-layer state flow; it must not redefine layer semantics. |
-| `persistence.py` | Load/validate/serialize/atomically save Structures JSON and commit the checkpoint with the same transaction. |
+| `output.py` | Validate and serialize the per-invocation result as JSON or cleartext; performs no file I/O. |
 
 Layer 7 runtime target/RR policy and monitor alert evaluation are not Mapper modules. The Mapper may preserve canonical structural/target-reference facts needed downstream, but it does not resolve runtime targets, apply RR policy, or emit alerts. Layer-8 state/observability requirements are implemented at the relevant module boundaries without creating a competing semantic layer.
 
@@ -1593,14 +1590,14 @@ At this boundary:
 - available_start / available_end describe completed-candle coverage only;
 - candles are canonical market-data input;
 - current is excluded from canonical processing;
-- candle completion_time is the eligibility boundary for explicit --endtime;
+- requested-period eligibility uses canonical candle interval-start timestamps and half-open UTC boundaries;
 - optional protocol volume fields retain their independent meanings; `volume_total` supplies the normalized total-volume input for OHLC estimation, while an observed orderflow pair is available only when both `orderflow_buy` and `orderflow_sell` are present;
 - delta is derived as buy minus sell from the selected branch; no source-level delta field is required;
 - persisted numeric values must be parsed deterministically and validated before use.
 
 ## 15.4 Structures persistence
 
-Owner module: `SMC_MAPPER/persistence.py`.
+Owner module: `SMC_MAPPER/output.py`.
 
     create_empty_structures(symbol, history_no) -> StructuresDocument
     load_structures(path, symbol) -> StructuresDocument
@@ -1639,52 +1636,25 @@ Normal execution emits exactly one JSON document to STDOUT after the correspondi
 
 ---
 
-# 16. PERSISTENCE AND CHECKPOINT CONTRACT
+# 16. RESULT OUTPUT CONTRACT
 
-## 16.1 Structures JSON transaction boundary
+## 16.1 JSON result
 
-The mapper persists one symbol-scoped file:
+Default successful execution emits exactly one complete JSON document on STDOUT. The result represents only the current invocation and includes symbol, timeframe configuration, normalized requested period, actual per-timeframe available coverage, canonical processing coverage, requested output window, canonical structural results, and applicable provenance/volume analytics.
 
-    <DATA_ROOT>/<SYMBOL>/<SYMBOL>_structures.json
+The JSON document is created from validated in-memory domain state. It is not persisted, re-read, merged with previous output, or treated as a checkpoint. The Mapper does not create `<SYMBOL>_structures.json` or any other output file.
 
-Conceptually:
+## 16.2 Cleartext result
 
-    {
-      "symbol": "CCCC",
-      "history_no": 5000,
-      "analyses": {
-        "H4_M15_2026-06-10T12:00:00Z": { ... }
-      }
-    }
+When `--cleartext` is supplied, STDOUT contains a human-readable rendering of the same successful in-memory result instead of JSON. This is presentation-only and must not change canonical computation or result content. The Monitor must not enable `--cleartext` when it needs machine-readable Mapper output.
 
-The JSON form may use an object keyed by deterministic analysis key even though the portable domain model represents analyses as an explicit array. The key is an index/serialization convenience; canonical semantics do not depend on JSON container type.
+## 16.3 Failure behavior
 
-A mapper invocation performs one complete read-modify-write transaction for the affected symbol. Unrelated analysis entries must be preserved semantically and must not be dropped or merged.
+If input validation, coverage validation, canonical processing, or result serialization fails, exit non-zero and emit no successful result to STDOUT. Error details and diagnostics go to STDERR. A failed invocation leaves Market Data's persistent candle cache untouched by the Mapper; only Market Data owns updates to that cache.
 
-## 16.2 Atomic persistence
+## 16.4 Historical recomputation
 
-Use the same persistence discipline as Market Data:
-
-1. serialize the complete structures document deterministically;
-2. write a temporary file in the same directory;
-3. flush and close successfully;
-4. atomically replace the target;
-5. retry finite transient failures;
-6. remove temporary files on failure.
-
-No separate lock file is required for V1 because the monitor serializes active orchestration per symbol.
-
-## 16.3 Checkpoint ordering
-
-The mapper must update last_processed_candle_time in the in-memory analysis state only as part of a successful processing result, and the persisted checkpoint is authoritative only after the complete structures document has been atomically persisted.
-
-A failure before persistence must not leave a falsely advanced checkpoint in durable state.
-
-The persisted checkpoint must correspond to the latest completed entry-timeframe candle actually incorporated by the successful processing transaction and must not be later than the resolved analysis end boundary.
-
-The checkpoint is implementation provenance only; it has no canonical SMC meaning.
-
----
+Historical recomputation is an ordinary invocation with a positional period. The Mapper rebuilds state from the complete supplied candle history and required warm-up/context, so corrected historical candles automatically affect all downstream structural outcomes. There is no special update command, transaction, checkpoint, old-state preservation, or duplicate-event reconciliation because no previous Mapper state is loaded.
 
 # 17. PURE-FUNCTION AND TESTABILITY BOUNDARIES
 
@@ -1714,20 +1684,17 @@ At minimum, the finished mapper implementation must have focused tests covering:
 
 - CLI option parsing, including equal HTF/LTF single-timeframe mode and invalid HTF<LTF combinations;
 - list/query of stored analyses without canonical processing or file mutation;
-- ambiguous cache query rejection with all matching analysis keys identified;
-- explicit deletion of one analysis preserving unrelated analyses, and explicit Structures-cache deletion never touching Market Data storage;
-- cache-query JSON output and byte-for-byte/file-mtime immutability for read-only operations;
-- deterministic analysis-key creation from normalized timeframe configuration + persisted analysis_start;
+- positional-period parser coverage for date-only, date-range, exact-minute, open-start, and open-end forms;
+- omitted period resolves to the full completed-candle history actually supplied by Market Data;
 - ambiguous existing-analysis selection;
 - UTC parsing and completion_time-based end-time eligibility;
 - rejection of current/in-progress candles as canonical input;
 - independent HTF/LTF ranges and HTF_CONTEXT_UNAVAILABLE behavior;
 - point-in-time HTF context, proving later HTF events do not reinterpret earlier LTF events;
-- bootstrap versus incremental resume from last_processed_candle_time;
-- historical `--update-range` validates boundaries, requires an existing unambiguous analysis and full replay-window coverage, rebuilds path-dependent state from analysis_start, preserves unrelated analyses, and atomically replaces the selected analysis only on success;
-- failed or insufficient historical replay leaves the prior Structures JSON bytes and checkpoint unchanged;
-- historical replay does not duplicate stale structural events or change analysis identity;
-- two-timeframe incremental overlap includes an HTF candle that starts before but completes after the entry-timeframe checkpoint, without duplicating previously incorporated structural events;
+- full recomputation from supplied history yields deterministic output;
+- historical candle corrections are reflected in a fresh invocation without reading prior Mapper output;
+- insufficient warm-up/context coverage fails closed;
+- two-timeframe HTF/LTF overlap is handled by point-in-time completion rules without duplicate events within a single invocation;
 - deterministic Dealing Range identity/history reconciliation and history_no retention;
 - canonical POI lifecycle pass-through without introducing mapper-specific lifecycle states;
 - POI volume provenance and branch separation for NONE/OHLC/ORDERFLOW/BOTH;
@@ -1735,7 +1702,7 @@ At minimum, the finished mapper implementation must have focused tests covering:
 - `market_data_input.py` parses the fixed CSV header and validates the exact field count and order;
 - source-level delta derivation from buy/sell with no persisted candle-level delta dependency;
 - deterministic OHLC directional-volume aggregation and zero-volume behavior;
-- structures JSON atomic persistence and checkpoint ordering;
+- JSON/cleartext output modes are presentation-exclusive and do not alter canonical computation;
 - successful CLI STDOUT is exactly the committed Structures JSON document, with no diagnostic text; failure emits no success document and returns a non-zero exit status;
 - MQL-portable domain-state behavior independent of Python-specific collection mechanics;
 - absence of runtime/import dependencies on legacy modules and Market Data/Monitor modules;
@@ -1749,9 +1716,8 @@ Definition of done:
 - canonical SMC decisions are governed by .agents/skills/smc/;
 - Market Data current snapshot never enters canonical structural input;
 - no source-level orderflow delta field is required;
-- checkpoint advances only after successful atomic persistence;
-- analysis_start is persisted and is the sole analysis-identity boundary;
-- structures state is deterministic and incrementally resumable;
+- no Structures JSON, Mapper cache, persistent analysis identity, or Mapper checkpoint is created;
+- repeated full recomputation is deterministic for identical normalized input and configuration;
 - implementation contains no runtime dependency on legacy artifacts;
 - focused mapper tests pass without network access;
 - the code structure remains directly portable at the class/contract level to both MQL4 and MQL5.
