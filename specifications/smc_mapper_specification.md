@@ -603,7 +603,7 @@ The result is per-invocation output, not a durable source of truth. If a caller 
 
 Historical recomputation is an ordinary invocation with a positional period. Mapper rebuilds state from all retained completed candles supplied through the requested end, beginning at the earliest candle in each timeframe's returned history. A corrected historical candle in the Market Data cache is naturally reflected by the next invocation and all downstream structural lifecycle outcomes. No special update command is required.
 
-The Monitor/orchestrator must request the full retained Market Data history through the requested end (normally Market Data's open-start `--range -END` form), then pass that complete CSV stream to Mapper. If the stream lacks retained-history coverage or required canonical context, Mapper fails closed instead of presenting an incomplete result as complete.
+The Monitor/orchestrator must request the full retained Market Data history through the requested end (normally by using Market Data's positional open-start `-END` scope), then pass that complete CSV stream to Mapper. If the stream lacks retained-history coverage or required canonical context, Mapper fails closed instead of presenting an incomplete result as complete.
 
 Example process pipe:
 
@@ -611,7 +611,7 @@ Example process pipe:
 python market_data.py SYMBOL --timeframes RESOLVED_TF_1 RESOLVED_TF_2 ... MARKET_DATA_SCOPE | python smc_mapper.py --symbol SYMBOL --timeframe TF [PERIOD]
 ```
 
-Market Data output must include all retained completed candles through the Mapper's requested end, not just the visible output window; use the Market Data open-start `--range -END` form for this full-history result. Market Data's `--range` is not passed to Mapper as a flag. The Monitor must pass the primary timeframe selection explicitly and include the permitted candidate series required by canonical pullback-representation resolution; it must not discover timeframe configuration from a Structures file.
+Market Data output must include all retained completed candles through the Mapper's requested end, not just the visible output window; use the positional open-start `-END` scope for this full-history result. There is no `--range` option, and the Market Data scope is not passed to Mapper as a flag. The Monitor passes the user's single `--timeframe TF` anchor and includes the automatically derived candidate series required by canonical pullback-representation resolution; it must not discover timeframe configuration from a Structures file.
 
 # 3. PER-INVOCATION ANALYSIS MODEL
 
