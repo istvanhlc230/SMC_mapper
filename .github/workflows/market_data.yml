@@ -360,6 +360,24 @@ jobs:
               assert run_market_data_request(table_request) == 0
           assert "L2 MARKET DEPTH" not in captured_future_stdout.call_args.args[0]
 
+          # Price levels must be ordered best-to-worst before display.
+          unsorted_depth = replace(
+              sample_depth,
+              bids=list(reversed(sample_depth.bids)),
+          )
+          class UnsortedDepthProvider:
+              def fetch_market_depth(self, symbol, as_of=None):
+                  return unsorted_depth
+
+          with patch(
+              "MARKET_DATA.cli.create_provider",
+              return_value=UnsortedDepthProvider(),
+          ), patch(
+              "MARKET_DATA.cli.get_candles", return_value={"M1": [sample_candle]}
+          ), patch("builtins.print") as captured_unsorted_stdout:
+              assert run_market_data_request(table_request) == 0
+          assert "L2 MARKET DEPTH" not in captured_unsorted_stdout.call_args.args[0]
+
           class FailingDepthProvider:
               def fetch_market_depth(self, symbol, as_of=None):
                   raise RuntimeError("synthetic depth endpoint failure")
