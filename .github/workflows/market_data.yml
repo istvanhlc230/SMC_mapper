@@ -107,11 +107,11 @@ jobs:
           from decimal import Decimal
           from MARKET_DATA.cli import run as run_market_data_request
           from MARKET_DATA.models import (
-    MarketDepthLevel,
-    MarketDepthSnapshot,
-    NormalizedCandle,
-    VolumeState,
-)
+              MarketDepthLevel,
+              MarketDepthSnapshot,
+              NormalizedCandle,
+              VolumeState,
+          )
           from MARKET_DATA.protocol import format_table
 
           table_request = parse_market_data_request([
