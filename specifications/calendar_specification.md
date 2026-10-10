@@ -400,7 +400,7 @@ Refresh behavior:
     returned. The CLI MUST NOT reapply committed coverage or watermark filters to the refresh result, because refresh is
     allowed to return first-use acquisitions and rescheduled records that are not representable by a normal cache query.
     Machine-readable output includes the `added`/`changed`/`unchanged` refresh summary. In `--table` mode the normal
-    event output is followed by one refresh summary line.
+    event tables are followed by a compact Added/Changed/Unchanged summary table.
 
 A refresh performed by the Monitor MUST run outside the candle-close processing path and MUST NOT block candle
 processing on provider/network I/O. The CLI may remain synchronous because the user explicitly requested the
