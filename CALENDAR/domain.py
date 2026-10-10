@@ -293,6 +293,15 @@ def _validate_calendar_event(event: Dict[str, Any], event_ids: set[str]) -> None
         raise DataIntegrityError("Event title must not be empty.")
     if not isinstance(event["details"], dict):
         raise DataIntegrityError("Event details must be an object.")
+    provider_fields = event["details"].get("provider_fields")
+    if provider_fields is not None:
+        if not isinstance(provider_fields, dict):
+            raise DataIntegrityError("Provider fields must be grouped by provider.")
+        for provider_name, fields in provider_fields.items():
+            if provider_name not in {"lse", "forexfactory", "yahoo_finance"}:
+                raise DataIntegrityError("Invalid provider-fields provider.")
+            if not isinstance(fields, dict):
+                raise DataIntegrityError("Provider-specific fields must be an object.")
     parse_iso8601(event["timestamp"])
     if event["event_type"] == "economic":
         if not set(sources).intersection({"lse", "forexfactory"}):
@@ -394,17 +403,86 @@ def _event_merge_key(event: Dict[str, Any]) -> Tuple[str, str, str]:
     return event["event_type"], currency, f'{event["timestamp"]}|{title}'
 
 
+_PROVIDER_FIELD_SOURCE_NAMES = {"lse", "forexfactory", "yahoo_finance"}
+
+
+def normalize_provider_fields(
+    provider_fields: Any,
+    default_provider: str,
+) -> Dict[str, Dict[str, Any]]:
+    """Normalize provider metadata into the canonical provider -> field -> value shape."""
+    if not isinstance(provider_fields, dict):
+        return {}
+
+    normalized: Dict[str, Dict[str, Any]] = {}
+    legacy_fields: Dict[str, Any] = {}
+    for field_name, value in provider_fields.items():
+        name = str(field_name)
+        if name in _PROVIDER_FIELD_SOURCE_NAMES and isinstance(value, dict):
+            normalized.setdefault(name, {}).update(value)
+        else:
+            legacy_fields[name] = value
+
+    # Legacy data stored LSE's raw fields directly under provider_fields.
+    # If both forms exist, prefer the explicit nested values for duplicate keys.
+    if legacy_fields:
+        provider_name = (
+            default_provider
+            if default_provider in _PROVIDER_FIELD_SOURCE_NAMES
+            else "unknown"
+        )
+        existing_fields = normalized.get(provider_name, {})
+        normalized[provider_name] = {**legacy_fields, **existing_fields}
+    return normalized
+
+
+def normalize_calendar_document_provider_fields(document: Dict[str, Any]) -> bool:
+    """Normalize legacy provider-field layouts in a loaded document; return whether changed."""
+    events = document.get("events", []) if isinstance(document, dict) else []
+    if not isinstance(events, list):
+        return False
+
+    changed = False
+    for event in events:
+        if not isinstance(event, dict):
+            continue
+        details = event.get("details")
+        if not isinstance(details, dict) or "provider_fields" not in details:
+            continue
+        previous_fields = details["provider_fields"]
+        if not isinstance(previous_fields, dict):
+            continue
+        normalized_fields = normalize_provider_fields(
+            previous_fields,
+            str(event.get("source", "unknown")),
+        )
+        if normalized_fields:
+            if normalized_fields != previous_fields:
+                details["provider_fields"] = normalized_fields
+                changed = True
+        else:
+            details.pop("provider_fields", None)
+            changed = True
+    return changed
+
+
 def _merge_event_details(existing: Dict[str, Any], incoming: Dict[str, Any]) -> Dict[str, Any]:
     """Merge non-conflicting provider facts without discarding existing information."""
     details = dict(existing.get("details", {}))
     incoming_details = incoming.get("details", {})
     provider = incoming.get("source", "unknown")
-    provider_fields = dict(details.get("provider_fields", {}))
+    provider_fields = normalize_provider_fields(
+        details.get("provider_fields", {}),
+        str(existing.get("source", provider)),
+    )
     for key, value in incoming_details.items():
         if value in (None, "", [], {}):
             continue
         if key == "provider_fields":
-            provider_fields[provider] = value
+            incoming_provider_fields = normalize_provider_fields(value, provider)
+            for field_provider, field_values in incoming_provider_fields.items():
+                current_fields = provider_fields.setdefault(field_provider, {})
+                current_fields.update(field_values)
             continue
         if key not in details or details[key] in (None, "", [], {}):
             details[key] = value
@@ -412,6 +490,8 @@ def _merge_event_details(existing: Dict[str, Any], incoming: Dict[str, Any]) -> 
             provider_fields.setdefault(provider, {})[key] = value
     if provider_fields:
         details["provider_fields"] = provider_fields
+    else:
+        details.pop("provider_fields", None)
     return details
 
 
