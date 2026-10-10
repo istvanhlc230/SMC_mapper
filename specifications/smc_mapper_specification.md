@@ -68,7 +68,7 @@ Date-only starts resolve to 00:00 UTC. Date-only ends resolve to the exclusive b
 
 Period selection uses candle interval-start timestamps with half-open semantics: `start <= candle.timestamp < end`. Completion status is checked separately. Open-start selection uses each timeframe's earliest completed candle present in the validated Market Data stream, which must correspond to the earliest retained candle in that timeframe's cache, not its latest candle. The Mapper derives coverage from CSV rows and never reads Market Data's private JSON metadata. HTF and LTF may therefore have different earliest retained boundaries.
 
-The requested period is the requested output/evaluation window, not permission to omit canonical predecessors. The input stream must also include every earlier warm-up/context candle required by the canonical SMC rules. If required context is unavailable, fail closed or preserve the specific unresolved dependency as required by the canonical skill. Output metadata distinguishes the requested period, actual per-timeframe coverage, canonical processing coverage, and requested output window. These are per-run metadata only; there is no persistent identity or checkpoint.
+The requested period defines the output/evaluation window, not the start of canonical computation. For deterministic SMC state, Mapper processes all completed candles present in the supplied stream from the earliest available candle through the resolved requested end. The input stream must therefore include the full retained history through that end for every requested timeframe. If required history/context is unavailable, fail closed or preserve the specific unresolved dependency as required by the canonical skill. Output includes structures/events relevant to the requested window plus any earlier carry-in state required to interpret them or describe the canonical state at the requested end. Metadata distinguishes requested period, actual per-timeframe coverage, canonical processing coverage, and requested output window. There is no persistent identity or checkpoint.
 
 ## 0.4 Process input and output boundaries
 
@@ -539,7 +539,7 @@ The canonical date spelling is `YYYY.MM.DD` and time spelling is `HH:MM`. Time i
 
 For open-start periods, resolve the earliest completed candle present in the validated returned CSV separately for each timeframe; the stream must cover the full retained cache history through the explicit end boundary. The Mapper must not assume private Market Data JSON metadata is available. For an open-end period, capture current UTC once at invocation start and use that fixed instant for all timeframe groups. Reject future starts and reversed/empty intervals.
 
-The requested period filters the output/evaluation window. Canonical processing must also use all earlier warm-up/context candles required by the canonical skill; context candles must not be misreported as belonging to the requested output interval.
+The requested period filters which events/structures are presented as belonging to the requested output window, but does not truncate canonical processing history. Mapper must process every supplied completed candle from the earliest available candle through the requested end. It may include earlier carry-in structures needed to interpret in-window events or represent state at the requested end, but must identify them as context rather than claim they formed in the requested window.
 
 ## 2.8 Completed-candle and window selection
 
@@ -547,7 +547,7 @@ A candle is eligible for canonical processing only when the normalized completio
 
 The requested interval uses candle interval-start timestamps and half-open semantics: `start_time <= candle.timestamp < end_time`. Completion status is checked separately. A date-only end includes the entire named UTC date by resolving to the following day's midnight as the exclusive boundary.
 
-The Mapper distinguishes requested period, actual completed-candle coverage per timeframe, canonical processing coverage, and requested output window. There is no persisted analysis identity, checkpoint, resume point, or historical-update mode. Every invocation reconstructs canonical state from the supplied required history.
+The Mapper distinguishes requested period, actual completed-candle coverage per timeframe, canonical processing coverage, and requested output window. There is no persisted analysis identity, checkpoint, resume point, or historical-update mode. Every invocation reconstructs canonical state from the full retained candle history supplied through the requested end.
 
 ## 2.9 Input validation
 
@@ -674,9 +674,9 @@ The result is per-invocation output, not a durable source of truth. If a caller 
 
 ### Historical recomputation
 
-Historical recomputation is an ordinary invocation with a positional period. Mapper rebuilds state from the complete supplied candle history and required warm-up/context. A corrected historical candle in the Market Data cache is naturally reflected by the next invocation and all downstream structural lifecycle outcomes. No special update command is required.
+Historical recomputation is an ordinary invocation with a positional period. Mapper rebuilds state from all retained completed candles supplied through the requested end, beginning at the earliest candle in each timeframe's returned history. A corrected historical candle in the Market Data cache is naturally reflected by the next invocation and all downstream structural lifecycle outcomes. No special update command is required.
 
-The Monitor/orchestrator must acquire and pass sufficient history. If the stream lacks required coverage, Mapper fails closed instead of presenting an incomplete result as complete.
+The Monitor/orchestrator must request the full retained Market Data history through the requested end (normally Market Data's open-start `--range -END` form), then pass that complete CSV stream to Mapper. If the stream lacks retained-history coverage or required canonical context, Mapper fails closed instead of presenting an incomplete result as complete.
 
 Example process pipe:
 
@@ -684,7 +684,7 @@ Example process pipe:
 python market_data.py --symbol SYMBOL --timeframes TF [TF ...] --range MARKET_DATA_SCOPE | python smc_mapper.py --symbol SYMBOL [--htf HTF] [--ltf LTF] [PERIOD]
 ```
 
-Market Data acquisition must include the Mapper's requested period plus required warm-up/context. Market Data's `--range` is not passed to Mapper as a flag. The Monitor must pass its configured timeframe selection explicitly; it must not discover timeframe configuration from a Structures file.
+Market Data output must include all retained completed candles through the Mapper's requested end, not just the visible output window; use the Market Data open-start `--range -END` form for this full-history result. Market Data's `--range` is not passed to Mapper as a flag. The Monitor must pass its configured timeframe selection explicitly; it must not discover timeframe configuration from a Structures file.
 
 # 3. PER-INVOCATION ANALYSIS MODEL
 
@@ -758,7 +758,7 @@ The mapper must not use a latest-window shortcut that bypasses required structur
 
 The Monitor/orchestrator invokes the Market Data CLI for the required bootstrap range in deterministic batch form, then supplies the captured machine-readable STDOUT as Mapper STDIN.
 
-Every invocation rebuilds canonical state from the full required candle history supplied for the requested period. The Monitor/orchestrator obtains that history from the Market Data cache (which may fetch only missing candles) and passes the validated stream through STDIN. In two-timeframe mode, the stream must include all HTF/LTF overlap and warm-up candles needed for point-in-time context. The Mapper does not compare against prior checkpoints or incrementally append structural events.
+Every invocation rebuilds canonical state from the full retained history supplied through the requested end; the requested start filters output, not canonical processing. The Monitor/orchestrator obtains that history from the Market Data cache (which may fetch only missing candles) and passes the validated stream through STDIN. In two-timeframe mode, the stream must include all HTF/LTF overlap and warm-up candles needed for point-in-time context. The Mapper does not compare against prior checkpoints or incrementally append structural events.
 
 The mapper obtains its market-data stream from the Monitor/orchestrator through STDIN and does not access a concrete provider.
 
@@ -1632,7 +1632,7 @@ Where practical, the following operations must be deterministic/pure with explic
 
 Stateful orchestration is allowed only where state mutation is the purpose of the function. Avoid hidden global state, hidden caches that affect correctness, or provider calls from canonical processing.
 
-Tests must be able to execute canonical-processing logic from fixed in-memory candle fixtures without network access or live wall-clock dependence.
+Tests must be able to execute canonical-processing logic from fixed in-memory candle fixtures without network access or live wall-clock dependence. Period filtering must not truncate canonical history before the requested end.
 
 ---
 
