@@ -179,8 +179,10 @@ def _fetch_lse_rows(symbol: str, start: datetime, end: datetime) -> List[Dict[st
 
     params = urllib.parse.urlencode({
         "region": ",".join(regions),
-        "start": format_iso8601(start),
-        "end": format_iso8601(end),
+        # LSE's economic-calendar endpoint accepts date-only boundaries,
+        # unlike the candle endpoint's timestamp-based request contract.
+        "start": start.date().isoformat(),
+        "end": end.date().isoformat(),
         "order": "asc",
         "limit": 5000,
     })
