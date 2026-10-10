@@ -514,6 +514,11 @@ Purpose:
 - provide English `--help`;
 - do not execute provider or file I/O.
 
+When `python market_data.py` is invoked without command-line arguments, the CLI prints the
+argument parser's help text and exits with status 0. This is a help-only operation and must
+not contact a provider or read/write market-data files. The same behavior applies when
+`main([])` is called directly.
+
 Required options:
 
 ```text
