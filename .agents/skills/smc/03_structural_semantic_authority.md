@@ -585,10 +585,30 @@ Layer 3 is the sole semantic owner of structural qualification. A retracement wa
 
 - **Condition:** `HTF_CONDITIONAL_THRESHOLD <= RetracementDepth < STANDARD_EQUILIBRIUM_THRESHOLD` of the active dealing range. `HTF_CONDITIONAL_THRESHOLD` and `STANDARD_EQUILIBRIUM_THRESHOLD` are owned by `methodology_parameters.md`.
 - **HTF Evidence Gate:**
-  - Depth between 38.2% and 49.9% is **never sufficient on its own**.
-  - It is qualified **if and only if** the entire retracement move constitutes a single valid pullback event on the applicable immediate Higher Timeframe (`HTF_VALID_PULLBACK == TRUE`).
-  - **Axiom:** “A higher timeframe valid pullback is a lower timeframe complete structure.”
-  - If the HTF displays an inside bar or an invalid pullback: `MAJOR_RETRACEMENT_QUALIFIED = FALSE`.
+  - Depth from 38.2% to below 50% is **never sufficient on its own**.
+  - It qualifies **if and only if** the entire lower-timeframe retracement is represented by exactly one candle-level valid pullback on the applicable immediate Higher Timeframe (`HTF_VALID_PULLBACK == TRUE`). A directional candle, one extreme breach, or an arbitrary higher-timeframe candle is not sufficient unless the full Layer-1/Layer-2 valid-pullback conditions are satisfied.
+  - **Canonical axiom:** “A higher timeframe valid pullback is a lower timeframe complete structure.”
+  - The higher-timeframe pullback must cover the same structural move being qualified; unrelated or later HTF facts cannot validate it retroactively.
+  - An HTF inside bar or invalid pullback gives `MAJOR_RETRACEMENT_QUALIFIED = FALSE`.
+  - Missing required HTF candles or unresolved HTF sequencing gives `HTF_CONTEXT_UNAVAILABLE`; it must not be downgraded to `HTF_VALID_PULLBACK = FALSE`, nor may the conditional path be accepted.
+- **Pairing examples (illustrative, not a rigid lookup table):**
+
+  | Valid pullback represented on the HTF | Complete structure evaluated on the lower timeframe |
+  |---|---|
+  | 3MN (three-month / quarterly) | W1 |
+  | W1 | D1 or H4 |
+  | D1 | H4 |
+  | H4 | M15 |
+  | M15 | M1 |
+
+  The operative rule is the **applicable immediate higher-timeframe context**, not a hard-coded timeframe-pair table. These examples must not be treated as exclusive pairs. For example, a W1 retracement in the 38.2%–below-50% band may be validated by a single valid 1MN pullback when 1MN is the applicable immediate HTF context and 3MN is not part of the available/configured hierarchy. Do not substitute an arbitrary higher timeframe or skip the active context's required immediate-HTF relationship.
+
+#### Mandatory Multi-Timeframe invariant
+
+- A conformant True SMC mapping must evaluate **two distinct, explicitly identified timeframes** in one coordinated context: HTF for directional narrative, canonical POIs and core-liquidity context; LTF for internal structure and context-gated LTF-CHoCH / execution confirmation.
+- Single-timeframe-only mapping is non-conformant. An HTF must not be emulated by relabeling the selected timeframe as both HTF and LTF.
+- If the second timeframe or required overlapping history is unavailable, preserve the analysis as `UNAVAILABLE` / `HTF_CONTEXT_UNAVAILABLE` for the dependent decisions and fail closed. Do not invent candles, infer unobserved event order, or emit a canonical BOS/CHoCH/entry conclusion whose prerequisites depend on that missing context.
+- The structural and execution roles remain distinct: HTF supplies context/POIs; LTF verifies the internal structure and the applicable entry confirmation. The existence of an LTF CHoCH away from the required HTF interaction context does not, by itself, create an HTF-backed execution setup.
 
 #### Gate 3: Insufficient Retracement
 
