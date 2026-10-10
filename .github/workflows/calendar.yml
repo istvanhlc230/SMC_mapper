@@ -45,7 +45,7 @@ jobs:
           # A stock ticker is outside LSE's Calendar role and must not require
           # an LSE key or issue a network request.
           original_lse_key_loader = providers.get_provider_api_key
-          original_lse_urlopen = providers.urllib.request.urlopen
+          original_lse_open_url = providers.open_url
           try:
               providers.get_provider_api_key = lambda provider: (_ for _ in ()).throw(
                   AssertionError("stock ticker should not load LSE credentials")
@@ -65,11 +65,13 @@ jobs:
                       return False
 
               captured_lse_request = {}
-              def fake_lse_urlopen(request, timeout):
+              def fake_lse_open_url(request, *, timeout_seconds, ipv4_first):
+                  assert timeout_seconds > 0
+                  assert ipv4_first is True
                   captured_lse_request["request"] = request
                   return SyntheticLSECalendarResponse()
 
-              providers.urllib.request.urlopen = fake_lse_urlopen
+              providers.open_url = fake_lse_open_url
               assert providers._fetch_lse_rows(
                   "EURUSD", dt("2026-10-06T00:00:00Z"), dt("2026-10-07T00:00:00Z")
               ) == []
@@ -84,12 +86,14 @@ jobs:
               # HTTP error text is retained for --debug but request credentials
               # and URL query details must not be included in the exception.
               import urllib.error
-              def rejected_lse_urlopen(request, timeout):
+              def rejected_lse_open_url(request, *, timeout_seconds, ipv4_first):
+                  assert timeout_seconds > 0
+                  assert ipv4_first is True
                   raise urllib.error.HTTPError(
                       request.full_url, 400, "Bad Request", {},
                       io.BytesIO(b'{"detail":"invalid region filter"}')
                   )
-              providers.urllib.request.urlopen = rejected_lse_urlopen
+              providers.open_url = rejected_lse_open_url
               try:
                   providers._fetch_lse_rows(
                       "EURUSD", dt("2026-10-06T00:00:00Z"), dt("2026-10-07T00:00:00Z")
@@ -102,7 +106,7 @@ jobs:
                   raise AssertionError("LSE HTTP failure must be surfaced")
           finally:
               providers.get_provider_api_key = original_lse_key_loader
-              providers.urllib.request.urlopen = original_lse_urlopen
+              providers.open_url = original_lse_open_url
 
           assert calendar.validate_symbol("EURUSD") == "EURUSD"
           assert calendar.__version__ == "2.6.2"
