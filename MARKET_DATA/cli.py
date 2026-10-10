@@ -301,9 +301,16 @@ def run(request):
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """Parse and execute the Market Data CLI."""
+    """Parse and execute the Market Data CLI, showing help when no arguments are supplied."""
+    # Treat a bare invocation as a request for usage help instead of letting
+    # argparse report missing required options as an error.
+    supplied_arguments = sys.argv[1:] if argv is None else list(argv)
+    if not supplied_arguments:
+        build_argument_parser().print_help()
+        return 0
+
     try:
-        request = parse_market_data_request(argv)
+        request = parse_market_data_request(supplied_arguments)
     except ValueError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         debug_enabled = "--debug" in (sys.argv[1:] if argv is None else argv)
