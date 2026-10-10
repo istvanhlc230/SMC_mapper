@@ -202,175 +202,94 @@ is descriptive only; provider verification is authoritative at runtime.
 
 ## 3. Canonical CLI
 
-When `python calendar.py` is invoked with no command-line arguments, it prints the Calendar CLI help text and exits with status 0. This is a help-only operation: it does not read or write `calendar.json` and does not contact any provider.
+When `python calendar.py` is invoked without arguments, it prints the help text and exits with status 0. This operation performs no cache or provider I/O.
 
-Public query forms:
+The public query grammar is positional:
 
-    python calendar.py SYMBOL YYYY.MM.DD [refresh]
-    python calendar.py SYMBOL YYYY.MM.DD-YYYY.MM.DD [refresh]
-    python calendar.py SYMBOL YYYY.MM.DD@HH:MM [refresh]
-    python calendar.py SYMBOL YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM [refresh]
-    python calendar.py SYMBOL --time HH:MM [refresh]
-    python calendar.py SYMBOL --range YYYY.MM.DD- [refresh]
-    python calendar.py SYMBOL --range YYYY.MM.DD@HH:MM- [refresh]
-    python calendar.py SYMBOL --range -YYYY.MM.DD [refresh]
-    python calendar.py SYMBOL --range -YYYY.MM.DD@HH:MM [refresh]
-    python calendar.py SYMBOL YYYY.MM.DD --time HH:MM [refresh]
-    python calendar.py SYMBOL current [refresh]
-    python calendar.py SYMBOL current day [refresh]
-    python calendar.py SYMBOL current week [refresh]
-    python calendar.py SYMBOL current month [refresh]
-    python calendar.py SYMBOL next
-    python calendar.py SYMBOL next day [refresh]
-    python calendar.py SYMBOL next week [refresh]
-    python calendar.py SYMBOL next month [refresh]
-    python calendar.py SYMBOL prev
-    python calendar.py SYMBOL prev day [refresh]
-    python calendar.py SYMBOL prev week [refresh]
-    python calendar.py SYMBOL prev month [refresh]
-    python calendar.py SYMBOL latest
-    python calendar.py SYMBOL news
+```text
+python calendar.py SYMBOL <scope> [refresh]
+python calendar.py SYMBOL --last-update
+python calendar.py delete
+python calendar.py delete SYMBOL <scope>
+python calendar.py --help
+```
+
+The public date/time grammar is shared with Market Data and implemented in `COMMON/date_time.py` by `DateTimeScopeParser`. Date and time are separated by a space, not `@`. There are no `positional date scope`, `positional time scope`, or `positional scope` flags.
+
+Supported temporal scopes:
+
+| Scope | Meaning |
+|---|---|
+| `YYYY.MM.DD` | Entire UTC calendar day |
+| `YYYY.MM.DD HH:MM` | Exact one-minute interval |
+| `YYYY.MM.DD-YYYY.MM.DD` | Inclusive date range; end resolves to the following UTC midnight |
+| `YYYY.MM.DD HH:MM-YYYY.MM.DD HH:MM` | Half-open datetime range `[start, end)` |
+| `HH:MM` | Exact minute on the current UTC calendar day |
+| `HH:MM-HH:MM` | Half-open time range on the current UTC calendar day; end must be later than start |
+| `YYYY.MM.DD-` | From that date's UTC midnight through the current UTC time |
+| `YYYY.MM.DD HH:MM-` | From that exact UTC minute through the current UTC time |
+| `HH:MM-` | From that time today through the current UTC time |
+| `-YYYY.MM.DD` | From the latest recorded visible event for SYMBOL through the end of the selected UTC date |
+| `-YYYY.MM.DD HH:MM` | From the latest recorded visible event for SYMBOL through the selected minute |
+| `-HH:MM` | From the latest recorded visible event for SYMBOL through the selected minute today |
+
+An open-start scope requires retained visible Calendar event history for SYMBOL. Its start is resolved at execution time from the latest visible event timestamp in the committed `calendar.json`; it is not guessed from the machine clock. A date endpoint includes the full UTC date, while a datetime/time endpoint includes its entire minute. Plain open-start scopes are cache-only; adding trailing `refresh` requests provider acquisition over the resolved interval.
+
+An open-end scope resolves its end to the current UTC time at execution. A future start, reversed range, invalid date, or invalid time is rejected. Time-only scopes use the UTC date captured at parsing time. The parser receives an injectable reference time so these rules can be tested deterministically.
+
+The Calendar retains these non-date query scopes:
+
+```text
+current
+current day
+current week
+current month
+today
+tomorrow
+yesterday
+next
+next day
+next week
+next month
+prev
+prev day
+prev week
+prev month
+latest
+news
+```
+
+`current` is an active-event cache query. Trailing `refresh` is valid for temporal scopes and for `current`, but not for `latest`, `next`, `prev`, or `news`. `refresh` is a trailing modifier, never an independent command.
 
 Delete forms:
 
-    python calendar.py delete
-    python calendar.py delete SYMBOL YYYY.MM.DD
-    python calendar.py delete SYMBOL YYYY.MM.DD-YYYY.MM.DD
-    python calendar.py delete SYMBOL YYYY.MM.DD@HH:MM
-    python calendar.py delete SYMBOL YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM
-    python calendar.py delete SYMBOL today
-    python calendar.py delete SYMBOL tomorrow
-    python calendar.py delete SYMBOL yesterday
-    python calendar.py delete SYMBOL --time HH:MM
-    python calendar.py delete SYMBOL YYYY.MM.DD --time HH:MM
+```text
+python calendar.py delete
+python calendar.py delete SYMBOL <scope>
+```
 
-Bare delete is the explicit full-cache reset.
+Bare delete is the explicit full-cache reset. Scoped delete uses the same temporal grammar as query and is always symbol-scoped. Relative event queries such as `current`, `next`, `prev`, `latest`, and `news` are not delete scopes. `today`, `tomorrow`, and `yesterday` remain valid exact-day delete scopes.
 
-Scoped delete is always symbol-scoped. The scope must be a date, date range,
-datetime, or datetime range. current is not a delete scope.
+`--last-update` is a read-only operation that returns the latest successful provider acquisition timestamp for each applicable provider. It does not call providers or alter coverage, watermarks, or `calendar.json`.
 
-Yahoo Finance news is symbol-owned, so a symbol-scoped deletion removes only
-matching Yahoo events in the requested interval.
+## 3.1 Shared date/time implementation
 
-ForexFactory events may carry optional suppressed_for symbol metadata. A symbol
-query excludes an event when its canonical symbol is present in suppressed_for.
-Successful reacquisition clears that symbol's suppression for the returned facts.
+`COMMON/date_time.py` is the provider-independent owner of date/time parsing, scope classification, UTC normalization, and ISO 8601 parsing/formatting helpers. Calendar may add domain-specific validation and resolves open-start scopes from visible stored events; it must not implement a separate date/time grammar.
 
-ForexFactory economic events are shared currency facts. A symbol-scoped deletion
-therefore invalidates only the matching provider+canonical-symbol coverage in
-the requested interval and keeps the shared event record. This prevents
-deleting an EUR event from breaking EURGBP when deleting EURUSD.
+## 3.2 Relative day semantics
 
-If the deleted interval contains the newest known event timestamp for a
-provider+canonical-symbol watermark, that watermark is removed. No synthetic
-watermark is created.
+- `today` is the current UTC calendar day.
+- `tomorrow` is the next UTC calendar day.
+- `yesterday` is the previous UTC calendar day.
 
-Removed from the public grammar:
-- next_day
-- standalone week
-- standalone month
-Date syntax is YYYY.MM.DD. Time syntax is HH:MM. @ separates date/time. - separates interval endpoints. No .. syntax exists.
+These aliases are resolved at execution time using the same injectable UTC clock. They do not mean `current`, `latest`, or `next`.
 
---time HH:MM is a CLI shorthand for an exact one-minute datetime query on the current UTC calendar day. With no explicit date scope, Calendar resolves it as <current UTC date>@HH:MM. With a date-only scope, SYMBOL YYYY.MM.DD --time HH:MM resolves to YYYY.MM.DD@HH:MM. --time must not be combined with an existing @HH:MM point or a date/range scope that already contains time. The shorthand is normalized to the canonical YYYY.MM.DD@HH:MM scope before domain parsing, so the underlying query/refresh/delete interval semantics remain unchanged. The current UTC date is obtained from the same Calendar utc_now() clock used by the domain layer; no local-machine date is assumed.
+## 3.3 Last-update lookup
 
-Date = full UTC day.
-Date range = inclusive by calendar date.
-Datetime = exact one-minute interval.
-Datetime range = half-open start/end interval.
-
-Open-start range = -END: start is resolved from the latest recorded visible event for SYMBOL.
-Open-end range = START-: end is resolved to the current UTC time at execution.
-For YYYY.MM.DD- the START is 00:00 UTC; for YYYY.MM.DD@HH:MM- the START is the exact UTC minute.
-A future START is rejected. Both forms are valid query/refresh scopes and neither is a delete scope.
-
-Preferred positional time-range shorthand:
-
-    python calendar.py SYMBOL HH:MM-HH:MM [refresh]
-
-This is the preferred public shorthand when the requested interval is entirely on the current UTC calendar day. It resolves both times against the current UTC calendar date at execution time and normalizes to the canonical `YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM` datetime range before scope parsing. It is valid for normal query, trailing `refresh`, and symbol-scoped delete operations. It is mutually exclusive with `--date`, `--time`, `--range`, or another positional scope. The end time must be later than the start time; invalid clock values fail through the existing Calendar time parser.
-
-## 3.1 --time CLI shorthand
-
-The public Calendar CLI also accepts a time-only shorthand:
-
-    python calendar.py SYMBOL --time HH:MM
-    python calendar.py SYMBOL YYYY.MM.DD --time HH:MM
-
-The first form targets the current UTC calendar day. The second form targets the supplied date. Both forms are converted to the canonical datetime scope before parse_scope()/resolve_scope_interval() processing.
-
-The shorthand is CLI syntax only; the canonical internal scope remains YYYY.MM.DD@HH:MM. The same shorthand accepts the trailing refresh modifier and symbol-scoped delete operations. Bare delete cannot be combined with --time.
-
-Open-start `--range`:
-    python calendar.py SYMBOL --range -YYYY.MM.DD [refresh]
-    python calendar.py SYMBOL --range -YYYY.MM.DD@HH:MM [refresh]
-
-A leading `-` omits the start boundary. Calendar resolves that start at execution time from the latest
-recorded visible event timestamp for SYMBOL in the committed `calendar.json` snapshot. The explicit END
-remains the upper boundary: a date END resolves to the next UTC midnight, and a datetime END resolves to
-the end of that exact UTC minute. An open-start range requires retained visible event history for SYMBOL;
-otherwise the request fails explicitly. Plain open-start range is cache-only. Adding trailing `refresh`
-forces provider acquisition over the same resolved interval.
-
-The canonical time spelling is `HH:MM`. For compatibility with the approved CLI example, the open-start
-datetime form also accepts `HH.MM` and normalizes it to `HH:MM`.
-
---time is mutually exclusive with an explicit datetime, datetime range, date range, current, latest, or next scope. Invalid HH:MM values fail through the existing Calendar time parser.
-
-## 3.2 Relative day scopes
-
-The public CLI accepts three relative UTC calendar-day scopes:
-
-    python calendar.py SYMBOL today
-    python calendar.py SYMBOL tomorrow
-    python calendar.py SYMBOL yesterday
-
-Semantics:
-
-- today = the current UTC calendar day, from 00:00:00 to the next UTC midnight;
-- tomorrow = the next UTC calendar day;
-- yesterday = the previous UTC calendar day.
-
-These scopes are resolved at execution time using the same utc_now() clock as
-the Calendar domain. They are dynamically resolved exact-day aliases, not
-persistent state and not provider-native ForexFactory navigation parameters.
-
-They use the normal exact-day query/acquisition interval semantics and are also
-valid with the trailing refresh modifier and for symbol-scoped delete. They do not mean current,
-latest, or next.
-
-## 3.3 Open-start --range
-
-`--range -END` is a query/refresh shorthand for a range whose start is resolved from the latest recorded
-visible Calendar event for SYMBOL.
-
-Semantics:
-- `--range -YYYY.MM.DD` ends at the next UTC midnight after the specified date;
-- `--range -YYYY.MM.DD@HH:MM` ends at the end of the specified UTC minute;
-- the start is the timestamp of the latest visible persisted event for SYMBOL;
-- without retained visible event history, the request fails explicitly;
-- plain open-start range is cache-only and does not contact providers;
-- open-start range with trailing `refresh` forces provider acquisition over the resolved interval;
-- the resolved interval is the same logical query interval used for refresh matching and result presentation;
-- the range does not create or alter coverage/watermarks merely by parsing or querying.
-
-## 3.4 Explicit date flags and last-update lookup
-
-The public CLI also accepts explicit date/time flags:
-
-- SYMBOL --date YYYY.MM.DD selects the exact UTC calendar day;
-- SYMBOL --date YYYY.MM.DD --time HH:MM selects the exact UTC minute;
-- SYMBOL --time HH:MM remains the current-UTC-day shorthand;
-- the same --date / --time scope construction is supported by explicit refresh SYMBOL and scoped delete SYMBOL;
-- --date and --time cannot be combined with an already explicit positional scope;
-- date/time flags are normalized to the existing canonical scope grammar before domain resolution.
-
-The read-only SYMBOL --last-update operation returns the latest successful provider acquisition timestamp (watermarks[provider|symbol].last_successful_at) for every applicable provider. It does not call providers, change coverage, change watermarks, or write calendar.json.
-
-If no applicable provider has a successful watermark, the result status is NO_LAST_UPDATE. Missing individual provider watermarks are returned as null / N/A rather than fabricated timestamps.
-
-The help text must expose --date, --time, and --last-update once in the FLAGS section and keep usage examples concise without duplicating equivalent --time forms.
+The read-only `SYMBOL --last-update` operation returns `last_successful_at` for every applicable provider+canonical-symbol watermark. If no applicable provider has a successful watermark, status is `NO_LAST_UPDATE`. Missing individual provider watermarks are represented as null / N/A, never as fabricated timestamps.
 
 Implementation version is 2.6.1; persistent schema remains V2.
+
 ## 4. current semantics
 
 `current` is a read-only active-event lookup over the committed `calendar.json` snapshot.
@@ -416,11 +335,11 @@ Public forms:
     python calendar.py SYMBOL yesterday refresh
     python calendar.py SYMBOL YYYY.MM.DD refresh
     python calendar.py SYMBOL YYYY.MM.DD-YYYY.MM.DD refresh
-    python calendar.py SYMBOL YYYY.MM.DD@HH:MM refresh
-    python calendar.py SYMBOL YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM refresh
-    python calendar.py SYMBOL --date YYYY.MM.DD refresh
-    python calendar.py SYMBOL --date YYYY.MM.DD --time HH:MM refresh
-    python calendar.py SYMBOL --time HH:MM refresh
+    python calendar.py SYMBOL YYYY.MM.DD HH:MM refresh
+    python calendar.py SYMBOL YYYY.MM.DD HH:MM-YYYY.MM.DD HH:MM refresh
+    python calendar.py SYMBOL positional date scope YYYY.MM.DD refresh
+    python calendar.py SYMBOL positional date scope YYYY.MM.DD positional time scope HH:MM refresh
+    python calendar.py SYMBOL positional time scope HH:MM refresh
 
 The former `refresh SYMBOL SCOPE` command grammar is removed.
 `current refresh` is valid and is the only refresh form permitted among `current`, `latest`, `next`, `prev`, and `news`. `latest refresh`, `next refresh`, `prev refresh`, and `news refresh` are invalid.
@@ -794,10 +713,10 @@ Acceptance requires:
 - current is watermark-based and remains cache-only;
 - a missing current-mode watermark contributes no events to plain `current`;
 - provider acquisition for current-mode refresh is explicit through the trailing `refresh` modifier;
-- `--range -YYYY.MM.DD` and `--range -YYYY.MM.DD@HH:MM` resolve their start from the latest recorded visible Calendar event and preserve the explicit END boundary;
+- `positional scope -YYYY.MM.DD` and `positional scope -YYYY.MM.DD HH:MM` resolve their start from the latest recorded visible Calendar event and preserve the explicit END boundary;
 - `next` considers only scheduled ForexFactory economic events; Yahoo published/current news is not a future-event source;
 - normal public query output never exposes provider `ERROR` records or provider exception text;
-- plain open-start `--range` is cache-only; trailing `refresh` performs provider acquisition over that resolved interval;
+- plain open-start `positional scope` is cache-only; trailing `refresh` performs provider acquisition over that resolved interval;
 - EURUSD date, date range, datetime, and datetime range parse correctly;
 - NVDA routes to Yahoo;
 - HUF routes to ForexFactory;

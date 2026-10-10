@@ -432,7 +432,7 @@ The canonical next acquisition boundary is:
 - W1: next Monday 00:00 UTC;
 - MN1: first day of the next calendar month at 00:00 UTC.
 
-Open-start `--range -END` begins at the persisted `available_start` timestamp for each requested timeframe and returns retained history through END; stable candle identity deduplicates provider overfetch.
+Open-start `positional scope -END` begins at the persisted `available_start` timestamp for each requested timeframe and returns retained history through END; stable candle identity deduplicates provider overfetch.
 
 ### Current snapshot semantics
 
@@ -499,32 +499,15 @@ Every function must have one owner responsibility.
 
 # 5. CLI LAYER
 
-## 5.1 build_argument_parser
+## 5.1 CLI grammar and argument parsing
 
-Signature:
+The Market Data CLI provides English `--help` and performs no provider or file I/O while building the parser. Invoking `python market_data.py` without arguments prints help and exits with status 0.
 
-```python
-def build_argument_parser() -> argparse.ArgumentParser:
-    ...
-```
-
-Purpose:
-
-- define the approved `market_data.py` CLI;
-- provide English `--help`;
-- do not execute provider or file I/O.
-
-When `python market_data.py` is invoked without command-line arguments, the CLI prints the
-argument parser's help text and exits with status 0. This is a help-only operation and must
-not contact a provider or read/write market-data files. The same behavior applies when
-`main([])` is called directly.
-
-Required options:
+Required request options:
 
 ```text
 --symbol SYMBOL
 --timeframes TF [TF ...]
---range SCOPE
 --current
 --lastclosed
 --debug
@@ -532,49 +515,34 @@ Required options:
 --help
 ```
 
-`--range` accepts the Calendar-compatible scope grammar:
+The temporal scope is positional, matching Calendar. The public CLI does not accept `positional scope`, `--date`, or `--time`. Date and time are separated by a space, never `@`.
 
-```text
-YYYY.MM.DD
-YYYY.MM.DD-YYYY.MM.DD
-YYYY.MM.DD@HH:MM
-YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM
-```
+Supported scope forms:
 
-Open-start range forms are also supported:
+| Scope | Meaning |
+|---|---|
+| `YYYY.MM.DD` | Entire UTC calendar day |
+| `YYYY.MM.DD HH:MM` | Exact one-minute interval |
+| `YYYY.MM.DD-YYYY.MM.DD` | Inclusive date range |
+| `YYYY.MM.DD HH:MM-YYYY.MM.DD HH:MM` | Half-open datetime range |
+| `HH:MM` | Exact minute on the current UTC calendar day |
+| `HH:MM-HH:MM` | Half-open time range on the current UTC calendar day |
+| `YYYY.MM.DD-` | From date through the current UTC time |
+| `YYYY.MM.DD HH:MM-` | From datetime through the current UTC time |
+| `HH:MM-` | From that time today through the current UTC time |
+| `-YYYY.MM.DD` | From each requested timeframe's earliest retained candle through the selected date |
+| `-YYYY.MM.DD HH:MM` | From each requested timeframe's earliest retained candle through the selected minute |
+| `-HH:MM` | From each requested timeframe's earliest retained candle through that minute today |
 
-    --range -YYYY.MM.DD
-    --range -YYYY.MM.DD@HH:MM
-    --range YYYY.MM.DD-
-    --range YYYY.MM.DD@HH:MM-
+`DateTimeScopeParser` in `COMMON/date_time.py` is the single source for date/time syntax and UTC interval parsing. Market Data uses its own retained-candle state and provider capability rules to resolve an open-start acquisition/output window.
 
-A leading `-` omits the start boundary. The output start is resolved separately for each requested timeframe from
-that timeframe's earliest retained completed-candle timestamp (`available_start`). The explicit END remains
-the upper output boundary. This form returns all retained cached history from the beginning of each timeframe's
-cache through END. It does not mean the provider must re-download the entire historical output interval on every
-call: provider acquisition fills only missing data after the retained `available_end` when possible, while the
-serializer returns the complete retained series in the requested output scope. If no retained history exists, the
-CLI performs a provider-supported initial historical bootstrap within documented provider/retention limits; if it
-cannot establish usable history, it fails explicitly rather than inventing a start.
+A leading hyphen omits the start boundary. For an open-start scope, Market Data resolves the output start separately for each requested timeframe from the earliest retained completed-candle timestamp (`available_start`). It returns retained history through the explicit end and acquires only missing data when possible. If no retained history exists, it may use a provider-supported initial historical bootstrap; if usable history cannot be established, it fails explicitly.
 
-A trailing `-` omits the end boundary. The explicit START is retained and the end resolves to the current
-UTC time at execution. Therefore `--range YYYY.MM.DD-` means START at 00:00 UTC through NOW, while
-`--range YYYY.MM.DD@HH:MM-` means the exact UTC minute through NOW. A future START is rejected.
-Both open-start and open-end forms use the same UTC date/time grammar and half-open interval semantics.
-The canonical time spelling is `HH:MM`; `HH.MM` is accepted only as a compatibility alias in open-ended datetime forms and is normalized to `HH:MM`.
+A trailing hyphen omits the end boundary, which resolves to the current UTC time. A future start and a reversed range are rejected. Time-only scopes use a captured current UTC date. Overnight time-only ranges are rejected; use an explicit datetime range to cross UTC midnight.
 
-Examples:
+The option scanner must distinguish supported timeframe tokens from scope tokens, including when multiple values follow `--timeframes`. For example, `--timeframes H1 M15 2026.10.10` means timeframes H1 and M15 and the positional date scope `2026.10.10`. The temporal scope may contain spaces and is assembled only after known options and timeframe tokens have been separated.
 
-```text
---range 2026.10.05
---range 2026.10.05-2026.10.08
---range 2026.10.05@08:30
---range 2026.10.05@08:30-2026.10.05@16:45
---current
---lastclosed
-```
-
-The historical scope grammar is intentionally aligned with the Calendar CLI specification. Market Data does not introduce a second date/time syntax.
+`--current` and `--lastclosed` are mutually exclusive with each other and with any positional historical scope. With no scope and neither mode enabled, Market Data performs its normal incremental/bootstrap acquisition. No price-basis, volume-method, or mapper/SMC option is allowed.
 
 No price-basis option is allowed.
 
@@ -604,10 +572,10 @@ Purpose:
 |---|---|
 | `YYYY.MM.DD` | full UTC calendar day: `[00:00, next-day 00:00)` |
 | `YYYY.MM.DD-YYYY.MM.DD` | inclusive date range: `[start 00:00, day-after-end 00:00)` |
-| `YYYY.MM.DD@HH:MM` | exact UTC minute: `[point, point+1 minute)` |
-| `YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM` | half-open UTC interval |
+| `YYYY.MM.DD HH:MM` | exact UTC minute: `[point, point+1 minute)` |
+| `YYYY.MM.DD HH:MM-YYYY.MM.DD HH:MM` | half-open UTC interval |
 | `-YYYY.MM.DD` | output retained history from `available_start` through the exclusive end of the given UTC day; acquisition fills missing coverage only |
-| `-YYYY.MM.DD@HH:MM` | output retained history from `available_start` through the exclusive end of the given UTC minute; acquisition fills missing coverage only |
+| `-YYYY.MM.DD HH:MM` | output retained history from `available_start` through the exclusive end of the given UTC minute; acquisition fills missing coverage only |
 | `--current` | no historical interval; refresh the current in-progress candle snapshot |
 | omitted | normal incremental completed-candle acquisition |
 | `--lastclosed` | exactly the latest completed candle |
@@ -624,9 +592,9 @@ No machine-local timezone is ever assumed.
 
 - `--lastclosed` means **the latest completed/closed candle**, never the current in-progress candle.
 - `--current` means **the current in-progress candle snapshot**.
-- `--lastclosed` is mutually exclusive with `--range`.
+- `--lastclosed` is mutually exclusive with `positional scope`.
 - `--current` is mutually exclusive with `--lastclosed`.
-- Historical `--range` scopes, including open-start `-END` ranges, are mutually exclusive with `current` and `lastclosed` modes.
+- Historical `positional scope` scopes, including open-start `-END` ranges, are mutually exclusive with `current` and `lastclosed` modes.
 - With no explicit mode, normal incremental completed-candle acquisition is used.
 - `lastclosed` must use the provider's latest-completed acquisition path and completion validation.
 - The implementation request fields are `last_closed_only` and `current`; these names are authoritative for Market Data CLI orchestration.
@@ -659,10 +627,10 @@ The current in-progress candle mode is exposed as the explicit `--current` CLI p
 Canonical forms:
 
     python market_data.py --symbol EURUSD --timeframes M1 M5 --current
-    python market_data.py --symbol EURUSD --timeframes M1 M5 --range 2026.10.05
+    python market_data.py --symbol EURUSD --timeframes M1 M5 positional scope 2026.10.05
     python market_data.py --symbol EURUSD --timeframes M1 M5 --lastclosed
 
-`--current` must not be encoded as `--range current`. The latter form is not part of the public Market Data CLI grammar and must be rejected. `--current` is mutually exclusive with `--range` and `--lastclosed`.
+`--current` must not be encoded as `positional scope current`. The latter form is not part of the public Market Data CLI grammar and must be rejected. `--current` is mutually exclusive with `positional scope` and `--lastclosed`.
 
 ## 5.3 normalize_symbol
 
@@ -1648,7 +1616,7 @@ When explicit historical boundaries are supplied:
 
 - `start_time + end_time`: acquire exactly the requested interval;
 - `start_time` only: acquire from `start_time` through the latest completed candle available at evaluation time;
-- `end_time` only (the internal representation of open-start `--range -END`): resolve the output start from `available_start`; if retained history exists, acquire only any missing completed candles after `available_end` up to the requested end, then emit the full retained output scope. If no retained history exists, return a provider acquisition plan with an open start (`None, end_time`) so the adapter can request its widest supported historical bootstrap within documented provider/retention limits; fail explicitly if that bootstrap is unsupported or yields no usable completed candles;
+- `end_time` only (the internal representation of open-start `positional scope -END`): resolve the output start from `available_start`; if retained history exists, acquire only any missing completed candles after `available_end` up to the requested end, then emit the full retained output scope. If no retained history exists, return a provider acquisition plan with an open start (`None, end_time`) so the adapter can request its widest supported historical bootstrap within documented provider/retention limits; fail explicitly if that bootstrap is unsupported or yields no usable completed candles;
 - honor requested boundaries;
 - do not invent candles outside requested scope.
 
@@ -1688,7 +1656,7 @@ Normal incremental mode advances past the persisted `available_end` candle. The 
     available_end + timeframe interval duration
 
 This prevents an ordinary incremental run from re-requesting the already persisted terminal candle. The open-start
-`--range -END` mode is intentionally different from normal incremental mode in its output scope: output begins at `available_start`
+`positional scope -END` mode is intentionally different from normal incremental mode in its output scope: output begins at `available_start`
 inclusively and includes all retained candles through END. Provider acquisition still starts only after `available_end` when retained history exists;
 reacquisition of a past interval requires an explicit bounded `START-END` request. Stable candle identity deduplicates provider overfetch.
 
