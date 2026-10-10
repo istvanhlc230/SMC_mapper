@@ -1643,7 +1643,7 @@ When explicit historical boundaries are supplied:
 
 - `start_time + end_time`: acquire exactly the requested interval;
 - `start_time` only: acquire from `start_time` through the latest completed candle available at evaluation time;
-- `end_time` only (the internal representation of open-start `--range -END`): resolve the output start from `available_start`; if retained history exists, acquire only any missing completed candles after `available_end` up to the requested end, then emit the full retained output scope. If no retained history exists, attempt the documented provider-supported initial historical bootstrap; fail explicitly if unavailable;
+- `end_time` only (the internal representation of open-start `--range -END`): resolve the output start from `available_start`; if retained history exists, acquire only any missing completed candles after `available_end` up to the requested end, then emit the full retained output scope. If no retained history exists, return a provider acquisition plan with an open start (`None, end_time`) so the adapter can request its widest supported historical bootstrap within documented provider/retention limits; fail explicitly if that bootstrap is unsupported or yields no usable completed candles;
 - honor requested boundaries;
 - do not invent candles outside requested scope.
 
@@ -2395,6 +2395,7 @@ test_failed_timeframe_update_does_not_persist_partial_symbol_change
 test_historical_reacquisition_range_is_protected_from_immediate_eviction
 test_open_start_request_bootstraps_when_provider_supports_it
 test_open_start_request_fails_when_bootstrap_unavailable
+test_open_start_empty_cache_uses_open_provider_start_and_explicit_end
 test_empty_series_incremental_update_fetches_latest_completed
 test_completion_boundary_is_timezone_independent
 test_provider_completion_hint_cannot_override_canonical_boundary
