@@ -1601,7 +1601,8 @@ jobs:
           try:
               domain.resolve_applicable_providers = lambda _symbol: ["forexfactory"]
               domain.utc_now = lambda: dt("2026-10-05T12:00:00Z")
-              storage.save_calendar_atomic = lambda document: None
+              persisted_partial_documents = []
+              storage.save_calendar_atomic = lambda document: persisted_partial_documents.append(document)
               call_count = {"value": 0}
 
               def partial_then_success(start, end, include_details=True, detail_failures=None, unresolved_event_time_ids=None):
@@ -1633,6 +1634,8 @@ jobs:
               assert partial_doc["coverage"][0]["status"] == "PARTIAL"
               assert "forexfactory|USD" not in partial_doc["watermarks"]
               assert len(partial_doc["events"]) == 3
+              assert persisted_partial_documents
+              assert persisted_partial_documents[0]["coverage"][0]["status"] == "PARTIAL"
 
               second = operations.acquire_explicit(
                   partial_doc,
