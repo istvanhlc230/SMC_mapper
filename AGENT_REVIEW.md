@@ -1639,3 +1639,20 @@ The user's live refresh failed in the HTML fallback because the page had an even
 - The new CLI contract matches Calendar's positional-symbol approach while preserving Market Data's required multi-timeframe option.
 - Runtime CI passed for the aligned implementation/specification/test snapshot at commit `a3808c40c0f9a1aadace300c02ab924930c2ed2c`: [Market Data workflow](https://github.com/istvanhlc230/SMC_mapper/actions/runs/38082034101) and [Calendar workflow](https://github.com/istvanhlc230/SMC_mapper/actions/runs/38082034092) both completed successfully.
 
+## LSE HTTP 400 — date-only candle queries and calendar-window paging — 2026-10-10
+
+### Finding
+- Market Data sent full UTC timestamps in the LSE candle endpoint's `start` and `end` query filters. LSE candle-query documentation/wrappers indicate that this endpoint's date filters are date-granular; sub-day timestamps can be rejected with HTTP 400.
+- The old paging loop derived the next request start from the last row returned. This could repeat the same range or fail to progress when a market was closed and the last available candle preceded the requested end.
+
+### Changes
+- Switched LSE candle request boundaries to UTC `YYYY-MM-DD` values; exact requested timestamps are still filtered locally with the canonical half-open interval.
+- Partitioned every range into deterministic two-day UTC calendar windows, keeping each request within the API's 5,000-row limit for the project's smallest supported timeframe even if the API includes the end date.
+- Advanced through the requested calendar windows even when a provider page is empty.
+- Deduplicated overlapping inclusive date-boundary rows by candle timestamp and rejected conflicting duplicate content.
+- Improved the LSE request error message to identify the provider symbol, timeframe, and date window without exposing the API key.
+- Updated the Market Data specification and added regression cases for date-only query parameters, precise local filtering, boundary deduplication, and empty market-day progress.
+
+### Validation
+- CI is pending for this revision; no live-provider success is claimed because this runtime does not use the user's local LSE credential.
+
