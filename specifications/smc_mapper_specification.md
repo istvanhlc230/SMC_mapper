@@ -13,8 +13,8 @@
 The intended finished product uses these active Python runtime components:
 
 - `market_data.py` — standalone Market Data CLI: provider access, normalization, completion handling, deterministic range retrieval, incremental update, bounded retention, completed-candle persistence, current-candle snapshot refresh, and persistence to `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json`.
-- `smc_mapper.py` — canonical SMC mapper: structural analysis, HTF/LTF processing, and persistent structural state in `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_structures.json`.
-- `smc_monitor.py` — interactive runtime: scheduling, user interaction, runtime/target monitoring, alerts, and orchestration of Market Data CLI and mapper execution across multiple symbols and multiple stored analyses per symbol.
+- `smc_mapper.py` — stateless canonical SMC mapper: structural analysis, HTF/LTF processing, and per-invocation JSON or `--cleartext` output. It does not persist structural state.
+- `smc_monitor.py` — interactive runtime: scheduling, user interaction, runtime/target monitoring, alerts, and orchestration of Market Data CLI and Mapper execution across configured symbols/timeframes. Mapper analyses are recomputed, not discovered from persisted Structures files.
 
 The older `smc_htf_ltf_monitor.py`, `smc_analyzer.py`, and Layer-1-to-Layer-6 `*_engine.py` implementation artifacts are not components of the finished product architecture.
 
@@ -33,28 +33,13 @@ The Market Data process boundary is the standalone `market_data.py` executable a
 The normal data flow is:
 
 ```text
-Provider(s)
-    |
-    v
-market_data.py (CLI)
-    |
-    +----> internal <SYMBOL>_marketdata.json persistence
-    |
-    +----> machine CSV STDOUT
-                  |
-                  v
-          smc_monitor.py
-          validates/captures stream
-                  |
-                  | passes captured CSV as Mapper STDIN
-                  v
-             smc_mapper.py
-                  |
-                  +----> <SYMBOL>_structures.json
-                              |
-                              v
-                        smc_monitor.py
+Provider/cache -> market_data.py -> machine CSV STDOUT
+              -> smc_monitor.py validates and passes CSV as Mapper STDIN
+              -> smc_mapper.py computes canonical state in memory
+              -> one per-invocation result on STDOUT (JSON by default)
 ```
+
+
 
 The machine-readable candle stream is the Mapper's market-data portability boundary. The Mapper must not know whether the Market Data process obtained data from LSE, a future MT4/MT5 adapter, a broker, replay data, cache, or another provider.
 
@@ -64,79 +49,40 @@ The Mapper must never call a concrete provider, perform provider-specific API re
 
 V1 implements the process boundary with Python `market_data.py`. Future platform implementations may provide the same machine-readable candle contract without changing Mapper/SMC logic. MT4/MT5 are portability targets only; no MT4/MT5 implementation is part of V1.
 
-## 0.3 Time-domain contract
+## 0.3 Time-domain and positional period contract
 
-The Mapper operates on canonical UTC only.
+The Mapper operates on canonical UTC only. Market Data supplies canonical UTC candle interval-start timestamps, OHLC values, optional primitive volume fields, and completed status. Source-native timestamps are not canonical Mapper input.
 
-The Market Data process supplies:
+The optional positional `PERIOD` grammar is:
 
-- `timestamp` — canonical UTC candle interval-start timestamp;
-- OHLC values;
-- optional primitive volume fields from the machine protocol;
-- `completed` — process-protocol completion state.
+- `YYYY.MM.DD` — the full UTC calendar day;
+- `YYYY.MM.DD-YYYY.MM.DD` — both endpoint dates inclusive, represented as a half-open UTC interval;
+- `YYYY.MM.DD@HH:MM` — the specified UTC minute;
+- `YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM` — an explicit half-open UTC interval;
+- `YYYY.MM.DD@HH:MM-` — from the specified UTC minute through the current UTC time;
+- `-YYYY.MM.DD` or `-YYYY.MM.DD@HH:MM` — from the earliest completed candle retained in the Market Data cache through the specified UTC day/minute.
 
-Datasource-native timestamps are not canonical Mapper input.
+If PERIOD is omitted, analyze all completed history supplied by Market Data, from the earliest available candle through the latest completed candle.
 
-Local time is a transient presentation/runtime value derived from canonical UTC with an explicit IANA timezone. It may be used for human-readable diagnostics or for converting explicitly identified user-local input before the Mapper contract is invoked.
+Date-only starts resolve to 00:00 UTC. Date-only ends resolve to the exclusive boundary at 00:00 UTC on the day after the named date. A single `YYYY.MM.DD@HH:MM` point represents one UTC minute; it does not mean “from this time to now”—the trailing hyphen is required. Only `HH:MM` is accepted; seconds, timezone suffixes, and machine-local timezone interpretation are rejected. For an open-end period, capture current UTC once at invocation start and use the same instant across all timeframes. Future starts and reversed/empty ranges are rejected.
 
-Local time must never change:
+Period selection uses candle interval-start timestamps with half-open semantics: `start <= candle.timestamp < end`. Completion status is checked separately. Open-start selection uses each timeframe's earliest retained completed candle (`available_start`), not its latest candle. HTF and LTF may therefore have different earliest retained boundaries.
 
-- candle ordering;
-- completion eligibility;
-- analysis identity;
-- Dealing Range timestamps;
-- mapper checkpoints;
-- canonical SMC calculations.
+The requested period is the requested output/evaluation window, not permission to omit canonical predecessors. The input stream must also include every earlier warm-up/context candle required by the canonical SMC rules. If required context is unavailable, fail closed or preserve the specific unresolved dependency as required by the canonical skill. Output metadata distinguishes the requested period, actual per-timeframe coverage, canonical processing coverage, and requested output window. These are per-run metadata only; there is no persistent identity or checkpoint.
 
-All Mapper start/end boundaries must resolve to canonical UTC before analysis identity generation, effective-window selection, checkpoint comparison, or candle eligibility.
+## 0.4 Process input and output boundaries
 
-The analysis key must use the resolved canonical UTC boundary, not the original local-time spelling.
+Market Data owns the retained candle cache. The Mapper owns no data directory, persistent Structures JSON, structural cache, checkpoint file, or analysis registry.
 
-At the Mapper contract boundary, datetime input must be timezone-aware ISO-8601 and date-only input is accepted only as the deterministic UTC calendar-date shorthand defined in §§2.7–2.8. Explicit local-time input must be converted to canonical UTC before the Mapper contract is invoked.
-
-## 0.4 Symbol data-directory and process input
-
-Durable outputs for one symbol remain under one directory beneath the common data root:
-
-```text
-<DATA_ROOT>/
-└── <SYMBOL>/
-    ├── <SYMBOL>_marketdata.json
-    └── <SYMBOL>_structures.json
-```
-
-Market Data owns creation and maintenance of `<SYMBOL>_marketdata.json`. Mapper owns `<SYMBOL>_structures.json`.
-
-Mapper market-data input is the machine-readable STDOUT captured by the Monitor/orchestrator from a successful Market Data process invocation and passed to the Mapper through STDIN. The Mapper does not launch Market Data, discover or open the Market Data persistence file, or accept an alternate JSON input path.
-
-### Process boundary
-
-```text
-Monitor / orchestrator
-    |
-    | launches market_data.py
-    | validates and captures machine STDOUT
-    | passes captured stream as Mapper STDIN
-    v
-smc_mapper.py
-    |
-    | parses completed-candle stream
-    v
-canonical structural processing
-```
+The Mapper consumes captured machine-readable Market Data STDOUT through STDIN. It does not launch Market Data, discover or open the Market Data persistence file, or accept an alternate JSON input path.
 
 Rules:
 
-- Mapper consumes the Market Data machine protocol from STDIN only;
-- Market Data diagnostics and errors are emitted on STDERR and are never treated as candle data;
-- Mapper must fail the input/analysis operation if the machine protocol on STDIN is malformed;
-- Mapper must not fall back to reading the Market Data JSON file;
-- `--cleartext` must never be used by Mapper;
-- the process contract is independent of the internal Python module layout;
-- the candle protocol uses only simple cross-language values and is intentionally suitable for a future MQL4/MQL5 implementation;
-- symbol-directory persistence remains an internal Market Data concern.
-
-The symbol directory is still the common durable storage location for Market Data and Mapper outputs, but the Mapper does not use the Market Data JSON file as its runtime input.
+- malformed machine input fails the invocation;
+- Market Data diagnostics on STDERR are never treated as candle data;
+- Mapper never falls back to reading Market Data's JSON file;
+- JSON is the default output; `--cleartext` is an optional presentation mode;
+- Mapper creates or updates no persistent Structures file, structural cache, checkpoint, or analysis registry.
 
 # 1. EXTERNAL MARKET-DATA CONTRACT
 
@@ -575,71 +521,34 @@ The mapper must never automatically select or invent a different HTF when only o
 
 ---
 
-## 2.7 Start-time resolution
+## 2.7 Positional period resolution
 
-`--starttime` is optional.
+The CLI accepts one optional positional `PERIOD` argument. The `--starttime`, `--endtime`, and `--update-range` options are not part of the CLI contract.
 
-When supplied, it defines the requested start of the analysis window and selects the analysis identity associated with that normalized boundary.
+| Positional value | Resolved scope |
+|---|---|
+| omitted | all completed candle history supplied by Market Data |
+| `YYYY.MM.DD` | full UTC day, `[00:00, next day 00:00)` |
+| `YYYY.MM.DD-YYYY.MM.DD` | inclusive endpoint dates, represented as a half-open UTC interval |
+| `YYYY.MM.DD@HH:MM` | exact UTC minute, `[point, point + 1 minute)` |
+| `YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM` | explicit half-open UTC interval |
+| `YYYY.MM.DD@HH:MM-` | specified UTC minute through the current UTC time captured at invocation start |
+| `-YYYY.MM.DD` | earliest retained completed candle through the exclusive end of the specified UTC day |
+| `-YYYY.MM.DD@HH:MM` | earliest retained completed candle through the exclusive end of the specified UTC minute |
 
-Accepted forms:
+The canonical date spelling is `YYYY.MM.DD` and time spelling is `HH:MM`. All values are UTC. Seconds, timezone suffixes, and machine-local timezone interpretation are not accepted.
 
-- timezone-aware ISO-8601 datetime; or
-- ISO calendar date, normalized deterministically to `00:00:00Z`.
+For open-start periods, resolve the earliest retained completed candle separately for each timeframe from its `available_start`; the end boundary remains explicit. For an open-end period, capture current UTC once at invocation start and use that fixed instant for all timeframe groups. Reject future starts and reversed/empty intervals.
 
-Examples:
+The requested period filters the output/evaluation window. Canonical processing must also use all earlier warm-up/context candles required by the canonical skill; context candles must not be misreported as belonging to the requested output interval.
 
-`--starttime 2026-09-01` → `2026-09-01T00:00:00Z`
+## 2.8 Completed-candle and window selection
 
-`--starttime 2026-09-01T09:30:00+02:00` → canonical UTC before identity generation.
+A candle is eligible for canonical processing only when the normalized completion contract confirms that it is completed. An incomplete/current candle is never processed as canonical history.
 
-Date-only input is a UTC calendar-date shorthand, not local time.
+The requested interval uses candle interval-start timestamps and half-open semantics: `start_time <= candle.timestamp < end_time`. Completion status is checked separately. A date-only end includes the entire named UTC date by resolving to the following day's midnight as the exclusive boundary.
 
-When `--starttime` is omitted:
-
-- if exactly one existing analysis matches the supplied timeframe configuration, the mapper resumes that analysis from its persisted `last_processed_candle_time`;
-- if multiple existing analyses match the supplied timeframe configuration but have different analysis start boundaries, the request is ambiguous and must fail explicitly; `--starttime` is required to select one;
-- if no existing analysis matches the supplied timeframe configuration, the mapper creates a new analysis using the earliest available completed entry-timeframe candle returned by the Market Data process for the requested bootstrap range as its persisted initial analysis boundary. This boundary comes from actual market data and is not invented.
-
-For an existing analysis, the next eligible completed entry-timeframe candle after `last_processed_candle_time` is the incremental processing start.
-
-For a newly created analysis without `--starttime`, the mapper performs the required bootstrap/warm-up from the persisted available history beginning at the selected initial analysis boundary.
-
-The resume path is specifically intended to support restarting the program after a previous shutdown.
-
-The mapper must distinguish the explicitly requested `requested_start`, when supplied, from the persisted analysis boundary and the computed `effective_start`.
-
-If required historical data is outside the retained market-data window, the Market Data CLI reacquires the missing range before mapper processing.
-
-Missing historical data must never be fabricated.
-
-## 2.8 End-time resolution
-
-`--endtime` is optional.
-
-Accepted forms:
-
-- timezone-aware ISO-8601 datetime; or
-- ISO calendar date, normalized deterministically to the end of that UTC calendar day.
-
-Examples:
-
-`--endtime 2026-09-29` → `2026-09-29T23:59:59.999999Z`
-
-`--endtime 2026-09-29T15:30:00+02:00` → canonical UTC before candle eligibility.
-
-Date-only input is a UTC calendar-date shorthand, not local time.
-
-If omitted, use the latest completed entry-timeframe candle returned by the Market Data process after the required update.
-
-If supplied, use the latest completed candle returned by the Market Data process whose canonical completion boundary is less than or equal to the requested end time.
-
-For an existing analysis resumed from `last_processed_candle_time`, an end-time earlier than that checkpoint is an invalid incremental request. The mapper must fail explicitly rather than process the analysis backwards or silently create a second identity.
-
-When an explicit end-time limits processing, the persisted checkpoint must never advance beyond the resolved end-time boundary.
-
-The normalized candle `timestamp` alone must not be treated as proof that a candle has completed. Completion is determined by the normalized completion status/time contract in §1.5.
-
-An incomplete/current candle must never enter canonical analysis.
+The Mapper distinguishes requested period, actual completed-candle coverage per timeframe, canonical processing coverage, and requested output window. There is no persisted analysis identity, checkpoint, resume point, or historical-update mode. Every invocation reconstructs canonical state from the supplied required history.
 
 ## 2.9 Input validation
 
@@ -688,25 +597,32 @@ BOTH uses both available genuine orderflow analytics and OHLC-derived directiona
 
 The selected method is an analysis-time processing decision. It is not persisted as a single exclusive volume provenance field in normalized market-data candles, and it does not remove or overwrite any parallel volume data that is available. Explicit CLI values override the default.
 
+## 2.9 Input validation
+
+Before canonical analysis, validate symbol, timeframe values, HTF/LTF relationship, positional-period syntax and resolution, timestamp ordering, duplicate timestamps, UTC normalization, completed-candle status, OHLC integrity, required volume-field pairing, and single-/two-timeframe mode requirements.
+
+Malformed dates/times, impossible dates, invalid 24-hour times, unsupported seconds/timezone suffixes, reversed/empty intervals, and future range starts fail explicitly before canonical processing. Provider/API failures and acquisition errors belong to Market Data. Missing required historical/context candles must not be fabricated.
+
+## 2.10 Configuration boundary
+
+No separate Mapper configuration file is required. Mapper behavior is controlled by CLI parameters, explicit defaults, Market Data machine-output metadata/candle records, and the canonical SMC skill. Provider configuration and retained candle storage belong to Market Data; Mapper never reads its private JSON file.
+
+Timeframe selection is controlled only by `--htf` and/or `--ltf`. Timeframe catalog and duration ownership remain with the Market Data contract; Mapper must not introduce a second hard-coded `SUPPORTED_TIMEFRAMES` list.
+
+Volume analysis uses `--volume-method {NONE,OHLC,ORDERFLOW,BOTH}`, default `BOTH`. Genuine orderflow and OHLC-derived directional-volume analytics remain separate branches. If only one is available, use that branch; if neither is available, produce no POI volume analytics.
+
 ## 2.11 CLI and --help contracts
 
-Every CLI option defined by this specification is a real implementation contract. Each documented option must be parsed, validated, functionally applied, and documented by the corresponding English --help output. Documentation-only, placeholder, or future CLI options are not permitted.
+Every documented CLI option must be parsed, validated, applied, and documented in English `--help`. `--help` works without other required arguments and exits successfully.
 
---help must work without other required arguments, print the English option descriptions, and exit successfully.
-
-### smc_mapper.py
+### `smc_mapper.py`
 
 ```text
 Usage:
-  python smc_mapper.py --symbol SYMBOL [--htf TF] [--ltf TF]
-                       [--starttime TIME_BOUNDARY] [--endtime TIME_BOUNDARY]
-                       [--update-range RANGE_START RANGE_END]
+  python smc_mapper.py --symbol SYMBOL [--htf TF] [--ltf TF] [PERIOD]
                        [--history-no N]
                        [--volume-method {NONE,OHLC,ORDERFLOW,BOTH}]
-                       [--list-analyses | --query | --delete-analysis | --delete-cache]
-                       [--analysis-key KEY]
-                       [--debug]
-                       [--help]
+                       [--cleartext] [--debug] [--help]
 
 Options:
   --symbol SYMBOL
@@ -716,198 +632,82 @@ Options:
       Optional Higher Timeframe. With --ltf, HTF must be strictly higher.
 
   --ltf TF
-      Optional Lower/selected timeframe. With --htf, this is the entry timeframe.
+      Optional selected/entry timeframe. With --htf, this is the entry timeframe.
       At least one of --htf or --ltf must be supplied.
 
-  --starttime ISO8601
-      Optional analysis start boundary. When supplied, it selects the analysis
-      identity associated with that boundary.
-
-  --endtime ISO8601
-      Optional analysis end boundary. The latest completed candle whose
-      completion_time is <= this value is used.
-
-  --update-range RANGE_START RANGE_END
-      Explicitly re-map a historical interval within an existing analysis.
-      Requires an unambiguous existing analysis and both UTC-normalizable
-      boundaries. The interval is inclusive by candle completion_time.
-      Rebuilds canonical state from analysis_start through the existing
-      checkpoint/end boundary, so downstream structures affected by the
-      historical interval are reconciled rather than patched in isolation.
-      Does not change the analysis identity or analysis_start.
+  PERIOD
+      Optional positional UTC scope. Supports YYYY.MM.DD,
+      YYYY.MM.DD-YYYY.MM.DD, YYYY.MM.DD@HH:MM,
+      YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM, YYYY.MM.DD@HH:MM-,
+      -YYYY.MM.DD, and -YYYY.MM.DD@HH:MM. Omission means all completed
+      history supplied by Market Data.
 
   --history-no N
-      Optional symbol-level closed Dealing Range history capacity. N must be >= 1.
-      Default when initializing a symbol structure file is 5000; an existing
-      stored value is preserved.
+      Closed Dealing Range history capacity, N >= 1; default 5000.
+      Applies to this invocation only and is not persisted.
 
   --volume-method {NONE,OHLC,ORDERFLOW,BOTH}
-      POI volume analytics method. Default: BOTH.
-      NONE disables volume analytics.
-      OHLC uses OHLC-derived directional volume estimates.
-      ORDERFLOW uses genuine orderflow only.
-      BOTH uses both available branches independently.
+      Select non-canonical POI volume analytics. Default: BOTH.
 
-  --list-analyses
-      List stored analyses for --symbol as JSON without mapping or writing.
-
-  --query
-      Read the persisted Structures cache without mapping. Return the whole cache
-      unless a unique analysis is selected by --analysis-key or timeframe/start options.
-
-  --analysis-key KEY
-      Select an exact persisted analysis for --query or --delete-analysis.
-
-  --delete-analysis
-      Delete the uniquely selected analysis, preserving all other analyses.
-
-  --delete-cache
-      Explicitly delete only the symbol's Structures cache, never Market Data.
+  --cleartext
+      Render the result in human-readable form instead of JSON.
+      Presentation-only; does not change canonical processing.
 
   --debug
-      Enable diagnostic output on stderr.
+      Emit additional diagnostics to STDERR only.
 
   --help
-      Show this help message and exit.
+      Show this help and exit.
 ```
 
-Only a mapping/update invocation reads one complete machine-readable Market Data CSV stream from STDIN. Empty input, malformed protocol, unexpected timeframe rows, incomplete/current rows, or a timeframe/range mismatch is an explicit input failure. Read-only cache operations (`--list-analyses` and `--query`) and cache-management operations (`--delete-analysis` and `--delete-cache`) do not read STDIN and do not require Market Data to be running. Because CSV rows do not repeat the symbol, the Monitor/orchestrator must guarantee that a mapping stream was acquired for the same symbol as the Mapper's `--symbol` argument. The Mapper never launches `market_data.py` and never opens `<SYMBOL>_marketdata.json`.
+### STDIN contract
 
-### CLI JSON output and persistent-cache contract
+Every non-help invocation reads one complete machine-readable Market Data CSV stream from STDIN. Empty input, malformed protocol, unexpected timeframe rows, incomplete/current rows in the completed-candle stream, or symbol/timeframe/coverage mismatch is an explicit failure. Mapper never launches Market Data and never opens `<SYMBOL>_marketdata.json`.
 
-The Structures JSON file is the durable structural cache and source of truth for resume and read-only queries. It is not disposable temporary cache: it stores the symbol's analyses, canonical structural state, provenance, and Mapper checkpoint. Successful mapping updates it atomically.
+### Stateless execution and output contract
 
-The CLI must explicitly distinguish **normal mapping/update**, **historical range re-mapping**, **read-only query**, and **cache-management mutation** operations. These operation modes are mutually exclusive; incompatible combinations must be rejected before file or structural state mutation. A query loads the existing Structures JSON and returns selected stored content as JSON without invoking canonical processing, advancing checkpoints, changing history, refreshing market data, or writing the file. Querying an absent file or absent analysis returns a machine-readable not-found result with a non-zero exit status; it must not silently create an empty file or trigger mapping.
+Mapper is a stateless computation component. It has no Structures JSON file, structural cache, analysis registry, checkpoint, incremental-resume mode, query/list/delete mode, or historical cache-update mode. Every invocation reconstructs canonical state from the validated supplied candles and required warm-up/context history.
 
-Every successful non-help invocation emits exactly one complete JSON document to STDOUT. For mapping/update operations, the document is the same symbol-scoped Structures JSON state that was atomically persisted to `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_structures.json`; it is not a status envelope, a diff, or a second independently generated representation. For read-only query operations, STDOUT contains the requested JSON projection of the stored document, with an explicit operation/result status and enough identity metadata to identify the selected symbol and analysis.
+Default STDOUT contains exactly one complete JSON document for the current invocation. It includes symbol, timeframe configuration, normalized requested period, actual per-timeframe coverage, canonical processing coverage, requested output window, canonical structural results, and relevant provenance. It is generated from the validated in-memory result; no file is persisted or re-read. STDOUT contains no progress text, banners, diagnostics, or partial JSON.
 
-The write order for mapping/update is mandatory:
+With `--cleartext`, STDOUT contains a human-readable rendering of that same successful result instead of JSON. STDERR is reserved for diagnostics/errors in both modes. `--debug` adds diagnostic detail to STDERR only. A non-zero exit means no successful result is emitted.
 
-1. complete canonical processing in memory;
-2. serialize and atomically persist the complete Structures document, including the successful checkpoint;
-3. only after persistence succeeds, serialize that same committed document to STDOUT as JSON;
-4. exit with status 0.
+The result is per-invocation output, not a durable source of truth. If a caller needs to retain it, that caller owns storage; Mapper never writes output to a file.
 
-A read-only query has no write phase and must not change file bytes or file modification time. If validation, processing, serialization, or persistence fails, the Mapper must not emit a success JSON document and must exit non-zero. Error details go to STDERR. STDOUT must never contain progress text, banners, pretty human-readable summaries, or partial JSON. Diagnostics remain on STDERR whether or not `--debug` is enabled; `--debug` controls additional diagnostic detail only. JSON output is the default behavior and does not require a separate output flag.
+### Historical recomputation
 
-### Required cache-management CLI semantics
+Historical recomputation is an ordinary invocation with a positional period. Mapper rebuilds state from the complete supplied candle history and required warm-up/context. A corrected historical candle in the Market Data cache is naturally reflected by the next invocation and all downstream structural lifecycle outcomes. No special update command is required.
 
-The option names above are the V1 CLI contract; the implementation must support these distinct operations:
+The Monitor/orchestrator must acquire and pass sufficient history. If the stream lacks required coverage, Mapper fails closed instead of presenting an incomplete result as complete.
 
-- **List analyses:** list stored analysis identities and their timeframe/start/checkpoint metadata for a symbol without mapping.
-- **Query analysis/state:** return the complete stored Structures JSON document or one selected analysis as JSON without mapping.
-- **Map/update:** explicitly run canonical processing for new completed candles and persist the result.
-- **Historical range update:** use `--update-range RANGE_START RANGE_END` to request explicit re-mapping of a previously processed interval.
-- **Delete analysis:** explicitly remove one selected analysis while preserving all other analyses for the symbol.
-- **Delete symbol cache:** explicitly remove the symbol's Structures JSON only when requested; it must not delete Market Data storage.
-- **Inspect cache metadata:** expose the stored symbol, analysis identities, timeframe configuration, analysis-start boundary, and checkpoint information sufficient to diagnose whether the cache matches the requested analysis. If a schema/version field is defined by the persisted document format, include it in this metadata.
-
-A query must identify its target unambiguously. If multiple analyses match the supplied timeframe configuration and no unique start boundary/key is provided, return an ambiguity error listing the matching analysis keys. Never pick the first match implicitly.
-
-A read-only query must not automatically remap stale state. The caller may explicitly request a separate map/update operation. Cache age or checkpoint lag may be reported as metadata, but must not be used to silently alter canonical state.
-
-### Historical range re-mapping semantics
-
-`--update-range RANGE_START RANGE_END` is an explicit mutating operation, not a read-only query and not a normal incremental append. Both boundaries are normalized to UTC and RANGE_START must be earlier than or equal to RANGE_END. The target analysis must already exist and must be selected unambiguously; the command must not create a new analysis or alter its identity.
-
-The requested interval identifies the historical candles to be corrected/re-evaluated, but canonical structural state is path-dependent. Therefore the Mapper must not splice newly computed structures into the existing state only for those timestamps. It must rebuild the selected analysis deterministically from its persisted `analysis_start` through the previously committed checkpoint (or an explicitly supplied, valid `--endtime` not beyond available completed data), using the current validated candle stream, then atomically replace that analysis state. This replay reconciles downstream structures and lifecycle changes caused by the historical interval. Other analyses in the symbol cache remain unchanged.
-
-The supplied STDIN must contain all completed candle history needed to replay the selected analysis from `analysis_start` through the chosen replay end, for every required timeframe. If the stream does not cover that replay window, validation fails closed and the existing Structures JSON remains unchanged. The requested update interval must overlap the selected analysis's processed time range; otherwise return a range error without mutation. The interval is interpreted by candle `completion_time`, and the inclusive boundary rule is used consistently.
-
-The replay must be transactional: construct the rebuilt analysis in isolated in-memory state; validate its identity, timeframe coverage, and checkpoint; then atomically persist the full Structures document. If replay or persistence fails, preserve the previously committed analysis and checkpoint. STDOUT contains the full committed Structures JSON only after successful persistence. No new identity is created, no checkpoint advances on failure, and no duplicate structural events may remain from the pre-replay state.
-
-A historical update is not automatically scheduled by Monitor and must not be inferred from stale data. It is initiated explicitly by the caller/orchestrator, which must acquire and validate the complete replay stream before invoking Mapper. `--list-analyses` and `--query` must work when Market Data is unavailable, because they read only the Structures cache. `--delete-analysis` requires an unambiguous analysis key or equivalent unique selector; it must reject ambiguous selection without modifying the file.
-
-Deletion and mutation operations must use the same atomic persistence discipline as normal Structures updates. When the last analysis is deleted, retain a valid symbol-scoped Structures document with an empty `analyses` object; this avoids treating an intentional empty cache as a missing/corrupt file. The document's schema/version metadata must remain valid. Deleting the whole cache is a separate explicit operation.
-
-A direct shell invocation may connect the processes with a pipe:
+Example process pipe:
 
 ```text
-python market_data.py --symbol SYMBOL --timeframes TF [TF ...] --range RANGE | python smc_mapper.py --symbol SYMBOL [--htf HTF] [--ltf LTF] --starttime START --endtime END
+python market_data.py --symbol SYMBOL --timeframes TF [TF ...] --range MARKET_DATA_SCOPE | python smc_mapper.py --symbol SYMBOL [--htf HTF] [--ltf LTF] [PERIOD]
 ```
 
-The Monitor uses the same contract by capturing and validating the Market Data STDOUT, then passing the analysis-scoped stream as Mapper STDIN.
+Market Data acquisition must include the Mapper's requested period plus required warm-up/context. Market Data's `--range` is not passed to Mapper as a flag. The Monitor must pass its configured timeframe selection explicitly; it must not discover timeframe configuration from a Structures file.
 
-The Market Data and Monitor CLIs are specified only in their owner documents:
+# 3. PER-INVOCATION ANALYSIS MODEL
 
-- `market_data.py` → `specifications/market_data_specification.md` §0.4 and §5
-- `smc_monitor.py` → `specifications/smc_monitor_specification.md` §1
+## 3.1 Invocation metadata
 
-The Mapper must not duplicate those CLI contracts here.
-The monitor does not accept --htf or --ltf; it monitors the analyses already persisted in each symbol's structures JSON. Timeframe analysis configuration remains owned by smc_mapper.py.
+Each Mapper invocation is independent. There is no persistent analysis identity, stored analysis registry, Structures JSON, checkpoint, or resume selection.
 
-CLI options are independent of canonical SMC semantic authority. Invalid option combinations must fail explicitly rather than being silently corrected.
+The result identifies the invocation by symbol, normalized timeframe configuration, normalized requested period, actual available coverage, and processing/output boundaries. Any optional correlation identifier is output metadata only and must not load or mutate state.
 
----
+The timeframe model remains:
 
-# 3. ANALYSIS IDENTITY AND PERSISTENT STATE MODEL
+- `SINGLE_TIMEFRAME`: analyze the selected timeframe once, without treating it as its own HTF;
+- `HTF_LTF`: both timeframes are supplied, HTF is strictly higher than LTF, and LTF is the entry timeframe.
 
-## 3.1 Analysis identity and structures JSON
+## 3.2 Per-run structural state
 
-`<DATA_ROOT>/<SYMBOL>/<SYMBOL>_structures.json` is the canonical mapper structural-state file for that symbol.
+Canonical structures, lifecycle state, Dealing Range state/history, IDM provenance, BOS/CHoCH outcomes, canonical POIs, and volume enrichments exist only in memory for one invocation. They are serialized into the result and then released.
 
-It contains all distinct mapper analyses for the symbol in one file. Each analysis is identified by a deterministic analysis key derived from its normalized timeframe configuration and persisted `analysis_start` boundary.
+`history_no` is a per-invocation setting, default 5000, not a persisted symbol-level configuration. Mapper must not persist canonical structure or dynamic monitor/trade state.
 
-Examples:
-
-```text
-H4_M15_2026-06-10T12:00:00Z
-H1_M5_2026-07-01T09:00:00Z
-M15_2026-06-10T12:00:00Z
-```
-
-The persisted `analysis_start` is required and is the stable boundary used by the analysis identity.
-
-Persisted timeframe fields use this normalized shape:
-- `SINGLE_TIMEFRAME`: `entry_timeframe` is the selected timeframe; `htf` and `ltf` preserve supplied timeframe values or null when omitted.
-- `HTF_LTF`: both `htf` and `ltf` are present and `htf > ltf`; `entry_timeframe = ltf`.
-
-When `--starttime` is supplied, `analysis_start` equals the normalized requested start boundary.
-- When `--starttime` is omitted for a new analysis, `analysis_start` equals the earliest available completed entry-timeframe candle completion boundary selected by §2.7.
-- `requested_start` records the explicitly supplied boundary and may be null/absent for analyses created without `--starttime`.
-- `effective_start` is an execution-window value and is not part of analysis identity. It need not be persisted in V1.
-
-When `--starttime` is omitted, an existing analysis is selected by timeframe configuration only when that selection is unambiguous. If multiple analysis keys share the same timeframe configuration, `--starttime` is required.
-
-The analysis key is an implementation-level identifier only; it does not redefine canonical SMC ontology.
-
-Logical shape:
-
-```json
-{
-  "symbol": "CCCC",
-  "history_no": 5000,
-  "analyses": {
-    "H4_M15_2026-06-10T12:00:00Z": {
-      "htf": "H4",
-      "ltf": "M15",
-      "analysis_mode": "HTF_LTF",
-      "requested_start": "2026-06-10T12:00:00Z",
-      "last_processed_candle_time": "...",
-      "canonical_pois": [],
-      "history": []
-    }
-  }
-}
-```
-
-`history_no` is stored once at symbol level and applies independently to each analysis's applicable closed Dealing Range history.
-
-A Market Data CLI execution updates only its internal `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json` and emits the requested machine-output stream. A mapper execution updates only its relevant analysis entry inside `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_structures.json`.
-
-Downstream consumers identify each stored analysis from its deterministic analysis key and validate the stored `analysis_mode`, `htf`, `ltf`, `entry_timeframe`, and required `analysis_start`. `requested_start` is provenance metadata and may be null/absent for an analysis created without an explicit `--starttime`.
-
-## 3.2 Stored mapper state
-
-Each mapper analysis entry stores canonical structural analysis plus the minimal mapper-processing metadata required for deterministic incremental execution.
-
-It may contain Layer-3 structural lifecycle/state, CONFIRMED_STRUCTURAL_SWING, Protected Structural Extreme, Dealing Range state, IDM state/provenance (MINOR_IDM / MAJOR_IDM), retracement qualification, STRUCTURAL_SWING_BREAK / VALID_BOS, CHoCH lifecycle state, canonical Layer-6 POI results, canonical POI registry, retained closed Dealing Range history, and structural provenance/change metadata.
-
-The mapper must not persist dynamic monitoring or trade state such as current market price, active trade/order state, stop state, break-even state, trailing state, target-hit state, or the monitor's transient POI selection state. Those are owned by the monitor.
-
-Each analysis entry contains its own `last_processed_candle_time` as mapper processing provenance/checkpoint metadata. It carries no canonical SMC meaning.
-
----
+The Market Data cache remains the only persistent candle-history source in this data path. Mapper receives its machine-readable candle stream and does not read Market Data's private JSON file.
 
 # 4. DATA COVERAGE, BOOTSTRAP, AND RESUME PLANNING
 
