@@ -148,13 +148,15 @@ LTF-CHoCH CONTEXT ACTIVE
 
 HTF POI interaction means mitigation/reaction against a canonical HTF POI. HTF core-liquidity takeout means a canonical HTF IDM or Engineering Liquidity interaction. The LTF context may refine execution, but it must not independently reverse the HTF bias.
 
-#### Mandatory HTF/LTF role and pairing contract
+#### Mandatory automatic multi-timeframe role contract
 
-- This project's conformant automated Mapper/Monitor contract uses two distinct timeframes; a single chart/timeframe alone cannot satisfy this product's MTF-analysis contract. This does not negate source examples of discretionary single-timeframe trading.
-- **HTF:** establishes directional narrative, canonical POI zones, and relevant core-liquidity context.
-- **LTF:** reveals the internal structure within/after the HTF interaction, qualifies the context-gated LTF-CHoCH route, and supplies entry confirmation. An LTF CHoCH without the required HTF POI/core-liquidity context must not be treated as this route or independently authorize an entry. This context gate also prevents isolated pre-inducement micro-structure from being mistaken for an HTF-backed setup; the existing `06_execution.md` `SMT / INDUCEMENT_TRAP` semantics remain authoritative, and this section must not invent a new SMT event class.
-- Common execution pairings are **H4 HTF → M15 LTF** for short-term swings and **D1 HTF → H1 LTF** for long-term swings. These are common pairings, not an exhaustive or rigid timeframe table; the configured pair must preserve distinct higher-context and lower-execution roles.
-- If the required HTF POI, liquidity interaction, historical coverage, or timeframe relationship is unavailable, keep the dependent LTF-CHoCH context inactive/unavailable. Never manufacture the missing context from an LTF pivot or local CHoCH.
+- The public Mapper/Monitor interface accepts one required anchor timeframe through `--timeframe TF`; a conformant runtime automatically resolves multiple distinct series wherever canonical SMC semantics require them. One CLI argument does not authorize a single-timeframe analysis result.
+- **Narrative / POI HTF:** establishes directional narrative, canonical POI zones, and relevant core-liquidity context. It is normally the selected anchor timeframe, unless the canonical mapping hierarchy requires a distinct higher context to qualify the relevant event.
+- **Pullback-representation timeframe:** may be needed to establish that an HTF structural retracement is represented by a complete lower-timeframe structure. This is a separate semantic role and is not assumed to be the entry/monitoring LTF.
+- **Entry / monitoring LTF:** reveals internal structure within/after the relevant HTF interaction, qualifies the context-gated LTF-CHoCH route, and supplies entry confirmation. The Monitor must not fetch/use this series solely to monitor CHoCH before an eligible institutional HTF POI/core-liquidity interaction is canonically observed. Following that gate, the runtime activates entry monitoring and acquires the automatically selected entry LTF. A series acquired beforehand for an independent pullback-representation requirement must not be mistaken for pre-armed entry/CHoCH evidence.
+- An LTF CHoCH without the required HTF POI/core-liquidity context must not be treated as this route or independently authorize an entry. This context gate also prevents isolated pre-inducement micro-structure from being mistaken for an HTF-backed setup; the existing `06_execution.md` `SMT / INDUCEMENT_TRAP` semantics remain authoritative, and this section must not invent a new SMT event class.
+- Common execution pairings remain **H4 HTF → M15 LTF** for short-term swings and **D1 HTF → H1 LTF** for long-term swings. They are illustrative execution pairings, not required CLI parameters, not an exhaustive timeframe table, and not a replacement for the complete-structure pullback-representation hierarchy. The resolver must respect canonical context and actual supported Market Data timeframe tokens.
+- If required HTF POI, liquidity interaction, supporting series, historical coverage, or event sequencing is unavailable, keep the dependent LTF-CHoCH context inactive/unavailable. Never manufacture the missing context from an LTF pivot or local CHoCH. Missing evidence is not proof of a negative result.
 
 #### LTF governing reference
 
