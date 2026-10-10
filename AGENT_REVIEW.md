@@ -1774,3 +1774,33 @@ The user's live refresh failed in the HTML fallback because the page had an even
 ### Runtime validation
 - The workflow contains regressions for the changed formatting contract.
 - Automated workflow status for this final snapshot has not yet been verified; CI PASS is not claimed.
+
+
+
+## Conditional provider L2 market-depth display — 2026-10-10
+
+### Decision
+- Show L2 only when the selected provider returns a valid timestamped snapshot with usable bid and/or ask levels.
+- Do not add empty L2 columns to candle rows. Render L2 as a separate section because order-book depth is a snapshot, not per-candle aggregate volume.
+- Keep aggregate candle `volume.total` independent from Level 2 price-level sizes.
+- An unsupported, empty, mismatched, invalid, or failed optional L2 response must not block valid candle output.
+- Do not use a live snapshot for a historical query whose requested end precedes that snapshot.
+- Keep L2 out of the stable machine CSV protocol; this change is limited to `--table`.
+
+### Changes
+- Added provider-neutral `MarketDepthLevel` and `MarketDepthSnapshot` models.
+- Added the optional `MarketDataProvider.fetch_market_depth(symbol, as_of=None)` capability. Its default implementation returns `None`, keeping providers without L2 support compatible.
+- Updated the CLI to query optional L2 only for table presentation, validate symbol/provider/timestamp/level values, and degrade to candle-only output if L2 is absent or fails.
+- Added conditional L2 rendering with UTC snapshot time, provider label, bid/ask price and volume per level.
+- Updated the normative Market Data specification and regression workflow for populated, missing, and failing L2 responses.
+
+### Static audit
+- The provider contract, model, CLI dispatch, formatter and specification agree on a separate optional L2 snapshot.
+- An absent snapshot produces no L2 heading or empty depth table.
+- Invalid or failed optional depth data cannot prevent valid candle table output.
+- The stable machine CSV header and row behavior are unchanged.
+- The current LSE candle adapter inherits the optional capability's `None` default; this change does not fabricate or claim live L2 support for LSE.
+
+### Runtime validation
+- The workflow has regressions for displaying returned levels, omitting absent depth, and continuing candle output after an L2 lookup failure.
+- The GitHub Actions result for the final snapshot is not available through the current status response; automated CI PASS is not claimed.
