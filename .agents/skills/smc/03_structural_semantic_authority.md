@@ -603,12 +603,7 @@ Layer 3 is the sole semantic owner of structural qualification. A retracement wa
 
   The operative rule is the **applicable immediate higher-timeframe context**, not a hard-coded timeframe-pair table. These examples must not be treated as exclusive pairs. For example, a W1 retracement in the 38.2%–below-50% band may be validated by a single valid 1MN pullback when 1MN is the applicable immediate HTF context and 3MN is not part of the available/configured hierarchy. Do not substitute an arbitrary higher timeframe or skip the active context's required immediate-HTF relationship.
 
-#### Mandatory Multi-Timeframe invariant
-
-- A conformant True SMC mapping must evaluate **two distinct, explicitly identified timeframes** in one coordinated context: HTF for directional narrative, canonical POIs and core-liquidity context; LTF for internal structure and context-gated LTF-CHoCH / execution confirmation.
-- Single-timeframe-only mapping is non-conformant. An HTF must not be emulated by relabeling the selected timeframe as both HTF and LTF.
-- If the second timeframe or required overlapping history is unavailable, preserve the analysis as `UNAVAILABLE` / `HTF_CONTEXT_UNAVAILABLE` for the dependent decisions and fail closed. Do not invent candles, infer unobserved event order, or emit a canonical BOS/CHoCH/entry conclusion whose prerequisites depend on that missing context.
-- The structural and execution roles remain distinct: HTF supplies context/POIs; LTF verifies the internal structure and the applicable entry confirmation. The existence of an LTF CHoCH away from the required HTF interaction context does not, by itself, create an HTF-backed execution setup.
+These pullback-representation examples are distinct from HTF-POI-to-entry pairings. The former answers whether a lower-timeframe structural retracement is represented by one valid pullback on its applicable higher timeframe; the latter assigns the narrative/POI timeframe and the execution timeframe. For example, D1→H4 may be a pullback-representation pair, while D1 HTF POI→H1 LTF is a long-term-swing execution pair. They answer different questions and must not be collapsed into one rigid table.
 
 #### Gate 3: Insufficient Retracement
 
@@ -616,6 +611,13 @@ Layer 3 is the sole semantic owner of structural qualification. A retracement wa
 - **Output:** `MAJOR_RETRACEMENT_QUALIFIED = FALSE`.
 
 The gates are hierarchical and mutually exclusive by depth. Gate 2 is the only qualification path below 50%; Gate 3 cannot qualify. Qualification is evaluated before the structural swing break and is stored for downstream Layer 4 consumption.
+
+#### Mandatory Multi-Timeframe invariant
+
+- A conformant True SMC mapping must evaluate **two distinct, explicitly identified timeframes** in one coordinated context: HTF for directional narrative, canonical POIs and core-liquidity context; LTF for internal structure and context-gated LTF-CHoCH / execution confirmation.
+- Single-timeframe-only mapping is non-conformant. An HTF must not be emulated by relabeling the selected timeframe as both HTF and LTF.
+- If the second timeframe or required overlapping history is unavailable, preserve the analysis as `UNAVAILABLE` / `HTF_CONTEXT_UNAVAILABLE` for the dependent decisions and fail closed. Do not invent candles, infer unobserved event order, or emit a canonical BOS/CHoCH/entry conclusion whose prerequisites depend on that missing context.
+- The structural and execution roles remain distinct: HTF supplies context/POIs; LTF verifies the internal structure and the applicable entry confirmation. The existence of an LTF CHoCH away from the required HTF interaction context does not, by itself, create an HTF-backed execution setup.
 ### 3.3.3 — Protected Structural Extreme Lock
 
 The absolute corrective extreme remains dynamically tracked until the structural event that produces `VALID_BOS`.
