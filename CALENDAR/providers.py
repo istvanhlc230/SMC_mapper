@@ -15,7 +15,7 @@ from .config import (FOREXFACTORY_DETAIL_URL, FOREXFACTORY_URL, FX_CURRENCY_CODE
 from PROVIDERS.credentials import ProviderCredentialError, get_provider_api_key
 from .domain import canonicalize_fx_token, format_iso8601, is_currency, is_fx_pair, normalize_symbol, parse_iso8601
 from .parsing import extract_days_payload, parse_calendar_days, parse_forexfactory_html_events
-from COMMON.http_client import HttpClient, HttpRequestError
+from COMMON.http_client import HttpClient, HttpRequestError, open_url
 
 # Provider state is request-local: fetched payloads, normalized events, and Detail failures stay inside the active acquisition call.
 
@@ -189,7 +189,7 @@ def _fetch_lse_rows(symbol: str, start: datetime, end: datetime) -> List[Dict[st
         headers={"x-api-key": api_key, "User-Agent": USER_AGENT, "Accept": "application/json"},
     )
     try:
-        with urllib.request.urlopen(request, timeout=HTTP_TIMEOUT) as response:
+        with open_url(request, timeout_seconds=HTTP_TIMEOUT, ipv4_first=True) as response:
             if response.status != 200:
                 raise ProviderError(f"LSE HTTP {response.status}")
             payload = json.loads(response.read().decode("utf-8"))
