@@ -1816,6 +1816,7 @@ The user's live refresh failed in the HTML fallback because the page had an even
    - It omitted `volume_total` and the observed `orderflow_buy/orderflow_sell` pair.
    - `MACHINE_PROTOCOL_HEADER` and row serialization now match the shared 13-column contract. Total volume is populated only from normalized `VolumeState.total`; observed orderflow is emitted only as a complete finite non-negative pair. The existing three optional provider fields retain separate slots.
    - Regression coverage asserts the exact header, row width, field positions, total-volume transport, orderflow transport, and rejection of an incomplete orderflow pair.
+   - The availability flag of every `VolumeState` branch must agree with value presence in both directions. A value stored behind a false flag is rejected, preventing silent omission at the machine-output or persistence boundary.
 
 2. **Optional provider semantic fields were not representable end-to-end — FIXED.**
    - The contract described `tick_volume`, `spread`, and `real_volume`, but the normalized model and persistence path did not preserve them.
@@ -1839,10 +1840,10 @@ The user's live refresh failed in the HTML fallback because the page had an even
 ### Cross-file audit
 
 - **PASS — protocol header agreement:** the implementation emits the same 13 fields listed in `market_data_specification.md`, `smc_mapper_specification.md`, and `smc_monitor_specification.md`.
-- **PASS — volume field semantics:** each optional field has an independent representation; total volume and observed orderflow are not fabricated from tick volume, spread, real volume, or OHLC.
+- **PASS — volume field semantics:** each optional field has an independent representation; total volume and observed orderflow are not fabricated from tick volume, spread, real volume, or OHLC. Availability flags and corresponding value presence must match exactly; inconsistent state fails closed.
 - **PASS — persistence boundary:** optional provider fields use canonical decimal strings, validate as finite non-negative values, and are omitted when unavailable. Mapper/Monitor do not depend on the persisted JSON.
 - **PASS — conditional L2 presentation:** L2 appears as a distinct timestamped section only for a valid provider-returned snapshot; it is not merged into candle volume or added to the stable machine CSV.
-- **PASS — regression contract:** workflow tests cover available/unavailable/failing L2, historical end boundaries, last-closed depth timing, future snapshots, unsorted levels, machine CSV field positions, optional provider-field persistence, and concise table precision.
+- **PASS — regression contract:** workflow tests cover available/unavailable/failing L2, historical end boundaries, last-closed depth timing, future snapshots, unsorted levels, machine CSV field positions, optional provider-field persistence, volume availability flag consistency, and concise table precision.
 
 ### Explicit remaining limitation
 
@@ -1852,6 +1853,6 @@ The user's live refresh failed in the HTML fallback because the page had an even
 
 ### Runtime validation
 
-- Market Data Python tests [run #38090885033](https://github.com/istvanhlc230/SMC_mapper/actions/runs/38090885033): **SUCCESS** for the source/test snapshot before the final specification-only wording correction.
-- Calendar Python tests [run #38090885056](https://github.com/istvanhlc230/SMC_mapper/actions/runs/38090885056): **SUCCESS** for the same snapshot.
+- Market Data Python tests [run #38091131920](https://github.com/istvanhlc230/SMC_mapper/actions/runs/38091131920): **SUCCESS** against implementation commit `2e577beff70a374aa0d4d4af8950550520f8e42b`, including the exact 13-column CSV, optional provider-volume persistence, conditional L2 tests, and availability-flag consistency regressions. The normative spec and cross-spec wording were aligned in adjacent commit `afd5d5149d975d84adcd9f1f0a3c9d41bf82326a`.
+- Calendar Python tests [run #38091131947](https://github.com/istvanhlc230/SMC_mapper/actions/runs/38091131947): **SUCCESS** for the same code/specification tree.
 - These workflows use synthetic/provider-mocked data; they do not constitute a credential-backed live L2 or live LSE acquisition test.
