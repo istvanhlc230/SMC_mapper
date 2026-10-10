@@ -700,6 +700,7 @@ Every CLI option defined by this specification is a real implementation contract
 Usage:
   python smc_mapper.py --symbol SYMBOL [--htf TF] [--ltf TF]
                        [--starttime TIME_BOUNDARY] [--endtime TIME_BOUNDARY]
+                       [--update-range RANGE_START RANGE_END]
                        [--history-no N]
                        [--volume-method {NONE,OHLC,ORDERFLOW,BOTH}]
                        [--list-analyses | --query | --delete-analysis | --delete-cache]
@@ -725,6 +726,15 @@ Options:
   --endtime ISO8601
       Optional analysis end boundary. The latest completed candle whose
       completion_time is <= this value is used.
+
+  --update-range RANGE_START RANGE_END
+      Explicitly re-map a historical interval within an existing analysis.
+      Requires an unambiguous existing analysis and both UTC-normalizable
+      boundaries. The interval is inclusive by candle completion_time.
+      Rebuilds canonical state from analysis_start through the existing
+      checkpoint/end boundary, so downstream structures affected by the
+      historical interval are reconciled rather than patched in isolation.
+      Does not change the analysis identity or analysis_start.
 
   --history-no N
       Optional symbol-level closed Dealing Range history capacity. N must be >= 1.
@@ -767,7 +777,7 @@ Only a mapping/update invocation reads one complete machine-readable Market Data
 
 The Structures JSON file is the durable structural cache and source of truth for resume and read-only queries. It is not disposable temporary cache: it stores the symbol's analyses, canonical structural state, provenance, and Mapper checkpoint. Successful mapping updates it atomically.
 
-The CLI must explicitly distinguish **mapping/update**, **read-only query**, and **cache-management mutation** operations. These operation modes are mutually exclusive; incompatible combinations must be rejected before file or structural state mutation. A query loads the existing Structures JSON and returns selected stored content as JSON without invoking canonical processing, advancing checkpoints, changing history, refreshing market data, or writing the file. Querying an absent file or absent analysis returns a machine-readable not-found result with a non-zero exit status; it must not silently create an empty file or trigger mapping.
+The CLI must explicitly distinguish **normal mapping/update**, **historical range re-mapping**, **read-only query**, and **cache-management mutation** operations. These operation modes are mutually exclusive; incompatible combinations must be rejected before file or structural state mutation. A query loads the existing Structures JSON and returns selected stored content as JSON without invoking canonical processing, advancing checkpoints, changing history, refreshing market data, or writing the file. Querying an absent file or absent analysis returns a machine-readable not-found result with a non-zero exit status; it must not silently create an empty file or trigger mapping.
 
 Every successful non-help invocation emits exactly one complete JSON document to STDOUT. For mapping/update operations, the document is the same symbol-scoped Structures JSON state that was atomically persisted to `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_structures.json`; it is not a status envelope, a diff, or a second independently generated representation. For read-only query operations, STDOUT contains the requested JSON projection of the stored document, with an explicit operation/result status and enough identity metadata to identify the selected symbol and analysis.
 
@@ -786,14 +796,27 @@ The option names above are the V1 CLI contract; the implementation must support 
 
 - **List analyses:** list stored analysis identities and their timeframe/start/checkpoint metadata for a symbol without mapping.
 - **Query analysis/state:** return the complete stored Structures JSON document or one selected analysis as JSON without mapping.
-- **Map/update:** explicitly run canonical processing and persist the result.
+- **Map/update:** explicitly run canonical processing for new completed candles and persist the result.
+- **Historical range update:** use `--update-range RANGE_START RANGE_END` to request explicit re-mapping of a previously processed interval.
 - **Delete analysis:** explicitly remove one selected analysis while preserving all other analyses for the symbol.
 - **Delete symbol cache:** explicitly remove the symbol's Structures JSON only when requested; it must not delete Market Data storage.
 - **Inspect cache metadata:** expose the stored symbol, analysis identities, timeframe configuration, analysis-start boundary, and checkpoint information sufficient to diagnose whether the cache matches the requested analysis. If a schema/version field is defined by the persisted document format, include it in this metadata.
 
 A query must identify its target unambiguously. If multiple analyses match the supplied timeframe configuration and no unique start boundary/key is provided, return an ambiguity error listing the matching analysis keys. Never pick the first match implicitly.
 
-A read-only query must not automatically remap stale state. The caller may explicitly request a separate map/update operation. Cache age or checkpoint lag may be reported as metadata, but must not be used to silently alter canonical state. `--list-analyses` and `--query` must work when Market Data is unavailable, because they read only the Structures cache. `--delete-analysis` requires an unambiguous analysis key or equivalent unique selector; it must reject ambiguous selection without modifying the file.
+A read-only query must not automatically remap stale state. The caller may explicitly request a separate map/update operation. Cache age or checkpoint lag may be reported as metadata, but must not be used to silently alter canonical state.
+
+### Historical range re-mapping semantics
+
+`--update-range RANGE_START RANGE_END` is an explicit mutating operation, not a read-only query and not a normal incremental append. Both boundaries are normalized to UTC and RANGE_START must be earlier than or equal to RANGE_END. The target analysis must already exist and must be selected unambiguously; the command must not create a new analysis or alter its identity.
+
+The requested interval identifies the historical candles to be corrected/re-evaluated, but canonical structural state is path-dependent. Therefore the Mapper must not splice newly computed structures into the existing state only for those timestamps. It must rebuild the selected analysis deterministically from its persisted `analysis_start` through the previously committed checkpoint (or an explicitly supplied, valid `--endtime` not beyond available completed data), using the current validated candle stream, then atomically replace that analysis state. This replay reconciles downstream structures and lifecycle changes caused by the historical interval. Other analyses in the symbol cache remain unchanged.
+
+The supplied STDIN must contain all completed candle history needed to replay the selected analysis from `analysis_start` through the chosen replay end, for every required timeframe. If the stream does not cover that replay window, validation fails closed and the existing Structures JSON remains unchanged. The requested update interval must overlap the selected analysis's processed time range; otherwise return a range error without mutation. The interval is interpreted by candle `completion_time`, and the inclusive boundary rule is used consistently.
+
+The replay must be transactional: construct the rebuilt analysis in isolated in-memory state; validate its identity, timeframe coverage, and checkpoint; then atomically persist the full Structures document. If replay or persistence fails, preserve the previously committed analysis and checkpoint. STDOUT contains the full committed Structures JSON only after successful persistence. No new identity is created, no checkpoint advances on failure, and no duplicate structural events may remain from the pre-replay state.
+
+A historical update is not automatically scheduled by Monitor and must not be inferred from stale data. It is initiated explicitly by the caller/orchestrator, which must acquire and validate the complete replay stream before invoking Mapper. `--list-analyses` and `--query` must work when Market Data is unavailable, because they read only the Structures cache. `--delete-analysis` requires an unambiguous analysis key or equivalent unique selector; it must reject ambiguous selection without modifying the file.
 
 Deletion and mutation operations must use the same atomic persistence discipline as normal Structures updates. When the last analysis is deleted, retain a valid symbol-scoped Structures document with an empty `analyses` object; this avoids treating an intentional empty cache as a missing/corrupt file. The document's schema/version metadata must remain valid. Deleting the whole cache is a separate explicit operation.
 
@@ -1901,6 +1924,9 @@ At minimum, the finished mapper implementation must have focused tests covering:
 - independent HTF/LTF ranges and HTF_CONTEXT_UNAVAILABLE behavior;
 - point-in-time HTF context, proving later HTF events do not reinterpret earlier LTF events;
 - bootstrap versus incremental resume from last_processed_candle_time;
+- historical `--update-range` validates boundaries, requires an existing unambiguous analysis and full replay-window coverage, rebuilds path-dependent state from analysis_start, preserves unrelated analyses, and atomically replaces the selected analysis only on success;
+- failed or insufficient historical replay leaves the prior Structures JSON bytes and checkpoint unchanged;
+- historical replay does not duplicate stale structural events or change analysis identity;
 - two-timeframe incremental overlap includes an HTF candle that starts before but completes after the entry-timeframe checkpoint, without duplicating previously incorporated structural events;
 - deterministic Dealing Range identity/history reconciliation and history_no retention;
 - canonical POI lifecycle pass-through without introducing mapper-specific lifecycle states;
