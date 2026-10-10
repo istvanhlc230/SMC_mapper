@@ -105,7 +105,12 @@ jobs:
           # --table is the only human-readable output option; --cleartext is not an alias.
           from decimal import Decimal
           from MARKET_DATA.cli import run as run_market_data_request
-          from MARKET_DATA.models import NormalizedCandle, VolumeState
+          from MARKET_DATA.models import (
+    MarketDepthLevel,
+    MarketDepthSnapshot,
+    NormalizedCandle,
+    VolumeState,
+)
           from MARKET_DATA.protocol import format_table
 
           table_request = parse_market_data_request([
@@ -166,6 +171,73 @@ jobs:
               "EURUSD", {"M1": [(candle_without_volume, True)]}
           )
           assert "N/A" in no_volume_table
+          assert "L2 MARKET DEPTH" not in rendered_table
+          assert "L2 MARKET DEPTH" not in no_volume_table
+
+          # A real provider-returned L2 snapshot gets a separate section. It is
+          # not merged into a candle's aggregate volume or duplicated per candle.
+          sample_depth = MarketDepthSnapshot(
+              symbol="EURUSD",
+              provider="synthetic",
+              timestamp=dt("2026-10-10T00:00:30Z"),
+              bids=[
+                  MarketDepthLevel(Decimal("1.1499"), Decimal("250")),
+                  MarketDepthLevel(Decimal("1.1498"), Decimal("400")),
+              ],
+              asks=[
+                  MarketDepthLevel(Decimal("1.1501"), Decimal("300")),
+              ],
+          )
+          l2_table = format_table(
+              "EURUSD", sample_entries, market_depth=sample_depth
+          )
+          assert "L2 MARKET DEPTH | PROVIDER synthetic" in l2_table
+          assert "2026-10-10 00:00:30" in l2_table
+          assert "Bid Volume" in l2_table and "Ask Volume" in l2_table
+          assert "250" in l2_table and "300" in l2_table and "400" in l2_table
+          assert "L2 MARKET DEPTH" not in format_table("EURUSD", sample_entries)
+
+          class SyntheticDepthProvider:
+              def fetch_market_depth(self, symbol, as_of=None):
+                  assert symbol == "EURUSD"
+                  assert as_of is None
+                  return sample_depth
+
+          with patch(
+              "MARKET_DATA.cli.create_provider",
+              return_value=SyntheticDepthProvider(),
+          ), patch(
+              "MARKET_DATA.cli.get_candles", return_value={"M1": [sample_candle]}
+          ), patch("builtins.print") as captured_l2_stdout:
+              assert run_market_data_request(table_request) == 0
+          assert "L2 MARKET DEPTH" in captured_l2_stdout.call_args.args[0]
+
+          class UnavailableDepthProvider:
+              def fetch_market_depth(self, symbol, as_of=None):
+                  return None
+
+          with patch(
+              "MARKET_DATA.cli.create_provider",
+              return_value=UnavailableDepthProvider(),
+          ), patch(
+              "MARKET_DATA.cli.get_candles", return_value={"M1": [sample_candle]}
+          ), patch("builtins.print") as captured_no_l2_stdout:
+              assert run_market_data_request(table_request) == 0
+          assert "L2 MARKET DEPTH" not in captured_no_l2_stdout.call_args.args[0]
+
+          class FailingDepthProvider:
+              def fetch_market_depth(self, symbol, as_of=None):
+                  raise RuntimeError("synthetic depth endpoint failure")
+
+          with patch(
+              "MARKET_DATA.cli.create_provider",
+              return_value=FailingDepthProvider(),
+          ), patch(
+              "MARKET_DATA.cli.get_candles", return_value={"M1": [sample_candle]}
+          ), patch("builtins.print") as captured_failed_l2_stdout:
+              assert run_market_data_request(table_request) == 0
+          assert "L2 MARKET DEPTH" not in captured_failed_l2_stdout.call_args.args[0]
+          assert "TIMEFRAME | M1 | CANDLES 1" in captured_failed_l2_stdout.call_args.args[0]
 
           with patch("MARKET_DATA.cli.create_provider"), patch(
               "MARKET_DATA.cli.get_candles", return_value={"M1": [sample_candle]}
