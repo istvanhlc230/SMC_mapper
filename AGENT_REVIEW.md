@@ -1656,3 +1656,20 @@ The user's live refresh failed in the HTML fallback because the page had an even
 ### Validation
 - CI is pending for this revision; no live-provider success is claimed because this runtime does not use the user's local LSE credential.
 
+## LSE raw timestamp timezone normalization — 2026-10-10
+
+### Finding
+- After the date-only query fix, the live LSE response reached row parsing but failed because its raw candle timestamp had no timezone suffix.
+- The official LSE Python client documents raw Vault row times as UTC `YYYY-MM-DD HH:MM:SS[.ffffff]` and converts this exact shape to ISO-8601 with `Z`. The project adapter had retained the generic strict timestamp parser without implementing that provider-specific conversion.
+
+### Correction
+- The LSE adapter now recognizes the documented space-separated Vault timestamp shape and assigns UTC explicitly before parsing.
+- Numeric Unix epoch values and already timezone-aware `Z`/offset timestamps remain supported.
+- An arbitrary timezone-naive ISO value with `T` remains rejected; the change does not weaken the general no-implicit-local-time rule.
+- Added regressions for plain/fractional LSE Vault timestamps, explicit offset normalization, strict rejection of an undocumented naive ISO timestamp, and normalization through the actual LSE row parser.
+- Updated the Market Data specification and acceptance-test inventory.
+
+### Validation
+- CI is pending for this revision. No live credential-backed re-run is claimed from this environment.
+- Upstream contract reference: https://github.com/londonstrategicedge/lse-data/blob/main/lse/client.py#L3017-L3039
+
