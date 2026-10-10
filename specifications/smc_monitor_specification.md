@@ -18,7 +18,7 @@ Responsibilities:
 2. schedule analysis updates according to each analysis entry timeframe;
 3. plan and request the required Market Data coverage through the standalone process before mapper execution;
 4. invoke market_data.py and smc_mapper.py as separate processes;
-5. reload persisted state after successful mapper updates;
+5. validate the successful Mapper JSON result and retain it in memory;
 6. obtain the latest current market reference from a validated Market Data `--current` process result;
 7. request Calendar Update Engine work asynchronously when News coverage needs refresh;
 8. read validated Calendar facts from the committed local calendar.json snapshot;
@@ -403,7 +403,7 @@ The Monitor must not invoke Mapper once per missed candle unless an explicit imp
 
 News acquisition is independent of canonical Mapper processing.
 
-For each analysis:
+For each monitored symbol/timeframe configuration:
 
 ~~~text
 base_window = duration(entry_timeframe)
@@ -1058,7 +1058,7 @@ No implicit minimum RR is applied when --rr is absent.
 
 ~~~python
 def evaluate_alert_eligibility(
-    analysis: MapperResultView,
+    result: MapperResultView,
     target: TargetPlan | None,
     current_market_view: CurrentMarketView,
     min_rr: Decimal | None,
@@ -1111,7 +1111,7 @@ At minimum, the logical alert detail contains:
 
 - alert type;
 - symbol;
-- analysis key where applicable;
+- runtime analysis key where applicable;
 - direction where applicable;
 - canonical setup/entry event reference where available;
 - source POI identity where applicable;
@@ -1283,7 +1283,7 @@ UNKNOWN / HOLIDAY -> None
 
 ```python
 def evaluate_news_warnings(
-    analysis: StoredAnalysisView,
+    result: MapperResultView,
     news_events: list[dict[str, Any]],
     now: datetime,
 ) -> list[NewsWarningDecision]:
@@ -1316,7 +1316,7 @@ Each successful warning notification records its transient identity in `emitted_
 
 ```python
 def evaluate_news_event_status(
-    analysis: StoredAnalysisView,
+    result: MapperResultView,
     event: dict[str, Any],
     now: datetime,
 ) -> NewsEventStatus:
@@ -1477,7 +1477,7 @@ notification error
 Errors identify:
 
 - symbol;
-- analysis key where applicable;
+- runtime analysis key where applicable;
 - timeframe where applicable;
 - concise cause.
 
@@ -1540,7 +1540,7 @@ evaluate_alert_eligibility
 Side effects belong in:
 
 ~~~text
-load_structures
+(removed: no Structures persistence)
 parse_market_data_stdout
 invoke_market_data
 request_calendar_update_async
@@ -1563,7 +1563,7 @@ Portable Monitor domain contracts should use explicit named fields and arrays.
 
 ~~~text
 MonitorRequest
-MonitoredAnalysis
+MonitoredSymbol
 CurrentMarketView
 TargetPlan
 AlertDecision
@@ -1600,8 +1600,8 @@ get_symbol_data_directory(symbol, data_directory)
 parse_market_data_stdout(stdout, symbol, requested_timeframes)
 
 
-plan_market_data_updates(monitored_symbols, now)
-get_due_analyses(registry, now)
+plan_market_data_updates(symbols, timeframe_configuration, coverage, now)
+get_due_symbols(registry, now)
 
 invoke_market_data(plan, debug)
 invoke_mapper(symbol, htf, ltf, period, market_data_stdout, debug)
@@ -1719,7 +1719,7 @@ build_transient_runtime_key
 Implement:
 
 ~~~text
-get_due_analyses
+get_due_symbols
 plan_market_data_updates
 ~~~
 
