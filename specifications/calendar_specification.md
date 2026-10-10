@@ -50,6 +50,7 @@ London Strategic Edge (LSE):
 - primary economic-calendar provider;
 - queried through the LSE economic_calendar API;
 - the adapter requests IPv4-first transport because some client networks do not have working IPv6; the transport falls back to IPv6 if IPv4 cannot connect;
+- the `start` and `end` request parameters are date-only strings in `YYYY-MM-DD` format, as required by the API; precise UTC datetimes remain internal and filter returned events after acquisition;
 - its `region` filter accepts provider region/country codes (for example `EU`,
   `US`, and `GB`), not ISO 4217 currency codes;
 - Calendar maps each supported currency code to the matching LSE region code and
