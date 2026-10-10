@@ -1369,3 +1369,27 @@ PASS — no remaining source/specification/CI mismatch was found for the correct
 ## Runtime gate
 
 The latest corrective commits are on main. GitHub's connected status endpoint has not yet exposed workflow status for the newest commit, so CI/runtime PASS is intentionally not claimed here.
+
+
+# Calendar LSE HTTP 400 corrective audit — 2026-10-10
+
+## Finding
+
+The Calendar adapter passed three-letter ISO 4217 currency codes directly into the LSE economic-calendar `region` filter (for example `EUR,USD`). The LSE client contract documents region values such as `EU`, `US`, and `GB`; the invalid filter caused the provider's HTTP 400 response. The LSE adapter also attempted to load credentials before checking whether a symbol was relevant to its economic-calendar role.
+
+## Corrections
+
+- Added an explicit currency-to-LSE-region mapping and ordered deduplication for standalone currencies and FX pairs.
+- Unmapped currency codes now fail explicitly rather than being submitted as invalid region filters.
+- Non-FX ticker symbols return no LSE Calendar rows before credential loading because LSE Calendar is not the stock-news provider.
+- LSE HTTP failures now preserve a short provider error detail for `--debug` diagnostics while excluding the API key and request URL/query.
+- Bumped Calendar implementation version to 2.6.2.
+- Updated the normative Calendar provider contract and Calendar workflow tests to verify `EURUSD → EU,US`, standalone currency mapping, key-free ticker no-op behavior, and sanitized HTTP failure diagnostics.
+
+## Static audit
+
+PASS for source/specification/CI contract alignment at the time of this edit. The LSE endpoint shape and expected `region` semantics were checked against the official `londonstrategicedge/lse-data` client. This repository change does not contain or expose any real API credential.
+
+## Runtime validation
+
+GitHub Actions validation is pending for the latest commit. A live authenticated LSE request cannot be reproduced from this environment because the user's local credential is intentionally not available here; therefore no live-provider success is claimed.
