@@ -736,6 +736,22 @@ Options:
       ORDERFLOW uses genuine orderflow only.
       BOTH uses both available branches independently.
 
+  --list-analyses
+      List stored analyses for --symbol as JSON without mapping or writing.
+
+  --query
+      Read the persisted Structures cache without mapping. Return the whole cache
+      unless a unique analysis is selected by --analysis-key or timeframe/start options.
+
+  --analysis-key KEY
+      Select an exact persisted analysis for --query or --delete-analysis.
+
+  --delete-analysis
+      Delete the uniquely selected analysis, preserving all other analyses.
+
+  --delete-cache
+      Explicitly delete only the symbol's Structures cache, never Market Data.
+
   --debug
       Enable diagnostic output on stderr.
 
@@ -745,20 +761,39 @@ Options:
 
 For every invocation other than `--help`, the Mapper reads one complete machine-readable Market Data CSV stream from STDIN. Empty input, malformed protocol, unexpected timeframe rows, incomplete/current rows, or a timeframe/range mismatch is an explicit input failure. Because the CSV rows do not repeat the symbol, the Monitor/orchestrator must guarantee that the supplied stream was acquired for the same symbol as the Mapper's `--symbol` argument. The Mapper never launches `market_data.py` and never opens `<SYMBOL>_marketdata.json`.
 
-### CLI JSON output contract
+### CLI JSON output and persistent-cache contract
 
-Every successful non-help invocation emits exactly one complete JSON document to STDOUT. The document is the same symbol-scoped Structures JSON state that was atomically persisted to `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_structures.json`; it is not a status envelope, a diff, or a second independently generated representation.
+The Structures JSON file is the durable structural cache and source of truth for resume and read-only queries. It is not disposable temporary cache: it stores the symbol's analyses, canonical structural state, provenance, and Mapper checkpoint. Successful mapping updates it atomically.
 
-The write order is mandatory:
+The CLI must explicitly distinguish **mapping/mutation operations** from **read-only cache queries**. A query loads the existing Structures JSON and returns selected stored content as JSON without invoking canonical processing, advancing checkpoints, changing history, refreshing market data, or writing the file. Querying an absent file or absent analysis returns a machine-readable not-found result with a non-zero exit status; it must not silently create an empty file or trigger mapping.
+
+Every successful non-help invocation emits exactly one complete JSON document to STDOUT. For mapping/update operations, the document is the same symbol-scoped Structures JSON state that was atomically persisted to `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_structures.json`; it is not a status envelope, a diff, or a second independently generated representation. For read-only query operations, STDOUT contains the requested JSON projection of the stored document, with an explicit operation/result status and enough identity metadata to identify the selected symbol and analysis.
+
+The write order for mapping/update is mandatory:
 
 1. complete canonical processing in memory;
 2. serialize and atomically persist the complete Structures document, including the successful checkpoint;
 3. only after persistence succeeds, serialize that same committed document to STDOUT as JSON;
 4. exit with status 0.
 
-If validation, processing, serialization, or persistence fails, the Mapper must not emit a success JSON document and must exit non-zero. Error details go to STDERR. STDOUT must never contain progress text, banners, pretty human-readable summaries, or partial JSON. Diagnostics remain on STDERR whether or not `--debug` is enabled; `--debug` controls additional diagnostic detail only. JSON output is the default behavior and does not require a separate output flag.
+A read-only query has no write phase and must not change file bytes or file modification time. If validation, processing, serialization, or persistence fails, the Mapper must not emit a success JSON document and must exit non-zero. Error details go to STDERR. STDOUT must never contain progress text, banners, pretty human-readable summaries, or partial JSON. Diagnostics remain on STDERR whether or not `--debug` is enabled; `--debug` controls additional diagnostic detail only. JSON output is the default behavior and does not require a separate output flag.
 
-The CLI JSON output does not replace the Structures file: the file remains the durable source of truth used to resume later runs. STDOUT is the process response for callers that need a machine-readable result.
+### Required cache-management CLI semantics
+
+The exact option spelling is a CLI design decision to be finalized in the CLI audit, but the implementation must support these distinct operations:
+
+- **List analyses:** list stored analysis identities and their timeframe/start/checkpoint metadata for a symbol without mapping.
+- **Query analysis/state:** return the complete stored Structures JSON document or one selected analysis as JSON without mapping.
+- **Map/update:** explicitly run canonical processing and persist the result.
+- **Delete analysis:** explicitly remove one selected analysis while preserving all other analyses for the symbol.
+- **Delete symbol cache:** explicitly remove the symbol's Structures JSON only when requested; it must not delete Market Data storage.
+- **Inspect cache metadata:** expose schema/version and per-analysis identity/checkpoint information sufficient to diagnose whether the stored cache matches the requested analysis.
+
+A query must identify its target unambiguously. If multiple analyses match the supplied timeframe configuration and no unique start boundary/key is provided, return an ambiguity error listing the matching analysis keys. Never pick the first match implicitly.
+
+A read-only query must not automatically remap stale state. The caller may explicitly request a subsequent map/update operation. Cache age or checkpoint lag may be reported as metadata, but must not be used to silently alter canonical state.
+
+Deletion and mutation operations must use the same atomic persistence discipline as normal Structures updates. When the last analysis is deleted, retain a valid symbol-scoped Structures document with an empty `analyses` object; this avoids treating an intentional empty cache as a missing/corrupt file. The document's schema/version metadata must remain valid. Deleting the whole cache is a separate explicit operation.
 
 A direct shell invocation may connect the processes with a pipe:
 
@@ -1853,6 +1888,10 @@ The global developer-agent naming, portability, prompt-efficiency, and validatio
 At minimum, the finished mapper implementation must have focused tests covering:
 
 - CLI option parsing, including equal HTF/LTF single-timeframe mode and invalid HTF<LTF combinations;
+- list/query of stored analyses without canonical processing or file mutation;
+- ambiguous cache query rejection with all matching analysis keys identified;
+- explicit deletion of one analysis preserving unrelated analyses, and explicit Structures-cache deletion never touching Market Data storage;
+- cache-query JSON output and byte-for-byte/file-mtime immutability for read-only operations;
 - deterministic analysis-key creation from normalized timeframe configuration + persisted analysis_start;
 - ambiguous existing-analysis selection;
 - UTC parsing and completion_time-based end-time eligibility;
