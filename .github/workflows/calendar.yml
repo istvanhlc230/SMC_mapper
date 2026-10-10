@@ -38,6 +38,7 @@ jobs:
           # LSE's region query expects geographic region codes (EU, US), not
           # three-letter ISO 4217 currency codes (EUR, USD).
           assert providers._resolve_lse_regions("EURUSD") == ["EU", "US"]
+          assert providers._resolve_lse_regions("EUR/USD") == ["EU", "US"]
           assert providers._resolve_lse_regions("USD") == ["US"]
           assert providers._resolve_lse_regions("HUF") == ["HU"]
 
