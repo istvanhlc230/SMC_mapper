@@ -14,8 +14,8 @@ smc_monitor.py is the interactive runtime coordinator for the finished product.
 
 Responsibilities:
 
-1. load selected symbols and all stored mapper analyses for those symbols;
-2. schedule analysis updates according to each analysis entry timeframe;
+1. load selected symbols and explicit HTF/LTF configuration from the Monitor CLI;
+2. schedule fresh mapping according to each configured symbol's entry timeframe;
 3. plan and request the required Market Data coverage through the standalone process before mapper execution;
 4. invoke market_data.py and smc_mapper.py as separate processes;
 5. validate the successful Mapper JSON result and retain it in memory;
@@ -26,9 +26,9 @@ Responsibilities:
 10. evaluate targets/RR/alerts;
 11. emit runtime alerts/notifications;
 12. maintain transient runtime scheduling, evaluation, and alert-deduplication state;
-13. keep symbol and analysis execution isolated.
+13. keep symbol and timeframe-configuration execution isolated.
 
-The Monitor is an orchestrator and downstream consumer. It is not a Calendar provider, Update Engine, canonical SMC analyzer, mapper, POI lifecycle engine, or broker/order-management system.
+The Monitor is an orchestrator and downstream consumer. It is not a Calendar provider, Update Engine, canonical SMC analyzer, Mapper, POI lifecycle engine, or broker/order-management system.
 
 ## 0.2 Ownership boundaries
 
@@ -291,7 +291,7 @@ For every monitored symbol:
 
 - one independent symbol and one explicitly configured timeframe combination;
 - no shared runtime result across symbols;
-- no persisted Mapper checkpoint or analysis identity;
+- no persisted Mapper checkpoint or runtime analysis correlation identity;
 - no mutation of canonical Mapper results;
 - every new full Mapper result is produced from Market Data candles, never from the previous Mapper result.
 
@@ -1523,7 +1523,7 @@ parse_monitor_request
 validate_monitor_request
 parse_decimal
 build_alert_output
-discover_monitored_symbols
+build_monitored_symbols
 build_market_data_update_plan
 get_due_symbols
 is_target_cleared
@@ -1540,7 +1540,6 @@ evaluate_alert_eligibility
 Side effects belong in:
 
 ~~~text
-(removed: no Structures persistence)
 parse_market_data_stdout
 invoke_market_data
 request_calendar_update_async
@@ -1595,7 +1594,6 @@ validate_monitor_request(request)
 normalize_symbol(symbol)
 parse_decimal(value)
 
-get_symbol_data_directory(symbol, data_directory)
 
 parse_market_data_stdout(stdout, symbol, requested_timeframes)
 
@@ -1631,7 +1629,7 @@ run(request)
 main(argv)
 ~~~
 
-Each function has one primary responsibility.
+Each function has one primary responsibility. No function may discover or load persisted Mapper analyses or Structures JSON.
 
 Avoid vague names such as:
 
