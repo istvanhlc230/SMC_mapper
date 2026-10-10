@@ -1694,3 +1694,26 @@ The user's live refresh failed in the HTML fallback because the page had an even
 - Calendar Python tests [run #1043](https://github.com/istvanhlc230/SMC_mapper/actions/runs/38083815007): **SUCCESS**.
 - Both workflows passed for implementation/specification/test snapshot `1976ec67eeade4fb4e714055712744e6d261fced`.
 - These synthetic regression tests cover the exact merge/retention type boundary; a new credential-backed live LSE call has not been executed from this environment.
+
+
+## Dynamic complete-structure timeframe mapping — 2026-10-10
+
+### Canonical updates
+- Updated `.agents/skills/smc/03_structural_semantic_authority.md` with the approved hierarchy: 3M→W1, W1→D1/H4 (dynamic), D1→H4, H4→M15, M15→M1.
+- Defined a complete lower-timeframe structure as a coherent causal sequence including the relevant valid pullback, verified pullback extreme, active IDM, IDM takeout, and qualified `VALID_BOS`; a physical break alone is insufficient.
+- Specified W1 resolution principles: D1 for a large/extended pullback when a complete structure is clear; H4 when a small/shallow pullback cannot be resolved structurally at D1 granularity. Physical extent, candle span/count and volume/activity evidence are considered. No numeric size threshold was invented.
+- Added the fail-closed branch for a demonstrably false HTF gate in the 38.2%–below-50% band: `INVALID_BOS` qualification verdict, no Dealing Range expansion/lock, revoke the swing candidate, shift the rejected correction extreme to active IDM, and return to `WAITING_FOR_IDM_TAKEN`.
+- Reconciled this special `INVALID_BOS` qualification verdict with the existing `IMPULSE_EXTENSION` event-classification owner: it is not a new structural event class and cannot promote a break to `VALID_BOS`.
+- Updated `.agents/skills/smc/08_implementation.md`, the skill index, and `specifications/smc_mapper_specification.md` to distinguish narrative/POI HTF, entry/monitoring LTF, and pullback-representation timeframe roles, and to allow canonical supporting series outside the primary HTF/LTF pair where necessary.
+
+### Audit findings
+- **PASS — canonical rule transcription:** the complete-structure sequence, dynamic W1 alternative, fail-closed shallow-retracement rollback, and no-hard-coded-pair-dictionary requirement are present in the semantic owner and referenced by the implementation skill/specification.
+- **PASS — no invented numeric threshold:** size/volume thresholds remain explicitly unspecified; implementation must not choose arbitrary constants or claim a dynamic resolution pass without the complete structure.
+- **PASS — source-reconciliation transparency:** the user-approved project-canonical M15→M1 mapping is explicit. The existing indexed source evidence for M15→M3 is preserved and is not falsely attributed to M15→M1.
+- **PASS — timeframe capability boundary:** 3M/3MN input is not assumed to exist in Market Data; missing data cannot be fabricated or silently relabelled. The separate MN1 conditional-context fallback is limited to an explicitly established applicable-HTF context.
+- **OPEN — public CLI and staged runtime:** `smc_mapper_specification.md` and `smc_monitor_specification.md` still require explicit `--htf`/`--ltf` primary-pair arguments; the Monitor contract also still plans exactly those two timeframes. The canonical mapping may require additional pullback-representation candidates, while the entry LTF query is intended to be activated only after an HTF POI touch. The one-anchor CLI versus explicit-pair CLI decision and the staged HTF-arming/entry-LTF-acquisition lifecycle must be resolved before runtime implementation. No parser or Monitor behavior was silently changed.
+- **OPEN — quantitative resolution rule:** the canonical decision factors are defined, but a reproducible, testable rule for when a W1 pullback is “small” versus “large” is not yet mathematically specified. This is a design dependency, not a defect to fix by inventing a threshold.
+
+### Validation scope
+- Static semantic/specification audit only. The `smc_mapper.py`/`smc_monitor.py` runtime behavior is not claimed as tested or implemented by this change.
+- No live market-data call was performed for this skill/specification update.
