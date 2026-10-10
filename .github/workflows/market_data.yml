@@ -457,6 +457,47 @@ jobs:
           else:
               raise AssertionError("positional current scope must remain rejected")
 
+          # Newly normalized candles must be converted to canonical storage types
+          # before merge/retention, not left as datetime/Decimal Python objects.
+          from MARKET_DATA.service import (
+              _candle_dict,
+              apply_candle_retention,
+              merge_completed_candles,
+          )
+          canonical_candle_record = _candle_dict(sample_candle)
+          assert canonical_candle_record["timestamp"] == "2026-10-10T00:00:00Z"
+          assert canonical_candle_record["completion_time"] == "2026-10-10T00:01:00Z"
+          assert canonical_candle_record["open"] == "1.100000000000000000"
+          assert isinstance(canonical_candle_record["timestamp"], str)
+          assert isinstance(canonical_candle_record["open"], str)
+          assert merge_completed_candles(
+              [canonical_candle_record],
+              [sample_candle],
+          ) == [canonical_candle_record]
+          assert apply_candle_retention(
+              [canonical_candle_record],
+              10,
+              dt("2026-10-10T00:00:00Z"),
+              dt("2026-10-10T00:01:00Z"),
+          ) == [canonical_candle_record]
+          try:
+              _candle_dict(
+                  NormalizedCandle(
+                      candle_id="naive-timestamp",
+                      timestamp=datetime(2026, 10, 10),
+                      completion_time=datetime(2026, 10, 10, 0, 1),
+                      open_price=Decimal("1"),
+                      high_price=Decimal("2"),
+                      low_price=Decimal("0"),
+                      close_price=Decimal("1"),
+                      volume=VolumeState(False, None, False, None, None, False, None, None),
+                  )
+              )
+          except ValueError as error:
+              assert "timezone-aware" in str(error)
+          else:
+              raise AssertionError("naive candle timestamps must not be assumed local")
+
           # The production timeframe update path must use the request mode fields
           # last_closed_only and current after the range correction.
           from MARKET_DATA.service import update_timeframe
