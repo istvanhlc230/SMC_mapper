@@ -2,7 +2,7 @@
 
 Status: Current V2 specification.
 
-Calendar implementation baseline: 2.6.9.
+Calendar implementation baseline: 2.7.0.
 
 Default DATA_ROOT is the repository `CALENDAR/` directory, so the default persistent artifact is `<repository-root>/CALENDAR/calendar.json`. `SMC_DATA_ROOT` may explicitly override this runtime location.
 
@@ -320,7 +320,7 @@ These aliases are resolved at execution time using the same injectable UTC clock
 
 The read-only `SYMBOL --last-update` operation returns `last_successful_at` for every applicable provider+canonical-symbol watermark. If no applicable provider has a successful watermark, status is `NO_LAST_UPDATE`. Missing individual provider watermarks are represented as null / N/A, never as fabricated timestamps.
 
-Implementation version is 2.6.9; persistent schema remains V2.
+Implementation version is 2.7.0; persistent schema remains V2.
 
 ## 4. current semantics
 
@@ -547,6 +547,12 @@ Yahoo details may include:
     summary
 
 Provider-specific fields not mapped to canonical fields may be retained under provider_fields.
+The canonical structure is always a nested mapping of provider name to raw field name to value,
+for example `provider_fields.lse.time`. Provider fields must never be stored as a flat dictionary
+or as a mixture of flat fields and provider-nested dictionaries. Legacy flat/mixed records are
+normalized to this canonical shape when loaded and when merged; explicit nested values win over
+duplicate flat legacy values. Cleartext output displays each provider and each raw field on
+separate lines, rather than printing a Python dictionary representation.
 No provider severity or economic value is invented.
 
 ## 7.1 ForexFactory HTML fallback
