@@ -507,7 +507,7 @@ Malformed dates/times, impossible dates, invalid 24-hour times, unsupported seco
 
 No separate Mapper configuration file is required. Mapper behavior is controlled by CLI parameters, explicit defaults, Market Data machine-output metadata/candle records, and the canonical SMC skill. Provider configuration and retained candle storage belong to Market Data; Mapper never reads its private JSON file.
 
-Timeframe selection is controlled only by `--htf` and/or `--ltf`. Timeframe catalog and duration ownership remain with the Market Data contract; Mapper must not introduce a second hard-coded `SUPPORTED_TIMEFRAMES` list.
+Timeframe selection requires both `--htf` and `--ltf`; HTF must be strictly higher than LTF. The Mapper must reject missing, equal, or reversed pairs. Timeframe catalog and duration ownership remain with the Market Data contract; Mapper must not introduce a second hard-coded `SUPPORTED_TIMEFRAMES` list.
 
 Volume analysis uses `--volume-method {NONE,OHLC,ORDERFLOW,BOTH}`, default `BOTH`. Genuine orderflow and OHLC-derived directional-volume analytics remain separate branches. If only one is available, use that branch; if neither is available, produce no POI volume analytics.
 
@@ -656,7 +656,7 @@ The mapper must not use a latest-window shortcut that bypasses required structur
 
 The Monitor/orchestrator invokes the Market Data CLI for the required bootstrap range in deterministic batch form, then supplies the captured machine-readable STDOUT as Mapper STDIN.
 
-Every invocation rebuilds canonical state from the full retained history supplied through the requested end; the requested start filters output, not canonical processing. The Monitor/orchestrator obtains that history from the Market Data cache (which may fetch only missing candles) and passes the validated stream through STDIN. In two-timeframe mode, the stream must include all HTF/LTF overlap and warm-up candles needed for point-in-time context. The Mapper does not compare against prior checkpoints or incrementally append structural events.
+Every invocation rebuilds canonical state from the full retained history supplied through the requested end; the requested start filters output, not canonical processing. The Monitor/orchestrator obtains that history from the Market Data cache (which may fetch only missing candles) and passes the validated stream through STDIN. The stream must include both HTF and LTF series plus all overlap and warm-up candles needed for point-in-time context. The Mapper does not compare against prior checkpoints or incrementally append structural events.
 
 The mapper obtains its market-data stream from the Monitor/orchestrator through STDIN and does not access a concrete provider.
 
@@ -773,7 +773,7 @@ There is no conformant single-timeframe-only execution mode; a request lacking e
 
 ## 6.2 Synchronized point-in-time processing
 
-When an HTF and LTF are both supplied:
+For every valid HTF/LTF invocation:
 
 1. the monitor/orchestrator requests the required HTF range from Market Data; the mapper consumes that returned range and establishes the current HTF canonical structural context first;
 2. the mapper determines the applicable HTF execution context and any LTF bootstrap/activation requirement;
