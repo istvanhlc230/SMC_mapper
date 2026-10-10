@@ -50,6 +50,9 @@ class ProviderCandle:
     orderflow_sell: Any | None = None
     completion_hint: Any | None = None
     provider_metadata: dict[str, Any] | None = None
+    tick_volume: Any | None = None
+    spread: Any | None = None
+    real_volume: Any | None = None
 
 @dataclass(frozen=True)
 class VolumeState:
@@ -91,6 +94,9 @@ class NormalizedCandle:
     low_price: Decimal
     close_price: Decimal
     volume: VolumeState
+    tick_volume: Decimal | None = None
+    spread: Decimal | None = None
+    real_volume: Decimal | None = None
 
 @dataclass
 class TimeframeState:
