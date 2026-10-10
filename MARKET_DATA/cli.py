@@ -254,77 +254,127 @@ def run(request):
 
         if request.table:
             market_depth = None
-            if not request.last_closed_only:
-                fetch_market_depth = getattr(provider, "fetch_market_depth", None)
-                if callable(fetch_market_depth):
-                    try:
-                        candidate_depth = fetch_market_depth(
-                            request.symbol,
-                            as_of=request.end_time,
+            depth_as_of = request.end_time
+            require_historical_depth_time = request.end_time is not None
+
+            if request.last_closed_only:
+                last_closed_candles = [
+                    candle
+                    for entries in output_entries.values()
+                    for candle, completed in entries
+                    if completed
+                ]
+                if last_closed_candles:
+                    depth_as_of = max(
+                        last_closed_candles,
+                        key=lambda candle: candle.timestamp,
+                    ).completion_time
+                    require_historical_depth_time = True
+
+            # Do not turn a last-closed request with no matching candle into an
+            # unrelated live L2 query.
+            can_request_depth = not request.last_closed_only or depth_as_of is not None
+            fetch_market_depth = getattr(provider, "fetch_market_depth", None)
+            if can_request_depth and callable(fetch_market_depth):
+                try:
+                    candidate_depth = fetch_market_depth(
+                        request.symbol,
+                        as_of=depth_as_of,
+                    )
+                    if isinstance(candidate_depth, MarketDepthSnapshot):
+                        snapshot_timestamp = candidate_depth.timestamp
+                        has_explicit_timezone = (
+                            isinstance(snapshot_timestamp, datetime)
+                            and snapshot_timestamp.tzinfo is not None
+                            and snapshot_timestamp.utcoffset() is not None
                         )
-                        if isinstance(candidate_depth, MarketDepthSnapshot):
-                            has_explicit_timezone = (
-                                candidate_depth.timestamp.tzinfo is not None
-                                and candidate_depth.timestamp.utcoffset() is not None
+                        matches_symbol = (
+                            isinstance(candidate_depth.symbol, str)
+                            and candidate_depth.symbol.strip().upper()
+                            == request.symbol
+                        )
+                        valid_provider_name = (
+                            isinstance(candidate_depth.provider, str)
+                            and bool(candidate_depth.provider.strip())
+                        )
+                        snapshot_time_utc = (
+                            snapshot_timestamp.astimezone(timezone.utc)
+                            if has_explicit_timezone
+                            else None
+                        )
+                        not_in_future = (
+                            snapshot_time_utc is not None
+                            and snapshot_time_utc <= datetime.now(timezone.utc)
+                        )
+                        if request.end_time is not None:
+                            # Historical scopes use a half-open [start, end) range.
+                            within_requested_scope = (
+                                snapshot_time_utc is not None
+                                and snapshot_time_utc < request.end_time
                             )
-                            matches_symbol = (
-                                isinstance(candidate_depth.symbol, str)
-                                and candidate_depth.symbol.strip().upper()
-                                == request.symbol
+                        elif require_historical_depth_time:
+                            # --lastclosed identifies an instant at the candle close.
+                            within_requested_scope = (
+                                snapshot_time_utc is not None
+                                and depth_as_of is not None
+                                and snapshot_time_utc <= depth_as_of
                             )
-                            valid_provider_name = (
-                                isinstance(candidate_depth.provider, str)
-                                and bool(candidate_depth.provider.strip())
-                            )
-                            not_after_requested_end = (
-                                request.end_time is None
-                                or (
-                                    has_explicit_timezone
-                                    and candidate_depth.timestamp.astimezone(timezone.utc)
-                                    <= request.end_time
-                                )
-                            )
-                            depth_levels = list(candidate_depth.bids or []) + list(
-                                candidate_depth.asks or []
-                            )
-                            has_valid_levels = bool(depth_levels) and all(
-                                isinstance(level, MarketDepthLevel)
-                                and isinstance(level.price, Decimal)
-                                and level.price.is_finite()
-                                and isinstance(level.volume, Decimal)
-                                and level.volume.is_finite()
-                                and level.volume >= 0
-                                for level in depth_levels
-                            )
-                            if (
-                                has_explicit_timezone
-                                and matches_symbol
-                                and valid_provider_name
-                                and not_after_requested_end
-                                and has_valid_levels
-                            ):
-                                market_depth = candidate_depth
-                            elif request.debug:
-                                print(
-                                    "DEBUG: L2 market depth omitted because the "
-                                    "provider returned an empty, mismatched, or "
-                                    "time-incompatible snapshot.",
-                                    file=sys.stderr,
-                                )
-                        elif candidate_depth is not None and request.debug:
+                        else:
+                            within_requested_scope = not_in_future
+
+                        bids = list(candidate_depth.bids or [])
+                        asks = list(candidate_depth.asks or [])
+                        depth_levels = bids + asks
+                        levels_are_valid = bool(depth_levels) and all(
+                            isinstance(level, MarketDepthLevel)
+                            and isinstance(level.price, Decimal)
+                            and level.price.is_finite()
+                            and isinstance(level.volume, Decimal)
+                            and level.volume.is_finite()
+                            and level.volume >= 0
+                            for level in depth_levels
+                        )
+                        bids_are_best_first = all(
+                            bids[index].price >= bids[index + 1].price
+                            for index in range(len(bids) - 1)
+                        )
+                        asks_are_best_first = all(
+                            asks[index].price <= asks[index + 1].price
+                            for index in range(len(asks) - 1)
+                        )
+                        if (
+                            has_explicit_timezone
+                            and matches_symbol
+                            and valid_provider_name
+                            and not_in_future
+                            and within_requested_scope
+                            and levels_are_valid
+                            and bids_are_best_first
+                            and asks_are_best_first
+                        ):
+                            market_depth = candidate_depth
+                        elif request.debug:
                             print(
-                                "DEBUG: L2 market depth omitted because the provider "
-                                "returned an unsupported snapshot representation.",
+                                "DEBUG: L2 market depth omitted because the "
+                                "snapshot was empty, malformed, out of order, "
+                                "mismatched, or outside the requested time scope.",
                                 file=sys.stderr,
                             )
-                    except Exception as depth_error:
-                        # L2 is an optional enrichment and must not make valid candle
-                        # data unavailable when the provider's depth endpoint fails.
-                        if request.debug:
-                            print(
-                                f"DEBUG: L2 market depth unavailable: {depth_error}",
-                                file=sys.stderr,
-                            )
+                    elif candidate_depth is not None and request.debug:
+                        print(
+                            "DEBUG: L2 market depth omitted because the provider "
+                            "returned an unsupported snapshot representation.",
+                            file=sys.stderr,
+                        )
+                except Exception as depth_error:
+                    # L2 is an optional enrichment and must not make valid candle
+                    # data unavailable when the provider's depth endpoint fails.
+                    if request.debug:
+                        print(
+                            f"DEBUG: L2 market depth unavailable: {depth_error}",
+                            file=sys.stderr,
+                        )
+
             print(
                 format_table(
                     request.symbol,
