@@ -1506,6 +1506,8 @@ The user's live refresh failed in the HTML fallback because the page had an even
 - Updated the normative provider-transport specification and bumped Calendar version to 2.6.7.
 
 ### Validation
-- Automated validation is pending for this transport-specific change.
-- The observed 31.68-second request time is the user's runtime measurement. Reduction after this fix must be verified on the user's network.
+- Calendar Python tests [run #937](https://github.com/istvanhlc230/SMC_mapper/actions/runs/38071869388): **SUCCESS**.
+- Market Data Python tests [run #552](https://github.com/istvanhlc230/SMC_mapper/actions/runs/38071869579): **SUCCESS**.
+- Both CI workflows passed against transport implementation commit `59d77ba2005ecaf05791bfe9d6d66092df25202b`, including a regression that checks the shared Calendar fetch helper passes `ipv4_first=True`.
+- The observed 31.68-second request time is the user's runtime measurement. The post-fix latency reduction must still be verified on the user's network.
 - No live user API key or credential was used or included in tests.
