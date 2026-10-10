@@ -591,21 +591,34 @@ Layer 3 is the sole semantic owner of structural qualification. A retracement wa
   - The higher-timeframe pullback must cover the same structural move being qualified; unrelated or later HTF facts cannot validate it retroactively.
   - If the proposed HTF representation is merely an Inside Bar and does not establish a complete valid pullback event, or if the applicable HTF pullback fails Layer-1/Layer-2 validity, set `MAJOR_RETRACEMENT_QUALIFIED = FALSE`. An Inside Bar occurring inside a multi-candle pullback is handled by the canonical mother-candle/reference rules and does not invalidate the whole event by itself.
   - Missing required HTF candles or unresolved HTF sequencing gives `HTF_CONTEXT_UNAVAILABLE`; it must not be downgraded to `HTF_VALID_PULLBACK = FALSE`, nor may the conditional path be accepted.
-- **Pairing examples (illustrative, not a rigid lookup table):**
+- **Canonical complete-structure timeframe mapping:**
 
-  | Valid pullback represented on the HTF | Complete structure evaluated on the lower timeframe |
+  | Higher-timeframe valid pullback being represented | Lower-timeframe complete structure required |
   |---|---|
-  | 3MN (three-month / quarterly) | W1 |
-  | W1 | D1 or H4 |
+  | 3M (three-month / quarterly) | W1 |
+  | W1 | D1 or H4, resolved dynamically from pullback size and structure quality |
   | D1 | H4 |
   | H4 | M15 |
-  | M15 | M1† |
+  | M15 | M1* |
 
-The operative rule is the **applicable immediate higher-timeframe context**, not a hard-coded timeframe-pair table. These examples must not be treated as exclusive pairs. For example, a W1 retracement in the 38.2%–below-50% band may be validated by one valid pullback event on the one-month timeframe when one-month is the applicable HTF selected for that W1 analysis and the three-month timeframe is not part of the established hierarchy. Do not substitute an arbitrary higher timeframe or skip a required relationship after the analysis context has been selected.
+  This is the canonical candidate hierarchy, not a hard-coded one-to-one timeframe dictionary. The hierarchy constrains eligible resolution paths; the engine must select a timeframe that can show the complete same-move structure without either insufficient detail or unnecessary lower-timeframe noise.
 
-**Timeframe-token boundary:** The table expresses methodology intervals, not a promise that every interval is supported by every provider. Market Data owns canonical input tokens and actual timeframe support. Its current specification identifies `MN1` as the monthly calendar-based timeframe token; `1MN` is the corresponding methodology/source notation. The three-month example (`3MN`) must not be assumed to be a valid CLI token unless the Market Data contract/provider explicitly supports that series.
+- **Meaning of “complete lower-timeframe structure”:**
+  - A standalone physical price break is not enough.
+  - The lower-timeframe sequence must include formation of the relevant valid pullback and verified pullback extreme, the resulting active Inducement (IDM), the IDM takeout, and the subsequent structurally qualified break (`VALID_BOS`) for the same structural move.
+  - The required causal sequence is: `CANDLE_LEVEL_VALID_PULLBACK → VERIFIED_PULLBACK_EXTREME → ACTIVE_IDM → IDM_TAKEN → SWING_CANDIDATE → RETRACEMENT_QUALIFIED → PHYSICAL_STRUCTURAL_BREAK → VALID_BOS`. Each step remains subject to its existing semantic owner and prerequisites; configuration cannot manufacture a missing event.
+  - A higher-timeframe pullback is validated by one matching complete lower-timeframe structure. “One” refers to one coherent pullback/structure event, not one candle. Unrelated or later evidence cannot qualify it retroactively.
 
-**Source reconciliation note for †:** The `M15 → M1` pullback-representation row is retained from the current user-supplied canonical update. The currently indexed `smc_trader_another_missing_piece.txt` passage (00:05:21–00:05:49), which discusses the same 38.2% qualification exception, explicitly gives `D1 → H4`, `H4 → M15`, and `M15 → M3`. The checked corpus therefore supports `M15 → M3` as a source example but does not independently verify `M15 → M1` in that passage. Keep the user-supplied `M15 → M1` rule as a project-canonical addition; do not claim it is source-direct, and do not silently erase the distinct source example `M15 → M3`. The applicable pair must be selected from the active structural context rather than hard-coded as an exclusive universal pair.
+- **Dynamic W1 resolution:**
+  - A small, shallow, or short-span W1 pullback may not contain enough D1 candles to expose a complete structure. In that case, the engine must examine H4 for the complete IDM-takeout-plus-BOS sequence.
+  - A large, broad, or extended W1 pullback should use D1 when D1 exposes the complete structure clearly; H4 must not be preferred merely because more granular candles exist when that added granularity produces unnecessary noise.
+  - The decision must consider the physical price-range/extent of the pullback, its duration/candle count at candidate resolutions, and available volume/activity evidence. No single input is a substitute for proving the complete structure.
+  - No numeric size thresholds are defined by this rule. The implementation must not invent a threshold or silently fall back to a fixed pair. The measurable size/volume decision rule remains an explicit implementation-design item to be specified and tested.
+  - If sufficient history exists but no eligible candidate resolution proves the complete structure, the HTF valid-pullback gate fails. If the necessary series/history or event sequencing is absent, report context as unavailable instead of converting missing evidence into a negative proof.
+
+**Timeframe-token boundary:** The mapping uses methodology intervals. Market Data owns canonical input tokens and actual provider support. Its current specification identifies `MN1` as the monthly token; methodology/source notation such as `1MN` is not necessarily a CLI token. The three-month interval (`3M`, also referenced as `3MN` in source material) must not be assumed available unless the Market Data contract/provider explicitly supports it. An unavailable 3M series must not be fabricated or silently renamed as W1 or MN1.
+
+**Source reconciliation note for *:** The project-canonical mapping approved by the user is `M15 → M1`. The currently indexed `smc_trader_another_missing_piece.txt` passage (00:05:21–00:05:49) explicitly gives `D1 → H4`, `H4 → M15`, and `M15 → M3` for the discussed 38.2% qualification exception. That source passage therefore does not independently verify `M15 → M1`; it remains a user-approved project-canonical mapping, while the distinct `M15 → M3` source evidence remains recorded and must not be erased or misattributed.
 
 These pullback-representation examples are distinct from HTF-POI-to-entry pairings. The former answers whether a lower-timeframe structural retracement is represented by one valid pullback on its applicable higher timeframe; the latter assigns the narrative/POI timeframe and the execution timeframe. For example, D1→H4 may be a pullback-representation pair, while D1 HTF POI→H1 LTF is a long-term-swing execution pair. They answer different questions and must not be collapsed into one rigid table.
 
@@ -615,6 +628,18 @@ These pullback-representation examples are distinct from HTF-POI-to-entry pairin
 - **Output:** `MAJOR_RETRACEMENT_QUALIFIED = FALSE`.
 
 The gates are hierarchical and mutually exclusive by depth. Gate 2 is the only qualification path below 50%; Gate 3 cannot qualify. Qualification is evaluated before the structural swing break and is stored for downstream Layer 4 consumption.
+
+#### Gate 2 — Failed HTF validation and fail-closed rollback
+
+When `HTF_CONDITIONAL_THRESHOLD <= RetracementDepth < STANDARD_EQUILIBRIUM_THRESHOLD` and the applicable HTF valid-pullback gate is demonstrably false:
+
+- `MAJOR_RETRACEMENT_QUALIFIED = FALSE`; a physical wick/body crossing of the candidate swing extreme must not pass the `VALID_BOS` gate (`INVALID_BOS` is the qualification verdict, not a new structural event class).
+- The Dealing Range remains unchanged; no expansion, protected-extreme lock, or range rollover occurs.
+- Revoke the affected `SWING_CANDIDATE` / provisional structural extreme.
+- Promote the rejected shallow correction's relevant extreme to the active IDM reference / active pullback pointer, according to the active direction and existing reference-provenance rules.
+- Return the lifecycle to `WAITING_FOR_IDM_TAKEN` and wait for the newly active IDM to be taken before promoting another swing candidate.
+- Keep event classification owned by `04_BOS_mechanics.md`: rejection at this qualification gate must never be used to manufacture a `VALID_BOS`, and it must not silently rewrite the existing `EXT_CONT_BREAK` classification contract.
+- Do not apply this negative outcome when required HTF data or intrabar sequence evidence is missing; that remains `HTF_CONTEXT_UNAVAILABLE` and the dependent decision stays blocked.
 
 #### Mandatory Multi-Timeframe invariant
 
