@@ -1549,4 +1549,6 @@ The user's live refresh failed in the HTML fallback because the page had an even
 - Updated the normative specification and bumped Calendar version to 2.6.9.
 
 ### Validation
-- Automated Calendar and Market Data CI status is pending for this commit.
+- Calendar Python tests [run #941](https://github.com/istvanhlc230/SMC_mapper/actions/runs/38073880187): **SUCCESS**.
+- Market Data Python tests [run #556](https://github.com/istvanhlc230/SMC_mapper/actions/runs/38073880172): **SUCCESS**.
+- Both workflows passed against implementation commit `0c4b0c66e5dbf7a78f66beac76fa8d113e6d9ff7`, including the future-date/partial-provider visibility regression.
