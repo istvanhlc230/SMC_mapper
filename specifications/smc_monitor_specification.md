@@ -261,15 +261,34 @@ class MapperResultView:
     analysis_mode: str
     timeframe_roles: dict[str, str]
     required_timeframes: list[str]
-    entry_timeframe: str | None
+    entry_timeframe: str
     monitoring_phase: str
     timeframe_resolution_rationale: dict[str, str]
     requested_period: str | None
     available_coverage: dict[str, tuple[datetime | None, datetime | None]]
-    last_completed_candle_time: datetime
+    last_completed_candle_time_by_timeframe: dict[str, datetime]
     canonical_result: dict[str, object]
 ~~~
 
+An explicit transient resolution-plan model separates the pre-activation structural series from the entry series armed by POI interaction:
+
+~~~python
+@dataclass(frozen=True)
+class TimeframeResolutionPlan:
+    anchor_timeframe: str
+    narrative_poi_timeframe: str
+    pullback_representation_candidates: list[str]
+    selected_pullback_representation_timeframe: str | None
+    entry_timeframe: str
+    pre_activation_timeframes: list[str]
+    armed_monitoring_timeframes: list[str]
+    resolution_status: str
+    rationale: dict[str, str]
+~~~
+
+`pre_activation_timeframes` contains the anchor and the supporting higher-context/pullback-representation candidate series needed to establish canonical structure. `armed_monitoring_timeframes` adds the automatically selected entry-LTF series and any additional required context. If the same timeframe is independently required for pullback representation, its presence before POI activation is permitted; it must not be treated as entry-LTF CHoCH evidence before the POI gate.
+
+The pullback-representation selector must not use a hard-coded one-to-one TF map or invented numeric size threshold. The exact deterministic W1 size/volume selector remains a design dependency and must be specified before implementation can pass its quantitative-resolution tests.
 The result exists only in memory for the current runtime cycle. It must not be persisted as a canonical cache or used as the source of the next mapping invocation.
 
 ---
@@ -288,14 +307,14 @@ Use transient per-symbol scheduling state only:
 @dataclass
 class MonitoredSymbol:
     symbol: str
-    analysis_key: str  # transient correlation key: symbol + timeframe configuration; never persisted
+    analysis_key: str  # transient correlation key: symbol + anchor timeframe; never persisted
     anchor_timeframe: str
     timeframe_roles: dict[str, str]
     required_timeframes: list[str]
-    entry_timeframe: str | None
-    monitoring_phase: str
-    analysis_mode: str
-    last_mapped_candle_time: datetime | None
+    entry_timeframe: str
+    monitoring_phase: str  # WAITING_FOR_HTF_POI or ARMED_MONITORING_LTF
+    analysis_mode: str  # AUTO_MTF
+    last_mapped_candle_time_by_timeframe: dict[str, datetime]
     next_due_time: datetime | None
     latest_mapper_result: MapperResultView | None
     emitted_alert_keys: set[str]
@@ -353,7 +372,7 @@ The Monitor keeps the validated Market Data CSV result in memory and supplies it
 
 The Monitor invokes Mapper for an initial anchor/context build, when a newly completed anchor or required structural-support candle changes the HTF map, or—after entry monitoring is armed—when a new completed entry-LTF candle is observed. Trigger candle role and timestamp are tracked separately.
 
-The Monitor begins in `WAITING_FOR_HTF_POI`. It must not acquire or process the entry LTF solely to monitor CHoCH before an eligible institutional HTF POI is canonically touched. On an observed POI touch it transitions to `ARMED_MONITORING_LTF`, plans the automatic entry timeframe, acquires the required range, and recomputes Mapper output using all required context series. A current-price/current-snapshot refresh may update POI-touch observation, but current/in-progress candles are never admitted to canonical structural processing.
+The Monitor begins in `WAITING_FOR_HTF_POI`. It must not acquire or process the entry LTF solely to monitor CHoCH before an eligible institutional HTF POI is canonically touched. The entry timeframe role may be resolved and reported in advance, but its history is not requested for entry monitoring before the gate. On an observed POI touch it transitions to `ARMED_MONITORING_LTF`, acquires the required entry-LTF range, and recomputes Mapper output using all required context series. If that same series is independently needed for pullback representation, it may have been fetched for that distinct purpose, but may not be used for premature CHoCH/entry monitoring. A current-price/current-snapshot refresh may update POI-touch observation, but current/in-progress candles are never admitted to canonical structural processing.
 
 Transient timestamps are scheduling optimizations only. They are not persisted or passed to Mapper as canonical checkpoints. After restart, the Monitor re-establishes coverage and recomputes canonical results.
 
@@ -364,8 +383,7 @@ Function:
 ~~~python
 def plan_market_data_updates(
     symbols: list[str],
-    anchor_timeframe: str,
-    resolved_timeframe_roles: dict[str, Any],
+    timeframe_resolution_plan: TimeframeResolutionPlan,
     monitoring_phase: str,
     market_data_coverage: dict[str, Any],
     now: datetime,
@@ -391,8 +409,8 @@ Plan invariants:
 
 - one plan belongs to one symbol, one anchor, and the current automatic-monitoring phase;
 - `timeframes` contains the distinct series required for that plan's phase; the list is not constrained to exactly two and is derived from the canonical timeframe-resolution contract;
-- while `monitoring_phase=WAITING_FOR_HTF_POI`, include the anchor and required higher-context/pullback-representation candidates but exclude the entry LTF solely for CHoCH monitoring;
-- while `monitoring_phase=ARMED_MONITORING_LTF`, include the automatically selected entry-LTF series plus all anchor/context series needed for point-in-time qualification;
+- while `monitoring_phase=WAITING_FOR_HTF_POI`, use `pre_activation_timeframes`: include the anchor and required higher-context/pullback-representation candidates, but do not acquire/use the entry LTF solely for CHoCH monitoring;
+- while `monitoring_phase=ARMED_MONITORING_LTF`, use `armed_monitoring_timeframes`: include the automatically selected entry-LTF series plus all anchor/context series needed for point-in-time qualification;
 - `last_closed_only=True` is a latest-completed-candle probe and requires null range boundaries;
 - current/in-progress snapshots are handled by the separate current-snapshot path;
 - no provider-specific acquisition logic belongs in the Monitor.
@@ -409,18 +427,19 @@ Planning rules:
 
 ## 4.4 No-new-candle path
 
-When no new completed entry-timeframe candle is observed:
+When no new completed candle is observed for any timeframe that is a trigger in the current monitoring phase:
 
-- do not invoke Mapper solely for that reason;
-- a current-snapshot change may still trigger downstream target/alert evaluation using the current runtime result;
+- do not invoke Mapper solely for the absence of a new candle;
+- a current-snapshot change may still update the price-vs-POI observation and, if it proves an eligible POI touch, trigger transition to `ARMED_MONITORING_LTF` and an entry-LTF acquisition plan;
+- an incomplete/current candle is not itself passed into canonical Mapper processing;
 - no checkpoint or persisted Mapper state is changed.
 
 ## 4.5 Missed-cycle path
 
-When multiple completed entry-timeframe candles accumulated:
+When multiple completed candles accumulated for a trigger timeframe in the current phase (anchor/structural-support series before activation; entry LTF after activation):
 
 - allow Market Data to update its own candle cache;
-- retrieve the complete required history from that cache in one operation when possible;
+- retrieve the complete required history for the active role plan in one operation when possible;
 - invoke Mapper once for the resulting chronological stream;
 - evaluate downstream state only from the newly validated Mapper JSON result.
 
@@ -430,7 +449,7 @@ The Monitor must not invoke Mapper once per missed candle unless an explicit imp
 
 News acquisition is independent of canonical Mapper processing.
 
-For each monitored symbol/timeframe configuration:
+For each monitored symbol's automatically resolved timeframe plan:
 
 ~~~text
 base_window = duration(entry_timeframe)
@@ -621,7 +640,7 @@ MONITOR_POLL_INTERVAL_SECONDS
 
 Its exact V1 value is a Monitor implementation decision.
 
-The Monitor must not execute redundant Mapper processing when no new completed entry-timeframe candle exists.
+The Monitor must not execute redundant Mapper processing when no new completed candle exists for a trigger timeframe in the active monitoring phase.
 
 ## 6.3 Due evaluation
 
@@ -824,7 +843,7 @@ def refresh_current_market_view(
 
 Current refresh must use the Market Data process boundary and consume the current CSV row.
 
-A current snapshot update does not trigger canonical Mapper processing unless a new completed entry-timeframe candle is also observed.
+A current snapshot update may trigger the POI-touch gate and an entry-LTF acquisition plan, but it does not enter canonical structural processing. A fresh Mapper run is triggered by the resulting phase/series plan or a new completed candle in a trigger timeframe.
 
 ---
 
@@ -1616,13 +1635,13 @@ parse_decimal(value)
 
 
 parse_market_data_stdout(stdout, symbol, requested_timeframes)
+resolve_timeframe_resolution_plan(anchor_timeframe, monitoring_phase, coverage)
 
-
-plan_market_data_updates(symbols, timeframe_configuration, coverage, now)
+plan_market_data_updates(symbols, timeframe_resolution_plan, monitoring_phase, coverage, now)
 get_due_symbols(registry, now)
 
 invoke_market_data(plan, debug)
-invoke_mapper(symbol, htf, ltf, period, market_data_stdout, debug)
+invoke_mapper(symbol, anchor_timeframe, period, market_data_stdout, debug)
 
 refresh_current_market_view(symbol, timeframe)
 
@@ -1884,7 +1903,7 @@ test_monitor_excludes_entry_ltf_before_poi_touch
 test_monitor_blocks_dependent_setup_when_nested_htf_context_is_unavailable
 test_monitor_never_uses_unconfirmed_htf_structure_for_ltf_authorization
 test_runtime_mapping_context_is_symbol_isolated
-test_transient_last_mapped_time_is_not_persisted
+test_role_specific_last_mapped_times_are_transient
 ~~~
 
 ### Market Data orchestration
