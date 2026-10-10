@@ -614,10 +614,13 @@ The gates are hierarchical and mutually exclusive by depth. Gate 2 is the only q
 
 #### Mandatory Multi-Timeframe invariant
 
-- A conformant True SMC mapping must evaluate **two distinct, explicitly identified timeframes** in one coordinated context: HTF for directional narrative, canonical POIs and core-liquidity context; LTF for internal structure and context-gated LTF-CHoCH / execution confirmation.
-- Single-timeframe-only mapping is non-conformant. An HTF must not be emulated by relabeling the selected timeframe as both HTF and LTF.
+- For this project's automated Mapper/Monitor contract, a conformant mapping invocation must evaluate **two distinct, explicitly identified timeframes** in one coordinated context: HTF for directional narrative, canonical POIs and core-liquidity context; LTF for internal structure and context-gated LTF-CHoCH / execution confirmation.
+- Single-timeframe-only Mapper/Monitor runs are non-conformant under this project contract. An HTF must not be emulated by relabeling the selected timeframe as both HTF and LTF. This is a project-canonical input/architecture constraint, not a universal claim that discretionary True SMC analysis on one chart is always invalid.
 - If the second timeframe or required overlapping history is unavailable, preserve the analysis as `UNAVAILABLE` / `HTF_CONTEXT_UNAVAILABLE` for the dependent decisions and fail closed. Do not invent candles, infer unobserved event order, or emit a canonical BOS/CHoCH/entry conclusion whose prerequisites depend on that missing context.
 - The structural and execution roles remain distinct: HTF supplies context/POIs; LTF verifies the internal structure and the applicable entry confirmation. The existence of an LTF CHoCH away from the required HTF interaction context does not, by itself, create an HTF-backed execution setup.
+
+**Source-boundary audit note:** The source corpus also contains single-timeframe freestyle examples: [`truesmc2026.txt`](../../../knowledgebase/sources/truesmc2026.txt), Part 9 (00:00:00–00:00:12), explicitly presents single-timeframe trading as a demonstration that top-down analysis is not always required; [`true_smc_21dayBootCamp.txt`](../../../knowledgebase/sources/true_smc_21dayBootCamp.txt), Day 14, also shows a single-timeframe freestyle example. The source material therefore does not support attributing a blanket ban on every single-timeframe discretionary analysis to True SMC as a universal source-direct rule. The project nevertheless requires two distinct timeframes for a fully conformant automated Mapper/Monitor run. That implementation constraint does not waive the conditional HTF evidence required by Gate 2 or resolve intrabar order that aggregate OHLC cannot observe.
+
 ### 3.3.3 — Protected Structural Extreme Lock
 
 The absolute corrective extreme remains dynamically tracked until the structural event that produces `VALID_BOS`.
