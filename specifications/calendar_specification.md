@@ -2,7 +2,7 @@
 
 Status: Current V2 specification.
 
-Calendar implementation baseline: 2.7.0.
+Calendar implementation baseline: 2.8.0.
 
 Default DATA_ROOT is the repository `CALENDAR/` directory, so the default persistent artifact is `<repository-root>/CALENDAR/calendar.json`. `SMC_DATA_ROOT` may explicitly override this runtime location.
 
@@ -320,7 +320,7 @@ These aliases are resolved at execution time using the same injectable UTC clock
 
 The read-only `SYMBOL --last-update` operation returns `last_successful_at` for every applicable provider+canonical-symbol watermark. If no applicable provider has a successful watermark, status is `NO_LAST_UPDATE`. Missing individual provider watermarks are represented as null / N/A, never as fabricated timestamps.
 
-Implementation version is 2.7.0; persistent schema remains V2.
+Implementation version is 2.8.0; persistent schema remains V2.
 
 ## 4. current semantics
 
@@ -399,7 +399,7 @@ Refresh behavior:
     within the provider-side overlap and were outside the logical scope before refresh are merged into the cache but are not
     returned. The CLI MUST NOT reapply committed coverage or watermark filters to the refresh result, because refresh is
     allowed to return first-use acquisitions and rescheduled records that are not representable by a normal cache query.
-    Machine-readable output includes the `added`/`changed`/`unchanged` refresh summary. In `--cleartext` mode the normal
+    Machine-readable output includes the `added`/`changed`/`unchanged` refresh summary. In `--table` mode the normal
     event output is followed by one refresh summary line.
 
 A refresh performed by the Monitor MUST run outside the candle-close processing path and MUST NOT block candle
@@ -525,7 +525,7 @@ ForexFactory details include:
     html
 
 The `html` value is the provider's Detail specification content and may contain links.
-The `title` value is also provider-controlled text and may contain HTML markup; cleartext presentation
+The `title` value is also provider-controlled text and may contain HTML markup; table presentation
 must sanitize the title and HTML content through the same HTML-aware rendering path.
 
 LSE details may include:
@@ -602,31 +602,30 @@ inside the requested interval has no `details.specs`. Such an interval is reacqu
 provider facts can be enriched with Detail specifications. This is an enrichment rule within schema
 version 2, not a schema migration.
 
-## 7.2 Human-readable CLI presentation
+## 7.2 Tabular CLI presentation
 
-`--cleartext` is presentation-only and must not modify the canonical event data or persistent schema.
+`--table` is presentation-only and must not modify canonical event data or the persistent schema.
+The former `--cleartext` flag is retired and must return a clear input error directing users to
+`--table`; it is not a compatibility alias.
 
-The `Details` section in cleartext output must render the normalized `details` object as individual human-readable fields, not as a serialized JSON dictionary. ForexFactory core details are presented in this order when present:
+Table output begins with aggregate status and provider statuses, followed by an event summary table
+with UTC timestamp, currency, impact, provider source, and event title. Each event then has a separate
+two-column detail table containing timestamp, event type, source, symbol, title, event ID, canonical
+detail fields, and sanitized ForexFactory Detail specifications. Provider-specific fields are shown in
+a separate table with Provider, Field, and Value columns. Nested values use deterministic JSON text
+inside a cell; long cell content wraps rather than extending the table indefinitely. Empty queries keep
+the status/provider header and report `No matching events.`
 
-    Currency
-    Impact
-    Actual
-    Forecast
-    Previous
+ForexFactory `specs` follow provider order. The provider `title` and `html` are sanitized through
+the HTML-aware parser. The title is rendered on a single line; `<br>` in content becomes a readable
+line break. HTML character references are decoded to a stable value before parsing, including markup
+escaped more than once such as `&amp;lt;br&amp;gt;` or `&amp;lt;img ...&amp;gt;`. Raw or escaped
+provider markup must not leak into `--table` output. The canonical `calendar.json` retains original
+provider HTML so links and formatting information are not lost. Null detail values display as `N/A`;
+fields are ordered deterministically. The default machine-readable JSON output remains unchanged.
 
-ForexFactory `specs` follow the core fields in provider order. Each specification renders as
-`<Title>: <text content>` after applying HTML-aware cleartext sanitization to both the provider
-`title` and `html` fields. For the `title`, provider markup is removed and any resulting line
-boundaries are normalized to spaces so the title remains a single-line field label. For the `html`
-content, `<br>` becomes a readable line break. HTML character references are decoded to a stable value
-before parsing, including markup escaped more than once such as `&amp;lt;br&amp;gt;` or
-`&amp;lt;img ...&amp;gt;`. Raw provider markup or escaped markup must never leak from either field into
-`--cleartext` output. The canonical `calendar.json` retains the original provider HTML so links and
-formatting information are not lost.
-A null detail value is displayed as `N/A`. Additional non-spec detail fields are rendered afterward in
-deterministic key order. Each cleartext event block ends after `Event ID`; there is no closing separator
-line, and adjacent event blocks are separated by one blank line. The default machine-readable JSON output
-remains unchanged.
+The `SYMBOL --last-update --table` operation and the post-refresh summary also use compact tables.
+The refresh summary retains Added, Changed, and Unchanged counts.
 
 ## 8. Persistent schema
 
@@ -788,7 +787,7 @@ Acceptance requires:
 - `latest` is read-only and returns `NO_LATEST_EVENT` when the committed snapshot contains no visible event at or before current UTC time;
 - ForexFactory normalized events include `details.specs` from the provider Detail JSON payload; no event URL is synthesized from the provider event ID;
 - malformed or unavailable ForexFactory Detail JSON is surfaced as a provider failure and never silently converted into fabricated Detail content;
-- `--cleartext` renders normalized event details as human-readable fields rather than a raw JSON dictionary, without changing canonical data or machine-readable output.
+- `--table` renders normalized event details as human-readable fields rather than a raw JSON dictionary, without changing canonical data or machine-readable output.
 
 ## 14. Source layout and portability
 
