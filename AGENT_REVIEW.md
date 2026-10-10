@@ -1670,6 +1670,8 @@ The user's live refresh failed in the HTML fallback because the page had an even
 - Updated the Market Data specification and acceptance-test inventory.
 
 ### Validation
-- CI is pending for this revision. No live credential-backed re-run is claimed from this environment.
+- Market Data Python tests [run #649](https://github.com/istvanhlc230/SMC_mapper/actions/runs/38083011748): **SUCCESS**.
+- Calendar Python tests [run #650](https://github.com/istvanhlc230/SMC_mapper/actions/runs/38083011747): **SUCCESS**.
+- Both workflows passed for implementation/specification/test snapshot `1ec39f8293baba3b89d5380b010d280be54f4f70`. The tests use synthetic provider rows; no live credential-backed re-run is claimed from this environment.
 - Upstream contract reference: https://github.com/londonstrategicedge/lse-data/blob/main/lse/client.py#L3017-L3039
 
