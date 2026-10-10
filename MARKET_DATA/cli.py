@@ -6,7 +6,7 @@ import sys
 from datetime import datetime, timedelta, timezone
 from typing import Sequence
 
-from .models import MarketDataRequest, SUPPORTED_TIMEFRAMES
+from .models import MarketDataRequest, MarketDepthSnapshot, SUPPORTED_TIMEFRAMES
 from .provider import create_provider
 from .protocol import format_table, serialize_machine_csv
 from .service import get_candles
@@ -247,7 +247,71 @@ def run(request):
                 output_entries[timeframe] = entries[-1:]
 
         if request.table:
-            print(format_table(request.symbol, output_entries), end="\n")
+            market_depth = None
+            if not request.last_closed_only:
+                fetch_market_depth = getattr(provider, "fetch_market_depth", None)
+                if callable(fetch_market_depth):
+                    try:
+                        candidate_depth = fetch_market_depth(
+                            request.symbol,
+                            as_of=request.end_time,
+                        )
+                        if isinstance(candidate_depth, MarketDepthSnapshot):
+                            has_explicit_timezone = (
+                                candidate_depth.timestamp.tzinfo is not None
+                                and candidate_depth.timestamp.utcoffset() is not None
+                            )
+                            matches_symbol = (
+                                candidate_depth.symbol.strip().upper()
+                                == request.symbol
+                            )
+                            not_after_requested_end = (
+                                request.end_time is None
+                                or (
+                                    has_explicit_timezone
+                                    and candidate_depth.timestamp.astimezone(timezone.utc)
+                                    <= request.end_time
+                                )
+                            )
+                            has_levels = bool(
+                                candidate_depth.bids or candidate_depth.asks
+                            )
+                            if (
+                                has_explicit_timezone
+                                and matches_symbol
+                                and not_after_requested_end
+                                and has_levels
+                            ):
+                                market_depth = candidate_depth
+                            elif request.debug:
+                                print(
+                                    "DEBUG: L2 market depth omitted because the "
+                                    "provider returned an empty, mismatched, or "
+                                    "time-incompatible snapshot.",
+                                    file=sys.stderr,
+                                )
+                        elif candidate_depth is not None and request.debug:
+                            print(
+                                "DEBUG: L2 market depth omitted because the provider "
+                                "returned an unsupported snapshot representation.",
+                                file=sys.stderr,
+                            )
+                    except Exception as depth_error:
+                        # L2 is an optional enrichment and must not make valid candle
+                        # data unavailable when the provider's depth endpoint fails.
+                        if request.debug:
+                            print(
+                                f"DEBUG: L2 market depth unavailable: {depth_error}",
+                                file=sys.stderr,
+                            )
+            print(
+                format_table(
+                    request.symbol,
+                    output_entries,
+                    market_depth=market_depth,
+                ),
+                end="\n",
+            )
         else:
             print(serialize_machine_csv(output_entries), end="")
         return 0
