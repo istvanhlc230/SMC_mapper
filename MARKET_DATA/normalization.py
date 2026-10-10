@@ -93,11 +93,59 @@ def normalize_provider_candle(provider_candle: ProviderCandle, timeframe: str, s
     high_price = _parse_decimal(provider_candle.high_price, "high")
     low_price = _parse_decimal(provider_candle.low_price, "low")
     close_price = _parse_decimal(provider_candle.close_price, "close")
-    total = None if provider_candle.total_volume is None else _parse_decimal(provider_candle.total_volume, "total_volume")
-    order_buy = None if provider_candle.orderflow_buy is None else _parse_decimal(provider_candle.orderflow_buy, "orderflow_buy")
-    order_sell = None if provider_candle.orderflow_sell is None else _parse_decimal(provider_candle.orderflow_sell, "orderflow_sell")
-    volume = VolumeState(total is not None, total, False, None, None, order_buy is not None or order_sell is not None, order_buy, order_sell)
-    candle = NormalizedCandle(build_candle_id(symbol, timeframe, timestamp), timestamp, completion_time, open_price, high_price, low_price, close_price, volume)
+    total = (
+        None
+        if provider_candle.total_volume is None
+        else _parse_decimal(provider_candle.total_volume, "total_volume")
+    )
+    order_buy = (
+        None
+        if provider_candle.orderflow_buy is None
+        else _parse_decimal(provider_candle.orderflow_buy, "orderflow_buy")
+    )
+    order_sell = (
+        None
+        if provider_candle.orderflow_sell is None
+        else _parse_decimal(provider_candle.orderflow_sell, "orderflow_sell")
+    )
+    tick_volume = (
+        None
+        if provider_candle.tick_volume is None
+        else _parse_decimal(provider_candle.tick_volume, "tick_volume")
+    )
+    spread = (
+        None
+        if provider_candle.spread is None
+        else _parse_decimal(provider_candle.spread, "spread")
+    )
+    real_volume = (
+        None
+        if provider_candle.real_volume is None
+        else _parse_decimal(provider_candle.real_volume, "real_volume")
+    )
+    volume = VolumeState(
+        has_total=total is not None,
+        total=total,
+        has_ohlc=False,
+        ohlc_buy=None,
+        ohlc_sell=None,
+        has_orderflow=order_buy is not None or order_sell is not None,
+        orderflow_buy=order_buy,
+        orderflow_sell=order_sell,
+    )
+    candle = NormalizedCandle(
+        candle_id=build_candle_id(symbol, timeframe, timestamp),
+        timestamp=timestamp,
+        completion_time=completion_time,
+        open_price=open_price,
+        high_price=high_price,
+        low_price=low_price,
+        close_price=close_price,
+        volume=volume,
+        tick_volume=tick_volume,
+        spread=spread,
+        real_volume=real_volume,
+    )
     validate_normalized_candle(candle)
     return candle
 
@@ -115,8 +163,32 @@ def validate_normalized_candle(candle: NormalizedCandle) -> None:
         raise ValueError("completion_time must be after timestamp")
     if candle.high_price < candle.low_price or not (candle.low_price <= candle.open_price <= candle.high_price) or not (candle.low_price <= candle.close_price <= candle.high_price):
         raise ValueError("invalid OHLC formation")
-    volume_values = (candle.volume.total, candle.volume.ohlc_buy, candle.volume.ohlc_sell, candle.volume.orderflow_buy, candle.volume.orderflow_sell)
-    if any(value is not None and (not value.is_finite() or value < 0) for value in volume_values):
+    volume_values = (
+        candle.volume.total,
+        candle.volume.ohlc_buy,
+        candle.volume.ohlc_sell,
+        candle.volume.orderflow_buy,
+        candle.volume.orderflow_sell,
+        candle.tick_volume,
+        candle.real_volume,
+    )
+    if any(
+        value is not None and (not value.is_finite() or value < 0)
+        for value in volume_values
+    ):
         raise ValueError("invalid volume value")
-    if candle.volume.has_orderflow and (candle.volume.orderflow_buy is None or candle.volume.orderflow_sell is None):
+    if candle.spread is not None and (
+        not candle.spread.is_finite() or candle.spread < 0
+    ):
+        raise ValueError("invalid spread value")
+    if candle.volume.has_total and candle.volume.total is None:
+        raise ValueError("volume.total is marked available but missing")
+    if candle.volume.has_ohlc and (
+        candle.volume.ohlc_buy is None or candle.volume.ohlc_sell is None
+    ):
+        raise ValueError("OHLC volume branch must contain buy and sell")
+    if candle.volume.has_orderflow and (
+        candle.volume.orderflow_buy is None
+        or candle.volume.orderflow_sell is None
+    ):
         raise ValueError("orderflow branch must contain buy and sell")
