@@ -99,7 +99,7 @@ def parse_date(value: str) -> datetime:
 def parse_point(value: str) -> Tuple[datetime, bool]:
     """Parse a single date, date-time, or time-only point through the shared parser."""
     try:
-        parsed_scope = _DateTimeScopeParser().parse(value)
+        parsed_scope = _DateTimeScopeParser(reference_time=utc_now()).parse(value)
     except _DateTimeScopeError as exc:
         raise CalendarInputError(str(exc)) from exc
     if parsed_scope.kind not in {"DATE", "DATETIME", "TIME"} or parsed_scope.start is None:
@@ -133,8 +133,8 @@ def resolve_scope_interval(scope: str) -> Tuple[datetime, datetime]:
         return resolve_relative_scope_interval(scope)
 
     try:
-        parsed_scope = _DateTimeScopeParser().parse(scope)
-        start, end = parsed_scope.resolve_interval()
+        parsed_scope = _DateTimeScopeParser(reference_time=utc_now()).parse(scope)
+        start, end = parsed_scope.resolve_interval(reference_time=utc_now())
     except _DateTimeScopeError as exc:
         raise CalendarInputError(str(exc)) from exc
     if start is None or end is None:
@@ -190,10 +190,10 @@ def is_open_end_scope(scope: str) -> bool:
 def resolve_open_end_scope(scope: str) -> Tuple[datetime, datetime]:
     """Resolve a positional START- scope through the current UTC time."""
     try:
-        parsed_scope = _DateTimeScopeParser().parse(scope)
+        parsed_scope = _DateTimeScopeParser(reference_time=utc_now()).parse(scope)
         if not parsed_scope.open_end or parsed_scope.start is None:
             raise _DateTimeScopeError("expected an open-end scope such as YYYY.MM.DD-")
-        start, end = parsed_scope.resolve_interval()
+        start, end = parsed_scope.resolve_interval(reference_time=utc_now())
     except _DateTimeScopeError as exc:
         raise CalendarInputError(str(exc)) from exc
     if start is None or end is None:
@@ -208,7 +208,7 @@ def resolve_open_start_scope(
 ) -> Tuple[datetime, datetime]:
     """Resolve -END from latest visible stored event and the shared parser's end boundary."""
     try:
-        parsed_scope = _DateTimeScopeParser().parse(scope)
+        parsed_scope = _DateTimeScopeParser(reference_time=utc_now()).parse(scope)
     except _DateTimeScopeError as exc:
         raise CalendarInputError(str(exc)) from exc
     if not parsed_scope.open_start or parsed_scope.end is None:
@@ -244,7 +244,7 @@ def parse_scope(scope: str) -> str:
         return scope
 
     try:
-        _DateTimeScopeParser().parse(scope)
+        _DateTimeScopeParser(reference_time=utc_now()).parse(scope)
     except _DateTimeScopeError as exc:
         raise CalendarInputError(str(exc)) from exc
     return scope

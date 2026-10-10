@@ -145,7 +145,7 @@ def resolve_acquisition_range(
     if request.end_time is not None:
         if not existing_state or not existing_state.get("available_end"):
             raise ValueError(
-                f"open-start --range requires existing retained history for {timeframe}"
+                f"open-start scope requires existing retained history for {timeframe}"
             )
         # Open-start ranges retain the inclusive available_end boundary so the
         # merge layer can reconcile the boundary by candle identity.
