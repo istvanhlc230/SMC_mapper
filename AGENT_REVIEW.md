@@ -1528,5 +1528,8 @@ The user's live refresh failed in the HTML fallback because the page had an even
 - Added normalization, bad-row isolation, partial coverage, and watermark contract regressions; bumped Calendar version and specification baseline to 2.6.8.
 
 ### Validation
-- Automated Calendar and Market Data CI status is pending for this commit.
+- Calendar Python tests [run #939](https://github.com/istvanhlc230/SMC_mapper/actions/runs/38073273134): **SUCCESS**.
+- Market Data Python tests [run #554](https://github.com/istvanhlc230/SMC_mapper/actions/runs/38073273131): **SUCCESS**.
+- Both workflows passed against implementation commit `a6350adda6764d16396a6d5c7695dfc2dfb427bd`.
+- Regressions cover recognized country/region-code normalization, isolation of unknown LSE region rows, PARTIAL coverage/watermark behavior, and acceptance of LSE watermarks by the persistent schema validator.
 - Tests use synthetic provider rows and do not require or expose the user's LSE key.
