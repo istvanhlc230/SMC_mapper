@@ -103,7 +103,10 @@ _CALENDAR_API_NAMES = frozenset({
     "parse_forexfactory_html_events",
     "extract_days_payload",
     "parse_calendar_days",
-    "format_cleartext_details",
+    "format_table_details",
+    "render_ascii_table",
+    "output_last_updates_table",
+    "output_refresh_summary",
     "output_query_result",
     "acquire_explicit",
     "delete_symbol_interval",
@@ -153,7 +156,7 @@ def run() -> int:
         return _calendar_cli.run_query(
             request["symbol"],
             request["scope"],
-            request.get("cleartext", False),
+            request.get("table", False),
             debug=request.get("debug", debug),
             refresh=request.get("refresh", False),
         )
