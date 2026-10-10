@@ -35,8 +35,10 @@ jobs:
               text=True,
           )
           assert no_args_help.returncode == 0, no_args_help.stderr
-          assert "--symbol" in no_args_help.stdout
+          assert "SYMBOL" in no_args_help.stdout
           assert "--timeframes" in no_args_help.stdout
+
+          assert "--symbol" not in no_args_help.stdout
 
           from MARKET_DATA.provider import LSEMarketDataProvider, create_provider
           from MARKET_DATA.cli import parse_market_data_request
@@ -52,12 +54,22 @@ jobs:
           from MARKET_DATA.protocol import format_table
 
           table_request = parse_market_data_request([
-              "--symbol", "EURUSD", "--timeframes", "M1", "--table"
+              "EURUSD", "--timeframes", "M1", "--table"
           ])
+
+          assert table_request.symbol == "EURUSD"
+          try:
+              parse_market_data_request([
+                  "--symbol", "EURUSD", "--timeframes", "M1"
+              ])
+          except ValueError as error:
+              assert "SYMBOL is positional" in str(error)
+          else:
+              raise AssertionError("--symbol must be rejected; SYMBOL is positional")
           assert table_request.table is True
           try:
               parse_market_data_request([
-                  "--symbol", "EURUSD", "--timeframes", "M1", "--cleartext"
+                  "EURUSD", "--timeframes", "M1", "--cleartext"
               ])
           except ValueError as error:
               assert "--cleartext is no longer supported" in str(error)
@@ -89,7 +101,7 @@ jobs:
           assert "TIMEFRAME | M1 | CANDLES 1" in captured_stdout.call_args.args[0]
 
           default_request = parse_market_data_request([
-              "--symbol", "EURUSD", "--timeframes", "M1"
+              "EURUSD", "--timeframes", "M1"
           ])
           assert default_request.table is False
           with patch("MARKET_DATA.cli.create_provider"), patch(
@@ -217,7 +229,7 @@ jobs:
               raise AssertionError("obsolete Yahoo Charts provider must be rejected")
 
           request = parse_market_data_request([
-              "--symbol", "EURUSD",
+              "EURUSD",
               "--timeframes", "M1", "M5",
               "2026.10.06-",
           ])
@@ -227,7 +239,7 @@ jobs:
           assert request.last_closed_only is False
 
           open_end_request = parse_market_data_request([
-              "--symbol", "EURUSD",
+              "EURUSD",
               "--timeframes", "M1",
               "2026.10.06 15:30-",
           ])
@@ -236,7 +248,7 @@ jobs:
 
           # A date-time range may be split by the shell into tokens around its space.
           explicit_datetime_range = parse_market_data_request([
-              "--symbol", "EURUSD",
+              "EURUSD",
               "--timeframes", "H1", "M15",
               "2026.10.06", "08:00-2026.10.10", "15:30",
           ])
@@ -248,7 +260,7 @@ jobs:
           for legacy_flag in ("--range", "--date", "--time"):
               try:
                   parse_market_data_request([
-                      "--symbol", "EURUSD",
+                      "EURUSD",
                       "--timeframes", "H1",
                       legacy_flag, "2026.10.06",
                   ])
@@ -258,7 +270,7 @@ jobs:
                   raise AssertionError(f"retired {legacy_flag} flag must be rejected")
 
           request = parse_market_data_request([
-              "--symbol", "EURUSD",
+              "EURUSD",
               "--timeframes", "M1", "M5",
               "-2026.10.20",
           ])
@@ -268,7 +280,7 @@ jobs:
           assert request.last_closed_only is False
 
           request = parse_market_data_request([
-              "--symbol", "EURUSD",
+              "EURUSD",
               "--timeframes", "M1",
               "-2026.10.06 05:00",
           ])
@@ -278,7 +290,7 @@ jobs:
           # The old HH.MM compatibility spelling is rejected for open-start scopes too.
           try:
               parse_market_data_request([
-                  "--symbol", "EURUSD",
+                  "EURUSD",
                   "--timeframes", "M1",
                   "-2026.10.06 05.00",
               ])
@@ -290,7 +302,7 @@ jobs:
           # HH.MM is not part of the public scope grammar.
           try:
               parse_market_data_request([
-                  "--symbol", "EURUSD",
+                  "EURUSD",
                   "--timeframes", "M1",
                   "2026.10.05 05.00",
               ])
@@ -302,7 +314,7 @@ jobs:
           # Future starts are invalid for every positional historical scope form.
           try:
               parse_market_data_request([
-                  "--symbol", "EURUSD",
+                  "EURUSD",
                   "--timeframes", "M1",
                   "2099.01.01-",
               ])
@@ -313,7 +325,7 @@ jobs:
 
           try:
               parse_market_data_request([
-                  "--symbol", "EURUSD",
+                  "EURUSD",
                   "--timeframes", "M1",
                   "2099.01.01-2099.01.02",
               ])
@@ -325,7 +337,7 @@ jobs:
           # --lastclosed cannot be combined with any positional historical scope.
           try:
               parse_market_data_request([
-                  "--symbol", "EURUSD",
+                  "EURUSD",
                   "--timeframes", "M1",
                   "--lastclosed",
                   "2026.10.05",
@@ -338,7 +350,7 @@ jobs:
           # main() converts CLI ValueError into a concise non-zero exit result.
           from MARKET_DATA.cli import main
           assert main([
-              "--symbol", "EURUSD",
+              "EURUSD",
               "--timeframes", "M1",
               "2099.01.01-",
           ]) == 2
@@ -358,7 +370,7 @@ jobs:
           # Normal incremental mode starts at the next canonical candle interval,
           # while open-start positional scope remains inclusive at available_end.
           incremental_request = parse_market_data_request([
-              "--symbol", "EURUSD",
+              "EURUSD",
               "--timeframes", "M1",
           ])
           incremental = resolve_acquisition_range(incremental_request, "M1", state)
@@ -381,7 +393,7 @@ jobs:
 
           try:
               parse_market_data_request([
-                  "--symbol", "EURUSD",
+                  "EURUSD",
                   "--timeframes", "M1",
                   "current",
               ])
@@ -402,7 +414,7 @@ jobs:
                   return None
 
           runtime_request = parse_market_data_request([
-              "--symbol", "EURUSD",
+              "EURUSD",
               "--timeframes", "M1",
               "-2026.10.20",
           ])
@@ -607,7 +619,7 @@ jobs:
           # --lastclosed is exclusive of every positional historical scope form, including open-start.
           try:
               parse_market_data_request([
-                  "--symbol", "EURUSD",
+                  "EURUSD",
                   "--timeframes", "M1",
                   "--lastclosed",
                   "-2026.10.20",
