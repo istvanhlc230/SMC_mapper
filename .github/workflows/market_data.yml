@@ -66,6 +66,7 @@ jobs:
               raise AssertionError("undocumented timezone-naive ISO timestamps must be rejected")
 
           lse_row_parser = LSEMarketDataProvider()
+          assert lse_row_parser.fetch_market_depth("EURUSD") is None
           parsed_lse_rows = lse_row_parser._parse_lse_candle_rows(
               [{
                   "timestamp": "2026-10-08 05:00:00",
@@ -224,6 +225,18 @@ jobs:
           ), patch("builtins.print") as captured_no_l2_stdout:
               assert run_market_data_request(table_request) == 0
           assert "L2 MARKET DEPTH" not in captured_no_l2_stdout.call_args.args[0]
+
+          historical_request = parse_market_data_request([
+              "EURUSD", "--timeframes", "M1", "2026.10.09", "--table"
+          ])
+          with patch(
+              "MARKET_DATA.cli.create_provider",
+              return_value=SyntheticDepthProvider(),
+          ), patch(
+              "MARKET_DATA.cli.get_candles", return_value={"M1": [sample_candle]}
+          ), patch("builtins.print") as captured_historical_stdout:
+              assert run_market_data_request(historical_request) == 0
+          assert "L2 MARKET DEPTH" not in captured_historical_stdout.call_args.args[0]
 
           class FailingDepthProvider:
               def fetch_market_depth(self, symbol, as_of=None):
