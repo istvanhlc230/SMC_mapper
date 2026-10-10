@@ -528,6 +528,7 @@ The CLI accepts one optional positional `PERIOD` argument. The `--starttime`, `-
 |---|---|
 | omitted | all completed candle history supplied by Market Data |
 | `YYYY.MM.DD` | full UTC day, `[00:00, next day 00:00)` |
+| `YYYY.MM.DD-YYYY.MM.DD` | inclusive full-day range |
 | `YYYY.MM.DD[@HH:MM]-YYYY.MM.DD[@HH:MM]` | explicit half-open UTC interval; time is optional independently on either endpoint |
 | `YYYY.MM.DD[@HH:MM]-` | start date/time through the current UTC time captured at invocation start |
 | `-YYYY.MM.DD[@HH:MM]` | earliest retained completed candle through the exclusive end of the specified UTC day/minute |
