@@ -1621,3 +1621,21 @@ The user's live refresh failed in the HTML fallback because the page had an even
 - `--table` affects presentation only; provider acquisition and persistence flow remain unchanged.
 - Runtime CI validation passed for implementation/specification commit `f0f97f4edca1b1e2d7697ba9949d1ec3d1d4bf02`: [Market Data workflow](https://github.com/istvanhlc230/SMC_mapper/actions/runs/38081406538) and [Calendar workflow](https://github.com/istvanhlc230/SMC_mapper/actions/runs/38081406558) both completed successfully. The Market Data workflow exercised `--table` rendering, explicit `--cleartext` rejection, and the unchanged default machine-CSV path.
 
+## Market Data positional symbol CLI — 2026-10-10
+
+### Decision
+- Align Market Data with Calendar's CLI convention by accepting the instrument symbol as a positional argument, e.g. `python market_data.py EURUSD --timeframes H1 M15`.
+- Remove `--symbol SYMBOL` from usage/help and reject the obsolete flag with a migration message.
+- Keep `--timeframes` explicit because Market Data may request multiple timeframe series in one acquisition.
+
+### Changes
+- Changed the public usage line and help entry to show positional `SYMBOL`.
+- Updated the request scanner so the first unclaimed positional token is the symbol and later unclaimed tokens form the optional date/time scope.
+- Updated all Market Data workflow invocations to use positional symbols.
+- Added regression checks for positional symbol parsing, old-flag rejection, and public help.
+- Updated `specifications/market_data_specification.md` to define the positional-symbol contract and examples.
+
+### Audit
+- The new CLI contract matches Calendar's positional-symbol approach while preserving Market Data's required multi-timeframe option.
+- Validation and CI results are pending for this revision.
+
