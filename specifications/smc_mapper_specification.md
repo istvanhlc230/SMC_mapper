@@ -529,8 +529,6 @@ The CLI accepts one optional positional `PERIOD` argument. The `--starttime`, `-
 |---|---|
 | omitted | all completed candle history supplied by Market Data |
 | `YYYY.MM.DD` | full UTC day, `[00:00, next day 00:00)` |
-| `YYYY.MM.DD-YYYY.MM.DD` | inclusive endpoint dates, represented as a half-open UTC interval |
-| `YYYY.MM.DD-YYYY.MM.DD` | inclusive full-day range |
 | `YYYY.MM.DD[@HH:MM]-YYYY.MM.DD[@HH:MM]` | explicit half-open UTC interval; time is optional independently on either endpoint |
 | `YYYY.MM.DD[@HH:MM]-` | start date/time through the current UTC time captured at invocation start |
 | `-YYYY.MM.DD[@HH:MM]` | earliest retained completed candle through the exclusive end of the specified UTC day/minute |
@@ -551,56 +549,9 @@ The Mapper distinguishes requested period, actual completed-candle coverage per 
 
 ## 2.9 Input validation
 
-Before canonical analysis, the mapper validates the supplied configuration and normalized candle contract, including at minimum:
+Before canonical analysis, validate symbol, timeframe values, HTF/LTF relationship, positional-period syntax and resolved UTC boundaries, timestamp ordering, duplicate timestamps, completed-candle status, OHLC integrity, required volume-field pairing, and single-/two-timeframe mode requirements.
 
-- symbol;
-- timeframe values;
-- HTF/LTF relationship;
-- start/end values;
-- starttime < endtime when both are specified;
-- history_no;
-- timestamp ordering;
-- duplicate timestamps;
-- timezone validity;
-- completed-candle status;
-- OHLC integrity;
-- two-timeframe HTF/LTF mode requirements.
-
-Provider-specific availability checks, provider/API failures, and acquisition errors belong to the Market Data CLI process. The mapper sees only the normalized machine-output result after the Market Data process has completed the required acquisition/update request.
-
-Invalid mapper configuration or normalized candle data must fail explicitly.
-
-## 2.10 Configuration boundary
-
-No separate mapper configuration file is required.
-
-Mapper behavior is controlled by CLI parameters, explicit defaults, Market Data machine-output metadata and candle records, and the canonical SMC skill.
-
-Market-data provider configuration belongs to the Market Data CLI and is not a mapper semantic dependency.
-
-`market_data.py` provides the CLI interface for market-data acquisition, normalization, incremental update, retention and persistence into `<SYMBOL>_marketdata.json` and machine-output through STDOUT. It is a separate process.
-
-No mapper configuration file is to be introduced for timeframe selection, history retention or analysis window.
-
-Timeframe selection is controlled only by `--htf` and/or `--ltf` according to the timeframe-relationship and synchronization contracts in this specification. The supported-timeframe catalog and timeframe-duration ownership remain with the Market Data contract; the mapper must not introduce a second hard-coded `SUPPORTED_TIMEFRAMES` list. The mapper may validate timeframe syntax and HTF/LTF duration ordering, then fail with explicit data-availability/error status when the requested timeframe is not present in the Market Data machine-output response.
-
-Volume analysis is controlled by the optional mapper CLI parameter:
-
-```
---volume-method {NONE,OHLC,ORDERFLOW,BOTH}
-```
-
-When the parameter is omitted, the default is BOTH.
-
-BOTH uses both available genuine orderflow analytics and OHLC-derived directional volume analytics in parallel. The two evidence branches remain separate and are never combined into a single volume value. If only one branch is available, that branch is used. If neither branch is available, no POI volume analytics are produced.
-
-The selected method is an analysis-time processing decision. It is not persisted as a single exclusive volume provenance field in normalized market-data candles, and it does not remove or overwrite any parallel volume data that is available. Explicit CLI values override the default.
-
-## 2.9 Input validation
-
-Before canonical analysis, validate symbol, timeframe values, HTF/LTF relationship, positional-period syntax and resolution, timestamp ordering, duplicate timestamps, UTC normalization, completed-candle status, OHLC integrity, required volume-field pairing, and single-/two-timeframe mode requirements.
-
-Malformed dates/times, impossible dates, invalid 24-hour times, unsupported seconds/timezone suffixes, reversed/empty intervals, and future range starts fail explicitly before canonical processing. Provider/API failures and acquisition errors belong to Market Data. Missing required historical/context candles must not be fabricated.
+Malformed dates/times, impossible dates, invalid 24-hour times, unsupported seconds/timezone suffixes, standalone date-time values without a range hyphen, reversed/empty intervals, and future range starts fail explicitly before canonical processing. Provider/API failures and acquisition errors belong to Market Data. Missing required historical/context candles must not be fabricated.
 
 ## 2.10 Configuration boundary
 
