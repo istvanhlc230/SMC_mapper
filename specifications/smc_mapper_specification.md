@@ -702,6 +702,8 @@ Usage:
                        [--starttime TIME_BOUNDARY] [--endtime TIME_BOUNDARY]
                        [--history-no N]
                        [--volume-method {NONE,OHLC,ORDERFLOW,BOTH}]
+                       [--list-analyses | --query | --delete-analysis | --delete-cache]
+                       [--analysis-key KEY]
                        [--debug]
                        [--help]
 
@@ -759,13 +761,13 @@ Options:
       Show this help message and exit.
 ```
 
-For every invocation other than `--help`, the Mapper reads one complete machine-readable Market Data CSV stream from STDIN. Empty input, malformed protocol, unexpected timeframe rows, incomplete/current rows, or a timeframe/range mismatch is an explicit input failure. Because the CSV rows do not repeat the symbol, the Monitor/orchestrator must guarantee that the supplied stream was acquired for the same symbol as the Mapper's `--symbol` argument. The Mapper never launches `market_data.py` and never opens `<SYMBOL>_marketdata.json`.
+Only a mapping/update invocation reads one complete machine-readable Market Data CSV stream from STDIN. Empty input, malformed protocol, unexpected timeframe rows, incomplete/current rows, or a timeframe/range mismatch is an explicit input failure. Read-only cache operations (`--list-analyses` and `--query`) and cache-management operations (`--delete-analysis` and `--delete-cache`) do not read STDIN and do not require Market Data to be running. Because CSV rows do not repeat the symbol, the Monitor/orchestrator must guarantee that a mapping stream was acquired for the same symbol as the Mapper's `--symbol` argument. The Mapper never launches `market_data.py` and never opens `<SYMBOL>_marketdata.json`.
 
 ### CLI JSON output and persistent-cache contract
 
 The Structures JSON file is the durable structural cache and source of truth for resume and read-only queries. It is not disposable temporary cache: it stores the symbol's analyses, canonical structural state, provenance, and Mapper checkpoint. Successful mapping updates it atomically.
 
-The CLI must explicitly distinguish **mapping/mutation operations** from **read-only cache queries**. A query loads the existing Structures JSON and returns selected stored content as JSON without invoking canonical processing, advancing checkpoints, changing history, refreshing market data, or writing the file. Querying an absent file or absent analysis returns a machine-readable not-found result with a non-zero exit status; it must not silently create an empty file or trigger mapping.
+The CLI must explicitly distinguish **mapping/update**, **read-only query**, and **cache-management mutation** operations. These operation modes are mutually exclusive; incompatible combinations must be rejected before file or structural state mutation. A query loads the existing Structures JSON and returns selected stored content as JSON without invoking canonical processing, advancing checkpoints, changing history, refreshing market data, or writing the file. Querying an absent file or absent analysis returns a machine-readable not-found result with a non-zero exit status; it must not silently create an empty file or trigger mapping.
 
 Every successful non-help invocation emits exactly one complete JSON document to STDOUT. For mapping/update operations, the document is the same symbol-scoped Structures JSON state that was atomically persisted to `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_structures.json`; it is not a status envelope, a diff, or a second independently generated representation. For read-only query operations, STDOUT contains the requested JSON projection of the stored document, with an explicit operation/result status and enough identity metadata to identify the selected symbol and analysis.
 
@@ -780,18 +782,18 @@ A read-only query has no write phase and must not change file bytes or file modi
 
 ### Required cache-management CLI semantics
 
-The exact option spelling is a CLI design decision to be finalized in the CLI audit, but the implementation must support these distinct operations:
+The option names above are the V1 CLI contract; the implementation must support these distinct operations:
 
 - **List analyses:** list stored analysis identities and their timeframe/start/checkpoint metadata for a symbol without mapping.
 - **Query analysis/state:** return the complete stored Structures JSON document or one selected analysis as JSON without mapping.
 - **Map/update:** explicitly run canonical processing and persist the result.
 - **Delete analysis:** explicitly remove one selected analysis while preserving all other analyses for the symbol.
 - **Delete symbol cache:** explicitly remove the symbol's Structures JSON only when requested; it must not delete Market Data storage.
-- **Inspect cache metadata:** expose schema/version and per-analysis identity/checkpoint information sufficient to diagnose whether the stored cache matches the requested analysis.
+- **Inspect cache metadata:** expose the stored symbol, analysis identities, timeframe configuration, analysis-start boundary, and checkpoint information sufficient to diagnose whether the cache matches the requested analysis. If a schema/version field is defined by the persisted document format, include it in this metadata.
 
 A query must identify its target unambiguously. If multiple analyses match the supplied timeframe configuration and no unique start boundary/key is provided, return an ambiguity error listing the matching analysis keys. Never pick the first match implicitly.
 
-A read-only query must not automatically remap stale state. The caller may explicitly request a subsequent map/update operation. Cache age or checkpoint lag may be reported as metadata, but must not be used to silently alter canonical state.
+A read-only query must not automatically remap stale state. The caller may explicitly request a separate map/update operation. Cache age or checkpoint lag may be reported as metadata, but must not be used to silently alter canonical state. `--list-analyses` and `--query` must work when Market Data is unavailable, because they read only the Structures cache. `--delete-analysis` requires an unambiguous analysis key or equivalent unique selector; it must reject ambiguous selection without modifying the file.
 
 Deletion and mutation operations must use the same atomic persistence discipline as normal Structures updates. When the last analysis is deleted, retain a valid symbol-scoped Structures document with an empty `analyses` object; this avoids treating an intentional empty cache as a missing/corrupt file. The document's schema/version metadata must remain valid. Deleting the whole cache is a separate explicit operation.
 
