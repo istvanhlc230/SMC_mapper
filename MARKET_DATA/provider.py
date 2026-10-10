@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import re
 import time
 import urllib.parse
 from datetime import datetime, timedelta, timezone
@@ -46,19 +47,32 @@ def _map_symbol_to_lse(symbol: str) -> str:
 
 
 def _parse_lse_timestamp(value: Any) -> datetime:
-    """Parse an LSE timestamp with an explicit timezone or numeric UTC epoch."""
+    """Parse an LSE timestamp, interpreting the Vault's documented naive row format as UTC."""
     if isinstance(value, (int, float)):
         return datetime.fromtimestamp(value, tz=timezone.utc)
+
     raw_timestamp = str(value).strip()
     if raw_timestamp.endswith("Z"):
         raw_timestamp = raw_timestamp[:-1] + "+00:00"
     elif " " in raw_timestamp and "T" not in raw_timestamp:
+        # The LSE Vault JSON row API returns UTC timestamps as
+        # "YYYY-MM-DD HH:MM:SS[.ffffff]" without an offset. Its official client
+        # normalizes this exact provider format by appending the UTC marker.
+        is_documented_vault_timestamp = re.fullmatch(
+            r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)?",
+            raw_timestamp,
+        ) is not None
         raw_timestamp = raw_timestamp.replace(" ", "T", 1)
+        if is_documented_vault_timestamp:
+            raw_timestamp += "+00:00"
+
     try:
         return parse_aware_datetime(raw_timestamp)
     except DateTimeScopeError as exc:
         if "explicit timezone" in str(exc):
-            raise ValueError("LSE timestamp must include an explicit timezone") from exc
+            raise ValueError(
+                "LSE timestamp is timezone-naive and does not match the documented UTC Vault row format"
+            ) from exc
         raise ValueError("invalid LSE timestamp") from exc
 
 
