@@ -222,6 +222,9 @@ class LSEMarketDataProvider(MarketDataProvider):
                     low_price=low_price,
                     close_price=close_price,
                     total_volume=volume,
+                    tick_volume=row.get("tick_volume"),
+                    spread=row.get("spread"),
+                    real_volume=row.get("real_volume"),
                     provider_metadata={
                         "provider": "lse",
                         "interval": timeframe,
