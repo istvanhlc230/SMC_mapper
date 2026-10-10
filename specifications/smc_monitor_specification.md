@@ -210,6 +210,8 @@ Rules:
 @dataclass(frozen=True)
 class MonitorRequest:
     symbols: list[str]
+    htf: str
+    ltf: str
     min_rr: Decimal | None
     timezone: str | None
     alert_json: bool
