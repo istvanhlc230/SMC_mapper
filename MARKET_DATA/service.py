@@ -52,7 +52,7 @@ def _candle_dict(candle: NormalizedCandle) -> dict[str, Any]:
             "sell": serialize_decimal(candle.volume.orderflow_sell),
         }
 
-    return {
+    record = {
         "candle_id": candle.candle_id,
         "timestamp": _format_utc_timestamp(candle.timestamp),
         "completion_time": _format_utc_timestamp(candle.completion_time),
@@ -62,6 +62,11 @@ def _candle_dict(candle: NormalizedCandle) -> dict[str, Any]:
         "close": serialize_decimal(candle.close_price),
         "volume": volume,
     }
+    for field_name in ("tick_volume", "spread", "real_volume"):
+        value = getattr(candle, field_name)
+        if value is not None:
+            record[field_name] = serialize_decimal(value)
+    return record
 
 
 def _merge_candle_record(
@@ -349,6 +354,17 @@ def _record_to_normalized_candle(record: dict[str, Any]) -> NormalizedCandle:
         low_price=Decimal(record["low"]),
         close_price=Decimal(record["close"]),
         volume=volume_state,
+        tick_volume=(
+            Decimal(record["tick_volume"])
+            if "tick_volume" in record
+            else None
+        ),
+        spread=Decimal(record["spread"]) if "spread" in record else None,
+        real_volume=(
+            Decimal(record["real_volume"])
+            if "real_volume" in record
+            else None
+        ),
     )
 
 
