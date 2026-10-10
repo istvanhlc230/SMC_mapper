@@ -1587,9 +1587,9 @@ The same logical market-data state must produce the same persisted JSON content.
 
 ---
 
-## 12.9 External JSON schema contract
+## 12.9 Internal persistence JSON schema
 
-The following serialized structure is the mapper-facing V1 market-data contract:
+The following serialized structure is the internal V1 Market Data persistence schema. It is not the Mapper/Monitor process-input contract; downstream consumers must use the machine-readable CSV STDOUT contract defined in Section 0.4 and Section 5.7.
 
     {
       "symbol": "CCCC",
