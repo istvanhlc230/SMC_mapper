@@ -113,19 +113,70 @@ class CalendarProvider:
         raise NotImplementedError
 
 
+# LSE economic-calendar region filters are ISO 3166 region/country codes, not
+# ISO 4217 currency codes. Keep this translation explicit so the API never
+# receives invalid values such as EUR or USD in its region parameter.
+_LSE_REGION_BY_CURRENCY = {
+    "AED": "AE", "AFN": "AF", "ALL": "AL", "AMD": "AM", "ARS": "AR",
+    "AUD": "AU", "AZN": "AZ", "BAM": "BA", "BBD": "BB", "BDT": "BD",
+    "BGN": "BG", "BHD": "BH", "BIF": "BI", "BND": "BN", "BOB": "BO",
+    "BRL": "BR", "BSD": "BS", "BTN": "BT", "BWP": "BW", "BYN": "BY",
+    "BZD": "BZ", "CAD": "CA", "CDF": "CD", "CHF": "CH", "CLP": "CL",
+    "CNY": "CN", "COP": "CO", "CRC": "CR", "CZK": "CZ", "DKK": "DK",
+    "DOP": "DO", "DZD": "DZ", "EGP": "EG", "EUR": "EU", "GBP": "GB",
+    "GEL": "GE", "GHS": "GH", "GTQ": "GT", "HKD": "HK", "HNL": "HN",
+    "HUF": "HU", "IDR": "ID", "ILS": "IL", "INR": "IN", "ISK": "IS",
+    "JMD": "JM", "JPY": "JP", "KES": "KE", "KRW": "KR", "KWD": "KW",
+    "KZT": "KZ", "LKR": "LK", "MAD": "MA", "MDL": "MD", "MKD": "MK",
+    "MNT": "MN", "MOP": "MO", "MUR": "MU", "MVR": "MV", "MXN": "MX",
+    "MYR": "MY", "NAD": "NA", "NGN": "NG", "NOK": "NO", "NPR": "NP",
+    "NZD": "NZ", "OMR": "OM", "PEN": "PE", "PHP": "PH", "PKR": "PK",
+    "PLN": "PL", "QAR": "QA", "RON": "RO", "RSD": "RS", "RUB": "RU",
+    "RWF": "RW", "SAR": "SA", "SEK": "SE", "SGD": "SG", "THB": "TH",
+    "TND": "TN", "TRY": "TR", "TWD": "TW", "TZS": "TZ", "UAH": "UA",
+    "UGX": "UG", "USD": "US", "UYU": "UY", "UZS": "UZ", "VND": "VN",
+    "XPF": "PF", "ZAR": "ZA", "ZMW": "ZM",
+}
+
+
+def _resolve_lse_regions(symbol: str) -> List[str]:
+    """Translate a supported currency or FX pair into LSE API region codes."""
+    normalized_symbol = normalize_symbol(symbol)
+    if is_currency(normalized_symbol):
+        currencies = [normalized_symbol]
+    elif is_fx_pair(normalized_symbol):
+        currencies = [normalized_symbol[:3], normalized_symbol[3:]]
+    else:
+        return []
+
+    unmapped_currencies = [
+        currency for currency in currencies
+        if currency not in _LSE_REGION_BY_CURRENCY
+    ]
+    if unmapped_currencies:
+        raise ProviderError(
+            "LSE calendar region mapping is unavailable for currency code(s): "
+            + ", ".join(unmapped_currencies)
+        )
+
+    # Preserve base/quote order while avoiding duplicate region filters.
+    return list(dict.fromkeys(
+        _LSE_REGION_BY_CURRENCY[currency] for currency in currencies
+    ))
+
+
 def _fetch_lse_rows(symbol: str, start: datetime, end: datetime) -> List[Dict[str, Any]]:
     """Fetch LSE economic-calendar rows for the currencies relevant to a symbol."""
+    regions = _resolve_lse_regions(symbol)
+    if not regions:
+        # LSE's economic calendar is not a stock-ticker news provider.
+        return []
+
     try:
         api_key = get_provider_api_key("lse")
     except ProviderCredentialError as exc:
         raise ProviderError(str(exc)) from exc
-    regions: List[str] = []
-    if is_currency(symbol):
-        regions = [symbol]
-    elif is_fx_pair(symbol):
-        regions = [symbol[:3], symbol[3:]]
-    else:
-        return []
+
     params = urllib.parse.urlencode({
         "region": ",".join(regions),
         "start": format_iso8601(start),
@@ -143,6 +194,29 @@ def _fetch_lse_rows(symbol: str, start: datetime, end: datetime) -> List[Dict[st
                 raise ProviderError(f"LSE HTTP {response.status}")
             payload = json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
+        # Preserve the provider's short diagnostic without echoing request URLs
+        # or credentials. The normal public CLI hides provider error details;
+        # --debug is the only path that exposes this message.
+        raw_error_body = exc.read(4096).decode("utf-8", "replace").strip()
+        error_detail = raw_error_body
+        try:
+            parsed_error_body = json.loads(raw_error_body)
+        except json.JSONDecodeError:
+            parsed_error_body = None
+        if isinstance(parsed_error_body, dict):
+            error_detail = str(
+                parsed_error_body.get("detail")
+                or parsed_error_body.get("message")
+                or parsed_error_body.get("error")
+                or raw_error_body
+            )
+        error_detail = re.sub(r"\\s+", " ", error_detail).strip()
+        if api_key:
+            error_detail = error_detail.replace(api_key, "[redacted]")
+        if error_detail:
+            raise ProviderError(
+                f"LSE HTTP {exc.code}: {error_detail[:240]}"
+            ) from exc
         raise ProviderError(f"LSE HTTP {exc.code}") from exc
     except (urllib.error.URLError, TimeoutError, UnicodeDecodeError, OSError, json.JSONDecodeError) as exc:
         raise ProviderError(f"LSE request failed: {exc}") from exc
