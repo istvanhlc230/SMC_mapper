@@ -48,6 +48,39 @@ jobs:
           def dt(value):
               return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
+          # The LSE Vault's documented raw timestamp format is UTC but omits
+          # the timezone suffix; normalize that exact shape at the provider edge.
+          from MARKET_DATA.provider import _parse_lse_timestamp
+          assert _parse_lse_timestamp("2026-10-08 05:00:00") == dt("2026-10-08T05:00:00Z")
+          assert _parse_lse_timestamp("2026-10-08 05:00:00.123456") == dt(
+              "2026-10-08T05:00:00.123456Z"
+          )
+          assert _parse_lse_timestamp("2026-10-08T05:00:00+02:00") == dt(
+              "2026-10-08T03:00:00Z"
+          )
+          try:
+              _parse_lse_timestamp("2026-10-08T05:00:00")
+          except ValueError as error:
+              assert "timezone-naive" in str(error)
+          else:
+              raise AssertionError("undocumented timezone-naive ISO timestamps must be rejected")
+
+          lse_row_parser = LSEMarketDataProvider()
+          parsed_lse_rows = lse_row_parser._parse_lse_candle_rows(
+              [{
+                  "timestamp": "2026-10-08 05:00:00",
+                  "open": "1.1",
+                  "high": "1.2",
+                  "low": "1.0",
+                  "close": "1.15",
+                  "volume": 10,
+              }],
+              "EURUSD",
+              "M1",
+          )
+          assert parsed_lse_rows[0].timestamp == dt("2026-10-08T05:00:00Z")
+          assert parsed_lse_rows[0].source_timezone == "UTC"
+
           # LSE candle query filters must be UTC dates, while the caller's exact
           # timestamps are applied locally after the provider response is parsed.
           date_filter_provider = LSEMarketDataProvider()
