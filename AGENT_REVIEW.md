@@ -1675,3 +1675,22 @@ The user's live refresh failed in the HTML fallback because the page had an even
 - Both workflows passed for implementation/specification/test snapshot `1ec39f8293baba3b89d5380b010d280be54f4f70`. The tests use synthetic provider rows; no live credential-backed re-run is claimed from this environment.
 - Upstream contract reference: https://github.com/londonstrategicedge/lse-data/blob/main/lse/client.py#L3017-L3039
 
+
+
+## Market Data retention type mismatch — 2026-10-10
+
+### Finding
+- A live candle-range update failed in `apply_candle_retention()` with `TypeError: 'str' object cannot be interpreted as an integer`.
+- `_candle_dict()` documented a canonical storage record but returned Python `datetime` values for timestamps and `Decimal` values for prices/volume. During the same update transaction, merge and retention treated the records as persisted JSON-shaped data: timestamp parsing called `.replace("Z", "+00:00")` and expected a string. This caused the observed traceback; mixed `Decimal`/string fields also risked false identity conflicts during re-acquisition.
+
+### Correction
+- Added a strict UTC timestamp formatter that emits ISO-8601 strings with `Z` and rejects timezone-naive values rather than assuming local time.
+- `_candle_dict()` now canonicalizes timestamp, completion time, OHLC, and every available volume value to the same field types and fixed Decimal precision used by persistence.
+- Added regression coverage for timestamp/Decimal storage types, repeat-acquisition merge idempotency, retention of a protected range, and rejection of naive timestamps.
+- Updated `specifications/market_data_specification.md` to make this representation boundary normative.
+
+### Validation
+- Market Data Python tests [run #658](https://github.com/istvanhlc230/SMC_mapper/actions/runs/38083815033): **SUCCESS**.
+- Calendar Python tests [run #1043](https://github.com/istvanhlc230/SMC_mapper/actions/runs/38083815007): **SUCCESS**.
+- Both workflows passed for implementation/specification/test snapshot `1976ec67eeade4fb4e714055712744e6d261fced`.
+- These synthetic regression tests cover the exact merge/retention type boundary; a new credential-backed live LSE call has not been executed from this environment.
