@@ -7,7 +7,7 @@ from datetime import timezone
 from decimal import Decimal
 from typing import Mapping, Sequence
 
-from .models import NormalizedCandle
+from .models import MarketDepthSnapshot, NormalizedCandle
 
 MACHINE_PROTOCOL_HEADER = (
     "timeframe",
@@ -74,8 +74,9 @@ def serialize_machine_csv(
 def format_table(
     symbol: str,
     candles_by_timeframe: Mapping[str, Sequence[tuple[NormalizedCandle, bool]]],
+    market_depth: MarketDepthSnapshot | None = None,
 ) -> str:
-    """Format candles with OHLC and available normalized total volume."""
+    """Format candle rows and append an L2 section only when depth data exists."""
     lines = [f"MARKET DATA | {symbol}"]
     table_width = 86
     separator = "-" * table_width
@@ -111,5 +112,32 @@ def format_table(
             )
 
         lines.append(separator)
+
+    if market_depth is not None and (market_depth.bids or market_depth.asks):
+        timestamp = market_depth.timestamp
+        if timestamp.tzinfo is None or timestamp.utcoffset() is None:
+            raise ValueError("L2 snapshot timestamp must include an explicit timezone")
+        timestamp_text = timestamp.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+        lines.extend(
+            [
+                "",
+                f"L2 MARKET DEPTH | PROVIDER {market_depth.provider} | TIME (UTC) {timestamp_text}",
+                "-" * 63,
+                f"{'Level':>5}  {'Bid Price':>12}  {'Bid Volume':>12}  {'Ask Price':>12}  {'Ask Volume':>12}",
+                "-" * 63,
+            ]
+        )
+        level_count = max(len(market_depth.bids), len(market_depth.asks))
+        for index in range(level_count):
+            bid = market_depth.bids[index] if index < len(market_depth.bids) else None
+            ask = market_depth.asks[index] if index < len(market_depth.asks) else None
+            lines.append(
+                f"{index + 1:>5}  "
+                f"{_decimal_text(bid.price) if bid is not None else '':>12}  "
+                f"{_decimal_text(bid.volume) if bid is not None else '':>12}  "
+                f"{_decimal_text(ask.price) if ask is not None else '':>12}  "
+                f"{_decimal_text(ask.volume) if ask is not None else '':>12}"
+            )
+        lines.append("-" * 63)
 
     return "\n".join(lines)
