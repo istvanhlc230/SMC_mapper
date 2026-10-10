@@ -64,6 +64,23 @@ class VolumeState:
     orderflow_sell: Decimal | None
 
 @dataclass(frozen=True)
+class MarketDepthLevel:
+    """One provider-reported Level 2 price level and its available size."""
+    price: Decimal
+    volume: Decimal
+
+
+@dataclass(frozen=True)
+class MarketDepthSnapshot:
+    """A timestamped provider order-book snapshot, independent of OHLC candles."""
+    symbol: str
+    provider: str
+    timestamp: datetime
+    bids: list[MarketDepthLevel]
+    asks: list[MarketDepthLevel]
+
+
+@dataclass(frozen=True)
 class NormalizedCandle:
     """Canonical candle representation used by Market Data process serialization."""
     candle_id: str
