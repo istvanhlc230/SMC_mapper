@@ -33,7 +33,7 @@ class MarketDataRequest:
     last_closed_only: bool
     current: bool
     debug: bool
-    cleartext: bool = False
+    table: bool = False
 
 @dataclass(frozen=True)
 class ProviderCandle:
