@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 from .config import DataIntegrityError
-from .domain import build_empty_calendar_document, validate_calendar_document
+from .domain import build_empty_calendar_document, normalize_calendar_document_provider_fields, validate_calendar_document
 from COMMON.atomic_file import atomic_write_text
 
 # PROJECT_ROOT — repository root used to derive the default Calendar data directory.
@@ -30,14 +30,16 @@ def _load_json_file() -> Dict[str, Any]:
         raise DataIntegrityError(f"Calendar data integrity error: {exc}") from exc
 
 def load_calendar_document() -> Dict[str, Any]:
-    """Load and validate the canonical persisted Calendar document."""
+    """Load, normalize legacy provider fields, and validate the Calendar document."""
     document = _load_json_file()
+    normalize_calendar_document_provider_fields(document)
     validate_calendar_document(document)
     return document
 
 def save_calendar_atomic(document: Dict[str, Any]) -> None:
-    """Serialize Calendar JSON and replace the destination through the shared atomic writer."""
+    """Normalize provider fields, then atomically persist the Calendar JSON document."""
     try:
+        normalize_calendar_document_provider_fields(document)
         serialized_document = json.dumps(document, indent=2, ensure_ascii=False)
         atomic_write_text(
             CALENDAR_FILE,
