@@ -278,9 +278,10 @@ The canonical process is:
 
 8. **Insufficient continuation / extension**
    - A structural break attempt before macro qualification is not `VALID_BOS`.
-   - Classify it through the canonical `IMPULSE_EXTENSION` path.
+   - Classify the break through the canonical `IMPULSE_EXTENSION` path where the existing Layer-4 event-classification rules apply.
    - The newer valid pullback/extreme may replace the candidate/reference according to the existing forward-only lifecycle.
    - No Protected Structural Extreme lock and no Dealing Range rollover occur.
+   - **Specific precedence:** when the failure is the Gate-2 conditional path (`HTF_CONDITIONAL_THRESHOLD <= RetracementDepth < STANDARD_EQUILIBRIUM_THRESHOLD`) and `HTF_VALID_PULLBACK` is demonstrably false, use the dedicated “Gate 2 — Failed HTF validation and fail-closed rollback” below. Its `INVALID_BOS` is the rejected qualification verdict, not a replacement for the `IMPULSE_EXTENSION` event class.
 
 Canonical causal chain:
 
@@ -616,7 +617,7 @@ Layer 3 is the sole semantic owner of structural qualification. A retracement wa
   - No numeric size thresholds are defined by this rule. The implementation must not invent a threshold or silently fall back to a fixed pair. The measurable size/volume decision rule remains an explicit implementation-design item to be specified and tested.
   - If sufficient history exists but no eligible candidate resolution proves the complete structure, the HTF valid-pullback gate fails. If the necessary series/history or event sequencing is absent, report context as unavailable instead of converting missing evidence into a negative proof.
 
-**Timeframe-token boundary:** The mapping uses methodology intervals. Market Data owns canonical input tokens and actual provider support. Its current specification identifies `MN1` as the monthly token; methodology/source notation such as `1MN` is not necessarily a CLI token. The three-month interval (`3M`, also referenced as `3MN` in source material) must not be assumed available unless the Market Data contract/provider explicitly supports it. An unavailable 3M series must not be fabricated or silently renamed as W1 or MN1.
+**Timeframe-token boundary:** The mapping uses methodology intervals. Market Data owns canonical input tokens and actual provider support. Its current specification identifies `MN1` as the monthly token; methodology/source notation such as `1MN` is not necessarily a CLI token. The three-month interval (`3M`, also referenced as `3MN` in source material) must not be assumed available unless the Market Data contract/provider explicitly supports it. A missing 3M series must never be fabricated or silently represented by an MN1 series. The distinct pre-existing conditional-gate rule may use an actual MN1 series for W1 context only when MN1 is explicitly the established applicable immediate-HTF context because 3M is not in that hierarchy; that conditional-gate context is not a new replacement row in the complete-structure mapping table.
 
 **Source reconciliation note for *:** The project-canonical mapping approved by the user is `M15 → M1`. The currently indexed `smc_trader_another_missing_piece.txt` passage (00:05:21–00:05:49) explicitly gives `D1 → H4`, `H4 → M15`, and `M15 → M3` for the discussed 38.2% qualification exception. That source passage therefore does not independently verify `M15 → M1`; it remains a user-approved project-canonical mapping, while the distinct `M15 → M3` source evidence remains recorded and must not be erased or misattributed.
 
