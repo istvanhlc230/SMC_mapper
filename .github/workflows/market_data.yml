@@ -164,12 +164,24 @@ jobs:
           assert "12345" in rendered_table
           assert "Completed" not in rendered_table
 
+          # Human tables must not expose the fixed 18-place persistence precision.
+          precision_candle = replace(
+              sample_candle,
+              open_price=Decimal("1.100000000000000000"),
+              volume=VolumeState(
+                  True, Decimal("12345.000000000000000000"),
+                  False, None, None, False, None, None,
+              ),
+          )
+          precision_table = format_table("EURUSD", {"M1": [(precision_candle, True)]})
+          assert "1.100000000000000000" not in precision_table
+          assert "12345.000000000000000000" not in precision_table
+
           current_table = format_table("EURUSD", {"M1": [(sample_candle, False)]})
           assert "CURRENT SNAPSHOT" in current_table
           assert "Completed" not in current_table
 
           # Missing total volume is shown as unavailable, never as a fabricated zero.
-          from dataclasses import replace
           candle_without_volume = replace(
               sample_candle,
               volume=VolumeState(False, None, False, None, None, False, None, None),
@@ -208,6 +220,7 @@ jobs:
           # and it must carry volume_total and a complete observed orderflow pair.
           import csv
           import io
+          from dataclasses import replace
           from MARKET_DATA.protocol import MACHINE_PROTOCOL_HEADER, serialize_machine_csv
           assert MACHINE_PROTOCOL_HEADER == (
               "timeframe", "time", "open", "high", "low", "close",
