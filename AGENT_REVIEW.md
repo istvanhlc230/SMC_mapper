@@ -1,3 +1,46 @@
+# CURRENT AUDIT OVERRIDE — 2026-10-10 (Shared Python Utilities + Positional CLI Scopes)
+
+## Release-gate audit
+
+Scope: shared date/time, atomic file and HTTP helpers; Calendar and Market Data CLI integration; their owning specifications and in-line GitHub Actions contract tests. Mapper/Monitor behavior and canonical SMC rules were not changed.
+
+### Implemented
+
+- Added `COMMON/date_time.py` as the sole shared temporal-scope grammar and UTC/ISO 8601 helper source. `DateTimeScopeParser` supports date, date-time, time-only, inclusive date ranges, half-open datetime/time ranges, and open-start/open-end forms. It rejects malformed dates, invalid times, mixed endpoint types, reversed intervals, and the retired `@` syntax. The returned scope retains the parser's reference UTC time for deterministic open-end resolution.
+- Added `COMMON/atomic_file.py` for bounded-retry, same-directory UTF-8 temp-file writes, flush/fsync, atomic replacement, and failure cleanup. Calendar and Market Data retain schema validation, JSON serialization, domain locking, retry policy, and their established error-category translation.
+- Added `COMMON/http_client.py` for urllib GET, bytes/text/JSON response decoding, finite caller-selected retries, and sanitized errors. Underlying request/URL exception context is suppressed at the public error boundary so debug tracebacks cannot reveal URL query credentials.
+- Kept `PROVIDERS/credentials.py` as the single shared API-key loader.
+- Rewired Calendar domain/date parsing, Calendar persistence/provider transport, Market Data CLI/time normalization/persistence/provider transport to these common helpers.
+- Replaced the date/time CLI forms with one positional scope grammar in both applications. The public `--date`, `--time`, and `--range` input flags are explicitly rejected. Calendar keeps `SYMBOL <scope> [refresh]`, `delete [SYMBOL <scope>]`, and `SYMBOL --last-update`. Market Data keeps `--symbol`, multi-value `--timeframes`, and `--current` / `--lastclosed` modes.
+- Preserved automatic no-argument help for `calendar.py` and `market_data.py`, exiting successfully without requesting provider data.
+- Converted the root `calendar.py` application API to lazy exports. This preserves the standard-library `calendar` surface and backwards-compatible Calendar API lookups without eagerly importing the Calendar providers while urllib/email imports the root module. This resolves the discovered import cycle with `COMMON.http_client`.
+- Updated `specifications/calendar_specification.md`, `specifications/market_data_specification.md`, and added `specifications/common_utilities_specification.md`.
+- Updated existing workflow-embedded tests rather than creating a root `test/` or `tests/` folder.
+
+### Audit corrections found during CI
+
+- Fixed the root stdlib-shadow import cycle; the common HTTP module could previously be imported only until Python's `email` stack re-imported project `calendar.py`.
+- Removed stale contract expectations rejecting `current refresh`, which is explicitly allowed by the Calendar specification.
+- Corrected a stale Calendar implementation-version assertion from 2.5.0 to 2.6.1.
+- Separated the merged-event query fixture from the independent `Next USD` CLI fixture, so the test no longer inserted an earlier eligible event and then expected a later event.
+- Corrected the active-event test fixture to include the required `details` mapping.
+- Added acceptance checks for no-argument help, shared parser determinism, retired flag rejection, atomic replacement/failure preservation, HTTP error sanitization, and the multi-timeframe positional datetime-range scanner.
+
+### CI verification
+
+Implementation snapshot: `a6d64c6282233b681ef9a0e925117ea2e08ee8f0`.
+
+- Calendar Python tests: PASS — https://github.com/istvanhlc230/SMC_mapper/actions/runs/38063173148
+- Market Data Python tests: PASS — https://github.com/istvanhlc230/SMC_mapper/actions/runs/38063173167
+
+These are the repository's GitHub Actions runtime/contract checks on Python 3.11. The tests verify compilation, parser and CLI behavior, and mocked/in-memory provider/storage paths; they do not constitute a live-provider integration check or a local Windows/Python 3.14 run. A smoke run in the user's Windows/Python 3.14 environment remains the final environment-specific verification.
+
+### Final assessment
+
+PASS for the tested Python 3.11 repository contract snapshot. Shared helper ownership and both positional CLI contracts are documented and exercised. No Calendar/Market Data JSON schema, provider routing, credential layout, candle/event identity, or canonical SMC rule was intentionally changed by this refactor.
+
+---
+
 # CURRENT AUDIT OVERRIDE — 2026-10-08 (Calendar + Market Data)
 
 ## Release-gate audit
