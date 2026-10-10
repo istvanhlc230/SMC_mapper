@@ -157,7 +157,7 @@ The Monitor accepts the same timeframe selection semantics as Mapper:
 - a different timeframe configuration requires a separate Monitor process;
 - these flags configure each fresh Mapper invocation and are not loaded from a file.
 
-## 1.3 --rr
+## 1.4 --rr
 
 Optional downstream minimum Projected_RR policy.
 
@@ -170,7 +170,7 @@ Rules:
 - RR policy must never alter canonical structure, POI lifecycle, target coordinates, or mapper state;
 - the supplied value applies only to the current Monitor invocation.
 
-## 1.4 --debug
+## 1.5 --debug
 
 Diagnostics are written to stderr only.
 
@@ -183,7 +183,7 @@ Debug output must never be:
 
 Normal successful execution is silent except for actual runtime alerts/notifications.
 
-## 1.5 Process result model
+## 1.6 Process result model
 
 Use an explicit subprocess result container:
 
@@ -204,7 +204,7 @@ Rules:
 - debug STDERR may be shown on the terminal only;
 - no subprocess diagnostic output is persisted as canonical state.
 
-## 1.6 Request model
+## 1.7 Request model
 
 ~~~python
 @dataclass(frozen=True)
@@ -303,7 +303,7 @@ For every monitored symbol:
 
 - one independent symbol and one explicitly configured timeframe combination;
 - no shared runtime result across symbols;
-- no persisted persistent Mapper checkpoint or runtime analysis correlation identity;
+- no persisted Mapper checkpoint or runtime analysis correlation identity;
 - no mutation of canonical Mapper results;
 - every new full Mapper result is produced from Market Data candles, never from the previous Mapper result.
 
