@@ -261,7 +261,7 @@ jobs:
           try:
               serialize_machine_csv({"M1": [(malformed_orderflow_candle, True)]})
           except ValueError as error:
-              assert "complete finite buy/sell pair" in str(error)
+              assert "complete finite non-negative buy/sell pair" in str(error)
           else:
               raise AssertionError("partial observed orderflow must be rejected")
 
