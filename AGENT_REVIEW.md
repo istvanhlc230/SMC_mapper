@@ -1637,5 +1637,5 @@ The user's live refresh failed in the HTML fallback because the page had an even
 
 ### Audit
 - The new CLI contract matches Calendar's positional-symbol approach while preserving Market Data's required multi-timeframe option.
-- Validation and CI results are pending for this revision.
+- Runtime CI passed for the aligned implementation/specification/test snapshot at commit `a3808c40c0f9a1aadace300c02ab924930c2ed2c`: [Market Data workflow](https://github.com/istvanhlc230/SMC_mapper/actions/runs/38082034101) and [Calendar workflow](https://github.com/istvanhlc230/SMC_mapper/actions/runs/38082034092) both completed successfully.
 
