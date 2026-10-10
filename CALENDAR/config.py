@@ -79,7 +79,7 @@ TIME_RE = r"\d{2}:\d{2}"
 # HELP_TEXT — CLI help text containing software/schema versions.
 HELP_TEXT = f"""Calendar CLI v{__version__} (schema {SCHEMA_VERSION})
 
-Usage:
+USAGE
   python calendar.py SYMBOL SCOPE [refresh] [--table] [--debug]
   python calendar.py SYMBOL --last-update [--table]
   python calendar.py delete [SYMBOL SCOPE]
