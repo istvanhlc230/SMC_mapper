@@ -451,7 +451,7 @@ Use single-timeframe analysis when:
 - only `--ltf` is supplied; or
 - both are supplied but they specify the **same timeframe**.
 
-In single-timeframe analysis, the selected timeframe is analyzed once. The normalized identity is based only on the selected timeframe, so `--htf H1`, `--ltf H1`, and `--htf H1 --ltf H1` address the same single-timeframe analysis identity when the analysis boundary is the same.
+In single-timeframe analysis, the selected timeframe is analyzed once. `--htf H1`, `--ltf H1`, and `--htf H1 --ltf H1` must resolve to the same single-timeframe processing mode when H1 is the only effective timeframe. This is a per-invocation mode equivalence, not a persistent analysis identity.
 
 Internally, the analysis may represent:
 
@@ -1332,7 +1332,7 @@ The Mapper must not create a second target ontology, select a target for alertin
 The CLI interfaces must strictly separate persistent market data from user-visible diagnostics.
 
 - Normalized candle data is persisted internally by Market Data and is emitted through the machine-readable STDOUT protocol as the Mapper data pipe.
-- On successful completion, Mapper emits the committed Structures JSON document to `stdout`.
+- On successful completion, Mapper emits the per-invocation result to STDOUT as JSON by default, or as human-readable output when `--cleartext` is supplied.
 - Debug, diagnostic, and error information is written to `stderr` only; it must never be mixed with either JSON protocol.
 - Debug `stderr` is terminal-only. The launcher/monitor must not capture, parse, forward, merge, persist, or pass it to `smc_mapper.py`, `smc_monitor.py`, or the market-data JSON.
 - `stderr` must never be merged into a machine-readable data channel.
@@ -1340,7 +1340,7 @@ The CLI interfaces must strictly separate persistent market data from user-visib
 - With `--debug`, diagnostics are visible directly on the terminal.
 - A process wrapper may capture diagnostics transiently for error reporting, but must never parse or persist them as data.
 - Debug mode must never alter canonical calculations or normalized market-data semantics.
-- Normal runtime must produce no human-readable status output. Market Data CSV on Mapper STDIN and committed Structures JSON on Mapper STDOUT are distinct machine-readable process contracts; neither is a diagnostic/status channel.
+- Normal JSON mode must produce no human-readable status output. Market Data CSV on Mapper STDIN and Mapper's default JSON result on STDOUT are distinct machine-readable process contracts. `--cleartext` intentionally replaces JSON presentation for direct human use; diagnostics remain on STDERR.
 
 ## 12.2 Diagnostic data boundary
 
@@ -1395,7 +1395,7 @@ Module responsibilities:
 | Module | Sole responsibility |
 |---|---|
 | `smc_mapper.py` | Thin executable entry point; calls the package CLI/run path and returns its exit status. |
-| `models.py` | Explicit cross-layer candle, request, analysis identity/state, structural-state, and persistence DTOs; no canonical decision logic. |
+| `models.py` | Explicit cross-layer candle, request, transient structural-state, and result DTOs; no canonical decision logic. |
 | `cli.py` | Mapper argument parsing and request validation; no file/network/process I/O. |
 | `market_data_input.py` | Parse and validate the fixed Market Data CSV STDIN protocol; no provider or JSON-store access. |
 | `period.py` | Parse positional period expressions and normalize UTC processing/output boundaries. |
@@ -1452,9 +1452,9 @@ POI volume enrichment may consume canonical POI provenance, but it cannot feed r
 
 ## 14.3 Domain-state containers
 
-Use explicit state containers for mapper-owned processing state. Python may use dataclass for implementation convenience, but the architecture must remain directly reproducible in MQL4/MQL5.
+Use explicit state containers for Mapper-owned processing state. Python may use dataclasses for implementation convenience, but the architecture must remain directly reproducible in MQL4/MQL5.
 
-The following conceptual models are sufficient for the V1 mapper boundary:
+Conceptual models:
 
     MapperRequest
         symbol
@@ -1464,6 +1464,7 @@ The following conceptual models are sufficient for the V1 mapper boundary:
         history_no
         volume_method
         debug
+        cleartext
 
     MarketDataCandleView
         candle_id
@@ -1499,9 +1500,7 @@ The following conceptual models are sufficient for the V1 mapper boundary:
         structural_state
         history
 
-The conceptual structural_state and history fields are in-memory ownership containers for canonical layer state and are serialized only as part of the invocation result. The mapper specification must not invent a second canonical ontology inside them. Actual canonical objects and fields are taken from .agents/skills/smc/ during implementation.
-
-A transient processing context may be represented separately when needed, containing only explicit point-in-time inputs such as evaluation time, active HTF context reference, and the current completed candle. It must not become persisted monitor state.
+The structural_state and history fields are in-memory ownership containers for canonical layer state and are serialized only into the current invocation's result. Actual canonical objects and fields are taken from `.agents/skills/smc/` during implementation. A transient processing context may include explicit point-in-time inputs such as evaluation time, active HTF context reference, and current completed candle; it must not become persistent state.
 
 ## 14.4 MQL4/MQL5 portability
 
@@ -1558,42 +1557,25 @@ Parsing is deterministic. Open-end periods use one UTC invocation timestamp capt
 
 ## 15.3 Market-data boundary
 
-Owner module: `SMC_MAPPER/market_data_input.py` for protocol parsing/validation; `SMC_MAPPER/identity.py` for analysis identity and window-boundary normalization.
+Owner modules: `SMC_MAPPER/market_data_input.py` for protocol parsing/validation; `SMC_MAPPER/period.py` for positional-period parsing and UTC window-boundary normalization.
 
     parse_market_data_stdout(stream) -> MarketDataSeries
     validate_market_data_stream(series, symbol, requested_timeframes) -> success/failure
+    parse_period_expression(period_text) -> PeriodScope
     select_completed_candles(series, timeframe, start_time, end_time) -> candle array
 
-The mapper process-input parser must validate the Market Data machine protocol without importing Market Data classes. It must accept the CSV-like stream and group records by the explicit `timeframe` field.
+The process-input parser validates the Market Data machine protocol without importing Market Data classes. It groups records by the explicit `timeframe` field.
 
-The Mapper derives `completion_time` deterministically from the canonical candle `timestamp` and `timeframe`; it is not a wire field.
+The Mapper derives `completion_time` deterministically from canonical candle `timestamp` and `timeframe`; it is not a wire field. Requested-period eligibility is based on candle interval-start timestamp and half-open UTC boundaries: `start_time <= timestamp < end_time`. Completion status is checked separately. Available coverage metadata describes completed-candle coverage only, and the current snapshot is excluded from canonical processing.
 
-For explicit analysis-window selection, a candle is eligible when:
-
-- derived `completion_time >= start boundary`; and
-- derived `completion_time <= end boundary`.
-
-At this boundary:
-
-- available_start / available_end describe completed-candle coverage only;
-- candles are canonical market-data input;
-- current is excluded from canonical processing;
-- requested-period eligibility uses canonical candle interval-start timestamps and half-open UTC boundaries;
-- optional protocol volume fields retain their independent meanings; `volume_total` supplies the normalized total-volume input for OHLC estimation, while an observed orderflow pair is available only when both `orderflow_buy` and `orderflow_sell` are present;
-- delta is derived as buy minus sell from the selected branch; no source-level delta field is required;
-- persisted numeric values must be parsed deterministically and validated before use.
-
-## 15.4 Structures persistence
+## 15.4 Output serialization
 
 Owner module: `SMC_MAPPER/output.py`.
 
-    create_empty_structures(symbol, history_no) -> StructuresDocument
-    load_structures(path, symbol) -> StructuresDocument
-    save_structures_atomic(path, structures) -> success/failure
+    serialize_mapper_result_json(result) -> JSON text
+    render_mapper_result_cleartext(result) -> human-readable text
 
-The structures writer owns only mapper structural persistence. It must not write the Market Data JSON.
-
-Persistence helpers may translate domain objects to/from plain Python dictionaries/lists, but mapper canonical logic must operate on explicit domain state rather than depending on dictionary layout.
+Serialization is an output boundary only. It does not read or write a file. Canonical processing operates on explicit domain models; JSON dictionaries are produced only after the in-memory result has been validated.
 
 ## 15.5 Canonical processing
 
