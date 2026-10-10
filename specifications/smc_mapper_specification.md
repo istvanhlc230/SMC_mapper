@@ -606,7 +606,7 @@ The Monitor/orchestrator must request the full retained Market Data history thro
 Example process pipe:
 
 ```text
-python market_data.py SYMBOL --timeframes RESOLVED_TF_1 RESOLVED_TF_2 ... MARKET_DATA_SCOPE --table? | python smc_mapper.py --symbol SYMBOL --timeframe TF [PERIOD]
+python market_data.py SYMBOL --timeframes RESOLVED_TF_1 RESOLVED_TF_2 ... MARKET_DATA_SCOPE | python smc_mapper.py --symbol SYMBOL --timeframe TF [PERIOD]
 ```
 
 Market Data output must include all retained completed candles through the Mapper's requested end, not just the visible output window; use the Market Data open-start `--range -END` form for this full-history result. Market Data's `--range` is not passed to Mapper as a flag. The Monitor must pass the primary timeframe selection explicitly and include the permitted candidate series required by canonical pullback-representation resolution; it must not discover timeframe configuration from a Structures file.
@@ -631,9 +631,9 @@ The Market Data cache remains the only persistent candle-history source in this 
 
 # 4. DATA COVERAGE, BOOTSTRAP, AND WARM-UP PLANNING
 
-## 4.1 Independent HTF/LTF feed ranges
+## 4.1 Independent resolved-timeframe feed ranges
 
-HTF and LTF candle data may cover different temporal ranges.
+The anchor, higher-context, pullback-representation, and entry/monitoring timeframe series may cover different temporal ranges. The resolver must preserve coverage separately for every actual timeframe and role.
 
 The Market Data CLI owns acquisition and determines the actual available/returned range for each requested timeframe. The Mapper obtains that range only from the validated Market Data machine-output response and must not fabricate unavailable candles.
 
@@ -666,7 +666,7 @@ Therefore:
 
 If a canonical decision depends on unavailable HTF context, the decision must remain unresolved / fail closed.
 
-This rule also applies recursively to the configured HTF's own structural lifecycle. The presence of a configured HTF series does not automatically prove that every structure within it is confirmed. If an HTF event qualifies only through the conditional 38.2%–below-50% path, its own applicable immediate-HTF context must be validated using the canonical mapping hierarchy. The Monitor/orchestrator may supply that required series as a supporting timeframe even when it is outside the primary `--htf`/`--ltf` pair. If the required context is not supplied or cannot be sequenced, that specific HTF event remains `HTF_CONTEXT_UNAVAILABLE`; the Mapper must not expose it as confirmed HTF context or use it to authorize dependent LTF structure, POIs, or entries. This restriction does not invalidate unrelated HTF events whose own canonical qualification gates pass.
+This rule also applies recursively to the anchor's own structural lifecycle. The presence of a selected anchor series does not automatically prove that every structure within it is confirmed. If an event qualifies only through the conditional 38.2%–below-50% path, its applicable immediate-HTF context must be validated using the canonical mapping hierarchy. The Monitor/orchestrator automatically supplies the required supporting series even when it is outside the user's single `--timeframe` selection. If the required context is not supplied or cannot be sequenced, that specific HTF event remains `HTF_CONTEXT_UNAVAILABLE`; the Mapper must not expose it as confirmed HTF context or use it to authorize dependent LTF structure, POIs, or entries. This restriction does not invalidate unrelated HTF events whose own canonical qualification gates pass.
 
 ---
 
@@ -682,25 +682,25 @@ The mapper must not use a latest-window shortcut that bypasses required structur
 
 The Monitor/orchestrator invokes the Market Data CLI for the required bootstrap range in deterministic batch form, then supplies the captured machine-readable STDOUT as Mapper STDIN.
 
-Every invocation rebuilds canonical state from the full retained history supplied through the requested end; the requested start filters output, not canonical processing. The Monitor/orchestrator obtains that history from the Market Data cache (which may fetch only missing candles) and passes the validated stream through STDIN. The stream must include both HTF and LTF series plus all overlap and warm-up candles needed for point-in-time context. The Mapper does not compare against prior checkpoints or incrementally append structural events.
+Every invocation rebuilds canonical state from the full retained history supplied through the requested end; the requested start filters output, not canonical processing. The Monitor/orchestrator obtains that history from the Market Data cache (which may fetch only missing candles) and passes the validated stream through STDIN. The stream must include every automatically resolved series required by the current invocation phase: the anchor, all required higher-context/pullback-representation series, and (only after POI activation) the resolved entry-LTF series, plus all overlap and warm-up candles needed for point-in-time context. The Mapper does not compare against prior checkpoints or incrementally append structural events.
 
 The mapper obtains its market-data stream from the Monitor/orchestrator through STDIN and does not access a concrete provider.
 
-### Two-timeframe LTF bootstrap
+### Automatic entry-LTF bootstrap
 
-In two-timeframe analysis, the mapper establishes an LTF bootstrap coverage reference from the applicable HTF canonical structural context.
+In automatic multi-timeframe analysis, the mapper establishes an entry-LTF bootstrap coverage reference from the applicable confirmed HTF canonical structural context. This entry-LTF is a separate role from the pullback-representation timeframe; the two may coincide only when the automatic resolver identifies that as the correct canonical role assignment.
 
 When a confirmed HTF Dealing Range exists, the applicable HTF Protected Structural Extreme is the preferred LTF bootstrap coverage reference. This reference determines the minimum historical LTF coverage needed for deterministic structural buildup. It is a data-coverage/reference point only; it is not an LTF structural start and does not create or promote any LTF structure.
 
-When LTF bootstrap is required, the Monitor/orchestrator invokes the Market Data CLI once for one deterministic LTF range covering the anchor through the activation/current boundary, subject to any additional LTF warm-up required by the canonical LTF rules, allows Market Data to update its internal persistence, then passes the returned machine-output range to the Mapper through STDIN.
+When an eligible HTF institutional POI is canonically touched and the state transitions to `ARMED_MONITORING_LTF`, the Monitor/orchestrator invokes Market Data for the automatically resolved entry-LTF range covering the anchor/reference through the activation/current boundary, subject to additional LTF warm-up required by canonical LTF rules. It then passes the returned machine-output range and all currently required supporting series to a fresh Mapper invocation through STDIN. Before this POI-activation gate, the Monitor must not fetch the entry LTF solely to inspect CHoCH.
 
-If the requested LTF coverage begins later than the anchor because the source has no completed LTF data at or after the requested anchor, the mapper uses the first actually available completed LTF candle after the reference as the effective LTF bootstrap start. No attempt is made by the mapper to access the provider directly.
+If the requested entry-LTF coverage begins later than the anchor because no completed data exists at or after the reference, the mapper uses the first actually available completed entry-LTF candle after the reference as the effective bootstrap start and preserves the source gap/coverage limitation. Mapper never accesses the provider directly.
 
 If the supplied LTF data begins before the HTF reference, that earlier data may be retained and used as additional canonical LTF warm-up when required; the HTF Protected Structural Extreme remains the context/coverage reference.
 
 If the applicable confirmed HTF Protected Structural Extreme does not exist, the mapper does not fabricate one. The LTF bootstrap then follows the supplied LTF history subject to the canonical genesis/source-gap boundaries.
 
-The LTF bootstrap reference is not an LTF structural-start ontology. The first LTF structural object is determined only by the canonical LTF rules.
+The entry-LTF bootstrap reference is not an entry-LTF structural-start ontology. The first LTF structural object is determined only by canonical LTF rules. Neither this entry bootstrap nor its history coverage replaces the separately resolved lower-timeframe complete structure required for HTF pullback representation.
 
 ---
 
@@ -787,26 +787,24 @@ A successful invocation returns the validated in-memory result. A failed or unre
 
 ## 6.1 Independent timeframe semantics
 
-Each timeframe is analyzed according to its own canonical structural rules.
+Each timeframe series is analyzed according to its own canonical structural rules. The public CLI accepts one anchor timeframe, but a conformant automatic-multitimeframe invocation processes every distinct series required by the resolved canonical context.
 
-In every valid invocation, HTF and LTF remain separate canonical analyses while sharing a synchronized execution timeline.
+The narrative/POI HTF, pullback-representation timeframe, and entry/monitoring LTF are separate semantic roles. The pullback-representation timeframe may be different from the entry LTF; a role may share a series only when canonical resolution shows that this does not collapse distinct required evidence. One input timeframe must never be relabelled to satisfy multiple timeframe prerequisites.
 
-The LTF is not a canonical child of the HTF and must not redefine or mutate HTF structure.
+The LTF is not a canonical child of the HTF and must not redefine or mutate HTF structure. The HTF provides the execution context required by canonical LTF rules where explicitly specified.
 
-The HTF provides the execution context required by canonical LTF rules where such context is explicitly specified.
-
-There is no conformant single-timeframe-only execution mode; a request lacking either distinct timeframe is rejected and unavailable context is never synthesized.
+An invocation whose resolved runtime actually processes only one timeframe is non-conformant. Missing required series/history must remain unavailable and fail closed; it is not an input error merely because the user supplied only the required anchor `--timeframe TF`.
 
 ## 6.2 Synchronized point-in-time processing
 
-For every valid HTF/LTF invocation:
+For every automatic multi-timeframe invocation:
 
-1. the monitor/orchestrator requests the required HTF range from Market Data; the mapper consumes that returned range and establishes the current HTF canonical structural context first;
-2. the mapper determines the applicable HTF execution context and any LTF bootstrap/activation requirement;
-3. the monitor/orchestrator requests the LTF range required by the applicable analysis state from Market Data; the mapper consumes that returned range;
-4. HTF and LTF candles are processed chronologically on the shared time axis;
-5. each LTF candle is evaluated using only HTF canonical context that already exists at that LTF evaluation time;
-6. a later HTF event must never reinterpret an earlier LTF event.
+1. the Monitor/orchestrator resolves the required series from the single anchor and the canonical mapping hierarchy, then requests the anchor plus all supporting higher-context/pullback-representation history needed to establish valid structural and POI context;
+2. the Mapper processes the anchor and supporting structural series chronologically, preserving their independent coverage and event timestamps;
+3. before an eligible HTF institutional POI touch, the Monitor does not request the automatically resolved entry LTF solely for CHoCH monitoring;
+4. after the POI-touch gate is satisfied, the Monitor transitions to `ARMED_MONITORING_LTF`, acquires the resolved entry-LTF series, and invokes Mapper again with all currently required context series;
+5. all distinct series are processed on a shared UTC timeline; each lower-timeframe event uses only higher-timeframe facts already canonical at that evaluation time;
+6. a later higher-timeframe event must never reinterpret an earlier lower-timeframe event.
 
 The LTF exists to refine and qualify entry within the applicable HTF context; it does not create a competing higher-level narrative.
 
