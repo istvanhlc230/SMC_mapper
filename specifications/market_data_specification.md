@@ -228,7 +228,7 @@ Provider-facing state may contain provider-specific types/metadata. Required con
 - `completion_hint` is provider evidence only; it never overrides the canonical completion rules.
 - `provider_metadata` remains provider-local and must not cross into the persisted normalized JSON boundary.
 
-A provider adapter must either supply an unambiguous timezone with the timestamp or fail the record. It must never silently assume the machine-local timezone. If the provider expresses a candle by interval-end time, the provider adapter must convert it to the canonical interval-start `timestamp` before the record reaches normalization.
+A provider adapter must either supply an unambiguous timezone with the timestamp or apply a provider-specific, documented timezone contract before normalization; it must never silently assume the machine-local timezone. In particular, the LSE Vault's raw candle rows use UTC timestamps in the documented `YYYY-MM-DD HH:MM:SS[.ffffff]` format without an explicit offset. The LSE adapter must interpret that exact source format as UTC and must retain strict rejection for other timezone-naive forms. If the provider expresses a candle by interval-end time, the provider adapter must convert it to the canonical interval-start `timestamp` before the record reaches normalization.
 
 ```text
 source_timestamp
@@ -850,6 +850,8 @@ The provider must not send values such as `2026-10-08T00:00:00Z` as candle-query
 `LSEMarketDataProvider.fetch_range` must partition the requested interval into deterministic UTC calendar windows of at most two days. Each provider call uses midnight UTC at the start and end of its date window. This bounds the window below the API's 5,000-row ceiling for every currently supported timeframe, including M1, even if the endpoint includes the end-date row. The exact requested interval remains half-open: `start_time <= candle.timestamp < end_time`.
 
 Pagination advances by the requested calendar-date window, not by the latest returned candle. This guarantees progress when a provider returns no records for a weekend/holiday or when its final available candle predates the requested end. Rows returned more than once at an inclusive date boundary are deduplicated by canonical candle timestamp. Conflicting content at the same timestamp is a data-integrity error.
+
+The LSE Vault's raw row API returns UTC timestamp strings in the form `YYYY-MM-DD HH:MM:SS[.ffffff]` without an offset. This is a documented provider-specific UTC representation, not a machine-local timestamp. The adapter must convert only this exact shape to a timezone-aware UTC datetime; an arbitrary timezone-naive ISO string such as `YYYY-MM-DDTHH:MM:SS` remains invalid. Explicit offsets and `Z` suffixes are parsed and normalized to UTC.
 
 The caller receives one logical, sorted, duplicate-free list. Provider pagination must not change persisted results.
 
@@ -2424,6 +2426,8 @@ test_timeframe_update_has_no_direct_file_side_effect
 test_machine_csv_header_contains_volume_total_and_orderflow_fields
 test_machine_csv_preserves_volume_total_without_tick_real_inference
 test_machine_csv_emits_orderflow_only_as_a_complete_observed_pair
+test_lse_raw_vault_timestamp_without_offset_is_normalized_as_utc
+test_lse_rejects_undocumented_timezone_naive_iso_timestamp
 test_lse_candle_query_uses_date_only_boundaries
 test_lse_fetch_range_partitions_calendar_windows
 test_lse_fetch_range_deduplicates_inclusive_date_boundaries
