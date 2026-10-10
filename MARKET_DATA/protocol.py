@@ -71,11 +71,11 @@ def serialize_machine_csv(
     return output.getvalue()
 
 
-def format_cleartext(
+def format_table(
     symbol: str,
     candles_by_timeframe: Mapping[str, Sequence[tuple[NormalizedCandle, bool]]],
 ) -> str:
-    """Format candles as wrapped, human-readable line-oriented tables."""
+    """Format candles as a human-readable table for the Market Data CLI."""
     lines = [f"MARKET DATA | {symbol}"]
     for timeframe, entries in candles_by_timeframe.items():
         ordered = sorted(entries, key=lambda item: item[0].timestamp)
