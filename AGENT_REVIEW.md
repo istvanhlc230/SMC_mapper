@@ -1418,3 +1418,28 @@ GitHub Actions validation is pending for the latest commit. A live authenticated
 - Source/specification/workflow static consistency: PASS at this point.
 - GitHub Actions status for the latest changes is not yet available; workflow PASS is not claimed.
 - Authenticated live LSE Calendar data has not been fetched from this environment. The user's local credential is not accessible here.
+
+
+# Calendar LSE date-format correction — 2026-10-10
+
+## Finding
+
+The user's live LSE API response returned HTTP 400 with the exact validation detail: `invalid date '2026-10-09T00:00:00Z' (use YYYY-MM-DD)`. The Calendar adapter was serializing UTC timestamps with time and timezone suffixes in the LSE economic-calendar `start` and `end` query parameters, unlike the endpoint's date-only contract.
+
+## Correction
+
+- Calendar's LSE adapter now sends `start.date().isoformat()` and `end.date().isoformat()`, yielding `YYYY-MM-DD`.
+- Internal UTC interval boundaries and post-acquisition event filtering remain unchanged; no internal timestamps or persisted event timestamps are downgraded to dates.
+- Added workflow regressions that inspect the actual query and assert exact date-only values, with no time suffix.
+- Updated the normative Calendar specification.
+- Bumped Calendar version to 2.6.4 and aligned the workflow version checks.
+
+## Evidence
+
+The provider's own client accepts `start` and `end` as dates for `economic_calendar()`; the user-provided API response directly confirms the rejected timestamp form.
+
+## Validation
+
+- Source/specification/CI test assertions were statically checked for alignment.
+- Latest GitHub Actions status is pending/not yet exposed, so runtime CI PASS is not claimed.
+- A successful live authenticated API response has not yet been observed; the next local run must verify it.
