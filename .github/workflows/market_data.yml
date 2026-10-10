@@ -15,7 +15,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: Compile
-        run: python -m py_compile market_data.py && python -m compileall -q MARKET_DATA
+        run: python -m py_compile market_data.py && python -m compileall -q COMMON MARKET_DATA
       - name: Market Data range contract tests
         shell: bash
         run: |
@@ -26,6 +26,21 @@ jobs:
           from MARKET_DATA.cli import parse_market_data_request
           from MARKET_DATA.models import MarketDataRequest, ProviderCandle
           from MARKET_DATA.service import resolve_acquisition_range
+          from COMMON.date_time import DateTimeScopeParser, DateTimeScopeError
+
+          # The shared parser is deterministic, strict, and independent of consumer modules.
+          shared_parser = DateTimeScopeParser(reference_time=dt("2026-10-06T12:00:00Z"))
+          assert shared_parser.parse("2026.10.06").end == dt("2026-10-07T00:00:00Z")
+          assert shared_parser.parse("2026.10.06 15:30").end == dt("2026-10-06T15:31:00Z")
+          assert shared_parser.parse("09:30-11:00").end == dt("2026-10-06T11:00:00Z")
+          assert shared_parser.parse("2026.10.06 15:30-").open_end
+          assert shared_parser.parse("-2026.10.06 15:30").open_start
+          try:
+              shared_parser.parse("2026.02.30")
+          except DateTimeScopeError:
+              pass
+          else:
+              raise AssertionError("invalid date must be rejected by shared parser")
 
           def dt(value):
               return datetime.fromisoformat(value.replace("Z", "+00:00"))
@@ -42,7 +57,7 @@ jobs:
           request = parse_market_data_request([
               "--symbol", "EURUSD",
               "--timeframes", "M1", "M5",
-              "--range", "2026.10.06-",
+              "2026.10.06-",
           ])
           assert request.start_time == dt("2026-10-06T00:00:00Z")
           assert request.end_time is None
@@ -52,7 +67,7 @@ jobs:
           open_end_request = parse_market_data_request([
               "--symbol", "EURUSD",
               "--timeframes", "M1",
-              "--range", "2026.10.06@15:30-",
+              "2026.10.06 15:30-",
           ])
           assert open_end_request.start_time == dt("2026-10-06T15:30:00Z")
           assert open_end_request.end_time is None
@@ -60,7 +75,7 @@ jobs:
           request = parse_market_data_request([
               "--symbol", "EURUSD",
               "--timeframes", "M1", "M5",
-              "--range", "-2026.10.20",
+              "-2026.10.20",
           ])
           assert request.start_time is None
           assert request.end_time == dt("2026-10-21T00:00:00Z")
@@ -70,7 +85,7 @@ jobs:
           request = parse_market_data_request([
               "--symbol", "EURUSD",
               "--timeframes", "M1",
-              "--range", "-2026.10.06@05.00",
+              "-2026.10.06 05:00",
           ])
           assert request.start_time is None
           assert request.end_time == dt("2026-10-06T05:01:00Z")
@@ -78,7 +93,7 @@ jobs:
           request = parse_market_data_request([
               "--symbol", "EURUSD",
               "--timeframes", "M1",
-              "--range", "-2026.10.06@05:00",
+              "-2026.10.06 05:00",
           ])
           assert request.start_time is None
           assert request.end_time == dt("2026-10-06T05:01:00Z")
@@ -89,22 +104,22 @@ jobs:
               parse_market_data_request([
                   "--symbol", "EURUSD",
                   "--timeframes", "M1",
-                  "--range", "2026.10.05@05.00",
+                  "2026.10.05 05:00",
               ])
           except ValueError:
               pass
           else:
               raise AssertionError("explicit HH.MM datetime must be rejected")
 
-          # Future starts are invalid for every historical range form.
+          # Future starts are invalid for every positional historical scope form.
           try:
               parse_market_data_request([
                   "--symbol", "EURUSD",
                   "--timeframes", "M1",
-                  "--range", "2099.01.01-",
+                  "2099.01.01-",
               ])
           except ValueError as exc:
-              assert "future range start" in str(exc)
+              assert "future scope start" in str(exc)
           else:
               raise AssertionError("future open-end start must be rejected")
 
@@ -112,20 +127,20 @@ jobs:
               parse_market_data_request([
                   "--symbol", "EURUSD",
                   "--timeframes", "M1",
-                  "--range", "2099.01.01-2099.01.02",
+                  "2099.01.01-2099.01.02",
               ])
           except ValueError as exc:
-              assert "future range start" in str(exc)
+              assert "future scope start" in str(exc)
           else:
               raise AssertionError("future explicit start must be rejected")
 
-          # --lastclosed cannot be combined with any historical range.
+          # --lastclosed cannot be combined with any positional historical scope.
           try:
               parse_market_data_request([
                   "--symbol", "EURUSD",
                   "--timeframes", "M1",
                   "--lastclosed",
-                  "--range", "2026.10.05",
+                  "2026.10.05",
               ])
           except ValueError as exc:
               assert "lastclosed cannot be combined" in str(exc)
@@ -137,7 +152,7 @@ jobs:
           assert main([
               "--symbol", "EURUSD",
               "--timeframes", "M1",
-              "--range", "2099.01.01-",
+              "2099.01.01-",
           ]) == 2
 
           state = {
@@ -153,7 +168,7 @@ jobs:
           )
 
           # Normal incremental mode starts at the next canonical candle interval,
-          # while open-start --range remains inclusive at available_end.
+          # while open-start positional scope remains inclusive at available_end.
           incremental_request = parse_market_data_request([
               "--symbol", "EURUSD",
               "--timeframes", "M1",
@@ -172,7 +187,7 @@ jobs:
           try:
               resolve_acquisition_range(request, "M1", missing)
           except ValueError as exc:
-              assert "open-start --range requires existing retained history" in str(exc)
+              assert "open-start scope requires existing retained history" in str(exc)
           else:
               raise AssertionError("open-start range without retained history must fail")
 
@@ -180,12 +195,12 @@ jobs:
               parse_market_data_request([
                   "--symbol", "EURUSD",
                   "--timeframes", "M1",
-                  "--range", "current",
+                  "current",
               ])
           except ValueError:
               pass
           else:
-              raise AssertionError("--range current must remain rejected")
+              raise AssertionError("positional current scope must remain rejected")
 
           # The production timeframe update path must use the request mode fields
           # last_closed_only and current after the range correction.
@@ -201,7 +216,7 @@ jobs:
           runtime_request = parse_market_data_request([
               "--symbol", "EURUSD",
               "--timeframes", "M1",
-              "--range", "-2026.10.20",
+              "-2026.10.20",
           ])
           runtime_market_data = {
               "symbol": "EURUSD",
@@ -401,13 +416,13 @@ jobs:
           mn1_incremental = resolve_acquisition_range(incremental_request, "MN1", calendar_state)
           assert mn1_incremental[0] == dt("2026-10-01T00:00:00Z")
 
-          # --lastclosed is exclusive of every historical range form, including open-start.
+          # --lastclosed is exclusive of every positional historical scope form, including open-start.
           try:
               parse_market_data_request([
                   "--symbol", "EURUSD",
                   "--timeframes", "M1",
                   "--lastclosed",
-                  "--range", "-2026.10.20",
+                  "-2026.10.20",
               ])
           except ValueError as exc:
               assert "lastclosed cannot be combined" in str(exc)

@@ -15,7 +15,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: Compile
-        run: python -m py_compile calendar.py && python -m compileall -q CALENDAR
+        run: python -m py_compile calendar.py && python -m compileall -q COMMON CALENDAR
       - name: Calendar unit/runtime contract tests
         shell: bash
         run: |
@@ -84,18 +84,36 @@ jobs:
           assert set(merge_doc["events"][0]["sources"]) == {"lse", "forexfactory"}
           assert merge_doc["events"][0]["details"]["previous"] == "3.2"
           import CALENDAR.cli as calendar_cli
+          from COMMON.date_time import DateTimeScopeParser, DateTimeScopeError
+
+          # The shared parser exposes one deterministic UTC grammar for every consumer.
+          parser = DateTimeScopeParser(reference_time=dt("2026-10-06T12:00:00Z"))
+          assert parser.parse("2026.10.06").kind == "DATE"
+          assert parser.parse("2026.10.06 10:30").start == dt("2026-10-06T10:30:00Z")
+          assert parser.parse("2026.10.05-2026.10.06").end == dt("2026-10-07T00:00:00Z")
+          assert parser.parse("2026.10.06 10:00-2026.10.06 11:00").end == dt("2026-10-06T11:00:00Z")
+          assert parser.parse("10:30").start == dt("2026-10-06T10:30:00Z")
+          assert parser.parse("10:00-11:00").end == dt("2026-10-06T11:00:00Z")
+          assert parser.parse("-10:30").end == dt("2026-10-06T10:31:00Z")
+          for invalid_scope in ("2026.02.30", "25:00", "11:00-10:00", "2026.10.01 10:00-11:00", "2026.10.06@10:30"):
+              try:
+                  parser.parse(invalid_scope)
+              except DateTimeScopeError:
+                  pass
+              else:
+                  raise AssertionError(f"invalid common scope must be rejected: {invalid_scope}")
           fixed_utc_now = domain.utc_now
           try:
               domain.utc_now = lambda: dt("2026-10-06T12:00:00Z")
               shorthand_request = calendar_cli.parse_calendar_cli_request(
                   ["EURUSD", "10:00-11:00", "refresh"]
               )
-              assert shorthand_request["scope"] == "2026.10.06@10:00-2026.10.06@11:00"
+              assert shorthand_request["scope"] == "10:00-11:00"
               assert shorthand_request["refresh"] is True
               delete_request = calendar_cli.parse_calendar_cli_request(
                   ["delete", "EURUSD", "10:00-11:00"]
               )
-              assert delete_request["scope"] == "2026.10.06@10:00-2026.10.06@11:00"
+              assert delete_request["scope"] == "10:00-11:00"
           finally:
               domain.utc_now = fixed_utc_now
 
@@ -159,7 +177,7 @@ jobs:
           finally:
               domain.utc_now = fixed_utc_now
 
-          # Open-start and open-end --range forms share the canonical UTC interval model.
+          # Open-start and open-end positional open-start/open-end scope forms share the canonical UTC interval model.
           fixed_utc_now = domain.utc_now
           try:
               domain.utc_now = lambda: dt("2026-10-06T12:00:00Z")
@@ -190,20 +208,20 @@ jobs:
                   dt("2026-10-06T00:00:00Z"),
                   dt("2026-10-06T12:00:00Z"),
               )
-              open_end_time = domain.parse_scope("2026.10.06@10:30-")
+              open_end_time = domain.parse_scope("2026.10.06 10:30-")
               assert domain.resolve_open_end_scope(open_end_time) == (
                   dt("2026-10-06T10:30:00Z"),
                   dt("2026-10-06T12:00:00Z"),
               )
 
               range_request = calendar_cli.parse_calendar_cli_request(
-                  ["EURUSD", "--range", "2026.10.06-"]
+                  ["EURUSD", "2026.10.06-"]
               )
               assert range_request["scope"] == "2026.10.06-"
               range_request = calendar_cli.parse_calendar_cli_request(
-                  ["EURUSD", "--range", "2026.10.06@10:30-"]
+                  ["EURUSD", "2026.10.06 10:30-"]
               )
-              assert range_request["scope"] == "2026.10.06@10:30-"
+              assert range_request["scope"] == "2026.10.06 10:30-"
               assert domain.resolve_scope_interval("2026.10.06-") == (
                   dt("2026-10-06T00:00:00Z"),
                   dt("2026-10-06T12:00:00Z"),
@@ -689,15 +707,15 @@ jobs:
           for tokens in (
               ["USD", "2026.10.01", "refresh"],
               ["USD", "2026.10.01-2026.10.02", "refresh"],
-              ["USD", "2026.10.01@12:30", "refresh"],
-              ["USD", "2026.10.01@12:30-2026.10.01@13:30", "refresh"],
+              ["USD", "2026.10.01 12:30", "refresh"],
+              ["USD", "2026.10.01 12:30-2026.10.01 13:30", "refresh"],
               ["USD", "current", "refresh"],
               ["USD", "today", "refresh"],
               ["USD", "tomorrow", "refresh"],
               ["USD", "yesterday", "refresh"],
-              ["USD", "--date", "2026.10.01", "refresh"],
-              ["USD", "--date", "2026.10.01", "--time", "12:30", "refresh"],
-              ["USD", "--time", "12:30", "refresh"],
+              ["USD", "2026.10.01", "refresh"],
+              ["USD", "2026.10.01", "12:30", "refresh"],
+              ["USD", "12:30", "refresh"],
           ):
               parsed = calendar.parse_request(tokens)
               assert parsed["operation"] == "QUERY"
@@ -802,7 +820,7 @@ jobs:
               operations.refresh_calendar_scope = original_refresh_scope
               storage.load_calendar_document = original_load
 
-          # Open-start --range uses the latest recorded visible Calendar event
+          # Open-start positional scope uses the latest recorded visible Calendar event
           # as its lower boundary and keeps the explicit END as the upper boundary.
           open_range_doc = domain.build_empty_calendar_document()
           open_range_doc["events"] = [
@@ -842,14 +860,14 @@ jobs:
               },
           ]
           assert calendar.parse_request(
-              ["USD", "--range", "-2026.10.20"]
+              ["USD", "-2026.10.20"]
           )["scope"] == "-2026.10.20"
           assert calendar.parse_request(
-              ["USD", "--range", "-2026.10.10@05.00", "refresh"]
+              ["USD", "-2026.10.10 05:00", "refresh"]
           ) == {
               "operation": "QUERY",
               "symbol": "USD",
-              "scope": "-2026.10.10@05.00",
+              "scope": "-2026.10.10 05:00",
               "cleartext": False,
               "debug": False,
               "refresh": True,
@@ -860,7 +878,7 @@ jobs:
           assert start == dt("2026-10-05T07:15:00Z")
           assert end == dt("2026-10-21T00:00:00Z")
           start, end = domain.resolve_open_start_scope(
-              open_range_doc, "USD", "-2026.10.10@05.00"
+              open_range_doc, "USD", "-2026.10.10 05:00"
           )
           assert start == dt("2026-10-05T07:15:00Z")
           assert end == dt("2026-10-10T05:01:00Z")
@@ -874,7 +892,7 @@ jobs:
           except calendar.CalendarInputError:
               pass
           else:
-              raise AssertionError("open-start range without retained history must fail")
+              raise AssertionError("open-start scope without retained history must fail")
 
           # Legacy schema-2 ForexFactory coverage without Detail specs is incomplete
           # for the requested overlap and must be reacquired.
@@ -1517,14 +1535,14 @@ jobs:
               providers.fetch_yahoo_news = original_yahoo_news
               storage.load_calendar_document = original_load
 
-          # Plain open-start range is cache-only and must not contact providers.
+          # Plain open-start scope is cache-only and must not contact providers.
           original_acquire_explicit = operations.acquire_explicit
           original_load = storage.load_calendar_document
           try:
               open_query_doc = json.loads(json.dumps(open_range_doc))
               storage.load_calendar_document = lambda: open_query_doc
               operations.acquire_explicit = lambda *args, **kwargs: (_ for _ in ()).throw(
-                  AssertionError("plain open-start range must not call provider acquisition")
+                  AssertionError("plain open-start scope must not call provider acquisition")
               )
               out = io.StringIO()
               with contextlib.redirect_stdout(out):
