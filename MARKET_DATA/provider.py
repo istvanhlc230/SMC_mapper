@@ -142,6 +142,7 @@ class LSEMarketDataProvider(MarketDataProvider):
                 response_format="json",
                 retries=self.retries,
                 retry_delay_seconds=0.5,
+                ipv4_first=True,
             )
         except HttpRequestError as exc:
             raise RuntimeError(f"LSE candle acquisition failed: {exc}") from exc
