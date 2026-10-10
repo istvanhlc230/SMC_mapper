@@ -543,11 +543,14 @@ Open-start range forms are also supported:
     --range YYYY.MM.DD-
     --range YYYY.MM.DD@HH:MM-
 
-A leading `-` omits the start boundary. The start is resolved separately for each requested timeframe from
+A leading `-` omits the start boundary. The output start is resolved separately for each requested timeframe from
 that timeframe's earliest retained completed-candle timestamp (`available_start`). The explicit END remains
-the upper boundary. This form returns retained history from the beginning of each timeframe's cache, not merely
-an incremental update from the newest candle. An open-start range therefore requires retained completed history
-for every requested timeframe; a missing `available_start` fails explicitly rather than fabricating a start.
+the upper output boundary. This form returns all retained cached history from the beginning of each timeframe's
+cache through END. It does not mean the provider must re-download the entire historical output interval on every
+call: provider acquisition fills only missing data after the retained `available_end` when possible, while the
+serializer returns the complete retained series in the requested output scope. If no retained history exists, the
+CLI performs a provider-supported initial historical bootstrap within documented provider/retention limits; if it
+cannot establish usable history, it fails explicitly rather than inventing a start.
 
 A trailing `-` omits the end boundary. The explicit START is retained and the end resolves to the current
 UTC time at execution. Therefore `--range YYYY.MM.DD-` means START at 00:00 UTC through NOW, while
@@ -598,8 +601,8 @@ Purpose:
 | `YYYY.MM.DD-YYYY.MM.DD` | inclusive date range: `[start 00:00, day-after-end 00:00)` |
 | `YYYY.MM.DD@HH:MM` | exact UTC minute: `[point, point+1 minute)` |
 | `YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM` | half-open UTC interval |
-| `-YYYY.MM.DD` | from persisted `available_start` through the exclusive end of the given UTC day |
-| `-YYYY.MM.DD@HH:MM` | from persisted `available_start` through the exclusive end of the given UTC minute |
+| `-YYYY.MM.DD` | output retained history from `available_start` through the exclusive end of the given UTC day; acquisition fills missing coverage only |
+| `-YYYY.MM.DD@HH:MM` | output retained history from `available_start` through the exclusive end of the given UTC minute; acquisition fills missing coverage only |
 | `--current` | no historical interval; refresh the current in-progress candle snapshot |
 | omitted | normal incremental completed-candle acquisition |
 | `--lastclosed` | exactly the latest completed candle |
@@ -1640,7 +1643,7 @@ When explicit historical boundaries are supplied:
 
 - `start_time + end_time`: acquire exactly the requested interval;
 - `start_time` only: acquire from `start_time` through the latest completed candle available at evaluation time;
-- `end_time` only (the internal representation of open-start `--range -END`): use the persisted `available_start` for the timeframe as the acquisition start; if no retained completed history exists, fail explicitly;
+- `end_time` only (the internal representation of open-start `--range -END`): resolve the output start from `available_start`; if retained history exists, acquire only any missing completed candles after `available_end` up to the requested end, then emit the full retained output scope. If no retained history exists, attempt the documented provider-supported initial historical bootstrap; fail explicitly if unavailable;
 - honor requested boundaries;
 - do not invent candles outside requested scope.
 
@@ -1680,12 +1683,13 @@ Normal incremental mode advances past the persisted `available_end` candle. The 
     available_end + timeframe interval duration
 
 This prevents an ordinary incremental run from re-requesting the already persisted terminal candle. The open-start
-`--range -END` mode is intentionally different from normal incremental mode: it starts at `available_start` inclusively
-so the requested historical range returns all retained history through END and deduplicates provider overfetch by stable candle ID.
+`--range -END` mode is intentionally different from normal incremental mode in its output scope: output begins at `available_start`
+inclusively and includes all retained candles through END. Provider acquisition still starts only after `available_end` when retained history exists;
+reacquisition of a past interval requires an explicit bounded `START-END` request. Stable candle identity deduplicates provider overfetch.
 
 ### Resolved acquisition range contract
 
-`resolve_acquisition_range()` returns a logical canonical range after applying request mode, existing state, and current evaluation time.
+`resolve_acquisition_range()` plans provider acquisition, not the full output scope. Output selection is a separate operation: after any required acquisition and merge, the serializer selects all retained completed candles inside the user's requested scope. In open-start `-END` mode, output begins at `available_start`, while provider acquisition begins after `available_end` when retained history exists.
 
 The returned range must satisfy:
 
