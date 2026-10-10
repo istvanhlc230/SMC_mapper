@@ -53,9 +53,9 @@ Calendar and Market Data retain their own validation, serialization, locking, an
 
 ## 5. Standard-library HTTP GET client
 
-`HttpClient.get(url, headers, timeout_seconds, response_format, retries, retry_delay_seconds)` is a transport helper using `urllib.request` only. Supported response formats are bytes, UTF-8 text, and JSON. Retry count is finite, and retry delay grows linearly by attempt. Errors must not include request headers, URLs containing credentials, or credential values.
+`HttpClient.get(url, headers, timeout_seconds, response_format, retries, retry_delay_seconds, ipv4_first)` is a transport helper using the Python standard library. Supported response formats are bytes, UTF-8 text, and JSON. Retry count is finite, and retry delay grows linearly by attempt. Errors must not include request headers, URLs containing credentials, or credential values. The default transport preserves the normal urllib behavior. When `ipv4_first=True`, the transport tries resolved IPv4 addresses before IPv6, then still falls back to IPv6 if IPv4 connections fail. `open_url(request, timeout_seconds, ipv4_first)` exposes the same transport selection for provider adapters that need the HTTP status/body for their own sanitized error handling.
 
-Calendar keeps its own provider URL construction, user agent, timeout and `ProviderError` mapping. Market Data keeps API-key loading, URL/query construction, JSON payload validation, timeframe mapping and provider-specific failure policy. The shared client does not know about LSE, ForexFactory, Yahoo, currency pairs, events, candles, cache schemas, or watermarks.
+Calendar keeps its own provider URL construction, user agent, timeout and `ProviderError` mapping. Market Data keeps API-key loading, URL/query construction, JSON payload validation, timeframe mapping and provider-specific failure policy. Both LSE adapters request IPv4-first transport because IPv6 may be unavailable on some client networks; IPv6 remains a fallback. The shared client does not know about LSE, ForexFactory, Yahoo, currency pairs, events, candles, cache schemas, or watermarks.
 
 ## 6. Explicit non-goals
 
