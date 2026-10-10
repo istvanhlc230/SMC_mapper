@@ -72,7 +72,7 @@ market_data.py
 
 smc_mapper.py
         ↓
-<DATA_ROOT>/<SYMBOL>/<SYMBOL>_structures.json
+per-invocation JSON STDOUT (no Structures file)
 
 Calendar Update Engine
         ↓
@@ -110,6 +110,8 @@ Approved options:
 
 ~~~text
 --symbol SYMBOL [SYMBOL ...]
+--htf TF
+--ltf TF
 --rr DECIMAL
 --timezone TZ
 --alert-json
@@ -204,44 +206,21 @@ class MonitorRequest:
     debug: bool
 ~~~
 
-The request contains no HTF/LTF configuration because the Monitor does not create analyses. The existing common data root is unchanged; the Monitor automatically derives the symbol subdirectory from the selected normalized symbol and does not expose a data-path CLI option.
+The Monitor's HTF/LTF configuration applies to each selected symbol for this process invocation. At least one timeframe is required; when both are supplied, HTF must be strictly higher. To monitor a different timeframe configuration, run a separate Monitor instance. The Monitor does not infer configuration from persisted analysis files and does not expose a data-path CLI option.
 
 ---
 
 # 2. PERSISTED INPUT CONTRACTS
 
-## 2.1 Structures JSON
+## 2.1 Mapper result STDOUT
 
-For each selected symbol, load:
+There is no Structures JSON file. For each mapping invocation, the Monitor captures Mapper STDOUT as the result of that invocation.
 
-~~~text
-<DATA_ROOT>/<SYMBOL>/<SYMBOL>_structures.json
-~~~
+By default, Mapper STDOUT must be exactly one complete JSON result document. The Monitor captures STDOUT and STDERR separately, validates the JSON schema and symbol/timeframe/period metadata, and passes the parsed in-memory result to downstream evaluation. It must not attempt to load or write `<SYMBOL>_structures.json`.
 
-Validate at minimum:
+The Monitor must never pass `--cleartext` to Mapper in an invocation whose result is consumed programmatically. Mapper cleartext is a user-facing presentation mode only.
 
-- symbol identity;
-- analysis key;
-- htf;
-- ltf;
-- analysis_mode;
-- entry_timeframe;
-- required `analysis_start`;
-- requested_start provenance where present;
-- last_processed_candle_time;
-- canonical structural state required for downstream evaluation.
-
-The Monitor must preserve:
-
-~~~text
-canonical structure
-implementation checkpoint
-transient monitor state
-~~~
-
-The Monitor never modifies last_processed_candle_time.
-
-Mapper remains the sole Structures writer. The Structures file is also the durable Mapper cache: Monitor may read already-persisted contents but must not cause remapping merely to answer a read-only request. Cache-management mutations remain Mapper-owned and are not performed by Monitor.
+A successful Mapper process result is transient. It is not a durable canonical cache, and the Monitor must not use a previous invocation's result as input to a later Mapper computation.
 
 ## 2.2 Market Data process output
 
@@ -259,80 +238,63 @@ The Monitor may consume completed rows (`completed=1`) for coverage/update decis
 
 The Monitor validates the process exit code and machine protocol before using the result. STDERR is diagnostics only. A non-zero Market Data exit blocks the dependent operation.
 
-## 2.3 Read-only consumer model
+## 2.3 In-memory result model
 
-Use explicit read-only view models at the file boundary.
+Use an explicit immutable view of the result received from Mapper STDOUT, for example:
 
 ~~~python
 @dataclass(frozen=True)
-class StoredAnalysisView:
+class MapperResultView:
     symbol: str
-    analysis_key: str
     htf: str | None
     ltf: str | None
     analysis_mode: str
     entry_timeframe: str
-    analysis_start: datetime
-    requested_start: datetime | None
-    last_processed_candle_time: datetime | None
+    requested_period: str | None
+    available_coverage: dict[str, tuple[datetime | None, datetime | None]]
+    last_completed_candle_time: datetime
+    canonical_result: dict[str, object]
 ~~~
 
-Additional canonical-state views may be added for downstream evaluation.
-
-The Monitor must not create a second persistent canonical representation.
+The result exists only in memory for the current runtime cycle. It must not be persisted as a canonical cache or used as the source of the next mapping invocation.
 
 ---
 
-# 3. ANALYSIS DISCOVERY AND RUNTIME REGISTRY
+# 3. TRANSIENT MAPPING CONTEXT AND SCHEDULING
 
-## 3.1 Stored analysis discovery
+## 3.1 Runtime configuration
 
-Load all stored analyses for every requested symbol.
-
-The Monitor does not infer analyses from:
-
-- symbol input;
-- RR input;
-- current price;
-- Market Data timeframes;
-- legacy monitor state.
-
-If a selected symbol has no stored analyses, the Monitor performs no configuration inference. It may report the condition under debug and continue with other symbols.
+The Monitor obtains its timeframe configuration from its own `--htf` and/or `--ltf` CLI arguments. It applies that same configuration independently to every selected symbol. It does not discover analyses from files, infer timeframe configuration from Market Data, or load a persisted analysis registry.
 
 ## 3.2 Runtime registry
 
-Use transient runtime scheduling state:
+Use transient per-symbol scheduling state only:
 
 ~~~python
 @dataclass
-class MonitoredAnalysis:
+class MonitoredSymbol:
     symbol: str
-    analysis_key: str
     entry_timeframe: str
     htf: str | None
     ltf: str | None
     analysis_mode: str
-    last_checkpoint: datetime | None
+    last_mapped_candle_time: datetime | None
     next_due_time: datetime | None
+    latest_mapper_result: MapperResultView | None
     emitted_alert_keys: set[str]
 ~~~
 
-This registry is not persisted.
+The registry exists only in process memory. It is not a durable checkpoint or canonical cache. After restart, the Monitor obtains the latest completed candle from Market Data and recomputes Mapper output when needed.
 
-After mapper completion, reload the structures JSON and refresh the relevant runtime record.
+## 3.3 Runtime invariants
 
-## 3.3 Registry invariants
+For every monitored symbol:
 
-For every monitored analysis:
-
-- one symbol;
-- one deterministic analysis key;
-- one entry timeframe;
-- one independent checkpoint;
-- no shared checkpoint;
-- no runtime mutation of canonical structure.
-
----
+- one independent symbol and one explicitly configured timeframe combination;
+- no shared runtime result across symbols;
+- no persisted Mapper checkpoint or analysis identity;
+- no mutation of canonical Mapper results;
+- every new full Mapper result is produced from Market Data candles, never from the previous Mapper result.
 
 # 4. MARKET-DATA UPDATE ORCHESTRATION
 
@@ -366,16 +328,15 @@ evaluate targets / RR / alerts
 schedule next cycle
 ~~~
 
-The Monitor keeps the validated Market Data CSV result in memory for the dependent Mapper invocation and supplies the same stream to the Mapper through STDIN. No intermediate market-data file is introduced. The Market Data CSV STDOUT is the machine-readable process boundary. Structures JSON remains the persisted mapper-state boundary; Calendar JSON remains the Calendar read boundary.
+The Monitor keeps the validated Market Data CSV result in memory and supplies it to Mapper through STDIN. No intermediate market-data file is introduced. Market Data CSV STDOUT is the machine-readable process boundary; Mapper JSON STDOUT is the transient canonical-result boundary; Calendar JSON remains the Calendar read boundary.
 
-## 4.2 Analysis update eligibility
+## 4.2 Mapper execution eligibility
 
-An analysis requires mapper execution when:
+The Monitor invokes Mapper when a newly completed entry-timeframe candle is observed compared with the current process's transient `last_mapped_candle_time`, or when no Mapper result exists in the current process and an initial mapping is required.
 
-- new completed entry-timeframe candles exist after its durable checkpoint; or
-- the analysis has no valid checkpoint and bootstrap processing is required.
+The transient timestamp is only a scheduling optimization. It is not persisted and is never passed to Mapper as a canonical checkpoint. After restart, the Monitor re-establishes current coverage from Market Data and recomputes a complete Mapper result.
 
-A current-only change does not require canonical mapper execution.
+A current-only candle refresh does not trigger canonical Mapper execution.
 
 ## 4.3 Market Data planning
 
@@ -582,8 +543,10 @@ Signature:
 
 ~~~python
 def invoke_mapper(
-    analysis: StoredAnalysisView,
-    end_time: datetime,
+    symbol: str,
+    htf: str | None,
+    ltf: str | None,
+    period: str | None,
     market_data_stdout: str,
     debug: bool = False,
 ) -> ProcessResult:
@@ -593,26 +556,17 @@ def invoke_mapper(
 Launch:
 
 ~~~text
-python smc_mapper.py --symbol SYMBOL [--htf HTF] [--ltf LTF]
-                     --starttime ANALYSIS_START
-                     --endtime END_TIME
+python smc_mapper.py --symbol SYMBOL [--htf HTF] [--ltf LTF] [PERIOD]
                      [--volume-method ...] [--debug]
 ~~~
 
-The Monitor must pass the stored timeframe configuration, the persisted `analysis_start`, and the resolved operational `end_time`. It must always pass `--starttime analysis_start` so the intended stored analysis is selected deterministically when multiple analyses share the same timeframe configuration. The Monitor does not pass `effective_start` because that is an execution-window concept. It passes the validated `market_data_stdout` result as the Mapper process STDIN; the Mapper does not launch Market Data itself. The stream must correspond to the requested symbol, timeframe configuration, and range.
+The Monitor passes the timeframe configuration from its CLI and the resolved requested period, if any. It passes the validated Market Data machine-output result as Mapper STDIN; Mapper does not launch Market Data itself. The stream must correspond to the requested symbol, timeframe configuration, requested period, and all required canonical warm-up/context history.
 
-The Monitor must not:
+The Monitor must not infer timeframe configuration from previous Mapper output, create or change a persistent analysis identity, set or edit Mapper checkpoints, calculate BOS/CHoCH/IDM/retracement/POI lifecycle, or pass `--cleartext` when it expects a machine-readable result.
 
-- generate alternate HTF/LTF configuration;
-- change analysis identity;
-- set or edit mapper checkpoints;
-- calculate BOS, CHoCH, IDM, retracement, or POI lifecycle.
+On success, Mapper STDOUT contains exactly one JSON document. The Monitor captures STDOUT separately from STDERR, parses and validates the result, and never treats STDERR as data. It does not reload or compare a Structures file because none exists.
 
-On success, Mapper STDOUT contains exactly one JSON document: the complete Structures JSON document that Mapper has already atomically persisted. The Monitor must capture stdout separately from stderr, parse and validate this JSON response, and never treat stderr as data. The Market Data CSV is process input only and must not be appended to Mapper arguments, written to an intermediate repository file, or merged with diagnostic STDERR. Mapper STDOUT is a response channel, not the durable state store; the Structures file remains authoritative for restart/resume.
-
-When debug is enabled, the Monitor may propagate --debug to smc_mapper.py so mapper diagnostics remain visible on stderr. It must never parse those diagnostics as data.
-
-A non-zero mapper exit status prevents downstream use of a newer structural state for that analysis. The last successfully persisted state remains authoritative.
+When debug is enabled, the Monitor may propagate `--debug` so Mapper diagnostics remain visible on STDERR. A non-zero Mapper exit or malformed/mismatched JSON result blocks downstream use of that invocation's result. The Monitor must not fall back to a prior result as if it were newly computed.
 
 ## 5.4 Process isolation
 
@@ -1464,60 +1418,37 @@ A failed analysis keeps its last successfully persisted canonical state while un
 
 ---
 
-# 14. CHECKPOINT AND PROCESSING GUARANTEES
+# 14. RECOMPUTATION AND PROCESSING GUARANTEES
 
-## 14.1 Checkpoint owner
+## 14.1 No durable Mapper checkpoint
 
-The Mapper owns:
+Mapper has no persistent checkpoint or Structures file. The Monitor may retain `last_mapped_candle_time` only in transient runtime memory to avoid redundant executions during one process lifetime. It must not serialize that value to disk or treat it as canonical state.
 
-~~~text
-last_processed_candle_time
-~~~
+## 14.2 Result validity
 
-The Monitor reads it only.
+A Mapper result is usable only after Mapper exits successfully, STDOUT parses as exactly one JSON document, symbol and timeframe configuration match the request, requested period and available-coverage metadata are valid, and the result includes all required canonical output fields. Process exit alone is not sufficient evidence of a valid result.
 
-The Monitor never increments, decrements, rewrites, or fabricates it.
+## 14.3 Restart and historical correction
 
-## 14.2 Durable checkpoint rule
+After Monitor restart, no Mapper state is restored. The Monitor obtains the latest completed candles from Market Data's cache and recomputes the full Mapper result. If historical candles have changed in the Market Data cache, the new Mapper invocation naturally reflects those corrections.
 
-The Monitor considers a Mapper update durable only after the Mapper has:
-
-1. processed eligible completed candles;
-2. atomically persisted the structures JSON;
-3. advanced its own checkpoint inside that persistence transaction.
-
-Process exit alone is not sufficient evidence of durable checkpoint advancement.
-
-## 14.3 Backward range inconsistency
-
-When a persisted checkpoint is later than the requested operational end boundary:
-
-- do not process backward;
-- do not rewrite checkpoint;
-- surface the inconsistency;
-- invoke Mapper only under a valid boundary.
-
----
+A failed invocation does not alter the Market Data cache through Mapper. The Monitor may continue unrelated symbols and retry according to its transient retry policy; it must not represent an older in-memory result as a fresh successful computation.
 
 # 15. PERSISTENCE OWNERSHIP
 
-The Monitor does not own any persistent JSON schema and must not read the Market Data persistence JSON. Market Data state used for scheduling is transiently derived from validated process-output records.
+The Monitor does not own a persistent canonical JSON schema and must not read the Market Data persistence JSON. Market Data state used for scheduling is transiently derived from validated process-output records.
 
 ## 15.1 Market Data
 
-Only market_data.py writes:
+Only `market_data.py` writes:
 
 ~~~text
 <DATA_ROOT>/<SYMBOL>/<SYMBOL>_marketdata.json
 ~~~
 
-## 15.2 Structures
+## 15.2 Mapper
 
-Only smc_mapper.py writes:
-
-~~~text
-<DATA_ROOT>/<SYMBOL>/<SYMBOL>_structures.json
-~~~
+Mapper writes no persistent file. Its JSON or cleartext output is emitted only to STDOUT for the current invocation.
 
 ## 15.3 Monitor runtime state
 
@@ -1525,16 +1456,16 @@ Transient only in V1:
 
 - scheduler state;
 - current market view;
+- latest parsed Mapper result;
 - target evaluation result;
 - Projected_RR;
 - alert decision;
 - alert deduplication keys;
 - process execution results;
-- temporary retry/backoff state.
+- temporary retry/backoff state;
+- last-mapped candle timestamp used only for in-process scheduling.
 
-Do not create a third Monitor JSON file unless the product specification is explicitly expanded.
-
----
+Do not create a Structures JSON file or a third Monitor JSON file unless the product specification is explicitly expanded.
 
 # 16. ERROR, RETRY, AND FAIL-CLOSED CONTRACT
 
