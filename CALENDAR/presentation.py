@@ -179,12 +179,14 @@ def render_ascii_table(
         line_count = max(len(lines) for lines in cell_lines)
         rendered: List[str] = []
         for line_index in range(line_count):
-            cells = [
-                (cell_lines[column_index][line_index]
-                 if line_index < len(cell_lines[column_index]) else "")
-                .ljust(widths[column_index])
-                for column_index in range(column_count)
-            ]
+            cells: List[str] = []
+            for column_index in range(column_count):
+                cell_value = (
+                    cell_lines[column_index][line_index]
+                    if line_index < len(cell_lines[column_index])
+                    else ""
+                )
+                cells.append(cell_value.ljust(widths[column_index]))
             rendered.append("| " + " | ".join(cells) + " |")
         return rendered
 
