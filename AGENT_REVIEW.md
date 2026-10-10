@@ -1393,3 +1393,28 @@ PASS for source/specification/CI contract alignment at the time of this edit. Th
 ## Runtime validation
 
 GitHub Actions validation is pending for the latest commit. A live authenticated LSE request cannot be reproduced from this environment because the user's local credential is intentionally not available here; therefore no live-provider success is claimed.
+
+
+# LSE transport timeout correction — 2026-10-10
+
+## Evidence from the user environment
+
+- Resolve-DnsName api.londonstrategicedge.com -Type A returned IPv4 addresses.
+- A forced IPv4 curl.exe -4 connection completed TLS and received HTTP 401 without the API-key header. This confirms IPv4 network/TLS reachability; the 401 is expected for an unauthenticated probe.
+- The prior Python Calendar traceback timed out during TCP connection, while the host's tested IPv6 connection failed.
+
+## Corrections
+
+- Added a shared standard-library transport option that attempts resolved IPv4 addresses before IPv6, retaining IPv6 fallback and default proxy handling.
+- Calendar's LSE economic-calendar request and Market Data's LSE candle requests now use the IPv4-first transport option.
+- The custom HTTPS handler retains the normal TLS context and hostname verification.
+- Added a deterministic workflow test where DNS presents IPv6 first, verifying that the helper attempts IPv4 first.
+- Updated Calendar's version contract to 2.6.3 and documented the transport behavior in Common Utilities, Calendar, and Market Data specifications.
+- Calendar's LSE request regression test now asserts that ipv4_first=True is used.
+
+## Validation
+
+- Local isolated transport smoke test against a loopback HTTP server: PASS.
+- Source/specification/workflow static consistency: PASS at this point.
+- GitHub Actions status for the latest changes is not yet available; workflow PASS is not claimed.
+- Authenticated live LSE Calendar data has not been fetched from this environment. The user's local credential is not accessible here.
