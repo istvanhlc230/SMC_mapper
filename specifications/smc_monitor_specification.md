@@ -303,7 +303,7 @@ For every monitored symbol:
 
 - one independent symbol and one explicitly configured timeframe combination;
 - no shared runtime result across symbols;
-- no persisted Mapper checkpoint or runtime analysis correlation identity;
+- no persisted Mapper checkpoint or persisted runtime analysis correlation identity;
 - no mutation of canonical Mapper results;
 - every new full Mapper result is produced from Market Data candles, never from the previous Mapper result.
 
@@ -568,7 +568,7 @@ python smc_mapper.py --symbol SYMBOL [--htf HTF] [--ltf LTF] [PERIOD]
 
 The Monitor passes the timeframe configuration from its CLI and the resolved requested period, if any. It passes the validated Market Data machine-output result as Mapper STDIN; Mapper does not launch Market Data itself. The stream must correspond to the requested symbol, timeframe configuration, requested period, and all required canonical warm-up/context history.
 
-The Monitor must not infer timeframe configuration from previous Mapper output, create or change a persistent analysis identity, set or edit Mapper checkpoints, calculate BOS/CHoCH/IDM/retracement/POI lifecycle, or pass `--cleartext` when it expects a machine-readable result.
+The Monitor must not infer timeframe configuration from previous Mapper output, persist any Mapper analysis identity or checkpoint, calculate BOS/CHoCH/IDM/retracement/POI lifecycle, or pass `--cleartext` when it expects a machine-readable result.
 
 On success, Mapper STDOUT contains exactly one JSON document. The Monitor captures STDOUT separately from STDERR, parses and validates the result, and never treats STDERR as data. It does not reload or compare a Structures file because none exists.
 
@@ -1159,6 +1159,8 @@ When enabled, each emitted alert is written as exactly one complete JSON object 
 
 The JSON object is the machine-readable alert contract and contains numeric `schema_version: 1` for V1. Human-readable alert text is not mixed into stdout when `--alert-json` is enabled.
 
+`analysis_key` is a transient Monitor correlation key derived from the canonical symbol and configured timeframe combination. It is not a persisted Mapper analysis identity and must not be used to load Mapper state.
+
 Diagnostics, debug output, warnings, and errors remain on stderr.
 
 When `--alert-json` is absent, the existing human-readable alert/notification output is unchanged.
@@ -1182,7 +1184,7 @@ Recommended logical JSON shape:
   "schema_version": 1,
   "alert_type": "SETUP_ELIGIBLE",
   "symbol": "EURUSD",
-  "analysis_key": "EURUSD|H4|H1|...",
+  "analysis_key": "EURUSD|H4|H1",
   "direction": "BUY",
   "entry_reference_price": 1.17000,
   "stop_price": 1.16500,
