@@ -1805,3 +1805,53 @@ The user's live refresh failed in the HTML fallback because the page had an even
 ### Runtime validation
 - The workflow has regressions for displaying returned levels, omitting absent depth, continuing candle output after an L2 lookup failure, omitting a live snapshot newer than a historical end, and confirming the current LSE adapter reports no L2 capability.
 - The GitHub Actions result for the final snapshot is not available through the current status response; automated CI PASS is not claimed.
+
+
+## Market Data / Mapper protocol / L2 cross-audit — 2026-10-11
+
+### Findings corrected
+
+1. **Machine CSV implementation/specification mismatch — FIXED.**
+   - The serializer previously emitted 10 columns while the Market Data, Mapper, and Monitor specifications required 13.
+   - It omitted `volume_total` and the observed `orderflow_buy/orderflow_sell` pair.
+   - `MACHINE_PROTOCOL_HEADER` and row serialization now match the shared 13-column contract. Total volume is populated only from normalized `VolumeState.total`; observed orderflow is emitted only as a complete finite non-negative pair. The existing three optional provider fields retain separate slots.
+   - Regression coverage asserts the exact header, row width, field positions, total-volume transport, orderflow transport, and rejection of an incomplete orderflow pair.
+
+2. **Optional provider semantic fields were not representable end-to-end — FIXED.**
+   - The contract described `tick_volume`, `spread`, and `real_volume`, but the normalized model and persistence path did not preserve them.
+   - Added explicit optional fields to `ProviderCandle` and `NormalizedCandle`; provider normalization, the LSE row adapter (only when those source fields are present), persistence serialization/deserialization, schema validation, and machine CSV now preserve the three fields independently.
+   - Missing values remain omitted internally/empty on the wire. No value is inferred from total volume or another field.
+   - Regression coverage includes provider-row extraction, CSV field output, fixed-precision persistence round-trip, and rejection of negative persisted values.
+
+3. **L2 time-scope validation — FIXED.**
+   - Historical requests now reject L2 snapshots at or after the half-open requested end boundary and reject future-dated snapshots.
+   - `--lastclosed --table` now requests depth as of the latest returned completed candle's completion boundary, rather than silently skipping L2.
+   - Bid/ask price levels must be best-first (bids descending, asks ascending); malformed, unordered, mismatched, unavailable, or failed optional depth data is omitted without blocking candle output.
+
+4. **Human table readability — FIXED.**
+   - Persisted Decimal values remain fixed precision, while `--table` now strips insignificant fractional trailing zeroes without rounding.
+   - The `Completed` table column remains removed; current snapshots are marked at timeframe-section level.
+
+5. **Persistence-vs-process contract wording — FIXED.**
+   - Section 12.9 previously called the private JSON persistence format the Mapper-facing contract, contradicting the process-interface section.
+   - The specification now identifies JSON as internal persistence and CSV STDOUT as the only Mapper/Monitor candle transport.
+
+### Cross-file audit
+
+- **PASS — protocol header agreement:** the implementation emits the same 13 fields listed in `market_data_specification.md`, `smc_mapper_specification.md`, and `smc_monitor_specification.md`.
+- **PASS — volume field semantics:** each optional field has an independent representation; total volume and observed orderflow are not fabricated from tick volume, spread, real volume, or OHLC.
+- **PASS — persistence boundary:** optional provider fields use canonical decimal strings, validate as finite non-negative values, and are omitted when unavailable. Mapper/Monitor do not depend on the persisted JSON.
+- **PASS — conditional L2 presentation:** L2 appears as a distinct timestamped section only for a valid provider-returned snapshot; it is not merged into candle volume or added to the stable machine CSV.
+- **PASS — regression contract:** workflow tests cover available/unavailable/failing L2, historical end boundaries, last-closed depth timing, future snapshots, unsorted levels, machine CSV field positions, optional provider-field persistence, and concise table precision.
+
+### Explicit remaining limitation
+
+- The currently configured provider factory supports only `lse`, and `LSEMarketDataProvider.fetch_market_depth()` explicitly returns `None`. Therefore the conditional L2 path is implemented and tested with a synthetic provider, but **the current production provider does not supply multi-level L2**, so a live run will correctly omit the L2 section. The public LSE SDK's documented live `Tick` contains best bid/ask fields, which is not itself a multi-level order book. See the [official LSE SDK](https://github.com/londonstrategicedge/lse-data).
+- Mapper/Monitor specifications were cross-checked against the shared process protocol, but there are no `smc_mapper.py` or `smc_monitor.py` runtime files in the current repository tree; their runtime implementation is not claimed as audited or tested here.
+- The canonical W1 D1-vs-H4 pullback-resolution metric remains an existing open SMC specification dependency; no numeric threshold was invented by this Market Data audit.
+
+### Runtime validation
+
+- Market Data Python tests [run #38090885033](https://github.com/istvanhlc230/SMC_mapper/actions/runs/38090885033): **SUCCESS** for the source/test snapshot before the final specification-only wording correction.
+- Calendar Python tests [run #38090885056](https://github.com/istvanhlc230/SMC_mapper/actions/runs/38090885056): **SUCCESS** for the same snapshot.
+- These workflows use synthetic/provider-mocked data; they do not constitute a credential-backed live L2 or live LSE acquisition test.
