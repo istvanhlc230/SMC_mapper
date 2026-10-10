@@ -25,6 +25,7 @@ jobs:
           from tempfile import TemporaryDirectory
           from unittest.mock import patch
           import urllib.error
+          import socket
           import subprocess
           import sys
 
@@ -47,6 +48,7 @@ jobs:
           from COMMON.date_time import DateTimeScopeParser, DateTimeScopeError
           from COMMON.atomic_file import atomic_write_text
           from COMMON.http_client import HttpClient, HttpRequestError
+          import COMMON.http_client as shared_http_client
 
           # The shared parser is deterministic, strict, and independent of consumer modules.
           shared_parser = DateTimeScopeParser(reference_time=dt("2026-10-06T12:00:00Z"))
@@ -90,6 +92,36 @@ jobs:
                   assert error.__cause__ is None
               else:
                   raise AssertionError("HTTP transport error must be reported")
+
+          # IPv4 is attempted before IPv6 even when DNS lists IPv6 first. This
+          # prevents broken local IPv6 routes from delaying reachable IPv4 APIs.
+          connection_attempts = []
+          class SyntheticSocket:
+              def __init__(self, address_family, socket_type, protocol):
+                  self.address_family = address_family
+              def settimeout(self, timeout):
+                  self.timeout = timeout
+              def bind(self, source_address):
+                  self.source_address = source_address
+              def connect(self, address):
+                  connection_attempts.append(self.address_family)
+                  if self.address_family == socket.AF_INET6:
+                      raise OSError("synthetic IPv6 route failure")
+              def close(self):
+                  pass
+
+          synthetic_address_info = [
+              (socket.AF_INET6, socket.SOCK_STREAM, socket.IPPROTO_TCP, "", ("2001:db8::1", 443, 0, 0)),
+              (socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "", ("192.0.2.1", 443)),
+          ]
+          with patch("COMMON.http_client.socket.getaddrinfo", return_value=synthetic_address_info), patch(
+              "COMMON.http_client.socket.socket", SyntheticSocket
+          ):
+              connected_socket = shared_http_client._ipv4_first_create_connection(
+                  ("example.invalid", 443), timeout=5
+              )
+          assert connected_socket.address_family == socket.AF_INET
+          assert connection_attempts == [socket.AF_INET]
 
           # Closed scopes use the same captured reference clock.
           assert shared_parser.parse("2026.10.06").end == dt("2026-10-07T00:00:00Z")
