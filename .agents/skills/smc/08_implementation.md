@@ -513,8 +513,13 @@ Regression tests must cover:
 - standard `NORMAL_RETRACEMENT_CANDLE_COUNT`-opposing-closing-candle qualification on the `STANDARD_EQUILIBRIUM_THRESHOLD` path;
 - a normal retracement requires >=3 opposing closing candles for the standard qualification path; a 2-candle retracement is eligible only through the documented reduced-candle displacement exception, and the one-candle displacement outlier bypasses the normal count gate only through its explicit rare displacement/extreme-taking exception and all other canonical gates;
 - reduced-candle qualification is not limited to two candles: the source-defined one-candle displacement outlier is also permitted when it takes >= `MIN_OUTLIER_EXTREMES_TAKEN` preceding bodies/extremes and all other canonical gates pass;
-- `HTF_CONDITIONAL_THRESHOLD`–<`STANDARD_EQUILIBRIUM_THRESHOLD` qualifies only through a valid single pullback event on the applicable immediate Higher Timeframe;
+- `HTF_CONDITIONAL_THRESHOLD`–<`STANDARD_EQUILIBRIUM_THRESHOLD` qualifies only through one complete valid pullback event on the applicable immediate Higher Timeframe;
+- the complete lower-timeframe retracement is represented by exactly one candle-level valid HTF pullback; a partial/unrelated pullback or isolated wick breach does not qualify;
 - HTF inside-bar or invalid-pullback representation does not qualify;
+- absent required HTF history produces `HTF_CONTEXT_UNAVAILABLE`, not `HTF_VALID_PULLBACK = FALSE`;
+- the 1MN HTF may validate W1 structure when 1MN is the applicable immediate HTF context and 3MN is unavailable/not configured in that established hierarchy; pairing examples are not rigid lookup constants;
+- single-timeframe-only inputs and equal HTF/LTF values are rejected; both distinct timeframes with `HTF > LTF` are required;
+- if an Outside Bar's internal sequence is not established by lower-timeframe or equivalent independent evidence, record `INTRABAR_SEQUENCE_EVIDENCE = UNAVAILABLE` and block dependent structural classification;
 - below `HTF_CONDITIONAL_THRESHOLD` does not qualify;
 - a continuation break without stored `MAJOR_RETRACEMENT_QUALIFIED` remains non-BOS / `IMPULSE_EXTENSION` as applicable.
 
