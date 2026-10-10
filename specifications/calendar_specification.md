@@ -2,7 +2,7 @@
 
 Status: Current V2 specification.
 
-Calendar implementation baseline: 2.6.7.
+Calendar implementation baseline: 2.6.8.
 
 Default DATA_ROOT is the repository `CALENDAR/` directory, so the default persistent artifact is `<repository-root>/CALENDAR/calendar.json`. `SMC_DATA_ROOT` may explicitly override this runtime location.
 
@@ -62,8 +62,8 @@ London Strategic Edge (LSE):
 - Calendar maps each supported currency code to the matching LSE region code and
   de-duplicates regions for pairs; it must not submit raw currency codes such as
   `EUR` or `USD` as region filters;
-- an unmapped currency fails the LSE provider acquisition explicitly rather than
-  sending an invalid region query;
+- event-level currency data is normalized to ISO 4217 currency codes before persistence; recognized country/region codes (for example `US`, `EU`, and `GB`) are converted to their corresponding currency codes;
+- an event with an unknown country/region value is skipped and reported as `PARTIAL`, while other valid LSE events remain usable; the invalid region token must never be persisted as a currency;
 - scheduled economic events are normalized to the common Calendar event contract;
 - provider fields such as actual, forecast, previous, impact, currency and provider
   event identity are retained when available;
@@ -313,7 +313,7 @@ These aliases are resolved at execution time using the same injectable UTC clock
 
 The read-only `SYMBOL --last-update` operation returns `last_successful_at` for every applicable provider+canonical-symbol watermark. If no applicable provider has a successful watermark, status is `NO_LAST_UPDATE`. Missing individual provider watermarks are represented as null / N/A, never as fabricated timestamps.
 
-Implementation version is 2.6.7; persistent schema remains V2.
+Implementation version is 2.6.8; persistent schema remains V2.
 
 ## 4. current semantics
 

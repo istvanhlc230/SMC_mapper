@@ -360,7 +360,7 @@ def _validate_watermarks(watermarks: Dict[str, Any]) -> None:
         if "|" not in key:
             raise DataIntegrityError("Invalid watermark key.")
         provider, symbol = key.split("|", 1)
-        if provider not in {"forexfactory", "yahoo_finance"} or not symbol:
+        if provider not in {"lse", "forexfactory", "yahoo_finance"} or not symbol:
             raise DataIntegrityError("Invalid watermark identity.")
         for field in ("last_successful_at", "last_event_timestamp"):
             if field not in watermark:

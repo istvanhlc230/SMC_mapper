@@ -1511,3 +1511,22 @@ The user's live refresh failed in the HTML fallback because the page had an even
 - Both CI workflows passed against transport implementation commit `59d77ba2005ecaf05791bfe9d6d66092df25202b`, including a regression that checks the shared Calendar fetch helper passes `ipv4_first=True`.
 - The observed 31.68-second request time is the user's runtime measurement. The post-fix latency reduction must still be verified on the user's network.
 - No live user API key or credential was used or included in tests.
+
+
+## LSE invalid economic-event currency — 2026-10-10
+
+### Finding
+- A date-scope query failed in `domain.validate_calendar_document` with `Invalid economic-event currency` after LSE data acquisition.
+- `normalize_lse_event()` previously copied `region_code`, `region`, or `country_code` directly into `details.currency` when the response lacked a `currency`/`ccy` field. Values such as `US` or `EU` are geographic codes, not ISO 4217 currency codes, and violate the canonical event contract.
+- The same validator also excluded `lse` from allowed watermark identities even though explicit acquisition updates provider watermarks for complete acquisitions.
+
+### Change
+- LSE normalizing now accepts known ISO currency codes directly and maps recognized region/country codes or names to the corresponding currency.
+- An unrecognized LSE event currency is isolated and skipped when acquisition supplies a collector, and the LSE result/coverage becomes `PARTIAL`; a valid event in the same response remains usable and no invalid token enters `calendar.json`.
+- Both explicit acquisition and forced refresh include `unresolved_event_currencies` in the provider result and do not advance the provider watermark on incomplete LSE acquisition.
+- Allowed LSE watermark records in the schema validator, aligning it with the acquisition path.
+- Added normalization, bad-row isolation, partial coverage, and watermark contract regressions; bumped Calendar version and specification baseline to 2.6.8.
+
+### Validation
+- Automated Calendar and Market Data CI status is pending for this commit.
+- Tests use synthetic provider rows and do not require or expose the user's LSE key.

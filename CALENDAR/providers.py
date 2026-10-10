@@ -138,6 +138,47 @@ _LSE_REGION_BY_CURRENCY = {
     "XPF": "PF", "ZAR": "ZA", "ZMW": "ZM",
 }
 
+_LSE_CURRENCY_BY_REGION = {
+    region: currency for currency, region in _LSE_REGION_BY_CURRENCY.items()
+}
+_LSE_CURRENCY_BY_REGION.update({
+    "UK": "GBP", "USA": "USD", "UNITEDSTATES": "USD",
+    "UNITEDSTATESOFAMERICA": "USD", "EUROPEANUNION": "EUR",
+    "EUROAREA": "EUR", "EUROZONE": "EUR", "UNITEDKINGDOM": "GBP",
+    "GREATBRITAIN": "GBP", "JAPAN": "JPY", "SWITZERLAND": "CHF",
+    "AUSTRALIA": "AUD", "CANADA": "CAD", "NEWZEALAND": "NZD",
+    "CHINA": "CNY", "HUNGARY": "HUF", "HONGKONG": "HKD",
+    "SINGAPORE": "SGD", "INDIA": "INR", "MEXICO": "MXN",
+    "PHILIPPINES": "PHP", "INDONESIA": "IDR", "THAILAND": "THB",
+    "MALAYSIA": "MYR", "SOUTHAFRICA": "ZAR", "RUSSIA": "RUB",
+    "BRAZIL": "BRL", "NORWAY": "NOK", "QATAR": "QAR",
+})
+
+
+class LSEEventCurrencyError(ProviderError):
+    """Raised when an LSE event's currency/region cannot be safely normalized."""
+
+
+def _normalize_lse_currency(raw: Dict[str, Any]) -> str:
+    """Resolve an LSE currency or known geographic code to an ISO currency."""
+    for field_name in (
+        "currency", "ccy", "region_code", "region",
+        "country_code", "countryCode", "iso_country_code", "country",
+    ):
+        value = raw.get(field_name)
+        if value in (None, ""):
+            continue
+        candidate = str(value).strip().upper()
+        if candidate in FX_CURRENCY_CODES or candidate == "ALL":
+            return candidate
+        compact_candidate = re.sub(r"[^A-Z]", "", candidate)
+        mapped_currency = _LSE_CURRENCY_BY_REGION.get(compact_candidate)
+        if mapped_currency:
+            return mapped_currency
+    raise LSEEventCurrencyError(
+        "LSE event currency/region is not a supported ISO 4217 currency or known region."
+    )
+
 
 def _resolve_lse_regions(symbol: str) -> List[str]:
     """Translate a supported currency or FX pair into LSE API region codes."""
@@ -241,8 +282,8 @@ def normalize_lse_event(raw: Dict[str, Any]) -> Dict[str, Any]:
     provider_id = _lse_value(raw, "id", "event_id", "eventId", "uuid")
     title = _lse_value(raw, "event", "name", "title")
     timestamp_value = _lse_value(raw, "datetime", "timestamp", "ts", "date")
-    currency = str(_lse_value(raw, "currency", "ccy", "region_code", "region", "country_code") or "").strip().upper()
-    if not provider_id or not title or not timestamp_value or not currency:
+    currency = _normalize_lse_currency(raw)
+    if not provider_id or not title or not timestamp_value:
         raise ProviderError("Malformed LSE economic-calendar event.")
     raw_timestamp = str(timestamp_value).strip()
     try:
@@ -283,10 +324,28 @@ def normalize_lse_event(raw: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def fetch_lse_calendar(symbol: str, start: datetime, end: datetime) -> List[Dict[str, Any]]:
-    """Fetch and normalize LSE economic-calendar events."""
-    events = [normalize_lse_event(row) for row in _fetch_lse_rows(symbol, start, end)]
-    return [event for event in events if start <= parse_iso8601(event["timestamp"]) < end]
+def fetch_lse_calendar(
+    symbol: str,
+    start: datetime,
+    end: datetime,
+    unresolved_event_currency_ids: Optional[List[str]] = None,
+) -> List[Dict[str, Any]]:
+    """Fetch LSE events, isolating rows whose currency/region cannot be normalized."""
+    events: List[Dict[str, Any]] = []
+    for raw_row in _fetch_lse_rows(symbol, start, end):
+        try:
+            event = normalize_lse_event(raw_row)
+        except LSEEventCurrencyError:
+            if unresolved_event_currency_ids is None:
+                raise
+            provider_event_id = _lse_value(raw_row, "id", "event_id", "eventId", "uuid")
+            unresolved_event_currency_ids.append(
+                str(provider_event_id) if provider_event_id not in (None, "") else "unknown"
+            )
+            continue
+        if start <= parse_iso8601(event["timestamp"]) < end:
+            events.append(event)
+    return events
 
 
 class LSECalendarProvider(CalendarProvider):
@@ -294,7 +353,12 @@ class LSECalendarProvider(CalendarProvider):
     name = "lse"
 
     def fetch_events(self, symbol, start, end, **kwargs):
-        return fetch_lse_calendar(symbol, start, end)
+        return fetch_lse_calendar(
+            symbol,
+            start,
+            end,
+            unresolved_event_currency_ids=kwargs.get("unresolved_event_currency_ids"),
+        )
 
 
 class ForexFactoryCalendarProvider(CalendarProvider):

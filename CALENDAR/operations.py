@@ -41,6 +41,7 @@ def acquire_explicit(
             events: List[Dict[str, Any]] = []
             detail_failures: List[str] = []
             unresolved_event_time_ids: List[str] = []
+            unresolved_event_currency_ids: List[str] = []
             for gap_start, gap_end in gaps:
                 if provider == "forexfactory":
                     gap_events = _fetch_provider_events(
@@ -50,6 +51,14 @@ def acquire_explicit(
                         gap_end,
                         detail_failures=detail_failures,
                         unresolved_event_time_ids=unresolved_event_time_ids,
+                    )
+                elif provider == "lse":
+                    gap_events = _fetch_provider_events(
+                        provider,
+                        symbol,
+                        gap_start,
+                        gap_end,
+                        unresolved_event_currency_ids=unresolved_event_currency_ids,
                     )
                 else:
                     gap_events = _fetch_provider_events(provider, symbol, gap_start, gap_end)
@@ -64,13 +73,22 @@ def acquire_explicit(
             )
             if events:
                 document_updated = True
-            has_partial_provider_data = bool(detail_failures or unresolved_event_time_ids)
+            has_partial_provider_data = bool(
+                detail_failures or unresolved_event_time_ids or unresolved_event_currency_ids
+            )
             status = "PARTIAL" if has_partial_provider_data else "OK"
             coverage_status = "PARTIAL" if has_partial_provider_data else "COMPLETE"
             if unresolved_event_time_ids and debug:
                 print(
                     "DEBUG | forexfactory skipped "
                     f"{len(unresolved_event_time_ids)} event row(s) without a concrete time; "
+                    "the provider interval remains PARTIAL.",
+                    file=sys.stderr,
+                )
+            if unresolved_event_currency_ids and debug:
+                print(
+                    "DEBUG | lse skipped "
+                    f"{len(unresolved_event_currency_ids)} event row(s) with unrecognized currency/region; "
                     "the provider interval remains PARTIAL.",
                     file=sys.stderr,
                 )
@@ -96,6 +114,7 @@ def acquire_explicit(
                 "coverage": "UPDATED",
                 **({"detail_failures": len(detail_failures)} if detail_failures else {}),
                 **({"unresolved_event_times": len(unresolved_event_time_ids)} if unresolved_event_time_ids else {}),
+                **({"unresolved_event_currencies": len(unresolved_event_currency_ids)} if unresolved_event_currency_ids else {}),
             })
         except YahooForexPairUnavailable as exc:
             if debug:
@@ -344,10 +363,11 @@ def refresh_calendar_scope(
 
     def fetch_provider_snapshot(
         provider: str,
-    ) -> Tuple[List[Dict[str, Any]], List[str], float]:
+    ) -> Tuple[List[Dict[str, Any]], List[str], List[str], float]:
         """Fetch one provider's base events and retain timing/partial-row metadata."""
         fetch_started_at = perf_counter()
         unresolved_event_time_ids: List[str] = []
+        unresolved_event_currency_ids: List[str] = []
         if provider == "forexfactory":
             fetched = _fetch_provider_events(
                 provider,
@@ -357,6 +377,14 @@ def refresh_calendar_scope(
                 include_details=False,
                 unresolved_event_time_ids=unresolved_event_time_ids,
             )
+        elif provider == "lse":
+            fetched = _fetch_provider_events(
+                provider,
+                symbol,
+                refresh_window_start,
+                refresh_window_end,
+                unresolved_event_currency_ids=unresolved_event_currency_ids,
+            )
         else:
             fetched = _fetch_provider_events(
                 provider,
@@ -364,7 +392,12 @@ def refresh_calendar_scope(
                 refresh_window_start,
                 refresh_window_end,
             )
-        return fetched, unresolved_event_time_ids, perf_counter() - fetch_started_at
+        return (
+            fetched,
+            unresolved_event_time_ids,
+            unresolved_event_currency_ids,
+            perf_counter() - fetch_started_at,
+        )
 
     # Provider base requests are independent. Run them concurrently so their
     # network latency overlaps instead of accumulating serially.
@@ -379,7 +412,12 @@ def refresh_calendar_scope(
 
     for provider in applicable_providers:
         try:
-            fetched, unresolved_event_time_ids, fetch_elapsed = provider_futures[provider].result()
+            (
+                fetched,
+                unresolved_event_time_ids,
+                unresolved_event_currency_ids,
+                fetch_elapsed,
+            ) = provider_futures[provider].result()
             if debug:
                 print(
                     f"DEBUG | {provider} base fetch completed in {fetch_elapsed:.2f}s "
@@ -390,6 +428,13 @@ def refresh_calendar_scope(
                 print(
                     "DEBUG | forexfactory skipped "
                     f"{len(unresolved_event_time_ids)} event row(s) without a concrete time; "
+                    "the provider interval remains PARTIAL.",
+                    file=sys.stderr,
+                )
+            if unresolved_event_currency_ids and debug:
+                print(
+                    "DEBUG | lse skipped "
+                    f"{len(unresolved_event_currency_ids)} event row(s) with unrecognized currency/region; "
                     "the provider interval remains PARTIAL.",
                     file=sys.stderr,
                 )
@@ -410,7 +455,9 @@ def refresh_calendar_scope(
                 existing = next((item for item in existing_events if item["event_id"] == event["event_id"]), None)
                 if existing is None or existing["timestamp"] != event["timestamp"]:
                     reported_events.append(event)
-            has_partial_provider_data = bool(detail_failures or unresolved_event_time_ids)
+            has_partial_provider_data = bool(
+                detail_failures or unresolved_event_time_ids or unresolved_event_currency_ids
+            )
             provider_results.append({
                 "provider": provider,
                 "status": "PARTIAL" if has_partial_provider_data else ("NO_MATCH" if not selected else "OK"),
@@ -418,6 +465,7 @@ def refresh_calendar_scope(
                 "events_refreshed": len(selected),
                 **({"detail_failures": len(detail_failures)} if detail_failures else {}),
                 **({"unresolved_event_times": len(unresolved_event_time_ids)} if unresolved_event_time_ids else {}),
+                **({"unresolved_event_currencies": len(unresolved_event_currency_ids)} if unresolved_event_currency_ids else {}),
             })
         except YahooForexPairUnavailable as exc:
             if debug:

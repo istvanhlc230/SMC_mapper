@@ -59,6 +59,53 @@ jobs:
           assert providers._resolve_lse_regions("USD") == ["US"]
           assert providers._resolve_lse_regions("HUF") == ["HU"]
 
+          # LSE responses can expose a geographic code where Calendar needs an ISO currency.
+          lse_region_event = {
+              "id": "lse-region-us",
+              "event": "US Test Event",
+              "datetime": "2026-10-06 12:30:00",
+              "region_code": "US",
+              "impact": "HIGH",
+          }
+          normalized_region_event = providers.normalize_lse_event(lse_region_event)
+          assert normalized_region_event["symbol"] == "USD"
+          assert normalized_region_event["details"]["currency"] == "USD"
+          lse_country_event = dict(lse_region_event, id="lse-country-eu", region_code=None, country_code="EU")
+          normalized_country_event = providers.normalize_lse_event(lse_country_event)
+          assert normalized_country_event["details"]["currency"] == "EUR"
+
+          # One unknown LSE geography must be isolated instead of poisoning all stored events.
+          original_lse_rows_fetch = providers._fetch_lse_rows
+          try:
+              providers._fetch_lse_rows = lambda _symbol, _start, _end: [
+                  lse_region_event,
+                  {
+                      "id": "lse-unknown-region",
+                      "event": "Unknown Region Test",
+                      "datetime": "2026-10-06 13:30:00",
+                      "region_code": "ZZZ",
+                  },
+              ]
+              unresolved_lse_currencies = []
+              lse_normalized_events = providers.fetch_lse_calendar(
+                  "EURUSD",
+                  dt("2026-10-06T00:00:00Z"),
+                  dt("2026-10-07T00:00:00Z"),
+                  unresolved_event_currency_ids=unresolved_lse_currencies,
+              )
+              assert [event["event_id"] for event in lse_normalized_events] == ["lse:lse-region-us"]
+              assert unresolved_lse_currencies == ["lse-unknown-region"]
+          finally:
+              providers._fetch_lse_rows = original_lse_rows_fetch
+
+          # LSE watermarks are valid persisted identities just like the other providers.
+          lse_watermark_doc = domain.build_empty_calendar_document()
+          domain.update_watermark(
+              lse_watermark_doc, "lse", "USD", dt("2026-10-06T12:31:00Z"), []
+          )
+          domain.validate_calendar_document(lse_watermark_doc)
+          assert "lse|USD" in lse_watermark_doc["watermarks"]
+
           # A stock ticker is outside LSE's Calendar role and must not require
           # an LSE key or issue a network request.
           original_lse_key_loader = providers.get_provider_api_key
@@ -132,7 +179,7 @@ jobs:
               providers.open_url = original_lse_open_url
 
           assert calendar.validate_symbol("EURUSD") == "EURUSD"
-          assert calendar.__version__ == "2.6.7"
+          assert calendar.__version__ == "2.6.8"
           assert calendar.validate_symbol("USDGBP") == "USDGBP"
           assert calendar.validate_symbol("HUF") == "HUF"
           assert calendar.validate_symbol("NVDA") == "NVDA"
@@ -1207,7 +1254,7 @@ jobs:
               }
               assert calendar.normalize_provider_event(structured_raw)["details"]["impact"] == expected_impact
 
-          assert calendar.__version__ == "2.6.7"
+          assert calendar.__version__ == "2.6.8"
           assert f"Calendar CLI v{calendar.__version__}" in calendar.HELP_TEXT
 
           # Cleartext output must render normalized details as readable fields,
@@ -1703,6 +1750,57 @@ jobs:
               domain.utc_now = original_now
               storage.save_calendar_atomic = original_save
               domain.resolve_applicable_providers = original_resolve
+
+          # Unknown LSE currency/region rows must make coverage PARTIAL,
+          # preserve other normalized events and never enter persisted data.
+          original_lse_provider_fetch = operations._fetch_provider_events
+          original_lse_partial_now = domain.utc_now
+          original_lse_partial_resolve = domain.resolve_applicable_providers
+          original_lse_partial_save = storage.save_calendar_atomic
+          try:
+              domain.resolve_applicable_providers = lambda _symbol: ["lse"]
+              domain.utc_now = lambda: dt("2026-10-05T12:00:00Z")
+              storage.save_calendar_atomic = lambda _document: None
+
+              def partial_lse_currency_fetch(provider, symbol, start, end, **kwargs):
+                  assert provider == "lse"
+                  kwargs["unresolved_event_currency_ids"].append("bad-region-1")
+                  return [{
+                      "event_id": "lse:valid-region",
+                      "symbol": "USD",
+                      "asset_type": "forex",
+                      "event_type": "economic",
+                      "source": "lse",
+                      "sources": ["lse"],
+                      "timestamp": "2026-10-05T09:00:00Z",
+                      "title": "Valid USD Event",
+                      "details": {"currency": "USD", "impact": "LOW", "actual": None,
+                                  "forecast": None, "previous": None},
+                  }]
+
+              operations._fetch_provider_events = partial_lse_currency_fetch
+              lse_partial_doc = domain.build_empty_calendar_document()
+              lse_partial_result = operations.acquire_explicit(
+                  lse_partial_doc,
+                  "USD",
+                  dt("2026-10-05T00:00:00Z"),
+                  dt("2026-10-06T00:00:00Z"),
+              )
+              lse_partial_status = next(
+                  item for item in lse_partial_result["provider_results"]
+                  if item["provider"] == "lse"
+              )
+              assert lse_partial_status["status"] == "PARTIAL"
+              assert lse_partial_status["unresolved_event_currencies"] == 1
+              assert lse_partial_doc["coverage"][0]["status"] == "PARTIAL"
+              assert "lse|USD" not in lse_partial_doc["watermarks"]
+              assert len(lse_partial_doc["events"]) == 1
+              assert lse_partial_doc["events"][0]["details"]["currency"] == "USD"
+          finally:
+              operations._fetch_provider_events = original_lse_provider_fetch
+              domain.utc_now = original_lse_partial_now
+              domain.resolve_applicable_providers = original_lse_partial_resolve
+              storage.save_calendar_atomic = original_lse_partial_save
 
           # The user-facing refresh path must preserve concrete-time events when
           # ForexFactory reports All Day/Tentative rows, and its result stays PARTIAL.
