@@ -269,6 +269,8 @@ class VolumeState:
 
 The independent source branches are `total`, `ohlc_buy/sell`, and `orderflow_buy/sell`.
 
+For every branch, the `has_*` flag must agree exactly with value presence: a true flag requires the complete branch values, and a false flag requires all branch values to be absent. A partial buy/sell pair or a value stored behind a false availability flag is malformed and must be rejected at normalization and machine-protocol validation boundaries; it must never be silently omitted.
+
 Source-level delta is not stored. When needed:
 
 ```text
@@ -2495,6 +2497,8 @@ test_timeframe_update_has_no_direct_file_side_effect
 test_machine_csv_header_contains_volume_total_and_orderflow_fields
 test_machine_csv_preserves_volume_total_without_tick_real_inference
 test_machine_csv_emits_orderflow_only_as_a_complete_observed_pair
+test_normalized_volume_availability_flags_match_value_presence
+test_machine_csv_rejects_values_hidden_by_unavailable_volume_flags
 test_lse_raw_vault_timestamp_without_offset_is_normalized_as_utc
 test_lse_rejects_undocumented_timezone_naive_iso_timestamp
 test_lse_candle_query_uses_date_only_boundaries
