@@ -140,7 +140,7 @@ jobs:
               high_price=Decimal("1.2"),
               low_price=Decimal("1.0"),
               close_price=Decimal("1.15"),
-              volume=VolumeState(False, None, False, None, None, False, None, None),
+              volume=VolumeState(True, Decimal("12345"), False, None, None, False, None, None),
           )
           sample_entries = {"M1": [(sample_candle, True)]}
           rendered_table = format_table("EURUSD", sample_entries)
@@ -148,6 +148,20 @@ jobs:
           assert "TIMEFRAME | M1 | CANDLES 1" in rendered_table
           assert "2026-10-10 00:00:00" in rendered_table
           assert "1.15" in rendered_table
+          assert "Volume" in rendered_table
+          assert "12345" in rendered_table
+          assert "Completed" not in rendered_table
+
+          # Missing total volume is shown as unavailable, never as a fabricated zero.
+          from dataclasses import replace
+          candle_without_volume = replace(
+              sample_candle,
+              volume=VolumeState(False, None, False, None, None, False, None, None),
+          )
+          no_volume_table = format_table(
+              "EURUSD", {"M1": [(candle_without_volume, True)]}
+          )
+          assert "N/A" in no_volume_table
 
           with patch("MARKET_DATA.cli.create_provider"), patch(
               "MARKET_DATA.cli.get_candles", return_value={"M1": [sample_candle]}
