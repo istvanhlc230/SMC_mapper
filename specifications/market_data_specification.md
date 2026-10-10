@@ -209,7 +209,7 @@ class MarketDataRequest:
     last_closed_only: bool
     current: bool
     debug: bool
-    cleartext: bool = False
+    table: bool = False
 ```
 
 Variable name: `request`.
@@ -511,11 +511,11 @@ Required request options:
 --current
 --lastclosed
 --debug
---cleartext
+--table
 --help
 ```
 
-The temporal scope is positional, matching Calendar. The public CLI does not accept the `--range`, `--date`, or `--time` flags. Date and time are separated by a space, never `@`.
+The temporal scope is positional, matching Calendar. The public CLI does not accept the `--range`, `--date`, or `--time` flags. Date and time are separated by a space, never `@`. The former `--cleartext` flag is rejected with an explicit migration message directing the user to `--table`; it is not a compatibility alias.
 
 Supported scope forms:
 
@@ -700,7 +700,7 @@ The CLI has two distinct STDOUT modes.
 
 ### Default mode — machine output
 
-Without `--cleartext`, successful execution emits the machine-readable candle protocol to STDOUT.
+Without `--table`, successful execution emits the machine-readable candle protocol to STDOUT.
 
 The machine output is the Mapper/Monitor integration boundary. It is not a human presentation format and must remain stable.
 
@@ -749,19 +749,19 @@ Rules:
 
 The machine protocol is a process interface, not the persistence JSON schema.
 
-### `--cleartext` presentation mode
+### `--table` presentation mode
 
-`--cleartext` switches STDOUT from machine protocol to human-readable presentation.
+`--table` switches STDOUT from machine protocol to human-readable tabular presentation. This flag is presentation-only: acquisition, normalization, persistence, retention, and query semantics remain unchanged.
 
 It never changes acquisition, normalization, persistence, retention, or query semantics.
 
-When specified, the CLI prints the requested completed candles in the existing human-readable style. The exact spacing/layout may evolve without changing the machine protocol.
+When specified, the CLI prints the requested completed candles in the existing human-readable style. The table includes the requested timeframe, candle count, UTC timestamp, OHLC values, and completion state. Empty results still identify each requested timeframe with a zero candle count. The exact spacing/layout may evolve without changing the machine protocol.
 
-A downstream process must never parse `--cleartext`.
+A downstream process must never parse `--table`.
 
 ### Output selection
 
-No separate `--machine` option is required. Machine output is the default successful STDOUT behavior; `--cleartext` explicitly selects human presentation.
+No separate `--machine` option is required. Machine output is the default successful STDOUT behavior; `--table` explicitly selects human presentation.
 
 ## 5.8 Process-output serializer functions
 
@@ -773,13 +773,13 @@ Required functions:
 def serialize_machine_csv(candles_by_timeframe) -> str:
     ...
 
-def format_cleartext(symbol, candles_by_timeframe) -> str:
+def format_table(symbol, candles_by_timeframe) -> str:
     ...
 ```
 
 `serialize_machine_csv` must validate the complete result before returning the machine stream. It owns CSV escaping, fixed header order, UTC epoch conversion, deterministic decimal formatting, completion flag encoding, duplicate identity rejection, and per-timeframe timestamp ordering.
 
-`format_cleartext` is presentation-only. Its spacing, wrapping, and column widths may change without a protocol revision. It must never be used as an inter-process input format.
+`format_table` is presentation-only. Its spacing, wrapping, and column widths may change without a protocol revision. It must never be used as an inter-process input format.
 
 
 # 6. PROVIDER ABSTRACTION
@@ -1941,7 +1941,7 @@ stderr -> empty
 With `--debug`:
 
 ```text
-stdout -> machine candle protocol (or cleartext presentation when --cleartext is used)
+stdout -> machine candle protocol (or table presentation when --table is used)
 stderr -> diagnostics/debug information
 ```
 
@@ -1950,7 +1950,7 @@ Never:
 - write debug/status/progress text to machine STDOUT;
 - forward STDERR into Mapper/Monitor data input;
 - persist debug output;
-- use `--cleartext` as an inter-process data protocol.
+- use `--table` as an inter-process data protocol.
 
 Errors use STDERR and a non-zero exit status. The machine-output stream must remain parseable when the request succeeds and debug is enabled. A failed request must not be consumed as a candle stream.
 
@@ -2343,6 +2343,10 @@ Test names:
 test_parse_market_data_request_lastclosed_conflicts
 test_parse_market_data_request_lastclosed_current_conflict
 test_parse_market_data_request_requires_timeframe
+test_parse_market_data_request_table_flag
+test_parse_market_data_request_rejects_cleartext_alias
+test_run_table_mode_formats_human_readable_output
+test_run_default_mode_preserves_machine_csv
 test_parse_iso8601_returns_utc
 test_normalize_source_time_with_timezone
 test_reject_naive_source_time_without_timezone
