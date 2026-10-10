@@ -75,28 +75,41 @@ def format_table(
     symbol: str,
     candles_by_timeframe: Mapping[str, Sequence[tuple[NormalizedCandle, bool]]],
 ) -> str:
-    """Format candles as a human-readable table for the Market Data CLI."""
+    """Format candles with OHLC and available normalized total volume."""
     lines = [f"MARKET DATA | {symbol}"]
+    table_width = 87
+    separator = "-" * table_width
+
     for timeframe, entries in candles_by_timeframe.items():
         ordered = sorted(entries, key=lambda item: item[0].timestamp)
+        current_snapshot_present = any(not completed for _, completed in ordered)
+        state_suffix = " | CURRENT SNAPSHOT" if current_snapshot_present else ""
         lines.extend(
             [
                 "",
-                f"TIMEFRAME | {timeframe} | CANDLES {len(ordered)}",
-                "-" * 78,
-                "Time (UTC)           Open         High         Low          Close       Completed",
-                "-" * 78,
+                f"TIMEFRAME | {timeframe} | CANDLES {len(ordered)}{state_suffix}",
+                separator,
+                f"{'Time (UTC)':<19} {'Open':>12} {'High':>12} {'Low':>12} {'Close':>12} {'Volume':>14}",
+                separator,
             ]
         )
-        for candle, completed in ordered:
+
+        for candle, _completed in ordered:
             timestamp = candle.timestamp.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
-            lines.append(
-                f"{timestamp}  "
-                f"{str(candle.open_price):>11}  "
-                f"{str(candle.high_price):>11}  "
-                f"{str(candle.low_price):>11}  "
-                f"{str(candle.close_price):>11}  "
-                f"{'YES' if completed else 'NO'}"
+            volume_text = (
+                _decimal_text(candle.volume.total)
+                if candle.volume.has_total and candle.volume.total is not None
+                else "N/A"
             )
-        lines.append("-" * 78)
+            lines.append(
+                f"{timestamp:<19} "
+                f"{str(candle.open_price):>12} "
+                f"{str(candle.high_price):>12} "
+                f"{str(candle.low_price):>12} "
+                f"{str(candle.close_price):>12} "
+                f"{volume_text:>14}"
+            )
+
+        lines.append(separator)
+
     return "\n".join(lines)
