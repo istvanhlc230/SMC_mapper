@@ -272,6 +272,35 @@ Source-level delta is not stored. When needed:
 delta = buy - sell
 ```
 
+### Optional L2 market-depth snapshot
+
+L2 (Level 2) data is a separate timestamped order-book snapshot, not candle volume and not a volume branch. Represent each provider-reported level as price plus displayed size, with separate bid and ask arrays:
+
+```python
+@dataclass(frozen=True)
+class MarketDepthLevel:
+    price: Decimal
+    volume: Decimal
+
+
+@dataclass(frozen=True)
+class MarketDepthSnapshot:
+    symbol: str
+    provider: str
+    timestamp: datetime
+    bids: list[MarketDepthLevel]
+    asks: list[MarketDepthLevel]
+```
+
+Rules:
+- preserve only price levels and quantities actually reported by the provider;
+- do not derive L2 size from `volume.total`, tick volume, OHLC, OHLC-derived estimates, or orderflow buy/sell;
+- the snapshot timestamp must include an explicit timezone and be normalized/displayed in UTC;
+- a historical `as_of` request must not be answered with a newer live-only snapshot;
+- an unsupported endpoint, unavailable snapshot, or snapshot with no usable levels produces no L2 table section and must not fail the candle request;
+- L2 data is not attached to historical candles or added to the existing machine CSV protocol;
+- the candle table displays L2 only when a valid snapshot is returned; otherwise it omits the entire L2 section, including its heading.
+
 ## 3.4 Normalized candle
 
 A `NormalizedCandle` is the only candle representation allowed to cross from acquisition/normalization into persistence.
@@ -757,7 +786,9 @@ The machine protocol is a process interface, not the persistence JSON schema.
 
 It never changes acquisition, normalization, persistence, retention, or query semantics.
 
-When specified, the CLI prints the requested candles in a human-readable table with timeframe, candle count, UTC timestamp, OHLC values, and normalized total volume. The table does not include a per-row `Completed` column. If an entry is an in-progress candle, identify the affected timeframe section as `CURRENT SNAPSHOT` so removing the column does not hide its state. Display the normalized `volume.total` value when available; display `N/A` when total volume is unavailable, and never substitute zero or infer total volume from tick volume, real volume, or directional volume branches. Empty results still identify each requested timeframe with a zero candle count. The exact spacing/layout may evolve without changing the machine protocol.
+When specified, the CLI prints the requested candles in a human-readable table with timeframe, candle count, UTC timestamp, OHLC values, and normalized total volume. The table does not include a per-row `Completed` column. If an entry is an in-progress candle, identify the affected timeframe section as `CURRENT SNAPSHOT` so removing the column does not hide its state. Display the normalized `volume.total` value when available; display `N/A` when total volume is unavailable, and never substitute zero or infer total volume from tick volume, real volume, or directional volume branches.
+
+If the provider returns valid L2 data for the requested point in time, append a separate `L2 MARKET DEPTH` section with provider, UTC snapshot time, and bid/ask price and volume by level. If no valid L2 snapshot is available, omit the entire L2 section without blank L2 columns. An L2 lookup failure must not invalidate otherwise successful candle output. A historical query must not display a live snapshot newer than its requested end. Empty candle results still identify each requested timeframe with a zero candle count. The exact spacing/layout may evolve without changing the machine protocol.
 
 A downstream process must never parse `--table`.
 
@@ -775,7 +806,11 @@ Required functions:
 def serialize_machine_csv(candles_by_timeframe) -> str:
     ...
 
-def format_table(symbol, candles_by_timeframe) -> str:
+def format_table(
+    symbol,
+    candles_by_timeframe,
+    market_depth: MarketDepthSnapshot | None = None,
+) -> str:
     ...
 ```
 
@@ -816,7 +851,16 @@ class MarketDataProvider:
         timeframe: str,
     ) -> ProviderCandle | None:
         ...
+
+    def fetch_market_depth(
+        self,
+        symbol: str,
+        as_of: datetime | None = None,
+    ) -> MarketDepthSnapshot | None:
+        ...
 ```
+
+`fetch_market_depth()` is an optional provider capability. It returns a normalized `MarketDepthSnapshot` only when usable depth data is available; otherwise it returns `None`. When `as_of` is specified, a provider that only supports live depth must return `None` rather than substituting a later live snapshot. Failures in this optional enrichment do not fail a successful candle request. The current LSE candle adapter does not infer L2 from OHLCV, quote ticks, or its ordinary candle endpoint.
 
 The provider interface is the only place where concrete provider behavior is abstracted.
 
@@ -2365,6 +2409,9 @@ test_parse_market_data_request_rejects_cleartext_alias
 test_run_table_mode_formats_human_readable_output
 test_table_shows_normalized_total_volume_and_omits_completed_column
 test_table_marks_current_snapshot_and_shows_unavailable_volume_as_na
+test_table_displays_l2_depth_only_when_provider_returns_snapshot
+test_table_omits_l2_section_when_depth_is_unavailable
+test_cli_l2_lookup_failure_does_not_block_candle_table
 test_run_default_mode_preserves_machine_csv
 test_parse_iso8601_returns_utc
 test_normalize_source_time_with_timezone
