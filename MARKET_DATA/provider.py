@@ -141,6 +141,14 @@ class LSEMarketDataProvider(MarketDataProvider):
         self.timeout_seconds = timeout_seconds
         self.retries = retries
 
+    def fetch_market_depth(
+        self,
+        symbol: str,
+        as_of: datetime | None = None,
+    ) -> MarketDepthSnapshot | None:
+        """Report no L2 snapshot because the configured LSE adapter is candle-only."""
+        return None
+
     def _request_candle_page(
         self,
         symbol: str,
