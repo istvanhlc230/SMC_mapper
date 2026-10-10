@@ -110,8 +110,7 @@ Approved options:
 
 ~~~text
 --symbol SYMBOL [SYMBOL ...]
---htf TF
---ltf TF
+--timeframe TF
 --rr DECIMAL
 --timezone TZ
 --alert-json
@@ -146,16 +145,17 @@ The single global Calendar data file is:
 
 The Monitor automatically resolves the symbol directory from the common data root. It does not expose per-file path CLI options.
 
-## 1.3 --htf and --ltf
+## 1.3 --timeframe
 
-The Monitor requires both `--htf` and `--ltf` for a conformant automated Mapper/Monitor run under this project's product contract:
+The Monitor requires exactly one user-selected anchor timeframe through `--timeframe TF`:
 
-- both must be supplied and must identify distinct timeframes;
-- HTF must be strictly higher than LTF;
-- missing, equal, or reversed timeframe pairs are input errors; there is no single-timeframe mode;
-- the same valid configuration applies independently to every selected symbol;
-- a different timeframe configuration requires a separate Monitor process;
-- these flags configure each fresh Mapper invocation and are not loaded from a file.
+- the anchor selects the primary analysis/narrative/POI timeframe independently for each selected symbol;
+- the Monitor and Mapper automatically derive all additional higher-context, pullback-representation, intermediary, and entry/monitoring timeframes required by the canonical SMC skill;
+- derived timeframe roles follow the canonical hierarchy, the available Market Data timeframe tokens, and the deterministic resolution rules; they are not manually configured by the user;
+- supplying one anchor timeframe is not single-timeframe analysis: a conformant run must process multiple distinct series wherever canonical rules require them;
+- missing `--timeframe`, an unsupported token, or retired `--htf`/`--ltf` flags are input errors. The retired flags are not accepted as aliases or overrides;
+- the same anchor applies independently to every selected symbol; a different anchor requires a separate Monitor process;
+- the Monitor does not load timeframe configuration from a file or infer a previous user selection from Mapper output.
 
 ## 1.4 --rr
 
@@ -210,15 +210,14 @@ Rules:
 @dataclass(frozen=True)
 class MonitorRequest:
     symbols: list[str]
-    htf: str
-    ltf: str
+    anchor_timeframe: str
     min_rr: Decimal | None
     timezone: str | None
     alert_json: bool
     debug: bool
 ~~~
 
-The Monitor's HTF/LTF configuration applies to each selected symbol for this process invocation. Both timeframes are required, they must be distinct, and HTF must be strictly higher than LTF. Missing or equal timeframes are rejected; single-timeframe mode is not conformant. To monitor a different valid timeframe configuration, run a separate Monitor instance. The Monitor does not infer configuration from persisted analysis files and does not expose a data-path CLI option.
+The Monitor's single anchor timeframe applies independently to every selected symbol for this process invocation. The Monitor automatically derives all supporting timeframe roles from canonical SMC rules and exposes no user override for HTF/LTF. A run that ultimately processes only one timeframe is non-conformant, but a single CLI anchor is mandatory and is not single-timeframe mode. To monitor a different anchor, run a separate Monitor instance. The Monitor does not infer the anchor from persisted analysis files and does not expose a data-path CLI option.
 
 ---
 
@@ -258,10 +257,13 @@ Use an explicit immutable view of the result received from Mapper STDOUT, for ex
 @dataclass(frozen=True)
 class MapperResultView:
     symbol: str
-    htf: str
-    ltf: str
+    anchor_timeframe: str
     analysis_mode: str
-    entry_timeframe: str
+    timeframe_roles: dict[str, str]
+    required_timeframes: list[str]
+    entry_timeframe: str | None
+    monitoring_phase: str
+    timeframe_resolution_rationale: dict[str, str]
     requested_period: str | None
     available_coverage: dict[str, tuple[datetime | None, datetime | None]]
     last_completed_candle_time: datetime
@@ -276,7 +278,7 @@ The result exists only in memory for the current runtime cycle. It must not be p
 
 ## 3.1 Runtime configuration
 
-The Monitor requires both `--htf` and `--ltf` CLI arguments, validates `HTF > LTF`, and applies that same distinct timeframe pair independently to every selected symbol. It does not discover analyses from files, infer timeframe configuration from Market Data, or load a persisted analysis registry.
+The Monitor accepts one required `--timeframe TF` anchor and applies it independently to every selected symbol. It automatically resolves additional timeframe roles from the canonical hierarchy. It does not infer the anchor from files, Market Data cache contents, or previous Mapper output, and it does not load a persisted analysis registry.
 
 ## 3.2 Runtime registry
 
@@ -287,9 +289,11 @@ Use transient per-symbol scheduling state only:
 class MonitoredSymbol:
     symbol: str
     analysis_key: str  # transient correlation key: symbol + timeframe configuration; never persisted
-    entry_timeframe: str
-    htf: str
-    ltf: str
+    anchor_timeframe: str
+    timeframe_roles: dict[str, str]
+    required_timeframes: list[str]
+    entry_timeframe: str | None
+    monitoring_phase: str
     analysis_mode: str
     last_mapped_candle_time: datetime | None
     next_due_time: datetime | None
@@ -303,8 +307,8 @@ The registry exists only in process memory. It is not a durable checkpoint or ca
 
 For every monitored symbol:
 
-- one independent symbol and one explicitly configured timeframe combination;
-- no shared runtime result across symbols;
+- one independent symbol and one explicitly selected anchor timeframe with its own automatically resolved timeframe roles;
+- no shared runtime result or resolved timeframe plan across symbols;
 - no persisted Mapper checkpoint or persisted runtime analysis correlation identity;
 - no mutation of canonical Mapper results;
 - every new full Mapper result is produced from Market Data candles, never from the previous Mapper result.
@@ -314,19 +318,21 @@ For every monitored symbol:
 ## 4.1 General cycle
 
 ~~~text
-load explicit Monitor symbol/timeframe configuration
+load symbols and one selected anchor timeframe
         ↓
-plan required Market Data ranges
+resolve required context / pullback-representation series
         ↓
-invoke market_data.py
+invoke market_data.py for required pre-activation series
         ↓
 consume Market Data machine CSV result
         ↓
-check whether a new completed entry-timeframe candle exists
+invoke Mapper for the anchor and required structural context
         ↓
-invoke Mapper for the configured timeframe combination
+validate and retain the auto-resolved role plan in memory
         ↓
-validate and retain the result in memory
+observe anchor/current price against eligible HTF POIs
+        ↓
+if POI touched: arm and acquire entry LTF, then rerun Mapper with all required series
         ↓
 refresh current market reference
         ↓
@@ -345,11 +351,11 @@ The Monitor keeps the validated Market Data CSV result in memory and supplies it
 
 ## 4.2 Mapper execution eligibility
 
-The Monitor invokes Mapper when a newly completed entry-timeframe candle is observed compared with the current process's transient `last_mapped_candle_time`, or when no Mapper result exists in the current process and an initial mapping is required.
+The Monitor invokes Mapper for an initial anchor/context build, when a newly completed anchor or required structural-support candle changes the HTF map, or—after entry monitoring is armed—when a new completed entry-LTF candle is observed. Trigger candle role and timestamp are tracked separately.
 
-The transient timestamp is only a scheduling optimization. It is not persisted and is never passed to Mapper as a canonical checkpoint. After restart, the Monitor re-establishes current coverage from Market Data and recomputes a complete Mapper result.
+The Monitor begins in `WAITING_FOR_HTF_POI`. It must not acquire or process the entry LTF solely to monitor CHoCH before an eligible institutional HTF POI is canonically touched. On an observed POI touch it transitions to `ARMED_MONITORING_LTF`, plans the automatic entry timeframe, acquires the required range, and recomputes Mapper output using all required context series. A current-price/current-snapshot refresh may update POI-touch observation, but current/in-progress candles are never admitted to canonical structural processing.
 
-A current-only candle refresh does not trigger canonical Mapper execution.
+Transient timestamps are scheduling optimizations only. They are not persisted or passed to Mapper as canonical checkpoints. After restart, the Monitor re-establishes coverage and recomputes canonical results.
 
 ## 4.3 Market Data planning
 
@@ -358,7 +364,9 @@ Function:
 ~~~python
 def plan_market_data_updates(
     symbols: list[str],
-    timeframe_configuration: TimeframeConfiguration,
+    anchor_timeframe: str,
+    resolved_timeframe_roles: dict[str, Any],
+    monitoring_phase: str,
     market_data_coverage: dict[str, Any],
     now: datetime,
 ) -> list[MarketDataUpdatePlan]:
@@ -372,6 +380,8 @@ Model:
 class MarketDataUpdatePlan:
     symbol: str
     timeframes: list[str]
+    phase: str
+    purpose: str
     start_time: datetime | None
     end_time: datetime | None
     last_closed_only: bool
@@ -379,8 +389,10 @@ class MarketDataUpdatePlan:
 
 Plan invariants:
 
-- one plan belongs to one symbol and the Monitor's explicit timeframe configuration;
-- `timeframes` contains exactly the two distinct selected timeframes, HTF and LTF, with HTF strictly higher than LTF;
+- one plan belongs to one symbol, one anchor, and the current automatic-monitoring phase;
+- `timeframes` contains the distinct series required for that plan's phase; the list is not constrained to exactly two and is derived from the canonical timeframe-resolution contract;
+- while `monitoring_phase=WAITING_FOR_HTF_POI`, include the anchor and required higher-context/pullback-representation candidates but exclude the entry LTF solely for CHoCH monitoring;
+- while `monitoring_phase=ARMED_MONITORING_LTF`, include the automatically selected entry-LTF series plus all anchor/context series needed for point-in-time qualification;
 - `last_closed_only=True` is a latest-completed-candle probe and requires null range boundaries;
 - current/in-progress snapshots are handled by the separate current-snapshot path;
 - no provider-specific acquisition logic belongs in the Monitor.
@@ -391,7 +403,7 @@ Planning rules:
 - the Monitor uses returned completed-candle coverage to determine whether a fresh Mapper run is due;
 - every Mapper invocation receives the full retained completed-candle history through its resolved end boundary, not merely the requested output period;
 - to return that history, the Monitor uses Market Data's open-start `--range -END` output scope; when retained data exists, Market Data fetches only missing coverage after `available_end` and emits the full retained history from `available_start`;
-- the stream includes both HTF and LTF plus all overlap needed for point-in-time context;
+- the stream includes all series required by the current resolved roles/phase plus all overlap and warm-up needed for point-in-time context;
 - `-END` historical scopes resolve from each timeframe's earliest retained completed candle, not its latest candle;
 - no plan uses a Mapper checkpoint; no durable Mapper checkpoint exists.
 
@@ -552,8 +564,7 @@ Signature:
 ~~~python
 def invoke_mapper(
     symbol: str,
-    htf: str,
-    ltf: str,
+    anchor_timeframe: str,
     period: str | None,
     market_data_stdout: str,
     debug: bool = False,
@@ -564,11 +575,11 @@ def invoke_mapper(
 Launch:
 
 ~~~text
-python smc_mapper.py --symbol SYMBOL --htf HTF --ltf LTF [PERIOD]
+python smc_mapper.py --symbol SYMBOL --timeframe TF [PERIOD]
                      [--volume-method ...] [--debug]
 ~~~
 
-The Monitor passes the timeframe configuration from its CLI and the resolved requested period, if any. It passes the validated Market Data machine-output result as Mapper STDIN; Mapper does not launch Market Data itself. The stream must correspond to the requested symbol, timeframe configuration, requested period, and all required canonical warm-up/context history.
+The Monitor passes its single anchor timeframe from the CLI and the resolved requested period, if any. It passes the validated Market Data machine-output result as Mapper STDIN; Mapper does not launch Market Data itself. The stream must contain all series required by the current automatic role plan for that phase, the requested symbol, requested period, and all required canonical warm-up/context history. Mapper result metadata returns the resolved timeframe roles and rationale; the Monitor retains these only in memory.
 
 The Monitor must not infer timeframe configuration from previous Mapper output, persist any Mapper analysis identity or checkpoint, calculate BOS/CHoCH/IDM/retracement/POI lifecycle, or pass `--cleartext` when it expects a machine-readable result.
 
@@ -1846,9 +1857,10 @@ Focused tests must cover at minimum.
 
 ~~~text
 test_monitor_requires_symbol
-test_monitor_requires_htf_and_ltf
-test_monitor_rejects_equal_htf_ltf
-test_monitor_rejects_htf_not_strictly_higher_than_ltf
+test_monitor_requires_anchor_timeframe
+test_monitor_rejects_missing_anchor_timeframe
+test_monitor_rejects_retired_htf_ltf_flags
+test_monitor_uses_single_anchor_timeframe
 test_monitor_accepts_multiple_symbols
 test_monitor_does_not_require_structures_output_directory
 test_monitor_uses_global_calendar_data
@@ -1865,8 +1877,10 @@ test_local_time_does_not_change_due_evaluation
 ### Analysis discovery
 
 ~~~text
-test_monitor_uses_explicit_timeframe_configuration
-test_monitor_does_not_infer_timeframes_from_market_data
+test_monitor_resolves_timeframe_roles_from_single_anchor
+test_monitor_does_not_infer_anchor_from_market_data_or_mapper_result
+test_monitor_auto_selects_dynamic_w1_pullback_representation
+test_monitor_excludes_entry_ltf_before_poi_touch
 test_monitor_blocks_dependent_setup_when_nested_htf_context_is_unavailable
 test_monitor_never_uses_unconfirmed_htf_structure_for_ltf_authorization
 test_runtime_mapping_context_is_symbol_isolated
@@ -1876,12 +1890,13 @@ test_transient_last_mapped_time_is_not_persisted
 ### Market Data orchestration
 
 ~~~text
-test_plan_market_data_from_explicit_timeframe_configuration
+test_plan_market_data_from_single_anchor_and_automatic_roles
 test_plan_market_data_bootstrap_from_cached_history
 test_mapper_request_uses_open_start_full_history_scope
 test_plan_market_data_separates_symbol_ranges
-test_two_timeframe_range_includes_required_htf_ltf_context
-test_market_data_plan_contains_only_configured_timeframes
+test_market_data_plan_includes_all_required_structural_support_series
+test_market_data_plan_excludes_entry_ltf_before_poi_touch
+test_market_data_plan_adds_entry_ltf_after_poi_touch
 test_no_new_completed_candle_skips_mapper
 test_missed_multiple_candles_use_one_full_recompute
 test_current_snapshot_refresh_does_not_trigger_mapper
