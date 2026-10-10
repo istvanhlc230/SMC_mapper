@@ -411,112 +411,62 @@ One mapper execution analyzes one symbol.
 
 ## 2.2 HTF
 
-Optional.
+Required. Exactly one valid timeframe must be supplied.
 
-Exactly one timeframe may be supplied.
-
-Example:
-
-`--htf H4`
+Example: `--htf H4`
 
 ---
 
 ## 2.3 LTF
 
-Optional.
+Required. Exactly one valid timeframe must be supplied.
 
-Exactly one timeframe may be supplied.
-
-Example:
-
-`--ltf M15`
+Example: `--ltf M15`
 
 ---
 
 ## 2.4 Timeframe relationship and analysis mode
 
-The mapper uses exactly two analysis modes:
+The Mapper supports one conformant analysis mode only:
 
-- `SINGLE_TIMEFRAME`
-- `HTF_LTF`
+- `HTF_LTF`: both `--htf` and `--ltf` are explicitly supplied, the timeframes are distinct, and `HTF > LTF`.
 
-The mapper determines the mode from the supplied timeframe parameters.
+Missing timeframe arguments, equal HTF/LTF values, or `HTF < LTF` are input errors. The Mapper must never silently swap, invent, or relabel timeframe inputs.
 
-### Single-timeframe analysis
+Single-timeframe-only analysis is not a conformant True SMC mapping mode. A selected timeframe must never be treated as both HTF and LTF.
 
-Use single-timeframe analysis when:
-
-- only `--htf` is supplied;
-- only `--ltf` is supplied; or
-- both are supplied but they specify the **same timeframe**.
-
-In single-timeframe analysis, the selected timeframe is analyzed once. `--htf H1`, `--ltf H1`, and `--htf H1 --ltf H1` must resolve to the same single-timeframe processing mode when H1 is the only effective timeframe. This is a per-invocation mode equivalence, not a persistent analysis identity.
-
-Internally, the analysis may represent:
-
-`HTF = LTF = selected timeframe`
-
-but this does **not** activate HTF pullback validation.
-
-### Two-timeframe analysis
-
-Use two-timeframe analysis only when both are supplied and they are different:
-
-`HTF > LTF`
-
-An invalid relationship is an input error.
-
-The mapper must never silently swap or otherwise correct the supplied timeframes.
+If both timeframe arguments are present but required historical coverage or context for either series is unavailable, the Mapper must preserve the dependent result as unavailable and fail closed; it must not downgrade the run to single-timeframe analysis.
 
 ---
 
 ## 2.5 Entry timeframe
 
-The entry timeframe is the driving timeframe for Monitor runtime scheduling. Market Data may use incremental provider acquisition internally, but Mapper always recomputes from the full retained history supplied to the invocation.
+The LTF is the entry timeframe and drives Monitor runtime scheduling. Market Data may use incremental provider acquisition internally, but Mapper always recomputes from the full retained history supplied to the invocation.
 
-- Single-timeframe analysis: the selected timeframe is the entry timeframe.
-- Two-timeframe analysis: the LTF is the entry timeframe.
-
-The entry timeframe determines completed-candle cadence for runtime scheduling and the requested processing/output boundaries. HTF remains the higher-context timeframe and is processed as required to provide point-in-time context for the entry timeframe.
+The entry timeframe determines completed-candle cadence for runtime scheduling and the requested processing/output boundaries. HTF remains the higher-context timeframe and is processed first as required to provide point-in-time context for the entry timeframe.
 
 ---
 
 ## 2.6 HTF pullback validation
 
-HTF pullback validation is enabled only in **two-timeframe analysis**, when both HTF and LTF are explicitly supplied and they are different.
+HTF pullback validation is mandatory wherever required by canonical True SMC structural qualification. It is available only when both distinct timeframe series are supplied.
 
-### Both supplied and different
+### Valid two-timeframe request
 
 `--htf H4 --ltf M15`
 
-- Analyze H4 first.
-- Analyze M15 second.
-- M15 may consume the required H4 structural context for canonical HTF pullback validation.
+- Establish H4 structural context first.
+- Process M15 in chronological order against the HTF facts already canonical at each LTF evaluation time.
+- Never allow a later HTF event to retroactively reinterpret an earlier LTF event.
 
-### Only HTF supplied
+### Invalid requests
 
-`--htf H4`
+- `--htf H4`: LTF is missing.
+- `--ltf M15`: HTF is missing.
+- `--htf H1 --ltf H1`: HTF and LTF are not distinct.
+- Any configuration where `HTF < LTF`: invalid timeframe relationship.
 
-- Analyze only H4.
-- Do not perform HTF pullback validation.
-
-### Only LTF supplied
-
-`--ltf M15`
-
-- Analyze only M15.
-- Do not perform HTF pullback validation.
-
-### Both supplied and equal
-
-`--htf H1 --ltf H1`
-
-- Treat the request as a single-timeframe H1 analysis.
-- Analyze H1 once.
-- Do not perform HTF pullback validation.
-- Do not treat H1 as its own Higher Timeframe for canonical Gate 2.
-
-The mapper must never automatically select or invent a different HTF when only one timeframe is supplied.
+Each invalid configuration is rejected; no substitute timeframe or single-timeframe mode is inferred.
 
 ---
 
@@ -549,7 +499,7 @@ The Mapper distinguishes requested period, actual completed-candle coverage per 
 
 ## 2.9 Input validation
 
-Before canonical analysis, validate symbol, timeframe values, HTF/LTF relationship, positional-period syntax and resolved UTC boundaries, timestamp ordering, duplicate timestamps, completed-candle status, OHLC integrity, required volume-field pairing, and single-/two-timeframe mode requirements.
+Before canonical analysis, validate symbol, both timeframe values, strict HTF > LTF relationship, positional-period syntax and resolved UTC boundaries, timestamp ordering, duplicate timestamps, completed-candle status, OHLC integrity, required volume-field pairing, and required MTF context coverage.
 
 Malformed dates/times, impossible dates, invalid 24-hour times, unsupported seconds/timezone suffixes, standalone date-time values without a range hyphen, reversed/empty intervals, and future range starts fail explicitly before canonical processing. Provider/API failures and acquisition errors belong to Market Data. Missing required historical/context candles must not be fabricated.
 
@@ -632,7 +582,7 @@ The Monitor/orchestrator must request the full retained Market Data history thro
 Example process pipe:
 
 ```text
-python market_data.py --symbol SYMBOL --timeframes TF [TF ...] --range MARKET_DATA_SCOPE | python smc_mapper.py --symbol SYMBOL [--htf HTF] [--ltf LTF] [PERIOD]
+python market_data.py --symbol SYMBOL --timeframes HTF LTF --range MARKET_DATA_SCOPE | python smc_mapper.py --symbol SYMBOL --htf HTF --ltf LTF [PERIOD]
 ```
 
 Market Data output must include all retained completed candles through the Mapper's requested end, not just the visible output window; use the Market Data open-start `--range -END` form for this full-history result. Market Data's `--range` is not passed to Mapper as a flag. The Monitor must pass its configured timeframe selection explicitly; it must not discover timeframe configuration from a Structures file.
@@ -645,10 +595,7 @@ Each Mapper invocation is independent. There is no persistent analysis identity,
 
 The result identifies the invocation by symbol, normalized timeframe configuration, normalized requested period, actual available coverage, and processing/output boundaries. Any optional correlation identifier is output metadata only and must not load or mutate state.
 
-The timeframe model remains:
-
-- `SINGLE_TIMEFRAME`: analyze the selected timeframe once, without treating it as its own HTF;
-- `HTF_LTF`: both timeframes are supplied, HTF is strictly higher than LTF, and LTF is the entry timeframe.
+The only conformant timeframe model is `HTF_LTF`: both timeframes are supplied, HTF is strictly higher than LTF, and LTF is the entry timeframe.
 
 ## 3.2 Per-run structural state
 
@@ -742,8 +689,7 @@ The mapper executes the following dependency-ordered pipeline for every analysis
 3. Initialize fresh in-memory canonical state for this invocation.
 4. Verify the supplied stream covers the requested period and all required bootstrap/warm-up context.
 5. Process completed candles only, in chronological order, using the canonical SMC skill as the sole semantic authority.
-6. In single-timeframe mode, evaluate the selected timeframe without HTF pullback validation.
-7. In two-timeframe mode, establish and maintain point-in-time HTF context and evaluate LTF candles only against HTF facts already canonical at the LTF evaluation time.
+6. Establish and maintain point-in-time HTF context; evaluate LTF candles only against HTF facts already canonical at the LTF evaluation time. A required context that is not available remains unresolved / fails closed.
 8. Reconcile canonical structural lifecycle, Dealing Range state/history, and canonical POI state according to the skill-owned semantics.
 9. Enrich already-canonical POIs with optional non-canonical volume analytics when requested and available.
 10. Serialize the completed in-memory result to the selected STDOUT presentation mode; do not persist canonical state.
@@ -817,13 +763,13 @@ A successful invocation returns the validated in-memory result. A failed or unre
 
 Each timeframe is analyzed according to its own canonical structural rules.
 
-In two-timeframe mode, HTF and LTF remain separate canonical analyses while sharing a synchronized execution timeline.
+In every valid invocation, HTF and LTF remain separate canonical analyses while sharing a synchronized execution timeline.
 
 The LTF is not a canonical child of the HTF and must not redefine or mutate HTF structure.
 
 The HTF provides the execution context required by canonical LTF rules where such context is explicitly specified.
 
-In single-timeframe mode, no HTF/LTF execution relationship exists.
+There is no conformant single-timeframe-only execution mode; a request lacking either distinct timeframe is rejected and unavailable context is never synthesized.
 
 ## 6.2 Synchronized point-in-time processing
 
@@ -932,7 +878,7 @@ It must not introduce a general HTF-parent/LTF-child semantic ontology.
 
 In two-timeframe mode, it applies independently to the HTF CLOSED DEALING RANGE history retained inside each distinct mapper analysis entry. The LTF does not have a separate `history_no`.
 
-In single-timeframe analysis, it applies to the selected timeframe's CLOSED DEALING RANGE history for that analysis.
+The conformant HTF/LTF analysis retains HTF CLOSED DEALING RANGE history; there is no single-timeframe-only history mode.
 
 The history unit is the canonical closed Dealing Range. Only a Dealing Range that has been canonically closed may enter history. The currently open Dealing Range is never a history item.
 
@@ -1594,7 +1540,7 @@ The global developer-agent naming, portability, prompt-efficiency, and validatio
 
 At minimum, the finished mapper implementation must have focused tests covering:
 
-- CLI option parsing, including equal HTF/LTF single-timeframe mode and invalid HTF<LTF combinations;
+- CLI option parsing requires both HTF and LTF, rejects equal timeframes, and rejects invalid HTF<LTF combinations;
 - positional-period parser coverage for date-only, date ranges with independently optional endpoint times, open-start, and open-end forms;
 - leading-hyphen positional PERIOD is accepted without requiring an extra `--` delimiter;
 - standalone `YYYY.MM.DD@HH:MM` is rejected because a time requires a range hyphen;
