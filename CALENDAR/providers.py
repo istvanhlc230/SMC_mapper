@@ -210,7 +210,7 @@ def _fetch_lse_rows(symbol: str, start: datetime, end: datetime) -> List[Dict[st
                 or parsed_error_body.get("error")
                 or raw_error_body
             )
-        error_detail = re.sub(r"\\s+", " ", error_detail).strip()
+        error_detail = re.sub(r"\s+", " ", error_detail).strip()
         if api_key:
             error_detail = error_detail.replace(api_key, "[redacted]")
         if error_detail:
