@@ -433,7 +433,56 @@ jobs:
           except calendar.ProviderError:
               pass
           else:
-              raise AssertionError("missing provider time must fail closed")
+              raise AssertionError("direct parser calls must fail closed for missing event time")
+
+          # Provider acquisition can skip untimeable rows without fabricating a
+          # timestamp, while reporting the row IDs so the caller marks coverage PARTIAL.
+          unresolved_parser_ids = []
+          parsed_unresolved_rows = calendar.parse_forexfactory_html_events(
+              missing_time_html,
+              dt("2026-10-04T00:00:00Z"),
+              dt("2026-10-06T00:00:00Z"),
+              unresolved_event_time_ids=unresolved_parser_ids,
+          )
+          assert parsed_unresolved_rows == []
+          assert unresolved_parser_ids == ["1005"]
+
+          # End-to-end fallback parsing should retain concrete-time events while
+          # isolating an All Day event (the ID in the latest live failure).
+          fallback_html = """<html><body>
+          <div>Calendar Time Zone: Europe/Budapest (GMT +2)</div>
+          <table><tbody>
+          <tr class="calendar__row calendar_row" data-eventid="151380">
+            <td class="calendar__cell calendar__date date">Fri Oct 9</td>
+            <td class="calendar__cell calendar__time time">All Day</td>
+            <td class="calendar__cell calendar__currency currency">JPY</td>
+            <td class="calendar__cell calendar__event event"><span class="calendar__event-title">Bank Holiday</span></td>
+          </tr>
+          <tr class="calendar__row calendar_row" data-eventid="151381">
+            <td class="calendar__cell calendar__date date">Fri Oct 9</td>
+            <td class="calendar__cell calendar__time time">10:00am</td>
+            <td class="calendar__cell calendar__currency currency">USD</td>
+            <td class="calendar__cell calendar__event event"><span class="calendar__event-title">Timed Test Event</span></td>
+          </tr>
+          </tbody></table></body></html>"""
+          original_ff_fetch_url = providers.fetch_url
+          try:
+              providers.fetch_url = lambda _url: fallback_html
+              unresolved_provider_ids = []
+              fallback_events = providers.fetch_forexfactory(
+                  dt("2026-10-09T00:00:00Z"),
+                  dt("2026-10-10T00:00:00Z"),
+                  include_details=False,
+                  unresolved_event_time_ids=unresolved_provider_ids,
+              )
+              assert [event["event_id"] for event in fallback_events] == [
+                  "forexfactory:151381"
+              ]
+              assert fallback_events[0]["title"] == "Timed Test Event"
+              assert fallback_events[0]["timestamp"] == "2026-10-09T08:00:00Z"
+              assert unresolved_provider_ids == ["151380"]
+          finally:
+              providers.fetch_url = original_ff_fetch_url
 
           for raw_class, expected_impact in (
               ("icon--ff-impact-red", "high"),
@@ -713,7 +762,7 @@ jobs:
           original_refresh_save = storage.save_calendar_atomic
           saved_refresh_docs = []
           try:
-              providers.fetch_forexfactory = lambda start, end, include_details=True: [refreshed_event]
+              providers.fetch_forexfactory = lambda start, end, include_details=True, unresolved_event_time_ids=None: [refreshed_event]
               providers._enrich_forexfactory_details = lambda events: None
               storage.save_calendar_atomic = lambda document: saved_refresh_docs.append(document)
               refresh_result = operations.refresh_calendar_scope(
@@ -765,7 +814,7 @@ jobs:
               provider_event = dict(manual_mutation_event)
               provider_event["details"] = dict(manual_mutation_event["details"])
               provider_event["details"]["actual"] = "197K"
-              providers.fetch_forexfactory = lambda start, end, include_details=True: [provider_event]
+              providers.fetch_forexfactory = lambda start, end, include_details=True, unresolved_event_time_ids=None: [provider_event]
               providers._enrich_forexfactory_details = lambda events: None
               refresh_result = operations.refresh_calendar_scope(
                   manual_mutation_doc,
@@ -1555,7 +1604,7 @@ jobs:
               storage.save_calendar_atomic = lambda document: None
               call_count = {"value": 0}
 
-              def partial_then_success(start, end, include_details=True, detail_failures=None):
+              def partial_then_success(start, end, include_details=True, detail_failures=None, unresolved_event_time_ids=None):
                   call_count["value"] += 1
                   events = [
                       synthetic_ff_event("2001", 7),
@@ -1565,6 +1614,8 @@ jobs:
                   if detail_failures is not None and call_count["value"] == 1:
                       detail_failures.append("2002")
                       events[1]["details"]["specs"] = []
+                  if unresolved_event_time_ids is not None and call_count["value"] == 1:
+                      unresolved_event_time_ids.append("2999")
                   return events
 
               providers.fetch_forexfactory = partial_then_success
@@ -1578,6 +1629,7 @@ jobs:
               first_ff = next(item for item in first["provider_results"] if item["provider"] == "forexfactory")
               assert first_ff["status"] == "PARTIAL"
               assert first_ff["detail_failures"] == 1
+              assert first_ff["unresolved_event_times"] == 1
               assert partial_doc["coverage"][0]["status"] == "PARTIAL"
               assert "forexfactory|USD" not in partial_doc["watermarks"]
               assert len(partial_doc["events"]) == 3
@@ -1723,7 +1775,7 @@ jobs:
               )
 
               providers.fetch_forexfactory = (
-                  lambda start, end, include_details=False: [synthetic_ff_event("2201", 5)]
+                  lambda start, end, include_details=False, unresolved_event_time_ids=None: [synthetic_ff_event("2201", 5)]
               )
               providers.fetch_forexfactory_event_detail = (
                   lambda _event_id: [
