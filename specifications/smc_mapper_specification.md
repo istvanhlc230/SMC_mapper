@@ -1555,7 +1555,8 @@ At minimum, the finished mapper implementation must have focused tests covering:
 - 38.2%–below-50% qualification only when the entire mapped retracement is represented by one complete valid pullback event on the applicable immediate HTF; that event may span multiple HTF candles and is not a single-candle test;
 - an HTF inside bar/invalid pullback yields NOT QUALIFIED, while missing HTF history yields HTF_CONTEXT_UNAVAILABLE rather than a false negative;
 - pairing examples are not rigid: when a three-month series is not part of the established hierarchy, a configured monthly HTF may validate W1 structure; use the Market Data-defined `MN1` input token for monthly data, and do not assume `3MN` is supported;
-- an Outside Bar with ambiguous internal order is UNAVAILABLE unless supplied lower-timeframe/equivalent evidence establishes its path;
+- if a configured HTF's own 38.2%–below-50% qualification requires an additional higher timeframe outside the pair, keep that HTF event/context unavailable and block dependent LTF setup authorization;
+- an Outside Bar with ambiguous internal order records `INTRABAR_SEQUENCE_EVIDENCE = UNAVAILABLE`; Layer 2 terminally invalidates any dependent pullback candidate, and later candles cannot retroactively resolve it;
 - point-in-time HTF context, proving later HTF events do not reinterpret earlier LTF events;
 - full recomputation from supplied history yields deterministic output;
 - historical candle corrections are reflected in a fresh invocation without reading prior Mapper output;
