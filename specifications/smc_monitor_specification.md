@@ -420,7 +420,7 @@ Planning rules:
 - Market Data's retained cache determines whether a provider update is needed;
 - the Monitor uses returned completed-candle coverage to determine whether a fresh Mapper run is due;
 - every Mapper invocation receives the full retained completed-candle history through its resolved end boundary, not merely the requested output period;
-- to return that history, the Monitor uses Market Data's open-start `--range -END` output scope; when retained data exists, Market Data fetches only missing coverage after `available_end` and emits the full retained history from `available_start`;
+- to return that history, the Monitor uses Market Data's positional open-start `-END` scope (there is no `--range` flag); when retained data exists, Market Data fetches only missing coverage after `available_end` and emits the full retained history from `available_start`;
 - the stream includes all series required by the current resolved roles/phase plus all overlap and warm-up needed for point-in-time context;
 - `-END` historical scopes resolve from each timeframe's earliest retained completed candle, not its latest candle;
 - no plan uses a Mapper checkpoint; no durable Mapper checkpoint exists.
@@ -1445,7 +1445,7 @@ A failed symbol cycle produces no usable new Mapper result; unrelated symbols ma
 
 ## 14.1 No durable Mapper checkpoint
 
-Mapper has no persistent checkpoint or Structures file. The Monitor may retain `last_mapped_candle_time` only in transient runtime memory to avoid redundant executions during one process lifetime. It must not serialize that value to disk or treat it as canonical state.
+Mapper has no persistent checkpoint or Structures file. The Monitor may retain `last_mapped_candle_time_by_timeframe` only in transient runtime memory to avoid redundant executions during one process lifetime. Trigger timestamps are tracked by actual timeframe/role so the anchor cadence and the armed entry-LTF cadence cannot be confused. They must not be serialized to disk or treated as canonical state.
 
 ## 14.2 Result validity
 
@@ -1918,7 +1918,8 @@ test_market_data_plan_excludes_entry_ltf_before_poi_touch
 test_market_data_plan_adds_entry_ltf_after_poi_touch
 test_no_new_completed_candle_skips_mapper
 test_missed_multiple_candles_use_one_full_recompute
-test_current_snapshot_refresh_does_not_trigger_mapper
+test_current_snapshot_without_poi_touch_does_not_trigger_mapper
+test_current_snapshot_poi_touch_arms_entry_ltf_plan
 ~~~
 
 ### Process boundary
