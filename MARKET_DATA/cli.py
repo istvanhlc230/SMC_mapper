@@ -4,9 +4,15 @@ from __future__ import annotations
 import argparse
 import sys
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 from typing import Sequence
 
-from .models import MarketDataRequest, MarketDepthSnapshot, SUPPORTED_TIMEFRAMES
+from .models import (
+    MarketDataRequest,
+    MarketDepthLevel,
+    MarketDepthSnapshot,
+    SUPPORTED_TIMEFRAMES,
+)
 from .provider import create_provider
 from .protocol import format_table, serialize_machine_csv
 from .service import get_candles
@@ -262,8 +268,13 @@ def run(request):
                                 and candidate_depth.timestamp.utcoffset() is not None
                             )
                             matches_symbol = (
-                                candidate_depth.symbol.strip().upper()
+                                isinstance(candidate_depth.symbol, str)
+                                and candidate_depth.symbol.strip().upper()
                                 == request.symbol
+                            )
+                            valid_provider_name = (
+                                isinstance(candidate_depth.provider, str)
+                                and bool(candidate_depth.provider.strip())
                             )
                             not_after_requested_end = (
                                 request.end_time is None
@@ -273,14 +284,24 @@ def run(request):
                                     <= request.end_time
                                 )
                             )
-                            has_levels = bool(
-                                candidate_depth.bids or candidate_depth.asks
+                            depth_levels = list(candidate_depth.bids or []) + list(
+                                candidate_depth.asks or []
+                            )
+                            has_valid_levels = bool(depth_levels) and all(
+                                isinstance(level, MarketDepthLevel)
+                                and isinstance(level.price, Decimal)
+                                and level.price.is_finite()
+                                and isinstance(level.volume, Decimal)
+                                and level.volume.is_finite()
+                                and level.volume >= 0
+                                for level in depth_levels
                             )
                             if (
                                 has_explicit_timezone
                                 and matches_symbol
+                                and valid_provider_name
                                 and not_after_requested_end
-                                and has_levels
+                                and has_valid_levels
                             ):
                                 market_depth = candidate_depth
                             elif request.debug:
