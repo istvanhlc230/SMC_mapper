@@ -20,6 +20,7 @@ jobs:
         shell: bash
         run: |
           python - <<'PY'
+          from dataclasses import replace
           from datetime import datetime, timezone
           from pathlib import Path
           from tempfile import TemporaryDirectory
@@ -220,7 +221,6 @@ jobs:
           # and it must carry volume_total and a complete observed orderflow pair.
           import csv
           import io
-          from dataclasses import replace
           from MARKET_DATA.protocol import MACHINE_PROTOCOL_HEADER, serialize_machine_csv
           assert MACHINE_PROTOCOL_HEADER == (
               "timeframe", "time", "open", "high", "low", "close",
