@@ -1409,6 +1409,31 @@ jobs:
           assert "EVENT DETAILS | 02 | Second Test Event" in rendered_blocks
           assert rendered_blocks.count("+") > 20
 
+          # Metadata and refresh summaries use the same tabular presentation.
+          table_out = io.StringIO()
+          with contextlib.redirect_stdout(table_out):
+              calendar.output_last_updates_table(
+                  "OK",
+                  "EURUSD",
+                  [
+                      {"provider": "lse", "last_successful_at": "2026-10-10T12:00:00Z"},
+                      {"provider": "forexfactory", "last_successful_at": None},
+                  ],
+              )
+          last_update_rendered = table_out.getvalue()
+          assert "Last Successful Update (UTC)" in last_update_rendered
+          assert "forexfactory" in last_update_rendered
+          assert "N/A" in last_update_rendered
+
+          table_out = io.StringIO()
+          with contextlib.redirect_stdout(table_out):
+              calendar.output_refresh_summary({"added": 2, "changed": 1, "unchanged": 4})
+          refresh_rendered = table_out.getvalue()
+          assert "REFRESH SUMMARY" in refresh_rendered
+          assert "Added" in refresh_rendered and "2" in refresh_rendered
+          assert "Changed" in refresh_rendered and "1" in refresh_rendered
+          assert "Unchanged" in refresh_rendered and "4" in refresh_rendered
+
           # Explicit bare delete must recover from an incompatible legacy cache.
           original_root = storage.DATA_ROOT
           original_file = storage.CALENDAR_FILE
