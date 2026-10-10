@@ -64,6 +64,7 @@ Read the referenced documents in this order when the full methodology is require
 
 9. `08_implementation.md`
    - Implementation representation requirements
+   - Dynamic multi-timeframe resolution roles and required supporting-data availability
    - State-transition and validation requirements
    - First-BOS bootstrap/process-state representation, dedicated bootstrap-reversal event routing, `dynamic_retracement_extreme` lifecycle mapping, explicit pre-BOS observation boundaries, and mapping-origin `C0` invariants
    - Must consume canonical methodology; it must not redefine it
