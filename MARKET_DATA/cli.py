@@ -21,11 +21,11 @@ def build_argument_parser():
             "--table selects human-readable tabular output."
         ),
         usage=(
-            "%(prog)s --symbol SYMBOL --timeframes TF [TF ...] [SCOPE ...] "
+            "%(prog)s SYMBOL --timeframes TF [TF ...] [SCOPE ...] "
             "[--current | --lastclosed] [--debug] [--table]"
         ),
     )
-    parser.add_argument("--symbol", metavar="SYMBOL", help="Instrument or ticker symbol.")
+    parser.add_argument("symbol", nargs="?", metavar="SYMBOL", help="Instrument or ticker symbol (positional).")
     parser.add_argument(
         "--timeframes",
         metavar="TF",
@@ -155,13 +155,7 @@ def parse_market_data_request(argv: Sequence[str] | None = None):
                 "Date/time scope is positional; --range, --date, and --time are not supported."
             )
         if argument == "--symbol":
-            if argument in options_seen:
-                raise ValueError("--symbol may be specified only once")
-            options_seen.add(argument)
-            index += 1
-            if index >= len(raw_arguments):
-                raise ValueError("--symbol requires SYMBOL")
-            symbol = raw_arguments[index]
+            raise ValueError("SYMBOL is positional; do not use --symbol. Example: market_data.py EURUSD --timeframes H1 M15.")
         elif argument == "--timeframes":
             if argument in options_seen:
                 raise ValueError("--timeframes may be specified only once")
@@ -189,11 +183,14 @@ def parse_market_data_request(argv: Sequence[str] | None = None):
         elif argument.startswith("--"):
             raise ValueError(f"unknown CLI option: {argument}")
         else:
-            scope_tokens.append(argument)
+            if symbol is None:
+                symbol = argument
+            else:
+                scope_tokens.append(argument)
         index += 1
 
     if symbol is None:
-        raise ValueError("--symbol is required")
+        raise ValueError("expected SYMBOL as a positional argument")
     if not timeframes:
         raise ValueError("--timeframes requires at least one supported timeframe")
 
