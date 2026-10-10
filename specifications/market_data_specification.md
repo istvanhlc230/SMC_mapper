@@ -1950,7 +1950,7 @@ Never:
 - write debug/status/progress text to machine STDOUT;
 - forward STDERR into Mapper/Monitor data input;
 - persist debug output;
-- use `--table` as an inter-process data protocol.
+- use human-readable `--table` output as an inter-process data protocol.
 
 Errors use STDERR and a non-zero exit status. The machine-output stream must remain parseable when the request succeeds and debug is enabled. A failed request must not be consumed as a candle stream.
 
