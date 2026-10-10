@@ -1408,7 +1408,7 @@ GitHub Actions validation is pending for the latest commit. A live authenticated
 - Added a shared standard-library transport option that attempts resolved IPv4 addresses before IPv6, retaining IPv6 fallback and default proxy handling.
 - Calendar's LSE economic-calendar request and Market Data's LSE candle requests now use the IPv4-first transport option.
 - The custom HTTPS handler retains the normal TLS context and hostname verification.
-- Added a deterministic workflow test where DNS presents IPv6 first, verifying that the helper attempts IPv4 first.
+- Added deterministic workflow tests where DNS presents IPv6 first, verifying that the helper attempts IPv4 first and falls back to IPv6 when IPv4 connection attempts fail.
 - Updated Calendar's version contract to 2.6.3 and documented the transport behavior in Common Utilities, Calendar, and Market Data specifications.
 - Calendar's LSE request regression test now asserts that ipv4_first=True is used.
 
