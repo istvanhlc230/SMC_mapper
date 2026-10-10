@@ -293,12 +293,12 @@ def _validate_calendar_event(event: Dict[str, Any], event_ids: set[str]) -> None
         raise DataIntegrityError("Event title must not be empty.")
     if not isinstance(event["details"], dict):
         raise DataIntegrityError("Event details must be an object.")
-    provider_fields = event["details"].get("provider_fields")
-    if provider_fields is not None:
+    if "provider_fields" in event["details"]:
+        provider_fields = event["details"]["provider_fields"]
         if not isinstance(provider_fields, dict):
             raise DataIntegrityError("Provider fields must be grouped by provider.")
         for provider_name, fields in provider_fields.items():
-            if provider_name not in {"lse", "forexfactory", "yahoo_finance"}:
+            if provider_name not in _PROVIDER_FIELD_SOURCE_NAMES:
                 raise DataIntegrityError("Invalid provider-fields provider.")
             if not isinstance(fields, dict):
                 raise DataIntegrityError("Provider-specific fields must be an object.")
@@ -450,6 +450,10 @@ def normalize_calendar_document_provider_fields(document: Dict[str, Any]) -> boo
         if not isinstance(details, dict) or "provider_fields" not in details:
             continue
         previous_fields = details["provider_fields"]
+        if previous_fields is None:
+            details.pop("provider_fields", None)
+            changed = True
+            continue
         if not isinstance(previous_fields, dict):
             continue
         normalized_fields = normalize_provider_fields(
