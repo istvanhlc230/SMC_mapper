@@ -187,7 +187,7 @@ Rules:
 
 - `stdout` and `stderr` are separate process streams whose interpretation is defined by the invoked component contract;
 - for `market_data.py`, `stdout` is the machine-readable candle transport and `stderr` is diagnostics;
-- for `smc_mapper.py`, stdout is not a Market Data input channel;
+- for `smc_mapper.py`, stdout is the committed Structures JSON response, while stderr is diagnostics/errors;
 - the Monitor may retain process output transiently for validation, diagnostics, or downstream contract handling as defined by the invoked process;
 - debug STDERR may be shown on the terminal only;
 - no subprocess diagnostic output is persisted as canonical state.
@@ -608,7 +608,7 @@ The Monitor must not:
 - set or edit mapper checkpoints;
 - calculate BOS, CHoCH, IDM, retracement, or POI lifecycle.
 
-The machine-readable result is the persisted structures JSON. The Market Data CSV is process input only and must not be appended to Mapper arguments, written to an intermediate repository file, or merged with diagnostic STDERR.
+On success, Mapper STDOUT contains exactly one JSON document: the complete Structures JSON document that Mapper has already atomically persisted. The Monitor must capture stdout separately from stderr, parse and validate this JSON response, and never treat stderr as data. The Market Data CSV is process input only and must not be appended to Mapper arguments, written to an intermediate repository file, or merged with diagnostic STDERR. Mapper STDOUT is a response channel, not the durable state store; the Structures file remains authoritative for restart/resume.
 
 When debug is enabled, the Monitor may propagate --debug to smc_mapper.py so mapper diagnostics remain visible on stderr. It must never parse those diagnostics as data.
 
@@ -618,7 +618,7 @@ A non-zero mapper exit status prevents downstream use of a newer structural stat
 
 Each subprocess receives explicit arguments and the environment required for execution.
 
-stdout/stderr remain diagnostics/process output only.
+stdout/stderr are captured as separate streams and interpreted according to the invoked process contract. Market Data stdout is CSV input for Mapper; Mapper stdout is its committed Structures JSON response. STDERR is diagnostics/errors only and is never parsed as canonical data.
 
 No process may consume another process's debug output as machine data.
 
@@ -627,9 +627,13 @@ No process may consume another process's debug output as machine data.
 For downstream evaluation, Mapper success requires:
 
 1. successful process exit;
-2. valid reload of the expected structures JSON;
-3. presence of the relevant analysis entry;
-4. a checkpoint consistent with the completed candles the Mapper incorporated.
+2. exactly one valid JSON document captured from Mapper STDOUT;
+3. valid reload of the expected structures JSON;
+4. semantic consistency between the returned JSON document and the atomically persisted Structures JSON;
+5. presence of the relevant analysis entry;
+6. a checkpoint consistent with the completed candles the Mapper incorporated.
+
+If stdout is empty, contains extra non-JSON text, contains malformed JSON, or disagrees with the persisted file, the Monitor treats the invocation as failed and does not use a newer state for downstream evaluation. The Monitor never writes or repairs the Mapper's Structures JSON.
 
 The Monitor does not independently advance checkpoint state.
 
@@ -1964,6 +1968,8 @@ test_current_snapshot_refresh_does_not_advance_checkpoint
 ~~~text
 test_invoke_market_data_consumes_machine_stdout
 test_invoke_mapper_passes_market_data_stdout_to_stdin
+test_invoke_mapper_parses_json_stdout
+test_invoke_mapper_stdout_matches_persisted_structures_json
 test_invoke_mapper_uses_persisted_structures_json
 test_failed_market_data_blocks_dependent_mapper
 test_failed_mapper_does_not_advance_monitor_checkpoint
