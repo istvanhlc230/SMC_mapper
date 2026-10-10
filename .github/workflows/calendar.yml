@@ -190,7 +190,7 @@ jobs:
               providers.open_url = original_lse_open_url
 
           assert calendar.validate_symbol("EURUSD") == "EURUSD"
-          assert calendar.__version__ == "2.7.0"
+          assert calendar.__version__ == "2.8.0"
           assert calendar.validate_symbol("USDGBP") == "USDGBP"
           assert calendar.validate_symbol("HUF") == "HUF"
           assert calendar.validate_symbol("NVDA") == "NVDA"
@@ -731,7 +731,7 @@ jobs:
               providers.fetch_url = original_fetch_url
               providers.fetch_forexfactory_event_detail = detail_failure_original_detail_fetch
 
-          cleartext_specs = calendar.format_cleartext_details({
+          table_specs = calendar.format_table_details({
               "currency": "USD",
               "impact": "HIGH",
               "actual": None,
@@ -742,8 +742,8 @@ jobs:
                   {"order": 1, "title": "Measures", "html": "Monthly data."},
               ],
           })
-          assert any("Source   : Example Source" in line for line in cleartext_specs)
-          assert any("Measures : Monthly data." in line for line in cleartext_specs)
+          assert any("Source   : Example Source" in line for line in table_specs)
+          assert any("Measures : Monthly data." in line for line in table_specs)
 
           # Provider Detail HTML may be entity-escaped. Cleartext must decode
           # entities before stripping markup, while calendar.json still retains
@@ -754,7 +754,7 @@ jobs:
               "Event added to calendar 176 minutes before release time; "
               "Why Traders&lt;br&gt;Care: Federal Reserve members vote on rates"
           )
-          escaped_lines = calendar.format_cleartext_details({
+          escaped_lines = calendar.format_table_details({
               "specs": [{"order": 1, "title": "Provider Detail", "html": escaped_detail}],
           })
           escaped_rendered = "\n".join(escaped_lines)
@@ -768,7 +768,7 @@ jobs:
               "FF Notice &amp;lt;img class=&amp;quot;svg-img&amp;quot;&amp;gt;: Event added; "
               "Why Traders&amp;lt;br&amp;gt;Care: policy clues"
           )
-          double_escaped_lines = calendar.format_cleartext_details({
+          double_escaped_lines = calendar.format_table_details({
               "specs": [{"order": 1, "title": "Provider Detail", "html": double_escaped_detail}],
           })
           double_escaped_rendered = "\n".join(double_escaped_lines)
@@ -783,7 +783,7 @@ jobs:
               "FF Notice <img class=\"svg-img svg-img--misc-star\">: Event added; "
               "Why Traders<br>Care: policy clues"
           )
-          literal_lines = calendar.format_cleartext_details({
+          literal_lines = calendar.format_table_details({
               "specs": [{
                   "order": 1,
                   "title": "Why Traders<br>Care",
@@ -1025,7 +1025,7 @@ jobs:
               out = io.StringIO()
               with contextlib.redirect_stdout(out):
                   assert calendar.run_query(
-                      "USD", "2026.10.01", cleartext=False, refresh=True
+                      "USD", "2026.10.01", table=False, refresh=True
                   ) == 0
               lines = [line for line in out.getvalue().splitlines() if line.strip()]
               assert len(lines) == 1
@@ -1107,7 +1107,7 @@ jobs:
               out = io.StringIO()
               with contextlib.redirect_stdout(out):
                   assert calendar.run_query(
-                      "USD", "2026.10.05", cleartext=False, refresh=True
+                      "USD", "2026.10.05", table=False, refresh=True
                   ) == 0
               parsed = json.loads(out.getvalue())
               assert parsed["status"] == "OK"
@@ -1157,7 +1157,7 @@ jobs:
               out = io.StringIO()
               with contextlib.redirect_stdout(out):
                   assert calendar.run_query(
-                      "USD", "2026.10.05", cleartext=False, refresh=True
+                      "USD", "2026.10.05", table=False, refresh=True
                   ) == 0
               parsed = json.loads(out.getvalue())
               assert parsed["status"] == "OK"
@@ -1215,7 +1215,7 @@ jobs:
               "operation": "QUERY",
               "symbol": "USD",
               "scope": "-2026.10.10 05:00",
-              "cleartext": False,
+              "table": False,
               "debug": False,
               "refresh": True,
           }
@@ -1339,13 +1339,13 @@ jobs:
               }
               assert calendar.normalize_provider_event(structured_raw)["details"]["impact"] == expected_impact
 
-          assert calendar.__version__ == "2.7.0"
+          assert calendar.__version__ == "2.8.0"
           assert f"Calendar CLI v{calendar.__version__}" in calendar.HELP_TEXT
 
           # Cleartext output must render normalized details as readable fields,
           # not as an internal JSON dictionary representation.
-          cleartext_event = {
-              "event_id": "forexfactory:cleartext",
+          table_event = {
+              "event_id": "forexfactory:table",
               "symbol": "EUR",
               "asset_type": "forex",
               "event_type": "economic",
@@ -1367,12 +1367,12 @@ jobs:
                   },
               },
           }
-          cleartext_out = io.StringIO()
-          with contextlib.redirect_stdout(cleartext_out):
+          table_out = io.StringIO()
+          with contextlib.redirect_stdout(table_out):
               calendar.output_query_result(
-                  "OK", "EURUSD", [cleartext_event], [], cleartext=True
+                  "OK", "EURUSD", [table_event], [], table=True
               )
-          rendered = cleartext_out.getvalue()
+          rendered = table_out.getvalue()
           assert 'Details   : {"currency"' not in rendered
           assert "Details   :\n" in rendered
           assert "  Currency : EUR\n" in rendered
@@ -1387,16 +1387,16 @@ jobs:
           assert "{'time':" not in rendered
 
           # Cleartext event blocks are separated by whitespace only; no closing rule is emitted.
-          second_cleartext_event = dict(cleartext_event)
-          second_cleartext_event["event_id"] = "forexfactory:cleartext-2"
-          cleartext_out = io.StringIO()
-          with contextlib.redirect_stdout(cleartext_out):
+          second_table_event = dict(table_event)
+          second_table_event["event_id"] = "forexfactory:table-2"
+          table_out = io.StringIO()
+          with contextlib.redirect_stdout(table_out):
               calendar.output_query_result(
-                  "OK", "EURUSD", [cleartext_event, second_cleartext_event], [], cleartext=True
+                  "OK", "EURUSD", [table_event, second_table_event], [], table=True
               )
-          rendered_blocks = cleartext_out.getvalue()
+          rendered_blocks = table_out.getvalue()
           assert "-----------------------------------------------" not in rendered_blocks
-          assert "Event ID  : forexfactory:cleartext\n\n--- EVENT 02" in rendered_blocks
+          assert "Event ID  : forexfactory:table\n\n--- EVENT 02" in rendered_blocks
 
           # Explicit bare delete must recover from an incompatible legacy cache.
           original_root = storage.DATA_ROOT
@@ -1478,14 +1478,14 @@ jobs:
               import contextlib, io
               out = io.StringIO()
               with contextlib.redirect_stdout(out):
-                  assert calendar.run_query("EURUSD", "next", cleartext=True) == 0 # 14. cleartext produces output
+                  assert calendar.run_query("EURUSD", "next", table=True) == 0 # 14. table produces output
               assert "Next USD" in out.getvalue()
               assert not acquired_calls # 13. next does not trigger acquisition
 
               out = io.StringIO()
               with contextlib.redirect_stdout(out):
                   domain.utc_now = lambda: dt("2026-10-04T12:00:00Z")
-                  assert calendar.run_query("EURUSD", "latest", cleartext=True) == 0
+                  assert calendar.run_query("EURUSD", "latest", table=True) == 0
               assert "Now USD" in out.getvalue()
               assert not acquired_calls # latest must not trigger acquisition
               assert not saved_docs # latest must not alter persistent state
@@ -1495,7 +1495,7 @@ jobs:
               out = io.StringIO()
               with contextlib.redirect_stdout(out):
                   domain.utc_now = lambda: dt("2026-11-01T00:00:00Z") # in the far future
-                  assert calendar.run_query("EURUSD", "next", cleartext=False) == 0
+                  assert calendar.run_query("EURUSD", "next", table=False) == 0
               assert json.loads(out.getvalue())["status"] == "NO_NEXT_EVENT" # 7. returns NO_NEXT_EVENT output
           finally:
               storage.load_calendar_document = original_load
@@ -1651,15 +1651,15 @@ jobs:
                   "operation": "QUERY",
                   "symbol": "EURUSD",
                   "scope": "current",
-                  "cleartext": False,
+                  "table": False,
                   "debug": True,
               }
               __import__("CALENDAR.cli", fromlist=["run_query"]).parse_request = calendar.parse_request
-              __import__("CALENDAR.cli", fromlist=["run_query"]).run_query = lambda symbol, scope, cleartext=False, debug=False, refresh=False: (
+              __import__("CALENDAR.cli", fromlist=["run_query"]).run_query = lambda symbol, scope, table=False, debug=False, refresh=False: (
                   captured.update({
                       "symbol": symbol,
                       "scope": scope,
-                      "cleartext": cleartext,
+                      "table": table,
                       "debug": debug,
                   }) or 0
               )
@@ -2057,7 +2057,7 @@ jobs:
               out = io.StringIO()
               with contextlib.redirect_stdout(out):
                   assert calendar.run_query(
-                      "USD", "current", cleartext=False, refresh=False
+                      "USD", "current", table=False, refresh=False
                   ) == 0
               parsed_current = json.loads(out.getvalue())
               assert parsed_current["status"] == "NO_CURRENT_EVENT"
@@ -2076,7 +2076,7 @@ jobs:
               )
               out = io.StringIO()
               with contextlib.redirect_stdout(out):
-                  assert calendar.run_query("USD", "-2026.10.20", cleartext=False, refresh=False) == 0
+                  assert calendar.run_query("USD", "-2026.10.20", table=False, refresh=False) == 0
               parsed_open_query = json.loads(out.getvalue())
               assert parsed_open_query["status"] == "OK"
               assert [event["event_id"] for event in parsed_open_query["events"]] == [
