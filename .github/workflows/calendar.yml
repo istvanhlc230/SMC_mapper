@@ -1384,15 +1384,15 @@ jobs:
           assert "Actual Revised" in rendered
           assert "{'time':" not in rendered
 
-          # Table request parsing accepts --table and explicitly retires --cleartext.
+          # Table request parsing accepts --table; retired flags use generic unknown-option errors.
           table_request = calendar.parse_request(["EURUSD", "2026.10.12", "--table"])
           assert table_request["table"] is True
           try:
               calendar.parse_request(["EURUSD", "2026.10.12", "--cleartext"])
           except calendar.CalendarInputError as exc:
-              assert "--cleartext was replaced by --table" in str(exc)
+              assert str(exc) == "Unknown CLI option '--cleartext'."
           else:
-              raise AssertionError("--cleartext must be rejected after the rename")
+              raise AssertionError("--cleartext must be rejected as an unknown option")
 
           # Each event has its own labeled details table following the summary table.
           second_table_event = dict(table_event)
