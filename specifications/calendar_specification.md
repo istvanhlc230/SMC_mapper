@@ -72,6 +72,8 @@ ForexFactory:
 - a single concrete calendar day uses day=<monD.YYYY>;
 - a multi-day interval uses range=<monD.YYYY>-<monD.YYYY>;
 - the range-filtered calendar HTML and legacy embedded structured payload are accepted;
+- a rendered row without a concrete provider clock (for example `All Day`, `Tentative`, or an empty time) is never assigned a synthetic timestamp;
+- during acquisition, an untimeable row is isolated and skipped while other timestampable rows are retained; the unresolved row count makes the provider result and coverage `PARTIAL`, and the provider watermark is not advanced, so a later acquisition retries the interval;
 - Detail enrichment remains provider-specific and is preserved under details.specs.
 
 Yahoo Finance:
@@ -406,6 +408,7 @@ Provider failure semantics remain fail-closed:
 - `SKIPPED_NO_FOREX_PAIR` remains distinguishable and is never treated as a
   successful empty acquisition;
 - Detail-partial ForexFactory acquisition remains `PARTIAL`;
+- ForexFactory rows without concrete time remain visible as an unresolved-event count and keep provider status/coverage `PARTIAL`; these rows never become fabricated midnight events and do not advance the watermark;
 - provider diagnostics remain subject to the normal `--debug` stderr contract.
 
 The modifier does not introduce a separate `REFRESHED`, `UNCHANGED`, or
@@ -771,7 +774,7 @@ The domain layer keeps event, interval, coverage, watermark, merge, filtering, a
 
 ## 14.1 Rendered ForexFactory time handling
 
-The rendered HTML fallback requires a concrete provider clock. Missing, `Tentative`, or `All Day` time text is not converted to `00:00` or another synthetic timestamp. Such a row causes provider parsing to fail closed; invalid hour/minute values are also rejected explicitly.
+The rendered HTML fallback requires a concrete provider clock. Missing, `Tentative`, or `All Day` time text is not converted to `00:00` or another synthetic timestamp. A strict direct parser call rejects such a row. During provider acquisition, the caller collects its event ID as unresolved and skips only that row; the provider result and interval coverage become `PARTIAL`, and the watermark does not advance so the interval can be retried. Other timestampable events in the same response remain usable. Invalid hour/minute values are still rejected explicitly.
 
 ## 14.2 Source activity documentation
 
