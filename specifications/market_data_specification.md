@@ -503,10 +503,12 @@ Every function must have one owner responsibility.
 
 The Market Data CLI provides English `--help` and performs no provider or file I/O while building the parser. Invoking `python market_data.py` without arguments prints help and exits with status 0.
 
+The instrument symbol is the first positional query argument, matching the `calendar.py` convention `SYMBOL <scope>`. It is not introduced by a flag. The public CLI rejects the retired `--symbol` form with a message directing the user to positional syntax. The required `--timeframes` option continues to accept one or more supported timeframe tokens.
+
 Required request options:
 
 ```text
---symbol SYMBOL
+SYMBOL
 --timeframes TF [TF ...]
 --current
 --lastclosed
@@ -540,7 +542,7 @@ A leading hyphen omits the start boundary. For an open-start scope, Market Data 
 
 A trailing hyphen omits the end boundary, which resolves to the current UTC time. A future start and a reversed range are rejected. Time-only scopes use a captured current UTC date. Overnight time-only ranges are rejected; use an explicit datetime range to cross UTC midnight.
 
-The option scanner must distinguish supported timeframe tokens from scope tokens, including when multiple values follow `--timeframes`. For example, `--timeframes H1 M15 2026.10.10` means timeframes H1 and M15 and the positional date scope `2026.10.10`. The temporal scope may contain spaces and is assembled only after known options and timeframe tokens have been separated.
+The option scanner must distinguish the first unclaimed positional token (the symbol) from timeframe values and subsequent scope tokens. It must distinguish supported timeframe tokens from scope tokens, including when multiple values follow `--timeframes`. For example, `EURUSD --timeframes H1 M15 2026.10.10` means symbol EURUSD, timeframes H1 and M15, and positional date scope `2026.10.10`. The temporal scope may contain spaces and is assembled only after known options and timeframe tokens have been separated.
 
 `--current` and `--lastclosed` are mutually exclusive with each other and with any positional historical scope. With no scope and neither mode enabled, Market Data performs its normal incremental/bootstrap acquisition. No price-basis, volume-method, or mapper/SMC option is allowed.
 
@@ -626,9 +628,9 @@ The current in-progress candle mode is exposed as the explicit `--current` CLI p
 
 Canonical forms:
 
-    python market_data.py --symbol EURUSD --timeframes M1 M5 --current
-    python market_data.py --symbol EURUSD --timeframes M1 M5 2026.10.05
-    python market_data.py --symbol EURUSD --timeframes M1 M5 --lastclosed
+    python market_data.py EURUSD --timeframes M1 M5 --current
+    python market_data.py EURUSD --timeframes M1 M5 2026.10.05
+    python market_data.py EURUSD --timeframes M1 M5 --lastclosed
 
 `--current` is a flag, not a scope value; a bare `current` positional token is invalid. `--current` is mutually exclusive with any positional historical scope and with `--lastclosed`.
 
@@ -2343,6 +2345,9 @@ Test names:
 test_parse_market_data_request_lastclosed_conflicts
 test_parse_market_data_request_lastclosed_current_conflict
 test_parse_market_data_request_requires_timeframe
+test_parse_market_data_request_accepts_positional_symbol
+test_parse_market_data_request_rejects_symbol_option
+test_market_data_help_documents_positional_symbol
 test_parse_market_data_request_table_flag
 test_parse_market_data_request_rejects_cleartext_alias
 test_run_table_mode_formats_human_readable_output
