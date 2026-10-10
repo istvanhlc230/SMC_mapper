@@ -1749,3 +1749,28 @@ The user's live refresh failed in the HTML fallback because the page had an even
 - Static cross-file specification/skill audit: **PASS** for the one-anchor interface and staged role contract after the updates in this section.
 - This work changes the skill and specifications only; it does not implement or execute a Mapper/Monitor runtime. No Mapper/Monitor runtime PASS is claimed. Existing Market Data/Calendar CI runs do not validate this runtime design.
 - No live provider acquisition was performed for this specification change.
+
+
+## Market Data `--table` volume and completion presentation — 2026-10-10
+
+### Decision
+- Remove the per-row `Completed` column from the human-readable `--table` output.
+- Show normalized provider total volume in a `Volume` column.
+- Render unavailable total volume as `N/A`; never substitute zero or infer the total from tick volume, real volume, or directional-volume fields.
+- Preserve current-candle clarity by marking that timeframe section as `CURRENT SNAPSHOT` when an in-progress candle is displayed.
+- Leave the machine-readable CSV protocol and its `completed` metadata unchanged.
+
+### Changes
+- Updated `MARKET_DATA/protocol.py` table headings and rows to include normalized total volume and omit the completion column.
+- Updated the table regression in `.github/workflows/market_data.yml` to cover a present total-volume value, missing-volume `N/A`, omission of the `Completed` column, and the current-snapshot section label.
+- Updated `specifications/market_data_specification.md` and the acceptance-test inventory.
+
+### Static audit
+- Human presentation shows `volume.total` only when the normalized total-volume field is available.
+- Missing volume is distinct from numeric zero.
+- The `Completed` column is removed only from `--table`; the machine CSV contract is unchanged.
+- The current-only view retains a section-level `CURRENT SNAPSHOT` label instead of the removed per-row marker.
+
+### Runtime validation
+- The workflow contains regressions for the changed formatting contract.
+- Automated workflow status for this final snapshot has not yet been verified; CI PASS is not claimed.
