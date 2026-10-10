@@ -31,6 +31,15 @@ def _decimal_text(value: Decimal) -> str:
     return format(value, "f")
 
 
+def _optional_decimal_text(value: Decimal | None, field_name: str) -> str:
+    """Return one optional finite non-negative Decimal field or a CSV empty value."""
+    if value is None:
+        return ""
+    if not isinstance(value, Decimal) or not value.is_finite() or value < 0:
+        raise ValueError(f"{field_name} must be a finite non-negative decimal when present")
+    return _decimal_text(value)
+
+
 def _machine_row(timeframe: str, candle: NormalizedCandle, completed: bool) -> list[str]:
     """Build one portable machine-protocol candle row."""
     volume_total = ""
@@ -59,9 +68,9 @@ def _machine_row(timeframe: str, candle: NormalizedCandle, completed: bool) -> l
         _decimal_text(candle.high_price),
         _decimal_text(candle.low_price),
         _decimal_text(candle.close_price),
-        "",
-        "",
-        "",
+        _optional_decimal_text(candle.tick_volume, "tick_volume"),
+        _optional_decimal_text(candle.spread, "spread"),
+        _optional_decimal_text(candle.real_volume, "real_volume"),
         volume_total,
         orderflow_buy,
         orderflow_sell,
