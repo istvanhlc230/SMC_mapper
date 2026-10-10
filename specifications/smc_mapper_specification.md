@@ -449,24 +449,45 @@ The entry timeframe determines completed-candle cadence for runtime scheduling a
 
 ## 2.6 HTF pullback validation
 
-HTF pullback validation is mandatory wherever required by canonical True SMC structural qualification. It is available only when both distinct timeframe series are supplied.
+HTF pullback validation is mandatory wherever required by canonical True SMC structural qualification. The primary HTF/entry-LTF relationship must use distinct timeframe series, but those two series do not necessarily exhaust the timeframe evidence required by the canonical pullback-representation rule. The pullback-representation timeframe is a separate semantic role and may coincide with the entry LTF or require an additional candidate series.
 
-### Valid two-timeframe request
+### Primary two-timeframe request
 
 `--htf H4 --ltf M15`
 
-- Establish H4 structural context first.
-- Process M15 in chronological order against the HTF facts already canonical at each LTF evaluation time.
+- Establish H4 structural/POI context first.
+- Process M15 entry/monitoring evidence only against HTF facts already canonical at each LTF evaluation time, and activate POI-scoped LTF CHoCH/entry monitoring only after the HTF POI activation condition is met.
 - Never allow a later HTF event to retroactively reinterpret an earlier LTF event.
+- When canonical pullback qualification requires additional representation candidates, the Monitor/orchestrator must acquire and include the permitted supporting timeframe series in the input stream. The Mapper must not request provider data itself.
 
-### Invalid requests
+### Canonical pullback-representation hierarchy
 
-- `--htf H4`: LTF is missing.
-- `--ltf M15`: HTF is missing.
+The canonical authority is `.agents/skills/smc/03_structural_semantic_authority.md`. The current user-facing `--htf`/`--ltf` flags identify the primary narrative/entry pair; they are not a hard-coded table for complete-structure representation.
+
+| HTF valid pullback | Lower-timeframe complete structure to evaluate |
+|---|---|
+| 3M (three-month / quarterly) | W1 |
+| W1 | D1 or H4, selected dynamically from pullback size and structure quality |
+| D1 | H4 |
+| H4 | M15 |
+| M15 | M1 |
+
+A complete lower-timeframe structure must include the relevant valid pullback and verified extreme, active IDM, IDM takeout, and subsequent qualified `VALID_BOS` for the same move. A bare wick/body break is not sufficient.
+
+For W1, a broad/large/extended pullback should resolve to D1 when D1 exposes the complete structure without undue noise. A small/shallow/short-span pullback may require H4 because D1 does not expose enough candles to establish the complete structure. The decision considers physical extent, span/candle count, and available volume/activity evidence. Do not invent a numeric threshold or hard-code a one-to-one dictionary; the precise size/volume decision rule remains an open implementation-design item.
+
+The entry/monitoring LTF is not assumed to be the pullback-representation timeframe. The latter may be required to qualify HTF structural context before a POI becomes active; the former is used for POI-triggered CHoCH/entry evidence. The Monitor/orchestrator must acquire each required series when its role needs it and must preserve explicit staged behavior when entry-LTF acquisition is deferred until a POI touch.
+
+Missing required series/history or unresolved intrabar sequence yields `HTF_CONTEXT_UNAVAILABLE`, not a negative proof. If all eligible candidate series are present but none demonstrates the required complete structure, the applicable HTF valid-pullback gate fails closed. A missing 3M series must not be fabricated or silently relabeled as `MN1`; an actual `MN1` series may validate W1 context only when it is explicitly the established applicable immediate-HTF context under the canonical conditional-gate rule.
+
+### Invalid primary-pair requests
+
+- `--htf H4`: LTF is missing under the current public CLI contract.
+- `--ltf M15`: HTF is missing under the current public CLI contract.
 - `--htf H1 --ltf H1`: HTF and LTF are not distinct.
-- Any configuration where `HTF < LTF`: invalid timeframe relationship.
+- Any configuration where `HTF < LTF`: invalid primary timeframe relationship.
 
-Each invalid configuration is rejected; no substitute timeframe or single-timeframe mode is inferred.
+Each invalid primary-pair configuration is rejected; no single-timeframe mode is inferred. The public CLI still requires both `--htf` and `--ltf` until its separate interface design is approved; this does not authorize the runtime to skip canonical supporting timeframe evidence.
 
 ---
 
@@ -561,7 +582,7 @@ Options:
 
 ### STDIN contract
 
-Every non-help invocation reads one complete machine-readable Market Data CSV stream from STDIN. Empty input, malformed protocol, unexpected timeframe rows, incomplete/current rows in the completed-candle stream, or symbol/timeframe/coverage mismatch is an explicit failure. Mapper never launches Market Data and never opens `<SYMBOL>_marketdata.json`.
+Every non-help invocation reads one complete machine-readable Market Data CSV stream from STDIN. Empty input, malformed protocol, timeframe rows outside the resolved input set (primary HTF/entry-LTF plus permitted canonical pullback-representation candidates), incomplete/current rows in the completed-candle stream, or symbol/timeframe/coverage mismatch is an explicit failure. The Monitor/orchestrator determines and acquires the candidate timeframe series required by the canonical mapping hierarchy; a supporting series is not an error merely because it is additional to the primary `--htf`/`--ltf` pair. Mapper never launches Market Data and never opens `<SYMBOL>_marketdata.json`.
 
 ### Stateless execution and output contract
 
@@ -642,7 +663,7 @@ Therefore:
 
 If a canonical decision depends on unavailable HTF context, the decision must remain unresolved / fail closed.
 
-This rule also applies recursively to the configured HTF's own structural lifecycle. The presence of a configured HTF series does not automatically prove that every structure within it is confirmed. If an HTF event qualifies only through the conditional 38.2%–below-50% path, but its own applicable immediate HTF is outside the configured pair and no validated context is supplied, that specific HTF event remains `HTF_CONTEXT_UNAVAILABLE`. The Mapper must not expose it as confirmed HTF context or use it to authorize dependent LTF structure, POIs, or entries. This restriction does not invalidate unrelated HTF events whose own canonical qualification gates pass.
+This rule also applies recursively to the configured HTF's own structural lifecycle. The presence of a configured HTF series does not automatically prove that every structure within it is confirmed. If an HTF event qualifies only through the conditional 38.2%–below-50% path, its own applicable immediate-HTF context must be validated using the canonical mapping hierarchy. The Monitor/orchestrator may supply that required series as a supporting timeframe even when it is outside the primary `--htf`/`--ltf` pair. If the required context is not supplied or cannot be sequenced, that specific HTF event remains `HTF_CONTEXT_UNAVAILABLE`; the Mapper must not expose it as confirmed HTF context or use it to authorize dependent LTF structure, POIs, or entries. This restriction does not invalidate unrelated HTF events whose own canonical qualification gates pass.
 
 ---
 
@@ -1550,10 +1571,15 @@ At minimum, the finished mapper implementation must have focused tests covering:
 - UTC parsing, interval-start-based half-open period eligibility, and rejection of a standalone date-time without a range hyphen;
 - rejection of current/in-progress candles as canonical input;
 - independent HTF/LTF ranges and HTF_CONTEXT_UNAVAILABLE behavior;
-- 38.2%–below-50% qualification only when the entire mapped retracement is represented by one complete valid pullback event on the applicable immediate HTF; that event may span multiple HTF candles and is not a single-candle test;
-- an HTF representation consisting only of an Inside Bar without a complete valid pullback yields NOT QUALIFIED; an Inside Bar inside a valid multi-candle pullback follows the canonical mother-candle/reference rules; missing HTF history yields HTF_CONTEXT_UNAVAILABLE rather than a false negative;
-- pairing examples are not rigid: when a three-month series is not part of the established hierarchy, a configured monthly HTF may validate W1 structure; use the Market Data-defined `MN1` input token for monthly data, and do not assume `3MN` is supported;
-- if a configured HTF's own 38.2%–below-50% qualification requires an additional higher timeframe outside the pair, keep that HTF event/context unavailable and block dependent LTF setup authorization;
+- 38.2%–below-50% qualification only when the mapped pullback is represented by one coherent HTF valid-pullback event and the corresponding lower-timeframe complete structure includes IDM takeout followed by qualified `VALID_BOS`; this is not a single-candle test;
+- rejection of a bare wick/body break, missing IDM takeout, invalid BOS, or incomplete structure as proof of a valid HTF pullback;
+- dynamic W1 resolution chooses D1 when a large/extended pullback has a complete, clear D1 structure; chooses H4 when a small/shallow pullback cannot form the complete structure at D1 resolution; does not use invented numeric thresholds or a fixed one-to-one lookup table;
+- dynamic W1 resolution tests physical pullback extent, candle span/count and volume/activity evidence, and records the chosen representation timeframe and selection rationale in diagnostic/output metadata;
+- fail-closed shallow-retracement rollback on a demonstrably false HTF valid-pullback gate: `INVALID_BOS` qualification verdict, no Dealing Range expansion/lock, revoke the swing candidate, shift the rejected correction extreme to active IDM, and return to `WAITING_FOR_IDM_TAKEN`; preserve `IMPULSE_EXTENSION` event-classification ownership;
+- an HTF representation consisting only of an Inside Bar without a complete valid pullback yields NOT QUALIFIED; an Inside Bar inside a valid multi-candle pullback follows canonical mother-candle/reference rules; missing HTF history yields `HTF_CONTEXT_UNAVAILABLE` rather than a false negative;
+- the 3M→W1, W1→D1/H4, D1→H4, H4→M15, and M15→M1 project-canonical candidate hierarchy; distinguish representation timeframe from POI/entry LTF; retain the separate source-corpus M15→M3 note without misattributing it to the user-approved M15→M1 rule;
+- a configured MN1 series may validate W1 conditional context only when it is explicitly the established applicable immediate-HTF context and a 3M series is not part of that hierarchy; use the Market Data-defined `MN1` token and never fabricate or relabel missing 3M data;
+- if a conditional structural qualification requires an additional higher timeframe outside the primary pair and that supporting series is not supplied/validated, keep the affected HTF event/context unavailable and block dependent LTF setup authorization;
 - an Outside Bar with ambiguous internal order records `INTRABAR_SEQUENCE_EVIDENCE = UNAVAILABLE`; Layer 2 terminally invalidates any dependent pullback candidate, and later candles cannot retroactively resolve it;
 - point-in-time HTF context, proving later HTF events do not reinterpret earlier LTF events;
 - full recomputation from supplied history yields deterministic output;
