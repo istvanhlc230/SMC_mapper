@@ -519,7 +519,7 @@ Every documented CLI option must be parsed, validated, applied, and documented i
 
 ```text
 Usage:
-  python smc_mapper.py --symbol SYMBOL [--htf TF] [--ltf TF] [PERIOD]
+  python smc_mapper.py --symbol SYMBOL --htf HTF --ltf LTF [PERIOD]
                        [--history-no N]
                        [--volume-method {NONE,OHLC,ORDERFLOW,BOTH}]
                        [--cleartext] [--debug] [--help]
@@ -528,12 +528,12 @@ Options:
   --symbol SYMBOL
       Required instrument symbol.
 
-  --htf TF
-      Optional Higher Timeframe. With --ltf, HTF must be strictly higher.
+  --htf HTF
+      Required Higher Timeframe. Must be strictly higher than --ltf.
 
-  --ltf TF
-      Optional selected/entry timeframe. With --htf, this is the entry timeframe.
-      At least one of --htf or --ltf must be supplied.
+  --ltf LTF
+      Required lower/entry timeframe. Both --htf and --ltf must be supplied
+      and must identify distinct timeframes. Single-timeframe mode is invalid.
 
   PERIOD
       Optional positional UTC scope. Supports YYYY.MM.DD,
@@ -1541,6 +1541,7 @@ The global developer-agent naming, portability, prompt-efficiency, and validatio
 At minimum, the finished mapper implementation must have focused tests covering:
 
 - CLI option parsing requires both HTF and LTF, rejects equal timeframes, and rejects invalid HTF<LTF combinations;
+- only the distinct HTF/LTF analysis mode is available; attempts to map with one timeframe or equal HTF/LTF must be rejected;
 - positional-period parser coverage for date-only, date ranges with independently optional endpoint times, open-start, and open-end forms;
 - leading-hyphen positional PERIOD is accepted without requiring an extra `--` delimiter;
 - standalone `YYYY.MM.DD@HH:MM` is rejected because a time requires a range hyphen;
