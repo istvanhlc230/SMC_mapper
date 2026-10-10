@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from .config import (FOREXFACTORY_DETAIL_URL, FOREXFACTORY_URL, FX_CURRENCY_CODES, HTTP_TIMEOUT, YAHOO_SEARCH_URL, USER_AGENT, USD_BASE_YAHOO_SYMBOLS, LSE_API_URL, CalendarInputError, ProviderError, YahooForexPairUnavailable)
 from PROVIDERS.credentials import ProviderCredentialError, get_provider_api_key
-from .domain import format_iso8601, is_currency, is_fx_pair, normalize_symbol, parse_iso8601
+from .domain import canonicalize_fx_token, format_iso8601, is_currency, is_fx_pair, normalize_symbol, parse_iso8601
 from .parsing import extract_days_payload, parse_calendar_days, parse_forexfactory_html_events
 from COMMON.http_client import HttpClient, HttpRequestError
 
@@ -141,7 +141,7 @@ _LSE_REGION_BY_CURRENCY = {
 
 def _resolve_lse_regions(symbol: str) -> List[str]:
     """Translate a supported currency or FX pair into LSE API region codes."""
-    normalized_symbol = normalize_symbol(symbol)
+    normalized_symbol = canonicalize_fx_token(symbol)
     if is_currency(normalized_symbol):
         currencies = [normalized_symbol]
     elif is_fx_pair(normalized_symbol):
