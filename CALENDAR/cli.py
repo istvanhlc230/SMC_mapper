@@ -72,11 +72,7 @@ def execute_calendar_query(
                     refresh_result["provider_results"],
                     table=True,
                 )
-                print(
-                    f"REFRESH | added={refresh_result['summary']['added']} "
-                    f"changed={refresh_result['summary']['changed']} "
-                    f"unchanged={refresh_result['summary']['unchanged']}"
-                )
+                presentation.output_refresh_summary(refresh_result["summary"])
             else:
                 print(json.dumps({
                     "status": status,
@@ -183,12 +179,7 @@ def execute_calendar_query(
             updates = domain.query_last_update(document, symbol)
             status = "OK" if any(item["last_successful_at"] for item in updates) else "NO_LAST_UPDATE"
             if table:
-                print(f"CALENDAR RESULT | {status} | {symbol}")
-                for item in updates:
-                    print(
-                        f"PROVIDER | {item['provider']} | "
-                        f"{item['last_successful_at'] or 'N/A'}"
-                    )
+                presentation.output_last_updates_table(status, symbol, updates)
             else:
                 print(json.dumps({
                     "status": status,
@@ -307,6 +298,8 @@ def parse_calendar_cli_request(cli_arguments: List[str]) -> Dict[str, Any]:
             "--date, --time, and --range are no longer supported."
         )
 
+    if any(item == "--cleartext" or item.startswith("--cleartext=") for item in cli_arguments):
+        raise CalendarInputError("--cleartext was replaced by --table.")
     table = "--table" in cli_arguments
     debug = "--debug" in cli_arguments
     last_update = "--last-update" in cli_arguments
@@ -426,9 +419,7 @@ def execute_calendar_cli() -> int:
             updates = domain.query_last_update(document, request["symbol"])
             status = "OK" if any(item["last_successful_at"] for item in updates) else "NO_LAST_UPDATE"
             if request["table"]:
-                print(f"CALENDAR RESULT | {status} | {request['symbol']}")
-                for item in updates:
-                    print(f"PROVIDER | {item['provider']} | {item['last_successful_at'] or 'N/A'}")
+                presentation.output_last_updates_table(status, request["symbol"], updates)
             else:
                 print(json.dumps({
                     "status": status,
