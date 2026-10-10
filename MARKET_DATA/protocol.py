@@ -31,6 +31,14 @@ def _decimal_text(value: Decimal) -> str:
     return format(value, "f")
 
 
+def _human_decimal_text(value: Decimal) -> str:
+    """Render a Decimal compactly for people without changing its numeric value."""
+    text = _decimal_text(value)
+    if "." in text:
+        text = text.rstrip("0").rstrip(".")
+    return text or "0"
+
+
 def _optional_decimal_text(value: Decimal | None, field_name: str) -> str:
     """Return one optional finite non-negative Decimal field or a CSV empty value."""
     if value is None:
@@ -166,16 +174,16 @@ def format_table(
         for candle, _completed in ordered:
             timestamp = candle.timestamp.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
             volume_text = (
-                _decimal_text(candle.volume.total)
+                _human_decimal_text(candle.volume.total)
                 if candle.volume.has_total and candle.volume.total is not None
                 else "N/A"
             )
             lines.append(
                 f"{timestamp:<19} "
-                f"{str(candle.open_price):>12} "
-                f"{str(candle.high_price):>12} "
-                f"{str(candle.low_price):>12} "
-                f"{str(candle.close_price):>12} "
+                f"{_human_decimal_text(candle.open_price):>12} "
+                f"{_human_decimal_text(candle.high_price):>12} "
+                f"{_human_decimal_text(candle.low_price):>12} "
+                f"{_human_decimal_text(candle.close_price):>12} "
                 f"{volume_text:>14}"
             )
 
@@ -201,10 +209,10 @@ def format_table(
             ask = market_depth.asks[index] if index < len(market_depth.asks) else None
             lines.append(
                 f"{index + 1:>5}  "
-                f"{_decimal_text(bid.price) if bid is not None else '':>12}  "
-                f"{_decimal_text(bid.volume) if bid is not None else '':>12}  "
-                f"{_decimal_text(ask.price) if ask is not None else '':>12}  "
-                f"{_decimal_text(ask.volume) if ask is not None else '':>12}"
+                f"{_human_decimal_text(bid.price) if bid is not None else '':>12}  "
+                f"{_human_decimal_text(bid.volume) if bid is not None else '':>12}  "
+                f"{_human_decimal_text(ask.price) if ask is not None else '':>12}  "
+                f"{_human_decimal_text(ask.volume) if ask is not None else '':>12}"
             )
         lines.append("-" * 63)
 
