@@ -1619,5 +1619,5 @@ The user's live refresh failed in the HTML fallback because the page had an even
 - CLI option, request model, output dispatcher, formatter, specification, and workflow regression use the same `--table` contract.
 - No Market Data runtime code accepts `--cleartext` as a synonym.
 - `--table` affects presentation only; provider acquisition and persistence flow remain unchanged.
-- Runtime CI validation is pending for the resulting commit; PASS is not claimed until the workflow completes successfully.
+- Runtime CI validation passed for implementation/specification commit `f0f97f4edca1b1e2d7697ba9949d1ec3d1d4bf02`: [Market Data workflow](https://github.com/istvanhlc230/SMC_mapper/actions/runs/38081406538) and [Calendar workflow](https://github.com/istvanhlc230/SMC_mapper/actions/runs/38081406558) both completed successfully. The Market Data workflow exercised `--table` rendering, explicit `--cleartext` rejection, and the unchanged default machine-CSV path.
 
