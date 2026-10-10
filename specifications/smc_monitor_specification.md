@@ -148,7 +148,7 @@ The Monitor automatically resolves the symbol directory from the common data roo
 
 ## 1.3 --htf and --ltf
 
-The Monitor requires both `--htf` and `--ltf` for a conformant True SMC analysis:
+The Monitor requires both `--htf` and `--ltf` for a conformant automated Mapper/Monitor run under this project's product contract:
 
 - both must be supplied and must identify distinct timeframes;
 - HTF must be strictly higher than LTF;
