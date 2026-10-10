@@ -1458,12 +1458,15 @@ The user's live refresh failed in the HTML fallback because the page had an even
 - The ForexFactory adapter forwards unresolved IDs to the operations layer.
 - Both explicit acquisition and forced refresh mark the provider result `PARTIAL`, report the unresolved-row count, and do not advance the provider watermark on incomplete acquisition.
 - Explicit acquisition stores `PARTIAL` coverage so the interval remains eligible for retry; timestampable events from the same response remain usable.
+- Partial event data and partial coverage are persisted even if no other provider completes successfully, rather than being lost behind the success-only persistence gate.
 - Added a regression with the observed ID `151380` as an `All Day` row and a neighboring timed event. The test verifies that the timed event is preserved and only the unresolved ID is collected.
 - Added operation-level coverage for partial explicit acquisition and partial forced refresh.
 - Updated the normative specification and bumped Calendar version to 2.6.5.
 
 ## Validation
 
-- Static source/specification/test-contract alignment: PASS on inspection.
-- GitHub Actions runtime status for the new commit is not yet exposed; CI PASS is not claimed.
-- The regression uses a synthetic provider response and does not require or expose the user's API key.
+- Static source/specification/test-contract alignment: PASS.
+- Calendar GitHub Actions run [#931](https://github.com/istvanhlc230/SMC_mapper/actions/runs/38069762085): SUCCESS.
+- Market Data GitHub Actions run [#546](https://github.com/istvanhlc230/SMC_mapper/actions/runs/38069762117): SUCCESS.
+- Both workflows passed against implementation/specification/workflow snapshot `e1db791393145f365aa4eb47c04f5dcd71bc61d4`, including the embedded regression tests for the observed `151380` case, partial forced refresh, and persistence of partial acquisition state.
+- The regression uses a synthetic provider response and does not require or expose the user's API key. A successful live authenticated ForexFactory response is not re-tested here.
