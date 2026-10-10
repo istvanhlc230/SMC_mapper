@@ -1009,18 +1009,11 @@ This is the history identity. `structure_hash` is not a closed-range identity.
 
 A closed range identity is immutable once canonically closed. For an existing retained range with the same identity, reconciliation updates that range in place. A newly closed range with a new identity is inserted.
 
-### `history_no` persistence rules
+### `history_no` per-invocation rules
 
-`history_no` is stored once per symbol structures JSON, not per timeframe or analysis.
+`history_no` is a per-invocation output-retention setting, not symbol-level persisted configuration. If omitted, use `5000`. If supplied, `N` must be an integer >= 1 and applies to the current invocation only. No value is loaded from or written to a Structures JSON file.
 
-- New symbol structures JSON + no `--history-no` -> initialize and persist `history_no = 5000`.
-- New symbol structures JSON + `--history-no=N` -> initialize and persist `history_no = N`.
-- Existing symbol structures JSON + no `--history-no` -> preserve the stored `history_no`.
-- Existing symbol structures JSON + `--history-no=N` -> ignore the CLI value and preserve the stored `history_no`.
-- If an existing symbol structures JSON lacks `history_no`, initialize and persist `5000`.
-- `N` must be an integer >= 1 when supplied.
-
-Changing `history_no` changes retention capacity only. It does not change canonical SMC semantics.
+Changing `history_no` changes retained closed Dealing Range history in the returned result only. It does not change canonical SMC semantics.
 
 ## 7.3 HTF Dealing Range history contract
 
@@ -1602,7 +1595,7 @@ Owner modules:
 - `SMC_MAPPER/processor.py` owns `run(request, market_data_stream) -> exit_status`: validate the supplied stream, load the selected analysis state, process, and persist.
 - The root `smc_mapper.py` contains only the import of `SMC_MAPPER.cli.main` and the executable guard.
 
-Normal execution emits exactly one JSON document to STDOUT after the corresponding Structures JSON has been successfully persisted atomically. The document is the complete committed Structures JSON, not a status message or diff. Market-data input is consumed from STDIN as the exact analysis-scoped machine protocol captured from Market Data STDOUT by the Monitor/orchestrator. Mapper diagnostics and errors are emitted only on STDERR according to Section 12; failure must not produce a success JSON document.
+Normal execution emits exactly one JSON document to STDOUT after successful in-memory processing. With `--cleartext`, it emits the human-readable rendering instead. No Structures JSON is persisted. Market-data input is consumed from STDIN as the validated machine protocol captured from Market Data STDOUT by the Monitor/orchestrator. Mapper diagnostics and errors are emitted only on STDERR according to Section 12; failure must not produce a success result.
 
 ---
 
@@ -1631,10 +1624,9 @@ Historical recomputation is an ordinary invocation with a positional period. The
 Where practical, the following operations must be deterministic/pure with explicit inputs:
 
 - CLI validation after parsing;
-- analysis-key construction;
-- analysis-window selection;
+- positional-period parsing and window selection;
 - point-in-time HTF context selection;
-- candle eligibility selection from persisted data;
+- candle eligibility selection from the supplied Market Data stream;
 - Dealing Range history reconciliation input/output;
 - POI volume aggregation;
 - OHLC directional-volume calculation;
@@ -1642,7 +1634,7 @@ Where practical, the following operations must be deterministic/pure with explic
 
 Stateful orchestration is allowed only where state mutation is the purpose of the function. Avoid hidden global state, hidden caches that affect correctness, or provider calls from canonical processing.
 
-Tests must be able to execute canonical-processing logic from fixed persisted candles without network access or live wall-clock dependence.
+Tests must be able to execute canonical-processing logic from fixed in-memory candle fixtures without network access or live wall-clock dependence.
 
 ---
 
@@ -1653,11 +1645,9 @@ The global developer-agent naming, portability, prompt-efficiency, and validatio
 At minimum, the finished mapper implementation must have focused tests covering:
 
 - CLI option parsing, including equal HTF/LTF single-timeframe mode and invalid HTF<LTF combinations;
-- list/query of stored analyses without canonical processing or file mutation;
 - positional-period parser coverage for date-only, date-range, exact-minute, open-start, and open-end forms;
 - omitted period resolves to the full completed-candle history actually supplied by Market Data;
-- ambiguous existing-analysis selection;
-- UTC parsing and completion_time-based end-time eligibility;
+- UTC parsing and interval-start-based half-open period eligibility;
 - rejection of current/in-progress candles as canonical input;
 - independent HTF/LTF ranges and HTF_CONTEXT_UNAVAILABLE behavior;
 - point-in-time HTF context, proving later HTF events do not reinterpret earlier LTF events;
@@ -1673,7 +1663,7 @@ At minimum, the finished mapper implementation must have focused tests covering:
 - source-level delta derivation from buy/sell with no persisted candle-level delta dependency;
 - deterministic OHLC directional-volume aggregation and zero-volume behavior;
 - JSON/cleartext output modes are presentation-exclusive and do not alter canonical computation;
-- successful CLI STDOUT is exactly the committed Structures JSON document, with no diagnostic text; failure emits no success document and returns a non-zero exit status;
+- successful CLI STDOUT is exactly one JSON result by default, or one cleartext rendering with `--cleartext`; diagnostics go only to STDERR; failure emits no success result and returns a non-zero exit status;
 - MQL-portable domain-state behavior independent of Python-specific collection mechanics;
 - absence of runtime/import dependencies on legacy modules and Market Data/Monitor modules;
 - canonical Layer-1-to-Layer-6 behavior is implemented in separate modules with the ownership defined in §14.1, and no layer module bypasses another layer's canonical prerequisite/state contract.
