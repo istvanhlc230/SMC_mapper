@@ -48,6 +48,9 @@ jobs:
           from COMMON.atomic_file import atomic_write_text
           from COMMON.http_client import HttpClient, HttpRequestError
 
+          # The shared parser is deterministic, strict, and independent of consumer modules.
+          shared_parser = DateTimeScopeParser(reference_time=dt("2026-10-06T12:00:00Z"))
+
           # Resolving an open-end scope must use the parser's captured UTC time.
           captured_open_end = shared_parser.parse("2026.10.06 10:30-")
           captured_start, captured_end = captured_open_end.resolve_interval()
@@ -88,8 +91,7 @@ jobs:
               else:
                   raise AssertionError("HTTP transport error must be reported")
 
-          # The shared parser is deterministic, strict, and independent of consumer modules.
-          shared_parser = DateTimeScopeParser(reference_time=dt("2026-10-06T12:00:00Z"))
+          # Closed scopes use the same captured reference clock.
           assert shared_parser.parse("2026.10.06").end == dt("2026-10-07T00:00:00Z")
           assert shared_parser.parse("2026.10.06 15:30").end == dt("2026-10-06T15:31:00Z")
           assert shared_parser.parse("09:30-11:00").end == dt("2026-10-06T11:00:00Z")
