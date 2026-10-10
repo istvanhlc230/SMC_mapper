@@ -77,62 +77,29 @@ DATE_RE = r"\d{4}\.\d{2}\.\d{2}"
 TIME_RE = r"\d{2}:\d{2}"
 
 # HELP_TEXT — CLI help text containing software/schema versions.
-HELP_TEXT = f"""Calendar CLI v{__version__} (schema {SCHEMA_VERSION}) - unified economic calendar and news update engine
+HELP_TEXT = f"""Calendar CLI v{__version__} (schema {SCHEMA_VERSION})
 
-USAGE
-  python calendar.py SYMBOL <scope> [refresh]
-  python calendar.py SYMBOL --last-update
-  python calendar.py delete
-  python calendar.py delete SYMBOL <scope>
+Usage:
+  python calendar.py SYMBOL SCOPE [refresh] [--table] [--debug]
+  python calendar.py SYMBOL --last-update [--table]
+  python calendar.py delete [SYMBOL SCOPE]
   python calendar.py --help
-FLAGS
-  --table        Tabular presentation only; does not change stored data.
-  --debug        Emit diagnostic exceptions/tracebacks to stderr only.
-  --last-update  Read last successful provider update times; no provider call.
-  --help         Show this help.
 
-SCOPE
-  YYYY.MM.DD                         Exact UTC calendar day.
-  YYYY.MM.DD HH:MM                   Exact UTC minute.
-  YYYY.MM.DD-YYYY.MM.DD              Inclusive UTC date range.
-  YYYY.MM.DD HH:MM-YYYY.MM.DD HH:MM  Half-open UTC datetime range.
-  HH:MM                              Exact minute on the current UTC day.
-  HH:MM-HH:MM                        Half-open range within the current UTC day.
-  YYYY.MM.DD-                        From that date through current UTC time.
-  YYYY.MM.DD HH:MM-                  From that minute through current UTC time.
-  HH:MM-                             From that time today through current UTC time.
-  -YYYY.MM.DD                        From latest recorded visible event through that date.
-  -YYYY.MM.DD HH:MM                  From latest recorded visible event through that minute.
-  -HH:MM                             From latest recorded visible event through that minute today.
-  current                            Events active in the current UTC minute.
-  current day/week/month             Current UTC day, week, or month.
-  today/tomorrow/yesterday           Corresponding UTC calendar day.
-  next                                Nearest future scheduled economic event.
-  next day/week/month                 Events in the following UTC period.
-  prev                                Nearest previous scheduled economic event.
-  prev day/week/month                 Events in the previous UTC period.
-  latest                              Most recent past/current cached event.
-  news                                Active news lookup.
+Scopes (UTC):
+  DATE | DATE HH:MM | DATE-DATE | DATE HH:MM-DATE HH:MM
+  TIME | TIME-TIME (today); DATE[ HH:MM]- (through now)
+  -DATE[ HH:MM] (from latest stored event)
+  today | tomorrow | yesterday
+  current/next/prev [day|week|month] | latest | news
 
-SYMBOL
-  Supported FX pair, standalone supported currency, or Yahoo ticker.
-  Provider selection is automatic.
+Options:
+  --table       Tables instead of JSON
+  --debug       Diagnostics/tracebacks to stderr
+  --last-update Show last successful provider update times
 
-REFRESH
-  refresh is a trailing modifier, not an independent command or scope.
-  Example: python calendar.py EURUSD 2026.10.10 refresh
-  Plain open-start scopes are cache-only; adding refresh requests provider acquisition.
-  current refresh is permitted; latest, next, prev, and news reject refresh.
-
-OUTPUT
-  Default output is JSON. --table changes presentation only.
-
-ERRORS
-  Invalid syntax and unsupported symbols are rejected explicitly.
-  Provider failures are never converted to successful empty data.
-  Normal output does not expose provider exception details.
+SYMBOL: Supported FX pair, currency, or Yahoo ticker; providers are selected automatically.
+refresh: Trailing modifier for provider refresh; not valid with latest, next, prev, or news.
 """
-
 
 
 class CalendarInputError(Exception):
