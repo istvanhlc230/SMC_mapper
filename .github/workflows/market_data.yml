@@ -21,6 +21,17 @@ jobs:
         run: |
           python - <<'PY'
           from datetime import datetime, timezone
+          import subprocess
+          import sys
+
+          no_args_help = subprocess.run(
+              [sys.executable, "market_data.py"],
+              capture_output=True,
+              text=True,
+          )
+          assert no_args_help.returncode == 0, no_args_help.stderr
+          assert "--symbol" in no_args_help.stdout
+          assert "--timeframes" in no_args_help.stdout
 
           from MARKET_DATA.provider import LSEMarketDataProvider, create_provider
           from MARKET_DATA.cli import parse_market_data_request

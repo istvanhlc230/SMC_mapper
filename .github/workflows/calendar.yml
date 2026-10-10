@@ -25,6 +25,7 @@ jobs:
           import io
           import contextlib
           import sys
+          import subprocess
           import tempfile
           from datetime import datetime, timedelta, timezone
 
@@ -83,6 +84,23 @@ jobs:
           assert len(merge_doc["events"]) == 1
           assert set(merge_doc["events"][0]["sources"]) == {"lse", "forexfactory"}
           assert merge_doc["events"][0]["details"]["previous"] == "3.2"
+          # Importing urllib/email while the repository root shadows stdlib calendar
+          # must not eagerly import the Calendar provider graph or create an import cycle.
+          stdlib_import_check = subprocess.run(
+              [sys.executable, "-c", "import urllib.request, email.parser, calendar; assert callable(calendar.timegm)"],
+              capture_output=True,
+              text=True,
+          )
+          assert stdlib_import_check.returncode == 0, stdlib_import_check.stderr
+
+          no_args_help = subprocess.run(
+              [sys.executable, "calendar.py"],
+              capture_output=True,
+              text=True,
+          )
+          assert no_args_help.returncode == 0, no_args_help.stderr
+          assert "USAGE" in no_args_help.stdout
+
           import CALENDAR.cli as calendar_cli
           from COMMON.date_time import DateTimeScopeParser, DateTimeScopeError
 

@@ -33,8 +33,54 @@ for _name in dir(_stdlib_calendar):
     if not _name.startswith("__"):
         globals().setdefault(_name, getattr(_stdlib_calendar, _name))
 
-from CALENDAR.api import *
 import traceback as _traceback
+
+# Load the Calendar application API lazily. During stdlib import chains (for
+# example urllib.request -> email -> calendar), eager imports here would cycle
+# back into COMMON.http_client before HttpClient is defined.
+_CALENDAR_API_NAMES = frozenset({
+    "__version__", "SCHEMA_VERSION", "HELP_TEXT", "DATA_ROOT", "CALENDAR_FILE",
+    "CalendarInputError", "ProviderError", "YahooForexPairUnavailable", "DataIntegrityError",
+    "utc_now", "format_iso8601", "parse_iso8601", "normalize_symbol", "is_currency",
+    "canonicalize_fx_token", "is_fx_pair", "is_ticker", "validate_symbol", "parse_time",
+    "parse_date", "parse_point", "resolve_scope_interval", "is_open_start_scope",
+    "is_open_end_scope", "resolve_open_start_scope", "resolve_open_end_scope", "parse_scope",
+    "build_empty_calendar_document", "validate_calendar_document", "merge_events", "merge_coverage",
+    "find_uncovered_intervals", "watermark_key", "resolve_applicable_providers",
+    "filter_events_for_symbol", "filter_events_for_interval", "update_watermark",
+    "query_current_events", "query_latest_event", "query_next_event", "status_from_provider_results",
+    "filter_query_events", "resolve_yahoo_symbol", "fetch_url", "build_forexfactory_query",
+    "fetch_forexfactory", "fetch_forexfactory_event_detail", "normalize_provider_event",
+    "normalize_calendar_events", "fetch_yahoo_news", "parse_forexfactory_html_events",
+    "extract_days_payload", "parse_calendar_days", "format_cleartext_details", "output_query_result",
+    "acquire_explicit", "delete_symbol_interval", "refresh_current_scope", "refresh_calendar_scope",
+    "run_query", "run_delete", "parse_request", "main",
+})
+
+
+def __getattr__(name):
+    """Resolve Calendar application API attributes without eager import side effects."""
+    if name not in _CALENDAR_API_NAMES:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    from CALENDAR import api as _calendar_api
+    try:
+        return getattr(_calendar_api, name)
+    except AttributeError as exc:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}") from exc
+
+
+def __dir__():
+    """Include lazily exposed Calendar API names in module introspection."""
+    return sorted(set(globals()) | set(_CALENDAR_API_NAMES))
+
+
+# Preserve star-import compatibility while deferring Calendar API loading until
+# an application-specific name is requested.
+__all__ = sorted(
+    {name for name in dir(_stdlib_calendar) if not name.startswith("__")}
+    | set(_CALENDAR_API_NAMES)
+    | {"run"}
+)
 
 
 def run() -> int:
@@ -57,5 +103,11 @@ def run() -> int:
             _traceback.print_exc()
         return 1
 
+def main() -> int:
+    """Run the Calendar CLI without eagerly importing it during stdlib module loading."""
+    from CALENDAR.cli import execute_calendar_cli
+    return execute_calendar_cli()
+
+
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
