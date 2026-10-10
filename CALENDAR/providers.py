@@ -303,15 +303,14 @@ class ForexFactoryCalendarProvider(CalendarProvider):
 
     def fetch_events(self, symbol, start, end, **kwargs):
         detail_failures = kwargs.get("detail_failures")
+        unresolved_event_time_ids = kwargs.get("unresolved_event_time_ids")
         include_details = kwargs.get("include_details", True)
-        if detail_failures is None:
-            return fetch_forexfactory(start, end, include_details=include_details)
-        return fetch_forexfactory(
-            start,
-            end,
-            detail_failures=detail_failures,
-            include_details=include_details,
-        )
+        provider_options = {"include_details": include_details}
+        if detail_failures is not None:
+            provider_options["detail_failures"] = detail_failures
+        if unresolved_event_time_ids is not None:
+            provider_options["unresolved_event_time_ids"] = unresolved_event_time_ids
+        return fetch_forexfactory(start, end, **provider_options)
 
 
 class YahooFinanceNewsProvider(CalendarProvider):
@@ -388,6 +387,7 @@ def fetch_forexfactory(
     end: datetime,
     include_details: bool = True,
     detail_failures: Optional[List[str]] = None,
+    unresolved_event_time_ids: Optional[List[str]] = None,
 ) -> List[Dict[str, Any]]:
     """Internal helper for fetch forexfactory."""
     request_start = start
@@ -406,6 +406,7 @@ def fetch_forexfactory(
             html,
             request_start,
             request_end,
+            unresolved_event_time_ids=unresolved_event_time_ids,
         )
         normalized = [
             normalize_provider_event(raw_event)
