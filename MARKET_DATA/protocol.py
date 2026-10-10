@@ -8,6 +8,7 @@ from decimal import Decimal
 from typing import Mapping, Sequence
 
 from .models import MarketDepthSnapshot, NormalizedCandle
+from .normalization import validate_normalized_candle
 
 MACHINE_PROTOCOL_HEADER = (
     "timeframe",
@@ -59,6 +60,7 @@ def _machine_row(timeframe: str, candle: NormalizedCandle, completed: bool) -> l
         raise ValueError("machine-protocol candle timestamps must be timezone-aware")
     if candle.completion_time <= candle.timestamp:
         raise ValueError("candle completion_time must be after timestamp")
+    validate_normalized_candle(candle)
 
     prices = (
         candle.open_price,
