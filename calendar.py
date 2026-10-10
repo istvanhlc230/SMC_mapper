@@ -6,6 +6,7 @@
 # the standard-library implementation under a private name and expose its
 # public attributes so urllib/email and other stdlib modules remain compatible.
 import importlib.util as _importlib_util
+import sys as _sys
 import sysconfig as _sysconfig
 from pathlib import Path as _Path
 
@@ -14,14 +15,25 @@ _stdlib_calendar_spec = _importlib_util.spec_from_file_location(
     "_smc_mapper_stdlib_calendar",
     _stdlib_calendar_path,
 )
+if _stdlib_calendar_spec is None or _stdlib_calendar_spec.loader is None:
+    raise ImportError(
+        f"Cannot load standard-library calendar module: {_stdlib_calendar_path}"
+    )
+
 _stdlib_calendar = _importlib_util.module_from_spec(_stdlib_calendar_spec)
+
+# Register before execution: Python 3.14 enum.global_enum resolves the module
+# through sys.modules while the standard-library calendar module is loading.
+_sys.modules[_stdlib_calendar_spec.name] = _stdlib_calendar
 _stdlib_calendar_spec.loader.exec_module(_stdlib_calendar)
+
+# Re-export public standard-library names so imports still work despite this
+# executable's filename shadowing the standard-library calendar module.
 for _name in dir(_stdlib_calendar):
     if not _name.startswith("__"):
         globals().setdefault(_name, getattr(_stdlib_calendar, _name))
 
 from CALENDAR.api import *
-import sys as _sys
 import traceback as _traceback
 
 
