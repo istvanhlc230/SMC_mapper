@@ -202,6 +202,8 @@ is descriptive only; provider verification is authoritative at runtime.
 
 ## 3. Canonical CLI
 
+When `python calendar.py` is invoked with no command-line arguments, it prints the Calendar CLI help text and exits with status 0. This is a help-only operation: it does not read or write `calendar.json` and does not contact any provider.
+
 Public query forms:
 
     python calendar.py SYMBOL YYYY.MM.DD [refresh]
@@ -785,6 +787,7 @@ Any Yahoo-news severity requires an explicit future Monitor specification change
 ## 13. Acceptance
 
 Acceptance requires:
+- invoking `python calendar.py` with no arguments prints the CLI help and exits successfully without provider or cache I/O;
 - old relative scopes removed;
 - `latest` returns the most recent past/current visible event from the committed snapshot without provider calls;
 - `next` returns the nearest future visible event from the committed snapshot without provider calls;
