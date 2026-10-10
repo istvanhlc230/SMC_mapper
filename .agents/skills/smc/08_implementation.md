@@ -517,7 +517,7 @@ Regression tests must cover:
 - reduced-candle qualification is not limited to two candles: the source-defined one-candle displacement outlier is also permitted when it takes >= `MIN_OUTLIER_EXTREMES_TAKEN` preceding bodies/extremes and all other canonical gates pass;
 - `HTF_CONDITIONAL_THRESHOLD`–<`STANDARD_EQUILIBRIUM_THRESHOLD` qualifies only through one complete valid pullback event on the applicable immediate Higher Timeframe;
 - the complete lower-timeframe retracement is represented by exactly one candle-level valid HTF pullback; a partial/unrelated pullback or isolated wick breach does not qualify;
-- HTF inside-bar or invalid-pullback representation does not qualify;
+- an HTF representation consisting only of an Inside Bar, with no complete valid pullback event, does not qualify; an Inside Bar inside a valid multi-candle pullback follows the canonical mother-candle/reference rules and does not invalidate that event by itself;
 - absent required HTF history produces `HTF_CONTEXT_UNAVAILABLE`, not `HTF_VALID_PULLBACK = FALSE`;
 - a monthly HTF may validate W1 structure when the monthly timeframe is the applicable immediate HTF context and a three-month series is not part of the established hierarchy; use the Market Data-defined `MN1` input token for monthly data, and do not assume `3MN` is supported;
 - single-timeframe-only inputs and equal HTF/LTF values are rejected; both distinct timeframes with `HTF > LTF` are required;
