@@ -1384,7 +1384,7 @@ The Calendar adapter passed three-letter ISO 4217 currency codes directly into t
 - Non-FX ticker symbols return no LSE Calendar rows before credential loading because LSE Calendar is not the stock-news provider.
 - LSE HTTP failures now preserve a short provider error detail for `--debug` diagnostics while excluding the API key and request URL/query.
 - Bumped Calendar implementation version to 2.6.2.
-- Updated the normative Calendar provider contract and Calendar workflow tests to verify `EURUSD → EU,US`, standalone currency mapping, key-free ticker no-op behavior, and sanitized HTTP failure diagnostics.
+- Updated the normative Calendar provider contract and Calendar workflow tests to verify `EURUSD` and `EUR/USD` → `EU,US`, standalone currency mapping, key-free ticker no-op behavior, and sanitized HTTP failure diagnostics.
 
 ## Static audit
 
