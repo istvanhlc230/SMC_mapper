@@ -66,7 +66,7 @@ If PERIOD is omitted, analyze all completed history supplied by Market Data, fro
 
 Date-only starts resolve to 00:00 UTC. Date-only ends resolve to the exclusive boundary at 00:00 UTC on the day after the named date. A time may appear only as an endpoint of a range; a standalone date-time without a hyphen is invalid. A date-only scope without a hyphen means the full UTC day. A trailing hyphen means from the start date/time to now. Only `HH:MM` is accepted; seconds, timezone suffixes, and machine-local timezone interpretation are rejected. For an open-end period, capture current UTC once at invocation start and use the same instant across all timeframes. Future starts and reversed/empty ranges are rejected.
 
-Period selection uses candle interval-start timestamps with half-open semantics: `start <= candle.timestamp < end`. Completion status is checked separately. Open-start selection uses each timeframe's earliest retained completed candle (`available_start`), not its latest candle. HTF and LTF may therefore have different earliest retained boundaries.
+Period selection uses candle interval-start timestamps with half-open semantics: `start <= candle.timestamp < end`. Completion status is checked separately. Open-start selection uses each timeframe's earliest completed candle present in the validated Market Data stream, which must correspond to the earliest retained candle in that timeframe's cache, not its latest candle. The Mapper derives coverage from CSV rows and never reads Market Data's private JSON metadata. HTF and LTF may therefore have different earliest retained boundaries.
 
 The requested period is the requested output/evaluation window, not permission to omit canonical predecessors. The input stream must also include every earlier warm-up/context candle required by the canonical SMC rules. If required context is unavailable, fail closed or preserve the specific unresolved dependency as required by the canonical skill. Output metadata distinguishes the requested period, actual per-timeframe coverage, canonical processing coverage, and requested output window. These are per-run metadata only; there is no persistent identity or checkpoint.
 
@@ -537,7 +537,7 @@ The CLI accepts one optional positional `PERIOD` argument. The `--starttime`, `-
 
 The canonical date spelling is `YYYY.MM.DD` and time spelling is `HH:MM`. Time is optional on each explicit range endpoint. All values are UTC. Seconds, timezone suffixes, and machine-local timezone interpretation are not accepted. The parser must recognize the leading-hyphen `-YYYY.MM.DD[@HH:MM]` expression as the positional PERIOD, not misinterpret it as an unknown option; users must not need an extra `--` delimiter.
 
-For open-start periods, resolve the earliest retained completed candle separately for each timeframe from its `available_start`; the end boundary remains explicit. For an open-end period, capture current UTC once at invocation start and use that fixed instant for all timeframe groups. Reject future starts and reversed/empty intervals.
+For open-start periods, resolve the earliest completed candle present in the validated returned CSV separately for each timeframe; the stream must cover the full retained cache history through the explicit end boundary. The Mapper must not assume private Market Data JSON metadata is available. For an open-end period, capture current UTC once at invocation start and use that fixed instant for all timeframe groups. Reject future starts and reversed/empty intervals.
 
 The requested period filters the output/evaluation window. Canonical processing must also use all earlier warm-up/context candles required by the canonical skill; context candles must not be misreported as belonging to the requested output interval.
 
@@ -1475,8 +1475,8 @@ Conceptual models:
     MarketDataSeries
         symbol
         timeframe
-        available_start
-        available_end
+        available_start (derived from returned completed candles)
+        available_end (derived from returned completed candles)
         candles: array of MarketDataCandleView
 
     MapperResult
@@ -1544,7 +1544,7 @@ Owner module: `SMC_MAPPER/period.py`.
     parse_period_expression(value) -> PeriodScope
     resolve_period_scope(period, market_data_coverage, invocation_time) -> ResolvedPeriod
 
-Parsing is deterministic. Open-end periods use one UTC invocation timestamp captured once; open-start periods resolve against the earliest retained completed candle per timeframe. There is no persistent analysis identity or resume-selection behavior.
+Parsing is deterministic. Open-end periods use one UTC invocation timestamp captured once; open-start periods resolve against the earliest completed candle present in the validated CSV per timeframe. There is no persistent analysis identity or resume-selection behavior.
 
 ## 15.3 Market-data boundary
 
