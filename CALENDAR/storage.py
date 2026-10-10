@@ -37,15 +37,15 @@ def load_calendar_document() -> Dict[str, Any]:
 
 def save_calendar_atomic(document: Dict[str, Any]) -> None:
     """Serialize Calendar JSON and replace the destination through the shared atomic writer."""
-    serialized_document = json.dumps(document, indent=2, ensure_ascii=False)
     try:
+        serialized_document = json.dumps(document, indent=2, ensure_ascii=False)
         atomic_write_text(
             CALENDAR_FILE,
             serialized_document,
             prefix="calendar_",
             retry_limit=1,
         )
-    except OSError as exc:
+    except Exception as exc:
         raise DataIntegrityError(f"Atomic save failed: {exc}") from exc
 
 

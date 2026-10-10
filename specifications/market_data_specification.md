@@ -592,7 +592,7 @@ No machine-local timezone is ever assumed.
 
 - `--lastclosed` means **the latest completed/closed candle**, never the current in-progress candle.
 - `--current` means **the current in-progress candle snapshot**.
-- `--lastclosed` is mutually exclusive with `positional scope`.
+- `--lastclosed` is mutually exclusive with any positional historical scope.
 - `--current` is mutually exclusive with `--lastclosed`.
 - Positional historical scopes, including open-start `-END` ranges, are mutually exclusive with `current` and `lastclosed` modes.
 - With no explicit mode, normal incremental completed-candle acquisition is used.
@@ -2433,6 +2433,10 @@ After implementation, update `AGENT_REVIEW.md` with the completed audit/test res
 ---
 
 # 24. NORMATIVE RUNTIME FLOW
+
+## 24.0 Shared utility dependencies
+
+Market Data imports the provider-independent `DateTimeScopeParser` and UTC primitives from `COMMON/date_time.py`, `atomic_write_text` from `COMMON/atomic_file.py`, and `HttpClient` from `COMMON/http_client.py`. These helpers own syntax/time normalization, atomic text replacement, and HTTP transport only. Market Data continues to own symbol/timeframe validation, provider payload/OHLC normalization, data schema, retention, request semantics, provider-specific retry configuration, and error translation. Provider credentials remain owned by `PROVIDERS/credentials.py`.
 
 The complete V1 execution flow is:
 

@@ -754,6 +754,8 @@ Acceptance requires:
 
 The repository-root `calendar.py` remains the stable CLI entrypoint. Internal Calendar modules are grouped under `CALENDAR/` by responsibility, and the default persistent cache is `CALENDAR/calendar.json`. `SMC_DATA_ROOT` remains an explicit override.
 
+Calendar persistence uses `COMMON/atomic_file.py` for same-directory atomic UTF-8 replacement, while retaining Calendar-specific JSON validation, locking, and `DataIntegrityError` translation. Provider HTTP transport uses `COMMON/http_client.py`; all Calendar provider URL construction, headers, event parsing, and `ProviderError` mapping remain in the Calendar layer.
+
 The domain layer keeps event, interval, coverage, watermark, merge, filtering, and refresh decisions represented by explicit fields and simple scalar values so the semantic core remains straightforward to port to MQL4/MQL5. Python-only provider HTTP, HTML parsing, threading, and OS-specific locking are confined to infrastructure modules.
 
 ## 14.1 Rendered ForexFactory time handling

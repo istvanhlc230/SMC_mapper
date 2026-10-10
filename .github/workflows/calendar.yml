@@ -186,8 +186,16 @@ jobs:
               )
 
               active_events = [
-                  {"event_id": "active", "symbol": "EURUSD", "timestamp": "2026-10-07T12:30:00Z", "source": "forexfactory"},
-                  {"event_id": "expired", "symbol": "EURUSD", "timestamp": "2026-10-07T12:29:00Z", "source": "forexfactory"},
+                  {
+                      "event_id": "active", "symbol": "EURUSD",
+                      "timestamp": "2026-10-07T12:30:00Z", "source": "forexfactory",
+                      "details": {"currency": "EUR"},
+                  },
+                  {
+                      "event_id": "expired", "symbol": "EURUSD",
+                      "timestamp": "2026-10-07T12:29:00Z", "source": "forexfactory",
+                      "details": {"currency": "EUR"},
+                  },
               ]
               assert [event["event_id"] for event in domain.query_ongoing_events(
                   active_events, "EURUSD", dt("2026-10-07T12:30:30Z")
