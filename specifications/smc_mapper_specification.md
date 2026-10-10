@@ -472,7 +472,7 @@ The mapper must never silently swap or otherwise correct the supplied timeframes
 
 ## 2.5 Entry timeframe
 
-The entry timeframe is the driving timeframe for incremental processing and runtime scheduling.
+The entry timeframe is the driving timeframe for Monitor runtime scheduling. Market Data may use incremental provider acquisition internally, but Mapper always recomputes from the full retained history supplied to the invocation.
 
 - Single-timeframe analysis: the selected timeframe is the entry timeframe.
 - Two-timeframe analysis: the LTF is the entry timeframe.
@@ -1567,7 +1567,7 @@ If input validation, coverage validation, canonical processing, or result serial
 
 ## 16.4 Historical recomputation
 
-Historical recomputation is an ordinary invocation with a positional period. The Mapper rebuilds state from the complete supplied candle history and required warm-up/context, so corrected historical candles automatically affect all downstream structural outcomes. There is no special update command, transaction, checkpoint, old-state preservation, or duplicate-event reconciliation because no previous Mapper state is loaded.
+Historical recomputation is an ordinary invocation with a positional period. The Mapper rebuilds state from all retained completed candles supplied through the requested end, beginning at the earliest candle in each timeframe's returned history, so corrected historical candles automatically affect all downstream structural outcomes. There is no special update command, transaction, checkpoint, old-state preservation, or duplicate-event reconciliation because no previous Mapper state is loaded.
 
 # 17. PURE-FUNCTION AND TESTABILITY BOUNDARIES
 
