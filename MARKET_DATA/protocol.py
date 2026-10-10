@@ -77,7 +77,7 @@ def format_table(
 ) -> str:
     """Format candles with OHLC and available normalized total volume."""
     lines = [f"MARKET DATA | {symbol}"]
-    table_width = 87
+    table_width = 86
     separator = "-" * table_width
 
     for timeframe, entries in candles_by_timeframe.items():
