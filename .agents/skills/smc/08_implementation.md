@@ -217,6 +217,18 @@ UNAVAILABLE MUST NOT BE AUTO-PROMOTED TO OBSERVED
 
 If stronger sequence evidence later becomes available, the implementation may replace UNAVAILABLE with OBSERVED only on the basis of that evidence. The methodology model may not be used as retrospective proof.
 
+## Mandatory Multi-Timeframe input contract
+
+A True SMC mapping invocation is conformant only when it has two distinct, explicitly identified timeframe series with `HTF > LTF`. Single-timeframe-only mapping and equal HTF/LTF configuration are invalid as complete True SMC analysis modes; a timeframe must never be relabelled as its own HTF.
+
+- The HTF supplies directional narrative, canonical POI zones, and relevant core-liquidity context.
+- The LTF supplies the internal structure and context-gated LTF-CHoCH / entry-confirmation evidence.
+- Both series must be available over the historical overlap required for point-in-time analysis. Missing candles, missing HTF context, and unresolved intrabar sequencing are unavailable evidence, not negative proof.
+- If only one timeframe series is supplied, or required HTF/LTF context cannot be established, mark the dependent mapping/decision `UNAVAILABLE` with an explicit reason such as `HTF_CONTEXT_UNAVAILABLE`; do not return a fully conformant single-timeframe result or fabricate a substitute series.
+- For an Outside Bar, aggregate OHLC proves both extremes were breached but does not prove which extreme occurred first. Unless lower-timeframe or equivalent independent evidence establishes the sequence, `INTRABAR_SEQUENCE_EVIDENCE = UNAVAILABLE`, and every dependent structural classification must remain unresolved/fail closed.
+
+This input contract does not allow a generic higher timeframe to be chosen arbitrarily. Structural qualification uses the applicable immediate Higher Timeframe determined by the canonical mapping context. The pairing examples in the structural authority are illustrative; absence of one example timeframe (for example 3MN) does not automatically make another arbitrary timeframe valid, but an applicable configured 1MN series may validate W1 structure when that is the established HTF context.
+
 ## 46. Structural state machine
 
 The mapper is a state machine. Each event must be evaluated against current structural state, not only against the current candle.
