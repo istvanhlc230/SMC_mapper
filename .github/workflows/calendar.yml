@@ -115,7 +115,7 @@ jobs:
               providers.open_url = original_lse_open_url
 
           assert calendar.validate_symbol("EURUSD") == "EURUSD"
-          assert calendar.__version__ == "2.6.4"
+          assert calendar.__version__ == "2.6.5"
           assert calendar.validate_symbol("USDGBP") == "USDGBP"
           assert calendar.validate_symbol("HUF") == "HUF"
           assert calendar.validate_symbol("NVDA") == "NVDA"
@@ -1158,7 +1158,7 @@ jobs:
               }
               assert calendar.normalize_provider_event(structured_raw)["details"]["impact"] == expected_impact
 
-          assert calendar.__version__ == "2.6.4"
+          assert calendar.__version__ == "2.6.5"
           assert f"Calendar CLI v{calendar.__version__}" in calendar.HELP_TEXT
 
           # Cleartext output must render normalized details as readable fields,
@@ -1651,6 +1651,49 @@ jobs:
               domain.utc_now = original_now
               storage.save_calendar_atomic = original_save
               domain.resolve_applicable_providers = original_resolve
+
+          # The user-facing refresh path must preserve concrete-time events when
+          # ForexFactory reports All Day/Tentative rows, and its result stays PARTIAL.
+          original_refresh_fetch_provider = operations._fetch_provider_events
+          original_refresh_resolve = domain.resolve_applicable_providers
+          original_refresh_now = domain.utc_now
+          original_refresh_enrich = providers._enrich_forexfactory_details
+          original_refresh_save = storage.save_calendar_atomic
+          try:
+              domain.resolve_applicable_providers = lambda _symbol: ["forexfactory"]
+              domain.utc_now = lambda: dt("2026-10-05T12:00:00Z")
+              providers._enrich_forexfactory_details = lambda events: []
+              storage.save_calendar_atomic = lambda _document: None
+
+              def partial_time_row_refresh(provider, symbol, start, end, **kwargs):
+                  assert provider == "forexfactory"
+                  unresolved_ids = kwargs["unresolved_event_time_ids"]
+                  unresolved_ids.append("151380")
+                  return [synthetic_ff_event("151381", 9)]
+
+              operations._fetch_provider_events = partial_time_row_refresh
+              refresh_partial_doc = domain.build_empty_calendar_document()
+              refresh_partial_result = operations.refresh_calendar_scope(
+                  refresh_partial_doc,
+                  "USD",
+                  dt("2026-10-05T00:00:00Z"),
+                  dt("2026-10-06T00:00:00Z"),
+              )
+              refresh_partial_ff = next(
+                  item for item in refresh_partial_result["provider_results"]
+                  if item["provider"] == "forexfactory"
+              )
+              assert refresh_partial_ff["status"] == "PARTIAL"
+              assert refresh_partial_ff["unresolved_event_times"] == 1
+              assert [event["event_id"] for event in refresh_partial_doc["events"]] == [
+                  "forexfactory:151381"
+              ]
+          finally:
+              operations._fetch_provider_events = original_refresh_fetch_provider
+              domain.resolve_applicable_providers = original_refresh_resolve
+              domain.utc_now = original_refresh_now
+              providers._enrich_forexfactory_details = original_refresh_enrich
+              storage.save_calendar_atomic = original_refresh_save
 
           # Public provider failures remain observable through aggregate status,
           # but ERROR records and exception text never cross the normal stdout boundary.
