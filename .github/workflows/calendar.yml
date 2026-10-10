@@ -1118,6 +1118,8 @@ jobs:
               next_doc["events"], "EURUSD", dt("2026-10-05T08:00:00Z")
           )
           assert [e["event_id"] for e in merged_events] == ["lse:merged-next"] # 4. earlier ignored, 5. later ignored, 6. exactly now ignored, 8. suppressed_for prevents return, 9. pair visibility works
+          # Keep the following independent CLI integration fixture focused on Next USD.
+          next_doc["events"].remove(merged_next)
           assert calendar.query_next_event(next_doc["events"], "NVDA", dt("2026-10-04T12:00:00Z")) == []
           assert [e["event_id"] for e in calendar.query_latest_event(next_doc["events"], "EURUSD", dt("2026-10-04T12:00:00Z"))] == ["forexfactory:now-usd"] # 10. NVDA works
           assert calendar.query_next_event(next_doc["events"], "NVDA", dt("2026-10-05T10:00:00Z")) == [] # 7. NO_NEXT_EVENT when no future exists
