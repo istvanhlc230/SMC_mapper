@@ -1443,3 +1443,27 @@ The provider's own client accepts `start` and `end` as dates for `economic_calen
 - Source/specification/CI test assertions were statically checked for alignment.
 - Latest GitHub Actions status is pending/not yet exposed, so runtime CI PASS is not claimed.
 - A successful live authenticated API response has not yet been observed; the next local run must verify it.
+
+
+# ForexFactory untimestampable-row isolation — 2026-10-10
+
+## Finding
+
+The user's live refresh failed in the HTML fallback because the page had an event row (provider ID `151380`) with no concrete clock. ForexFactory's legacy embedded `days` payload was absent, causing the code to fall back to the rendered calendar. The parser raised for a single untimeable row and thereby discarded all other timestampable events from the same response.
+
+## Corrections
+
+- The strict public HTML parser still rejects a no-clock event unless the caller explicitly supplies an unresolved-event collector.
+- During real acquisition, the parser now reports unresolved event IDs and skips only those rows. It never substitutes midnight or borrows a neighboring event's clock.
+- The ForexFactory adapter forwards unresolved IDs to the operations layer.
+- Both explicit acquisition and forced refresh mark the provider result `PARTIAL`, report the unresolved-row count, and do not advance the provider watermark on incomplete acquisition.
+- Explicit acquisition stores `PARTIAL` coverage so the interval remains eligible for retry; timestampable events from the same response remain usable.
+- Added a regression with the observed ID `151380` as an `All Day` row and a neighboring timed event. The test verifies that the timed event is preserved and only the unresolved ID is collected.
+- Added operation-level coverage for partial explicit acquisition and partial forced refresh.
+- Updated the normative specification and bumped Calendar version to 2.6.5.
+
+## Validation
+
+- Static source/specification/test-contract alignment: PASS on inspection.
+- GitHub Actions runtime status for the new commit is not yet exposed; CI PASS is not claimed.
+- The regression uses a synthetic provider response and does not require or expose the user's API key.
