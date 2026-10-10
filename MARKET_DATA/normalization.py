@@ -181,14 +181,24 @@ def validate_normalized_candle(candle: NormalizedCandle) -> None:
         not candle.spread.is_finite() or candle.spread < 0
     ):
         raise ValueError("invalid spread value")
-    if candle.volume.has_total and candle.volume.total is None:
-        raise ValueError("volume.total is marked available but missing")
-    if candle.volume.has_ohlc and (
-        candle.volume.ohlc_buy is None or candle.volume.ohlc_sell is None
+    if candle.volume.has_total != (candle.volume.total is not None):
+        raise ValueError("volume.total presence must match has_total")
+    ohlc_pair_is_present = (
+        candle.volume.ohlc_buy is not None
+        and candle.volume.ohlc_sell is not None
+    )
+    if candle.volume.has_ohlc != ohlc_pair_is_present:
+        raise ValueError("OHLC volume pair presence must match has_ohlc")
+    if (candle.volume.ohlc_buy is None) != (candle.volume.ohlc_sell is None):
+        raise ValueError("OHLC volume branch must contain both buy and sell")
+    orderflow_pair_is_present = (
+        candle.volume.orderflow_buy is not None
+        and candle.volume.orderflow_sell is not None
+    )
+    if candle.volume.has_orderflow != orderflow_pair_is_present:
+        raise ValueError("orderflow pair presence must match has_orderflow")
+    if (
+        (candle.volume.orderflow_buy is None)
+        != (candle.volume.orderflow_sell is None)
     ):
-        raise ValueError("OHLC volume branch must contain buy and sell")
-    if candle.volume.has_orderflow and (
-        candle.volume.orderflow_buy is None
-        or candle.volume.orderflow_sell is None
-    ):
-        raise ValueError("orderflow branch must contain buy and sell")
+        raise ValueError("orderflow branch must contain both buy and sell")
