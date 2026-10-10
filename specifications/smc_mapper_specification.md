@@ -1543,7 +1543,6 @@ The global developer-agent naming, portability, prompt-efficiency, and validatio
 At minimum, the finished mapper implementation must have focused tests covering:
 
 - CLI option parsing requires both HTF and LTF, rejects equal timeframes, and rejects invalid HTF<LTF combinations;
-- only the distinct HTF/LTF analysis mode is available; attempts to map with one timeframe or equal HTF/LTF must be rejected;
 - positional-period parser coverage for date-only, date ranges with independently optional endpoint times, open-start, and open-end forms;
 - leading-hyphen positional PERIOD is accepted without requiring an extra `--` delimiter;
 - standalone `YYYY.MM.DD@HH:MM` is rejected because a time requires a range hyphen;
