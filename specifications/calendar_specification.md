@@ -609,7 +609,7 @@ The former `--cleartext` flag is retired and must return a clear input error dir
 `--table`; it is not a compatibility alias.
 
 Table output begins with aggregate status and provider statuses, followed by an event summary table
-with UTC timestamp, currency, impact, provider source, and event title. Each event then has a separate
+with UTC timestamp, currency, impact, all contributing sources, and event title. Each event then has a separate
 two-column detail table containing timestamp, event type, source, symbol, title, event ID, canonical
 detail fields, and sanitized ForexFactory Detail specifications. Provider-specific fields are shown in
 a separate table with Provider, Field, and Value columns. Nested values use deterministic JSON text
