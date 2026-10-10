@@ -152,7 +152,7 @@ HTF POI interaction means mitigation/reaction against a canonical HTF POI. HTF c
 
 - A conformant True SMC mapping uses two distinct timeframes; a single chart/timeframe alone is not a complete MTF analysis.
 - **HTF:** establishes directional narrative, canonical POI zones, and relevant core-liquidity context.
-- **LTF:** reveals the internal structure within/after the HTF interaction, qualifies the context-gated LTF-CHoCH route, and supplies entry confirmation. An LTF CHoCH without the required HTF POI/core-liquidity context must not be treated as this route or independently authorize an entry.
+- **LTF:** reveals the internal structure within/after the HTF interaction, qualifies the context-gated LTF-CHoCH route, and supplies entry confirmation. An LTF CHoCH without the required HTF POI/core-liquidity context must not be treated as this route or independently authorize an entry. This context gate also prevents isolated pre-inducement micro-structure from being mistaken for an HTF-backed setup; the existing `06_execution.md` `SMT / INDUCEMENT_TRAP` semantics remain authoritative, and this section must not invent a new SMT event class.
 - Common execution pairings are **H4 HTF → M15 LTF** for short-term swings and **D1 HTF → H1 LTF** for long-term swings. These are common pairings, not an exhaustive or rigid timeframe table; the configured pair must preserve distinct higher-context and lower-execution roles.
 - If the required HTF POI, liquidity interaction, historical coverage, or timeframe relationship is unavailable, keep the dependent LTF-CHoCH context inactive/unavailable. Never manufacture the missing context from an LTF pivot or local CHoCH.
 
