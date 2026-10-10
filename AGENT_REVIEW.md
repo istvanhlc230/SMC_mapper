@@ -1591,8 +1591,12 @@ The user's live refresh failed in the HTML fallback because the page had an even
 
 ### Static re-audit
 - Default JSON output path remains unchanged.
-- `--table` output includes event summary, complete detail rows, and provider fields without raw Python dictionary representations.
+- `--table` output includes event summary, all contributing provider sources, complete detail rows, sanitized ForexFactory Detail fields, and provider fields without raw Python dictionary representations.
+- Last-update metadata and refresh Added/Changed/Unchanged counts use compact tables.
+- CLI parsing, request dictionary keys, root compatibility exports, API exports, help text, version assertions, and normative specification all use the new table-mode contract.
 - The old flag is only referenced in the intentional rejection contract, specification migration note, regression test, and historical review records.
+- The final source/specification/test snapshot is statically consistent at implementation version 2.8.0.
 
 ### Runtime validation
-- Workflow regression coverage is updated. Final GitHub Actions status must be checked before marking the code audit PASS.
+- Workflow regressions cover table overview/details, long/escaped ForexFactory Detail sanitization, provider metadata rendering, merged source provenance, last-update tables, refresh summary tables, and the explicit rejection of `--cleartext`.
+- The available GitHub status/run lookup returned no status records for the current push-triggered workflow. Automated CI PASS is therefore not claimed; the workflow must still be confirmed green.
