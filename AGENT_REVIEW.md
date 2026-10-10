@@ -1552,3 +1552,23 @@ The user's live refresh failed in the HTML fallback because the page had an even
 - Calendar Python tests [run #941](https://github.com/istvanhlc230/SMC_mapper/actions/runs/38073880187): **SUCCESS**.
 - Market Data Python tests [run #556](https://github.com/istvanhlc230/SMC_mapper/actions/runs/38073880172): **SUCCESS**.
 - Both workflows passed against implementation commit `0c4b0c66e5dbf7a78f66beac76fa8d113e6d9ff7`, including the future-date/partial-provider visibility regression.
+
+## Calendar provider-field normalization — 2026-10-10
+
+### Finding
+- LSE normalization stored unmatched raw fields as a flat `details.provider_fields` dictionary on first acquisition.
+- A later merge treated the entire flat dictionary as already provider-grouped and added an `lse` child, leaving duplicated/mixed field structures.
+- Cleartext output converted the nested mapping with Python `str()`, hiding individual field names and values inside one dictionary representation.
+
+### Corrections
+- LSE normalization now stores provider-specific data as `provider_fields.lse.<field>`.
+- Added a compatibility normalizer for legacy flat and mixed records. Explicit nested values win where legacy flat and nested keys overlap.
+- Loaded in-memory documents and every atomic save normalize provider fields; event merge normalizes both the existing and incoming representations.
+- Calendar validation now rejects malformed or ungrouped provider_fields values after legacy normalization.
+- Cleartext output now renders each provider and each provider field on readable separate lines.
+- Added workflow regressions for LSE field normalization, legacy data migration, same-provider refresh merging, nested-schema validation, and human-readable field rendering.
+- Bumped Calendar implementation version to 2.7.0; persistent schema remains V2 because legacy structures are normalized compatibly at the persistence boundary.
+
+### Static audit
+- Source, persistence, presentation, version assertions, regression tests, and normative specification are aligned.
+- Runtime CI verification pending for the final code/test snapshot.
