@@ -523,7 +523,9 @@ Regression tests must cover:
 - an HTF representation consisting only of an Inside Bar, with no complete valid pullback event, does not qualify; an Inside Bar inside a valid multi-candle pullback follows the canonical mother-candle/reference rules and does not invalidate that event by itself;
 - absent required HTF history produces `HTF_CONTEXT_UNAVAILABLE`, not `HTF_VALID_PULLBACK = FALSE`;
 - a monthly HTF may validate W1 structure when the monthly timeframe is the applicable immediate HTF context and a three-month series is not part of the established hierarchy; use the Market Data-defined `MN1` input token for monthly data, and do not assume `3MN` is supported;
-- single-timeframe-only inputs and equal HTF/LTF values are rejected; both distinct timeframes with `HTF > LTF` are required;
+- the CLI requires exactly one `--timeframe TF` anchor and rejects missing/unsupported anchors plus retired `--htf`/`--ltf` flags;
+- automatic resolution supplies all distinct narrative/POI, pullback-representation, and entry/monitoring series required by canonical semantics; the runtime must not pass when it actually processes only one timeframe;
+- role-specific data plans exclude entry-LTF CHoCH monitoring before an eligible HTF POI interaction and include the resolved entry series after the state changes to `ARMED_MONITORING_LTF`;
 - if an Outside Bar's internal sequence is not established by lower-timeframe or equivalent independent evidence, record `INTRABAR_SEQUENCE_EVIDENCE = UNAVAILABLE`, terminally invalidate any Layer-2 pullback candidate that requires that order, and prohibit later candles from retroactively resolving it;
 - below `HTF_CONDITIONAL_THRESHOLD` does not qualify;
 - a continuation break without stored `MAJOR_RETRACEMENT_QUALIFIED` remains non-BOS / `IMPULSE_EXTENSION` as applicable.
