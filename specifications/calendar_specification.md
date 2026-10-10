@@ -234,7 +234,7 @@ is descriptive only; provider verification is authoritative at runtime.
 
 ## 3. Canonical CLI
 
-When `python calendar.py` is invoked without arguments, it prints the help text and exits with status 0. This operation performs no cache or provider I/O.
+When `python calendar.py` is invoked without arguments, it prints the help text and exits with status 0. This operation performs no cache or provider I/O. The help output must stay concise, summarizing usage, common scope forms, primary options, and output modes; the full temporal grammar remains specified below.
 
 The public query grammar is positional:
 
