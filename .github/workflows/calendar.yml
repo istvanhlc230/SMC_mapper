@@ -731,7 +731,7 @@ jobs:
               providers.fetch_url = original_fetch_url
               providers.fetch_forexfactory_event_detail = detail_failure_original_detail_fetch
 
-          table_specs = calendar.format_table_details({
+          table_spec_rows, _ = calendar.format_table_details({
               "currency": "USD",
               "impact": "HIGH",
               "actual": None,
@@ -742,22 +742,21 @@ jobs:
                   {"order": 1, "title": "Measures", "html": "Monthly data."},
               ],
           })
-          assert any("Source   : Example Source" in line for line in table_specs)
-          assert any("Measures : Monthly data." in line for line in table_specs)
+          assert ("Source", "Example Source") in table_spec_rows
+          assert ("Measures", "Monthly data.") in table_spec_rows
 
-          # Provider Detail HTML may be entity-escaped. Cleartext must decode
-          # entities before stripping markup, while calendar.json still retains
-          # the original provider HTML.
+          # Provider Detail HTML may be entity-escaped. Table output decodes
+          # entities before stripping markup, while calendar.json retains HTML.
           escaped_detail = (
               "FF Notice &lt;img class=&quot;svg-img svg-img--misc-star&quot; "
               "width=&quot;12&quot; height=&quot;11&quot; src=&quot;resources/svg/images/misc/star.svg&quot;&gt;: "
               "Event added to calendar 176 minutes before release time; "
               "Why Traders&lt;br&gt;Care: Federal Reserve members vote on rates"
           )
-          escaped_lines = calendar.format_table_details({
+          escaped_rows, _ = calendar.format_table_details({
               "specs": [{"order": 1, "title": "Provider Detail", "html": escaped_detail}],
           })
-          escaped_rendered = "\n".join(escaped_lines)
+          escaped_rendered = "\n".join(f"{field}: {value}" for field, value in escaped_rows)
           assert "<img" not in escaped_rendered
           assert "svg-img" not in escaped_rendered
           assert "<br>" not in escaped_rendered
@@ -768,10 +767,10 @@ jobs:
               "FF Notice &amp;lt;img class=&amp;quot;svg-img&amp;quot;&amp;gt;: Event added; "
               "Why Traders&amp;lt;br&amp;gt;Care: policy clues"
           )
-          double_escaped_lines = calendar.format_table_details({
+          double_escaped_rows, _ = calendar.format_table_details({
               "specs": [{"order": 1, "title": "Provider Detail", "html": double_escaped_detail}],
           })
-          double_escaped_rendered = "\n".join(double_escaped_lines)
+          double_escaped_rendered = "\n".join(f"{field}: {value}" for field, value in double_escaped_rows)
           assert "<img" not in double_escaped_rendered
           assert "&lt;img" not in double_escaped_rendered
           assert "<br>" not in double_escaped_rendered
@@ -783,14 +782,14 @@ jobs:
               "FF Notice <img class=\"svg-img svg-img--misc-star\">: Event added; "
               "Why Traders<br>Care: policy clues"
           )
-          literal_lines = calendar.format_table_details({
+          literal_rows, _ = calendar.format_table_details({
               "specs": [{
                   "order": 1,
                   "title": "Why Traders<br>Care",
                   "html": literal_html_detail,
               }],
           })
-          literal_rendered = "\n".join(literal_lines)
+          literal_rendered = "\n".join(f"{field}: {value}" for field, value in literal_rows)
           assert "Why Traders<br>Care" not in literal_rendered
           assert "Why Traders\nCare" in literal_rendered
           assert "<img" not in literal_rendered
@@ -1342,8 +1341,7 @@ jobs:
           assert calendar.__version__ == "2.8.0"
           assert f"Calendar CLI v{calendar.__version__}" in calendar.HELP_TEXT
 
-          # Cleartext output must render normalized details as readable fields,
-          # not as an internal JSON dictionary representation.
+          # --table renders an overview plus per-event detail and provider-field tables.
           table_event = {
               "event_id": "forexfactory:table",
               "symbol": "EUR",
@@ -1373,30 +1371,43 @@ jobs:
                   "OK", "EURUSD", [table_event], [], table=True
               )
           rendered = table_out.getvalue()
-          assert 'Details   : {"currency"' not in rendered
-          assert "Details   :\n" in rendered
-          assert "  Currency : EUR\n" in rendered
-          assert "  Impact   : LOW\n" in rendered
-          assert "  Actual   : N/A\n" in rendered
-          assert "  Forecast : 57.1\n" in rendered
-          assert "  Previous : 57.8\n" in rendered
-          assert "  Provider Fields:\n" in rendered
-          assert "    LSE:\n" in rendered
-          assert "      Time              : 10:00 AM\n" in rendered
-          assert "      Actual Revised    : 0\n" in rendered
+          assert "CALENDAR RESULT | OK | EURUSD" in rendered
+          assert "EVENTS | 1" in rendered
+          assert "Timestamp (UTC)" in rendered
+          assert "Spanish Services PMI" in rendered
+          assert "EVENT DETAILS | 01 | Spanish Services PMI" in rendered
+          assert "Currency" in rendered and "EUR" in rendered
+          assert "Actual" in rendered and "N/A" in rendered
+          assert "Forecast" in rendered and "57.1" in rendered
+          assert "PROVIDER FIELDS" in rendered
+          assert "LSE" in rendered and "Time" in rendered and "10:00 AM" in rendered
+          assert "Actual Revised" in rendered
           assert "{'time':" not in rendered
 
-          # Cleartext event blocks are separated by whitespace only; no closing rule is emitted.
+          # Table request parsing accepts --table and explicitly retires --cleartext.
+          table_request = calendar.parse_request(["EURUSD", "2026.10.12", "--table"])
+          assert table_request["table"] is True
+          try:
+              calendar.parse_request(["EURUSD", "2026.10.12", "--cleartext"])
+          except calendar.CalendarInputError as exc:
+              assert "--cleartext was replaced by --table" in str(exc)
+          else:
+              raise AssertionError("--cleartext must be rejected after the rename")
+
+          # Each event has its own labeled details table following the summary table.
           second_table_event = dict(table_event)
           second_table_event["event_id"] = "forexfactory:table-2"
+          second_table_event["title"] = "Second Test Event"
           table_out = io.StringIO()
           with contextlib.redirect_stdout(table_out):
               calendar.output_query_result(
                   "OK", "EURUSD", [table_event, second_table_event], [], table=True
               )
           rendered_blocks = table_out.getvalue()
-          assert "-----------------------------------------------" not in rendered_blocks
-          assert "Event ID  : forexfactory:table\n\n--- EVENT 02" in rendered_blocks
+          assert "EVENTS | 2" in rendered_blocks
+          assert "EVENT DETAILS | 01 | Spanish Services PMI" in rendered_blocks
+          assert "EVENT DETAILS | 02 | Second Test Event" in rendered_blocks
+          assert rendered_blocks.count("+") > 20
 
           # Explicit bare delete must recover from an incompatible legacy cache.
           original_root = storage.DATA_ROOT
