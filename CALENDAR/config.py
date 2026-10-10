@@ -19,7 +19,7 @@ HTTP_TIMEOUT = 15.0
 # SCHEMA_VERSION — persistent calendar.json schema version.
 SCHEMA_VERSION = 2
 # __version__ — Calendar CLI implementation version, independent from SCHEMA_VERSION.
-__version__ = "2.7.0"
+__version__ = "2.8.0"
 
 # SUPPORTED_CURRENCIES — standalone currencies accepted by the CLI.
 SUPPORTED_CURRENCIES = {
@@ -86,7 +86,7 @@ USAGE
   python calendar.py delete SYMBOL <scope>
   python calendar.py --help
 FLAGS
-  --cleartext    Human-readable presentation only; does not change stored data.
+  --table    Human-readable presentation only; does not change stored data.
   --debug        Emit diagnostic exceptions/tracebacks to stderr only.
   --last-update  Read last successful provider update times; no provider call.
   --help         Show this help.
@@ -125,7 +125,7 @@ REFRESH
   current refresh is permitted; latest, next, prev, and news reject refresh.
 
 OUTPUT
-  Default output is JSON. --cleartext changes presentation only.
+  Default output is JSON. --table changes presentation only.
 
 ERRORS
   Invalid syntax and unsupported symbols are rejected explicitly.
