@@ -1572,3 +1572,27 @@ The user's live refresh failed in the HTML fallback because the page had an even
 ### Static audit
 - Source, persistence, presentation, version assertions, regression tests, and normative specification are aligned.
 - Runtime CI verification pending for the final code/test snapshot.
+
+## Calendar `--table` presentation — 2026-10-10
+
+### Decision
+- Replace the public `--cleartext` switch with `--table`; it is not retained as an alias.
+- Preserve JSON as the default output and keep presentation independent from canonical stored data.
+
+### Changes
+- Added an event overview table showing UTC timestamp, currency, impact, provider source, and title.
+- Added a field/value detail table for each event and a separate provider/field/value table for provider-specific metadata.
+- Added deterministic column sizing and wrapping for long provider Detail text so descriptions stay readable without widening the table indefinitely.
+- ForexFactory Detail titles/content continue through the HTML-aware sanitizer before rendering.
+- The `--last-update --table` operation and refresh counters now use compact tables too.
+- The CLI parser rejects `--cleartext` with a migration message directing the user to `--table`.
+- Updated public CLI help, root compatibility facade, API exports, canonical Calendar specification, and workflow tests.
+- Bumped Calendar implementation version to 2.8.0; persistent schema remains V2.
+
+### Static re-audit
+- Default JSON output path remains unchanged.
+- `--table` output includes event summary, complete detail rows, and provider fields without raw Python dictionary representations.
+- The old flag is only referenced in the intentional rejection contract, specification migration note, regression test, and historical review records.
+
+### Runtime validation
+- Workflow regression coverage is updated. Final GitHub Actions status must be checked before marking the code audit PASS.
