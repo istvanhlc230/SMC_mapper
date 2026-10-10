@@ -268,17 +268,18 @@ def output_query_result(
         summary_rows = []
         for event in events:
             details = event.get("details", {})
+            sources = event.get("sources") or [event.get("source", "N/A")]
             summary_rows.append([
                 event.get("timestamp", "N/A"),
                 details.get("currency") or event.get("symbol", "N/A"),
                 details.get("impact") or "N/A",
-                event.get("source", "N/A"),
+                ", ".join(str(source) for source in sources),
                 event.get("title", "N/A"),
             ])
         for line in render_ascii_table(
-            ["Timestamp (UTC)", "Currency", "Impact", "Source", "Event"],
+            ["Timestamp (UTC)", "Currency", "Impact", "Sources", "Event"],
             summary_rows,
-            [20, 10, 10, 16, 48],
+            [20, 10, 10, 22, 48],
         ):
             print(line)
 
