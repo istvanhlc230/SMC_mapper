@@ -427,13 +427,13 @@ Example: `--ltf M15`
 
 ## 2.4 Timeframe relationship and analysis mode
 
-The Mapper supports one conformant analysis mode only:
+The Mapper product contract supports one conformant automated analysis mode only:
 
 - `HTF_LTF`: both `--htf` and `--ltf` are explicitly supplied, the timeframes are distinct, and `HTF > LTF`.
 
 Missing timeframe arguments, equal HTF/LTF values, or `HTF < LTF` are input errors. The Mapper must never silently swap, invent, or relabel timeframe inputs.
 
-Single-timeframe-only analysis is not a conformant True SMC mapping mode. A selected timeframe must never be treated as both HTF and LTF.
+Single-timeframe-only analysis is not a conformant mode under this project's Mapper input contract. A selected timeframe must never be treated as both HTF and LTF. This product rule does not claim that all discretionary single-timeframe True SMC analysis is source-prohibited.
 
 If both timeframe arguments are present but required historical coverage or context for either series is unavailable, the Mapper must preserve the dependent result as unavailable and fail closed; it must not downgrade the run to single-timeframe analysis.
 
