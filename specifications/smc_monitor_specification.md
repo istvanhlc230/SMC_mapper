@@ -256,8 +256,8 @@ Use an explicit immutable view of the result received from Mapper STDOUT, for ex
 @dataclass(frozen=True)
 class MapperResultView:
     symbol: str
-    htf: str | None
-    ltf: str | None
+    htf: str
+    ltf: str
     analysis_mode: str
     entry_timeframe: str
     requested_period: str | None
@@ -274,7 +274,7 @@ The result exists only in memory for the current runtime cycle. It must not be p
 
 ## 3.1 Runtime configuration
 
-The Monitor obtains its timeframe configuration from its own `--htf` and/or `--ltf` CLI arguments. It applies that same configuration independently to every selected symbol. It does not discover analyses from files, infer timeframe configuration from Market Data, or load a persisted analysis registry.
+The Monitor requires both `--htf` and `--ltf` CLI arguments, validates `HTF > LTF`, and applies that same distinct timeframe pair independently to every selected symbol. It does not discover analyses from files, infer timeframe configuration from Market Data, or load a persisted analysis registry.
 
 ## 3.2 Runtime registry
 
@@ -550,8 +550,8 @@ Signature:
 ~~~python
 def invoke_mapper(
     symbol: str,
-    htf: str | None,
-    ltf: str | None,
+    htf: str,
+    ltf: str,
     period: str | None,
     market_data_stdout: str,
     debug: bool = False,
@@ -562,7 +562,7 @@ def invoke_mapper(
 Launch:
 
 ~~~text
-python smc_mapper.py --symbol SYMBOL [--htf HTF] [--ltf LTF] [PERIOD]
+python smc_mapper.py --symbol SYMBOL --htf HTF --ltf LTF [PERIOD]
                      [--volume-method ...] [--debug]
 ~~~
 
