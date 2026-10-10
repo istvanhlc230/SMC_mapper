@@ -28,6 +28,7 @@ def acquire_explicit(
     provider_results: List[Dict[str, Any]] = []
     failures: List[Dict[str, str]] = []
     successful = 0
+    document_updated = False
     for provider in domain.resolve_applicable_providers(symbol):
         try:
             gaps = domain.find_uncovered_intervals(document, provider, symbol, start, end)
@@ -59,6 +60,8 @@ def acquire_explicit(
                 clear_suppressed_symbol=symbol,
                 preserve_detail_failure_ids=failed_detail_ids,
             )
+            if events:
+                document_updated = True
             has_partial_provider_data = bool(detail_failures or unresolved_event_time_ids)
             status = "PARTIAL" if has_partial_provider_data else "OK"
             coverage_status = "PARTIAL" if has_partial_provider_data else "COMPLETE"
@@ -79,6 +82,7 @@ def acquire_explicit(
                         "status": coverage_status,
                         "updated_at": domain.format_iso8601(now),
                     })
+                    document_updated = True
             if not has_partial_provider_data:
                 if start < now:
                     domain.update_watermark(document, provider, symbol, min(end, now), events)
@@ -101,7 +105,10 @@ def acquire_explicit(
                 traceback.print_exc()
             failures.append({"provider": provider, "error": str(exc)})
             provider_results.append({"provider": provider, "status": "ERROR", "error": str(exc)})
-    if successful:
+    if successful or document_updated:
+        # Persist partial events and PARTIAL coverage too. Otherwise a response
+        # containing useful timed events plus untimeable rows could be discarded
+        # when all other providers are unavailable.
         domain.validate_calendar_document(document)
         storage.save_calendar_atomic(document)
         if debug:
