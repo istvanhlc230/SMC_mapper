@@ -259,6 +259,9 @@ def build_empty_calendar_document() -> Dict[str, Any]:
         "watermarks": {},
     }
 
+_PROVIDER_FIELD_SOURCE_NAMES = {"lse", "forexfactory", "yahoo_finance"}
+
+
 def _validate_calendar_event(event: Dict[str, Any], event_ids: set[str]) -> None:
     """Internal helper for validate calendar event."""
     if not isinstance(event, dict):
@@ -401,9 +404,6 @@ def _event_merge_key(event: Dict[str, Any]) -> Tuple[str, str, str]:
     title = re.sub(r"[^a-z0-9]+", " ", event["title"].lower()).strip()
     currency = str(event.get("details", {}).get("currency", "")).upper()
     return event["event_type"], currency, f'{event["timestamp"]}|{title}'
-
-
-_PROVIDER_FIELD_SOURCE_NAMES = {"lse", "forexfactory", "yahoo_finance"}
 
 
 def normalize_provider_fields(
