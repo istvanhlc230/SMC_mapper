@@ -75,12 +75,18 @@ jobs:
                   "low": "1.0",
                   "close": "1.15",
                   "volume": 10,
+                  "tick_volume": 25,
+                  "spread": "0.0002",
+                  "real_volume": 18,
               }],
               "EURUSD",
               "M1",
           )
           assert parsed_lse_rows[0].timestamp == dt("2026-10-08T05:00:00Z")
           assert parsed_lse_rows[0].source_timezone == "UTC"
+          assert parsed_lse_rows[0].tick_volume == 25
+          assert parsed_lse_rows[0].spread == "0.0002"
+          assert parsed_lse_rows[0].real_volume == 18
 
           # LSE candle query filters must be UTC dates, while the caller's exact
           # timestamps are applied locally after the provider response is parsed.
@@ -213,6 +219,21 @@ jobs:
           assert len(machine_rows[1]) == 13
           assert machine_rows[1][6:9] == ["", "", ""]
           assert machine_rows[1][9:] == ["12345", "", "", "1"]
+
+          # Explicit provider fields retain their own protocol slots; no field is
+          # inferred from total volume or substituted for another field.
+          provider_fields_candle = replace(
+              sample_candle,
+              tick_volume=Decimal("88"),
+              spread=Decimal("0.0002"),
+              real_volume=Decimal("777"),
+          )
+          provider_fields_rows = list(csv.reader(io.StringIO(
+              serialize_machine_csv({"M1": [(provider_fields_candle, True)]})
+          )))
+          assert provider_fields_rows[1][6:10] == [
+              "88", "0.0002", "777", "12345"
+          ]
 
           observed_orderflow_candle = replace(
               sample_candle,
@@ -674,6 +695,56 @@ jobs:
           assert canonical_candle_record["open"] == "1.100000000000000000"
           assert isinstance(canonical_candle_record["timestamp"], str)
           assert isinstance(canonical_candle_record["open"], str)
+
+          provider_fields_record = _candle_dict(provider_fields_candle)
+          assert provider_fields_record["tick_volume"] == "88.000000000000000000"
+          assert provider_fields_record["spread"] == "0.000200000000000000"
+          assert provider_fields_record["real_volume"] == "777.000000000000000000"
+
+          from MARKET_DATA.service import _record_to_normalized_candle
+          restored_provider_fields_candle = _record_to_normalized_candle(
+              provider_fields_record
+          )
+          assert restored_provider_fields_candle.tick_volume == Decimal("88.000000000000000000")
+          assert restored_provider_fields_candle.spread == Decimal("0.000200000000000000")
+          assert restored_provider_fields_candle.real_volume == Decimal("777.000000000000000000")
+
+          # Persisted optional provider fields must pass the same schema validator.
+          from MARKET_DATA.persistence import save_market_data_atomic, load_market_data
+          with TemporaryDirectory() as optional_volume_dir:
+              optional_data_path = Path(optional_volume_dir) / "EURUSD" / "EURUSD_marketdata.json"
+              optional_data_path.parent.mkdir(parents=True)
+              optional_doc = {
+                  "symbol": "EURUSD",
+                  "timeframes": {
+                      "M1": {
+                          "available_start": provider_fields_record["timestamp"],
+                          "available_end": provider_fields_record["timestamp"],
+                          "candles": [provider_fields_record],
+                          "current": None,
+                      }
+                  },
+              }
+              save_market_data_atomic(optional_data_path, optional_doc)
+              loaded_optional_doc = load_market_data(optional_data_path, "EURUSD")
+              loaded_record = loaded_optional_doc["timeframes"]["M1"]["candles"][0]
+              assert loaded_record["tick_volume"] == "88.000000000000000000"
+              assert loaded_record["spread"] == "0.000200000000000000"
+              assert loaded_record["real_volume"] == "777.000000000000000000"
+              loaded_candle = _record_to_normalized_candle(loaded_record)
+              assert loaded_candle.tick_volume == restored_provider_fields_candle.tick_volume
+              assert loaded_candle.spread == restored_provider_fields_candle.spread
+              assert loaded_candle.real_volume == restored_provider_fields_candle.real_volume
+
+              optional_doc["timeframes"]["M1"]["candles"][0]["tick_volume"] = "-1"
+              save_market_data_atomic(optional_data_path, optional_doc)
+              try:
+                  load_market_data(optional_data_path, "EURUSD")
+              except ValueError as error:
+                  assert "tick_volume" in str(error)
+              else:
+                  raise AssertionError("negative persisted tick volume must be rejected")
+
           assert merge_completed_candles(
               [canonical_candle_record],
               [sample_candle],
