@@ -606,7 +606,7 @@ Example process pipe:
 python market_data.py --symbol SYMBOL --timeframes HTF LTF --range MARKET_DATA_SCOPE | python smc_mapper.py --symbol SYMBOL --htf HTF --ltf LTF [PERIOD]
 ```
 
-Market Data output must include all retained completed candles through the Mapper's requested end, not just the visible output window; use the Market Data open-start `--range -END` form for this full-history result. Market Data's `--range` is not passed to Mapper as a flag. The Monitor must pass its configured timeframe selection explicitly; it must not discover timeframe configuration from a Structures file.
+Market Data output must include all retained completed candles through the Mapper's requested end, not just the visible output window; use the Market Data open-start `--range -END` form for this full-history result. Market Data's `--range` is not passed to Mapper as a flag. The Monitor must pass the primary timeframe selection explicitly and include the permitted candidate series required by canonical pullback-representation resolution; it must not discover timeframe configuration from a Structures file.
 
 # 3. PER-INVOCATION ANALYSIS MODEL
 
