@@ -4,12 +4,15 @@ from datetime import datetime, timezone, timedelta
 from decimal import Decimal, InvalidOperation
 from typing import Iterable
 from .models import TIMEFRAME_SECONDS, NormalizedCandle, ProviderCandle, VolumeState
+from COMMON.date_time import DateTimeScopeError, ensure_utc
 
 def _to_utc(value: datetime) -> datetime:
-    """Convert a timezone-aware datetime to UTC."""
-    if value.tzinfo is None or value.utcoffset() is None:
-        raise ValueError("timestamp must be timezone-aware")
-    return value.astimezone(timezone.utc)
+    """Use the shared UTC normalizer and preserve Market Data's validation message."""
+    try:
+        return ensure_utc(value)
+    except DateTimeScopeError as exc:
+        raise ValueError("timestamp must be timezone-aware") from exc
+
 
 def _parse_decimal(value, field_name: str) -> Decimal:
     """Parse and validate one finite Decimal input field."""

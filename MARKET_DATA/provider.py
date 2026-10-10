@@ -3,15 +3,15 @@ from __future__ import annotations
 
 import json
 import time
-import urllib.error
 import urllib.parse
-import urllib.request
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any
 
 from .models import DEFAULT_PROVIDER_NAME, ProviderCandle, TIMEFRAME_SECONDS
 from PROVIDERS.credentials import ProviderCredentialError, get_provider_api_key
+from COMMON.date_time import DateTimeScopeError, format_utc_iso8601, parse_aware_datetime
+from COMMON.http_client import HttpClient, HttpRequestError
 
 LSE_CANDLES_URL = "https://api.londonstrategicedge.com/vault/candles"
 TIMEFRAME_INTERVALS = {
@@ -28,8 +28,10 @@ TIMEFRAME_INTERVALS = {
 
 
 def _format_lse_timestamp(value: datetime) -> str:
-    """Format a UTC datetime for the LSE API."""
-    return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+    """Format an LSE request boundary using the shared UTC ISO 8601 formatter."""
+    return format_utc_iso8601(value)
+
+
 
 
 def _map_symbol_to_lse(symbol: str) -> str:
@@ -41,18 +43,22 @@ def _map_symbol_to_lse(symbol: str) -> str:
 
 
 def _parse_lse_timestamp(value: Any) -> datetime:
-    """Parse an LSE timestamp into an aware UTC datetime."""
+    """Parse an LSE timestamp with an explicit timezone or numeric UTC epoch."""
     if isinstance(value, (int, float)):
         return datetime.fromtimestamp(value, tz=timezone.utc)
-    raw = str(value).strip()
-    if raw.endswith("Z"):
-        raw = raw[:-1] + "+00:00"
-    elif " " in raw and "T" not in raw:
-        raw = raw.replace(" ", "T", 1)
-    parsed = datetime.fromisoformat(raw)
-    if parsed.tzinfo is None or parsed.utcoffset() is None:
-        raise ValueError("LSE timestamp must include an explicit timezone")
-    return parsed.astimezone(timezone.utc)
+    raw_timestamp = str(value).strip()
+    if raw_timestamp.endswith("Z"):
+        raw_timestamp = raw_timestamp[:-1] + "+00:00"
+    elif " " in raw_timestamp and "T" not in raw_timestamp:
+        raw_timestamp = raw_timestamp.replace(" ", "T", 1)
+    try:
+        return parse_aware_datetime(raw_timestamp)
+    except DateTimeScopeError as exc:
+        if "explicit timezone" in str(exc):
+            raise ValueError("LSE timestamp must include an explicit timezone") from exc
+        raise ValueError("invalid LSE timestamp") from exc
+
+
 
 
 def _parse_lse_decimal(value: Any, field_name: str) -> Any:
@@ -107,6 +113,7 @@ class LSEMarketDataProvider(MarketDataProvider):
         start_time: datetime,
         end_time: datetime,
     ) -> list[dict[str, Any]]:
+        """Fetch one LSE candle page using the shared HTTP client and provider credentials."""
         try:
             api_key = get_provider_api_key("lse")
         except ProviderCredentialError as exc:
@@ -123,29 +130,26 @@ class LSEMarketDataProvider(MarketDataProvider):
             "limit": 5000,
         })
         url = f"{LSE_CANDLES_URL}?{params}"
-        last_error: Exception | None = None
-        for attempt in range(self.retries):
-            try:
-                request = urllib.request.Request(
-                    url,
-                    headers={
-                        "x-api-key": api_key,
-                        "User-Agent": "SMC_Mapper/LSEMarketDataProvider",
-                        "Accept": "application/json",
-                    },
-                )
-                with urllib.request.urlopen(request, timeout=self.timeout_seconds) as response:
-                    payload = json.loads(response.read().decode("utf-8"))
-                if not isinstance(payload, list):
-                    raise RuntimeError("LSE candles response is not a list")
-                return payload
-            except urllib.error.HTTPError as exc:
-                last_error = RuntimeError(f"LSE HTTP {exc.code}")
-            except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError) as exc:
-                last_error = exc
-            if attempt + 1 < self.retries:
-                time.sleep(0.5 * (attempt + 1))
-        raise RuntimeError(f"LSE candle acquisition failed: {last_error}")
+        try:
+            payload = HttpClient.get(
+                url,
+                headers={
+                    "x-api-key": api_key,
+                    "User-Agent": "SMC_Mapper/LSEMarketDataProvider",
+                    "Accept": "application/json",
+                },
+                timeout_seconds=self.timeout_seconds,
+                response_format="json",
+                retries=self.retries,
+                retry_delay_seconds=0.5,
+            )
+        except HttpRequestError as exc:
+            raise RuntimeError(f"LSE candle acquisition failed: {exc}") from exc
+        if not isinstance(payload, list):
+            raise RuntimeError("LSE candles response is not a list")
+        return payload
+
+
 
     def _parse_lse_candle_rows(self, rows: list[dict[str, Any]], symbol: str, timeframe: str) -> list[ProviderCandle]:
         """Convert direct LSE candle rows to provider-neutral candles."""

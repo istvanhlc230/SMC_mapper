@@ -1,19 +1,21 @@
 """Canonical Market Data JSON persistence and atomic storage."""
 from __future__ import annotations
-import json, os, re, tempfile
+import json, os, re
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal, ROUND_HALF_EVEN
 from pathlib import Path
 from typing import Any
 from .models import DECIMAL_PERSISTENCE_PLACES, SUPPORTED_TIMEFRAMES, WRITE_RETRY_DELAY_SECONDS, WRITE_RETRY_LIMIT
 from .normalization import build_candle_id, canonical_interval_start, canonical_interval_end
+from COMMON.atomic_file import atomic_write_text
+from COMMON.date_time import parse_aware_datetime
 
 def _parse_persisted_timestamp(value: str | None) -> datetime | None:
-    """Parse a persisted UTC timestamp into an aware datetime."""
-    if value is None: return None
-    parsed=datetime.fromisoformat(value.replace("Z","+00:00"))
-    if parsed.tzinfo is None: raise ValueError("persisted timestamp must be timezone-aware")
-    return parsed.astimezone(timezone.utc)
+    """Parse a persisted timezone-aware ISO timestamp using the shared helper."""
+    if value is None:
+        return None
+    return parse_aware_datetime(value)
+
 
 def _validate_symbol_path_component(symbol: str) -> str:
     """Validate a symbol before using it as a filesystem path component."""
@@ -168,19 +170,15 @@ def serialize_market_data(market_data):
     return json.dumps(_serialize_json_value(market_data), ensure_ascii=False, sort_keys=True, indent=2) + "\n"
 
 def save_market_data_atomic(path: Path, market_data, retry_limit=WRITE_RETRY_LIMIT):
-    """Atomically persist Market Data JSON with bounded write retries."""
-    path.parent.mkdir(parents=True,exist_ok=True)
-    payload=serialize_market_data(market_data)
-    last_error=None
-    for attempt in range(retry_limit):
-        temporary=None
-        try:
-            with tempfile.NamedTemporaryFile("w",encoding="utf-8",dir=path.parent,delete=False,prefix=".market_data.",suffix=".tmp") as handle:
-                temporary=Path(handle.name); handle.write(payload); handle.flush(); os.fsync(handle.fileno())
-            os.replace(temporary,path); return
-        except OSError as exc:
-            last_error=exc
-            if temporary and temporary.exists(): temporary.unlink(missing_ok=True)
-            if attempt+1 < retry_limit:
-                import time; time.sleep(WRITE_RETRY_DELAY_SECONDS)
-    raise OSError(f"atomic market-data save failed: {last_error}")
+    """Serialize validated Market Data and persist via the common atomic writer."""
+    payload = serialize_market_data(market_data)
+    try:
+        atomic_write_text(
+            path,
+            payload,
+            prefix=".market_data.",
+            retry_limit=retry_limit,
+            retry_delay_seconds=WRITE_RETRY_DELAY_SECONDS,
+        )
+    except OSError as exc:
+        raise OSError(f"atomic market-data save failed: {exc}") from exc

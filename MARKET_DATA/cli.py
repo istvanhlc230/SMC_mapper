@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import argparse
-import re
 import sys
 from datetime import datetime, timedelta, timezone
 from typing import Sequence
@@ -11,76 +10,43 @@ from .models import MarketDataRequest, SUPPORTED_TIMEFRAMES
 from .provider import create_provider
 from .protocol import format_cleartext, serialize_machine_csv
 from .service import get_candles
-
-
-DATE_RE = r"\d{4}\.\d{2}\.\d{2}"
-TIME_RE = r"\d{2}:\d{2}"
-
-
-def _normalize_cli_argv(argv):
-    """Normalize a separate negative --range value for argparse."""
-    values = list(sys.argv[1:] if argv is None else argv)
-    normalized = []
-    index = 0
-    while index < len(values):
-        value = values[index]
-        if value == "--range" and index + 1 < len(values):
-            candidate = values[index + 1]
-            if candidate.startswith("-"):
-                normalized.append(f"--range={candidate}")
-                index += 2
-                continue
-        normalized.append(value)
-        index += 1
-    return normalized
+from COMMON.date_time import DateTimeScopeError, DateTimeScopeParser, utc_now
 
 
 def build_argument_parser():
-    """Define the Market Data CLI without performing I/O."""
+    """Build the documented Market Data help parser without doing I/O."""
     parser = argparse.ArgumentParser(
         description=(
             "Acquire and persist Market Data. Successful default output is machine-readable CSV on STDOUT; "
             "--cleartext selects human-readable tabular output."
-        )
-    )
-    parser.add_argument("--symbol", required=True)
-    parser.add_argument(
-        "--timeframes",
-        nargs="+",
-        required=True,
-        help="One or more supported timeframes (for example H1 or H1 M15).",
-    )
-    parser.add_argument(
-        "--range",
-        dest="scope",
-        help=(
-            "Calendar-compatible scope: YYYY.MM.DD, "
-            "YYYY.MM.DD-YYYY.MM.DD, YYYY.MM.DD@HH:MM, "
-            "YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM, open-start -END, "
-            "or open-end START-."
+        ),
+        usage=(
+            "%(prog)s --symbol SYMBOL --timeframes TF [TF ...] [SCOPE ...] "
+            "[--current | --lastclosed] [--debug] [--cleartext]"
         ),
     )
+    parser.add_argument("--symbol", metavar="SYMBOL", help="Instrument or ticker symbol.")
     parser.add_argument(
-        "--current",
-        action="store_true",
-        help="Refresh the current in-progress candle snapshot.",
+        "--timeframes",
+        metavar="TF",
+        help="One or more supported timeframes (for example H1 M15).",
     )
     parser.add_argument(
-        "--lastclosed",
-        action="store_true",
-        help="Acquire exactly the latest completed/closed candle.",
+        "scope",
+        nargs="*",
+        metavar="SCOPE",
+        help=(
+            "Optional positional date/time scope; date and time are separated by a space. "
+            "The scope may contain multiple words."
+        ),
     )
-    parser.add_argument(
-        "--debug",
-        action="store_true",
-        help="Write diagnostic traceback/details to STDERR on failure.",
-    )
-    parser.add_argument(
-        "--cleartext",
-        action="store_true",
-        help="Use human-readable wrapped table output instead of machine CSV STDOUT.",
-    )
+    parser.add_argument("--current", action="store_true", help="Refresh the current in-progress candle snapshot.")
+    parser.add_argument("--lastclosed", action="store_true", help="Acquire exactly the latest completed candle.")
+    parser.add_argument("--debug", action="store_true", help="Write diagnostic traceback/details to STDERR on failure.")
+    parser.add_argument("--cleartext", action="store_true", help="Use human-readable table output instead of machine CSV.")
     return parser
+
+
 
 
 def normalize_symbol(symbol):
@@ -102,118 +68,49 @@ def normalize_timeframe(timeframe):
 
 
 def parse_calendar_date(value):
-    """Parse the Calendar-compatible YYYY.MM.DD date format."""
-    if not re.fullmatch(DATE_RE, value.strip()):
-        raise ValueError(f"invalid date, expected YYYY.MM.DD: {value}")
-    try:
-        year, month, day = (int(part) for part in value.strip().split("."))
-        return datetime(year, month, day, tzinfo=timezone.utc)
-    except (ValueError, TypeError) as exc:
-        raise ValueError(f"invalid date, expected YYYY.MM.DD: {value}") from exc
+    """Compatibility wrapper over the shared strict YYYY.MM.DD parser."""
+    return DateTimeScopeParser.parse_date_value(value)
 
 
 def parse_calendar_time(value):
-    """Parse the Calendar-compatible HH:MM 24-hour time format."""
-    if not re.fullmatch(TIME_RE, value.strip()):
-        raise ValueError(f"invalid time, expected HH:MM: {value}")
-    try:
-        hour, minute = (int(part) for part in value.strip().split(":"))
-        if hour > 23 or minute > 59:
-            raise ValueError
-        return datetime(2000, 1, 1, hour=hour, minute=minute).time()
-    except (ValueError, TypeError) as exc:
-        raise ValueError(f"invalid time, expected HH:MM: {value}") from exc
+    """Compatibility wrapper returning a time object from the shared HH:MM parser."""
+    hour, minute = DateTimeScopeParser.parse_time_value(value)
+    return datetime(2000, 1, 1, hour=hour, minute=minute).time()
 
 
 def resolve_scope_interval(scope):
-    """Resolve one Calendar-compatible historical scope into a UTC interval."""
-    if scope == "current":
-        raise ValueError("'current' is not a historical scope")
-
-    if scope.startswith("-"):
-        endpoint = scope[1:]
-        if not endpoint or endpoint.startswith("-"):
-            raise ValueError(
-                f"invalid open-start range: {scope}; expected -YYYY.MM.DD or -YYYY.MM.DD@HH:MM"
-            )
-        if "@" in endpoint:
-            date_part, time_part = endpoint.split("@", 1)
-            point = parse_open_ended_point(endpoint)
-            return None, point + timedelta(minutes=1)
-        return None, parse_calendar_date(endpoint) + timedelta(days=1)
-
-    if scope.endswith("-") and not scope.startswith("-"):
-        endpoint = scope[:-1]
-        if not endpoint:
-            raise ValueError(f"invalid open-end range: {scope}")
-        if "@" in endpoint:
-            point = parse_open_ended_point(endpoint)
-        else:
-            point = parse_calendar_date(endpoint)
-        return point, None
-
-    if "@" in scope:
-        parts = scope.split("-", 1)
-        if len(parts) == 2:
-            start = parse_calendar_point(parts[0], require_time=True)
-            end = parse_calendar_point(parts[1], require_time=True)
-            if end <= start:
-                raise ValueError(f"invalid datetime range: {scope}")
-            return start, end
-        point = parse_calendar_point(scope, require_time=True)
-        return point, point + timedelta(minutes=1)
-
-    if "-" in scope:
-        parts = scope.split("-")
-        if len(parts) != 2:
-            raise ValueError(f"invalid date range: {scope}")
-        start = parse_calendar_date(parts[0])
-        end = parse_calendar_date(parts[1])
-        if end < start:
-            raise ValueError(
-                f"invalid date range: {scope}: end must not precede start"
-            )
-        return start, end + timedelta(days=1)
-
-    start = parse_calendar_date(scope)
-    return start, start + timedelta(days=1)
+    """Resolve the common positional scope grammar into optional UTC boundaries."""
+    parsed_scope = DateTimeScopeParser().parse(scope)
+    return parsed_scope.start, parsed_scope.end
 
 
 def parse_open_ended_point(value):
-    """Parse a date-time point for an open-ended range, including HH.MM compatibility."""
-    if "@" not in value:
-        raise ValueError(f"invalid datetime point: {value}")
-    date_part, time_part = value.split("@", 1)
-    if "." in time_part:
-        if ":" in time_part:
-            raise ValueError(f"invalid datetime point: {value}")
-        time_part = time_part.replace(".", ":", 1)
-    return parse_calendar_point(f"{date_part}@{time_part}", require_time=True)
+    """Compatibility wrapper for one shared-parser date/time point."""
+    parsed_scope = DateTimeScopeParser().parse(value)
+    if parsed_scope.kind not in {"DATETIME", "TIME"} or parsed_scope.start is None:
+        raise DateTimeScopeError(f"invalid datetime point: {value}")
+    return parsed_scope.start
 
 
 def parse_calendar_point(value, *, require_time=False):
-    """Parse a Calendar-compatible date or date-time point."""
-    if "@" not in value:
-        if require_time:
-            raise ValueError(f"invalid datetime point: {value}")
-        return parse_calendar_date(value)
-
-    date_part, time_part = value.split("@", 1)
-    base = parse_calendar_date(date_part)
-    clock = parse_calendar_time(time_part)
-    return base.replace(hour=clock.hour, minute=clock.minute)
+    """Compatibility wrapper for a single date/time endpoint."""
+    parsed_scope = DateTimeScopeParser().parse(value)
+    if parsed_scope.kind not in {"DATE", "DATETIME", "TIME"} or parsed_scope.start is None:
+        raise DateTimeScopeError(f"invalid date/time point: {value}")
+    if require_time and parsed_scope.kind == "DATE":
+        raise DateTimeScopeError(f"invalid datetime point: {value}")
+    return parsed_scope.start
 
 
 def validate_scope(scope):
-    """Validate the Market Data scope grammar and return its canonical value."""
+    """Validate one positional date/time scope and reject a future start."""
     if scope is None:
         return None
-    if scope == "current":
-        raise ValueError("'current' is not a historical --range scope; use --current")
-    start_time, _ = resolve_scope_interval(scope)
-    if start_time is not None and start_time > datetime.now(timezone.utc):
-        raise ValueError(f"future range start is not allowed: {scope}")
-    return scope
+    parsed_scope = DateTimeScopeParser().parse(scope)
+    if parsed_scope.start is not None and parsed_scope.start > utc_now():
+        raise ValueError(f"future scope start is not allowed: {scope}")
+    return parsed_scope
+
 
 
 
@@ -225,43 +122,106 @@ def validate_request(request):
         raise ValueError("duplicate timeframe")
     if request.current and request.last_closed_only:
         raise ValueError("--current is mutually exclusive with --lastclosed")
-    if request.current and request.start_time is not None:
-        raise ValueError("current cannot be combined with a historical range")
-    if request.last_closed_only and request.start_time is not None:
-        raise ValueError("lastclosed cannot be combined with a historical range")
+    if request.current and (request.start_time is not None or request.end_time is not None):
+        raise ValueError("current cannot be combined with a positional historical scope")
+    if request.last_closed_only and (request.start_time is not None or request.end_time is not None):
+        raise ValueError("lastclosed cannot be combined with a positional historical scope")
 
 
 def parse_market_data_request(argv: Sequence[str] | None = None):
-    """Parse the Calendar-compatible Market Data scope into a MarketDataRequest."""
-    args = build_argument_parser().parse_args(_normalize_cli_argv(argv))
-    scope = validate_scope(args.scope)
+    """Parse Market Data flags and an optional positional scope consistently with Calendar."""
+    raw_arguments = list(sys.argv[1:] if argv is None else argv)
+    if any(argument in {"-h", "--help"} for argument in raw_arguments):
+        build_argument_parser().print_help()
+        raise SystemExit(0)
 
-    if args.current:
-        if scope is not None:
-            raise ValueError("--current cannot be combined with --range")
-        start_time = None
-        end_time = None
-        current = True
-    elif scope is not None:
-        start_time, end_time = resolve_scope_interval(scope)
-        current = False
-    else:
-        start_time = None
-        end_time = None
-        current = False
+    symbol = None
+    timeframes = []
+    current = False
+    last_closed_only = False
+    debug = False
+    cleartext = False
+    scope_tokens = []
+    options_seen = set()
+    index = 0
+
+    while index < len(raw_arguments):
+        argument = raw_arguments[index]
+        if argument in {"--range", "--date", "--time"} or any(
+            argument.startswith(flag + "=")
+            for flag in ("--range", "--date", "--time")
+        ):
+            raise ValueError(
+                "Date/time scope is positional; --range, --date, and --time are not supported."
+            )
+        if argument == "--symbol":
+            if argument in options_seen:
+                raise ValueError("--symbol may be specified only once")
+            options_seen.add(argument)
+            index += 1
+            if index >= len(raw_arguments):
+                raise ValueError("--symbol requires SYMBOL")
+            symbol = raw_arguments[index]
+        elif argument == "--timeframes":
+            if argument in options_seen:
+                raise ValueError("--timeframes may be specified only once")
+            options_seen.add(argument)
+            index += 1
+            while index < len(raw_arguments):
+                candidate = raw_arguments[index]
+                if candidate.upper() not in SUPPORTED_TIMEFRAMES:
+                    break
+                timeframes.append(normalize_timeframe(candidate))
+                index += 1
+            if not timeframes:
+                raise ValueError("--timeframes requires at least one supported timeframe")
+            continue
+        elif argument == "--current":
+            current = True
+        elif argument == "--lastclosed":
+            last_closed_only = True
+        elif argument == "--debug":
+            debug = True
+        elif argument == "--cleartext":
+            cleartext = True
+        elif argument.startswith("--"):
+            raise ValueError(f"unknown CLI option: {argument}")
+        else:
+            scope_tokens.append(argument)
+        index += 1
+
+    if symbol is None:
+        raise ValueError("--symbol is required")
+    if not timeframes:
+        raise ValueError("--timeframes requires at least one supported timeframe")
+
+    normalized_symbol = normalize_symbol(symbol)
+    normalized_timeframes = [normalize_timeframe(item) for item in timeframes]
+    scope_text = " ".join(scope_tokens).strip()
+    parsed_scope = validate_scope(scope_text) if scope_text else None
+    start_time = parsed_scope.start if parsed_scope is not None else None
+    end_time = parsed_scope.end if parsed_scope is not None else None
+
+    if current and last_closed_only:
+        raise ValueError("--current is mutually exclusive with --lastclosed")
+    if (current or last_closed_only) and parsed_scope is not None:
+        mode_name = "--current" if current else "--lastclosed"
+        raise ValueError(f"{mode_name} cannot be combined with a positional historical scope")
 
     request = MarketDataRequest(
-        normalize_symbol(args.symbol),
-        [normalize_timeframe(x) for x in args.timeframes],
+        normalized_symbol,
+        normalized_timeframes,
         start_time,
         end_time,
-        args.lastclosed,
+        last_closed_only,
         current,
-        args.debug,
-        args.cleartext,
+        debug,
+        cleartext,
     )
     validate_request(request)
     return request
+
+
 
 
 def run(request):
