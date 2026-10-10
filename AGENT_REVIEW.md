@@ -1792,7 +1792,8 @@ The user's live refresh failed in the HTML fallback because the page had an even
 - Added the optional `MarketDataProvider.fetch_market_depth(symbol, as_of=None)` capability. Its default implementation returns `None`, keeping providers without L2 support compatible.
 - Updated the CLI to query optional L2 only for table presentation, validate symbol/provider/timestamp/level values, and degrade to candle-only output if L2 is absent or fails.
 - Added conditional L2 rendering with UTC snapshot time, provider label, bid/ask price and volume per level.
-- Updated the normative Market Data specification and regression workflow for populated, missing, and failing L2 responses.
+- Added regressions for the active LSE adapter's unsupported-depth result and for rejecting a snapshot newer than an explicit historical query end.
+- Updated the normative Market Data specification and regression workflow for populated, missing, historical-mismatch, and failing L2 responses.
 
 ### Static audit
 - The provider contract, model, CLI dispatch, formatter and specification agree on a separate optional L2 snapshot.
@@ -1802,5 +1803,5 @@ The user's live refresh failed in the HTML fallback because the page had an even
 - The current LSE candle adapter inherits the optional capability's `None` default; this change does not fabricate or claim live L2 support for LSE.
 
 ### Runtime validation
-- The workflow has regressions for displaying returned levels, omitting absent depth, and continuing candle output after an L2 lookup failure.
+- The workflow has regressions for displaying returned levels, omitting absent depth, continuing candle output after an L2 lookup failure, omitting a live snapshot newer than a historical end, and confirming the current LSE adapter reports no L2 capability.
 - The GitHub Actions result for the final snapshot is not available through the current status response; automated CI PASS is not claimed.
