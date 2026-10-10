@@ -1800,7 +1800,7 @@ The user's live refresh failed in the HTML fallback because the page had an even
 - An absent snapshot produces no L2 heading or empty depth table.
 - Invalid or failed optional depth data cannot prevent valid candle table output.
 - The stable machine CSV header and row behavior are unchanged.
-- The current LSE candle adapter inherits the optional capability's `None` default; this change does not fabricate or claim live L2 support for LSE.
+- The current LSE candle adapter explicitly returns `None` for L2; this change does not fabricate or claim live L2 support for LSE.
 
 ### Runtime validation
 - The workflow has regressions for displaying returned levels, omitting absent depth, continuing candle output after an L2 lookup failure, omitting a live snapshot newer than a historical end, and confirming the current LSE adapter reports no L2 capability.
