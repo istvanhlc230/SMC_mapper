@@ -530,7 +530,12 @@ def parse_calendar_cli_request(cli_arguments: List[str]) -> Dict[str, Any]:
 
 
 def execute_calendar_cli() -> int:
-    """Execute the parsed Calendar CLI request and return its process exit code."""
+    """Execute the Calendar CLI, showing help when invoked without arguments."""
+
+    # A bare invocation is a help request, not an incomplete query or an error.
+    if len(sys.argv) == 1:
+        print(HELP_TEXT)
+        return 0
 
     debug = "--debug" in sys.argv[1:]
     try:
