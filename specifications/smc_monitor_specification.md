@@ -146,6 +146,17 @@ The single global Calendar data file is:
 
 The Monitor automatically resolves the symbol directory from the common data root. It does not expose per-file path CLI options.
 
+## 1.3 --htf and --ltf
+
+The Monitor accepts the same timeframe selection semantics as Mapper:
+
+- at least one of `--htf` or `--ltf` is required;
+- if both are supplied and differ, HTF must be strictly higher than LTF;
+- if both are equal, use single-timeframe mode and do not treat that timeframe as its own HTF;
+- the same configuration applies independently to every selected symbol;
+- a different timeframe configuration requires a separate Monitor process;
+- these flags configure each fresh Mapper invocation and are not loaded from a file.
+
 ## 1.3 --rr
 
 Optional downstream minimum Projected_RR policy.
@@ -205,7 +216,7 @@ class MonitorRequest:
     debug: bool
 ~~~
 
-The Monitor's HTF/LTF configuration applies to each selected symbol for this process invocation. At least one timeframe is required; when both are supplied, HTF must be strictly higher. To monitor a different timeframe configuration, run a separate Monitor instance. The Monitor does not infer configuration from persisted analysis files and does not expose a data-path CLI option.
+The Monitor's HTF/LTF configuration applies to each selected symbol for this process invocation. At least one timeframe is required; when both are supplied, HTF must be strictly higher. Equal HTF/LTF values resolve to single-timeframe mode. To monitor a different timeframe configuration, run a separate Monitor instance. The Monitor does not infer configuration from persisted analysis files and does not expose a data-path CLI option.
 
 ---
 
@@ -273,6 +284,7 @@ Use transient per-symbol scheduling state only:
 @dataclass
 class MonitoredSymbol:
     symbol: str
+    analysis_key: str  # transient correlation key: symbol + timeframe configuration; never persisted
     entry_timeframe: str
     htf: str | None
     ltf: str | None
@@ -291,7 +303,7 @@ For every monitored symbol:
 
 - one independent symbol and one explicitly configured timeframe combination;
 - no shared runtime result across symbols;
-- no persisted Mapper checkpoint or runtime analysis correlation identity;
+- no persisted persistent Mapper checkpoint or runtime analysis correlation identity;
 - no mutation of canonical Mapper results;
 - every new full Mapper result is produced from Market Data candles, never from the previous Mapper result.
 
@@ -1398,7 +1410,7 @@ The Monitor serializes orchestration per symbol.
 
 A failure for one symbol/analysis must not corrupt another symbol/analysis.
 
-A failed analysis keeps its last successfully persisted canonical state while unrelated work may continue.
+A failed symbol cycle produces no usable new Mapper result; unrelated symbols may continue. Any older result still held in memory must not be presented as the fresh result of the failed cycle.
 
 ---
 
