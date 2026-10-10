@@ -586,7 +586,7 @@ Layer 3 is the sole semantic owner of structural qualification. A retracement wa
 - **Condition:** `HTF_CONDITIONAL_THRESHOLD <= RetracementDepth < STANDARD_EQUILIBRIUM_THRESHOLD` of the active dealing range. `HTF_CONDITIONAL_THRESHOLD` and `STANDARD_EQUILIBRIUM_THRESHOLD` are owned by `methodology_parameters.md`.
 - **HTF Evidence Gate:**
   - Depth from 38.2% to below 50% is **never sufficient on its own**.
-  - It qualifies **if and only if** the entire lower-timeframe retracement is represented by exactly one candle-level valid pullback on the applicable immediate Higher Timeframe (`HTF_VALID_PULLBACK == TRUE`). A directional candle, one extreme breach, or an arbitrary higher-timeframe candle is not sufficient unless the full Layer-1/Layer-2 valid-pullback conditions are satisfied.
+  - It qualifies **if and only if** the entire lower-timeframe retracement is represented by exactly one completed Candle-Level Valid Pullback event on the applicable immediate Higher Timeframe (`HTF_VALID_PULLBACK == TRUE`). That event may comprise multiple HTF candles: “single” means one complete pullback event, not one candle. A directional candle, one extreme breach, or an arbitrary higher-timeframe candle is not sufficient unless the full Layer-1/Layer-2 valid-pullback conditions are satisfied.
   - **Canonical axiom:** “A higher timeframe valid pullback is a lower timeframe complete structure.”
   - The higher-timeframe pullback must cover the same structural move being qualified; unrelated or later HTF facts cannot validate it retroactively.
   - An HTF inside bar or invalid pullback gives `MAJOR_RETRACEMENT_QUALIFIED = FALSE`.
