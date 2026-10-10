@@ -642,6 +642,8 @@ Therefore:
 
 If a canonical decision depends on unavailable HTF context, the decision must remain unresolved / fail closed.
 
+This rule also applies recursively to the configured HTF's own structural lifecycle. The presence of a configured HTF series does not automatically prove that every structure within it is confirmed. If an HTF event qualifies only through the conditional 38.2%–below-50% path, but its own applicable immediate HTF is outside the configured pair and no validated context is supplied, that specific HTF event remains `HTF_CONTEXT_UNAVAILABLE`. The Mapper must not expose it as confirmed HTF context or use it to authorize dependent LTF structure, POIs, or entries. This restriction does not invalidate unrelated HTF events whose own canonical qualification gates pass.
+
 ---
 
 ## 4.3 Bootstrap and warm-up
@@ -1552,7 +1554,7 @@ At minimum, the finished mapper implementation must have focused tests covering:
 - rejection of missing timeframe arguments, equal HTF/LTF, and HTF < LTF; no single-timeframe analysis mode;
 - 38.2%–below-50% qualification only when the entire mapped retracement is represented by one complete valid pullback event on the applicable immediate HTF; that event may span multiple HTF candles and is not a single-candle test;
 - an HTF inside bar/invalid pullback yields NOT QUALIFIED, while missing HTF history yields HTF_CONTEXT_UNAVAILABLE rather than a false negative;
-- pairing examples are not rigid: when 3MN is unavailable, an applicable configured 1MN context may validate W1 structure;
+- pairing examples are not rigid: when a three-month series is not part of the established hierarchy, a configured monthly HTF may validate W1 structure; use the Market Data-defined `MN1` input token for monthly data, and do not assume `3MN` is supported;
 - an Outside Bar with ambiguous internal order is UNAVAILABLE unless supplied lower-timeframe/equivalent evidence establishes its path;
 - point-in-time HTF context, proving later HTF events do not reinterpret earlier LTF events;
 - full recomputation from supplied history yields deterministic output;
