@@ -816,6 +816,19 @@ jobs:
           assert current_refresh["scope"] == "current"
           assert current_refresh["refresh"] is True
 
+          # The positional grammar is the only accepted date/time CLI entry point.
+          for legacy_arguments in (
+              ["EURUSD", "--date", "2026.10.06"],
+              ["EURUSD", "--time", "10:30"],
+              ["EURUSD", "--range", "2026.10.06-"],
+          ):
+              try:
+                  calendar_cli.parse_calendar_cli_request(legacy_arguments)
+              except calendar.CalendarInputError:
+                  pass
+              else:
+                  raise AssertionError(f"legacy date/time flags must be rejected: {legacy_arguments}")
+
           # A rescheduled event that was visible in the logical refresh scope
           # must remain in the CLI result by stable provider ID even after its
           # timestamp moves outside the original interval.

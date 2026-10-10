@@ -134,7 +134,7 @@ def resolve_scope_interval(scope: str) -> Tuple[datetime, datetime]:
 
     try:
         parsed_scope = _DateTimeScopeParser(reference_time=utc_now()).parse(scope)
-        start, end = parsed_scope.resolve_interval(reference_time=utc_now())
+        start, end = parsed_scope.resolve_interval()
     except _DateTimeScopeError as exc:
         raise CalendarInputError(str(exc)) from exc
     if start is None or end is None:
@@ -193,7 +193,7 @@ def resolve_open_end_scope(scope: str) -> Tuple[datetime, datetime]:
         parsed_scope = _DateTimeScopeParser(reference_time=utc_now()).parse(scope)
         if not parsed_scope.open_end or parsed_scope.start is None:
             raise _DateTimeScopeError("expected an open-end scope such as YYYY.MM.DD-")
-        start, end = parsed_scope.resolve_interval(reference_time=utc_now())
+        start, end = parsed_scope.resolve_interval()
     except _DateTimeScopeError as exc:
         raise CalendarInputError(str(exc)) from exc
     if start is None or end is None:

@@ -21,6 +21,10 @@ jobs:
         run: |
           python - <<'PY'
           from datetime import datetime, timezone
+          from pathlib import Path
+          from tempfile import TemporaryDirectory
+          from unittest.mock import patch
+          import urllib.error
           import subprocess
           import sys
 
@@ -41,6 +45,48 @@ jobs:
               return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
           from COMMON.date_time import DateTimeScopeParser, DateTimeScopeError
+          from COMMON.atomic_file import atomic_write_text
+          from COMMON.http_client import HttpClient, HttpRequestError
+
+          # Resolving an open-end scope must use the parser's captured UTC time.
+          captured_open_end = shared_parser.parse("2026.10.06 10:30-")
+          captured_start, captured_end = captured_open_end.resolve_interval()
+          assert captured_start == dt("2026-10-06T10:30:00Z")
+          assert captured_end == dt("2026-10-06T12:00:00Z")
+
+          # Shared atomic replacement commits complete content and preserves the old
+          # destination if the final atomic replacement fails.
+          with TemporaryDirectory() as temporary_directory:
+              destination = Path(temporary_directory) / "shared-state.txt"
+              destination.write_text("old", encoding="utf-8")
+              atomic_write_text(destination, "new", retry_limit=1)
+              assert destination.read_text(encoding="utf-8") == "new"
+              with patch("COMMON.atomic_file.os.replace", side_effect=OSError("synthetic replace failure")):
+                  try:
+                      atomic_write_text(destination, "uncommitted", retry_limit=1)
+                  except OSError:
+                      pass
+                  else:
+                      raise AssertionError("atomic replacement failure must be propagated")
+              assert destination.read_text(encoding="utf-8") == "new"
+              assert not list(Path(temporary_directory).glob(".atomic.*.tmp"))
+
+          # HTTP error text and traceback context must not leak URLs or credentials.
+          with patch(
+              "COMMON.http_client.urllib.request.urlopen",
+              side_effect=urllib.error.URLError("https://internal.invalid/?token=synthetic-secret"),
+          ):
+              try:
+                  HttpClient.get(
+                      "https://internal.invalid/?token=synthetic-secret",
+                      response_format="text",
+                  )
+              except HttpRequestError as error:
+                  assert "synthetic-secret" not in str(error)
+                  assert "internal.invalid" not in str(error)
+                  assert error.__cause__ is None
+              else:
+                  raise AssertionError("HTTP transport error must be reported")
 
           # The shared parser is deterministic, strict, and independent of consumer modules.
           shared_parser = DateTimeScopeParser(reference_time=dt("2026-10-06T12:00:00Z"))
@@ -83,6 +129,29 @@ jobs:
           ])
           assert open_end_request.start_time == dt("2026-10-06T15:30:00Z")
           assert open_end_request.end_time is None
+
+          # A date-time range may be split by the shell into tokens around its space.
+          explicit_datetime_range = parse_market_data_request([
+              "--symbol", "EURUSD",
+              "--timeframes", "H1", "M15",
+              "2026.10.06", "08:00-2026.10.10", "15:30",
+          ])
+          assert explicit_datetime_range.start_time == dt("2026-10-06T08:00:00Z")
+          assert explicit_datetime_range.end_time == dt("2026-10-10T15:30:00Z")
+          assert explicit_datetime_range.timeframes == ["H1", "M15"]
+
+          # Retired flag-based date syntax must fail rather than be silently accepted.
+          for legacy_flag in ("--range", "--date", "--time"):
+              try:
+                  parse_market_data_request([
+                      "--symbol", "EURUSD",
+                      "--timeframes", "H1",
+                      legacy_flag, "2026.10.06",
+                  ])
+              except ValueError:
+                  pass
+              else:
+                  raise AssertionError(f"retired {legacy_flag} flag must be rejected")
 
           request = parse_market_data_request([
               "--symbol", "EURUSD",

@@ -78,7 +78,7 @@ class HttpClient:
             if attempt < retries and retry_delay_seconds:
                 time.sleep(retry_delay_seconds * attempt)
 
-        raise HttpRequestError(last_message) from last_error
+        raise HttpRequestError(last_message) from None
 
 
 class _HttpStatusError(RuntimeError):

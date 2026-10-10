@@ -17,7 +17,7 @@ Initial shared utilities:
 
 Public class: `DateTimeScopeParser`. Public result type: `DateTimeScope`. Public parse errors: `DateTimeScopeError`.
 
-The parser is a pure parser apart from its captured reference UTC time. It accepts an injectable reference time for deterministic tests, performs no I/O, and returns explicit scope kind, start/end boundaries, and open-start/open-end flags.
+The parser is a pure parser apart from its captured reference UTC time. It accepts an injectable reference time for deterministic tests, performs no I/O, and returns explicit scope kind, start/end boundaries, and open-start/open-end flags. The resulting `DateTimeScope` retains that same reference time so resolving an open-end scope later cannot drift across UTC midnight.
 
 Canonical public syntax:
 

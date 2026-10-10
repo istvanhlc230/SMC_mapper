@@ -60,13 +60,18 @@ class DateTimeScope:
     source: str
     open_start: bool = False
     open_end: bool = False
+    reference_time: Optional[datetime] = None
 
     def resolve_interval(
         self,
         reference_time: Optional[datetime] = None,
     ) -> tuple[Optional[datetime], Optional[datetime]]:
         """Resolve an open end to the reference UTC time while preserving open starts."""
-        current_time = ensure_utc(reference_time) if reference_time is not None else utc_now()
+        current_time = (
+            ensure_utc(reference_time)
+            if reference_time is not None
+            else ensure_utc(self.reference_time) if self.reference_time is not None else utc_now()
+        )
         if self.open_start:
             return None, self.end
         if self.open_end:
@@ -162,6 +167,7 @@ class DateTimeScopeParser:
                 end=end,
                 source=normalized_scope,
                 open_start=True,
+                reference_time=self.reference_time,
             )
 
         if normalized_scope.endswith("-"):
@@ -175,6 +181,7 @@ class DateTimeScopeParser:
                 end=None,
                 source=normalized_scope,
                 open_end=True,
+                reference_time=self.reference_time,
             )
 
         if "-" in normalized_scope:
@@ -199,7 +206,10 @@ class DateTimeScopeParser:
                 kind = "TIME_RANGE"
             if end <= start:
                 raise DateTimeScopeError("range end must be later than its start")
-            return DateTimeScope(kind, start, end, normalized_scope)
+            return DateTimeScope(
+                kind, start, end, normalized_scope,
+                reference_time=self.reference_time,
+            )
 
         endpoint_kind, point = self._parse_endpoint(normalized_scope)
         if endpoint_kind == "DATE":
@@ -208,10 +218,12 @@ class DateTimeScopeParser:
                 point,
                 point + timedelta(days=1),
                 normalized_scope,
+                reference_time=self.reference_time,
             )
         return DateTimeScope(
             endpoint_kind,
             point,
             point + timedelta(minutes=1),
             normalized_scope,
+            reference_time=self.reference_time,
         )
