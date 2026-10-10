@@ -45,6 +45,60 @@ jobs:
           def dt(value):
               return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
+          # --table is the only human-readable output option; --cleartext is not an alias.
+          from decimal import Decimal
+          from MARKET_DATA.cli import run as run_market_data_request
+          from MARKET_DATA.models import NormalizedCandle, VolumeState
+          from MARKET_DATA.protocol import format_table
+
+          table_request = parse_market_data_request([
+              "--symbol", "EURUSD", "--timeframes", "M1", "--table"
+          ])
+          assert table_request.table is True
+          try:
+              parse_market_data_request([
+                  "--symbol", "EURUSD", "--timeframes", "M1", "--cleartext"
+              ])
+          except ValueError as error:
+              assert "--cleartext is no longer supported" in str(error)
+              assert "--table" in str(error)
+          else:
+              raise AssertionError("--cleartext must be rejected rather than accepted as an alias")
+
+          sample_candle = NormalizedCandle(
+              candle_id="EURUSD_M1_2026-10-10T00:00:00Z",
+              timestamp=dt("2026-10-10T00:00:00Z"),
+              completion_time=dt("2026-10-10T00:01:00Z"),
+              open_price=Decimal("1.1"),
+              high_price=Decimal("1.2"),
+              low_price=Decimal("1.0"),
+              close_price=Decimal("1.15"),
+              volume=VolumeState(False, None, False, None, None, False, None, None),
+          )
+          sample_entries = {"M1": [(sample_candle, True)]}
+          rendered_table = format_table("EURUSD", sample_entries)
+          assert "MARKET DATA | EURUSD" in rendered_table
+          assert "TIMEFRAME | M1 | CANDLES 1" in rendered_table
+          assert "2026-10-10 00:00:00" in rendered_table
+          assert "1.15" in rendered_table
+
+          with patch("MARKET_DATA.cli.create_provider"), patch(
+              "MARKET_DATA.cli.get_candles", return_value={"M1": [sample_candle]}
+          ), patch("builtins.print") as captured_stdout:
+              assert run_market_data_request(table_request) == 0
+          assert "TIMEFRAME | M1 | CANDLES 1" in captured_stdout.call_args.args[0]
+
+          default_request = parse_market_data_request([
+              "--symbol", "EURUSD", "--timeframes", "M1"
+          ])
+          assert default_request.table is False
+          with patch("MARKET_DATA.cli.create_provider"), patch(
+              "MARKET_DATA.cli.get_candles", return_value={"M1": [sample_candle]}
+          ), patch("builtins.print") as captured_stdout:
+              assert run_market_data_request(default_request) == 0
+          assert captured_stdout.call_args.args[0].startswith("timeframe,time,")
+          assert "MARKET DATA | EURUSD" not in captured_stdout.call_args.args[0]
+
           from COMMON.date_time import DateTimeScopeParser, DateTimeScopeError
           from COMMON.atomic_file import atomic_write_text
           from COMMON.http_client import HttpClient, HttpRequestError
