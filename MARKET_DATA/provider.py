@@ -9,7 +9,12 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any
 
-from .models import DEFAULT_PROVIDER_NAME, ProviderCandle, TIMEFRAME_SECONDS
+from .models import (
+    DEFAULT_PROVIDER_NAME,
+    MarketDepthSnapshot,
+    ProviderCandle,
+    TIMEFRAME_SECONDS,
+)
 from PROVIDERS.credentials import ProviderCredentialError, get_provider_api_key
 from COMMON.date_time import DateTimeScopeError, parse_aware_datetime
 from COMMON.http_client import HttpClient, HttpRequestError
@@ -113,6 +118,19 @@ class MarketDataProvider:
         timeframe: str,
     ) -> ProviderCandle | None:
         raise NotImplementedError
+
+    def fetch_market_depth(
+        self,
+        symbol: str,
+        as_of: datetime | None = None,
+    ) -> MarketDepthSnapshot | None:
+        """Return optional L2 depth; return None when unsupported or unavailable.
+
+        If as_of is provided, only providers with historical depth support may
+        return a snapshot appropriate to that point in time. A live-only
+        snapshot must not be substituted for a historical request.
+        """
+        return None
 
 
 class LSEMarketDataProvider(MarketDataProvider):
