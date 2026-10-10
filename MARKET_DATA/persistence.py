@@ -76,6 +76,12 @@ def _validate_candle_record(candle, timeframe):
     if stamp != expected_start: raise ValueError("persisted candle timestamp does not match timeframe boundary")
     if completion != expected_completion: raise ValueError("persisted candle completion_time does not match timeframe boundary")
     for key in ("open","high","low","close"): _validate_persisted_decimal(candle[key], key)
+    for optional_field in ("tick_volume", "spread", "real_volume"):
+        if optional_field in candle:
+            _validate_persisted_non_negative_decimal(
+                candle[optional_field],
+                optional_field,
+            )
     if Decimal(candle["high"]) < Decimal(candle["low"]): raise ValueError("invalid persisted OHLC")
     if not Decimal(candle["low"]) <= Decimal(candle["open"]) <= Decimal(candle["high"]): raise ValueError("invalid persisted OHLC")
     if not Decimal(candle["low"]) <= Decimal(candle["close"]) <= Decimal(candle["high"]): raise ValueError("invalid persisted OHLC")
