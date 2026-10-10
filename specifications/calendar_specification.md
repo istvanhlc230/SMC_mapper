@@ -2,7 +2,7 @@
 
 Status: Current V2 specification.
 
-Calendar implementation baseline: 2.6.6.
+Calendar implementation baseline: 2.6.7.
 
 Default DATA_ROOT is the repository `CALENDAR/` directory, so the default persistent artifact is `<repository-root>/CALENDAR/calendar.json`. `SMC_DATA_ROOT` may explicitly override this runtime location.
 
@@ -43,6 +43,12 @@ single fallback chain.
 Provider interface:
 
     fetch_events(symbol, start, end, **provider_options) -> normalized events
+
+Shared HTTP transport:
+- Calendar provider HTTP requests use the common HTTP client and prefer IPv4 before IPv6 because the runtime network may have an unusable or very slow IPv6 route;
+- IPv6 remains a fallback if IPv4 cannot connect;
+- custom transport must preserve TLS hostname verification and default environment-proxy handling;
+- this applies to ForexFactory and Yahoo Finance as well as LSE, rather than only to the LSE adapter.
 
 Required providers:
 
@@ -307,7 +313,7 @@ These aliases are resolved at execution time using the same injectable UTC clock
 
 The read-only `SYMBOL --last-update` operation returns `last_successful_at` for every applicable provider+canonical-symbol watermark. If no applicable provider has a successful watermark, status is `NO_LAST_UPDATE`. Missing individual provider watermarks are represented as null / N/A, never as fabricated timestamps.
 
-Implementation version is 2.6.6; persistent schema remains V2.
+Implementation version is 2.6.7; persistent schema remains V2.
 
 ## 4. current semantics
 

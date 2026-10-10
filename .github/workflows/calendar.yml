@@ -32,6 +32,22 @@ jobs:
 
           import calendar
           from CALENDAR import domain, operations, providers, storage
+          # Shared Calendar HTTP requests must use the IPv4-first transport.
+          original_http_get = providers.HttpClient.get
+          captured_http_request = {}
+          def capture_http_get(url, **kwargs):
+              captured_http_request["url"] = url
+              captured_http_request.update(kwargs)
+              return "synthetic response"
+          try:
+              providers.HttpClient.get = staticmethod(capture_http_get)
+              assert providers.fetch_url("https://example.invalid/calendar") == "synthetic response"
+              assert captured_http_request["ipv4_first"] is True
+              assert captured_http_request["retries"] == 1
+              assert captured_http_request["timeout_seconds"] == providers.HTTP_TIMEOUT
+          finally:
+              providers.HttpClient.get = staticmethod(original_http_get)
+
 
           def dt(value):
               return datetime.fromisoformat(value.replace("Z", "+00:00"))
@@ -116,7 +132,7 @@ jobs:
               providers.open_url = original_lse_open_url
 
           assert calendar.validate_symbol("EURUSD") == "EURUSD"
-          assert calendar.__version__ == "2.6.6"
+          assert calendar.__version__ == "2.6.7"
           assert calendar.validate_symbol("USDGBP") == "USDGBP"
           assert calendar.validate_symbol("HUF") == "HUF"
           assert calendar.validate_symbol("NVDA") == "NVDA"
@@ -1191,7 +1207,7 @@ jobs:
               }
               assert calendar.normalize_provider_event(structured_raw)["details"]["impact"] == expected_impact
 
-          assert calendar.__version__ == "2.6.6"
+          assert calendar.__version__ == "2.6.7"
           assert f"Calendar CLI v{calendar.__version__}" in calendar.HELP_TEXT
 
           # Cleartext output must render normalized details as readable fields,

@@ -350,6 +350,9 @@ def fetch_url(url: str) -> str:
             timeout_seconds=HTTP_TIMEOUT,
             response_format="text",
             retries=1,
+            # Prefer IPv4: the active network can stall on unreachable IPv6
+            # before falling back to the working address family.
+            ipv4_first=True,
         )
     except HttpRequestError as exc:
         raise ProviderError(str(exc)) from exc

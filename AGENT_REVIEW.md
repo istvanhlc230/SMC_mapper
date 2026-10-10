@@ -1492,3 +1492,20 @@ The user's live refresh failed in the HTML fallback because the page had an even
 - Both passed against implementation commit `cb30953bee85d29dff081b98b59047712449abe1` with the corrected workflow in `a874c417640b88a8957525041a74ad3cfdc72460`; the synchronization regression confirms provider fetches overlap.
 - Live latency on the user's machine has not yet been measured; `--debug` now reports per-provider fetch duration for that verification.
 - No live user API key or credential was used or included in tests.
+
+
+## Calendar ForexFactory network latency — 2026-10-10
+
+### Finding
+- The user's measured refresh reported LSE base fetch in 1.44 seconds and ForexFactory in 31.68 seconds, even after independent providers were made concurrent.
+- Calendar's shared `fetch_url()` still used the default transport ordering, unlike the LSE-specific call which already preferred IPv4. On this network the default address ordering could wait on an unusable IPv6 path before reaching a working IPv4 address.
+
+### Change
+- Set the shared Calendar HTTP helper to `ipv4_first=True` for provider HTTPS GETs. The existing transport keeps TLS hostname verification and proxy handling, and still falls back to IPv6 if IPv4 fails.
+- Added a regression asserting Calendar provider requests pass the IPv4-first option to the shared transport.
+- Updated the normative provider-transport specification and bumped Calendar version to 2.6.7.
+
+### Validation
+- Automated validation is pending for this transport-specific change.
+- The observed 31.68-second request time is the user's runtime measurement. Reduction after this fix must be verified on the user's network.
+- No live user API key or credential was used or included in tests.
