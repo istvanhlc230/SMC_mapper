@@ -599,11 +599,13 @@ Layer 3 is the sole semantic owner of structural qualification. A retracement wa
   | W1 | D1 or H4 |
   | D1 | H4 |
   | H4 | M15 |
-  | M15 | M1 |
+  | M15 | M1† |
 
 The operative rule is the **applicable immediate higher-timeframe context**, not a hard-coded timeframe-pair table. These examples must not be treated as exclusive pairs. For example, a W1 retracement in the 38.2%–below-50% band may be validated by one valid pullback event on the one-month timeframe when one-month is the applicable HTF selected for that W1 analysis and the three-month timeframe is not part of the established hierarchy. Do not substitute an arbitrary higher timeframe or skip a required relationship after the analysis context has been selected.
 
 **Timeframe-token boundary:** The table expresses methodology intervals, not a promise that every interval is supported by every provider. Market Data owns canonical input tokens and actual timeframe support. Its current specification identifies `MN1` as the monthly calendar-based timeframe token; `1MN` is the corresponding methodology/source notation. The three-month example (`3MN`) must not be assumed to be a valid CLI token unless the Market Data contract/provider explicitly supports that series.
+
+**Source reconciliation note for †:** The `M15 → M1` pullback-representation row is retained from the current user-supplied canonical update. The currently indexed `smc_trader_another_missing_piece.txt` passage (00:05:21–00:05:49), which discusses the same 38.2% qualification exception, explicitly gives `D1 → H4`, `H4 → M15`, and `M15 → M3`. The checked corpus therefore supports `M15 → M3` as a source example but does not independently verify `M15 → M1` in that passage. Keep the user-supplied `M15 → M1` rule as a project-canonical addition; do not claim it is source-direct, and do not silently erase the distinct source example `M15 → M3`. The applicable pair must be selected from the active structural context rather than hard-coded as an exclusive universal pair.
 
 These pullback-representation examples are distinct from HTF-POI-to-entry pairings. The former answers whether a lower-timeframe structural retracement is represented by one valid pullback on its applicable higher timeframe; the latter assigns the narrative/POI timeframe and the execution timeframe. For example, D1→H4 may be a pullback-representation pair, while D1 HTF POI→H1 LTF is a long-term-swing execution pair. They answer different questions and must not be collapsed into one rigid table.
 
