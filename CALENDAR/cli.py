@@ -298,8 +298,6 @@ def parse_calendar_cli_request(cli_arguments: List[str]) -> Dict[str, Any]:
             "--date, --time, and --range are no longer supported."
         )
 
-    if any(item == "--cleartext" or item.startswith("--cleartext=") for item in cli_arguments):
-        raise CalendarInputError("--cleartext was replaced by --table.")
     table = "--table" in cli_arguments
     debug = "--debug" in cli_arguments
     last_update = "--last-update" in cli_arguments
