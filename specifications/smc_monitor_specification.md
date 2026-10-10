@@ -387,7 +387,8 @@ Planning rules:
 
 - Market Data's retained cache determines whether a provider update is needed;
 - the Monitor uses returned completed-candle coverage to determine whether a fresh Mapper run is due;
-- Mapper receives enough retained history for the requested output period plus all required warm-up/context candles;
+- every Mapper invocation receives the full retained completed-candle history through its resolved end boundary, not merely the requested output period;
+- to return that history, the Monitor uses Market Data's open-start `--range -END` output scope; when retained data exists, Market Data fetches only missing coverage after `available_end` and emits the full retained history from `available_start`;
 - in two-timeframe mode, the stream includes all HTF/LTF overlap needed for point-in-time context;
 - `-END` historical scopes resolve from each timeframe's earliest retained completed candle, not its latest candle;
 - no plan uses a Mapper checkpoint; no durable Mapper checkpoint exists.
@@ -1871,6 +1872,7 @@ test_transient_last_mapped_time_is_not_persisted
 ~~~text
 test_plan_market_data_from_explicit_timeframe_configuration
 test_plan_market_data_bootstrap_from_cached_history
+test_mapper_request_uses_open_start_full_history_scope
 test_plan_market_data_separates_symbol_ranges
 test_two_timeframe_range_includes_required_htf_ltf_context
 test_market_data_plan_contains_only_configured_timeframes
