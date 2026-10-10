@@ -24,34 +24,42 @@ from .persistence import (
     get_market_data_path,
     load_market_data,
     save_market_data_atomic,
+    serialize_decimal,
     update_available_bounds,
 )
 
 
+def _format_utc_timestamp(value: datetime) -> str:
+    """Format one timezone-aware timestamp as the canonical UTC ISO string."""
+    if value.tzinfo is None or value.utcoffset() is None:
+        raise ValueError("candle timestamp must be timezone-aware")
+    return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
 def _candle_dict(candle: NormalizedCandle) -> dict[str, Any]:
-    """Convert a normalized candle to its canonical persisted representation."""
+    """Convert a normalized candle to canonical in-memory storage field types."""
     volume: dict[str, Any] = {}
     if candle.volume.has_total:
-        volume["total"] = candle.volume.total
+        volume["total"] = serialize_decimal(candle.volume.total)
     if candle.volume.has_ohlc:
         volume["ohlc"] = {
-            "buy": candle.volume.ohlc_buy,
-            "sell": candle.volume.ohlc_sell,
+            "buy": serialize_decimal(candle.volume.ohlc_buy),
+            "sell": serialize_decimal(candle.volume.ohlc_sell),
         }
     if candle.volume.has_orderflow:
         volume["orderflow"] = {
-            "buy": candle.volume.orderflow_buy,
-            "sell": candle.volume.orderflow_sell,
+            "buy": serialize_decimal(candle.volume.orderflow_buy),
+            "sell": serialize_decimal(candle.volume.orderflow_sell),
         }
 
     return {
         "candle_id": candle.candle_id,
-        "timestamp": candle.timestamp,
-        "completion_time": candle.completion_time,
-        "open": candle.open_price,
-        "high": candle.high_price,
-        "low": candle.low_price,
-        "close": candle.close_price,
+        "timestamp": _format_utc_timestamp(candle.timestamp),
+        "completion_time": _format_utc_timestamp(candle.completion_time),
+        "open": serialize_decimal(candle.open_price),
+        "high": serialize_decimal(candle.high_price),
+        "low": serialize_decimal(candle.low_price),
+        "close": serialize_decimal(candle.close_price),
         "volume": volume,
     }
 
