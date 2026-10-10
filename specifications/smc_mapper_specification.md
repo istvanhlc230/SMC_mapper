@@ -218,7 +218,7 @@ The mapper must use the candle's canonical completion boundary when deciding whe
 
 An incomplete/current candle must be excluded from the canonical analysis series. It may be stored only in the per-timeframe current snapshot of <SYMBOL>_marketdata.json and must never be consumed as canonical structural input.
 
-The current snapshot is runtime market-data state, not historical candle state. Refreshing it must not alter structural history or mapper checkpoints.
+The current snapshot is runtime market-data state, not historical candle history. Refreshing it does not change the historical completed-candle stream used by a Mapper invocation.
 
 ## 1.6 Numeric and OHLC integrity
 
@@ -478,7 +478,7 @@ The entry timeframe is the driving timeframe for incremental processing and runt
 - Single-timeframe analysis: the selected timeframe is the entry timeframe.
 - Two-timeframe analysis: the LTF is the entry timeframe.
 
-The entry timeframe determines `last_processed_candle_time`, incremental market-data acquisition, mapper processing boundaries, and monitor update scheduling. HTF remains the higher-context timeframe and is processed as required to provide point-in-time context for the entry timeframe.
+The entry timeframe determines completed-candle cadence for runtime scheduling and the requested processing/output boundaries. HTF remains the higher-context timeframe and is processed as required to provide point-in-time context for the entry timeframe.
 
 ---
 
@@ -847,7 +847,7 @@ The bootstrap contract is:
 - the actual trigger candle becomes the new explicit active-impulse origin and seeds the new direction-consistent bootstrap anchor; processing resumes strictly forward from that real candle;
 - the original `C0` remains the mapping-origin and is never redefined or replayed;
 - bootstrap reversal cannot emit `VALID_BOS`, `CHoCH_CONFIRMED`, `MAJOR_IDM_SWEEP`, `PROTECTED_STRUCTURAL_EXTREME`, or a governing Dealing Range.
-- when first-BOS processing spans mapper invocations, required bootstrap/process state must be persisted or deterministically reconstructible from the same persisted canonical candle history; resume must not alter the bootstrap anchor or the pre-break dynamic observation boundary.
+- when first-BOS processing is recomputed in a later invocation, required bootstrap/process state must be deterministically reconstructed from the same complete canonical candle history; it must not rely on saved Mapper state or alter the bootstrap anchor or pre-break dynamic observation boundary.
 
 The mapper's canonical processing boundary is the completion of each eligible completed candle within the resolved analysis interval.
 
@@ -856,7 +856,7 @@ For every processed candle:
 - all required upstream canonical state is resolved before downstream state consumes it;
 - a canonical decision is evaluated only from information point-in-time available at that candle's evaluation time;
 - downstream analytical enrichment cannot mutate canonical structural truth;
-- persistence metadata such as `last_processed_candle_time` carries implementation provenance only and has no canonical SMC meaning.
+- per-run processing metadata carries implementation provenance only and has no canonical SMC meaning.
 
 A successful invocation returns the validated in-memory result. A failed or unresolved canonical dependency must not be converted into a successful structural result.
 
@@ -1376,7 +1376,7 @@ SMC_MAPPER/
     models.py
     cli.py
     market_data_input.py
-    identity.py
+    period.py
     layer1_micro_structure.py
     layer2_minor_structure.py
     layer3_structural_semantics.py
@@ -1398,7 +1398,7 @@ Module responsibilities:
 | `models.py` | Explicit cross-layer candle, request, analysis identity/state, structural-state, and persistence DTOs; no canonical decision logic. |
 | `cli.py` | Mapper argument parsing and request validation; no file/network/process I/O. |
 | `market_data_input.py` | Parse and validate the fixed Market Data CSV STDIN protocol; no provider or JSON-store access. |
-| `identity.py` | Parse positional period expressions and normalize UTC processing/output boundaries. |
+| `period.py` | Parse positional period expressions and normalize UTC processing/output boundaries. |
 | `layer1_micro_structure.py` | Implement only canonical Layer-1 candle/micro-structure semantics from the skill. |
 | `layer2_minor_structure.py` | Implement only canonical Layer-2 pullback, verified-extreme, and Minor IDM semantics from the skill. |
 | `layer3_structural_semantics.py` | Implement only canonical Layer-3 structural lifecycle, Major IDM, swing promotion, and retracement qualification semantics from the skill. |
@@ -1424,7 +1424,7 @@ The implementation dependency direction is:
 ```text
 smc_mapper.py
   -> SMC_MAPPER.cli
-      -> SMC_MAPPER.identity
+      -> SMC_MAPPER.period
       -> SMC_MAPPER.market_data_input
       -> SMC_MAPPER.processor
            -> Layer 1 -> Layer 2 -> Layer 3
@@ -1437,7 +1437,7 @@ smc_mapper.py
       -> SMC_MAPPER.persistence
 ```
 
-This diagram expresses module responsibility, not a license to bypass canonical state prerequisites. The exact layer-to-layer semantic dependencies remain those defined by `.agents/skills/smc/`. Layer 4 and Layer 5 consume Layer-3-owned structural state without redefining it; Layer 6 consumes canonical structural outcomes without creating them. Persistence and optional analytics must not feed decisions backward into canonical layers.
+This diagram expresses module responsibility, not a license to bypass canonical state prerequisites. The exact layer-to-layer semantic dependencies remain those defined by `.agents/skills/smc/`. Layer 4 and Layer 5 consume Layer-3-owned structural state without redefining it; Layer 6 consumes canonical structural outcomes without creating them. Result serialization and optional analytics must not feed decisions backward into canonical layers.
 
 Canonical SMC logic must not depend on:
 
@@ -1460,19 +1460,10 @@ The following conceptual models are sufficient for the V1 mapper boundary:
         symbol
         htf
         ltf
-        start_time
-        end_time
+        period
         history_no
         volume_method
         debug
-
-    AnalysisIdentity
-        analysis_key
-        htf
-        ltf
-        analysis_mode
-        entry_timeframe
-        analysis_start
 
     MarketDataCandleView
         candle_id
@@ -1496,20 +1487,19 @@ The following conceptual models are sufficient for the V1 mapper boundary:
         available_end
         candles: array of MarketDataCandleView
 
-    AnalysisState
-        identity
-        requested_start
-        effective_start
-        last_processed_candle_time
+    MapperResult
+        symbol
+        htf
+        ltf
+        analysis_mode
+        entry_timeframe
+        requested_period
+        available_coverage
+        canonical_processing_coverage
         structural_state
         history
 
-    StructuresDocument
-        symbol
-        history_no
-        analyses
-
-The conceptual structural_state and history fields are ownership containers for canonical layer state. The mapper specification must not invent a second canonical ontology inside them. Actual canonical objects and fields are taken from .agents/skills/smc/ during implementation.
+The conceptual structural_state and history fields are in-memory ownership containers for canonical layer state and are serialized only as part of the invocation result. The mapper specification must not invent a second canonical ontology inside them. Actual canonical objects and fields are taken from .agents/skills/smc/ during implementation.
 
 A transient processing context may be represented separately when needed, containing only explicit point-in-time inputs such as evaluation time, active HTF context reference, and the current completed candle. It must not become persisted monitor state.
 
@@ -1525,7 +1515,7 @@ Required portability rules:
 - public operations expose explicit success/failure paths;
 - UTC timestamps map to MQL datetime semantics;
 - canonical field names and meanings remain stable across Python/MQL implementations;
-- JSON dictionaries are persistence representation only;
+- JSON dictionaries are output representation only;
 - Python Decimal is an implementation detail of deterministic arithmetic, not a portable type requirement.
 
 Portability does not require reproducing Python's CLI or JSON library implementation details in MQL. It requires the same domain contracts and state transitions.
@@ -1537,7 +1527,7 @@ Portability does not require reproducing Python's CLI or JSON library implementa
 The following contracts have one implementation owner:
 
 - Market Data acquisition, normalization, completion, availability, timeframe catalog, retention and market-data JSON serialization: market_data.py / market_data_specification.md.
-- Mapper analysis identity, canonical processing orchestration, structures state and structures JSON persistence: smc_mapper.py / this specification.
+- Mapper positional-period parsing, canonical processing orchestration, transient structures state, and STDOUT serialization: smc_mapper.py / this specification.
 - Monitor scheduling, process orchestration, current-price/target monitoring and alerting: smc_monitor.py / its implementation contract.
 
 Do not duplicate the Market Data timeframe catalog, provider semantics, candle completion logic, or JSON serialization rules inside the mapper. The mapper may validate and consume them at its boundary, but does not redefine them.
@@ -1553,25 +1543,23 @@ Owner module: `SMC_MAPPER/cli.py`.
     build_argument_parser() -> parser
     parse_mapper_request(argv) -> MapperRequest
     validate_mapper_request(request) -> success/failure
-    parse_iso8601(value) -> UTC datetime
+    parse_period_expression(value) -> PeriodScope
 
 These functions validate mapper CLI semantics only. They must not execute canonical SMC analysis.
 
-## 15.2 Analysis identity
+## 15.2 Positional period parsing
 
-Owner module: `SMC_MAPPER/identity.py`.
+Owner module: `SMC_MAPPER/period.py`.
 
-    build_analysis_key(identity) -> string
-    resolve_analysis_identity(request, structures, market_data) -> AnalysisIdentity
+    parse_period_expression(value) -> PeriodScope
+    resolve_period_scope(period, market_data_coverage, invocation_time) -> ResolvedPeriod
 
-Identity resolution must remain deterministic. `build_analysis_key` uses the normalized timeframe configuration plus persisted `analysis_start`. It must never use current wall-clock time. When no explicit start was supplied, `analysis_start` is first resolved from persisted completed data, then the key is built from that resolved boundary.
+Parsing is deterministic. Open-end periods use one UTC invocation timestamp captured once; open-start periods resolve against the earliest retained completed candle per timeframe. There is no persistent analysis identity or resume-selection behavior.
 
 ## 15.3 Market-data boundary
 
 Owner module: `SMC_MAPPER/market_data_input.py` for protocol parsing/validation; `SMC_MAPPER/identity.py` for analysis identity and window-boundary normalization.
 
-    get_symbol_data_directory(symbol, data_directory) -> Path
-    get_structures_path(symbol, data_directory) -> Path
     parse_market_data_stdout(stream) -> MarketDataSeries
     validate_market_data_stream(series, symbol, requested_timeframes) -> success/failure
     select_completed_candles(series, timeframe, start_time, end_time) -> candle array
