@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from html import unescape
 
 from .config import DataIntegrityError
+from .domain import normalize_provider_fields
 
 # Presentation state is output-local: rendered lines are derived from the supplied event/details records.
 
@@ -63,13 +64,16 @@ def _detail_html_to_text(value: str) -> str:
     text = re.sub(r"\n{2,}", "\n", text)
     return text.strip()
 
-def format_cleartext_details(details: Dict[str, Any]) -> List[str]:
-    """Render details without exposing the internal dictionary representation."""
+def format_cleartext_details(
+    details: Dict[str, Any],
+    source: str = "unknown",
+) -> List[str]:
+    """Render canonical details and provider fields as readable individual lines."""
     preferred_keys = ("currency", "impact", "actual", "forecast", "previous")
     ordered_keys = [key for key in preferred_keys if key in details]
     extra_keys = [
         key for key in details
-        if key not in ordered_keys and key != "specs"
+        if key not in ordered_keys and key not in {"specs", "provider_fields"}
     ]
     ordered_keys.extend(sorted(extra_keys))
 
@@ -79,6 +83,31 @@ def format_cleartext_details(details: Dict[str, Any]) -> List[str]:
         display = "N/A" if value is None else str(value)
         label = key.replace("_", " ").title()
         lines.append(f"  {label:<9}: {display}")
+
+    raw_provider_fields = details.get("provider_fields")
+    provider_fields = normalize_provider_fields(raw_provider_fields, source)
+    if provider_fields:
+        provider_labels = {
+            "lse": "LSE",
+            "forexfactory": "ForexFactory",
+            "yahoo_finance": "Yahoo Finance",
+        }
+        lines.append("  Provider Fields:")
+        for provider_name in sorted(provider_fields):
+            provider_values = provider_fields[provider_name]
+            lines.append(
+                f"    {provider_labels.get(provider_name, provider_name)}:"
+            )
+            for field_name in sorted(provider_values):
+                value = provider_values[field_name]
+                if value is None:
+                    display = "N/A"
+                elif isinstance(value, (dict, list)):
+                    display = json.dumps(value, ensure_ascii=False, sort_keys=True)
+                else:
+                    display = str(value)
+                label = str(field_name).replace("_", " ").title()
+                lines.append(f"      {label:<18}: {display}")
 
     for spec in details.get("specs", []):
         title = _detail_html_to_text(str(spec.get("title", "")))
@@ -127,7 +156,10 @@ def output_query_result(
             print(f"Symbol    : {event['symbol']}")
             print(f"Title     : {event['title']}")
             print("Details   :")
-            for detail_line in format_cleartext_details(event["details"]):
+            for detail_line in format_cleartext_details(
+                event["details"],
+                source=event["source"],
+            ):
                 print(detail_line)
             print(f"Event ID  : {event['event_id']}")
             print()
