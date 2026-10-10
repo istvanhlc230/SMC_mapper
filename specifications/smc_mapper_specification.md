@@ -745,6 +745,21 @@ Options:
 
 For every invocation other than `--help`, the Mapper reads one complete machine-readable Market Data CSV stream from STDIN. Empty input, malformed protocol, unexpected timeframe rows, incomplete/current rows, or a timeframe/range mismatch is an explicit input failure. Because the CSV rows do not repeat the symbol, the Monitor/orchestrator must guarantee that the supplied stream was acquired for the same symbol as the Mapper's `--symbol` argument. The Mapper never launches `market_data.py` and never opens `<SYMBOL>_marketdata.json`.
 
+### CLI JSON output contract
+
+Every successful non-help invocation emits exactly one complete JSON document to STDOUT. The document is the same symbol-scoped Structures JSON state that was atomically persisted to `<DATA_ROOT>/<SYMBOL>/<SYMBOL>_structures.json`; it is not a status envelope, a diff, or a second independently generated representation.
+
+The write order is mandatory:
+
+1. complete canonical processing in memory;
+2. serialize and atomically persist the complete Structures document, including the successful checkpoint;
+3. only after persistence succeeds, serialize that same committed document to STDOUT as JSON;
+4. exit with status 0.
+
+If validation, processing, serialization, or persistence fails, the Mapper must not emit a success JSON document and must exit non-zero. Error details go to STDERR. STDOUT must never contain progress text, banners, pretty human-readable summaries, or partial JSON. Diagnostics remain on STDERR whether or not `--debug` is enabled; `--debug` controls additional diagnostic detail only. JSON output is the default behavior and does not require a separate output flag.
+
+The CLI JSON output does not replace the Structures file: the file remains the durable source of truth used to resume later runs. STDOUT is the process response for callers that need a machine-readable result.
+
 A direct shell invocation may connect the processes with a pipe:
 
 ```text
@@ -1460,14 +1475,15 @@ The Mapper must not create a second target ontology, select a target for alertin
 The CLI interfaces must strictly separate persistent market data from user-visible diagnostics.
 
 - Normalized candle data is persisted internally by Market Data and is emitted through the machine-readable STDOUT protocol as the Mapper data pipe.
-- Debug and diagnostic information is written to `stderr` only.
+- On successful completion, Mapper emits the committed Structures JSON document to `stdout`.
+- Debug, diagnostic, and error information is written to `stderr` only; it must never be mixed with either JSON protocol.
 - Debug `stderr` is terminal-only. The launcher/monitor must not capture, parse, forward, merge, persist, or pass it to `smc_mapper.py`, `smc_monitor.py`, or the market-data JSON.
 - `stderr` must never be merged into a machine-readable data channel.
 - Without `--debug`, debug/trace output is suppressed.
 - With `--debug`, diagnostics are visible directly on the terminal.
 - A process wrapper may capture diagnostics transiently for error reporting, but must never parse or persist them as data.
 - Debug mode must never alter canonical calculations or normalized market-data semantics.
-- Normal runtime must produce no human-readable status output. Market-data machine input/output remains a process stream and is not a diagnostic/status channel.
+- Normal runtime must produce no human-readable status output. Market Data CSV on Mapper STDIN and committed Structures JSON on Mapper STDOUT are distinct machine-readable process contracts; neither is a diagnostic/status channel.
 
 ## 12.2 Diagnostic data boundary
 
@@ -1759,7 +1775,7 @@ Owner modules:
 - `SMC_MAPPER/processor.py` owns `run(request, market_data_stream) -> exit_status`: validate the supplied stream, load the selected analysis state, process, and persist.
 - The root `smc_mapper.py` contains only the import of `SMC_MAPPER.cli.main` and the executable guard.
 
-Normal execution emits no human-readable status text; market-data input is consumed from STDIN as the exact analysis-scoped machine protocol captured from Market Data STDOUT by the Monitor/orchestrator. Mapper diagnostics are emitted only on STDERR according to Section 12.
+Normal execution emits exactly one JSON document to STDOUT after the corresponding Structures JSON has been successfully persisted atomically. The document is the complete committed Structures JSON, not a status message or diff. Market-data input is consumed from STDIN as the exact analysis-scoped machine protocol captured from Market Data STDOUT by the Monitor/orchestrator. Mapper diagnostics and errors are emitted only on STDERR according to Section 12; failure must not produce a success JSON document.
 
 ---
 
@@ -1853,6 +1869,7 @@ At minimum, the finished mapper implementation must have focused tests covering:
 - source-level delta derivation from buy/sell with no persisted candle-level delta dependency;
 - deterministic OHLC directional-volume aggregation and zero-volume behavior;
 - structures JSON atomic persistence and checkpoint ordering;
+- successful CLI STDOUT is exactly the committed Structures JSON document, with no diagnostic text; failure emits no success document and returns a non-zero exit status;
 - MQL-portable domain-state behavior independent of Python-specific collection mechanics;
 - absence of runtime/import dependencies on legacy modules and Market Data/Monitor modules;
 - canonical Layer-1-to-Layer-6 behavior is implemented in separate modules with the ownership defined in §14.1, and no layer module bypasses another layer's canonical prerequisite/state contract.
