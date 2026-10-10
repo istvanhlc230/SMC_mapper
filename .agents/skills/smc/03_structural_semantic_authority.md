@@ -589,7 +589,7 @@ Layer 3 is the sole semantic owner of structural qualification. A retracement wa
   - It qualifies **if and only if** the entire lower-timeframe retracement is represented by exactly one completed Candle-Level Valid Pullback event on the applicable immediate Higher Timeframe (`HTF_VALID_PULLBACK == TRUE`). That event may comprise multiple HTF candles: “single” means one complete pullback event, not one candle. A directional candle, one extreme breach, or an arbitrary higher-timeframe candle is not sufficient unless the full Layer-1/Layer-2 valid-pullback conditions are satisfied.
   - **Canonical axiom:** “A higher timeframe valid pullback is a lower timeframe complete structure.”
   - The higher-timeframe pullback must cover the same structural move being qualified; unrelated or later HTF facts cannot validate it retroactively.
-  - An HTF inside bar or invalid pullback gives `MAJOR_RETRACEMENT_QUALIFIED = FALSE`.
+  - If the proposed HTF representation is merely an Inside Bar and does not establish a complete valid pullback event, or if the applicable HTF pullback fails Layer-1/Layer-2 validity, set `MAJOR_RETRACEMENT_QUALIFIED = FALSE`. An Inside Bar occurring inside a multi-candle pullback is handled by the canonical mother-candle/reference rules and does not invalidate the whole event by itself.
   - Missing required HTF candles or unresolved HTF sequencing gives `HTF_CONTEXT_UNAVAILABLE`; it must not be downgraded to `HTF_VALID_PULLBACK = FALSE`, nor may the conditional path be accepted.
 - **Pairing examples (illustrative, not a rigid lookup table):**
 
