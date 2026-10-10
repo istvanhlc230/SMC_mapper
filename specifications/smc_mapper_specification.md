@@ -298,14 +298,16 @@ Every normalized candle series belongs to exactly one timeframe.
 
 A candle from one timeframe must never be silently mixed with another timeframe.
 
-For a two-timeframe analysis:
+For every resolved role, its underlying candle series remains distinct:
 
 ```
-HTF candle series
-LTF candle series
+anchor / narrative-POI series
+pullback-representation candidate series
+entry / monitoring LTF series (only after POI activation)
+any additional mandatory HTF context series
 ```
 
-remain distinct series.
+One candle series must never be duplicated or relabelled to fill multiple distinct evidence requirements.
 
 ---
 
@@ -468,7 +470,7 @@ HTF pullback validation is mandatory wherever required by canonical True SMC str
 
 ### Canonical pullback-representation hierarchy
 
-The canonical authority is `.agents/skills/smc/03_structural_semantic_authority.md`. The current user-facing `--htf`/`--ltf` flags identify the primary narrative/entry pair; they are not a hard-coded table for complete-structure representation.
+The canonical authority is `.agents/skills/smc/03_structural_semantic_authority.md`. The user-facing `--timeframe TF` selects the anchor narrative/POI context. All other series roles are resolved automatically; the pullback-representation timeframe is not necessarily the entry/monitoring LTF.
 
 | HTF valid pullback | Lower-timeframe complete structure to evaluate |
 |---|---|
@@ -585,7 +587,7 @@ Options:
 
 ### STDIN contract
 
-Every non-help invocation reads one complete machine-readable Market Data CSV stream from STDIN. Empty input, malformed protocol, timeframe rows outside the resolved input set (primary HTF/entry-LTF plus permitted canonical pullback-representation candidates), incomplete/current rows in the completed-candle stream, or symbol/timeframe/coverage mismatch is an explicit failure. The Monitor/orchestrator determines and acquires the candidate timeframe series required by the canonical mapping hierarchy; a supporting series is not an error merely because it is additional to the primary `--htf`/`--ltf` pair. Mapper never launches Market Data and never opens `<SYMBOL>_marketdata.json`.
+Every non-help invocation reads one complete machine-readable Market Data CSV stream from STDIN. Empty input, malformed protocol, timeframe rows outside the resolved input set (primary HTF/entry-LTF plus permitted canonical pullback-representation candidates), incomplete/current rows in the completed-candle stream, or symbol/timeframe/coverage mismatch is an explicit failure. The Monitor/orchestrator determines and acquires all candidate timeframe series required by the canonical mapping hierarchy; a supporting series is expected even though the user supplied only one `--timeframe TF` anchor. Mapper never launches Market Data and never opens `<SYMBOL>_marketdata.json`.
 
 ### Stateless execution and output contract
 
