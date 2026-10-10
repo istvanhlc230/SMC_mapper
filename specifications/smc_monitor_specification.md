@@ -131,7 +131,7 @@ Multiple symbols are allowed. Each symbol is monitored independently.
 
 The Monitor must never merge structures, market data, schedules, targets, or alerts between symbols.
 
-Each symbol uses one dedicated data directory for Market Data and Structures:
+Each symbol uses one dedicated Market Data cache directory; Mapper creates no per-symbol output file:
 
 ~~~text
 <DATA_ROOT>/<SYMBOL>/
