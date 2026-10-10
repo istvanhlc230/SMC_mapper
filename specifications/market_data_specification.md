@@ -757,7 +757,7 @@ The machine protocol is a process interface, not the persistence JSON schema.
 
 It never changes acquisition, normalization, persistence, retention, or query semantics.
 
-When specified, the CLI prints the requested completed candles in the existing human-readable style. The table includes the requested timeframe, candle count, UTC timestamp, OHLC values, and completion state. Empty results still identify each requested timeframe with a zero candle count. The exact spacing/layout may evolve without changing the machine protocol.
+When specified, the CLI prints the requested candles in a human-readable table with timeframe, candle count, UTC timestamp, OHLC values, and normalized total volume. The table does not include a per-row `Completed` column. If an entry is an in-progress candle, identify the affected timeframe section as `CURRENT SNAPSHOT` so removing the column does not hide its state. Display the normalized `volume.total` value when available; display `N/A` when total volume is unavailable, and never substitute zero or infer total volume from tick volume, real volume, or directional volume branches. Empty results still identify each requested timeframe with a zero candle count. The exact spacing/layout may evolve without changing the machine protocol.
 
 A downstream process must never parse `--table`.
 
@@ -2363,6 +2363,8 @@ test_market_data_help_documents_positional_symbol
 test_parse_market_data_request_table_flag
 test_parse_market_data_request_rejects_cleartext_alias
 test_run_table_mode_formats_human_readable_output
+test_table_shows_normalized_total_volume_and_omits_completed_column
+test_table_marks_current_snapshot_and_shows_unavailable_volume_as_na
 test_run_default_mode_preserves_machine_csv
 test_parse_iso8601_returns_utc
 test_normalize_source_time_with_timezone
