@@ -219,7 +219,7 @@ If stronger sequence evidence later becomes available, the implementation may re
 
 ## Mandatory Multi-Timeframe input contract
 
-A True SMC mapping invocation is conformant only when it has two distinct, explicitly identified timeframe series with `HTF > LTF`. Single-timeframe-only mapping and equal HTF/LTF configuration are invalid as complete True SMC analysis modes; a timeframe must never be relabelled as its own HTF.
+Under this project's automated Mapper/Monitor contract, a conformant mapping invocation requires two distinct, explicitly identified timeframe series with `HTF > LTF`. Single-timeframe-only runs and equal HTF/LTF configuration are invalid modes for this product; a timeframe must never be relabelled as its own HTF. This is an implementation conformance rule, not a universal claim that True SMC source material rejects all discretionary single-timeframe analysis.
 
 - The HTF supplies directional narrative, canonical POI zones, and relevant core-liquidity context.
 - The LTF supplies the internal structure and context-gated LTF-CHoCH / entry-confirmation evidence.
