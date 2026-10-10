@@ -25,6 +25,7 @@ jobs:
           from tempfile import TemporaryDirectory
           from unittest.mock import patch
           import urllib.error
+          import urllib.parse
           import socket
           import subprocess
           import sys
@@ -46,6 +47,27 @@ jobs:
           from MARKET_DATA.service import resolve_acquisition_range
           def dt(value):
               return datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+          # LSE candle query filters must be UTC dates, while the caller's exact
+          # timestamps are applied locally after the provider response is parsed.
+          date_filter_provider = LSEMarketDataProvider()
+          with patch("MARKET_DATA.provider.get_provider_api_key", return_value="test-key"), patch(
+              "MARKET_DATA.provider.HttpClient.get", return_value=[]
+          ) as mocked_lse_http:
+              date_filter_provider._request_candle_page(
+                  "EURUSD",
+                  "M1",
+                  dt("2026-10-08T12:30:00Z"),
+                  dt("2026-10-10T18:45:00Z"),
+              )
+          lse_query = urllib.parse.parse_qs(
+              urllib.parse.urlsplit(mocked_lse_http.call_args.args[0]).query
+          )
+          assert lse_query["symbol"] == ["EUR/USD"]
+          assert lse_query["timeframe"] == ["1m"]
+          assert lse_query["start"] == ["2026-10-08"]
+          assert lse_query["end"] == ["2026-10-10"]
+          assert lse_query["limit"] == ["5000"]
 
           # --table is the only human-readable output option; --cleartext is not an alias.
           from decimal import Decimal
@@ -629,32 +651,86 @@ jobs:
           else:
               raise AssertionError("lastclosed + open-start range must be rejected")
 
-          # LSE range acquisition must page forward until the requested interval is exhausted.
+          # LSE date-only query windows overfetch at most a calendar boundary;
+          # local filtering restores the exact range and identical boundary rows deduplicate.
           from MARKET_DATA.provider import LSEMarketDataProvider
           paged_provider = LSEMarketDataProvider()
           page_requests = []
+
+          def lse_row(timestamp, volume=1):
+              return {
+                  "timestamp": timestamp,
+                  "open": "1",
+                  "high": "2",
+                  "low": "0",
+                  "close": "1.5",
+                  "volume": volume,
+              }
+
           page_rows = [
-              [{"timestamp": "2026-10-10T05:00:00Z", "open": "1", "high": "2", "low": "0", "close": "1.5", "volume": 1}],
-              [{"timestamp": "2026-10-10T05:01:00Z", "open": "1", "high": "2", "low": "0", "close": "1.5", "volume": 2}],
-              [],
+              [
+                  lse_row("2026-10-08T11:59:00Z"),
+                  lse_row("2026-10-08T12:00:00Z"),
+                  lse_row("2026-10-09T00:00:00Z"),
+                  lse_row("2026-10-10T00:00:00Z", volume=3),
+              ],
+              [
+                  lse_row("2026-10-10T00:00:00Z", volume=3),
+                  lse_row("2026-10-10T19:59:00Z"),
+                  lse_row("2026-10-11T00:00:00Z"),
+              ],
           ]
+
           def paged_request(symbol, timeframe, start_time, end_time):
               page_requests.append((symbol, timeframe, start_time, end_time))
               return page_rows.pop(0)
+
           paged_provider._request_candle_page = paged_request
           paged_candles = paged_provider.fetch_range(
               "EURUSD",
               "M1",
-              dt("2026-10-10T05:00:00Z"),
-              dt("2026-10-10T05:02:00Z"),
+              dt("2026-10-08T12:00:00Z"),
+              dt("2026-10-10T20:00:00Z"),
           )
           assert [c.timestamp for c in paged_candles] == [
-              dt("2026-10-10T05:00:00Z"),
-              dt("2026-10-10T05:01:00Z"),
+              dt("2026-10-08T12:00:00Z"),
+              dt("2026-10-09T00:00:00Z"),
+              dt("2026-10-10T00:00:00Z"),
+              dt("2026-10-10T19:59:00Z"),
           ]
-          assert [item[2] for item in page_requests] == [
-              dt("2026-10-10T05:00:00Z"),
-              dt("2026-10-10T05:01:00Z"),
+          assert [item[2:] for item in page_requests] == [
+              (dt("2026-10-08T00:00:00Z"), dt("2026-10-10T00:00:00Z")),
+              (dt("2026-10-10T00:00:00Z"), dt("2026-10-11T00:00:00Z")),
+          ]
+
+          # A weekend/holiday-sized empty window must advance by dates rather
+          # than retrying the same last-candle timestamp.
+          empty_window_provider = LSEMarketDataProvider()
+          empty_window_requests = []
+
+          def empty_window_request(symbol, timeframe, start_time, end_time):
+              empty_window_requests.append((start_time, end_time))
+              if start_time == dt("2026-10-08T00:00:00Z"):
+                  return [lse_row("2026-10-08T05:00:00Z")]
+              if start_time == dt("2026-10-10T00:00:00Z"):
+                  return []
+              return [lse_row("2026-10-12T05:00:00Z")]
+
+          empty_window_provider._request_candle_page = empty_window_request
+          empty_window_candles = empty_window_provider.fetch_range(
+              "EURUSD",
+              "M1",
+              dt("2026-10-08T00:00:00Z"),
+              dt("2026-10-13T00:00:00Z"),
+          )
+          assert [item.timestamp for item in empty_window_candles] == [
+              dt("2026-10-08T05:00:00Z"),
+              dt("2026-10-12T05:00:00Z"),
+          ]
+          assert empty_window_requests == [
+              (dt("2026-10-08T00:00:00Z"), dt("2026-10-10T00:00:00Z")),
+              (dt("2026-10-10T00:00:00Z"), dt("2026-10-12T00:00:00Z")),
+              (dt("2026-10-12T00:00:00Z"), dt("2026-10-13T00:00:00Z")),
           ]
 
           # W1/MN1 persisted states must use calendar completion boundaries and
