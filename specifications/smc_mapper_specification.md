@@ -537,7 +537,7 @@ The canonical date spelling is `YYYY.MM.DD` and time spelling is `HH:MM`. Time i
 
 For open-start periods, resolve the earliest completed candle present in the validated returned CSV separately for each timeframe; the stream must cover the full retained cache history through the explicit end boundary. The Mapper must not assume private Market Data JSON metadata is available. For an open-end period, capture current UTC once at invocation start and use that fixed instant for all timeframe groups. Reject future starts and reversed/empty intervals.
 
-The requested period filters which events/structures are presented as belonging to the requested output window, but does not truncate canonical processing history. Mapper must process every supplied completed candle from the earliest available candle through the requested end. It may include earlier carry-in structures needed to interpret in-window events or represent state at the requested end, but must identify them as context rather than claim they formed in the requested window.
+The requested period filters which events/structures are presented as belonging to the requested output window, but does not truncate canonical processing history. `select_processing_candles()` must select every supplied completed candle from the earliest available candle through the requested end; it must not apply the requested start. `select_output_window_candles()` separately selects the requested interval for presentation. The result may include earlier carry-in structures needed to interpret in-window events or represent state at the requested end, but must identify them as context rather than claim they formed in the requested window.
 
 ## 2.8 Completed-candle and window selection
 
@@ -1504,7 +1504,8 @@ Owner modules: `SMC_MAPPER/market_data_input.py` for protocol parsing/validation
     parse_market_data_stdout(stream) -> MarketDataSeries
     validate_market_data_stream(series, symbol, requested_timeframes) -> success/failure
     parse_period_expression(period_text) -> PeriodScope
-    select_completed_candles(series, timeframe, start_time, end_time) -> candle array
+    select_processing_candles(series, timeframe, end_time) -> candle array
+    select_output_window_candles(series, timeframe, start_time, end_time) -> candle array
 
 The process-input parser validates the Market Data machine protocol without importing Market Data classes. It groups records by the explicit `timeframe` field.
 
@@ -1575,7 +1576,7 @@ Where practical, the following operations must be deterministic/pure with explic
 - CLI validation after parsing;
 - positional-period parsing and window selection;
 - point-in-time HTF context selection;
-- candle eligibility selection from the supplied Market Data stream;
+- processing-history and output-window candle selection from the supplied Market Data stream;
 - Dealing Range history reconciliation input/output;
 - POI volume aggregation;
 - OHLC directional-volume calculation;
@@ -1621,7 +1622,7 @@ Definition of done:
 
 - smc_mapper.py implements the contracts in this specification;
 - mapper consumes only normalized Market Data machine output and never a concrete provider;
-- Market Data and mapper JSON stores remain strictly separated by ownership;
+- Market Data persistence remains internal to Market Data; Mapper emits its result only through STDOUT;
 - canonical SMC decisions are governed by .agents/skills/smc/;
 - Market Data current snapshot never enters canonical structural input;
 - no source-level orderflow delta field is required;
