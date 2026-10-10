@@ -286,8 +286,8 @@ class MonitoredSymbol:
     symbol: str
     analysis_key: str  # transient correlation key: symbol + timeframe configuration; never persisted
     entry_timeframe: str
-    htf: str | None
-    ltf: str | None
+    htf: str
+    ltf: str
     analysis_mode: str
     last_mapped_candle_time: datetime | None
     next_due_time: datetime | None
