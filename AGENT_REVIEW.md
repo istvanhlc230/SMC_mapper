@@ -1717,3 +1717,35 @@ The user's live refresh failed in the HTML fallback because the page had an even
 ### Validation scope
 - Static semantic/specification audit only. The `smc_mapper.py`/`smc_monitor.py` runtime behavior is not claimed as tested or implemented by this change.
 - No live market-data call was performed for this skill/specification update.
+
+## Single-anchor automatic timeframe interface — 2026-10-10
+
+### Decision
+- The public Mapper/Monitor interface now requires exactly one user-selected anchor timeframe: `--timeframe TF`.
+- `--htf` and `--ltf` are no longer user configuration inputs. They remain mentioned only as rejected retired flags/migration cases where applicable.
+- One CLI anchor does not mean single-timeframe analysis. The runtime resolves distinct narrative/POI context, complete-pullback representation, entry/monitoring LTF, and any additional immediate-HTF evidence required by canonical SMC rules.
+- The pullback-representation TF is a separate role from the entry/monitoring LTF; the roles must not be conflated merely because both use lower-timeframe candles.
+
+### Specification changes
+- `specifications/smc_mapper_specification.md`: changed CLI usage/help to `--timeframe TF`; defined `AUTO_MTF`; documented resolver roles, role metadata, the canonical complete-structure hierarchy, fail-closed unavailability, and the requirement that supporting series may be additional to the user-supplied anchor.
+- `specifications/smc_monitor_specification.md`: changed Monitor configuration and request model to one anchor; added `TimeframeResolutionPlan`; planned required structural-support series before entry activation and entry-LTF acquisition after the HTF POI-touch gate; separated scheduling triggers by actual timeframe/role; retained all per-timeframe history/coverage boundaries.
+- `.agents/skills/smc/03_structural_semantic_authority.md`: the canonical semantic owner now states that the user supplies one anchor and the resolver derives required series; missing evidence remains unavailable and cannot be fabricated.
+- `.agents/skills/smc/05_CHOCH_mechanics.md`: removed the conflicting requirement for two manually configured CLI timeframes and clarified that common H4→M15 and D1→H1 execution pairings are explanatory examples rather than CLI parameters or a rigid table.
+- `.agents/skills/smc/08_implementation.md`: resolved the earlier open CLI contract and aligned acceptance-test requirements to one anchor and automatic roles.
+- `.agents/skills/smc/skill.md` already indexes the dynamic hierarchy and implementation ownership.
+
+### Audit results
+- **PASS — single public timeframe input:** Mapper and Monitor specifications require one anchor parameter and do not accept a hand-configured `--htf`/`--ltf` pair. Both explicitly explain that a one-parameter CLI still drives multi-timeframe processing.
+- **PASS — role separation:** narrative/POI HTF, pullback-representation TF, and entry/monitoring LTF have separate meanings and can only reuse a series when canonical resolution shows that no distinct prerequisite evidence is collapsed.
+- **PASS — staged entry monitoring:** start in `WAITING_FOR_HTF_POI`; the Monitor does not request/use the entry LTF solely for CHoCH before POI interaction. On the qualifying touch it transitions to `ARMED_MONITORING_LTF`, acquires the resolved entry series, and reruns Mapper with the required series. A series already required for pullback representation may be present earlier but cannot be used as premature entry-CHoCH evidence.
+- **PASS — source hierarchy and fail-closed behavior:** the 3M→W1, W1→D1/H4, D1→H4, H4→M15, M15→M1 mapping and the IDM-takeout-plus-qualified-BOS complete-structure requirement remain in the canonical owner; unavailable context is not treated as false proof.
+- **PASS — no invented numeric size threshold:** the W1 D1-vs-H4 selector must consider physical extent, candle span/count, and available volume/activity evidence; its exact reproducible threshold/decision rule remains open and must be specified before runtime implementation.
+- **PASS — CLI/data scope alignment:** Market Data history is expressed using its positional `-END` scope; the specs do not introduce a `--range` option.
+
+### Remaining implementation dependency
+- The size/volume decision rule that objectively selects D1 versus H4 for a W1 pullback is not yet mathematically specified. The spec explicitly keeps this open rather than inventing constants or falsely claiming the automatic selection is already implementable. Until that design is resolved, this selector cannot pass full quantitative acceptance tests.
+
+### Validation scope
+- Static cross-file specification/skill audit: **PASS** for the one-anchor interface and staged role contract after the updates in this section.
+- This work changes the skill and specifications only; it does not implement or execute a Mapper/Monitor runtime. No Mapper/Monitor runtime PASS is claimed. Existing Market Data/Calendar CI runs do not validate this runtime design.
+- No live provider acquisition was performed for this specification change.
