@@ -86,7 +86,7 @@ USAGE
   python calendar.py delete SYMBOL <scope>
   python calendar.py --help
 FLAGS
-  --table    Human-readable presentation only; does not change stored data.
+  --table        Tabular presentation only; does not change stored data.
   --debug        Emit diagnostic exceptions/tracebacks to stderr only.
   --last-update  Read last successful provider update times; no provider call.
   --help         Show this help.
