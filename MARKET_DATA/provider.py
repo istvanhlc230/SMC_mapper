@@ -10,10 +10,13 @@ from typing import Any
 
 from .models import DEFAULT_PROVIDER_NAME, ProviderCandle, TIMEFRAME_SECONDS
 from PROVIDERS.credentials import ProviderCredentialError, get_provider_api_key
-from COMMON.date_time import DateTimeScopeError, format_utc_iso8601, parse_aware_datetime
+from COMMON.date_time import DateTimeScopeError, parse_aware_datetime
 from COMMON.http_client import HttpClient, HttpRequestError
 
 LSE_CANDLES_URL = "https://api.londonstrategicedge.com/vault/candles"
+# The candle API is date-filtered and caps a response at 5,000 rows. A two-day
+# request window stays below that cap for M1 even if the end date is inclusive.
+CANDLE_QUERY_WINDOW_DAYS = 2
 TIMEFRAME_INTERVALS = {
     "M1": "1m",
     "M5": "5m",
@@ -27,9 +30,9 @@ TIMEFRAME_INTERVALS = {
 }
 
 
-def _format_lse_timestamp(value: datetime) -> str:
-    """Format an LSE request boundary using the shared UTC ISO 8601 formatter."""
-    return format_utc_iso8601(value)
+def _format_lse_date(value: datetime) -> str:
+    """Format an LSE candle filter as a UTC calendar date, without a time component."""
+    return value.astimezone(timezone.utc).date().isoformat()
 
 
 
@@ -124,8 +127,8 @@ class LSEMarketDataProvider(MarketDataProvider):
         params = urllib.parse.urlencode({
             "symbol": _map_symbol_to_lse(symbol),
             "timeframe": interval,
-            "start": _format_lse_timestamp(start_time),
-            "end": _format_lse_timestamp(end_time),
+            "start": _format_lse_date(start_time),
+            "end": _format_lse_date(end_time),
             "order": "asc",
             "limit": 5000,
         })
@@ -145,7 +148,12 @@ class LSEMarketDataProvider(MarketDataProvider):
                 ipv4_first=True,
             )
         except HttpRequestError as exc:
-            raise RuntimeError(f"LSE candle acquisition failed: {exc}") from exc
+            raise RuntimeError(
+                "LSE candle acquisition failed for "
+                f"{_map_symbol_to_lse(symbol)} timeframe={interval} "
+                f"date_window={_format_lse_date(start_time)}..{_format_lse_date(end_time)} "
+                f"(end-exclusive): {exc}"
+            ) from exc
         if not isinstance(payload, list):
             raise RuntimeError("LSE candles response is not a list")
         return payload
@@ -184,29 +192,61 @@ class LSEMarketDataProvider(MarketDataProvider):
         return sorted(records, key=lambda item: item.timestamp)
 
     def fetch_range(self, symbol, timeframe, start_time, end_time):
-        """Fetch the requested LSE timeframe, paging forward without gaps or loops."""
-        if end_time <= start_time:
+        """Fetch a precise UTC interval using bounded date-only LSE query windows."""
+        utc_start = start_time.astimezone(timezone.utc)
+        utc_end = end_time.astimezone(timezone.utc)
+        if utc_end <= utc_start:
             raise ValueError("LSE range end must be after start")
 
-        from .normalization import canonical_next_interval_start
+        # LSE candle filters are calendar-date based. Query all of the first date
+        # and, when END is not midnight, all of its date too; exact time filtering
+        # below restores the requested half-open interval.
+        query_day = utc_start.date()
+        exclusive_end_day = utc_end.date()
+        if utc_end.time() != datetime.min.time():
+            exclusive_end_day += timedelta(days=1)
 
-        page_start = start_time
-        records: list[ProviderCandle] = []
-        while page_start < end_time:
-            page_rows = self._request_candle_page(symbol, timeframe, page_start, end_time)
-            if not page_rows:
-                break
-            page_records = self._parse_lse_candle_rows(page_rows, symbol, timeframe)
-            records.extend(
-                record for record in page_records
-                if start_time <= record.timestamp < end_time
+        records_by_timestamp: dict[datetime, ProviderCandle] = {}
+        while query_day < exclusive_end_day:
+            window_end_day = min(
+                query_day + timedelta(days=CANDLE_QUERY_WINDOW_DAYS),
+                exclusive_end_day,
             )
-            latest_timestamp = max(record.timestamp for record in page_records)
-            next_start = canonical_next_interval_start(latest_timestamp, timeframe)
-            if next_start <= page_start:
-                raise RuntimeError("LSE pagination made no forward progress")
-            page_start = next_start
-        return sorted(records, key=lambda item: item.timestamp)
+            page_start = datetime.combine(
+                query_day,
+                datetime.min.time(),
+                tzinfo=timezone.utc,
+            )
+            page_end = datetime.combine(
+                window_end_day,
+                datetime.min.time(),
+                tzinfo=timezone.utc,
+            )
+            page_rows = self._request_candle_page(
+                symbol,
+                timeframe,
+                page_start,
+                page_end,
+            )
+            page_records = self._parse_lse_candle_rows(page_rows, symbol, timeframe)
+
+            for record in page_records:
+                if not utc_start <= record.timestamp < utc_end:
+                    continue
+                existing_record = records_by_timestamp.get(record.timestamp)
+                if existing_record is not None and existing_record != record:
+                    raise RuntimeError(
+                        "conflicting LSE candle content at timestamp "
+                        f"{record.timestamp.isoformat()}"
+                    )
+                records_by_timestamp[record.timestamp] = record
+
+            # Advance by the requested calendar window, not the latest returned
+            # candle. Weekends, holidays, and empty provider pages cannot stall
+            # or repeat the query loop.
+            query_day = window_end_day
+
+        return sorted(records_by_timestamp.values(), key=lambda item: item.timestamp)
 
     def _lookup_window(self, timeframe: str, now: datetime) -> datetime:
         """Return a bounded same-timeframe lookup start for latest/current reads."""
