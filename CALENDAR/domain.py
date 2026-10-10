@@ -5,28 +5,34 @@ import re
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
-from .config import CalendarInputError, DataIntegrityError, DATE_RE, FX_CURRENCY_CODES, SCHEMA_VERSION, SUPPORTED_CURRENCIES, TIME_RE
+from .config import CalendarInputError, DataIntegrityError, FX_CURRENCY_CODES, SCHEMA_VERSION, SUPPORTED_CURRENCIES
+from COMMON.date_time import (
+    DateTimeScopeError as _DateTimeScopeError,
+    DateTimeScopeParser as _DateTimeScopeParser,
+    format_utc_iso8601 as _format_utc_iso8601,
+    parse_aware_datetime as _parse_aware_datetime,
+    utc_now as _common_utc_now,
+)
 
 # Module state: domain functions operate on the caller-owned Calendar document; no provider I/O or persistent module state is kept here.
 
 def utc_now() -> datetime:
-    """Internal helper for utc now."""
-    return datetime.now(timezone.utc)
+    """Return the shared current UTC clock used by Calendar domain operations."""
+    return _common_utc_now()
+
 
 def format_iso8601(value: datetime) -> str:
-    """Internal helper for format iso8601."""
-    return value.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    """Format a Calendar timestamp in canonical UTC second precision."""
+    return _format_utc_iso8601(value, timespec="seconds")
+
 
 def parse_iso8601(value: str) -> datetime:
-    """Internal helper for parse iso8601."""
-    normalized = value[:-1] + "+00:00" if value.endswith("Z") else value
+    """Parse a persisted Calendar timestamp and require an explicit UTC offset."""
     try:
-        parsed = datetime.fromisoformat(normalized)
-    except ValueError as exc:
+        return _parse_aware_datetime(value, require_utc=True)
+    except _DateTimeScopeError as exc:
         raise DataIntegrityError(f"Invalid UTC timestamp '{value}'.") from exc
-    if parsed.tzinfo is None or parsed.utcoffset() != timedelta(0):
-        raise DataIntegrityError(f"Non-UTC timestamp '{value}'.")
-    return parsed.astimezone(timezone.utc)
+
 
 def normalize_symbol(value: str) -> str:
     """Internal helper for normalize symbol."""
@@ -75,42 +81,41 @@ def validate_symbol(value: str) -> str:
     )
 
 def parse_time(value: str) -> Tuple[int, int]:
-    """Internal helper for parse time."""
-    if not re.fullmatch(TIME_RE, value):
-        raise CalendarInputError(f"Invalid time '{value}'. Expected HH:MM.")
-    hour, minute = (int(part) for part in value.split(":"))
-    if hour > 23 or minute > 59:
-        raise CalendarInputError(f"Invalid time '{value}'. Expected HH:MM.")
-    return hour, minute
+    """Validate HH:MM using the shared parser and preserve Calendar error semantics."""
+    try:
+        return _DateTimeScopeParser.parse_time_value(value)
+    except _DateTimeScopeError as exc:
+        raise CalendarInputError(str(exc)) from exc
+
 
 def parse_date(value: str) -> datetime:
-    """Internal helper for parse date."""
-    if not re.fullmatch(DATE_RE, value):
-        raise CalendarInputError(
-            f"Invalid date '{value}'. Expected YYYY.MM.DD."
-        )
+    """Validate YYYY.MM.DD using the shared parser."""
     try:
-        year, month, day = (int(part) for part in value.split("."))
-        return datetime(year, month, day, tzinfo=timezone.utc)
-    except ValueError as exc:
-        raise CalendarInputError(f"Invalid calendar date '{value}'.") from exc
+        return _DateTimeScopeParser.parse_date_value(value)
+    except _DateTimeScopeError as exc:
+        raise CalendarInputError(str(exc)) from exc
+
 
 def parse_point(value: str) -> Tuple[datetime, bool]:
-    """Internal helper for parse point."""
-    if "@" not in value:
-        return parse_date(value), False
-    date_part, time_part = value.split("@", 1)
-    base = parse_date(date_part)
-    hour, minute = parse_time(time_part)
-    return base.replace(hour=hour, minute=minute), True
+    """Parse a single date, date-time, or time-only point through the shared parser."""
+    try:
+        parsed_scope = _DateTimeScopeParser().parse(value)
+    except _DateTimeScopeError as exc:
+        raise CalendarInputError(str(exc)) from exc
+    if parsed_scope.kind not in {"DATE", "DATETIME", "TIME"} or parsed_scope.start is None:
+        raise CalendarInputError(f"'{value}' is not a single date/time point.")
+    return parsed_scope.start, parsed_scope.kind != "DATE"
+
 
 def resolve_scope_interval(scope: str) -> Tuple[datetime, datetime]:
-    """Calendar operation: resolve_scope_interval performs historical scope resolution."""
+    """Resolve a closed historical Calendar scope using the shared UTC parser."""
     if is_open_end_scope(scope):
         return resolve_open_end_scope(scope)
+    if is_open_start_scope(scope):
+        raise CalendarInputError(
+            "Open-start scope must be resolved against retained Calendar event history."
+        )
 
-    # Relative day scopes use Calendar's canonical UTC clock rather than the
-    # host-local date, so midnight boundaries remain deterministic.
     if scope in {"today", "tomorrow", "yesterday"}:
         today = utc_now().replace(hour=0, minute=0, second=0, microsecond=0)
         offsets = {"today": 0, "yesterday": -1, "tomorrow": 1}
@@ -118,40 +123,23 @@ def resolve_scope_interval(scope: str) -> Tuple[datetime, datetime]:
         return start, start + timedelta(days=1)
 
     if scope in {"current", "latest", "next", "prev", "news"}:
-        raise CalendarInputError("'" + scope + "' is not a historical scope.")
+        raise CalendarInputError(f"'{scope}' is not a historical scope.")
 
-    if scope in {"current day", "current week", "current month", "next day", "next week", "next month", "prev day", "prev week", "prev month"}:
+    if scope in {
+        "current day", "current week", "current month",
+        "next day", "next week", "next month",
+        "prev day", "prev week", "prev month",
+    }:
         return resolve_relative_scope_interval(scope)
 
-    if "@" in scope:
-        parts = scope.split("-", 1)
-        if len(parts) == 2:
-            start, start_is_point = parse_point(parts[0])
-            end, end_is_point = parse_point(parts[1])
-            if not start_is_point or not end_is_point or end <= start:
-                raise CalendarInputError(
-                    f"Invalid datetime range '{scope}'."
-                )
-            return start, end
-        point, _ = parse_point(scope)
-        return point, point + timedelta(minutes=1)
-
-    if "-" in scope:
-        parts = scope.split("-")
-        if len(parts) != 2:
-            raise CalendarInputError(
-                f"Invalid date range '{scope}'."
-            )
-        start = parse_date(parts[0])
-        end_date = parse_date(parts[1])
-        if end_date < start:
-            raise CalendarInputError(
-                f"Invalid date range '{scope}': end must not precede start."
-            )
-        return start, end_date + timedelta(days=1)
-
-    start = parse_date(scope)
-    return start, start + timedelta(days=1)
+    try:
+        parsed_scope = _DateTimeScopeParser().parse(scope)
+        start, end = parsed_scope.resolve_interval()
+    except _DateTimeScopeError as exc:
+        raise CalendarInputError(str(exc)) from exc
+    if start is None or end is None:
+        raise CalendarInputError(f"Scope '{scope}' requires domain-specific boundary resolution.")
+    return start, end
 
 
 def resolve_relative_scope_interval(scope: str, now: Optional[datetime] = None) -> Tuple[datetime, datetime]:
@@ -200,21 +188,16 @@ def is_open_end_scope(scope: str) -> bool:
 
 
 def resolve_open_end_scope(scope: str) -> Tuple[datetime, datetime]:
-    """Resolve START- to START through the current UTC time."""
-    if not is_open_end_scope(scope):
-        raise CalendarInputError(f"Invalid open-end range '{scope}'.")
-    endpoint = scope[:-1]
-    if "@" in endpoint:
-        date_part, time_part = endpoint.split("@", 1)
-        normalized_time = time_part.replace(".", ":", 1)
-        start, _ = parse_point(f"{date_part}@{normalized_time}")
-    else:
-        start = parse_date(endpoint)
-    end = utc_now()
-    if start >= end:
-        raise CalendarInputError(
-            f"Open-end range '{scope}' starts at or after the current UTC time."
-        )
+    """Resolve a positional START- scope through the current UTC time."""
+    try:
+        parsed_scope = _DateTimeScopeParser().parse(scope)
+        if not parsed_scope.open_end or parsed_scope.start is None:
+            raise _DateTimeScopeError("expected an open-end scope such as YYYY.MM.DD-")
+        start, end = parsed_scope.resolve_interval()
+    except _DateTimeScopeError as exc:
+        raise CalendarInputError(str(exc)) from exc
+    if start is None or end is None:
+        raise CalendarInputError(f"Invalid open-end scope '{scope}'.")
     return start, end
 
 
@@ -223,44 +206,32 @@ def resolve_open_start_scope(
     symbol: str,
     scope: str,
 ) -> Tuple[datetime, datetime]:
-    """Resolve an open-start range from the latest visible persisted event to END."""
-    if not is_open_start_scope(scope):
-        raise CalendarInputError(f"Invalid open-start range '{scope}'.")
+    """Resolve -END from latest visible stored event and the shared parser's end boundary."""
+    try:
+        parsed_scope = _DateTimeScopeParser().parse(scope)
+    except _DateTimeScopeError as exc:
+        raise CalendarInputError(str(exc)) from exc
+    if not parsed_scope.open_start or parsed_scope.end is None:
+        raise CalendarInputError(f"Invalid open-start scope '{scope}'.")
 
-    endpoint = scope[1:]
-    if not endpoint or endpoint.startswith("-"):
+    visible_events = filter_events_for_symbol(document["events"], symbol)
+    event_timestamps = [parse_iso8601(event["timestamp"]) for event in visible_events]
+    if not event_timestamps:
         raise CalendarInputError(
-            f"Invalid open-start range '{scope}'. Expected -YYYY.MM.DD or -YYYY.MM.DD@HH:MM."
+            f"No recorded Calendar event exists for {symbol}; an open-start scope requires retained history."
         )
 
-    if "@" in endpoint:
-        date_part, time_part = endpoint.split("@", 1)
-        normalized_time = time_part.replace(".", ":", 1)
-        point, _ = parse_point(f"{date_part}@{normalized_time}")
-        end = point + timedelta(minutes=1)
-    else:
-        end = parse_date(endpoint) + timedelta(days=1)
-
-    visible = filter_events_for_symbol(document["events"], symbol)
-    timestamps = [
-        parse_iso8601(event["timestamp"])
-        for event in visible
-    ]
-    if not timestamps:
-        raise CalendarInputError(
-            f"No recorded Calendar event exists for {symbol}; an open-start range requires retained history."
-        )
-
-    start = max(timestamps)
+    start = max(event_timestamps)
+    end = parsed_scope.end
     if end <= start:
         raise CalendarInputError(
-            f"Open-start range '{scope}' ends at or before the latest recorded event for {symbol}."
+            f"Open-start scope '{scope}' ends at or before the latest recorded event for {symbol}."
         )
     return start, end
 
 
 def parse_scope(scope: str) -> str:
-    """Calendar operation: parse_scope validates the canonical and open-start scope forms."""
+    """Validate a positional temporal scope or one of Calendar's named query scopes."""
     if scope in {
         "current", "latest", "next", "prev", "news",
         "today", "tomorrow", "yesterday",
@@ -271,34 +242,13 @@ def parse_scope(scope: str) -> str:
         if " " in scope:
             resolve_relative_scope_interval(scope)
         return scope
-    if is_open_start_scope(scope):
-        endpoint = scope[1:]
-        if not endpoint or endpoint.startswith("-"):
-            raise CalendarInputError(
-                f"Invalid open-start range '{scope}'. Expected -YYYY.MM.DD or -YYYY.MM.DD@HH:MM."
-            )
-        if "@" in endpoint:
-            date_part, time_part = endpoint.split("@", 1)
-            parse_date(date_part)
-            parse_time(time_part.replace(".", ":", 1))
-        else:
-            parse_date(endpoint)
-        return scope
-    if is_open_end_scope(scope):
-        endpoint = scope[:-1]
-        if not endpoint:
-            raise CalendarInputError(
-                f"Invalid open-end range '{scope}'. Expected YYYY.MM.DD- or YYYY.MM.DD@HH:MM-."
-            )
-        if "@" in endpoint:
-            date_part, time_part = endpoint.split("@", 1)
-            parse_date(date_part)
-            parse_time(time_part.replace(".", ":", 1))
-        else:
-            parse_date(endpoint)
-        return scope
-    resolve_scope_interval(scope)
+
+    try:
+        _DateTimeScopeParser().parse(scope)
+    except _DateTimeScopeError as exc:
+        raise CalendarInputError(str(exc)) from exc
     return scope
+
 
 def build_empty_calendar_document() -> Dict[str, Any]:
     """Internal helper for build empty calendar document."""

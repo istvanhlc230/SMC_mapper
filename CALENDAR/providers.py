@@ -15,6 +15,7 @@ from .config import (FOREXFACTORY_DETAIL_URL, FOREXFACTORY_URL, FX_CURRENCY_CODE
 from PROVIDERS.credentials import ProviderCredentialError, get_provider_api_key
 from .domain import format_iso8601, is_currency, is_fx_pair, normalize_symbol, parse_iso8601
 from .parsing import extract_days_payload, parse_calendar_days, parse_forexfactory_html_events
+from COMMON.http_client import HttpClient, HttpRequestError
 
 # Provider state is request-local: fetched payloads, normalized events, and Detail failures stay inside the active acquisition call.
 
@@ -263,23 +264,21 @@ def get_calendar_provider(name: str) -> CalendarProvider:
 
 
 def fetch_url(url: str) -> str:
-    """Internal helper for fetch url."""
-    request = urllib.request.Request(
-        url,
-        headers={
-            "User-Agent": USER_AGENT,
-            "Accept": "application/json,text/html;q=0.9,*/*;q=0.8",
-        },
-    )
+    """Fetch UTF-8 provider response text through the shared HTTP transport."""
     try:
-        with urllib.request.urlopen(request, timeout=HTTP_TIMEOUT) as response:
-            if response.status != 200:
-                raise ProviderError(f"HTTP {response.status}")
-            return response.read().decode("utf-8")
-    except urllib.error.HTTPError as exc:
-        raise ProviderError(f"HTTP {exc.code}") from exc
-    except (urllib.error.URLError, TimeoutError, UnicodeDecodeError, OSError) as exc:
+        return HttpClient.get(
+            url,
+            headers={
+                "User-Agent": USER_AGENT,
+                "Accept": "application/json,text/html;q=0.9,*/*;q=0.8",
+            },
+            timeout_seconds=HTTP_TIMEOUT,
+            response_format="text",
+            retries=1,
+        )
+    except HttpRequestError as exc:
         raise ProviderError(str(exc)) from exc
+
 
 def _forexfactory_date_token(value: datetime) -> str:
     """Internal helper for forexfactory date token."""

@@ -5,12 +5,12 @@ import contextlib
 import hashlib
 import json
 import os
-import tempfile
 from pathlib import Path
 from typing import Any, Dict
 
 from .config import DataIntegrityError
 from .domain import build_empty_calendar_document, validate_calendar_document
+from COMMON.atomic_file import atomic_write_text
 
 # PROJECT_ROOT — repository root used to derive the default Calendar data directory.
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -36,28 +36,18 @@ def load_calendar_document() -> Dict[str, Any]:
     return document
 
 def save_calendar_atomic(document: Dict[str, Any]) -> None:
-    """Atomically replace calendar.json with the supplied validated document."""
-    os.makedirs(DATA_ROOT, exist_ok=True)
-    temp_path = None
-    fd = None
+    """Serialize Calendar JSON and replace the destination through the shared atomic writer."""
+    serialized_document = json.dumps(document, indent=2, ensure_ascii=False)
     try:
-        fd, temp_path = tempfile.mkstemp(
-            prefix="calendar_", suffix=".tmp", dir=DATA_ROOT
+        atomic_write_text(
+            CALENDAR_FILE,
+            serialized_document,
+            prefix="calendar_",
+            retry_limit=1,
         )
-        with os.fdopen(fd, "w", encoding="utf-8") as handle:
-            fd = None
-            json.dump(document, handle, indent=2, ensure_ascii=False)
-            handle.flush()
-            os.fsync(handle.fileno())
-        os.replace(temp_path, CALENDAR_FILE)
-        temp_path = None
-    except Exception as exc:
+    except OSError as exc:
         raise DataIntegrityError(f"Atomic save failed: {exc}") from exc
-    finally:
-        if fd is not None:
-            os.close(fd)
-        if temp_path and os.path.exists(temp_path):
-            os.remove(temp_path)
+
 
 @contextlib.contextmanager
 def acquire_calendar_lock():
