@@ -25,6 +25,8 @@ Read the referenced documents in this order when the full methodology is require
 3. `03_structural_semantic_authority.md`
    - Shared Layer 3 Major Structural Semantic Authority
    - Major Structure ontology and structural qualification
+   - Conditional 38.2% retracement qualification through applicable immediate-HTF valid pullback
+   - Mandatory distinct-HTF/LTF mapping requirement and fail-closed unavailable-context contract
    - Confirmed Structural Swing / Protected Structural Extreme lifecycle
    - First-BOS bootstrap initialization, dedicated bootstrap-reversal lifecycle, and post-CHoCH first-BOS lifecycle boundary
    - Shared lifecycle invariants
@@ -94,7 +96,7 @@ This index deliberately does not restate methodology rules. Each canonical conce
 |---|---|
 | Candle-level observations | `01_micro_structure.md` |
 | Sequential / Minor Structure and Minor IDM formation | `02_minor_structure.md` |
-| Major Structure, Major IDM governance, retracement qualification, and structural lifecycle | `03_structural_semantic_authority.md` |
+| Major Structure, Major IDM governance, retracement qualification, mandatory MTF context, and structural lifecycle | `03_structural_semantic_authority.md` |
 | BOS classification and mechanics | `04_BOS_mechanics.md` |
 | CHoCH classification and mechanics | `05_CHOCH_mechanics.md` |
 | POI, OF/OB/RB, execution liquidity, and entry authorization | `06_execution.md` |
