@@ -26,7 +26,9 @@ Read the referenced documents in this order when the full methodology is require
    - Shared Layer 3 Major Structural Semantic Authority
    - Major Structure ontology and structural qualification
    - Conditional 38.2% retracement qualification through applicable immediate-HTF valid pullback
-   - Mandatory distinct-HTF/LTF mapping requirement and fail-closed unavailable-context contract
+   - Canonical HTF-valid-pullback ↔ complete LTF structure mapping, including IDM takeout followed by qualified BOS
+   - Dynamic W1-to-D1/H4 resolution using pullback size, extent, candle span/count, and volume/activity evidence
+   - Mandatory distinct-timeframe mapping requirement and fail-closed unavailable-context contract
    - Confirmed Structural Swing / Protected Structural Extreme lifecycle
    - First-BOS bootstrap initialization, dedicated bootstrap-reversal lifecycle, and post-CHoCH first-BOS lifecycle boundary
    - Shared lifecycle invariants
