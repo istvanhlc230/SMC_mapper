@@ -241,11 +241,14 @@ close_price
 total_volume
 orderflow_buy
 orderflow_sell
+tick_volume
+spread
+real_volume
 completion_hint
 provider_metadata
 ```
 
-Provider-specific fields terminate at this boundary.
+`total_volume`, `tick_volume`, `spread`, and `real_volume` have independent meanings. An adapter may populate a standardized field only when the provider explicitly supplies that semantic value; it must not infer tick/real volume from generic total volume or derive a spread from unrelated data. These standardized optional fields survive normalization and persistence. Provider-specific metadata terminates at this boundary.
 
 ## 3.3 Volume state
 
@@ -296,6 +299,8 @@ Rules:
 - preserve only price levels and quantities actually reported by the provider;
 - do not derive L2 size from `volume.total`, tick volume, OHLC, OHLC-derived estimates, or orderflow buy/sell;
 - the snapshot timestamp must include an explicit timezone and be normalized/displayed in UTC;
+- bid levels are ordered best-to-worst (descending price); ask levels are ordered best-to-worst (ascending price);
+- every present price/size must be a finite Decimal, and each size must be non-negative;
 - a historical `as_of` request must not be answered with a newer live-only snapshot;
 - an unsupported endpoint, unavailable snapshot, or snapshot with no usable levels produces no L2 table section and must not fail the candle request;
 - L2 data is not attached to historical candles or added to the existing machine CSV protocol;
@@ -324,7 +329,12 @@ class NormalizedCandle:
     low_price: Decimal
     close_price: Decimal
     volume: VolumeState
+    tick_volume: Decimal | None = None
+    spread: Decimal | None = None
+    real_volume: Decimal | None = None
 ```
+
+`tick_volume`, `spread`, and `real_volume` are optional and independent of `VolumeState.total` and observed orderflow. Preserve explicit provider values through persistence and machine CSV. They are empty in the machine protocol when unavailable. All present values must be finite and non-negative. Do not infer one field from another.
 
 ## 3.5 Timeframe state
 
@@ -1593,7 +1603,7 @@ The following serialized structure is the mapper-facing V1 market-data contract:
       }
     }
 
-Each completed candle contains `candle_id`, `timestamp`, `completion_time`, `open`, `high`, `low`, `close`, and the volume object defined in Section 3.8. Timestamp and completion_time are UTC ISO-8601 values. Persisted numeric price and volume values use the deterministic decimal-compatible string representation.
+Each completed candle contains `candle_id`, `timestamp`, `completion_time`, `open`, `high`, `low`, `close`, and the volume object defined in Section 3.8. It may also contain `tick_volume`, `spread`, and `real_volume` at the candle-record root when and only when the provider explicitly supplied those semantic fields. Omit each unavailable optional field; do not persist it as a fabricated zero or JSON null. Timestamp and completion_time are UTC ISO-8601 values. Persisted numeric price, volume, spread, and optional provider values use the deterministic decimal-compatible string representation.
 
 Exact logical candle example:
 
@@ -1606,6 +1616,9 @@ Exact logical candle example:
   "high": "1.17250",
   "low": "1.16800",
   "close": "1.17125",
+  "tick_volume": "125",
+  "spread": "0.00010",
+  "real_volume": "12400",
   "volume": {
     "total": "12345",
     "ohlc": {
@@ -1641,6 +1654,7 @@ A persisted Market Data document is valid only when all of the following hold:
 - each candle has UTC `timestamp` and `completion_time`;
 - `completion_time > timestamp`;
 - persisted numeric values use the approved Decimal string representation;
+- optional `tick_volume`, `spread`, and `real_volume`, when present, are finite non-negative Decimal strings; each absent field remains omitted;
 - availability bounds equal the first/last persisted completed candle timestamps, or both are null when `candles=[]`;
 - `current` never changes availability bounds;
 - `available_start` and `available_end` are coverage bounds, not proof of gapless history;
@@ -2486,6 +2500,9 @@ test_lse_fetch_range_partitions_calendar_windows
 test_lse_fetch_range_deduplicates_inclusive_date_boundaries
 test_lse_fetch_range_progresses_across_empty_market_days
 test_machine_csv_keeps_unavailable_optional_volume_fields_empty
+test_machine_csv_emits_explicit_tick_spread_and_real_volume_values
+test_explicit_optional_provider_volume_fields_survive_persistence_roundtrip
+test_persisted_optional_provider_volume_fields_reject_negative_values
 ```
 
 Provider-dependent tests must use provider test doubles/mocks; core tests must not require live provider access. Core normalization, merge, retention and persistence tests must not require live provider access.
