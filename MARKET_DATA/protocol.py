@@ -19,6 +19,9 @@ MACHINE_PROTOCOL_HEADER = (
     "tick_volume",
     "spread",
     "real_volume",
+    "volume_total",
+    "orderflow_buy",
+    "orderflow_sell",
     "completed",
 )
 
@@ -30,6 +33,25 @@ def _decimal_text(value: Decimal) -> str:
 
 def _machine_row(timeframe: str, candle: NormalizedCandle, completed: bool) -> list[str]:
     """Build one portable machine-protocol candle row."""
+    volume_total = ""
+    if candle.volume.has_total:
+        if candle.volume.total is None or not candle.volume.total.is_finite():
+            raise ValueError("volume.total is marked available but has no finite value")
+        volume_total = _decimal_text(candle.volume.total)
+
+    orderflow_buy = ""
+    orderflow_sell = ""
+    if candle.volume.has_orderflow:
+        if (
+            candle.volume.orderflow_buy is None
+            or candle.volume.orderflow_sell is None
+            or not candle.volume.orderflow_buy.is_finite()
+            or not candle.volume.orderflow_sell.is_finite()
+        ):
+            raise ValueError("orderflow must contain a complete finite buy/sell pair")
+        orderflow_buy = _decimal_text(candle.volume.orderflow_buy)
+        orderflow_sell = _decimal_text(candle.volume.orderflow_sell)
+
     return [
         timeframe,
         str(int(candle.timestamp.astimezone(timezone.utc).timestamp())),
@@ -40,6 +62,9 @@ def _machine_row(timeframe: str, candle: NormalizedCandle, completed: bool) -> l
         "",
         "",
         "",
+        volume_total,
+        orderflow_buy,
+        orderflow_sell,
         "1" if completed else "0",
     ]
 
