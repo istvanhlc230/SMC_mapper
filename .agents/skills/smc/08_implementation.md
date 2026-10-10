@@ -227,7 +227,9 @@ Under this project's automated Mapper/Monitor contract, a conformant mapping inv
 - Missing/equal/reversed HTF/LTF CLI configuration is an input error. If a valid configured pair is requested but only one timeframe series, required overlap, or the necessary HTF context is actually available, mark the dependent mapping/decision `UNAVAILABLE` with an explicit reason such as `HTF_CONTEXT_UNAVAILABLE`; do not downgrade to a single-timeframe result or fabricate a substitute series.
 - For an Outside Bar, aggregate OHLC proves both extremes were breached but does not prove which extreme occurred first. Unless lower-timeframe or equivalent independent evidence establishes the sequence, `INTRABAR_SEQUENCE_EVIDENCE = UNAVAILABLE`, and every dependent structural classification must remain unresolved/fail closed.
 
-This input contract does not allow a generic higher timeframe to be chosen arbitrarily. Structural qualification uses the applicable immediate Higher Timeframe determined by the canonical mapping context. The pairing examples in the structural authority are illustrative; absence of one example timeframe (for example 3MN) does not automatically make another arbitrary timeframe valid, but an applicable configured 1MN series may validate W1 structure when that is the established HTF context.
+This input contract does not allow a generic higher timeframe to be chosen arbitrarily. Structural qualification uses the applicable immediate Higher Timeframe determined by the canonical mapping context. The pairing examples in the structural authority are illustrative; absence of one example interval (for example the three-month 3MN series) does not automatically make another arbitrary timeframe valid. A configured one-month series may validate W1 structure when it is the established HTF context; in the Market Data contract, use its accepted monthly token `MN1` rather than assuming methodology notation `1MN` is a CLI token. Three-month input is valid only if Market Data explicitly supports that series.
+
+The configured `--htf`/`--ltf` pair does not provide a third timeframe above `--htf`. If a structural event within the configured HTF itself requires an even higher timeframe to qualify through the conditional 38.2%–below-50% path, keep that HTF event `HTF_CONTEXT_UNAVAILABLE` until the required series is provided. Do not promote it to confirmed HTF context, and do not use it to authorize dependent LTF POIs or entries. Unrelated HTF events with independently satisfied qualification gates remain usable.
 
 ## 46. Structural state machine
 
@@ -517,7 +519,7 @@ Regression tests must cover:
 - the complete lower-timeframe retracement is represented by exactly one candle-level valid HTF pullback; a partial/unrelated pullback or isolated wick breach does not qualify;
 - HTF inside-bar or invalid-pullback representation does not qualify;
 - absent required HTF history produces `HTF_CONTEXT_UNAVAILABLE`, not `HTF_VALID_PULLBACK = FALSE`;
-- the 1MN HTF may validate W1 structure when 1MN is the applicable immediate HTF context and 3MN is unavailable/not configured in that established hierarchy; pairing examples are not rigid lookup constants;
+- a monthly HTF may validate W1 structure when the monthly timeframe is the applicable immediate HTF context and a three-month series is not part of the established hierarchy; use the Market Data-defined `MN1` input token for monthly data, and do not assume `3MN` is supported;
 - single-timeframe-only inputs and equal HTF/LTF values are rejected; both distinct timeframes with `HTF > LTF` are required;
 - if an Outside Bar's internal sequence is not established by lower-timeframe or equivalent independent evidence, record `INTRABAR_SEQUENCE_EVIDENCE = UNAVAILABLE` and block dependent structural classification;
 - below `HTF_CONDITIONAL_THRESHOLD` does not qualify;
