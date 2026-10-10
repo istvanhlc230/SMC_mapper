@@ -43,7 +43,7 @@ market_data.py
 specifications/market_data_specification.md
 ~~~
 
-Mapper structural processing and Structures persistence:
+Mapper structural processing and per-invocation result output:
 ~~~text
 smc_mapper.py
 specifications/smc_mapper_specification.md
@@ -220,7 +220,7 @@ The Monitor's HTF/LTF configuration applies to each selected symbol for this pro
 
 ---
 
-# 2. PERSISTED INPUT CONTRACTS
+# 2. INPUT CONTRACTS
 
 ## 2.1 Mapper result STDOUT
 
@@ -769,7 +769,7 @@ Adding Yahoo-news warning severity requires a separate explicit Monitor specific
 
 The Monitor never calls a provider directly.
 
-The current reference price comes from persisted Market Data state.
+The current reference price comes from the current-candle row emitted by the Market Data process. The Monitor does not read Market Data's persistence JSON.
 
 V1 target-reached observation uses this single current reference price only. It does not infer intrabar touch order, high/low microsequence, or broker execution from OHLC.
 
@@ -782,7 +782,7 @@ latest current snapshot close on the analysis entry timeframe
 If no current snapshot exists:
 
 1. request a current refresh through the Market Data process;
-2. reload the persisted current snapshot;
+2. consume and validate the current-candle CSV row returned by the Market Data process;
 3. if a valid current reference remains unavailable, fail closed for target clearance and alerting.
 
 A stale completed candle close must not silently be relabeled as a live current reference where current reference is required.
@@ -813,7 +813,7 @@ def refresh_current_market_view(
 
 Current refresh must use the Market Data process boundary and consume the current CSV row.
 
-A current snapshot update never advances a persistent Mapper checkpoint.
+A current snapshot update does not trigger canonical Mapper processing unless a new completed entry-timeframe candle is also observed.
 
 ---
 
@@ -1375,7 +1375,7 @@ Canonical structure is never changed by re-evaluation.
 
 ---
 
-# 13. MULTI-SYMBOL AND MULTI-ANALYSIS ISOLATION
+# 13. MULTI-SYMBOL AND TIMEFRAME-CONFIGURATION ISOLATION
 
 ## 13.1 Symbol isolation
 
@@ -1383,18 +1383,13 @@ All runtime state and persisted external-data consumption are symbol-scoped.
 
 No symbol may receive another symbol's market-data, structural, target, or alert state.
 
-## 13.2 Analysis isolation
+## 13.2 Timeframe-configuration isolation
 
-Each analysis retains:
+Each monitored symbol has one explicitly configured timeframe combination per active Monitor process, with its own transient scheduling state, entry timeframe, canonical Mapper result, and target evaluation.
 
-- independent identity;
-- independent transient scheduling state;
-- independent entry timeframe;
-- independent schedule;
-- independent canonical structural state;
-- independent target evaluation.
+The runtime correlation key is derived from symbol and timeframe configuration only. It is transient and is never used to load or persist Mapper state. Sharing a Market Data cache does not imply shared canonical structural state.
 
-Sharing a market-data file does not imply shared structural state.
+To switch a symbol to a different timeframe configuration, stop the current Monitor process for that symbol before starting another. Concurrent Monitor processes for the same symbol are prohibited.
 
 ## 13.3 One active Monitor per symbol
 
@@ -1402,7 +1397,7 @@ Sharing a market-data file does not imply shared structural state.
 at most one active smc_monitor.py orchestration instance per symbol
 ~~~
 
-A single Monitor may handle multiple symbols, but concurrent workers must not create two independent writers/orchestrators for the same symbol.
+A single Monitor may handle multiple symbols, but concurrent workers must not create two independent orchestrators for the same symbol.
 
 The Monitor serializes orchestration per symbol.
 
