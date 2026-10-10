@@ -241,7 +241,7 @@ transient monitor state
 
 The Monitor never modifies last_processed_candle_time.
 
-Mapper remains the sole structures writer.
+Mapper remains the sole Structures writer. The Structures file is also the durable Mapper cache: Monitor may read already-persisted contents but must not cause remapping merely to answer a read-only request. Cache-management mutations remain Mapper-owned and are not performed by Monitor.
 
 ## 2.2 Market Data process output
 
