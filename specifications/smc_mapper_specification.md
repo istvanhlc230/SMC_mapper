@@ -1596,6 +1596,8 @@ At minimum, the finished mapper implementation must have focused tests covering:
 
 - CLI option parsing, including equal HTF/LTF single-timeframe mode and invalid HTF<LTF combinations;
 - positional-period parser coverage for date-only, date ranges with independently optional endpoint times, open-start, and open-end forms;
+- leading-hyphen positional PERIOD is accepted without requiring an extra `--` delimiter;
+- standalone `YYYY.MM.DD@HH:MM` is rejected because a time requires a range hyphen;
 - omitted period resolves to the full completed-candle history actually supplied by Market Data;
 - UTC parsing, interval-start-based half-open period eligibility, and rejection of a standalone date-time without a range hyphen;
 - rejection of current/in-progress candles as canonical input;
@@ -1614,6 +1616,7 @@ At minimum, the finished mapper implementation must have focused tests covering:
 - deterministic OHLC directional-volume aggregation and zero-volume behavior;
 - JSON/cleartext output modes are presentation-exclusive and do not alter canonical computation;
 - successful CLI STDOUT is exactly one JSON result by default, or one cleartext rendering with `--cleartext`; diagnostics go only to STDERR; failure emits no success result and returns a non-zero exit status;
+- Mapper never creates a Structures JSON file, cache, checkpoint, or other persistent output;
 - MQL-portable domain-state behavior independent of Python-specific collection mechanics;
 - absence of runtime/import dependencies on legacy modules and Market Data/Monitor modules;
 - canonical Layer-1-to-Layer-6 behavior is implemented in separate modules with the ownership defined in §14.1, and no layer module bypasses another layer's canonical prerequisite/state contract.
