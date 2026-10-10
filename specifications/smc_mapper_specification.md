@@ -409,56 +409,62 @@ One mapper execution analyzes one symbol.
 
 ---
 
-## 2.2 HTF
+## 2.2 Anchor timeframe
 
-Required. Exactly one valid timeframe must be supplied.
+Exactly one required timeframe is supplied through `--timeframe TF`. It selects the primary analysis/narrative/POI timeframe the user wants mapped; it does **not** limit the invocation to one candle series or assert that the anchor is always the complete structural representation timeframe.
 
-Example: `--htf H4`
+Example: `--timeframe W1`.
 
----
-
-## 2.3 LTF
-
-Required. Exactly one valid timeframe must be supplied.
-
-Example: `--ltf M15`
+The anchor token must be supported by the Market Data contract. Mapper must not maintain a duplicate hard-coded timeframe catalog.
 
 ---
 
-## 2.4 Timeframe relationship and analysis mode
+## 2.3 Automatic timeframe resolution
 
-The Mapper product contract supports one conformant automated analysis mode only:
+The Mapper/Monitor derive all supporting timeframes. The user does not manually provide `--htf` or `--ltf`.
 
-- `HTF_LTF`: both `--htf` and `--ltf` are explicitly supplied, the timeframes are distinct, and `HTF > LTF`.
+The resolver assigns separate semantic roles as required by the selected anchor and active structural context:
 
-Missing timeframe arguments, equal HTF/LTF values, or `HTF < LTF` are input errors. The Mapper must never silently swap, invent, or relabel timeframe inputs.
+- **Narrative / POI HTF:** the timeframe whose canonical structure and institutional POIs are the primary monitoring context; normally the selected anchor unless the canonical hierarchy requires a higher context to qualify a dependent event.
+- **Pullback-representation timeframe:** a candidate lower timeframe used to prove the complete structure representing a valid HTF pullback. It must expose the relevant valid pullback, verified extreme, active IDM, IDM takeout, and subsequent qualified `VALID_BOS` for the same move.
+- **Entry / monitoring LTF:** the timeframe used for context-gated CHoCH and entry confirmation after the applicable HTF POI activation/touch. It is selected automatically according to the canonical execution/context rules and supported market-data timeframes; it is not assumed to equal the pullback-representation timeframe.
+- **Additional context timeframe:** any higher or intermediate series required to resolve the applicable immediate-HTF gate, dynamic structure resolution, or unresolved candle ordering.
 
-Single-timeframe-only analysis is not a conformant mode under this project's Mapper input contract. A selected timeframe must never be treated as both HTF and LTF. This product rule does not claim that all discretionary single-timeframe True SMC analysis is source-prohibited.
+The resolver must disclose the chosen roles, requested series, selection rationale, and any unavailable dependency in the Mapper result. It must not relabel one series as multiple roles merely to satisfy a prerequisite.
 
-If both timeframe arguments are present but required historical coverage or context for either series is unavailable, the Mapper must preserve the dependent result as unavailable and fail closed; it must not downgrade the run to single-timeframe analysis.
+---
+
+## 2.4 Timeframe resolution and analysis mode
+
+The only public timeframe selector is `--timeframe TF`. The conformant analysis mode is automatic multi-timeframe (`AUTO_MTF`): one user-selected anchor with multiple internally resolved, distinct candle series as required by canonical SMC rules.
+
+The user interface accepts no explicit `--htf` or `--ltf` override. Those retired options are not aliases and must be rejected with a migration message directing the user to `--timeframe TF`.
+
+A run that actually processes only one timeframe is non-conformant. However, one CLI timeframe argument is the required interface and must not be confused with single-timeframe analysis. Missing derived series/history, unresolved event sequencing, or an undecidable mandatory timeframe dependency must remain explicitly unavailable (for example `HTF_CONTEXT_UNAVAILABLE` or `TF_RESOLUTION_UNAVAILABLE`) and fail closed; the engine must not silently skip the dependency.
 
 ---
 
 ## 2.5 Entry timeframe
 
-The LTF is the entry timeframe and drives Monitor runtime scheduling. Market Data may use incremental provider acquisition internally, but Mapper always recomputes from the full retained history supplied to the invocation.
+The entry/monitoring LTF is resolved automatically; it is not a user-supplied CLI parameter. Before the relevant HTF POI is touched, the Monitor must not acquire/request that entry-LTF history solely to observe CHoCH. On a canonically observed touch of an eligible HTF institutional POI, the runtime transitions to `ARMED_MONITORING_LTF`, acquires the resolved entry-LTF series, and begins point-in-time CHoCH/entry observation. The pullback-representation timeframe is an independent role and may already be needed before POI activation to qualify the HTF structural context.
 
-The entry timeframe determines completed-candle cadence for runtime scheduling and the requested processing/output boundaries. HTF remains the higher-context timeframe and is processed first as required to provide point-in-time context for the entry timeframe.
+Market Data may use incremental provider acquisition internally, but Mapper always recomputes from the full retained completed history supplied for that invocation. Scheduling follows the active role/phase: anchor and required structural-support series update the HTF map; after activation, the resolved entry LTF's completed-candle cadence can drive CHoCH/entry monitoring. Current/in-progress snapshots do not become canonical structural input.
 
 ---
 
 ## 2.6 HTF pullback validation
 
-HTF pullback validation is mandatory wherever required by canonical True SMC structural qualification. The primary HTF/entry-LTF relationship must use distinct timeframe series, but those two series do not necessarily exhaust the timeframe evidence required by the canonical pullback-representation rule. The pullback-representation timeframe is a separate semantic role and may coincide with the entry LTF or require an additional candidate series.
+HTF pullback validation is mandatory wherever required by canonical True SMC structural qualification. One `--timeframe` anchor is the only user-facing timeframe input; the Mapper/Monitor must derive all distinct supporting series required by the canonical hierarchy.
 
-### Primary two-timeframe request
+### Single-anchor request
 
-`--htf H4 --ltf M15`
+`python smc_mapper.py --symbol EURUSD --timeframe W1`
 
-- Establish H4 structural/POI context first.
-- Process M15 entry/monitoring evidence only against HTF facts already canonical at each LTF evaluation time, and activate POI-scoped LTF CHoCH/entry monitoring only after the HTF POI activation condition is met.
-- Never allow a later HTF event to retroactively reinterpret an earlier LTF event.
-- When canonical pullback qualification requires additional representation candidates, the Monitor/orchestrator must acquire and include the permitted supporting timeframe series in the input stream. The Mapper must not request provider data itself.
+- Establish the selected W1 narrative/POI context and the structural dependencies required to validate it.
+- Resolve whether D1 or H4 is required to expose the complete structure representing a W1 pullback. Do not require the user to choose between D1 and H4.
+- Do not acquire the automatically resolved entry/monitoring LTF merely to observe CHoCH before an eligible HTF institutional POI touch. Once that touch is canonically observed, transition to `ARMED_MONITORING_LTF`, acquire the entry series, and begin point-in-time CHoCH/entry monitoring.
+- Never allow a later higher-timeframe event to retroactively reinterpret an earlier lower-timeframe event.
+- When an automatic resolution requires an additional candidate or context series, the Monitor/orchestrator acquires and includes it in the relevant invocation's input stream. Mapper itself must never request provider data.
 
 ### Canonical pullback-representation hierarchy
 
@@ -480,14 +486,12 @@ The entry/monitoring LTF is not assumed to be the pullback-representation timefr
 
 Missing required series/history or unresolved intrabar sequence yields `HTF_CONTEXT_UNAVAILABLE`, not a negative proof. If all eligible candidate series are present but none demonstrates the required complete structure, the applicable HTF valid-pullback gate fails closed. A missing 3M series must not be fabricated or silently relabeled as `MN1`; an actual `MN1` series may validate W1 context only when it is explicitly the established applicable immediate-HTF context under the canonical conditional-gate rule.
 
-### Invalid primary-pair requests
+### Invalid timeframe requests
 
-- `--htf H4`: LTF is missing under the current public CLI contract.
-- `--ltf M15`: HTF is missing under the current public CLI contract.
-- `--htf H1 --ltf H1`: HTF and LTF are not distinct.
-- Any configuration where `HTF < LTF`: invalid primary timeframe relationship.
-
-Each invalid primary-pair configuration is rejected; no single-timeframe mode is inferred. The public CLI still requires both `--htf` and `--ltf` until its separate interface design is approved; this does not authorize the runtime to skip canonical supporting timeframe evidence.
+- Missing `--timeframe TF` is an input error.
+- Unsupported `TF` is rejected according to the Market Data timeframe contract.
+- Retired `--htf` and `--ltf` flags are rejected rather than interpreted as overrides or aliases.
+- If required automatically resolved series are not available from Market Data or cannot be acquired, the relevant dependent structural result remains unavailable; no reduced single-timeframe fallback is permitted.
 
 ---
 
@@ -528,7 +532,7 @@ Malformed dates/times, impossible dates, invalid 24-hour times, unsupported seco
 
 No separate Mapper configuration file is required. Mapper behavior is controlled by CLI parameters, explicit defaults, Market Data machine-output metadata/candle records, and the canonical SMC skill. Provider configuration and retained candle storage belong to Market Data; Mapper never reads its private JSON file.
 
-Timeframe selection requires both `--htf` and `--ltf`; HTF must be strictly higher than LTF. The Mapper must reject missing, equal, or reversed pairs. Timeframe catalog and duration ownership remain with the Market Data contract; Mapper must not introduce a second hard-coded `SUPPORTED_TIMEFRAMES` list.
+The only public timeframe input is the required `--timeframe TF` anchor. Mapper automatically resolves the distinct narrative/context, pullback-representation, and entry/monitoring timeframe roles required by canonical SMC semantics. Market Data owns timeframe tokens and provider support; Mapper must not introduce a second hard-coded `SUPPORTED_TIMEFRAMES` list or accept explicit `--htf`/`--ltf` overrides.
 
 Volume analysis uses `--volume-method {NONE,OHLC,ORDERFLOW,BOTH}`, default `BOTH`. Genuine orderflow and OHLC-derived directional-volume analytics remain separate branches. If only one is available, use that branch; if neither is available, produce no POI volume analytics.
 
@@ -540,7 +544,7 @@ Every documented CLI option must be parsed, validated, applied, and documented i
 
 ```text
 Usage:
-  python smc_mapper.py --symbol SYMBOL --htf HTF --ltf LTF [PERIOD]
+  python smc_mapper.py --symbol SYMBOL --timeframe TF [PERIOD]
                        [--history-no N]
                        [--volume-method {NONE,OHLC,ORDERFLOW,BOTH}]
                        [--cleartext] [--debug] [--help]
@@ -549,12 +553,11 @@ Options:
   --symbol SYMBOL
       Required instrument symbol.
 
-  --htf HTF
-      Required Higher Timeframe. Must be strictly higher than --ltf.
-
-  --ltf LTF
-      Required lower/entry timeframe. Both --htf and --ltf must be supplied
-      and must identify distinct timeframes. Single-timeframe mode is invalid.
+  --timeframe TF
+      Required anchor timeframe for the requested analysis/POI context.
+      All supporting context, pullback-representation, and entry/monitoring
+      timeframes are resolved automatically from canonical SMC rules.
+      One input timeframe does not mean single-timeframe processing.
 
   PERIOD
       Optional positional UTC scope. Supports YYYY.MM.DD,
@@ -603,7 +606,7 @@ The Monitor/orchestrator must request the full retained Market Data history thro
 Example process pipe:
 
 ```text
-python market_data.py --symbol SYMBOL --timeframes HTF LTF --range MARKET_DATA_SCOPE | python smc_mapper.py --symbol SYMBOL --htf HTF --ltf LTF [PERIOD]
+python market_data.py SYMBOL --timeframes RESOLVED_TF_1 RESOLVED_TF_2 ... MARKET_DATA_SCOPE --table? | python smc_mapper.py --symbol SYMBOL --timeframe TF [PERIOD]
 ```
 
 Market Data output must include all retained completed candles through the Mapper's requested end, not just the visible output window; use the Market Data open-start `--range -END` form for this full-history result. Market Data's `--range` is not passed to Mapper as a flag. The Monitor must pass the primary timeframe selection explicitly and include the permitted candidate series required by canonical pullback-representation resolution; it must not discover timeframe configuration from a Structures file.
@@ -616,7 +619,7 @@ Each Mapper invocation is independent. There is no persistent analysis identity,
 
 The result identifies the invocation by symbol, normalized timeframe configuration, normalized requested period, actual available coverage, and processing/output boundaries. Any optional correlation identifier is output metadata only and must not load or mutate state.
 
-The only conformant timeframe model is `HTF_LTF`: both timeframes are supplied, HTF is strictly higher than LTF, and LTF is the entry timeframe.
+The only conformant public timeframe model is `AUTO_MTF`: the user supplies one required `--timeframe TF` anchor, and the resolver identifies all required context, pullback-representation, and entry/monitoring timeframe roles. These roles use distinct series where canonical semantics require distinct evidence; entry/monitoring LTF is not automatically identical to the pullback-representation timeframe.
 
 ## 3.2 Per-run structural state
 
@@ -1563,14 +1566,14 @@ The global developer-agent naming, portability, prompt-efficiency, and validatio
 
 At minimum, the finished mapper implementation must have focused tests covering:
 
-- CLI option parsing requires both HTF and LTF, rejects equal timeframes, and rejects invalid HTF<LTF combinations;
+- CLI parsing requires one `--timeframe TF` anchor, rejects missing/unsupported TF, and rejects retired `--htf`/`--ltf` flags;
 - positional-period parser coverage for date-only, date ranges with independently optional endpoint times, open-start, and open-end forms;
 - leading-hyphen positional PERIOD is accepted without requiring an extra `--` delimiter;
 - standalone `YYYY.MM.DD@HH:MM` is rejected because a time requires a range hyphen;
 - omitted period resolves to the full completed-candle history actually supplied by Market Data;
 - UTC parsing, interval-start-based half-open period eligibility, and rejection of a standalone date-time without a range hyphen;
 - rejection of current/in-progress candles as canonical input;
-- independent HTF/LTF ranges and HTF_CONTEXT_UNAVAILABLE behavior;
+- independent coverage for the automatically resolved anchor, required context, pullback-representation, and entry/monitoring series; `HTF_CONTEXT_UNAVAILABLE` and `TF_RESOLUTION_UNAVAILABLE` behavior;
 - 38.2%–below-50% qualification only when the mapped pullback is represented by one coherent HTF valid-pullback event and the corresponding lower-timeframe complete structure includes IDM takeout followed by qualified `VALID_BOS`; this is not a single-candle test;
 - rejection of a bare wick/body break, missing IDM takeout, invalid BOS, or incomplete structure as proof of a valid HTF pullback;
 - dynamic W1 resolution chooses D1 when a large/extended pullback has a complete, clear D1 structure; chooses H4 when a small/shallow pullback cannot form the complete structure at D1 resolution; does not use invented numeric thresholds or a fixed one-to-one lookup table;
@@ -1585,7 +1588,7 @@ At minimum, the finished mapper implementation must have focused tests covering:
 - full recomputation from supplied history yields deterministic output;
 - historical candle corrections are reflected in a fresh invocation without reading prior Mapper output;
 - insufficient warm-up/context coverage fails closed;
-- two-timeframe HTF/LTF overlap is handled by point-in-time completion rules without duplicate events within a single invocation;
+- all automatically resolved timeframe overlaps are handled by point-in-time completion rules without duplicate events within a single invocation;
 - deterministic Dealing Range identity/history reconciliation and history_no retention;
 - canonical POI lifecycle pass-through without introducing mapper-specific lifecycle states;
 - POI volume provenance and branch separation for NONE/OHLC/ORDERFLOW/BOTH;
