@@ -148,12 +148,12 @@ The Monitor automatically resolves the symbol directory from the common data roo
 
 ## 1.3 --htf and --ltf
 
-The Monitor accepts the same timeframe selection semantics as Mapper:
+The Monitor requires both `--htf` and `--ltf` for a conformant True SMC analysis:
 
-- at least one of `--htf` or `--ltf` is required;
-- if both are supplied and differ, HTF must be strictly higher than LTF;
-- if both are equal, use single-timeframe mode and do not treat that timeframe as its own HTF;
-- the same configuration applies independently to every selected symbol;
+- both must be supplied and must identify distinct timeframes;
+- HTF must be strictly higher than LTF;
+- missing, equal, or reversed timeframe pairs are input errors; there is no single-timeframe mode;
+- the same valid configuration applies independently to every selected symbol;
 - a different timeframe configuration requires a separate Monitor process;
 - these flags configure each fresh Mapper invocation and are not loaded from a file.
 
@@ -216,7 +216,7 @@ class MonitorRequest:
     debug: bool
 ~~~
 
-The Monitor's HTF/LTF configuration applies to each selected symbol for this process invocation. At least one timeframe is required; when both are supplied, HTF must be strictly higher. Equal HTF/LTF values resolve to single-timeframe mode. To monitor a different timeframe configuration, run a separate Monitor instance. The Monitor does not infer configuration from persisted analysis files and does not expose a data-path CLI option.
+The Monitor's HTF/LTF configuration applies to each selected symbol for this process invocation. Both timeframes are required, they must be distinct, and HTF must be strictly higher than LTF. Missing or equal timeframes are rejected; single-timeframe mode is not conformant. To monitor a different valid timeframe configuration, run a separate Monitor instance. The Monitor does not infer configuration from persisted analysis files and does not expose a data-path CLI option.
 
 ---
 
@@ -378,7 +378,7 @@ class MarketDataUpdatePlan:
 Plan invariants:
 
 - one plan belongs to one symbol and the Monitor's explicit timeframe configuration;
-- `timeframes` contains exactly the selected timeframe set: one timeframe in single-timeframe mode or both HTF and LTF in two-timeframe mode;
+- `timeframes` contains exactly the two distinct selected timeframes, HTF and LTF, with HTF strictly higher than LTF;
 - `last_closed_only=True` is a latest-completed-candle probe and requires null range boundaries;
 - current/in-progress snapshots are handled by the separate current-snapshot path;
 - no provider-specific acquisition logic belongs in the Monitor.
@@ -389,7 +389,7 @@ Planning rules:
 - the Monitor uses returned completed-candle coverage to determine whether a fresh Mapper run is due;
 - every Mapper invocation receives the full retained completed-candle history through its resolved end boundary, not merely the requested output period;
 - to return that history, the Monitor uses Market Data's open-start `--range -END` output scope; when retained data exists, Market Data fetches only missing coverage after `available_end` and emits the full retained history from `available_start`;
-- in two-timeframe mode, the stream includes all HTF/LTF overlap needed for point-in-time context;
+- the stream includes both HTF and LTF plus all overlap needed for point-in-time context;
 - `-END` historical scopes resolve from each timeframe's earliest retained completed candle, not its latest candle;
 - no plan uses a Mapper checkpoint; no durable Mapper checkpoint exists.
 
