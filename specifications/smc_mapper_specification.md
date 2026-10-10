@@ -57,7 +57,6 @@ The optional positional `PERIOD` grammar is:
 
 - `YYYY.MM.DD` — the full UTC calendar day;
 - `YYYY.MM.DD-YYYY.MM.DD` — both endpoint dates inclusive, represented as a half-open UTC interval;
-- `YYYY.MM.DD-YYYY.MM.DD` — inclusive full-day range;
 - `YYYY.MM.DD[@HH:MM]-YYYY.MM.DD[@HH:MM]` — explicit range; each endpoint may independently include a time;
 - `YYYY.MM.DD[@HH:MM]-` — from the date's midnight or specified UTC minute through the current UTC time;
 - `-YYYY.MM.DD[@HH:MM]` — from the earliest completed candle retained in the Market Data cache through the specified UTC day/minute.
@@ -615,7 +614,7 @@ Every non-help invocation reads one complete machine-readable Market Data CSV st
 
 ### Stateless execution and output contract
 
-Mapper is a stateless computation component. It has no Structures JSON file, structural cache, analysis registry, checkpoint, incremental-resume mode, query/list/delete mode, or historical cache-update mode. Every invocation reconstructs canonical state from the validated supplied candles and required warm-up/context history.
+Mapper is a stateless computation component. It has no Structures JSON file, structural cache, analysis registry, checkpoint, incremental-resume mode, query/list/delete mode, or historical cache-update mode. Every invocation reconstructs canonical state from all validated retained completed candles supplied through the requested end.
 
 Default STDOUT contains exactly one complete JSON document for the current invocation. It includes symbol, timeframe configuration, normalized requested period, actual per-timeframe coverage, canonical processing coverage, requested output window, canonical structural results, and relevant provenance. It is generated from the validated in-memory result; no file is persisted or re-read. STDOUT contains no progress text, banners, diagnostics, or partial JSON.
 
