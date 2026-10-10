@@ -809,13 +809,12 @@ jobs:
               operations.refresh_calendar_scope = original_refresh_scope
               storage.load_calendar_document = original_load
 
-          # current is an active-event lookup; refresh is not valid for it.
-          try:
-              calendar_cli.parse_calendar_cli_request(["EURUSD", "current", "refresh"])
-          except calendar.CalendarInputError:
-              pass
-          else:
-              raise AssertionError("refresh must be rejected for current")
+          # current refresh is explicitly supported and requests reacquisition.
+          current_refresh = calendar_cli.parse_calendar_cli_request(
+              ["EURUSD", "current", "refresh"]
+          )
+          assert current_refresh["scope"] == "current"
+          assert current_refresh["refresh"] is True
 
           # A rescheduled event that was visible in the logical refresh scope
           # must remain in the CLI result by stable provider ID even after its
