@@ -57,14 +57,14 @@ The optional positional `PERIOD` grammar is:
 
 - `YYYY.MM.DD` — the full UTC calendar day;
 - `YYYY.MM.DD-YYYY.MM.DD` — both endpoint dates inclusive, represented as a half-open UTC interval;
-- `YYYY.MM.DD@HH:MM` — the specified UTC minute;
-- `YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM` — an explicit half-open UTC interval;
-- `YYYY.MM.DD@HH:MM-` — from the specified UTC minute through the current UTC time;
-- `-YYYY.MM.DD` or `-YYYY.MM.DD@HH:MM` — from the earliest completed candle retained in the Market Data cache through the specified UTC day/minute.
+- `YYYY.MM.DD-YYYY.MM.DD` — inclusive full-day range;
+- `YYYY.MM.DD[@HH:MM]-YYYY.MM.DD[@HH:MM]` — explicit range; each endpoint may independently include a time;
+- `YYYY.MM.DD[@HH:MM]-` — from the date's midnight or specified UTC minute through the current UTC time;
+- `-YYYY.MM.DD[@HH:MM]` — from the earliest completed candle retained in the Market Data cache through the specified UTC day/minute.
 
 If PERIOD is omitted, analyze all completed history supplied by Market Data, from the earliest available candle through the latest completed candle.
 
-Date-only starts resolve to 00:00 UTC. Date-only ends resolve to the exclusive boundary at 00:00 UTC on the day after the named date. A single `YYYY.MM.DD@HH:MM` point represents one UTC minute; it does not mean “from this time to now”—the trailing hyphen is required. Only `HH:MM` is accepted; seconds, timezone suffixes, and machine-local timezone interpretation are rejected. For an open-end period, capture current UTC once at invocation start and use the same instant across all timeframes. Future starts and reversed/empty ranges are rejected.
+Date-only starts resolve to 00:00 UTC. Date-only ends resolve to the exclusive boundary at 00:00 UTC on the day after the named date. A time may appear only as an endpoint of a range; a standalone date-time without a hyphen is invalid. A date-only scope without a hyphen means the full UTC day. A trailing hyphen means from the start date/time to now. Only `HH:MM` is accepted; seconds, timezone suffixes, and machine-local timezone interpretation are rejected. For an open-end period, capture current UTC once at invocation start and use the same instant across all timeframes. Future starts and reversed/empty ranges are rejected.
 
 Period selection uses candle interval-start timestamps with half-open semantics: `start <= candle.timestamp < end`. Completion status is checked separately. Open-start selection uses each timeframe's earliest retained completed candle (`available_start`), not its latest candle. HTF and LTF may therefore have different earliest retained boundaries.
 
@@ -530,13 +530,12 @@ The CLI accepts one optional positional `PERIOD` argument. The `--starttime`, `-
 | omitted | all completed candle history supplied by Market Data |
 | `YYYY.MM.DD` | full UTC day, `[00:00, next day 00:00)` |
 | `YYYY.MM.DD-YYYY.MM.DD` | inclusive endpoint dates, represented as a half-open UTC interval |
-| `YYYY.MM.DD@HH:MM` | exact UTC minute, `[point, point + 1 minute)` |
-| `YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM` | explicit half-open UTC interval |
-| `YYYY.MM.DD@HH:MM-` | specified UTC minute through the current UTC time captured at invocation start |
-| `-YYYY.MM.DD` | earliest retained completed candle through the exclusive end of the specified UTC day |
-| `-YYYY.MM.DD@HH:MM` | earliest retained completed candle through the exclusive end of the specified UTC minute |
+| `YYYY.MM.DD-YYYY.MM.DD` | inclusive full-day range |
+| `YYYY.MM.DD[@HH:MM]-YYYY.MM.DD[@HH:MM]` | explicit half-open UTC interval; time is optional independently on either endpoint |
+| `YYYY.MM.DD[@HH:MM]-` | start date/time through the current UTC time captured at invocation start |
+| `-YYYY.MM.DD[@HH:MM]` | earliest retained completed candle through the exclusive end of the specified UTC day/minute |
 
-The canonical date spelling is `YYYY.MM.DD` and time spelling is `HH:MM`. All values are UTC. Seconds, timezone suffixes, and machine-local timezone interpretation are not accepted.
+The canonical date spelling is `YYYY.MM.DD` and time spelling is `HH:MM`. Time is optional on each explicit range endpoint. All values are UTC. Seconds, timezone suffixes, and machine-local timezone interpretation are not accepted. The parser must recognize the leading-hyphen `-YYYY.MM.DD[@HH:MM]` expression as the positional PERIOD, not misinterpret it as an unknown option; users must not need an extra `--` delimiter.
 
 For open-start periods, resolve the earliest retained completed candle separately for each timeframe from its `available_start`; the end boundary remains explicit. For an open-end period, capture current UTC once at invocation start and use that fixed instant for all timeframe groups. Reject future starts and reversed/empty intervals.
 
@@ -637,9 +636,8 @@ Options:
 
   PERIOD
       Optional positional UTC scope. Supports YYYY.MM.DD,
-      YYYY.MM.DD-YYYY.MM.DD, YYYY.MM.DD@HH:MM,
-      YYYY.MM.DD@HH:MM-YYYY.MM.DD@HH:MM, YYYY.MM.DD@HH:MM-,
-      -YYYY.MM.DD, and -YYYY.MM.DD@HH:MM. Omission means all completed
+      YYYY.MM.DD-YYYY.MM.DD, YYYY.MM.DD-YYYY.MM.DD, YYYY.MM.DD[@HH:MM]-YYYY.MM.DD[@HH:MM],
+      YYYY.MM.DD[@HH:MM]-, and -YYYY.MM.DD[@HH:MM]. Omission means all completed
       history supplied by Market Data.
 
   --history-no N
@@ -1645,9 +1643,9 @@ The global developer-agent naming, portability, prompt-efficiency, and validatio
 At minimum, the finished mapper implementation must have focused tests covering:
 
 - CLI option parsing, including equal HTF/LTF single-timeframe mode and invalid HTF<LTF combinations;
-- positional-period parser coverage for date-only, date-range, exact-minute, open-start, and open-end forms;
+- positional-period parser coverage for date-only, date ranges with independently optional endpoint times, open-start, and open-end forms;
 - omitted period resolves to the full completed-candle history actually supplied by Market Data;
-- UTC parsing and interval-start-based half-open period eligibility;
+- UTC parsing, interval-start-based half-open period eligibility, and rejection of a standalone date-time without a range hyphen;
 - rejection of current/in-progress candles as canonical input;
 - independent HTF/LTF ranges and HTF_CONTEXT_UNAVAILABLE behavior;
 - point-in-time HTF context, proving later HTF events do not reinterpret earlier LTF events;
