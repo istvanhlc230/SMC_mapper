@@ -16,7 +16,7 @@ from .config import HELP_TEXT, CalendarInputError, DataIntegrityError
 def execute_calendar_query(
     symbol: str,
     scope: str,
-    cleartext: bool = False,
+    table: bool = False,
     debug: bool = False,
     refresh: bool = False,
 ) -> int:
@@ -64,13 +64,13 @@ def execute_calendar_query(
             else:
                 status = "OK" if events else "NO_RELEVANT_EVENT"
 
-            if cleartext:
+            if table:
                 presentation.output_query_result(
                     status,
                     symbol,
                     events,
                     refresh_result["provider_results"],
-                    cleartext=True,
+                    table=True,
                 )
                 print(
                     f"REFRESH | added={refresh_result['summary']['added']} "
@@ -95,7 +95,7 @@ def execute_calendar_query(
                 document["events"], symbol, domain.utc_now()
             )
             status = "OK" if events else "NO_CURRENT_EVENT"
-            presentation.output_query_result(status, symbol, events, [], cleartext)
+            presentation.output_query_result(status, symbol, events, [], table)
             return 0
 
         if scope == "latest":
@@ -103,7 +103,7 @@ def execute_calendar_query(
                 document["events"], symbol, domain.utc_now()
             )
             status = "OK" if events else "NO_LATEST_EVENT"
-            presentation.output_query_result(status, symbol, events, [], cleartext)
+            presentation.output_query_result(status, symbol, events, [], table)
             return 0
 
         if scope == "next":
@@ -111,7 +111,7 @@ def execute_calendar_query(
                 document["events"], symbol, domain.utc_now()
             )
             status = "OK" if events else "NO_NEXT_EVENT"
-            presentation.output_query_result(status, symbol, events, [], cleartext)
+            presentation.output_query_result(status, symbol, events, [], table)
             return 0
 
         if scope == "prev":
@@ -119,7 +119,7 @@ def execute_calendar_query(
                 document["events"], symbol, domain.utc_now()
             )
             status = "OK" if events else "NO_PREV_EVENT"
-            presentation.output_query_result(status, symbol, events, [], cleartext)
+            presentation.output_query_result(status, symbol, events, [], table)
             return 0
 
         if scope == "news":
@@ -127,7 +127,7 @@ def execute_calendar_query(
                 document["events"], symbol, domain.utc_now()
             )
             status = "NEWS_ACTIVE" if events else "NO_ACTIVE_NEWS"
-            presentation.output_query_result(status, symbol, events, [], cleartext)
+            presentation.output_query_result(status, symbol, events, [], table)
             return 0
 
         if scope in {
@@ -139,7 +139,7 @@ def execute_calendar_query(
                 document["events"], symbol, scope
             )
             status = "OK" if events else "NO_RELEVANT_EVENT"
-            presentation.output_query_result(status, symbol, events, [], cleartext)
+            presentation.output_query_result(status, symbol, events, [], table)
             return 0
 
         if domain.is_open_end_scope(scope):
@@ -156,7 +156,7 @@ def execute_calendar_query(
                 symbol,
                 events,
                 [],
-                cleartext,
+                table,
             )
             return 0
 
@@ -175,14 +175,14 @@ def execute_calendar_query(
                 symbol,
                 events,
                 [],
-                cleartext,
+                table,
             )
             return 0
 
         if scope == "last-update":
             updates = domain.query_last_update(document, symbol)
             status = "OK" if any(item["last_successful_at"] for item in updates) else "NO_LAST_UPDATE"
-            if cleartext:
+            if table:
                 print(f"CALENDAR RESULT | {status} | {symbol}")
                 for item in updates:
                     print(
@@ -239,7 +239,7 @@ def execute_calendar_query(
             symbol,
             events,
             acquisition["provider_results"],
-            cleartext,
+            table,
         )
         return 0 if status != "UNAVAILABLE" else 2
 def execute_calendar_delete(
@@ -307,10 +307,10 @@ def parse_calendar_cli_request(cli_arguments: List[str]) -> Dict[str, Any]:
             "--date, --time, and --range are no longer supported."
         )
 
-    cleartext = "--cleartext" in cli_arguments
+    table = "--table" in cli_arguments
     debug = "--debug" in cli_arguments
     last_update = "--last-update" in cli_arguments
-    recognized_flags = {"--cleartext", "--debug", "--last-update"}
+    recognized_flags = {"--table", "--debug", "--last-update"}
     positional: List[str] = []
     for argument in cli_arguments:
         if argument in recognized_flags:
@@ -331,7 +331,7 @@ def parse_calendar_cli_request(cli_arguments: List[str]) -> Dict[str, Any]:
             "operation": "LAST_UPDATE",
             "symbol": domain.validate_symbol(positional[0]),
             "scope": None,
-            "cleartext": cleartext,
+            "table": table,
             "debug": debug,
             "refresh": False,
         }
@@ -346,14 +346,14 @@ def parse_calendar_cli_request(cli_arguments: List[str]) -> Dict[str, Any]:
     if positional[0] == "delete":
         if refresh:
             raise CalendarInputError("refresh is not valid for delete.")
-        if cleartext:
-            raise CalendarInputError("--cleartext is not valid for delete.")
+        if table:
+            raise CalendarInputError("--table is not valid for delete.")
         if len(positional) == 1:
             return {
                 "operation": "DELETE",
                 "symbol": None,
                 "scope": None,
-                "cleartext": False,
+                "table": False,
                 "debug": debug,
                 "refresh": False,
             }
@@ -377,7 +377,7 @@ def parse_calendar_cli_request(cli_arguments: List[str]) -> Dict[str, Any]:
             "operation": "DELETE",
             "symbol": symbol,
             "scope": scope,
-            "cleartext": False,
+            "table": False,
             "debug": debug,
             "refresh": False,
         }
@@ -397,7 +397,7 @@ def parse_calendar_cli_request(cli_arguments: List[str]) -> Dict[str, Any]:
         "operation": "QUERY",
         "symbol": symbol,
         "scope": scope,
-        "cleartext": cleartext,
+        "table": table,
         "debug": debug,
         "refresh": refresh,
     }
@@ -425,7 +425,7 @@ def execute_calendar_cli() -> int:
                 document = storage.load_calendar_document()
             updates = domain.query_last_update(document, request["symbol"])
             status = "OK" if any(item["last_successful_at"] for item in updates) else "NO_LAST_UPDATE"
-            if request["cleartext"]:
+            if request["table"]:
                 print(f"CALENDAR RESULT | {status} | {request['symbol']}")
                 for item in updates:
                     print(f"PROVIDER | {item['provider']} | {item['last_successful_at'] or 'N/A'}")
@@ -439,7 +439,7 @@ def execute_calendar_cli() -> int:
         return execute_calendar_query(
             request["symbol"],
             request["scope"],
-            request["cleartext"],
+            request["table"],
             debug=debug,
             refresh=request.get("refresh", False),
         )
