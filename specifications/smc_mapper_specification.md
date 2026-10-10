@@ -212,7 +212,7 @@ The canonical engine receives an already ordered series.
 
 Only completed candles may enter canonical analysis.
 
-A candle is considered completed only after its canonical timeframe interval has closed and the normalized provider/completion contract confirms that closure. Every persisted normalized candle carries a UTC `completion_time` representing that canonical interval-close boundary. The mapper uses `completion_time` for explicit end-time eligibility; timestamp alone is not sufficient evidence of completion.
+A candle is considered completed only after its canonical timeframe interval has closed and the normalized provider/completion contract confirms that closure. Every persisted normalized candle carries a UTC `completion_time` representing that canonical interval-close boundary. Mapper uses the candle interval-start `timestamp` for positional-period membership and validates `completed` separately; `completion_time` is used to exclude candles that have not yet closed, not as the period-range coordinate.
 
 The mapper must use the candle's canonical completion boundary when deciding whether it is eligible for an explicit analysis end time. The candle timestamp is not by itself sufficient evidence of completion.
 
@@ -707,7 +707,7 @@ Canonical structures, lifecycle state, Dealing Range state/history, IDM provenan
 
 The Market Data cache remains the only persistent candle-history source in this data path. Mapper receives its machine-readable candle stream and does not read Market Data's private JSON file.
 
-# 4. DATA COVERAGE, BOOTSTRAP, AND RESUME PLANNING
+# 4. DATA COVERAGE, BOOTSTRAP, AND WARM-UP PLANNING
 
 ## 4.1 Independent HTF/LTF feed ranges
 
@@ -1397,7 +1397,7 @@ Module responsibilities:
 | `layer5_choch.py` | Implement only canonical Layer-5 CHoCH mechanics and tested-level provenance rules. |
 | `layer6_execution_poi.py` | Implement only canonical Layer-6 POI/OF/OB/RB, mitigation, lifecycle, and execution-eligibility semantics. |
 | `htf_ltf_synchronization.py` | Synchronize independent timeframe streams and expose only point-in-time HTF context to LTF processing. |
-| `dealing_range_history.py` | Reconcile mapper-owned Dealing Range lifecycle records and apply symbol-configured storage retention without changing canonical state. |
+| `dealing_range_history.py` | Reconcile in-memory Dealing Range lifecycle records and apply the per-invocation output-history limit without changing canonical state. |
 | `volume_analytics.py` | Calculate optional POI-scoped OHLC/orderflow analytics after canonical POI resolution; never feed results back into structure. |
 | `processor.py` | Orchestrate chronological candle processing and cross-layer state flow; it must not redefine layer semantics. |
 | `output.py` | Validate and serialize the per-invocation result as JSON or cleartext; performs no file I/O. |
@@ -1590,7 +1590,7 @@ This function is downstream of canonical POI formation and lifecycle. It cannot 
 Owner modules:
 
 - `SMC_MAPPER/cli.py` owns `main(argv) -> exit_status`: parse/validate the CLI request, read the supplied machine protocol from STDIN, and call the processing entry point.
-- `SMC_MAPPER/processor.py` owns `run(request, market_data_stream) -> exit_status`: validate the supplied stream, load the selected analysis state, process, and persist.
+- `SMC_MAPPER/processor.py` owns `run(request, market_data_stream) -> MapperResult`: validate the supplied stream, initialize fresh in-memory state, process, and return the validated result without file I/O.
 - The root `smc_mapper.py` contains only the import of `SMC_MAPPER.cli.main` and the executable guard.
 
 Normal execution emits exactly one JSON document to STDOUT after successful in-memory processing. With `--cleartext`, it emits the human-readable rendering instead. No Structures JSON is persisted. Market-data input is consumed from STDIN as the validated machine protocol captured from Market Data STDOUT by the Monitor/orchestrator. Mapper diagnostics and errors are emitted only on STDERR according to Section 12; failure must not produce a success result.
