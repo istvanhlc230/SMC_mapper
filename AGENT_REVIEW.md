@@ -1486,5 +1486,9 @@ The user's live refresh failed in the HTML fallback because the page had an even
 - Updated the Calendar version and normative specification to 2.6.6.
 
 ### Validation
-- Static source and regression review: pending automated CI.
+- The first Calendar CI run failed on a stale test assertion that still expected version 2.6.5; all Calendar version assertions were aligned to 2.6.6 before rerun.
+- Calendar Python tests [run #935](https://github.com/istvanhlc230/SMC_mapper/actions/runs/38071214129): **SUCCESS**.
+- Market Data Python tests [run #550](https://github.com/istvanhlc230/SMC_mapper/actions/runs/38071214054): **SUCCESS**.
+- Both passed against implementation commit `cb30953bee85d29dff081b98b59047712449abe1` with the corrected workflow in `a874c417640b88a8957525041a74ad3cfdc72460`; the synchronization regression confirms provider fetches overlap.
+- Live latency on the user's machine has not yet been measured; `--debug` now reports per-provider fetch duration for that verification.
 - No live user API key or credential was used or included in tests.
