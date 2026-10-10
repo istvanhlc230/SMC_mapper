@@ -66,10 +66,21 @@ jobs:
               "datetime": "2026-10-06 12:30:00",
               "region_code": "US",
               "impact": "HIGH",
+              "time": "12:30 PM",
+              "actual_revised": 0,
+              "updated_at": "2026-10-06 12:25:00",
           }
           normalized_region_event = providers.normalize_lse_event(lse_region_event)
           assert normalized_region_event["symbol"] == "USD"
           assert normalized_region_event["details"]["currency"] == "USD"
+          assert normalized_region_event["details"]["provider_fields"] == {
+              "lse": {
+                  "time": "12:30 PM",
+                  "actual_revised": 0,
+                  "updated_at": "2026-10-06 12:25:00",
+              }
+          }
+          assert "time" not in normalized_region_event["details"]["provider_fields"]
           lse_country_event = dict(lse_region_event, id="lse-country-eu", region_code=None, country_code="EU")
           normalized_country_event = providers.normalize_lse_event(lse_country_event)
           assert normalized_country_event["details"]["currency"] == "EUR"
@@ -179,7 +190,7 @@ jobs:
               providers.open_url = original_lse_open_url
 
           assert calendar.validate_symbol("EURUSD") == "EURUSD"
-          assert calendar.__version__ == "2.6.9"
+          assert calendar.__version__ == "2.7.0"
           assert calendar.validate_symbol("USDGBP") == "USDGBP"
           assert calendar.validate_symbol("HUF") == "HUF"
           assert calendar.validate_symbol("NVDA") == "NVDA"
@@ -227,6 +238,34 @@ jobs:
           assert len(merge_doc["events"]) == 1
           assert set(merge_doc["events"][0]["sources"]) == {"lse", "forexfactory"}
           assert merge_doc["events"][0]["details"]["previous"] == "3.2"
+
+          # Legacy flat and mixed provider fields migrate to the canonical nested form.
+          legacy_provider_fields_doc = domain.build_empty_calendar_document()
+          legacy_provider_fields_event = dict(lse_event)
+          legacy_provider_fields_event["details"] = dict(lse_event["details"])
+          legacy_provider_fields_event["details"]["provider_fields"] = {
+              "time": "10:00 AM",
+              "updated_at": "old timestamp",
+              "lse": {"time": "10:00 AM", "updated_at": "nested timestamp"},
+          }
+          legacy_provider_fields_doc["events"] = [legacy_provider_fields_event]
+          assert domain.normalize_calendar_document_provider_fields(legacy_provider_fields_doc)
+          assert legacy_provider_fields_doc["events"][0]["details"]["provider_fields"] == {
+              "lse": {"time": "10:00 AM", "updated_at": "nested timestamp"}
+          }
+          domain.validate_calendar_document(legacy_provider_fields_doc)
+
+          # An incoming refresh replaces only the same provider's values; no flattened keys return.
+          incoming_lse_event = dict(lse_event)
+          incoming_lse_event["details"] = dict(lse_event["details"])
+          incoming_lse_event["details"]["provider_fields"] = {
+              "lse": {"time": "10:00 AM", "updated_at": "new timestamp", "actual_revised": 0}
+          }
+          domain.merge_events(legacy_provider_fields_doc, [incoming_lse_event])
+          assert legacy_provider_fields_doc["events"][0]["details"]["provider_fields"] == {
+              "lse": {"time": "10:00 AM", "updated_at": "new timestamp", "actual_revised": 0}
+          }
+
           # Importing urllib/email while the repository root shadows stdlib calendar
           # must not eagerly import the Calendar provider graph or create an import cycle.
           stdlib_import_check = subprocess.run(
@@ -1254,7 +1293,7 @@ jobs:
               }
               assert calendar.normalize_provider_event(structured_raw)["details"]["impact"] == expected_impact
 
-          assert calendar.__version__ == "2.6.9"
+          assert calendar.__version__ == "2.7.0"
           assert f"Calendar CLI v{calendar.__version__}" in calendar.HELP_TEXT
 
           # Cleartext output must render normalized details as readable fields,
@@ -1273,6 +1312,13 @@ jobs:
                   "actual": None,
                   "forecast": "57.1",
                   "previous": "57.8",
+                  "provider_fields": {
+                      "lse": {
+                          "time": "10:00 AM",
+                          "actual_revised": 0,
+                          "updated_at": "2026-10-08 05:30:50",
+                      },
+                  },
               },
           }
           cleartext_out = io.StringIO()
@@ -1288,6 +1334,11 @@ jobs:
           assert "  Actual   : N/A\n" in rendered
           assert "  Forecast : 57.1\n" in rendered
           assert "  Previous : 57.8\n" in rendered
+          assert "  Provider Fields:\n" in rendered
+          assert "    LSE:\n" in rendered
+          assert "      Time              : 10:00 AM\n" in rendered
+          assert "      Actual Revised    : 0\n" in rendered
+          assert "{'time':" not in rendered
 
           # Cleartext event blocks are separated by whitespace only; no closing rule is emitted.
           second_cleartext_event = dict(cleartext_event)
