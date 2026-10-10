@@ -550,8 +550,9 @@ Provider-specific fields not mapped to canonical fields may be retained under pr
 The canonical structure is always a nested mapping of provider name to raw field name to value,
 for example `provider_fields.lse.time`. Provider fields must never be stored as a flat dictionary
 or as a mixture of flat fields and provider-nested dictionaries. Legacy flat/mixed records are
-normalized to this canonical shape when loaded and when merged; explicit nested values win over
-duplicate flat legacy values. Cleartext output displays each provider and each raw field on
+normalized to this canonical shape when loaded, merged, and atomically saved; explicit nested
+values win over duplicate flat legacy values. Normalization is idempotent. Cleartext output
+displays each provider and each raw field on
 separate lines, rather than printing a Python dictionary representation.
 No provider severity or economic value is invented.
 
