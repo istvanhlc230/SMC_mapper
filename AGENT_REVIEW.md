@@ -1600,3 +1600,24 @@ The user's live refresh failed in the HTML fallback because the page had an even
 ### Runtime validation
 - Workflow regressions cover table overview/details, long/escaped ForexFactory Detail sanitization, provider metadata rendering, merged source provenance, last-update tables, refresh summary tables, and the explicit rejection of `--cleartext`.
 - The available GitHub status/run lookup returned no status records for the current push-triggered workflow. Automated CI PASS is therefore not claimed; the workflow must still be confirmed green.
+
+## Market Data `--table` presentation — 2026-10-10
+
+### Decision
+- Replace Market Data's public `--cleartext` option with `--table`, matching Calendar's presentation-mode naming.
+- Do not retain `--cleartext` as an alias; reject it with a migration message pointing to `--table`.
+- Keep machine-readable CSV as the default STDOUT protocol.
+
+### Changes
+- Renamed the request state from `cleartext` to `table`.
+- Renamed the formatter from `format_cleartext()` to `format_table()`.
+- Updated Market Data CLI help, usage, parsing, protocol imports, and output dispatch.
+- Updated the Market Data specification and acceptance-test inventory.
+- Added workflow regressions for the new option, explicit old-flag rejection, readable table content, and unchanged default machine-output mode.
+
+### Static re-audit
+- CLI option, request model, output dispatcher, formatter, specification, and workflow regression use the same `--table` contract.
+- No Market Data runtime code accepts `--cleartext` as a synonym.
+- `--table` affects presentation only; provider acquisition and persistence flow remain unchanged.
+- Runtime CI validation is pending for the resulting commit; PASS is not claimed until the workflow completes successfully.
+
