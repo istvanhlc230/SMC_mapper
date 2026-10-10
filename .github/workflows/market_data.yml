@@ -123,6 +123,22 @@ jobs:
           assert connected_socket.address_family == socket.AF_INET
           assert connection_attempts == [socket.AF_INET]
 
+          # IPv6 remains a fallback when no IPv4 address can connect.
+          connection_attempts.clear()
+          with patch("COMMON.http_client.socket.getaddrinfo", return_value=synthetic_address_info), patch(
+              "COMMON.http_client.socket.socket", SyntheticSocket
+          ):
+              def fake_ipv6_fallback_connect(self, address):
+                  connection_attempts.append(self.address_family)
+                  if self.address_family == socket.AF_INET:
+                      raise OSError("synthetic IPv4 route failure")
+              SyntheticSocket.connect = fake_ipv6_fallback_connect
+              fallback_socket = shared_http_client._ipv4_first_create_connection(
+                  ("example.invalid", 443), timeout=5
+              )
+          assert fallback_socket.address_family == socket.AF_INET6
+          assert connection_attempts == [socket.AF_INET, socket.AF_INET6]
+
           # Closed scopes use the same captured reference clock.
           assert shared_parser.parse("2026.10.06").end == dt("2026-10-07T00:00:00Z")
           assert shared_parser.parse("2026.10.06 15:30").end == dt("2026-10-06T15:31:00Z")
