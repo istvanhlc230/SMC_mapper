@@ -432,7 +432,7 @@ The canonical next acquisition boundary is:
 - W1: next Monday 00:00 UTC;
 - MN1: first day of the next calendar month at 00:00 UTC.
 
-Open-start `--range -END` remains inclusive at the persisted `available_end` timestamp for reconciliation/deduplication.
+Open-start `--range -END` begins at the persisted `available_start` timestamp for each requested timeframe and returns retained history through END; stable candle identity deduplicates provider overfetch.
 
 ### Current snapshot semantics
 
