@@ -253,6 +253,7 @@ jobs:
           assert legacy_provider_fields_doc["events"][0]["details"]["provider_fields"] == {
               "lse": {"time": "10:00 AM", "updated_at": "nested timestamp"}
           }
+          assert not domain.normalize_calendar_document_provider_fields(legacy_provider_fields_doc)
           domain.validate_calendar_document(legacy_provider_fields_doc)
 
           # The persistence loader normalizes existing cache data before schema validation.
