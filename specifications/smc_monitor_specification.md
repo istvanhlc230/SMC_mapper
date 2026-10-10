@@ -93,7 +93,7 @@ The Monitor must not:
 - invoke legacy monitor/analyzer/engine runtime artifacts;
 - write canonical SMC state into Market Data or Structures JSON.
 
-The Monitor may read persisted Structures and Calendar contracts only. Market Data is consumed through its process-output contract.
+The Monitor reads the Calendar contract only. Market Data and Mapper are consumed through their process-output contracts; no Structures file exists.
 
 # 1. CLI AND INPUT RESOLUTION
 
@@ -121,7 +121,7 @@ Approved options:
 
 The parser performs no network access and no canonical analysis.
 
-`--timezone` is presentation/reporting timezone only. It must be a valid IANA timezone name. Canonical scheduling, comparisons, checkpoints and session evaluation remain based on canonical UTC; each named trading session continues to use its own configured IANA timezone.
+`--timezone` is presentation/reporting timezone only. It must be a valid IANA timezone name. Canonical scheduling, comparisons and session evaluation remain based on canonical UTC; each named trading session continues to use its own configured IANA timezone.
 
 ## 1.2 --symbol
 
@@ -129,7 +129,7 @@ At least one symbol is required.
 
 Multiple symbols are allowed. Each symbol is monitored independently.
 
-The Monitor must never merge structures, market data, schedules, checkpoints, targets, or alerts between symbols.
+The Monitor must never merge structures, market data, schedules, targets, or alerts between symbols.
 
 Each symbol uses one dedicated data directory for Market Data and Structures:
 
@@ -188,7 +188,7 @@ Rules:
 
 - `stdout` and `stderr` are separate process streams whose interpretation is defined by the invoked component contract;
 - for `market_data.py`, `stdout` is the machine-readable candle transport and `stderr` is diagnostics;
-- for `smc_mapper.py`, stdout is the committed Structures JSON response, while stderr is diagnostics/errors;
+- for `smc_mapper.py`, stdout is the per-invocation JSON result by default, while stderr is diagnostics/errors;
 - the Monitor may retain process output transiently for validation, diagnostics, or downstream contract handling as defined by the invoked process;
 - debug STDERR may be shown on the terminal only;
 - no subprocess diagnostic output is persisted as canonical state.
@@ -300,7 +300,7 @@ For every monitored symbol:
 ## 4.1 General cycle
 
 ~~~text
-discover/load stored analyses
+load explicit Monitor symbol/timeframe configuration
         ↓
 plan required Market Data ranges
         ↓
@@ -308,11 +308,11 @@ invoke market_data.py
         ↓
 consume Market Data machine CSV result
         ↓
-identify analyses requiring mapper update
+check whether a new completed entry-timeframe candle exists
         ↓
-invoke affected mapper analyses
+invoke Mapper for the configured timeframe combination
         ↓
-reload structures state
+validate and retain the result in memory
         ↓
 refresh current market reference
         ↓
@@ -449,7 +449,7 @@ Rules:
 - Calendar acquisition failure does not block Market Data/Mapper processing;
 - missing, partial, bootstrap-required, or unavailable Calendar state is not canonical failure;
 - News evaluation uses only validated normalized Calendar facts;
-- News context cannot change Mapper checkpoints or canonical SMC state;
+- News context cannot change persistent Mapper checkpoints or canonical SMC state;
 - acquisition is an availability step only; it is never a setup/target/RR gate.
 
 # 5. PROCESS INVOCATION CONTRACT
@@ -676,7 +676,7 @@ Session state is never:
 
 - canonical SMC structure;
 - a POI lifecycle state;
-- a mapper checkpoint;
+- a transient last-mapped candle timestamp;
 - a reason to rewrite a historical candle.
 
 Session context may be used for:
@@ -801,7 +801,7 @@ def refresh_current_market_view(
 
 Current refresh must use the Market Data process boundary and consume the current CSV row.
 
-A current snapshot update never advances a mapper checkpoint.
+A current snapshot update never advances a persistent Mapper checkpoint.
 
 ---
 
@@ -909,7 +909,7 @@ EXPIRED_HISTORICAL
 
 POI_MITIGATION must not be reclassified by the Monitor as POI_FAILURE or POI_INVALIDATION; mitigation is a distinct canonical execution lifecycle state. The Monitor does not introduce an age-based freshness rule and must consume the canonical lifecycle result rather than define its own eligibility semantics.
 
-targeted is selection state, not lifecycle state, and is not written to structures JSON by the Monitor.
+targeted is selection state, not lifecycle state, and is not written to any Structures JSON file.
 
 ## 9.5 resolve_target_plan
 
@@ -1058,7 +1058,7 @@ No implicit minimum RR is applied when --rr is absent.
 
 ~~~python
 def evaluate_alert_eligibility(
-    analysis: StoredAnalysisView,
+    analysis: MapperResultView,
     target: TargetPlan | None,
     current_market_view: CurrentMarketView,
     min_rr: Decimal | None,
@@ -1244,7 +1244,7 @@ A key is added only after the corresponding notification has been emitted succes
 
 Unchanged state must not emit the same alert repeatedly during one Monitor runtime.
 
-Alert history is not persisted in structures JSON V1.
+Alert history is transient in V1 and is not persisted in a Structures JSON file.
 
 ## 12.4 Target-reached evaluation
 
@@ -1350,7 +1350,7 @@ Event-status transition identity:
 symbol + analysis_key + event_id + status_transition
 ```
 
-Event-status memory is transient only. It is not written to `calendar.json` or canonical Structures JSON.
+Event-status memory is transient only. It is not written to `calendar.json` or a persistent Structures file.
 ## 12.6 Re-evaluation
 
 The Monitor may re-evaluate downstream eligibility when current price or another downstream input changes.
@@ -1376,7 +1376,7 @@ No symbol may receive another symbol's market-data, structural, target, or alert
 Each analysis retains:
 
 - independent identity;
-- independent checkpoint;
+- independent transient scheduling state;
 - independent entry timeframe;
 - independent schedule;
 - independent canonical structural state;
@@ -1523,9 +1523,9 @@ parse_monitor_request
 validate_monitor_request
 parse_decimal
 build_alert_output
-discover_analysis_views
+discover_monitored_symbols
 build_market_data_update_plan
-get_due_analyses
+get_due_symbols
 is_target_cleared
 calculate_projected_rr
 plan_news_acquisition
@@ -1596,19 +1596,15 @@ normalize_symbol(symbol)
 parse_decimal(value)
 
 get_symbol_data_directory(symbol, data_directory)
-get_structures_path(symbol, data_directory)
 
-load_structures(path, symbol)
 parse_market_data_stdout(stdout, symbol, requested_timeframes)
 
-discover_analysis_views(structures)
-validate_analysis_view(analysis)
 
-plan_market_data_updates(analysis_views, now)
+plan_market_data_updates(monitored_symbols, now)
 get_due_analyses(registry, now)
 
 invoke_market_data(plan, debug)
-invoke_mapper(analysis, end_time, market_data_stdout, debug)
+invoke_mapper(symbol, htf, ltf, period, market_data_stdout, debug)
 
 refresh_current_market_view(symbol, timeframe)
 
@@ -1657,7 +1653,7 @@ Prefer:
 request
 symbols
 analysis
-analysis_views
+monitored_symbols
 analysis_key
 entry_timeframe
 market_data
@@ -1708,14 +1704,14 @@ parse_decimal
 
 Verify help, multiple symbols, RR validation, --alert-json output selection, and debug behavior.
 
-## Phase 3 — persisted readers
+## Phase 3 — transient result models
 
 Implement:
 
 ~~~text
-load_structures
-discover_analysis_views
-validate_analysis_view
+parse_mapper_json_stdout
+validate_mapper_result
+build_transient_runtime_key
 ~~~
 
 ## Phase 4 — scheduling and Market Data planning
@@ -1784,7 +1780,7 @@ Verify:
 
 ```text
 calendar.json is the sole persistent News store
-dynamic warning horizon is derived from stored analysis entry timeframes
+dynamic warning horizon is derived from each configured symbol's entry timeframe
 HIGH/MEDIUM/LOW warning scaling is deterministic
 Calendar Update Engine acquisition and Monitor local snapshot read are separate operations
 the committed normalized calendar.json snapshot is the machine-readable News boundary
@@ -1824,7 +1820,7 @@ incremental one-candle update
 missed multiple-candle update
 no-new-candle current-price refresh
 multi-symbol isolation
-multi-analysis isolation
+multi-symbol isolation and timeframe-configuration isolation
 target clearance
 optional RR
 alert deduplication
@@ -1844,7 +1840,7 @@ Focused tests must cover at minimum.
 ~~~text
 test_monitor_requires_symbol
 test_monitor_accepts_multiple_symbols
-test_monitor_resolves_symbol_output_directory
+test_monitor_does_not_require_structures_output_directory
 test_monitor_uses_global_calendar_data
 test_monitor_rr_optional
 test_monitor_rejects_invalid_rr
@@ -1957,7 +1953,7 @@ test_unchanged_alert_is_not_repeated
 test_target_reached_is_directional
 test_target_reached_does_not_use_rr_gate
 test_resolve_target_plan_does_not_use_current_price
-test_mapper_invocation_passes_persisted_analysis_start
+test_mapper_invocation_passes_positional_period
 test_monitor_restart_resets_transient_alert_memory
 test_alert_does_not_claim_position_open
 ~~~
@@ -1968,7 +1964,7 @@ test_alert_does_not_claim_position_open
 test_symbol_isolation
 test_analysis_isolation
 test_monitor_serializes_symbol_orchestration
-test_monitor_does_not_write_structures_json
+test_mapper_result_is_not_persisted_by_monitor
 test_monitor_does_not_write_market_data_json
 test_mapper_json_stdout_validation_is_required_before_downstream_evaluation
 ~~~
@@ -2057,7 +2053,7 @@ smc_monitor.py is implementation-complete when:
 - Yahoo news has no invented warning severity;
 - dynamic News warning scaling remains limited to ForexFactory economic events;
 - News event-status observations remain informational and transient;
-- target, RR, alert, session, checkpoint, portability, and process-isolation contracts remain intact.
+- target, RR, alert, session, stateless-recomputation, portability, and process-isolation contracts remain intact.
 
 STATUS: CURRENT IMPLEMENTATION CONTRACT — CALENDAR UPDATE ENGINE BOUNDARY RECONCILED
 
