@@ -218,6 +218,7 @@ def execute_calendar_query(
             start,
             end,
             yahoo_pair_available=yahoo_pair_available,
+            freshly_acquired_event_ids=set(acquisition.get("acquired_event_ids", [])),
         )
         provider_statuses = [
             item["status"] for item in acquisition["provider_results"]

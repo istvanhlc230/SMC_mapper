@@ -825,8 +825,10 @@ def filter_query_events(
     start: datetime,
     end: datetime,
     yahoo_pair_available: bool = True,
+    freshly_acquired_event_ids: Optional[set[str]] = None,
 ) -> List[Dict[str, Any]]:
-    """Apply symbol visibility and source-specific coverage guards to cached results."""
+    """Filter cached records by coverage while retaining events fetched in this request."""
+    acquired_event_ids = freshly_acquired_event_ids or set()
     result: List[Dict[str, Any]] = []
     coverage_valid = {
         provider: not bool(find_uncovered_intervals(document, provider, symbol, start, end))
@@ -834,6 +836,7 @@ def filter_query_events(
     }
     for event in events:
         sources = set(event.get("sources", [event.get("source")]))
+        freshly_acquired = event.get("event_id") in acquired_event_ids
         if (
             event.get("source") == "yahoo_finance"
             and is_fx_pair(symbol)
@@ -842,10 +845,14 @@ def filter_query_events(
             continue
         if event.get("event_type") == "economic":
             economic_sources = sources.intersection({"lse", "forexfactory"})
-            if economic_sources and not any(coverage_valid.get(provider, False) for provider in economic_sources):
+            if (
+                economic_sources
+                and not freshly_acquired
+                and not any(coverage_valid.get(provider, False) for provider in economic_sources)
+            ):
                 continue
         elif event.get("event_type") == "news" and "yahoo_finance" in sources:
-            if not coverage_valid["yahoo_finance"]:
+            if not freshly_acquired and not coverage_valid["yahoo_finance"]:
                 continue
         result.append(event)
     return result

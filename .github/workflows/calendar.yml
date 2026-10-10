@@ -179,7 +179,7 @@ jobs:
               providers.open_url = original_lse_open_url
 
           assert calendar.validate_symbol("EURUSD") == "EURUSD"
-          assert calendar.__version__ == "2.6.8"
+          assert calendar.__version__ == "2.6.9"
           assert calendar.validate_symbol("USDGBP") == "USDGBP"
           assert calendar.validate_symbol("HUF") == "HUF"
           assert calendar.validate_symbol("NVDA") == "NVDA"
@@ -1254,7 +1254,7 @@ jobs:
               }
               assert calendar.normalize_provider_event(structured_raw)["details"]["impact"] == expected_impact
 
-          assert calendar.__version__ == "2.6.8"
+          assert calendar.__version__ == "2.6.9"
           assert f"Calendar CLI v{calendar.__version__}" in calendar.HELP_TEXT
 
           # Cleartext output must render normalized details as readable fields,
@@ -1801,6 +1801,75 @@ jobs:
               domain.utc_now = original_lse_partial_now
               domain.resolve_applicable_providers = original_lse_partial_resolve
               storage.save_calendar_atomic = original_lse_partial_save
+
+          # Future intervals have no final coverage record yet, but valid events
+          # fetched by the current request must still be visible.
+          original_future_resolve = domain.resolve_applicable_providers
+          original_future_fetch = operations._fetch_provider_events
+          original_future_now = domain.utc_now
+          original_future_save = storage.save_calendar_atomic
+          try:
+              domain.resolve_applicable_providers = lambda _symbol: ["forexfactory"]
+              domain.utc_now = lambda: dt("2026-10-10T12:00:00Z")
+              storage.save_calendar_atomic = lambda _document: None
+              future_event = {
+                  "event_id": "forexfactory:future-fresh-event",
+                  "symbol": "USD",
+                  "asset_type": "forex",
+                  "event_type": "economic",
+                  "source": "forexfactory",
+                  "sources": ["forexfactory"],
+                  "timestamp": "2026-10-12T16:10:00Z",
+                  "title": "FOMC Member Hammack Speaks",
+                  "details": {"currency": "USD", "impact": "LOW", "actual": None,
+                              "forecast": None, "previous": None, "specs": []},
+              }
+
+              def future_partial_fetch(provider, symbol, start, end, **kwargs):
+                  assert provider == "forexfactory"
+                  kwargs["unresolved_event_time_ids"].append("future-all-day-row")
+                  return [future_event]
+
+              operations._fetch_provider_events = future_partial_fetch
+              future_doc = domain.build_empty_calendar_document()
+              future_acquisition = operations.acquire_explicit(
+                  future_doc,
+                  "EURUSD",
+                  dt("2026-10-12T00:00:00Z"),
+                  dt("2026-10-13T00:00:00Z"),
+              )
+              assert "forexfactory:future-fresh-event" in future_acquisition["acquired_event_ids"]
+              assert future_doc["coverage"] == []
+              future_symbol_events = domain.filter_events_for_symbol(future_doc["events"], "EURUSD")
+              future_interval_events = domain.filter_events_for_interval(
+                  future_symbol_events,
+                  dt("2026-10-12T00:00:00Z"),
+                  dt("2026-10-13T00:00:00Z"),
+              )
+              assert future_interval_events
+              assert domain.filter_query_events(
+                  future_doc,
+                  future_interval_events,
+                  "EURUSD",
+                  dt("2026-10-12T00:00:00Z"),
+                  dt("2026-10-13T00:00:00Z"),
+              ) == []
+              visible_fresh_events = domain.filter_query_events(
+                  future_doc,
+                  future_interval_events,
+                  "EURUSD",
+                  dt("2026-10-12T00:00:00Z"),
+                  dt("2026-10-13T00:00:00Z"),
+                  freshly_acquired_event_ids=set(future_acquisition["acquired_event_ids"]),
+              )
+              assert [event["event_id"] for event in visible_fresh_events] == [
+                  "forexfactory:future-fresh-event"
+              ]
+          finally:
+              domain.resolve_applicable_providers = original_future_resolve
+              operations._fetch_provider_events = original_future_fetch
+              domain.utc_now = original_future_now
+              storage.save_calendar_atomic = original_future_save
 
           # The user-facing refresh path must preserve concrete-time events when
           # ForexFactory reports All Day/Tentative rows, and its result stays PARTIAL.

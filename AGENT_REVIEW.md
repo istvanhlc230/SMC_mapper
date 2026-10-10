@@ -1533,3 +1533,20 @@ The user's live refresh failed in the HTML fallback because the page had an even
 - Both workflows passed against implementation commit `a6350adda6764d16396a6d5c7695dfc2dfb427bd`.
 - Regressions cover recognized country/region-code normalization, isolation of unknown LSE region rows, PARTIAL coverage/watermark behavior, and acceptance of LSE watermarks by the persistent schema validator.
 - Tests use synthetic provider rows and do not require or expose the user's LSE key.
+
+
+## Future date query hid freshly acquired events — 2026-10-10
+
+### Finding
+- A query for `EURUSD 2026.10.12` acquired provider data and persisted Calendar state but rendered `No matching events.`
+- Explicit acquisition intentionally does not write final coverage or advance watermarks for a future interval (`start >= now`), but the subsequent `filter_query_events()` stage required coverage and hid every freshly acquired event from that interval.
+- The same mismatch could also hide valid timestamped rows from a `PARTIAL` provider response after explicit acquisition.
+
+### Change
+- `acquire_explicit()` now returns canonical event IDs touched by current provider responses, mapping through the economic merge key when provider event IDs differ.
+- The explicit query passes those IDs to `filter_query_events()`; coverage guards are bypassed only for freshly acquired events. Cached items from error/uncovered sources remain guarded, and Yahoo pair verification is still enforced.
+- Added a regression proving that a future-date, partial ForexFactory response with one valid event remains visible without future coverage; the equivalent cached result is still hidden without the fresh-event IDs.
+- Updated the normative specification and bumped Calendar version to 2.6.9.
+
+### Validation
+- Automated Calendar and Market Data CI status is pending for this commit.

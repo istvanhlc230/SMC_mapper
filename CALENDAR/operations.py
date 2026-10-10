@@ -31,6 +31,7 @@ def acquire_explicit(
     failures: List[Dict[str, str]] = []
     successful = 0
     document_updated = False
+    acquired_event_ids: set[str] = set()
     for provider in domain.resolve_applicable_providers(symbol):
         try:
             gaps = domain.find_uncovered_intervals(document, provider, symbol, start, end)
@@ -65,11 +66,27 @@ def acquire_explicit(
                 gap_events = domain.filter_events_for_interval(gap_events, gap_start, gap_end)
                 events.extend(gap_events)
             failed_detail_ids = {f"forexfactory:{item}" for item in detail_failures}
+            # Record canonical events actually supported by this provider response.
+            # The shared merge key maps provider IDs to the canonical ID for a shared
+            # economic event, allowing fresh data through even if coverage is partial.
+            incoming_event_ids = {event["event_id"] for event in events}
+            incoming_economic_keys = {
+                domain._event_merge_key(event)
+                for event in events
+                if event["event_type"] == "economic"
+            }
             domain.merge_events(
                 document,
                 events,
                 clear_suppressed_symbol=symbol,
                 preserve_detail_failure_ids=failed_detail_ids,
+            )
+            acquired_event_ids.update(incoming_event_ids)
+            acquired_event_ids.update(
+                event["event_id"]
+                for event in document["events"]
+                if event["event_type"] == "economic"
+                and domain._event_merge_key(event) in incoming_economic_keys
             )
             if events:
                 document_updated = True
@@ -134,7 +151,11 @@ def acquire_explicit(
         storage.save_calendar_atomic(document)
         if debug:
             print(f"DEBUG | Persisted Calendar file: {storage.CALENDAR_FILE}", file=sys.stderr)
-    return {"provider_results": provider_results, "failures": failures}
+    return {
+        "provider_results": provider_results,
+        "failures": failures,
+        "acquired_event_ids": sorted(acquired_event_ids),
+    }
 
 
 def delete_symbol_interval(

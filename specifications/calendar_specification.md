@@ -2,7 +2,7 @@
 
 Status: Current V2 specification.
 
-Calendar implementation baseline: 2.6.8.
+Calendar implementation baseline: 2.6.9.
 
 Default DATA_ROOT is the repository `CALENDAR/` directory, so the default persistent artifact is `<repository-root>/CALENDAR/calendar.json`. `SMC_DATA_ROOT` may explicitly override this runtime location.
 
@@ -102,6 +102,13 @@ the adapter. The Calendar engine consumes only normalized provider events.
 Provider acquisition is independent: failure or absence from one provider must not
 prevent successful events from another provider from being persisted. Aggregate status
 is PARTIAL when at least one applicable provider fails while another succeeds.
+
+Query visibility of newly acquired events:
+- an explicit temporal query displays valid events fetched during that same request even when a provider interval is `PARTIAL` or a future interval intentionally has no final coverage record;
+- the acquisition operation records canonical event IDs affected by current provider responses, including cross-provider economic-event merges;
+- this exception applies only to event IDs freshly acquired in the current request; cached events from failed or uncovered sources remain subject to the source-coverage guards;
+- newly acquired event visibility does not mark a partial interval complete and does not advance its watermark.
+
 
 Forced-refresh performance contract:
 - base event acquisition for all applicable providers runs concurrently, with a bounded worker count equal to the applicable provider count (maximum three);
@@ -313,7 +320,7 @@ These aliases are resolved at execution time using the same injectable UTC clock
 
 The read-only `SYMBOL --last-update` operation returns `last_successful_at` for every applicable provider+canonical-symbol watermark. If no applicable provider has a successful watermark, status is `NO_LAST_UPDATE`. Missing individual provider watermarks are represented as null / N/A, never as fabricated timestamps.
 
-Implementation version is 2.6.8; persistent schema remains V2.
+Implementation version is 2.6.9; persistent schema remains V2.
 
 ## 4. current semantics
 
