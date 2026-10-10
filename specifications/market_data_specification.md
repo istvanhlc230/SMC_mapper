@@ -796,7 +796,7 @@ The machine protocol is a process interface, not the persistence JSON schema.
 
 It never changes acquisition, normalization, persistence, retention, or query semantics.
 
-When specified, the CLI prints the requested candles in a human-readable table with timeframe, candle count, UTC timestamp, OHLC values, and normalized total volume. The table does not include a per-row `Completed` column. If an entry is an in-progress candle, identify the affected timeframe section as `CURRENT SNAPSHOT` so removing the column does not hide its state. Display the normalized `volume.total` value when available; display `N/A` when total volume is unavailable, and never substitute zero or infer total volume from tick volume, real volume, or directional volume branches.
+When specified, the CLI prints the requested candles in a human-readable table with timeframe, candle count, UTC timestamp, OHLC values, and normalized total volume. The table does not include a per-row `Completed` column. If an entry is an in-progress candle, identify the affected timeframe section as `CURRENT SNAPSHOT` so removing the column does not hide its state. Display the normalized `volume.total` value when available; display `N/A` when total volume is unavailable, and never substitute zero or infer total volume from tick volume, real volume, or directional volume branches. Human-readable numeric values use compact decimal rendering that strips only insignificant fractional trailing zeroes; the machine protocol and persisted values retain their canonical precision.
 
 If the provider returns valid L2 data for the requested point in time, append a separate `L2 MARKET DEPTH` section with provider, UTC snapshot time, and bid/ask price and volume by level. If no valid L2 snapshot is available, omit the entire L2 section without blank L2 columns. An L2 lookup failure must not invalidate otherwise successful candle output. A historical query must not display a live snapshot newer than its requested end. Empty candle results still identify each requested timeframe with a zero candle count. The exact spacing/layout may evolve without changing the machine protocol.
 
@@ -2421,6 +2421,7 @@ test_market_data_help_documents_positional_symbol
 test_parse_market_data_request_table_flag
 test_parse_market_data_request_rejects_cleartext_alias
 test_run_table_mode_formats_human_readable_output
+test_table_trims_storage_precision_trailing_zeroes
 test_table_shows_normalized_total_volume_and_omits_completed_column
 test_table_marks_current_snapshot_and_shows_unavailable_volume_as_na
 test_table_displays_l2_depth_only_when_provider_returns_snapshot
