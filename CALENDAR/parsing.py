@@ -269,6 +269,7 @@ def parse_forexfactory_html_events(
     html: str,
     start: datetime,
     end: datetime,
+    unresolved_event_time_ids: Optional[List[str]] = None,
 ) -> List[Dict[str, Any]]:
     """Parse forexfactory html events."""
     parser = ForexFactoryHTMLCalendarParser()
@@ -298,12 +299,17 @@ def parse_forexfactory_html_events(
         event_date = _parse_forexfactory_date(str(row.get("date") or ""), start, end)
         parsed_time = _parse_forexfactory_time(str(row.get("time") or ""))
         if parsed_time is None:
-            # A titled event without a concrete clock is not safely timestampable.
-            # Fail closed so "Tentative", "All Day", an empty clock, or another
-            # malformed value can never be turned into a fabricated event time.
-            raise ProviderError(
-                f"ForexFactory event '{event_id}' has no concrete provider time."
-            )
+            # Never fabricate midnight or inherit an unrelated row's time for
+            # "All Day", "Tentative", or another event without a concrete clock.
+            # A direct parser call remains strict. During a provider acquisition,
+            # the caller may collect the unresolved IDs, skip only those rows, and
+            # mark the coverage PARTIAL so a later refresh retries the interval.
+            if unresolved_event_time_ids is None:
+                raise ProviderError(
+                    f"ForexFactory event '{event_id}' has no concrete provider time."
+                )
+            unresolved_event_time_ids.append(event_id)
+            continue
         hour, minute = parsed_time
         local_datetime = event_date.replace(
             hour=hour,
