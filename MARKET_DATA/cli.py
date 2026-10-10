@@ -8,7 +8,7 @@ from typing import Sequence
 
 from .models import MarketDataRequest, SUPPORTED_TIMEFRAMES
 from .provider import create_provider
-from .protocol import format_cleartext, serialize_machine_csv
+from .protocol import format_table, serialize_machine_csv
 from .service import get_candles
 from COMMON.date_time import DateTimeScopeError, DateTimeScopeParser, utc_now
 
@@ -18,11 +18,11 @@ def build_argument_parser():
     parser = argparse.ArgumentParser(
         description=(
             "Acquire and persist Market Data. Successful default output is machine-readable CSV on STDOUT; "
-            "--cleartext selects human-readable tabular output."
+            "--table selects human-readable tabular output."
         ),
         usage=(
             "%(prog)s --symbol SYMBOL --timeframes TF [TF ...] [SCOPE ...] "
-            "[--current | --lastclosed] [--debug] [--cleartext]"
+            "[--current | --lastclosed] [--debug] [--table]"
         ),
     )
     parser.add_argument("--symbol", metavar="SYMBOL", help="Instrument or ticker symbol.")
@@ -43,7 +43,7 @@ def build_argument_parser():
     parser.add_argument("--current", action="store_true", help="Refresh the current in-progress candle snapshot.")
     parser.add_argument("--lastclosed", action="store_true", help="Acquire exactly the latest completed candle.")
     parser.add_argument("--debug", action="store_true", help="Write diagnostic traceback/details to STDERR on failure.")
-    parser.add_argument("--cleartext", action="store_true", help="Use human-readable table output instead of machine CSV.")
+    parser.add_argument("--table", action="store_true", help="Use human-readable table output instead of machine CSV.")
     return parser
 
 
@@ -140,7 +140,7 @@ def parse_market_data_request(argv: Sequence[str] | None = None):
     current = False
     last_closed_only = False
     debug = False
-    cleartext = False
+    table = False
     scope_tokens = []
     options_seen = set()
     index = 0
@@ -183,7 +183,9 @@ def parse_market_data_request(argv: Sequence[str] | None = None):
         elif argument == "--debug":
             debug = True
         elif argument == "--cleartext":
-            cleartext = True
+            raise ValueError("--cleartext is no longer supported; use --table instead.")
+        elif argument == "--table":
+            table = True
         elif argument.startswith("--"):
             raise ValueError(f"unknown CLI option: {argument}")
         else:
@@ -216,7 +218,7 @@ def parse_market_data_request(argv: Sequence[str] | None = None):
         last_closed_only,
         current,
         debug,
-        cleartext,
+        table,
     )
     validate_request(request)
     return request
@@ -247,8 +249,8 @@ def run(request):
             for timeframe, entries in output_entries.items():
                 output_entries[timeframe] = entries[-1:]
 
-        if request.cleartext:
-            print(format_cleartext(request.symbol, output_entries), end="\n")
+        if request.table:
+            print(format_table(request.symbol, output_entries), end="\n")
         else:
             print(serialize_machine_csv(output_entries), end="")
         return 0
