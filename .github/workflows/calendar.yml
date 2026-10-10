@@ -277,6 +277,29 @@ jobs:
           finally:
               storage._load_json_file = original_json_loader
 
+          # Atomic saves must serialize canonical provider fields, not a legacy flat layout.
+          original_atomic_writer = storage.atomic_write_text
+          try:
+              saved_json = {}
+              storage.atomic_write_text = lambda _path, text, **kwargs: saved_json.update(
+                  {"content": text}
+              )
+              save_migration_doc = domain.build_empty_calendar_document()
+              save_migration_event = dict(lse_event)
+              save_migration_event["details"] = dict(lse_event["details"])
+              save_migration_event["details"]["provider_fields"] = {
+                  "time": "10:00 AM",
+                  "lse": {"time": "10:00 AM", "updated_at": "new timestamp"},
+              }
+              save_migration_doc["events"] = [save_migration_event]
+              storage.save_calendar_atomic(save_migration_doc)
+              serialized_migration_doc = json.loads(saved_json["content"])
+              assert serialized_migration_doc["events"][0]["details"]["provider_fields"] == {
+                  "lse": {"time": "10:00 AM", "updated_at": "new timestamp"}
+              }
+          finally:
+              storage.atomic_write_text = original_atomic_writer
+
           # An incoming refresh replaces only the same provider's values; no flattened keys return.
           incoming_lse_event = dict(lse_event)
           incoming_lse_event["details"] = dict(lse_event["details"])
