@@ -80,7 +80,7 @@ def format_table_details(
     # fields. Sanitize HTML before turning each specification into a table row.
     for spec in details.get("specs", []):
         title = _detail_html_to_text(str(spec.get("title", "")))
-        title = re.sub(r"\\s+", " ", title).strip()
+        title = re.sub(r"\s+", " ", title).strip()
         value = _detail_html_to_text(str(spec.get("html", "")))
         detail_rows.append((title or "Provider Detail", value or "N/A"))
 
