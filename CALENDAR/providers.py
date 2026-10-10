@@ -308,9 +308,22 @@ def normalize_lse_event(raw: Dict[str, Any]) -> Dict[str, Any]:
     }
     url = _lse_value(raw, "url", "link", "source_url")
     if url: details["url"] = str(url)
-    known = {"id","event_id","eventId","uuid","event","name","title","datetime","timestamp","ts","date","currency","ccy","region_code","region","country_code","impact","importance","impact_name","actual","forecast","consensus","previous","url","link","source_url"}
-    extras = {str(k): v for k,v in raw.items() if k not in known and v not in (None, "")}
-    if extras: details["provider_fields"] = extras
+    known = {
+        "id", "event_id", "eventId", "uuid", "event", "name", "title",
+        "datetime", "timestamp", "ts", "date", "currency", "ccy",
+        "region_code", "region", "country_code", "countryCode",
+        "iso_country_code", "country", "impact", "importance", "impact_name",
+        "actual", "forecast", "consensus", "previous", "url", "link",
+        "source_url",
+    }
+    extras = {
+        str(field_name): field_value
+        for field_name, field_value in raw.items()
+        if field_name not in known and field_value not in (None, "")
+    }
+    if extras:
+        # Provider-specific metadata always uses provider -> field -> value.
+        details["provider_fields"] = {"lse": extras}
     return {
         "event_id": f"lse:{provider_id}",
         "symbol": currency,
