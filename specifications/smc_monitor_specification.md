@@ -594,12 +594,9 @@ If STDOUT is empty, contains extra non-JSON text, or contains malformed/mismatch
 
 ## 6.1 Entry timeframe
 
-Scheduling is driven by the analysis entry timeframe:
+Scheduling is driven by the LTF entry timeframe. Both distinct HTF and LTF are required for every conformant Monitor analysis.
 
-- single timeframe: selected timeframe;
-- two timeframes: LTF.
-
-HTF is contextual and does not become the mapper scheduling driver.
+HTF provides higher-timeframe narrative/POI context and is not the Mapper scheduling driver.
 
 ## 6.2 Polling
 
