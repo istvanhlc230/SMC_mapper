@@ -133,7 +133,6 @@ ERRORS
   Normal output does not expose provider exception details.
 """
 
-"""
 
 
 class CalendarInputError(Exception):

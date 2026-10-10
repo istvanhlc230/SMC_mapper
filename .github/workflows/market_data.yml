@@ -26,6 +26,9 @@ jobs:
           from MARKET_DATA.cli import parse_market_data_request
           from MARKET_DATA.models import MarketDataRequest, ProviderCandle
           from MARKET_DATA.service import resolve_acquisition_range
+          def dt(value):
+              return datetime.fromisoformat(value.replace("Z", "+00:00"))
+
           from COMMON.date_time import DateTimeScopeParser, DateTimeScopeError
 
           # The shared parser is deterministic, strict, and independent of consumer modules.
@@ -42,8 +45,6 @@ jobs:
           else:
               raise AssertionError("invalid date must be rejected by shared parser")
 
-          def dt(value):
-              return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
           # The production CLI/provider boundary must select the canonical LSE adapter.
           assert isinstance(create_provider("lse"), LSEMarketDataProvider)
@@ -90,21 +91,24 @@ jobs:
           assert request.start_time is None
           assert request.end_time == dt("2026-10-06T05:01:00Z")
 
-          request = parse_market_data_request([
-              "--symbol", "EURUSD",
-              "--timeframes", "M1",
-              "-2026.10.06 05:00",
-          ])
-          assert request.start_time is None
-          assert request.end_time == dt("2026-10-06T05:01:00Z")
-
-          # HH.MM is compatibility-only for open-ended ranges; canonical explicit
-          # datetime scopes must use HH:MM.
+          # The old HH.MM compatibility spelling is rejected for open-start scopes too.
           try:
               parse_market_data_request([
                   "--symbol", "EURUSD",
                   "--timeframes", "M1",
-                  "2026.10.05 05:00",
+                  "-2026.10.06 05.00",
+              ])
+          except ValueError:
+              pass
+          else:
+              raise AssertionError("open-start HH.MM scope must be rejected")
+
+          # HH.MM is not part of the public scope grammar.
+          try:
+              parse_market_data_request([
+                  "--symbol", "EURUSD",
+                  "--timeframes", "M1",
+                  "2026.10.05 05.00",
               ])
           except ValueError:
               pass

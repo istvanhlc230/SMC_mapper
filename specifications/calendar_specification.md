@@ -214,7 +214,7 @@ python calendar.py delete SYMBOL <scope>
 python calendar.py --help
 ```
 
-The public date/time grammar is shared with Market Data and implemented in `COMMON/date_time.py` by `DateTimeScopeParser`. Date and time are separated by a space, not `@`. There are no `positional date scope`, `positional time scope`, or `positional scope` flags.
+The public date/time grammar is shared with Market Data and implemented in `COMMON/date_time.py` by `DateTimeScopeParser`. Date and time are separated by a space, not `@`. No `--date`, `--time`, or `--range` flags are accepted; the temporal scope is positional.
 
 Supported temporal scopes:
 
@@ -337,9 +337,9 @@ Public forms:
     python calendar.py SYMBOL YYYY.MM.DD-YYYY.MM.DD refresh
     python calendar.py SYMBOL YYYY.MM.DD HH:MM refresh
     python calendar.py SYMBOL YYYY.MM.DD HH:MM-YYYY.MM.DD HH:MM refresh
-    python calendar.py SYMBOL positional date scope YYYY.MM.DD refresh
-    python calendar.py SYMBOL positional date scope YYYY.MM.DD positional time scope HH:MM refresh
-    python calendar.py SYMBOL positional time scope HH:MM refresh
+    python calendar.py SYMBOL YYYY.MM.DD refresh
+    python calendar.py SYMBOL YYYY.MM.DD HH:MM refresh
+    python calendar.py SYMBOL HH:MM refresh
 
 The former `refresh SYMBOL SCOPE` command grammar is removed.
 `current refresh` is valid and is the only refresh form permitted among `current`, `latest`, `next`, `prev`, and `news`. `latest refresh`, `next refresh`, `prev refresh`, and `news refresh` are invalid.
@@ -713,10 +713,10 @@ Acceptance requires:
 - current is watermark-based and remains cache-only;
 - a missing current-mode watermark contributes no events to plain `current`;
 - provider acquisition for current-mode refresh is explicit through the trailing `refresh` modifier;
-- `positional scope -YYYY.MM.DD` and `positional scope -YYYY.MM.DD HH:MM` resolve their start from the latest recorded visible Calendar event and preserve the explicit END boundary;
+- `-YYYY.MM.DD` and `-YYYY.MM.DD HH:MM` resolve their start from the latest recorded visible Calendar event and preserve the explicit END boundary;
 - `next` considers only scheduled ForexFactory economic events; Yahoo published/current news is not a future-event source;
 - normal public query output never exposes provider `ERROR` records or provider exception text;
-- plain open-start `positional scope` is cache-only; trailing `refresh` performs provider acquisition over that resolved interval;
+- plain open-start scopes are cache-only; trailing `refresh` performs provider acquisition over that resolved interval;
 - EURUSD date, date range, datetime, and datetime range parse correctly;
 - NVDA routes to Yahoo;
 - HUF routes to ForexFactory;

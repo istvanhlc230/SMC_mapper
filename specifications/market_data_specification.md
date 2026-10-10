@@ -432,7 +432,7 @@ The canonical next acquisition boundary is:
 - W1: next Monday 00:00 UTC;
 - MN1: first day of the next calendar month at 00:00 UTC.
 
-Open-start `positional scope -END` begins at the persisted `available_start` timestamp for each requested timeframe and returns retained history through END; stable candle identity deduplicates provider overfetch.
+Open-start `-END` positional scope begins at the persisted `available_start` timestamp for each requested timeframe and returns retained history through END; stable candle identity deduplicates provider overfetch.
 
 ### Current snapshot semantics
 
@@ -515,7 +515,7 @@ Required request options:
 --help
 ```
 
-The temporal scope is positional, matching Calendar. The public CLI does not accept `positional scope`, `--date`, or `--time`. Date and time are separated by a space, never `@`.
+The temporal scope is positional, matching Calendar. The public CLI does not accept the `--range`, `--date`, or `--time` flags. Date and time are separated by a space, never `@`.
 
 Supported scope forms:
 
@@ -594,7 +594,7 @@ No machine-local timezone is ever assumed.
 - `--current` means **the current in-progress candle snapshot**.
 - `--lastclosed` is mutually exclusive with `positional scope`.
 - `--current` is mutually exclusive with `--lastclosed`.
-- Historical `positional scope` scopes, including open-start `-END` ranges, are mutually exclusive with `current` and `lastclosed` modes.
+- Positional historical scopes, including open-start `-END` ranges, are mutually exclusive with `current` and `lastclosed` modes.
 - With no explicit mode, normal incremental completed-candle acquisition is used.
 - `lastclosed` must use the provider's latest-completed acquisition path and completion validation.
 - The implementation request fields are `last_closed_only` and `current`; these names are authoritative for Market Data CLI orchestration.
@@ -627,10 +627,10 @@ The current in-progress candle mode is exposed as the explicit `--current` CLI p
 Canonical forms:
 
     python market_data.py --symbol EURUSD --timeframes M1 M5 --current
-    python market_data.py --symbol EURUSD --timeframes M1 M5 positional scope 2026.10.05
+    python market_data.py --symbol EURUSD --timeframes M1 M5 2026.10.05
     python market_data.py --symbol EURUSD --timeframes M1 M5 --lastclosed
 
-`--current` must not be encoded as `positional scope current`. The latter form is not part of the public Market Data CLI grammar and must be rejected. `--current` is mutually exclusive with `positional scope` and `--lastclosed`.
+`--current` is a flag, not a scope value; a bare `current` positional token is invalid. `--current` is mutually exclusive with any positional historical scope and with `--lastclosed`.
 
 ## 5.3 normalize_symbol
 
@@ -1616,7 +1616,7 @@ When explicit historical boundaries are supplied:
 
 - `start_time + end_time`: acquire exactly the requested interval;
 - `start_time` only: acquire from `start_time` through the latest completed candle available at evaluation time;
-- `end_time` only (the internal representation of open-start `positional scope -END`): resolve the output start from `available_start`; if retained history exists, acquire only any missing completed candles after `available_end` up to the requested end, then emit the full retained output scope. If no retained history exists, return a provider acquisition plan with an open start (`None, end_time`) so the adapter can request its widest supported historical bootstrap within documented provider/retention limits; fail explicitly if that bootstrap is unsupported or yields no usable completed candles;
+- `end_time` only (the internal representation of open-start `-END` scope): resolve the output start from `available_start`; if retained history exists, acquire only any missing completed candles after `available_end` up to the requested end, then emit the full retained output scope. If no retained history exists, return a provider acquisition plan with an open start (`None, end_time`) so the adapter can request its widest supported historical bootstrap within documented provider/retention limits; fail explicitly if that bootstrap is unsupported or yields no usable completed candles;
 - honor requested boundaries;
 - do not invent candles outside requested scope.
 
@@ -1656,7 +1656,7 @@ Normal incremental mode advances past the persisted `available_end` candle. The 
     available_end + timeframe interval duration
 
 This prevents an ordinary incremental run from re-requesting the already persisted terminal candle. The open-start
-`positional scope -END` mode is intentionally different from normal incremental mode in its output scope: output begins at `available_start`
+`-END` positional scope mode is intentionally different from normal incremental mode in its output scope: output begins at `available_start`
 inclusively and includes all retained candles through END. Provider acquisition still starts only after `available_end` when retained history exists;
 reacquisition of a past interval requires an explicit bounded `START-END` request. Stable candle identity deduplicates provider overfetch.
 
