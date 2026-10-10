@@ -274,9 +274,44 @@ jobs:
           try:
               serialize_machine_csv({"M1": [(malformed_orderflow_candle, True)]})
           except ValueError as error:
-              assert "complete finite non-negative buy/sell pair" in str(error)
+              assert "orderflow" in str(error)
           else:
               raise AssertionError("partial observed orderflow must be rejected")
+
+          # Availability flags and actual value presence must agree in both directions.
+          inconsistent_total_flag_candle = replace(
+              sample_candle,
+              volume=VolumeState(
+                  False, Decimal("12345"),
+                  False, None, None,
+                  False, None, None,
+              ),
+          )
+          try:
+              serialize_machine_csv({
+                  "M1": [(inconsistent_total_flag_candle, True)]
+              })
+          except ValueError as error:
+              assert "volume.total presence must match has_total" in str(error)
+          else:
+              raise AssertionError("unavailable total-volume flag must not discard a supplied value")
+
+          inconsistent_orderflow_flag_candle = replace(
+              sample_candle,
+              volume=VolumeState(
+                  True, Decimal("12345"),
+                  False, None, None,
+                  False, Decimal("5000"), Decimal("7345"),
+              ),
+          )
+          try:
+              serialize_machine_csv({
+                  "M1": [(inconsistent_orderflow_flag_candle, True)]
+              })
+          except ValueError as error:
+              assert "orderflow pair presence must match has_orderflow" in str(error)
+          else:
+              raise AssertionError("unavailable orderflow flag must not discard a supplied pair")
 
           class SyntheticDepthProvider:
               def fetch_market_depth(self, symbol, as_of=None):
